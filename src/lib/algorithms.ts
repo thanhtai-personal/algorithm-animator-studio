@@ -584,9 +584,14 @@ while (pq.size) {
     }
     const pathEdges: [number, number][] = [];
     for (let i = 0; i < path.length - 1; i++) pathEdges.push([path[i], path[i + 1]]);
-    v.path = path.length ? path.join("→") : "none";
+    const lbl = (id: number) => g.nodes[id]?.label ?? String(id);
+    const pathStr = path.map(lbl).join(" → ");
+    v.path = pathStr || "none";
     v.cost = dist[end] === Infinity ? "∞" : dist[end];
-    v.label = path.length ? `Shortest ${start}→${end} = ${dist[end]}` : "Unreachable";
+    v.task = `Dijkstra: shortest weighted path ${lbl(start)} → ${lbl(end)}`;
+    v.label = path.length
+      ? `SHORTEST path ${lbl(start)}→${lbl(end)}: ${pathStr} • total cost = ${dist[end]}`
+      : `Dijkstra: ${lbl(end)} is unreachable from ${lbl(start)}`;
     push(0, null, null, "found", pathEdges);
     return f;
   },

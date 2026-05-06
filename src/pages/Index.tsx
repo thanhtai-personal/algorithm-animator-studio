@@ -46,10 +46,11 @@ const Index = () => {
   const H = platform.h;
 
   // audio
-  const [sfxCompare, setSfxCompare] = useState<SfxKind>("off");
-  const [sfxSwap, setSfxSwap] = useState<SfxKind>("pop");
+  const [sfxCompare, setSfxCompare] = useState<SfxKind>("blip");
+  const [sfxSwap, setSfxSwap] = useState<SfxKind>("marimba");
   const [sfxVol, setSfxVol] = useState(60);
   const [musicVol, setMusicVol] = useState(30);
+  const [musicPreset, setMusicPreset] = useState<MusicPreset>("lofi");
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
 
   // custom code

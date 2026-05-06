@@ -31,6 +31,7 @@ export function useAlgorithmStudio() {
   const [speed, setSpeed] = useState(0.5);
   const [playing, setPlaying] = useState(false);
   const [frameIdx, setFrameIdx] = useState(0);
+  const [transitionProgress, setTransitionProgress] = useState(1);
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [exportFormat, setExportFormat] = useState<ExportFormat>("webm");
@@ -83,6 +84,7 @@ export function useAlgorithmStudio() {
   useEffect(() => { audioEngine.setMusicVolume(musicVol / 100); }, [musicVol]);
   useEffect(() => { audioEngine.setMusicSource(musicUrl); }, [musicUrl]);
   useEffect(() => { audioEngine.setMusicPreset(playing ? musicPreset : "off"); }, [musicPreset, playing]);
+  useEffect(() => { if (!playing) setTransitionProgress(1); }, [playing, frameIdx]);
 
   useEffect(() => {
     const c = canvasRef.current;
@@ -90,8 +92,18 @@ export function useAlgorithmStudio() {
     const f = frames[Math.min(frameIdx, frames.length - 1)];
     if (!c || !ctx || !f) return;
     const code = algoId === "custom" ? customCode : algo.code;
-    renderFrame(ctx, f, { title, subtitle, theme, code, showCode, complexity: COMPLEXITY[algoId] }, W, H);
-  }, [frames, frameIdx, title, subtitle, theme, algo.code, showCode, algoId, customCode, W, H]);
+    const previousFrame = frameIdx > 0 ? frames[frameIdx - 1] : null;
+    renderFrame(ctx, f, {
+      title,
+      subtitle,
+      theme,
+      code,
+      showCode,
+      complexity: COMPLEXITY[algoId],
+      previousFrame,
+      transitionProgress,
+    }, W, H);
+  }, [frames, frameIdx, transitionProgress, title, subtitle, theme, algo.code, showCode, algoId, customCode, W, H]);
 
   const playEvent = (f: Frame | null | undefined) => {
     if (!f) return;
@@ -113,12 +125,15 @@ export function useAlgorithmStudio() {
     lastRef.current = performance.now();
     const tick = (time: number) => {
       const interval = 1000 / (fps * speed);
-      if (time - lastRef.current >= interval) {
+      const elapsed = time - lastRef.current;
+      setTransitionProgress(Math.min(1, elapsed / interval));
+      if (elapsed >= interval) {
         lastRef.current = time;
         setFrameIdx((i) => {
           const next = i + 1;
           if (next >= frames.length) { setPlaying(false); return i; }
           playEvent(frames[next]);
+          setTransitionProgress(0);
           return next;
         });
       }
@@ -138,6 +153,7 @@ export function useAlgorithmStudio() {
     setArr(next);
     setInput(next.join(", "));
     setFrameIdx(0);
+    setTransitionProgress(1);
     setPlaying(false);
   };
 
@@ -180,11 +196,21 @@ export function useAlgorithmStudio() {
     const code = algoId === "custom" ? customCode : algo.code;
     const opts = { title, subtitle, theme, code, showCode, complexity: COMPLEXITY[algoId] };
     for (let i = 0; i < frames.length; i++) {
-      renderFrame(ctx, frames[i], opts, W, H);
-      track.requestFrame();
       playEvent(frames[i]);
+      const previousFrame = i > 0 ? frames[i - 1] : null;
+      const transitionFrames = shouldAnimateSwap(frames[i], previousFrame)
+        ? Math.max(4, Math.round(fps * 0.18))
+        : 1;
+      for (let step = 1; step <= transitionFrames; step++) {
+        renderFrame(ctx, frames[i], {
+          ...opts,
+          previousFrame,
+          transitionProgress: step / transitionFrames,
+        }, W, H);
+        track.requestFrame();
+        await new Promise((r) => setTimeout(r, 1000 / fps));
+      }
       setExportProgress(Math.round(((i + 1) / frames.length) * 100));
-      await new Promise((r) => setTimeout(r, 1000 / fps));
     }
     for (let i = 0; i < fps * 3; i++) {
       track.requestFrame();
@@ -227,3 +253,11 @@ export function useAlgorithmStudio() {
 }
 
 export type AlgorithmStudio = ReturnType<typeof useAlgorithmStudio>;
+
+function shouldAnimateSwap(frame: Frame, previousFrame: Frame | null) {
+  if (!previousFrame || frame.event !== "swap" || frame.swap.length !== 2) return false;
+  const [a, b] = frame.swap;
+  return previousFrame.arr.length === frame.arr.length
+    && previousFrame.arr[a] === frame.arr[b]
+    && previousFrame.arr[b] === frame.arr[a];
+}

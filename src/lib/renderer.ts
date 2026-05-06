@@ -1,4 +1,5 @@
 import { Frame } from "./algorithms";
+import { drawBars } from "./barRenderer";
 
 export type Theme = {
   bg: string;
@@ -23,6 +24,8 @@ export type RenderOpts = {
   code: string;
   showCode: boolean;
   complexity?: { time: string; best?: string; worst?: string; space: string };
+  previousFrame?: Frame | null;
+  transitionProgress?: number;
 };
 
 export function renderFrame(
@@ -96,7 +99,10 @@ export function renderFrame(
   if (frame.graph) {
     drawGraph(ctx, frame, padding, chartTop, chartW, chartH, theme);
   } else if (frame.arr && frame.arr.length) {
-    drawBars(ctx, frame, padding, chartTop, chartW, chartH, chartBottom, theme);
+    drawBars(ctx, frame, padding, chartTop, chartW, chartH, chartBottom, theme, {
+      previousFrame: opts.previousFrame,
+      transitionProgress: opts.transitionProgress,
+    });
   }
 
   if (typeof frame.target !== "undefined" && frame.target !== null) {
@@ -110,112 +116,6 @@ export function renderFrame(
   if (showCode) {
     drawCodePanel(ctx, frame, code, padding, chartBottom + Math.round(padding * 0.5) , width - padding * 2, codeH - Math.round(padding * 0.5) - padding / 2, theme, height);
   }
-}
-
-function drawBars(
-  ctx: CanvasRenderingContext2D,
-  frame: Frame,
-  padding: number,
-  chartTop: number,
-  chartW: number,
-  chartH: number,
-  chartBottom: number,
-  theme: Theme,
-) {
-  const arr = frame.arr;
-  const max = Math.max(...arr, 1);
-  const gap = Math.max(2, Math.floor(chartW / arr.length * 0.15));
-  const barW = (chartW - gap * (arr.length - 1)) / arr.length;
-  // First pass: draw bars (lift swap bars upward for visibility)
-  const swapLift = Math.min(40, chartH * 0.08);
-  const positions: { x: number; y: number; w: number; h: number; v: number; isSwap: boolean }[] = [];
-  for (let i = 0; i < arr.length; i++) {
-    const v = arr[i];
-    const h = (v / max) * (chartH - 60);
-    const x = padding + i * (barW + gap);
-    const isSwap = frame.swap.includes(i);
-    const y = chartBottom - h - (isSwap ? swapLift : 0);
-    positions.push({ x, y, w: barW, h, v, isSwap });
-
-    let color = theme.bar;
-    if (frame.sorted.includes(i)) color = theme.sorted;
-    if (frame.highlight.includes(i)) color = theme.highlight;
-    if (isSwap) color = theme.swap;
-    if (frame.pivot === i) color = theme.pivot;
-    const r = Math.min(10, barW / 2);
-
-    if (isSwap) {
-      ctx.save();
-      ctx.shadowColor = theme.swap;
-      ctx.shadowBlur = 30;
-      ctx.fillStyle = color;
-      roundRect(ctx, x, y, barW, h, r);
-      ctx.fill();
-      // bright outline
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = Math.max(2, barW * 0.06);
-      roundRect(ctx, x, y, barW, h, r);
-      ctx.stroke();
-      ctx.restore();
-    } else {
-      ctx.fillStyle = color;
-      roundRect(ctx, x, y, barW, h, r);
-      ctx.fill();
-    }
-
-    if (arr.length <= 30) {
-      ctx.fillStyle = isSwap ? "#ffffff" : "rgba(255,255,255,0.85)";
-      ctx.font = `${isSwap ? "800" : "600"} ${Math.min(28, Math.floor(barW * 0.6))}px ui-monospace, monospace`;
-      ctx.textAlign = "center";
-      ctx.fillText(String(v), x + barW / 2, y - 10);
-    }
-  }
-
-  // Draw swap arrows between the two swap bars
-  const swapped = positions.filter((p) => p.isSwap);
-  if (swapped.length === 2) {
-    const [a, b] = swapped[0].x < swapped[1].x ? [swapped[0], swapped[1]] : [swapped[1], swapped[0]];
-    const ax = a.x + a.w / 2;
-    const bx = b.x + b.w / 2;
-    const topY = Math.min(a.y, b.y) - 20;
-    drawSwapArrow(ctx, ax, bx, topY, theme.swap);
-  }
-  void chartTop;
-}
-
-function drawSwapArrow(ctx: CanvasRenderingContext2D, ax: number, bx: number, baseY: number, color: string) {
-  const mid = (ax + bx) / 2;
-  const arc = Math.max(24, Math.abs(bx - ax) * 0.35);
-  ctx.save();
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 4;
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 12;
-  // top arc a -> b
-  ctx.beginPath();
-  ctx.moveTo(ax, baseY);
-  ctx.quadraticCurveTo(mid, baseY - arc, bx, baseY);
-  ctx.stroke();
-  // bottom arc b -> a (slightly lower)
-  ctx.beginPath();
-  ctx.moveTo(bx, baseY + 14);
-  ctx.quadraticCurveTo(mid, baseY + 14 + arc * 0.6, ax, baseY + 14);
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-  // arrowheads
-  const head = (x: number, y: number, dir: 1 | -1) => {
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x - 10 * dir, y - 8);
-    ctx.lineTo(x - 10 * dir, y + 8);
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
-  };
-  head(bx, baseY, 1);
-  head(ax, baseY + 14, -1);
-  ctx.restore();
 }
 
 function drawGraph(

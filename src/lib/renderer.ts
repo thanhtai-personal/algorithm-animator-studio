@@ -222,14 +222,26 @@ function drawGraph(
       ctx.stroke();
     }
     if (typeof e.w === "number") {
-      const mx = (a.x + b.x) / 2;
-      const my = (a.y + b.y) / 2;
-      ctx.fillStyle = "rgba(15,23,42,0.85)";
-      ctx.beginPath(); ctx.arc(mx, my, 16, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "#e2e8f0";
-      ctx.font = "600 18px ui-monospace, monospace";
+      // Position weight pill offset perpendicular to edge so it doesn't overlap the line/node
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const len = Math.max(1, Math.hypot(dx, dy));
+      const nx = -dy / len, ny = dx / len;
+      const mx = (a.x + b.x) / 2 + nx * 14;
+      const my = (a.y + b.y) / 2 + ny * 14;
+      const label = String(e.w);
+      ctx.font = "bold 20px ui-monospace, monospace";
+      const tw = ctx.measureText(label).width;
+      const pillW = tw + 22, pillH = 28;
+      ctx.save();
+      ctx.fillStyle = onPath ? "#fde047" : "#0f172a";
+      ctx.strokeStyle = onPath ? "#0f172a" : "#fbbf24";
+      ctx.lineWidth = 2;
+      roundRect(ctx, mx - pillW / 2, my - pillH / 2, pillW, pillH, 14);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = onPath ? "#0f172a" : "#fde047";
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.fillText(String(e.w), mx, my);
+      ctx.fillText(label, mx, my + 1);
+      ctx.restore();
     }
   }
   // nodes

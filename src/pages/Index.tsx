@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ALGORITHMS, ALGO_GROUPS, Frame } from "@/lib/algorithms";
+import { ALGORITHMS, ALGO_GROUPS, Frame, parseGraph, makeSampleGraph } from "@/lib/algorithms";
 import { renderFrame, THEMES, Theme } from "@/lib/renderer";
 import { Lang, PLATFORMS, SFX_OPTIONS, MUSIC_PRESETS, t } from "@/lib/i18n";
 import { audioEngine, SfxKind, MusicPreset } from "@/lib/audio";
@@ -56,12 +56,30 @@ const Index = () => {
   // custom code
   const [customCode, setCustomCode] = useState(ALGORITHMS.custom.code);
 
+  // graph input
+  const defaultGraphLabels = makeSampleGraph().nodes.map((n) => n.label!);
+  const [graphInput, setGraphInput] = useState("A-B:4, A-D:2, B-C:3, B-E:5, C-F:2, D-E:1, D-G:6, E-F:4, E-H:3, F-H:2, G-H:5");
+  const [startLabel, setStartLabel] = useState(defaultGraphLabels[0]);
+  const [endLabel, setEndLabel] = useState(defaultGraphLabels[defaultGraphLabels.length - 1]);
+
   const algo = ALGORITHMS[algoId];
+  const isGraph = algo.category === "graph";
+
+  const parsedGraph = useMemo(() => isGraph ? parseGraph(graphInput) : null, [isGraph, graphInput]);
+  const graphLabels = parsedGraph?.nodes.map((n) => n.label ?? String(n.id)) ?? [];
+  const startId = graphLabels.indexOf(startLabel);
+  const endId = graphLabels.indexOf(endLabel);
 
   const frames: Frame[] = useMemo(() => {
     const targetNum = target.trim() ? parseInt(target, 10) : undefined;
-    return algo.run(arr, { target: Number.isNaN(targetNum as number) ? undefined : targetNum, customCode });
-  }, [algo, arr, target, customCode]);
+    return algo.run(arr, {
+      target: Number.isNaN(targetNum as number) ? undefined : targetNum,
+      customCode,
+      graph: parsedGraph ?? undefined,
+      start: startId >= 0 ? startId : undefined,
+      end: endId >= 0 ? endId : undefined,
+    });
+  }, [algo, arr, target, customCode, parsedGraph, startId, endId]);
 
   useEffect(() => { setTitle(algo.name); }, [algo]);
   useEffect(() => { setTheme(THEMES[themeName]); }, [themeName]);
@@ -245,26 +263,66 @@ const Index = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>{tr("inputArr")}</Label>
-              <Input className="mt-2" placeholder="5, 2, 8, 1, 9, 3" value={input} onChange={(e) => setInput(e.target.value)} />
-            </div>
+            {!isGraph && (
+              <div>
+                <Label>{tr("inputArr")}</Label>
+                <Input className="mt-2" placeholder="5, 2, 8, 1, 9, 3" value={input} onChange={(e) => setInput(e.target.value)} />
+              </div>
+            )}
             {isSearch && (
               <div>
                 <Label>{tr("target")}</Label>
                 <Input className="mt-2" placeholder="42" value={target} onChange={(e) => setTarget(e.target.value)} />
               </div>
             )}
-            <div>
-              <div className="flex justify-between mb-2">
-                <Label>{tr("randomSize")}</Label>
-                <span className="text-emerald-400 font-mono">{size}</span>
-              </div>
-              <Slider value={[size]} onValueChange={([v]) => setSize(v)} min={5} max={40} step={1} />
-            </div>
-            <Button onClick={newArray} variant="outline" className="w-full">
-              <RefreshCw className="w-4 h-4 mr-2" /> {tr("newArray")}
-            </Button>
+            {isGraph && (
+              <>
+                <div>
+                  <Label>{lang === "vi" ? "Cạnh đồ thị (A-B:trọng_số)" : "Edges (A-B:weight)"}</Label>
+                  <Textarea className="mt-2 font-mono text-xs h-24"
+                    placeholder="A-B:4, A-D:2, B-C:3"
+                    value={graphInput}
+                    onChange={(e) => setGraphInput(e.target.value)} />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {lang === "vi" ? "Cách nhau bởi dấu phẩy. Bỏ ':trọng_số' nếu không cần." : "Comma separated. Omit ':weight' for unweighted."}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">{lang === "vi" ? "Điểm bắt đầu" : "Start"}</Label>
+                    <Select value={graphLabels.includes(startLabel) ? startLabel : graphLabels[0]} onValueChange={setStartLabel}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {graphLabels.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">{lang === "vi" ? "Điểm kết thúc" : "End"}</Label>
+                    <Select value={graphLabels.includes(endLabel) ? endLabel : graphLabels[graphLabels.length - 1]} onValueChange={setEndLabel}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {graphLabels.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </>
+            )}
+            {!isGraph && (
+              <>
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <Label>{tr("randomSize")}</Label>
+                    <span className="text-emerald-400 font-mono">{size}</span>
+                  </div>
+                  <Slider value={[size]} onValueChange={([v]) => setSize(v)} min={5} max={40} step={1} />
+                </div>
+                <Button onClick={newArray} variant="outline" className="w-full">
+                  <RefreshCw className="w-4 h-4 mr-2" /> {tr("newArray")}
+                </Button>
+              </>
+            )}
           </Card>
 
           <Card className="p-4 space-y-3">

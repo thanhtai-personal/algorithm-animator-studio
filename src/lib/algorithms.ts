@@ -35,7 +35,7 @@ export type AlgoDef = {
   name: string;
   category: AlgoCategory;
   code: string;
-  run: (arr: number[], opts?: { target?: number; customCode?: string }) => Frame[];
+  run: (arr: number[], opts?: { target?: number; customCode?: string; graph?: GraphState; start?: number; end?: number }) => Frame[];
 };
 
 const snap = (
@@ -351,7 +351,7 @@ return -1;`,
 
 /* ---------------- GRAPH ---------------- */
 
-function makeSampleGraph(): GraphState {
+export function makeSampleGraph(): GraphState {
   // 8 nodes positioned on a normalized 0..1 grid
   const nodes: GraphNode[] = [
     { id: 0, x: 0.15, y: 0.2, label: "A" },
@@ -397,10 +397,10 @@ while (queue.length) {
     }
   }
 }`,
-  run() {
-    const g = makeSampleGraph();
+  run(_arr, opts) {
+    const g = opts?.graph ?? makeSampleGraph();
     const adj = adjacency(g);
-    const start = 0, end = g.nodes.length - 1;
+    const start = opts?.start ?? 0, end = opts?.end ?? g.nodes.length - 1;
     const f: Frame[] = [];
     const v: Record<string, number | string> = { start, end };
     const visited: number[] = [];
@@ -457,10 +457,10 @@ const dfs: AlgoDef = {
     if (!visited.has(v)) dfs(v);
   }
 }`,
-  run() {
-    const g = makeSampleGraph();
+  run(_arr, opts) {
+    const g = opts?.graph ?? makeSampleGraph();
     const adj = adjacency(g);
-    const start = 0, end = g.nodes.length - 1;
+    const start = opts?.start ?? 0, end = opts?.end ?? g.nodes.length - 1;
     const f: Frame[] = [];
     const visited: number[] = [];
     const parent: Record<number, number> = {};
@@ -513,10 +513,10 @@ while (pq.size) {
     }
   }
 }`,
-  run() {
-    const g = makeSampleGraph();
+  run(_arr, opts) {
+    const g = opts?.graph ?? makeSampleGraph();
     const adj = adjacency(g, true);
-    const start = 0, end = g.nodes.length - 1;
+    const start = opts?.start ?? 0, end = opts?.end ?? g.nodes.length - 1;
     const f: Frame[] = [];
     const dist: Record<number, number | string> = {};
     const parent: Record<number, number> = {};
@@ -626,6 +626,41 @@ for (let i = 0; i < n; i++) {
     return f;
   },
 };
+
+/**
+ * Parse a graph description like:
+ *   "A-B:4, A-D:2, B-C:3, B-E:5"
+ * Nodes are auto-discovered. Returns a GraphState laid out in a circle.
+ */
+export function parseGraph(text: string): GraphState | null {
+  const t = text.trim();
+  if (!t) return null;
+  const parts = t.split(/[,\n;]+/).map((s) => s.trim()).filter(Boolean);
+  const labelToId = new Map<string, number>();
+  const labels: string[] = [];
+  const edges: GraphEdge[] = [];
+  const ensure = (lbl: string) => {
+    if (!labelToId.has(lbl)) { labelToId.set(lbl, labels.length); labels.push(lbl); }
+    return labelToId.get(lbl)!;
+  };
+  for (const p of parts) {
+    const m = p.match(/^([A-Za-z0-9_]+)\s*[-–>]\s*([A-Za-z0-9_]+)(?:\s*[:=]\s*(-?\d+(?:\.\d+)?))?$/);
+    if (!m) continue;
+    const a = ensure(m[1]);
+    const b = ensure(m[2]);
+    const w = m[3] != null ? parseFloat(m[3]) : undefined;
+    edges.push({ a, b, w });
+  }
+  if (!labels.length) return null;
+  // circular layout
+  const N = labels.length;
+  const cx = 0.5, cy = 0.5, rx = 0.38, ry = 0.36;
+  const nodes: GraphNode[] = labels.map((lbl, i) => {
+    const ang = (i / N) * Math.PI * 2 - Math.PI / 2;
+    return { id: i, label: lbl, x: cx + rx * Math.cos(ang), y: cy + ry * Math.sin(ang) };
+  });
+  return { nodes, edges };
+}
 
 export const ALGORITHMS: Record<string, AlgoDef> = {
   bubble: bubbleSort,

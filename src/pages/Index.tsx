@@ -82,9 +82,18 @@ const Index = () => {
     renderFrame(ctx, f, { title, subtitle, theme, code, showCode }, W, H);
   }, [frames, frameIdx, title, subtitle, theme, algo.code, showCode, algoId, customCode, W, H]);
 
-  const playEvent = (ev: Frame["event"]) => {
-    if (ev === "compare") audioEngine.playSfx(sfxCompare);
-    else if (ev === "swap" || ev === "found" || ev === "visit") audioEngine.playSfx(sfxSwap);
+  const playEvent = (f: Frame | null | undefined) => {
+    if (!f) return;
+    const ev = f.event;
+    // pitch from highlighted/swap bar value 0..1
+    let pitch = 0.5;
+    const idx = (f.swap[0] ?? f.highlight[0]);
+    if (idx != null && f.arr[idx] != null) {
+      const max = Math.max(...f.arr, 1);
+      pitch = f.arr[idx] / max;
+    }
+    if (ev === "compare") audioEngine.playSfx(sfxCompare, pitch);
+    else if (ev === "swap" || ev === "found" || ev === "visit") audioEngine.playSfx(sfxSwap, pitch);
   };
 
   // playback

@@ -25,9 +25,10 @@ const Index = () => {
 
   const [algoId, setAlgoId] = useState("bubble");
   const [size, setSize] = useState(20);
-  const [input, setInput] = useState("");
+  const initialArr = useMemo(() => randArr(20), []);
+  const [input, setInput] = useState(initialArr.join(", "));
   const [target, setTarget] = useState<string>("");
-  const [arr, setArr] = useState<number[]>(() => randArr(20));
+  const [arr, setArr] = useState<number[]>(initialArr);
   const [themeName, setThemeName] = useState<keyof typeof THEMES>("neon");
   const [theme, setTheme] = useState<Theme>(THEMES.neon);
   const [title, setTitle] = useState("Bubble Sort");

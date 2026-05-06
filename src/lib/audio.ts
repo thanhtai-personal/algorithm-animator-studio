@@ -9,6 +9,9 @@ export class AudioEngine {
   dest?: MediaStreamAudioDestinationNode;
   musicEl?: HTMLAudioElement;
   musicSrc?: MediaElementAudioSourceNode;
+  private musicLoopTimer: number | null = null;
+  private musicLoopDelayMs = 0;
+  private musicPlaying = false;
 
   // procedural music
   private procTimer: number | null = null;
@@ -46,17 +49,17 @@ export class AudioEngine {
   }
 
   setMusicSource(url: string | null) {
-    if (this.musicEl) {
-      this.musicEl.pause();
-      this.musicEl.src = "";
-    }
+    this.stopCustomMusic();
     if (this.musicSrc) {
       try { this.musicSrc.disconnect(); } catch { /* noop */ }
     }
     if (!url) { this.musicEl = undefined; this.musicSrc = undefined; return; }
     const el = new Audio(url);
-    el.loop = true;
+    el.loop = false;
+    el.preload = "metadata";
+    el.playbackRate = 1;
     el.crossOrigin = "anonymous";
+    el.addEventListener("ended", () => this.scheduleCustomLoop());
     this.musicEl = el;
     this.musicSrc = this.ctx.createMediaElementSource(el);
     this.musicSrc.connect(this.musicGain);
@@ -80,6 +83,7 @@ export class AudioEngine {
   setMusicPreset(preset: MusicPreset) {
     this.stopProcedural();
     this.currentPreset = preset;
+    if (preset !== "custom") this.pauseCustomMusic(false);
     if (preset === "off" || preset === "custom") return;
     this.resume();
 
@@ -112,14 +116,57 @@ export class AudioEngine {
   }
 
   startMusic() {
+    this.resume();
     if (this.currentPreset !== "off" && this.currentPreset !== "custom") {
       this.setMusicPreset(this.currentPreset);
     }
-    if (this.musicEl) this.musicEl.play().catch(() => {});
+    if (this.currentPreset === "custom") this.playCustomMusic();
   }
   stopMusic() {
     this.stopProcedural();
-    if (this.musicEl) { this.musicEl.pause(); this.musicEl.currentTime = 0; }
+    this.pauseCustomMusic(true);
+  }
+
+  private playCustomMusic() {
+    if (!this.musicEl) return;
+    this.clearCustomLoopTimer();
+    this.musicPlaying = true;
+    this.musicEl.playbackRate = 1;
+    this.musicEl.preservesPitch = true;
+    this.musicEl.play().catch(() => {});
+  }
+
+  private pauseCustomMusic(reset: boolean) {
+    this.clearCustomLoopTimer();
+    this.musicPlaying = false;
+    if (!this.musicEl) return;
+    this.musicEl.pause();
+    this.musicEl.playbackRate = 1;
+    if (reset) this.musicEl.currentTime = 0;
+  }
+
+  private stopCustomMusic() {
+    this.pauseCustomMusic(true);
+    if (this.musicEl) {
+      this.musicEl.src = "";
+      this.musicEl.load();
+    }
+  }
+
+  private scheduleCustomLoop() {
+    if (!this.musicPlaying || !this.musicEl) return;
+    this.clearCustomLoopTimer();
+    this.musicLoopTimer = window.setTimeout(() => {
+      if (!this.musicPlaying || !this.musicEl) return;
+      this.musicEl.currentTime = 0;
+      this.playCustomMusic();
+    }, this.musicLoopDelayMs);
+  }
+
+  private clearCustomLoopTimer() {
+    if (this.musicLoopTimer == null) return;
+    window.clearTimeout(this.musicLoopTimer);
+    this.musicLoopTimer = null;
   }
 
   /**

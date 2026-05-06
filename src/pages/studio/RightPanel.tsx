@@ -1,11 +1,12 @@
 import { Upload } from "lucide-react";
 import { MUSIC_PRESETS, PLATFORMS, SFX_OPTIONS } from "@/lib/i18n";
-import { audioEngine, MusicPreset, SfxKind } from "@/lib/audio";
+import { audioEngine, SfxKind } from "@/lib/audio";
+import { ASSET_MUSIC_OPTIONS, BackgroundMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { THEMES } from "@/lib/renderer";
@@ -138,10 +139,18 @@ function MusicControls({ studio: s }: Props) {
   return (
     <div className="space-y-2 pt-2 border-t border-border/40">
       <Label className="text-sm">🎵 {s.tr("bgMusicPreset")}</Label>
-      <Select value={s.musicPreset} onValueChange={(v) => s.setMusicPreset(v as MusicPreset)}>
+      <Select value={s.musicPreset} onValueChange={(v) => s.setMusicPreset(v as BackgroundMusicId)}>
         <SelectTrigger><SelectValue /></SelectTrigger>
         <SelectContent>
-          {MUSIC_PRESETS.map((m) => <SelectItem key={m.id} value={m.id}>{m.label[s.lang]}</SelectItem>)}
+          <SelectGroup>
+            <SelectLabel>{s.lang === "vi" ? "Preset tạo sẵn" : "Procedural presets"}</SelectLabel>
+            {MUSIC_PRESETS.map((m) => <SelectItem key={m.id} value={m.id}>{m.label[s.lang]}</SelectItem>)}
+          </SelectGroup>
+          <SelectSeparator />
+          <SelectGroup>
+            <SelectLabel>{s.lang === "vi" ? "Nhạc nền có sẵn" : "Bundled tracks"}</SelectLabel>
+            {ASSET_MUSIC_OPTIONS.map((m) => <SelectItem key={m.id} value={m.id}>{m.label[s.lang]}</SelectItem>)}
+          </SelectGroup>
         </SelectContent>
       </Select>
       <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
@@ -156,8 +165,11 @@ function MusicControls({ studio: s }: Props) {
       <div className="flex justify-end">
         <Button size="sm" variant="outline" onClick={() => {
           audioEngine.resume();
-          if (s.musicPreset === "custom") audioEngine.startMusic();
-          else audioEngine.setMusicPreset(s.musicPreset);
+          if (isProceduralMusicPreset(s.musicPreset)) audioEngine.setMusicPreset(s.musicPreset);
+          else {
+            audioEngine.setMusicPreset("custom");
+            audioEngine.startMusic();
+          }
           setTimeout(() => { audioEngine.stopMusic(); audioEngine.setMusicPreset("off"); }, 4000);
         }}>{s.tr("test")} 4s</Button>
       </div>

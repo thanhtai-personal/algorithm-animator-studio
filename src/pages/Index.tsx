@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ALGORITHMS, ALGO_GROUPS, Frame, parseGraph } from "@/lib/algorithms";
+import { ALGORITHMS, ALGO_GROUPS, COMPLEXITY, Frame, parseGraph } from "@/lib/algorithms";
 import { renderFrame, THEMES, Theme } from "@/lib/renderer";
 import { Lang, PLATFORMS, SFX_OPTIONS, MUSIC_PRESETS, t } from "@/lib/i18n";
 import { audioEngine, SfxKind, MusicPreset } from "@/lib/audio";
@@ -100,7 +100,7 @@ const Index = () => {
     const f = frames[Math.min(frameIdx, frames.length - 1)];
     if (!f) return;
     const code = algoId === "custom" ? customCode : algo.code;
-    renderFrame(ctx, f, { title, subtitle, theme, code, showCode }, W, H);
+    renderFrame(ctx, f, { title, subtitle, theme, code, showCode, complexity: COMPLEXITY[algoId] }, W, H);
   }, [frames, frameIdx, title, subtitle, theme, algo.code, showCode, algoId, customCode, W, H]);
 
   const playEvent = (f: Frame | null | undefined) => {
@@ -192,7 +192,7 @@ const Index = () => {
     recorder.start();
 
     const code = algoId === "custom" ? customCode : algo.code;
-    const opts = { title, subtitle, theme, code, showCode };
+    const opts = { title, subtitle, theme, code, showCode, complexity: COMPLEXITY[algoId] };
     for (let i = 0; i < frames.length; i++) {
       renderFrame(ctx, frames[i], opts, W, H);
       track.requestFrame();
@@ -266,6 +266,18 @@ const Index = () => {
                   ))}
                 </SelectContent>
               </Select>
+              {COMPLEXITY[algoId] && (
+                <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-mono">
+                  <span className="px-2 py-0.5 rounded bg-yellow-400/15 text-yellow-300 border border-yellow-400/30">Time {COMPLEXITY[algoId].time}</span>
+                  {COMPLEXITY[algoId].best && COMPLEXITY[algoId].best !== COMPLEXITY[algoId].time && (
+                    <span className="px-2 py-0.5 rounded bg-emerald-400/15 text-emerald-300 border border-emerald-400/30">Best {COMPLEXITY[algoId].best}</span>
+                  )}
+                  {COMPLEXITY[algoId].worst && COMPLEXITY[algoId].worst !== COMPLEXITY[algoId].time && (
+                    <span className="px-2 py-0.5 rounded bg-rose-400/15 text-rose-300 border border-rose-400/30">Worst {COMPLEXITY[algoId].worst}</span>
+                  )}
+                  <span className="px-2 py-0.5 rounded bg-cyan-400/15 text-cyan-300 border border-cyan-400/30">Space {COMPLEXITY[algoId].space}</span>
+                </div>
+              )}
             </div>
             {!isGraph && (
               <div>

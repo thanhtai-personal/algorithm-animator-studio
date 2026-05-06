@@ -30,12 +30,28 @@ export type Frame = {
 };
 
 export type AlgoCategory = "sort" | "search" | "graph" | "custom";
+export type Complexity = { time: string; best?: string; worst?: string; space: string };
 export type AlgoDef = {
   id: string;
   name: string;
   category: AlgoCategory;
   code: string;
+  complexity?: Complexity;
   run: (arr: number[], opts?: { target?: number; customCode?: string; graph?: GraphState; start?: number; end?: number }) => Frame[];
+};
+
+export const COMPLEXITY: Record<string, Complexity> = {
+  bubble:    { time: "O(n²)", best: "O(n)",     worst: "O(n²)",     space: "O(1)" },
+  selection: { time: "O(n²)", best: "O(n²)",    worst: "O(n²)",     space: "O(1)" },
+  insertion: { time: "O(n²)", best: "O(n)",     worst: "O(n²)",     space: "O(1)" },
+  quick:     { time: "O(n log n)", best: "O(n log n)", worst: "O(n²)", space: "O(log n)" },
+  merge:     { time: "O(n log n)", best: "O(n log n)", worst: "O(n log n)", space: "O(n)" },
+  linear:    { time: "O(n)",       best: "O(1)",       worst: "O(n)",       space: "O(1)" },
+  binary:    { time: "O(log n)",   best: "O(1)",       worst: "O(log n)",   space: "O(1)" },
+  bfs:       { time: "O(V + E)",   space: "O(V)" },
+  dfs:       { time: "O(V + E)",   space: "O(V)" },
+  dijkstra:  { time: "O((V+E) log V)", space: "O(V)" },
+  custom:    { time: "—", space: "—" },
 };
 
 const snap = (

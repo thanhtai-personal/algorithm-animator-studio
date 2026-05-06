@@ -342,9 +342,10 @@ return -1;`,
     f.push(snap(a, 0, v, new Set(), [], [], null, { target, label: "sorted" }));
     while (lo <= hi) {
       v.lo = lo; v.hi = hi;
+      f.push(snap(a, 1, v, new Set(), [], [], null, { target }));
       const mid = (lo + hi) >> 1;
       v.mid = mid;
-      f.push(snap(a, 2, v, new Set(), [mid], [], null, { target, event: "compare" }));
+      f.push(snap(a, 3, v, new Set(), [mid], [], null, { target, event: "compare" }));
       if (a[mid] === target) {
         f.push(snap(a, 3, v, new Set([mid]), [], [], null, { target, found: mid, event: "found" }));
         return f;

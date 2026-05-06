@@ -1,6 +1,6 @@
-import type { Frame } from "./algorithms";
-import { roundRect } from "./rendering/shapes";
-import type { Theme } from "./rendering/theme";
+import type { Frame } from "../algorithms";
+import { roundRect } from "./shapes";
+import type { Theme } from "./theme";
 
 export function drawCodePanel(
   ctx: CanvasRenderingContext2D,

@@ -1,5 +1,5 @@
-import type { Frame } from "./algorithms";
-import type { Theme } from "./rendering/theme";
+import type { Frame } from "../algorithms";
+import type { Theme } from "./theme";
 
 type Bar = { x: number; y: number; w: number; h: number; cx: number; top: number; value: number };
 

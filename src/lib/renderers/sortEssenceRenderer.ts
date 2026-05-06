@@ -1,7 +1,7 @@
-import type { Frame } from "./algorithms";
+import type { Frame } from "../algorithms";
 import { drawBars } from "./barRenderer";
-import { roundRect } from "./rendering/shapes";
-import type { Theme } from "./rendering/theme";
+import { roundRect } from "./shapes";
+import type { Theme } from "./theme";
 
 type Options = {
   algorithmId: string;

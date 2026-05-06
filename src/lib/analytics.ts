@@ -5,6 +5,7 @@ declare global {
   interface Window {
     dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
+    __GA_MEASUREMENT_ID__?: string;
   }
 }
 
@@ -13,6 +14,7 @@ let initialized = false;
 export function initAnalytics() {
   if (!GA_MEASUREMENT_ID || initialized || typeof window === "undefined") return;
 
+  window.__GA_MEASUREMENT_ID__ = GA_MEASUREMENT_ID;
   window.dataLayer = window.dataLayer ?? [];
   window.gtag =
     window.gtag ??
@@ -35,9 +37,11 @@ export function trackPageView(path: string) {
   if (!GA_MEASUREMENT_ID || typeof window === "undefined") return;
 
   initAnalytics();
-  window.gtag?.("event", "page_view", {
+  window.gtag?.("config", GA_MEASUREMENT_ID, {
     page_path: path,
     page_location: `${window.location.origin}${path}`,
     page_title: document.title,
+    send_page_view: true,
+    transport_type: "beacon",
   });
 }

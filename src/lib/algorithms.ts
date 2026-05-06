@@ -400,34 +400,49 @@ while (queue.length) {
   run() {
     const g = makeSampleGraph();
     const adj = adjacency(g);
+    const start = 0, end = g.nodes.length - 1;
     const f: Frame[] = [];
-    const v: Record<string, number | string> = {};
+    const v: Record<string, number | string> = { start, end };
     const visited: number[] = [];
-    const queue = [0];
-    visited.push(0);
-    const push = (line: number, current: number | null, edge: [number, number] | null = null, ev: Frame["event"] = null) => {
+    const parent: Record<number, number> = {};
+    const queue = [start];
+    visited.push(start);
+    const push = (line: number, current: number | null, edge: [number, number] | null = null, ev: Frame["event"] = null, pathEdges?: [number, number][]) => {
       v.queue = `[${queue.join(",")}]`;
       v.visited = visited.length;
       f.push({
         arr: [], highlight: [], swap: [], sorted: [], pivot: null,
         line, vars: { ...v }, event: ev,
-        graph: { ...g, visited: [...visited], current, activeEdge: edge },
+        graph: { ...g, visited: [...visited], current, activeEdge: edge, start, end, pathEdges },
       });
     };
-    push(0, 0);
-    while (queue.length) {
+    push(0, start);
+    let found = false;
+    while (queue.length && !found) {
       const u = queue.shift()!;
       push(3, u, null, "visit");
       for (const { to } of adj[u]) {
         push(4, u, [u, to], "compare");
         if (!visited.includes(to)) {
           visited.push(to);
+          parent[to] = u;
           queue.push(to);
           push(6, to, [u, to], "visit");
+          if (to === end) { found = true; break; }
         }
       }
     }
-    push(0, null);
+    // reconstruct path
+    const path: number[] = [];
+    if (visited.includes(end)) {
+      let cur: number | undefined = end;
+      while (cur !== undefined) { path.unshift(cur); cur = parent[cur]; if (cur === start) { path.unshift(start); break; } }
+    }
+    const pathEdges: [number, number][] = [];
+    for (let i = 0; i < path.length - 1; i++) pathEdges.push([path[i], path[i + 1]]);
+    v.path = path.length ? path.join("→") : "none";
+    v.label = path.length ? `Path ${start}→${end}` : "No path";
+    push(0, null, null, "found", pathEdges);
     return f;
   },
 };

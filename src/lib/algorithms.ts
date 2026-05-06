@@ -8,6 +8,9 @@ export type GraphState = {
   path?: number[];
   dist?: Record<number, number | string>;
   activeEdge?: [number, number] | null;
+  start?: number;
+  end?: number;
+  pathEdges?: [number, number][];
 };
 
 export type Frame = {

@@ -148,7 +148,9 @@ const Index = () => {
       a = trimmed.split(/[,\s]+/).map((s) => parseInt(s, 10)).filter((n) => !Number.isNaN(n));
       if (!a.length) a = randArr(size);
     } else { a = randArr(size); }
-    setArr(a); setFrameIdx(0); setPlaying(false);
+    setArr(a);
+    setInput(a.join(", "));
+    setFrameIdx(0); setPlaying(false);
   };
 
   const onMusicUpload = (file: File) => {

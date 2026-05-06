@@ -315,19 +315,44 @@ function drawGraph(
     if (text) {
       ctx.save();
       ctx.textAlign = "center";
-      ctx.font = "bold 30px ui-sans-serif, system-ui";
-      const tw = ctx.measureText(text).width + 40;
+      const fontSize = Math.max(18, Math.min(30, Math.floor(w / Math.max(28, text.length * 0.55))));
+      ctx.font = `bold ${fontSize}px ui-sans-serif, system-ui`;
+      const lines = wrapText(ctx, text, w - 60);
+      const lineH = fontSize + 6;
+      const boxH = lines.length * lineH + 16;
+      const tw = Math.min(w - 20, Math.max(...lines.map((l) => ctx.measureText(l).width)) + 40);
       const bx = padding + w / 2 - tw / 2;
-      const by = top + h - 60;
+      const by = top + h - boxH - 8;
       ctx.fillStyle = "rgba(253, 224, 71, 0.95)";
-      roundRect(ctx, bx, by, tw, 48, 14); ctx.fill();
+      ctx.strokeStyle = "#0f172a";
+      ctx.lineWidth = 2;
+      roundRect(ctx, bx, by, tw, boxH, 14); ctx.fill(); ctx.stroke();
       ctx.fillStyle = "#0f172a";
       ctx.textBaseline = "middle";
-      ctx.fillText(text, padding + w / 2, by + 24);
+      lines.forEach((ln, i) => {
+        ctx.fillText(ln, padding + w / 2, by + 8 + i * lineH + lineH / 2);
+      });
       ctx.restore();
       ctx.textBaseline = "alphabetic";
     }
   }
+}
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxW: number): string[] {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let cur = "";
+  for (const w of words) {
+    const trial = cur ? cur + " " + w : w;
+    if (ctx.measureText(trial).width > maxW && cur) {
+      lines.push(cur);
+      cur = w;
+    } else {
+      cur = trial;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines;
 }
 
 function drawCodePanel(

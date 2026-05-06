@@ -24,6 +24,13 @@ export type CountingState = {
   movingValue?: number;
 };
 
+export type BucketState = {
+  labels: string[];
+  buckets: number[][];
+  activeBucket?: number;
+  phase?: string;
+};
+
 export type Frame = {
   arr: number[];
   highlight: number[];
@@ -37,6 +44,7 @@ export type Frame = {
   found?: number | null;
   label?: string;
   counting?: CountingState;
+  buckets?: BucketState;
   event?: "compare" | "swap" | "found" | "visit" | null;
 };
 

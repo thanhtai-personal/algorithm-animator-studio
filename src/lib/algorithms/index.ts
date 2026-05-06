@@ -26,6 +26,7 @@ export { makeSampleGraph, parseGraph } from "./graph/utils";
 export type {
   AlgoCategory,
   AlgoDef,
+  BucketState,
   Complexity,
   CountingState,
   Frame,

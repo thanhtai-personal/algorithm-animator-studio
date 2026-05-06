@@ -40,7 +40,15 @@ arr = [...negatives, ...positives];`,
           const digit = Math.floor(result[i] / exp) % 10;
           buckets[digit].push(result[i]);
           v.phase = phase; v.exp = exp; v.digit = digit; v.bucket = digit; v.value = result[i];
-          f.push(snap(a, 3, v, sorted, [i], [], null, { event: "compare" }));
+          f.push(snap(a, 3, v, sorted, [i], [], null, {
+            event: "compare",
+            buckets: {
+              labels: Array.from({ length: 10 }, (_, n) => String(n)),
+              buckets: buckets.map((bucket) => bucket.map((n) => phase === "negative" ? -n : n)),
+              activeBucket: digit,
+              phase,
+            },
+          }));
         }
         result = buckets.flat();
         writeBack(result.map((n) => phase === "negative" ? -n : n), 4, phase);

@@ -127,6 +127,7 @@ export function useAlgorithmStudio() {
       complexity: COMPLEXITY[algoId],
       previousFrame,
       transitionProgress,
+      algorithmId: algoId,
     }, W, H);
   }, [frames, frameIdx, transitionProgress, title, subtitle, theme, algo.code, showCode, algoId, customCode, W, H]);
 
@@ -236,7 +237,7 @@ export function useAlgorithmStudio() {
     recorder.start();
 
     const code = algoId === "custom" ? customCode : algo.code;
-    const opts = { title, subtitle, theme, code, showCode, complexity: COMPLEXITY[algoId] };
+    const opts = { title, subtitle, theme, code, showCode, complexity: COMPLEXITY[algoId], algorithmId: algoId };
     for (let i = 0; i < frames.length; i++) {
       playEvent(frames[i]);
       const previousFrame = i > 0 ? frames[i - 1] : null;

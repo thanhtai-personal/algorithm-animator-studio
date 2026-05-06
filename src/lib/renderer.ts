@@ -5,6 +5,7 @@ import { drawCountingSort } from "./countingSortRenderer";
 import { drawGraph } from "./graphRenderer";
 import { roundRect, shade } from "./rendering/shapes";
 import { THEMES, type Theme } from "./rendering/theme";
+import { drawSortEssence } from "./sortEssenceRenderer";
 
 export { THEMES };
 export type { Theme };
@@ -18,6 +19,7 @@ export type RenderOpts = {
   complexity?: { time: string; best?: string; worst?: string; space: string };
   previousFrame?: Frame | null;
   transitionProgress?: number;
+  algorithmId?: string;
 };
 
 export function renderFrame(
@@ -52,10 +54,18 @@ export function renderFrame(
   } else if (frame.counting) {
     drawCountingSort(ctx, frame, padding, chartTop, chartW, chartH, theme);
   } else if (frame.arr && frame.arr.length) {
-    drawBars(ctx, frame, padding, chartTop, chartW, chartH, chartBottom, theme, {
-      previousFrame: opts.previousFrame,
-      transitionProgress: opts.transitionProgress,
-    });
+    if (opts.algorithmId && opts.algorithmId !== "custom") {
+      drawSortEssence(ctx, frame, padding, chartTop, chartW, chartH, chartBottom, theme, {
+        algorithmId: opts.algorithmId,
+        previousFrame: opts.previousFrame,
+        transitionProgress: opts.transitionProgress,
+      });
+    } else {
+      drawBars(ctx, frame, padding, chartTop, chartW, chartH, chartBottom, theme, {
+        previousFrame: opts.previousFrame,
+        transitionProgress: opts.transitionProgress,
+      });
+    }
   }
 
   drawTarget(ctx, frame, padding, chartTop, height);

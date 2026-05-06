@@ -34,17 +34,35 @@ arr = buckets.flat();`,
       const bucketIndex = Math.min(bucketCount - 1, Math.floor(((a[i] - min) / range) * bucketCount));
       buckets[bucketIndex].push(a[i]);
       v.i = i; v.value = a[i]; v.bucketIndex = bucketIndex;
-      f.push(snap(a, 5, v, sorted, [i], [], null, { event: "compare" }));
+      f.push(snap(a, 5, v, sorted, [i], [], null, {
+        event: "compare",
+        buckets: {
+          labels: buckets.map((_, b) => `B${b}`),
+          buckets: buckets.map((bucket) => [...bucket]),
+          activeBucket: bucketIndex,
+          phase: "distribute",
+        },
+      }));
     }
 
     let index = 0;
+    const remainingBuckets = buckets.map((bucket) => [...bucket].sort((x, y) => x - y));
     for (let b = 0; b < buckets.length; b++) {
       buckets[b].sort((x, y) => x - y);
-      for (const value of buckets[b]) {
+      while (remainingBuckets[b].length) {
+        const value = remainingBuckets[b].shift()!;
         a[index] = value;
         sorted.add(index);
         v.bucketIndex = b; v.index = index; v.value = value;
-        f.push(snap(a, 9, v, sorted, [index], [index], null, { event: "swap" }));
+        f.push(snap(a, 9, v, sorted, [index], [index], null, {
+          event: "swap",
+          buckets: {
+            labels: buckets.map((_, bucketIndex) => `B${bucketIndex}`),
+            buckets: remainingBuckets.map((bucket) => [...bucket]),
+            activeBucket: b,
+            phase: "write back",
+          },
+        }));
         index++;
       }
     }

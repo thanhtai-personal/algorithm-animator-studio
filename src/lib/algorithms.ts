@@ -82,14 +82,14 @@ const bubbleSort: AlgoDef = {
       v.i = i;
       for (let j = 0; j < a.length - i - 1; j++) {
         v.j = j;
-        f.push(snap(a, 1, v, sorted, [j, j + 1], [], null, { event: "compare" }));
+        f.push(snap(a, 2, v, sorted, [j, j + 1], [], null, { event: "compare" }));
         if (a[j] > a[j + 1]) {
           [a[j], a[j + 1]] = [a[j + 1], a[j]];
-          f.push(snap(a, 2, v, sorted, [], [j, j + 1], null, { event: "swap" }));
+          f.push(snap(a, 3, v, sorted, [], [j, j + 1], null, { event: "swap" }));
         }
       }
       sorted.add(a.length - i - 1);
-      f.push(snap(a, 4, v, sorted));
+      f.push(snap(a, 5, v, sorted));
     }
     for (let k = 0; k < a.length; k++) sorted.add(k);
     f.push(snap(a, 6, v, sorted));

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -227,13 +227,16 @@ const Index = () => {
               <Select value={algoId} onValueChange={setAlgoId}>
                 <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {ALGO_GROUPS.map((grp) => (
-                    <SelectGroup key={grp.label.en}>
-                      <SelectLabel>{grp.label[lang]}</SelectLabel>
-                      {grp.ids.map((id) => (
-                        <SelectItem key={id} value={id}>{ALGORITHMS[id].name}</SelectItem>
-                      ))}
-                    </SelectGroup>
+                  {ALGO_GROUPS.map((grp, gi) => (
+                    <div key={grp.label.en}>
+                      {gi > 0 && <SelectSeparator />}
+                      <SelectGroup>
+                        <SelectLabel>{grp.label[lang]}</SelectLabel>
+                        {grp.ids.map((id) => (
+                          <SelectItem key={id} value={id}>{ALGORITHMS[id].name}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </div>
                   ))}
                 </SelectContent>
               </Select>

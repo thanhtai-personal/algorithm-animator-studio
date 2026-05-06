@@ -35,7 +35,7 @@ export type AlgoDef = {
   name: string;
   category: AlgoCategory;
   code: string;
-  run: (arr: number[], opts?: { target?: number; customCode?: string }) => Frame[];
+  run: (arr: number[], opts?: { target?: number; customCode?: string; graph?: GraphState; start?: number; end?: number }) => Frame[];
 };
 
 const snap = (

@@ -117,9 +117,10 @@ const selectionSort: AlgoDef = {
       v.i = i;
       let min = i;
       v.min = min;
+      f.push(snap(a, 1, v, sorted, [i], [], null));
       for (let j = i + 1; j < a.length; j++) {
         v.j = j;
-        f.push(snap(a, 2, v, sorted, [j, min], [], null, { event: "compare" }));
+        f.push(snap(a, 3, v, sorted, [j, min], [], null, { event: "compare" }));
         if (a[j] < a[min]) {
           min = j;
           v.min = min;
@@ -127,10 +128,10 @@ const selectionSort: AlgoDef = {
       }
       if (min !== i) {
         [a[i], a[min]] = [a[min], a[i]];
-        f.push(snap(a, 4, v, sorted, [], [i, min], null, { event: "swap" }));
+        f.push(snap(a, 5, v, sorted, [], [i, min], null, { event: "swap" }));
       }
       sorted.add(i);
-      f.push(snap(a, 5, v, sorted));
+      f.push(snap(a, 6, v, sorted));
     }
     return f;
   },

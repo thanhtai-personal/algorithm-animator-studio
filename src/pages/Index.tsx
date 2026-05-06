@@ -178,7 +178,9 @@ const Index = () => {
       setExportProgress(Math.round(((i + 1) / frames.length) * 100));
       await new Promise((r) => setTimeout(r, 1000 / fps));
     }
-    for (let i = 0; i < fps; i++) {
+    // Hold final frame so result/banner is visible (3s)
+    const holdFrames = fps * 3;
+    for (let i = 0; i < holdFrames; i++) {
       track.requestFrame();
       await new Promise((r) => setTimeout(r, 1000 / fps));
     }

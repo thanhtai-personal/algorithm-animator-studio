@@ -557,11 +557,11 @@ while (pq.size) {
       v.u = u;
       push(2, u, null, "visit");
       for (const { to, w } of adj[u]) {
-        push(3, u, [u, to], "compare");
+        push(4, u, [u, to], "compare");
         if ((dist[u] as number) + w < (dist[to] as number)) {
           dist[to] = (dist[u] as number) + w;
           parent[to] = u;
-          push(4, u, [u, to], "swap");
+          push(5, u, [u, to], "swap");
         }
       }
     }

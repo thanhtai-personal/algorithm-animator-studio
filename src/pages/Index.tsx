@@ -34,7 +34,7 @@ const Index = () => {
   const [subtitle, setSubtitle] = useState("Visualized");
   const [showCode, setShowCode] = useState(true);
   const [fps, setFps] = useState(30);
-  const [speed, setSpeed] = useState(1);
+  const [speed, setSpeed] = useState(0.5);
   const [playing, setPlaying] = useState(false);
   const [frameIdx, setFrameIdx] = useState(0);
   const [exporting, setExporting] = useState(false);

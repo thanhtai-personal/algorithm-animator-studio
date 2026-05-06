@@ -172,7 +172,7 @@ const Index = () => {
     for (let i = 0; i < frames.length; i++) {
       renderFrame(ctx, frames[i], opts, W, H);
       track.requestFrame();
-      playEvent(frames[i].event);
+      playEvent(frames[i]);
       setExportProgress(Math.round(((i + 1) / frames.length) * 100));
       await new Promise((r) => setTimeout(r, 1000 / fps));
     }

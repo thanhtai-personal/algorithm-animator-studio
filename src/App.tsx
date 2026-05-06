@@ -12,12 +12,12 @@ import NotFound from "./pages/NotFound.tsx";
 const queryClient = new QueryClient();
 
 const AnalyticsTracker = () => {
-  const location = useLocation();
-  const path = `${location.pathname}${location.search}${location.hash}`;
+  // const location = useLocation();
+  // const path = `${location.pathname}${location.search}${location.hash}`;
 
-  useEffect(() => {
-    trackPageView(path);
-  }, [path]);
+  // useEffect(() => {
+  //   trackPageView(path);
+  // }, [path]);
 
   return <Analytics mode="production" route={location.pathname} path={path} />;
 };

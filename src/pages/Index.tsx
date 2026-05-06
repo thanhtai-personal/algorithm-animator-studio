@@ -165,7 +165,8 @@ const Index = () => {
     });
 
     setExporting(true); setExportProgress(0); setPlaying(false);
-    audioEngine.startMusic();
+    if (musicPreset === "custom") audioEngine.startMusic();
+    else audioEngine.setMusicPreset(musicPreset);
     recorder.start();
 
     const code = algoId === "custom" ? customCode : algo.code;

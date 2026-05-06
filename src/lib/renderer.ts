@@ -61,6 +61,38 @@ export function renderFrame(
   ctx.font = `500 ${subPx}px ui-sans-serif, system-ui, sans-serif`;
   ctx.fillText(subtitle, width / 2, headerH * 0.5 + titlePx * 0.7);
 
+  // Complexity badges (top-right)
+  if (complexity) {
+    const cPx = Math.max(14, Math.round(height * 0.018));
+    ctx.font = `600 ${cPx}px ui-monospace, monospace`;
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    const parts: { label: string; value: string; color: string }[] = [
+      { label: "Time", value: complexity.time, color: "#fde047" },
+    ];
+    if (complexity.worst && complexity.worst !== complexity.time)
+      parts.push({ label: "Worst", value: complexity.worst, color: "#fb7185" });
+    if (complexity.best && complexity.best !== complexity.time)
+      parts.push({ label: "Best", value: complexity.best, color: "#86efac" });
+    parts.push({ label: "Space", value: complexity.space, color: "#a5f3fc" });
+    let x = width - padding;
+    const y = padding + cPx;
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i];
+      const text = `${p.label}: ${p.value}`;
+      const tw = ctx.measureText(text).width + 16;
+      ctx.fillStyle = "rgba(15,23,42,0.7)";
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 1.5;
+      roundRect(ctx, x - tw, y - cPx * 0.85, tw, cPx * 1.7, 8);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = p.color;
+      ctx.fillText(text, x - 8, y);
+      x -= tw + 8;
+    }
+    ctx.textBaseline = "alphabetic";
+  }
+
   if (frame.graph) {
     drawGraph(ctx, frame, padding, chartTop, chartW, chartH, theme);
   } else if (frame.arr && frame.arr.length) {

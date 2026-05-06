@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ALGORITHMS, ALGO_GROUPS, Frame } from "@/lib/algorithms";
 import { renderFrame, THEMES, Theme } from "@/lib/renderer";
-import { Lang, PLATFORMS, SFX_OPTIONS, t } from "@/lib/i18n";
-import { audioEngine, SfxKind } from "@/lib/audio";
+import { Lang, PLATFORMS, SFX_OPTIONS, MUSIC_PRESETS, t } from "@/lib/i18n";
+import { audioEngine, SfxKind, MusicPreset } from "@/lib/audio";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,7 +34,7 @@ const Index = () => {
   const [subtitle, setSubtitle] = useState("Visualized");
   const [showCode, setShowCode] = useState(true);
   const [fps, setFps] = useState(30);
-  const [speed, setSpeed] = useState(1);
+  const [speed, setSpeed] = useState(0.5);
   const [playing, setPlaying] = useState(false);
   const [frameIdx, setFrameIdx] = useState(0);
   const [exporting, setExporting] = useState(false);
@@ -46,10 +46,11 @@ const Index = () => {
   const H = platform.h;
 
   // audio
-  const [sfxCompare, setSfxCompare] = useState<SfxKind>("off");
-  const [sfxSwap, setSfxSwap] = useState<SfxKind>("pop");
+  const [sfxCompare, setSfxCompare] = useState<SfxKind>("blip");
+  const [sfxSwap, setSfxSwap] = useState<SfxKind>("marimba");
   const [sfxVol, setSfxVol] = useState(60);
   const [musicVol, setMusicVol] = useState(30);
+  const [musicPreset, setMusicPreset] = useState<MusicPreset>("lofi");
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
 
   // custom code
@@ -67,6 +68,7 @@ const Index = () => {
   useEffect(() => { audioEngine.setSfxVolume(sfxVol / 100); }, [sfxVol]);
   useEffect(() => { audioEngine.setMusicVolume(musicVol / 100); }, [musicVol]);
   useEffect(() => { audioEngine.setMusicSource(musicUrl); }, [musicUrl]);
+  useEffect(() => { audioEngine.setMusicPreset(playing ? musicPreset : "off"); }, [musicPreset, playing]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -81,9 +83,18 @@ const Index = () => {
     renderFrame(ctx, f, { title, subtitle, theme, code, showCode }, W, H);
   }, [frames, frameIdx, title, subtitle, theme, algo.code, showCode, algoId, customCode, W, H]);
 
-  const playEvent = (ev: Frame["event"]) => {
-    if (ev === "compare") audioEngine.playSfx(sfxCompare);
-    else if (ev === "swap" || ev === "found" || ev === "visit") audioEngine.playSfx(sfxSwap);
+  const playEvent = (f: Frame | null | undefined) => {
+    if (!f) return;
+    const ev = f.event;
+    // pitch from highlighted/swap bar value 0..1
+    let pitch = 0.5;
+    const idx = (f.swap[0] ?? f.highlight[0]);
+    if (idx != null && f.arr[idx] != null) {
+      const max = Math.max(...f.arr, 1);
+      pitch = f.arr[idx] / max;
+    }
+    if (ev === "compare") audioEngine.playSfx(sfxCompare, pitch);
+    else if (ev === "swap" || ev === "found" || ev === "visit") audioEngine.playSfx(sfxSwap, pitch);
   };
 
   // playback
@@ -101,7 +112,7 @@ const Index = () => {
         setFrameIdx((i) => {
           const next = i + 1;
           if (next >= frames.length) { setPlaying(false); return i; }
-          playEvent(frames[next]?.event ?? null);
+          playEvent(frames[next]);
           return next;
         });
       }
@@ -154,7 +165,8 @@ const Index = () => {
     });
 
     setExporting(true); setExportProgress(0); setPlaying(false);
-    audioEngine.startMusic();
+    if (musicPreset === "custom") audioEngine.startMusic();
+    else audioEngine.setMusicPreset(musicPreset);
     recorder.start();
 
     const code = algoId === "custom" ? customCode : algo.code;
@@ -162,7 +174,7 @@ const Index = () => {
     for (let i = 0; i < frames.length; i++) {
       renderFrame(ctx, frames[i], opts, W, H);
       track.requestFrame();
-      playEvent(frames[i].event);
+      playEvent(frames[i]);
       setExportProgress(Math.round(((i + 1) / frames.length) * 100));
       await new Promise((r) => setTimeout(r, 1000 / fps));
     }
@@ -172,6 +184,7 @@ const Index = () => {
     }
     recorder.stop();
     audioEngine.stopMusic();
+    audioEngine.setMusicPreset("off");
     const blob = await done;
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -319,7 +332,7 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-3">
               <Label className="text-xs whitespace-nowrap">{tr("speed")}</Label>
-              <Slider value={[speed]} min={0.25} max={4} step={0.25} onValueChange={([v]) => setSpeed(v)} />
+              <Slider value={[speed]} min={0.1} max={3} step={0.1} onValueChange={([v]) => setSpeed(v)} />
               <span className="font-mono text-xs w-10 text-right">{speed}x</span>
             </div>
           </Card>
@@ -422,16 +435,30 @@ const Index = () => {
                 </div>
               </div>
               <div className="space-y-2 pt-2 border-t border-border/40">
-                <Label className="text-sm">🎵 {tr("bgMusic")}</Label>
+                <Label className="text-sm">🎵 {tr("bgMusicPreset")}</Label>
+                <Select value={musicPreset} onValueChange={(v) => setMusicPreset(v as MusicPreset)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {MUSIC_PRESETS.map((m) => <SelectItem key={m.id} value={m.id}>{m.label[lang]}</SelectItem>)}
+                  </SelectContent>
+                </Select>
                 <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
                   <Upload className="w-3 h-3" /> {tr("uploadMusic")}
                   <input type="file" accept="audio/*" className="hidden"
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) onMusicUpload(f); }} />
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) { onMusicUpload(f); setMusicPreset("custom"); } }} />
                 </label>
                 <div className="flex items-center gap-2">
                   <span className="text-xs w-10">Vol</span>
                   <Slider value={[musicVol]} min={0} max={100} onValueChange={([v]) => setMusicVol(v)} />
                   <span className="text-xs font-mono w-10 text-right">{musicVol}%</span>
+                </div>
+                <div className="flex justify-end">
+                  <Button size="sm" variant="outline" onClick={() => {
+                    audioEngine.resume();
+                    if (musicPreset === "custom") audioEngine.startMusic();
+                    else audioEngine.setMusicPreset(musicPreset);
+                    setTimeout(() => { audioEngine.stopMusic(); audioEngine.setMusicPreset("off"); }, 4000);
+                  }}>{tr("test")} 4s</Button>
                 </div>
                 <p className="text-xs text-muted-foreground">{tr("audioInVideo")}</p>
               </div>

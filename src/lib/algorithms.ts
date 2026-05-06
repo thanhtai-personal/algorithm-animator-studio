@@ -397,10 +397,10 @@ while (queue.length) {
     }
   }
 }`,
-  run() {
-    const g = makeSampleGraph();
+  run(_arr, opts) {
+    const g = opts?.graph ?? makeSampleGraph();
     const adj = adjacency(g);
-    const start = 0, end = g.nodes.length - 1;
+    const start = opts?.start ?? 0, end = opts?.end ?? g.nodes.length - 1;
     const f: Frame[] = [];
     const v: Record<string, number | string> = { start, end };
     const visited: number[] = [];

@@ -61,8 +61,22 @@ export const PLATFORMS = [
 ] as const;
 
 export const SFX_OPTIONS = [
-  { id: "off", label: { en: "Off", vi: "Tắt" } },
-  { id: "pop", label: { en: "Pop", vi: "Pop" } },
-  { id: "click", label: { en: "Click", vi: "Click" } },
-  { id: "beep", label: { en: "Beep", vi: "Beep" } },
+  { id: "off",     label: { en: "Off",     vi: "Tắt" } },
+  { id: "pop",     label: { en: "Pop",     vi: "Pop" } },
+  { id: "click",   label: { en: "Click",   vi: "Click" } },
+  { id: "beep",    label: { en: "Beep",    vi: "Beep" } },
+  { id: "marimba", label: { en: "Marimba", vi: "Marimba" } },
+  { id: "piano",   label: { en: "Piano",   vi: "Piano" } },
+  { id: "key",     label: { en: "Keyboard",vi: "Phím" } },
+  { id: "retro",   label: { en: "Retro 8-bit", vi: "Retro 8-bit" } },
+  { id: "blip",    label: { en: "Blip",    vi: "Blip" } },
+] as const;
+
+export const MUSIC_PRESETS = [
+  { id: "off",     label: { en: "Off",                 vi: "Tắt" } },
+  { id: "lofi",    label: { en: "Lo-Fi Chill",         vi: "Lo-Fi Chill" } },
+  { id: "ambient", label: { en: "Ambient Calm",        vi: "Ambient nhẹ nhàng" } },
+  { id: "chill",   label: { en: "Chill Beats",         vi: "Chill Beats" } },
+  { id: "upbeat",  label: { en: "Upbeat Pop",          vi: "Upbeat Pop" } },
+  { id: "custom",  label: { en: "Custom (uploaded)",   vi: "Tự upload" } },
 ] as const;

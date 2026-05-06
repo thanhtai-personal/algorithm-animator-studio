@@ -111,7 +111,7 @@ const Index = () => {
         setFrameIdx((i) => {
           const next = i + 1;
           if (next >= frames.length) { setPlaying(false); return i; }
-          playEvent(frames[next]?.event ?? null);
+          playEvent(frames[next]);
           return next;
         });
       }

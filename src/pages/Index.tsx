@@ -100,7 +100,7 @@ const Index = () => {
     const f = frames[Math.min(frameIdx, frames.length - 1)];
     if (!f) return;
     const code = algoId === "custom" ? customCode : algo.code;
-    renderFrame(ctx, f, { title, subtitle, theme, code, showCode }, W, H);
+    renderFrame(ctx, f, { title, subtitle, theme, code, showCode, complexity: COMPLEXITY[algoId] }, W, H);
   }, [frames, frameIdx, title, subtitle, theme, algo.code, showCode, algoId, customCode, W, H]);
 
   const playEvent = (f: Frame | null | undefined) => {

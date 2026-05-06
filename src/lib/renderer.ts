@@ -196,17 +196,31 @@ function drawGraph(
 ) {
   const g = frame.graph!;
   const px = (n: { x: number; y: number }) => ({ x: padding + n.x * w, y: top + n.y * h });
+  const isPathEdge = (a: number, b: number) =>
+    !!g.pathEdges?.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
+
   // edges
   ctx.lineWidth = 3;
   for (const e of g.edges) {
     const a = px(g.nodes[e.a]);
     const b = px(g.nodes[e.b]);
     const active = g.activeEdge && ((g.activeEdge[0] === e.a && g.activeEdge[1] === e.b) || (g.activeEdge[0] === e.b && g.activeEdge[1] === e.a));
-    ctx.strokeStyle = active ? theme.highlight : "rgba(148,163,184,0.5)";
-    ctx.lineWidth = active ? 6 : 3;
-    ctx.beginPath();
-    ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-    ctx.stroke();
+    const onPath = isPathEdge(e.a, e.b);
+    if (onPath) {
+      ctx.save();
+      ctx.strokeStyle = "#fde047";
+      ctx.lineWidth = 9;
+      ctx.shadowColor = "#fde047";
+      ctx.shadowBlur = 16;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      ctx.restore();
+    } else {
+      ctx.strokeStyle = active ? theme.highlight : "rgba(148,163,184,0.5)";
+      ctx.lineWidth = active ? 6 : 3;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
     if (typeof e.w === "number") {
       const mx = (a.x + b.x) / 2;
       const my = (a.y + b.y) / 2;
@@ -223,9 +237,25 @@ function drawGraph(
     const p = px(n);
     const visited = g.visited?.includes(n.id);
     const current = g.current === n.id;
+    const isStart = g.start === n.id;
+    const isEnd = g.end === n.id;
     let color = theme.bar;
     if (visited) color = theme.sorted;
     if (current) color = theme.highlight;
+    if (isStart) color = "#22d3ee";
+    if (isEnd) color = "#f43f5e";
+
+    // outer ring for start/end
+    if (isStart || isEnd) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 4;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 18;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 36, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
+
     ctx.fillStyle = color;
     ctx.beginPath(); ctx.arc(p.x, p.y, 28, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = "rgba(15,23,42,0.6)"; ctx.lineWidth = 3; ctx.stroke();
@@ -238,8 +268,34 @@ function drawGraph(
       ctx.font = "600 18px ui-monospace, monospace";
       ctx.fillText(String(g.dist[n.id]), p.x, p.y - 44);
     }
+    // start/end badge
+    if (isStart || isEnd) {
+      ctx.fillStyle = color;
+      ctx.font = "bold 14px ui-sans-serif, system-ui";
+      ctx.fillText(isStart ? "START" : "END", p.x, p.y + 50);
+    }
   }
   ctx.textBaseline = "alphabetic";
+
+  // Result banner if pathEdges present
+  if (g.pathEdges && g.pathEdges.length) {
+    const text = String(frame.vars.label ?? "");
+    if (text) {
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.font = "bold 30px ui-sans-serif, system-ui";
+      const tw = ctx.measureText(text).width + 40;
+      const bx = padding + w / 2 - tw / 2;
+      const by = top + h - 60;
+      ctx.fillStyle = "rgba(253, 224, 71, 0.95)";
+      roundRect(ctx, bx, by, tw, 48, 14); ctx.fill();
+      ctx.fillStyle = "#0f172a";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, padding + w / 2, by + 24);
+      ctx.restore();
+      ctx.textBaseline = "alphabetic";
+    }
+  }
 }
 
 function drawCodePanel(

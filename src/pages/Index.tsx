@@ -178,7 +178,9 @@ const Index = () => {
       setExportProgress(Math.round(((i + 1) / frames.length) * 100));
       await new Promise((r) => setTimeout(r, 1000 / fps));
     }
-    for (let i = 0; i < fps; i++) {
+    // Hold final frame so result/banner is visible (3s)
+    const holdFrames = fps * 3;
+    for (let i = 0; i < holdFrames; i++) {
       track.requestFrame();
       await new Promise((r) => setTimeout(r, 1000 / fps));
     }
@@ -231,7 +233,9 @@ const Index = () => {
                     <div key={grp.label.en}>
                       {gi > 0 && <SelectSeparator />}
                       <SelectGroup>
-                        <SelectLabel>{grp.label[lang]}</SelectLabel>
+                        <SelectLabel className="bg-emerald-500/10 text-emerald-300 uppercase tracking-wider text-[11px] py-1.5 my-1 rounded">
+                          {grp.label[lang]}
+                        </SelectLabel>
                         {grp.ids.map((id) => (
                           <SelectItem key={id} value={id}>{ALGORITHMS[id].name}</SelectItem>
                         ))}

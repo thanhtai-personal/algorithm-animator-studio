@@ -82,14 +82,14 @@ const bubbleSort: AlgoDef = {
       v.i = i;
       for (let j = 0; j < a.length - i - 1; j++) {
         v.j = j;
-        f.push(snap(a, 1, v, sorted, [j, j + 1], [], null, { event: "compare" }));
+        f.push(snap(a, 2, v, sorted, [j, j + 1], [], null, { event: "compare" }));
         if (a[j] > a[j + 1]) {
           [a[j], a[j + 1]] = [a[j + 1], a[j]];
-          f.push(snap(a, 2, v, sorted, [], [j, j + 1], null, { event: "swap" }));
+          f.push(snap(a, 3, v, sorted, [], [j, j + 1], null, { event: "swap" }));
         }
       }
       sorted.add(a.length - i - 1);
-      f.push(snap(a, 4, v, sorted));
+      f.push(snap(a, 5, v, sorted));
     }
     for (let k = 0; k < a.length; k++) sorted.add(k);
     f.push(snap(a, 6, v, sorted));
@@ -117,9 +117,10 @@ const selectionSort: AlgoDef = {
       v.i = i;
       let min = i;
       v.min = min;
+      f.push(snap(a, 1, v, sorted, [i], [], null));
       for (let j = i + 1; j < a.length; j++) {
         v.j = j;
-        f.push(snap(a, 2, v, sorted, [j, min], [], null, { event: "compare" }));
+        f.push(snap(a, 3, v, sorted, [j, min], [], null, { event: "compare" }));
         if (a[j] < a[min]) {
           min = j;
           v.min = min;
@@ -127,10 +128,10 @@ const selectionSort: AlgoDef = {
       }
       if (min !== i) {
         [a[i], a[min]] = [a[min], a[i]];
-        f.push(snap(a, 4, v, sorted, [], [i, min], null, { event: "swap" }));
+        f.push(snap(a, 5, v, sorted, [], [i, min], null, { event: "swap" }));
       }
       sorted.add(i);
-      f.push(snap(a, 5, v, sorted));
+      f.push(snap(a, 6, v, sorted));
     }
     return f;
   },
@@ -158,18 +159,20 @@ const insertionSort: AlgoDef = {
       v.i = i;
       const key = a[i];
       v.key = key;
+      f.push(snap(a, 1, v, sorted, [i], [], null));
       let j = i - 1;
       v.j = j;
-      f.push(snap(a, 1, v, sorted, [i], [], null, { event: "compare" }));
+      f.push(snap(a, 3, v, sorted, [j, i], [], null, { event: "compare" }));
       while (j >= 0 && a[j] > key) {
-        f.push(snap(a, 3, v, sorted, [j], [j, j + 1], null, { event: "swap" }));
         a[j + 1] = a[j];
+        f.push(snap(a, 4, v, sorted, [], [j, j + 1], null, { event: "swap" }));
         j--;
         v.j = j;
+        f.push(snap(a, 3, v, sorted, [Math.max(j, 0), j + 1], [], null, { event: "compare" }));
       }
       a[j + 1] = key;
       sorted.add(i);
-      f.push(snap(a, 6, v, sorted));
+      f.push(snap(a, 7, v, sorted));
     }
     return f;
   },
@@ -199,34 +202,37 @@ const quickSort: AlgoDef = {
     const sorted = new Set<number>();
     const v: Record<string, number | string> = {};
     const quick = (lo: number, hi: number) => {
+      f.push(snap(a, 0, v, sorted, [], [], hi >= 0 && hi < a.length ? hi : null));
       if (lo > hi) return;
       if (lo === hi) {
         sorted.add(lo);
-        f.push(snap(a, 0, v, sorted));
+        f.push(snap(a, 1, v, sorted));
         return;
       }
       v.lo = lo;
       v.hi = hi;
       const pivot = a[hi];
+      v.pivot = pivot;
+      f.push(snap(a, 2, v, sorted, [], [], hi));
       let i = lo - 1;
       for (let j = lo; j < hi; j++) {
         v.j = j;
-        f.push(snap(a, 4, v, sorted, [j], [], hi, { event: "compare" }));
+        f.push(snap(a, 5, v, sorted, [j], [], hi, { event: "compare" }));
         if (a[j] < pivot) {
           i++;
           [a[i], a[j]] = [a[j], a[i]];
-          f.push(snap(a, 6, v, sorted, [], [i, j], hi, { event: "swap" }));
+          f.push(snap(a, 7, v, sorted, [], [i, j], hi, { event: "swap" }));
         }
       }
       [a[i + 1], a[hi]] = [a[hi], a[i + 1]];
-      f.push(snap(a, 9, v, sorted, [], [i + 1, hi], null, { event: "swap" }));
+      f.push(snap(a, 10, v, sorted, [], [i + 1, hi], null, { event: "swap" }));
       sorted.add(i + 1);
       quick(lo, i);
       quick(i + 2, hi);
     };
     quick(0, a.length - 1);
     for (let k = 0; k < a.length; k++) sorted.add(k);
-    f.push(snap(a, 0, v, sorted));
+    f.push(snap(a, 13, v, sorted));
     return f;
   },
 };
@@ -267,12 +273,14 @@ function ms(lo, hi) {
       while (j <= hi) tmp.push(a[j++]);
       for (let k = 0; k < tmp.length; k++) {
         a[lo + k] = tmp[k];
-        f.push(snap(a, 8, v, sorted, [lo + k], [], null, { event: "swap" }));
+        f.push(snap(a, 7, v, sorted, [lo + k], [], null, { event: "swap" }));
       }
     };
     const ms = (lo: number, hi: number) => {
       if (lo >= hi) { if (lo === hi) sorted.add(lo); return; }
       const mid = (lo + hi) >> 1;
+      v.lo = lo; v.hi = hi; v.mid = mid;
+      f.push(snap(a, 11, v, sorted));
       ms(lo, mid); ms(mid + 1, hi);
       merge(lo, mid, hi);
       for (let k = lo; k <= hi; k++) sorted.add(k);
@@ -280,7 +288,7 @@ function ms(lo, hi) {
     };
     ms(0, a.length - 1);
     for (let k = 0; k < a.length; k++) sorted.add(k);
-    f.push(snap(a, 0, v, sorted));
+    f.push(snap(a, 13, v, sorted));
     return f;
   },
 };
@@ -302,13 +310,13 @@ return -1;`,
     const v: Record<string, number | string> = { target };
     for (let i = 0; i < a.length; i++) {
       v.i = i;
-      f.push(snap(a, 0, v, new Set(), [i], [], null, { target, event: "compare" }));
+      f.push(snap(a, 1, v, new Set(), [i], [], null, { target, event: "compare" }));
       if (a[i] === target) {
         f.push(snap(a, 1, v, new Set([i]), [], [], null, { target, found: i, event: "found" }));
         return f;
       }
     }
-    f.push(snap(a, 2, v, new Set(), [], [], null, { target, found: -1 }));
+    f.push(snap(a, 3, v, new Set(), [], [], null, { target, found: -1 }));
     return f;
   },
 };
@@ -334,9 +342,10 @@ return -1;`,
     f.push(snap(a, 0, v, new Set(), [], [], null, { target, label: "sorted" }));
     while (lo <= hi) {
       v.lo = lo; v.hi = hi;
+      f.push(snap(a, 1, v, new Set(), [], [], null, { target }));
       const mid = (lo + hi) >> 1;
       v.mid = mid;
-      f.push(snap(a, 2, v, new Set(), [mid], [], null, { target, event: "compare" }));
+      f.push(snap(a, 3, v, new Set(), [mid], [], null, { target, event: "compare" }));
       if (a[mid] === target) {
         f.push(snap(a, 3, v, new Set([mid]), [], [], null, { target, found: mid, event: "found" }));
         return f;
@@ -548,11 +557,11 @@ while (pq.size) {
       v.u = u;
       push(2, u, null, "visit");
       for (const { to, w } of adj[u]) {
-        push(3, u, [u, to], "compare");
+        push(4, u, [u, to], "compare");
         if ((dist[u] as number) + w < (dist[to] as number)) {
           dist[to] = (dist[u] as number) + w;
           parent[to] = u;
-          push(4, u, [u, to], "swap");
+          push(5, u, [u, to], "swap");
         }
       }
     }

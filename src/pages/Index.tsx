@@ -32,7 +32,7 @@ const Index = () => {
   const [themeName, setThemeName] = useState<keyof typeof THEMES>("neon");
   const [theme, setTheme] = useState<Theme>(THEMES.neon);
   const [title, setTitle] = useState("Bubble Sort");
-  const [subtitle, setSubtitle] = useState("Visualized");
+  const [subtitle, setSubtitle] = useState("");
   const [showCode, setShowCode] = useState(true);
   const [fps, setFps] = useState(30);
   const [speed, setSpeed] = useState(0.5);

@@ -76,7 +76,7 @@ export function renderFrame(
       parts.push({ label: "Best", value: complexity.best, color: "#86efac" });
     parts.push({ label: "Space", value: complexity.space, color: "#a5f3fc" });
     let x = width - padding;
-    const y = padding + cPx + 80;
+    const y = padding + cPx + 75;
     for (let i = parts.length - 1; i >= 0; i--) {
       const p = parts[i];
       const text = `${p.label}: ${p.value}`;
@@ -108,7 +108,7 @@ export function renderFrame(
   }
 
   if (showCode) {
-    drawCodePanel(ctx, frame, code, padding, chartBottom + Math.round(padding * 0.5), width - padding * 2, codeH - Math.round(padding * 0.5) - padding / 2, theme, height);
+    drawCodePanel(ctx, frame, code, padding, chartBottom + Math.round(padding * 0.5) , width - padding * 2, codeH - Math.round(padding * 0.5) - padding / 2, theme, height);
   }
 }
 

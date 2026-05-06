@@ -457,10 +457,10 @@ const dfs: AlgoDef = {
     if (!visited.has(v)) dfs(v);
   }
 }`,
-  run() {
-    const g = makeSampleGraph();
+  run(_arr, opts) {
+    const g = opts?.graph ?? makeSampleGraph();
     const adj = adjacency(g);
-    const start = 0, end = g.nodes.length - 1;
+    const start = opts?.start ?? 0, end = opts?.end ?? g.nodes.length - 1;
     const f: Frame[] = [];
     const visited: number[] = [];
     const parent: Record<number, number> = {};

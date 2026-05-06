@@ -433,16 +433,30 @@ const Index = () => {
                 </div>
               </div>
               <div className="space-y-2 pt-2 border-t border-border/40">
-                <Label className="text-sm">🎵 {tr("bgMusic")}</Label>
+                <Label className="text-sm">🎵 {tr("bgMusicPreset")}</Label>
+                <Select value={musicPreset} onValueChange={(v) => setMusicPreset(v as MusicPreset)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {MUSIC_PRESETS.map((m) => <SelectItem key={m.id} value={m.id}>{m.label[lang]}</SelectItem>)}
+                  </SelectContent>
+                </Select>
                 <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
                   <Upload className="w-3 h-3" /> {tr("uploadMusic")}
                   <input type="file" accept="audio/*" className="hidden"
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) onMusicUpload(f); }} />
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) { onMusicUpload(f); setMusicPreset("custom"); } }} />
                 </label>
                 <div className="flex items-center gap-2">
                   <span className="text-xs w-10">Vol</span>
                   <Slider value={[musicVol]} min={0} max={100} onValueChange={([v]) => setMusicVol(v)} />
                   <span className="text-xs font-mono w-10 text-right">{musicVol}%</span>
+                </div>
+                <div className="flex justify-end">
+                  <Button size="sm" variant="outline" onClick={() => {
+                    audioEngine.resume();
+                    if (musicPreset === "custom") audioEngine.startMusic();
+                    else audioEngine.setMusicPreset(musicPreset);
+                    setTimeout(() => { audioEngine.stopMusic(); audioEngine.setMusicPreset("off"); }, 4000);
+                  }}>{tr("test")} 4s</Button>
                 </div>
                 <p className="text-xs text-muted-foreground">{tr("audioInVideo")}</p>
               </div>

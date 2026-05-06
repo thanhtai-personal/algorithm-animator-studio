@@ -22,6 +22,7 @@ export type RenderOpts = {
   theme: Theme;
   code: string;
   showCode: boolean;
+  complexity?: { time: string; best?: string; worst?: string; space: string };
 };
 
 export function renderFrame(

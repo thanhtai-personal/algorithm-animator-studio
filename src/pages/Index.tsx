@@ -56,12 +56,30 @@ const Index = () => {
   // custom code
   const [customCode, setCustomCode] = useState(ALGORITHMS.custom.code);
 
+  // graph input
+  const defaultGraphLabels = makeSampleGraph().nodes.map((n) => n.label!);
+  const [graphInput, setGraphInput] = useState("A-B:4, A-D:2, B-C:3, B-E:5, C-F:2, D-E:1, D-G:6, E-F:4, E-H:3, F-H:2, G-H:5");
+  const [startLabel, setStartLabel] = useState(defaultGraphLabels[0]);
+  const [endLabel, setEndLabel] = useState(defaultGraphLabels[defaultGraphLabels.length - 1]);
+
   const algo = ALGORITHMS[algoId];
+  const isGraph = algo.category === "graph";
+
+  const parsedGraph = useMemo(() => isGraph ? parseGraph(graphInput) : null, [isGraph, graphInput]);
+  const graphLabels = parsedGraph?.nodes.map((n) => n.label ?? String(n.id)) ?? [];
+  const startId = graphLabels.indexOf(startLabel);
+  const endId = graphLabels.indexOf(endLabel);
 
   const frames: Frame[] = useMemo(() => {
     const targetNum = target.trim() ? parseInt(target, 10) : undefined;
-    return algo.run(arr, { target: Number.isNaN(targetNum as number) ? undefined : targetNum, customCode });
-  }, [algo, arr, target, customCode]);
+    return algo.run(arr, {
+      target: Number.isNaN(targetNum as number) ? undefined : targetNum,
+      customCode,
+      graph: parsedGraph ?? undefined,
+      start: startId >= 0 ? startId : undefined,
+      end: endId >= 0 ? endId : undefined,
+    });
+  }, [algo, arr, target, customCode, parsedGraph, startId, endId]);
 
   useEffect(() => { setTitle(algo.name); }, [algo]);
   useEffect(() => { setTheme(THEMES[themeName]); }, [themeName]);

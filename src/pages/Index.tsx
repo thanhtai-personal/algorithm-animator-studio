@@ -330,7 +330,7 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-3">
               <Label className="text-xs whitespace-nowrap">{tr("speed")}</Label>
-              <Slider value={[speed]} min={0.25} max={4} step={0.25} onValueChange={([v]) => setSpeed(v)} />
+              <Slider value={[speed]} min={0.1} max={3} step={0.1} onValueChange={([v]) => setSpeed(v)} />
               <span className="font-mono text-xs w-10 text-right">{speed}x</span>
             </div>
           </Card>

@@ -231,7 +231,9 @@ const Index = () => {
                     <div key={grp.label.en}>
                       {gi > 0 && <SelectSeparator />}
                       <SelectGroup>
-                        <SelectLabel>{grp.label[lang]}</SelectLabel>
+                        <SelectLabel className="bg-emerald-500/10 text-emerald-300 uppercase tracking-wider text-[11px] py-1.5 my-1 rounded">
+                          {grp.label[lang]}
+                        </SelectLabel>
                         {grp.ids.map((id) => (
                           <SelectItem key={id} value={id}>{ALGORITHMS[id].name}</SelectItem>
                         ))}

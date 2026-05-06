@@ -38,6 +38,7 @@ export const STRINGS = {
   sfxCompare: { en: "SFX on compare (optional)", vi: "SFX khi so sánh (tuỳ chọn)" },
   sfxSwap: { en: "SFX on swap", vi: "SFX khi swap cột" },
   bgMusic: { en: "Background music", vi: "Nhạc nền" },
+  bgMusicPreset: { en: "Music preset", vi: "Nhạc nền có sẵn" },
   uploadMusic: { en: "Upload background music (.mp3/.wav)", vi: "Upload nhạc nền (.mp3/.wav)" },
   audioInVideo: { en: "Audio is embedded into the exported video.", vi: "Âm thanh sẽ được nhúng vào video khi xuất." },
   test: { en: "Test", vi: "Thử" },

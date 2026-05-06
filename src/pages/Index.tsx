@@ -192,7 +192,7 @@ const Index = () => {
     recorder.start();
 
     const code = algoId === "custom" ? customCode : algo.code;
-    const opts = { title, subtitle, theme, code, showCode };
+    const opts = { title, subtitle, theme, code, showCode, complexity: COMPLEXITY[algoId] };
     for (let i = 0; i < frames.length; i++) {
       renderFrame(ctx, frames[i], opts, W, H);
       track.requestFrame();

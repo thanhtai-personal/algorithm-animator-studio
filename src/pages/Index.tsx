@@ -57,11 +57,12 @@ const Index = () => {
   // custom code
   const [customCode, setCustomCode] = useState(ALGORITHMS.custom.code);
 
-  // graph input
-  const defaultGraphLabels = makeSampleGraph().nodes.map((n) => n.label!);
-  const [graphInput, setGraphInput] = useState("A-B:4, A-D:2, B-C:3, B-E:5, C-F:2, D-E:1, D-G:6, E-F:4, E-H:3, F-H:2, G-H:5");
-  const [startLabel, setStartLabel] = useState(defaultGraphLabels[0]);
-  const [endLabel, setEndLabel] = useState(defaultGraphLabels[defaultGraphLabels.length - 1]);
+  // graph input — bigger default graph (12 nodes A..L)
+  const [graphInput, setGraphInput] = useState(
+    "A-B:4, A-C:2, B-D:5, C-D:8, C-E:10, D-E:2, D-F:6, E-G:3, F-G:1, F-H:7, G-I:4, H-I:2, H-J:5, I-K:6, J-K:3, J-L:8, K-L:2"
+  );
+  const [startLabel, setStartLabel] = useState("A");
+  const [endLabel, setEndLabel] = useState("L");
 
   const algo = ALGORITHMS[algoId];
   const isGraph = algo.category === "graph";

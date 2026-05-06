@@ -351,7 +351,7 @@ return -1;`,
 
 /* ---------------- GRAPH ---------------- */
 
-function makeSampleGraph(): GraphState {
+export function makeSampleGraph(): GraphState {
   // 8 nodes positioned on a normalized 0..1 grid
   const nodes: GraphNode[] = [
     { id: 0, x: 0.15, y: 0.2, label: "A" },

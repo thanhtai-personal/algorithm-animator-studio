@@ -1,4 +1,5 @@
-const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID;
+const DEFAULT_GA_MEASUREMENT_ID = "G-QRMY60H8G";
+const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || DEFAULT_GA_MEASUREMENT_ID;
 
 declare global {
   interface Window {
@@ -13,12 +14,14 @@ export function initAnalytics() {
   if (!GA_MEASUREMENT_ID || initialized || typeof window === "undefined") return;
 
   window.dataLayer = window.dataLayer ?? [];
-  window.gtag = (...args: unknown[]) => {
-    window.dataLayer?.push(args);
-  };
+  window.gtag =
+    window.gtag ??
+    ((...args: unknown[]) => {
+      window.dataLayer?.push(args);
+    });
 
   window.gtag("js", new Date());
-  window.gtag("config", GA_MEASUREMENT_ID, { send_page_view: true });
+  window.gtag("config", GA_MEASUREMENT_ID, { send_page_view: false });
 
   const script = document.createElement("script");
   script.async = true;
@@ -34,7 +37,7 @@ export function trackPageView(path: string) {
   initAnalytics();
   window.gtag?.("event", "page_view", {
     page_path: path,
-    page_location: window.location.href,
+    page_location: `${window.location.origin}${path}`,
     page_title: document.title,
   });
 }

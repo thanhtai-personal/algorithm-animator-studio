@@ -516,22 +516,24 @@ while (pq.size) {
   run() {
     const g = makeSampleGraph();
     const adj = adjacency(g, true);
+    const start = 0, end = g.nodes.length - 1;
     const f: Frame[] = [];
     const dist: Record<number, number | string> = {};
+    const parent: Record<number, number> = {};
     g.nodes.forEach((n) => (dist[n.id] = Infinity));
-    dist[0] = 0;
+    dist[start] = 0;
     const visited: number[] = [];
-    const v: Record<string, number | string> = {};
-    const push = (line: number, current: number | null, edge: [number, number] | null = null, ev: Frame["event"] = null) => {
+    const v: Record<string, number | string> = { start, end };
+    const push = (line: number, current: number | null, edge: [number, number] | null = null, ev: Frame["event"] = null, pathEdges?: [number, number][]) => {
       const ddisp: Record<number, number | string> = {};
       Object.entries(dist).forEach(([k, val]) => (ddisp[+k] = val === Infinity ? "∞" : val));
       f.push({
         arr: [], highlight: [], swap: [], sorted: [], pivot: null,
         line, vars: { ...v }, event: ev,
-        graph: { ...g, visited: [...visited], current, activeEdge: edge, dist: ddisp },
+        graph: { ...g, visited: [...visited], current, activeEdge: edge, dist: ddisp, start, end, pathEdges },
       });
     };
-    push(0, 0);
+    push(0, start);
     while (visited.length < g.nodes.length) {
       let u = -1;
       let best = Infinity;
@@ -549,11 +551,23 @@ while (pq.size) {
         push(3, u, [u, to], "compare");
         if ((dist[u] as number) + w < (dist[to] as number)) {
           dist[to] = (dist[u] as number) + w;
+          parent[to] = u;
           push(4, u, [u, to], "swap");
         }
       }
     }
-    push(0, null);
+    // reconstruct shortest path start -> end
+    const path: number[] = [];
+    if (dist[end] !== Infinity) {
+      let cur: number | undefined = end;
+      while (cur !== undefined) { path.unshift(cur); if (cur === start) break; cur = parent[cur]; }
+    }
+    const pathEdges: [number, number][] = [];
+    for (let i = 0; i < path.length - 1; i++) pathEdges.push([path[i], path[i + 1]]);
+    v.path = path.length ? path.join("→") : "none";
+    v.cost = dist[end] === Infinity ? "∞" : dist[end];
+    v.label = path.length ? `Shortest ${start}→${end} = ${dist[end]}` : "Unreachable";
+    push(0, null, null, "found", pathEdges);
     return f;
   },
 };

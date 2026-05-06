@@ -14,12 +14,26 @@ function randArr(n: number) {
   return Array.from({ length: n }, () => Math.floor(Math.random() * 95) + 5);
 }
 
+function randCountingArr(n: number) {
+  const domainSize = Math.max(3, Math.min(8, Math.floor(Math.sqrt(n)) + 2));
+  const values = Array.from({ length: domainSize }, (_, i) => i + 1);
+  return Array.from({ length: n }, (_, i) => {
+    if (i < values.length) return values[i];
+    return values[Math.floor(Math.random() * values.length)];
+  }).sort(() => Math.random() - 0.5);
+}
+
+function shouldUseCountingDemo(arr: number[]) {
+  if (!arr.length) return true;
+  return new Set(arr).size > Math.max(8, Math.ceil(arr.length * 0.45));
+}
+
 export function useAlgorithmStudio() {
   const [lang, setLang] = useState<Lang>("en");
   const tr = (k: Parameters<typeof t>[1]) => t(lang, k);
 
   const [algoId, setAlgoId] = useState("bubble");
-  const [size, setSize] = useState(20);
+  const [size, setSizeState] = useState(20);
   const initialArr = useMemo(() => randArr(20), []);
   const [input, setInput] = useState(initialArr.join(", "));
   const [target, setTarget] = useState("");
@@ -81,6 +95,15 @@ export function useAlgorithmStudio() {
   const codeForPanel = isCustom ? customCode : algo.code;
 
   useEffect(() => { setTitle(algo.name); }, [algo]);
+  useEffect(() => {
+    if (algoId !== "counting" || !shouldUseCountingDemo(arr)) return;
+    const next = randCountingArr(size);
+    setArr(next);
+    setInput(next.join(", "));
+    setFrameIdx(0);
+    setTransitionProgress(1);
+    setPlaying(false);
+  }, [algoId]);
   useEffect(() => { setTheme(THEMES[themeName]); }, [themeName]);
   useEffect(() => { audioEngine.setSfxVolume(sfxVol / 100); }, [sfxVol]);
   useEffect(() => { audioEngine.setMusicVolume(musicVol / 100); }, [musicVol]);
@@ -153,10 +176,22 @@ export function useAlgorithmStudio() {
 
   const newArray = () => {
     const trimmed = input.trim();
-    let next = trimmed
+    let next = algoId === "counting"
+      ? randCountingArr(size)
+      : trimmed
       ? trimmed.split(/[,\s]+/).map((s) => parseInt(s, 10)).filter((n) => !Number.isNaN(n))
       : randArr(size);
     if (!next.length) next = randArr(size);
+    setArr(next);
+    setInput(next.join(", "));
+    setFrameIdx(0);
+    setTransitionProgress(1);
+    setPlaying(false);
+  };
+
+  const setSize = (nextSize: number) => {
+    setSizeState(nextSize);
+    const next = algoId === "counting" ? randCountingArr(nextSize) : randArr(nextSize);
     setArr(next);
     setInput(next.join(", "));
     setFrameIdx(0);

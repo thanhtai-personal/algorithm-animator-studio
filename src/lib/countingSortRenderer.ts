@@ -1,5 +1,5 @@
 import type { Frame } from "./algorithms";
-import type { Theme } from "./renderer";
+import type { Theme } from "./rendering/theme";
 
 type Bar = { x: number; y: number; w: number; h: number; cx: number; top: number; value: number };
 
@@ -99,16 +99,17 @@ function drawUniqueChart(
   h: number,
   opts: { theme: Theme; activeIndex?: number },
 ) {
-  const visible = values.map((value, i) => ({ value, count: counts[i] ?? 0, originalIndex: i })).filter((item) => item.count > 0);
-  const bars = layoutBars(visible.map((item) => item.value), x, y, w, h - 38);
+  const items = values.map((value, i) => ({ value, count: counts[i] ?? 0, originalIndex: i }));
+  const bars = layoutBars(items.map((item) => item.value), x, y, w, h - 38);
   const byOriginalIndex: Bar[] = [];
-  visible.forEach((item, visibleIndex) => {
-    const bar = bars[visibleIndex];
+  items.forEach((item, index) => {
+    const bar = bars[index];
     byOriginalIndex[item.originalIndex] = bar;
     const active = opts.activeIndex === item.originalIndex;
-    drawBar(ctx, bar, active ? opts.theme.swap : opts.theme.pivot, active, false);
-    drawLabel(ctx, String(item.value), bar.cx, y + h - 24, active ? opts.theme.swap : "#ddd6fe");
-    drawCountBadge(ctx, bar.cx, y + h - 7, item.count, active ? opts.theme.highlight : opts.theme.sorted);
+    const empty = item.count <= 0;
+    drawBar(ctx, bar, active ? opts.theme.swap : opts.theme.pivot, active, empty);
+    drawLabel(ctx, String(item.value), bar.cx, y + h - 24, empty ? "rgba(221,214,254,0.45)" : active ? opts.theme.swap : "#ddd6fe");
+    drawCountBadge(ctx, bar.cx, y + h - 7, item.count, active ? opts.theme.highlight : opts.theme.sorted, empty);
   });
   return byOriginalIndex;
 }
@@ -182,8 +183,9 @@ function drawLabel(ctx: CanvasRenderingContext2D, text: string, x: number, y: nu
   ctx.restore();
 }
 
-function drawCountBadge(ctx: CanvasRenderingContext2D, x: number, y: number, count: number, color: string) {
+function drawCountBadge(ctx: CanvasRenderingContext2D, x: number, y: number, count: number, color: string, empty = false) {
   ctx.save();
+  ctx.globalAlpha = empty ? 0.42 : 1;
   ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;

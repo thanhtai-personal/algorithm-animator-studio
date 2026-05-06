@@ -1,5 +1,5 @@
 import type { Frame } from "./algorithms";
-import type { Theme } from "./renderer";
+import type { Theme } from "./rendering/theme";
 
 type BarRenderOptions = {
   previousFrame?: Frame | null;

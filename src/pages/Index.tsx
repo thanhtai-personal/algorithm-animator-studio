@@ -227,13 +227,16 @@ const Index = () => {
               <Select value={algoId} onValueChange={setAlgoId}>
                 <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {ALGO_GROUPS.map((grp) => (
-                    <SelectGroup key={grp.label.en}>
-                      <SelectLabel>{grp.label[lang]}</SelectLabel>
-                      {grp.ids.map((id) => (
-                        <SelectItem key={id} value={id}>{ALGORITHMS[id].name}</SelectItem>
-                      ))}
-                    </SelectGroup>
+                  {ALGO_GROUPS.map((grp, gi) => (
+                    <div key={grp.label.en}>
+                      {gi > 0 && <SelectSeparator />}
+                      <SelectGroup>
+                        <SelectLabel>{grp.label[lang]}</SelectLabel>
+                        {grp.ids.map((id) => (
+                          <SelectItem key={id} value={id}>{ALGORITHMS[id].name}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </div>
                   ))}
                 </SelectContent>
               </Select>

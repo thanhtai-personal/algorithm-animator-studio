@@ -1,5 +1,6 @@
 const DEFAULT_GA_MEASUREMENT_ID = "G-QRMY60H8GC";
 const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || DEFAULT_GA_MEASUREMENT_ID;
+const GA_CLIENT_ID_KEY = "algo_studio_ga_client_id";
 
 declare global {
   interface Window {
@@ -10,6 +11,15 @@ declare global {
 }
 
 let initialized = false;
+
+function getClientId() {
+  const existing = window.localStorage.getItem(GA_CLIENT_ID_KEY);
+  if (existing) return existing;
+
+  const id = window.crypto?.randomUUID?.() ?? `${Date.now()}.${Math.random().toString(36).slice(2)}`;
+  window.localStorage.setItem(GA_CLIENT_ID_KEY, id);
+  return id;
+}
 
 export function initAnalytics() {
   if (!GA_MEASUREMENT_ID || initialized || typeof window === "undefined") return;
@@ -36,19 +46,38 @@ export function initAnalytics() {
 export function trackPageView(path: string) {
   if (!GA_MEASUREMENT_ID || typeof window === "undefined") return;
 
+  const pageLocation = `${window.location.origin}${path}`;
+  const pageTitle = document.title;
+
   initAnalytics();
   window.gtag?.("config", GA_MEASUREMENT_ID, {
     page_path: path,
-    page_location: `${window.location.origin}${path}`,
-    page_title: document.title,
+    page_location: pageLocation,
+    page_title: pageTitle,
     send_page_view: true,
     transport_type: "beacon",
   });
   window.gtag?.("event", "page_view", {
     send_to: GA_MEASUREMENT_ID,
     page_path: path,
-    page_location: `${window.location.origin}${path}`,
-    page_title: document.title,
+    page_location: pageLocation,
+    page_title: pageTitle,
     transport_type: "beacon",
   });
+
+  const payload = JSON.stringify({
+    clientId: getClientId(),
+    path,
+    pageLocation,
+    pageTitle,
+  });
+
+  if (!navigator.sendBeacon?.("/api/ga-pageview", new Blob([payload], { type: "application/json" }))) {
+    void fetch("/api/ga-pageview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: payload,
+      keepalive: true,
+    });
+  }
 }

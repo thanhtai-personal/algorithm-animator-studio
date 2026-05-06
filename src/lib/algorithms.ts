@@ -159,18 +159,20 @@ const insertionSort: AlgoDef = {
       v.i = i;
       const key = a[i];
       v.key = key;
+      f.push(snap(a, 1, v, sorted, [i], [], null));
       let j = i - 1;
       v.j = j;
-      f.push(snap(a, 1, v, sorted, [i], [], null, { event: "compare" }));
+      f.push(snap(a, 3, v, sorted, [j, i], [], null, { event: "compare" }));
       while (j >= 0 && a[j] > key) {
-        f.push(snap(a, 3, v, sorted, [j], [j, j + 1], null, { event: "swap" }));
         a[j + 1] = a[j];
+        f.push(snap(a, 4, v, sorted, [], [j, j + 1], null, { event: "swap" }));
         j--;
         v.j = j;
+        f.push(snap(a, 3, v, sorted, [Math.max(j, 0), j + 1], [], null, { event: "compare" }));
       }
       a[j + 1] = key;
       sorted.add(i);
-      f.push(snap(a, 6, v, sorted));
+      f.push(snap(a, 7, v, sorted));
     }
     return f;
   },

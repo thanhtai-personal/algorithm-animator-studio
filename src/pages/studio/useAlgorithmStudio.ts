@@ -5,6 +5,7 @@ import { audioEngine, SfxKind } from "@/lib/audio";
 import { BackgroundMusicId, getAssetMusicOption, isAssetMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
 import { Lang, PLATFORMS, t } from "@/lib/i18n";
 import { renderFrame, THEMES, Theme } from "@/lib/renderer";
+import { getAssetSfxOption } from "@/lib/selectSounds";
 import { ExportFormat, getExportFormat } from "./exportFormats";
 import { demoArrayForAlgorithm, demoSizeForAlgorithm, parseInputArray, shouldUseAlgorithmDemo } from "./demoArrays";
 
@@ -93,6 +94,12 @@ export function useAlgorithmStudio() {
   useEffect(() => { setTheme(THEMES[themeName]); }, [themeName]);
   useEffect(() => { audioEngine.setSfxVolume(sfxVol / 100); }, [sfxVol]);
   useEffect(() => { audioEngine.setMusicVolume(musicVol / 100); }, [musicVol]);
+  useEffect(() => {
+    void preloadAssetSfx(sfxCompare);
+  }, [sfxCompare]);
+  useEffect(() => {
+    void preloadAssetSfx(sfxSwap);
+  }, [sfxSwap]);
   useEffect(() => {
     let cancelled = false;
     if (isAssetMusicId(musicPreset)) {
@@ -237,6 +244,7 @@ export function useAlgorithmStudio() {
       toast.error(`${format.label}: ${tr("unsupportedExport")}`);
       return;
     }
+    await Promise.all([preloadAssetSfx(sfxCompare), preloadAssetSfx(sfxSwap)]);
 
     const recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 8_000_000 });
     const chunks: Blob[] = [];
@@ -322,4 +330,15 @@ function shouldAnimateSwap(frame: Frame, previousFrame: Frame | null) {
   return previousFrame.arr.length === frame.arr.length
     && previousFrame.arr[a] === frame.arr[b]
     && previousFrame.arr[b] === frame.arr[a];
+}
+
+async function preloadAssetSfx(kind: SfxKind) {
+  const option = getAssetSfxOption(kind);
+  if (!option) return;
+  try {
+    const url = await option.loadUrl();
+    await audioEngine.loadAssetSfx(option.id, url);
+  } catch {
+    // Export/playback should keep running even if one optional SFX asset fails.
+  }
 }

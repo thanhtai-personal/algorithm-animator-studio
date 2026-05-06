@@ -1,4 +1,6 @@
-export type SfxKind = "off" | "pop" | "click" | "beep" | "marimba" | "piano" | "key" | "retro" | "blip";
+export type ProceduralSfxKind = "off" | "pop" | "click" | "beep" | "marimba" | "piano" | "key" | "retro" | "blip";
+export type AssetSfxId = `asset-sfx:${string}`;
+export type SfxKind = ProceduralSfxKind | AssetSfxId;
 export type MusicPreset = "off" | "lofi" | "ambient" | "chill" | "upbeat" | "custom";
 
 export class AudioEngine {
@@ -12,6 +14,8 @@ export class AudioEngine {
   private musicLoopTimer: number | null = null;
   private musicLoopDelayMs = 0;
   private musicPlaying = false;
+  private sfxBuffers = new Map<AssetSfxId, AudioBuffer>();
+  private sfxBufferPromises = new Map<AssetSfxId, Promise<AudioBuffer>>();
 
   // procedural music
   private procTimer: number | null = null;
@@ -38,6 +42,30 @@ export class AudioEngine {
 
   setSfxVolume(v: number) { this.sfxGain.gain.value = v; }
   setMusicVolume(v: number) { this.musicGain.gain.value = v; }
+
+  loadAssetSfx(id: AssetSfxId, url: string): Promise<AudioBuffer> {
+    const cached = this.sfxBuffers.get(id);
+    if (cached) return Promise.resolve(cached);
+    const existing = this.sfxBufferPromises.get(id);
+    if (existing) return existing;
+    const promise = fetch(url)
+      .then((res) => {
+        if (!res.ok) throw new Error(`Failed to load SFX: ${res.status}`);
+        return res.arrayBuffer();
+      })
+      .then((buf) => this.ctx.decodeAudioData(buf))
+      .then((audioBuffer) => {
+        this.sfxBuffers.set(id, audioBuffer);
+        this.sfxBufferPromises.delete(id);
+        return audioBuffer;
+      })
+      .catch((err) => {
+        this.sfxBufferPromises.delete(id);
+        throw err;
+      });
+    this.sfxBufferPromises.set(id, promise);
+    return promise;
+  }
 
   getRecordStream(): MediaStream {
     if (!this.dest) {
@@ -176,6 +204,10 @@ export class AudioEngine {
   playSfx(kind: SfxKind, pitch = 0.5) {
     if (kind === "off") return;
     this.resume();
+    if (isAssetSfxId(kind)) {
+      this.playAssetSfx(kind);
+      return;
+    }
     const t0 = this.ctx.currentTime;
     const p = Math.max(0, Math.min(1, pitch));
 
@@ -214,10 +246,25 @@ export class AudioEngine {
     }
   }
 
+  private playAssetSfx(id: AssetSfxId) {
+    const buffer = this.sfxBuffers.get(id);
+    if (!buffer) return;
+    const source = this.ctx.createBufferSource();
+    const gain = this.ctx.createGain();
+    source.buffer = buffer;
+    gain.gain.value = 0.9;
+    source.connect(gain).connect(this.sfxGain);
+    source.start();
+  }
+
   async loadCustomSfx(file: File): Promise<AudioBuffer> {
     const buf = await file.arrayBuffer();
     return await this.ctx.decodeAudioData(buf);
   }
+}
+
+export function isAssetSfxId(kind: SfxKind): kind is AssetSfxId {
+  return kind.startsWith("asset-sfx:");
 }
 
 export const audioEngine = new AudioEngine();

@@ -627,6 +627,41 @@ for (let i = 0; i < n; i++) {
   },
 };
 
+/**
+ * Parse a graph description like:
+ *   "A-B:4, A-D:2, B-C:3, B-E:5"
+ * Nodes are auto-discovered. Returns a GraphState laid out in a circle.
+ */
+export function parseGraph(text: string): GraphState | null {
+  const t = text.trim();
+  if (!t) return null;
+  const parts = t.split(/[,\n;]+/).map((s) => s.trim()).filter(Boolean);
+  const labelToId = new Map<string, number>();
+  const labels: string[] = [];
+  const edges: GraphEdge[] = [];
+  const ensure = (lbl: string) => {
+    if (!labelToId.has(lbl)) { labelToId.set(lbl, labels.length); labels.push(lbl); }
+    return labelToId.get(lbl)!;
+  };
+  for (const p of parts) {
+    const m = p.match(/^([A-Za-z0-9_]+)\s*[-–>]\s*([A-Za-z0-9_]+)(?:\s*[:=]\s*(-?\d+(?:\.\d+)?))?$/);
+    if (!m) continue;
+    const a = ensure(m[1]);
+    const b = ensure(m[2]);
+    const w = m[3] != null ? parseFloat(m[3]) : undefined;
+    edges.push({ a, b, w });
+  }
+  if (!labels.length) return null;
+  // circular layout
+  const N = labels.length;
+  const cx = 0.5, cy = 0.5, rx = 0.38, ry = 0.36;
+  const nodes: GraphNode[] = labels.map((lbl, i) => {
+    const ang = (i / N) * Math.PI * 2 - Math.PI / 2;
+    return { id: i, label: lbl, x: cx + rx * Math.cos(ang), y: cy + ry * Math.sin(ang) };
+  });
+  return { nodes, edges };
+}
+
 export const ALGORITHMS: Record<string, AlgoDef> = {
   bubble: bubbleSort,
   selection: selectionSort,

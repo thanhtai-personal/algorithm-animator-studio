@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ALGORITHMS, ALGO_GROUPS, Frame } from "@/lib/algorithms";
+import { ALGORITHMS, ALGO_GROUPS, Frame, parseGraph, makeSampleGraph } from "@/lib/algorithms";
 import { renderFrame, THEMES, Theme } from "@/lib/renderer";
 import { Lang, PLATFORMS, SFX_OPTIONS, MUSIC_PRESETS, t } from "@/lib/i18n";
 import { audioEngine, SfxKind, MusicPreset } from "@/lib/audio";

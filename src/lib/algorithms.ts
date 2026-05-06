@@ -310,13 +310,13 @@ return -1;`,
     const v: Record<string, number | string> = { target };
     for (let i = 0; i < a.length; i++) {
       v.i = i;
-      f.push(snap(a, 0, v, new Set(), [i], [], null, { target, event: "compare" }));
+      f.push(snap(a, 1, v, new Set(), [i], [], null, { target, event: "compare" }));
       if (a[i] === target) {
         f.push(snap(a, 1, v, new Set([i]), [], [], null, { target, found: i, event: "found" }));
         return f;
       }
     }
-    f.push(snap(a, 2, v, new Set(), [], [], null, { target, found: -1 }));
+    f.push(snap(a, 3, v, new Set(), [], [], null, { target, found: -1 }));
     return f;
   },
 };

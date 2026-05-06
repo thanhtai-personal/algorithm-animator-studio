@@ -44,4 +44,11 @@ export function trackPageView(path: string) {
     send_page_view: true,
     transport_type: "beacon",
   });
+  window.gtag?.("event", "page_view", {
+    send_to: GA_MEASUREMENT_ID,
+    page_path: path,
+    page_location: `${window.location.origin}${path}`,
+    page_title: document.title,
+    transport_type: "beacon",
+  });
 }

@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Analytics } from "@vercel/analytics/react";
 import { useEffect } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -12,12 +13,13 @@ const queryClient = new QueryClient();
 
 const AnalyticsTracker = () => {
   const location = useLocation();
+  const path = `${location.pathname}${location.search}${location.hash}`;
 
   useEffect(() => {
-    trackPageView(`${location.pathname}${location.search}${location.hash}`);
-  }, [location]);
+    trackPageView(path);
+  }, [path]);
 
-  return null;
+  return <Analytics mode="production" route={location.pathname} path={path} />;
 };
 
 const App = () => (

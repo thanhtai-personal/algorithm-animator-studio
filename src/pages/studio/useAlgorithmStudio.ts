@@ -7,6 +7,8 @@ import { renderFrame, THEMES, Theme } from "@/lib/renderer";
 import { ExportFormat, getExportFormat } from "./exportFormats";
 
 const EXPORT_PASSWORD = "020321";
+const SWAP_TRANSITION_MULTIPLIER = 1.8;
+const SWAP_EXPORT_SECONDS = 0.35;
 
 function randArr(n: number) {
   return Array.from({ length: n }, () => Math.floor(Math.random() * 95) + 5);
@@ -124,7 +126,12 @@ export function useAlgorithmStudio() {
     audioEngine.resume();
     lastRef.current = performance.now();
     const tick = (time: number) => {
-      const interval = 1000 / (fps * speed);
+      const baseInterval = 1000 / (fps * speed);
+      const currentFrame = frames[Math.min(frameIdx, frames.length - 1)];
+      const previousFrame = frameIdx > 0 ? frames[frameIdx - 1] : null;
+      const interval = shouldAnimateSwap(currentFrame, previousFrame)
+        ? baseInterval * SWAP_TRANSITION_MULTIPLIER
+        : baseInterval;
       const elapsed = time - lastRef.current;
       setTransitionProgress(Math.min(1, elapsed / interval));
       if (elapsed >= interval) {
@@ -142,7 +149,7 @@ export function useAlgorithmStudio() {
     rafRef.current = requestAnimationFrame(tick);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing, fps, speed, frames.length]);
+  }, [playing, fps, speed, frames, frameIdx]);
 
   const newArray = () => {
     const trimmed = input.trim();
@@ -199,7 +206,7 @@ export function useAlgorithmStudio() {
       playEvent(frames[i]);
       const previousFrame = i > 0 ? frames[i - 1] : null;
       const transitionFrames = shouldAnimateSwap(frames[i], previousFrame)
-        ? Math.max(4, Math.round(fps * 0.18))
+        ? Math.max(6, Math.round(fps * SWAP_EXPORT_SECONDS))
         : 1;
       for (let step = 1; step <= transitionFrames; step++) {
         renderFrame(ctx, frames[i], {

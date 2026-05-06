@@ -513,10 +513,10 @@ while (pq.size) {
     }
   }
 }`,
-  run() {
-    const g = makeSampleGraph();
+  run(_arr, opts) {
+    const g = opts?.graph ?? makeSampleGraph();
     const adj = adjacency(g, true);
-    const start = 0, end = g.nodes.length - 1;
+    const start = opts?.start ?? 0, end = opts?.end ?? g.nodes.length - 1;
     const f: Frame[] = [];
     const dist: Record<number, number | string> = {};
     const parent: Record<number, number> = {};

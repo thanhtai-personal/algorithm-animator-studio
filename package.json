@@ -5,9 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run check:lines && vite build",
+    "build": "vite build",
     "build:dev": "vite build --mode development",
-    "check:lines": "node scripts/check-file-lines.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",

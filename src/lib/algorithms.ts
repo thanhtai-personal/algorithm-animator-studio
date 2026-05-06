@@ -508,8 +508,13 @@ const dfs: AlgoDef = {
     }
     const pathEdges: [number, number][] = [];
     for (let i = 0; i < path.length - 1; i++) pathEdges.push([path[i], path[i + 1]]);
-    v.path = path.length ? path.join("→") : "none";
-    v.label = path.length ? `Path ${start}→${end}` : "No path";
+    const lbl = (id: number) => g.nodes[id]?.label ?? String(id);
+    const pathStr = path.map(lbl).join(" → ");
+    v.path = pathStr || "none";
+    v.task = `DFS: find any path ${lbl(start)} → ${lbl(end)}`;
+    v.label = path.length
+      ? `DFS path ${lbl(start)}→${lbl(end)}: ${pathStr} • ${path.length - 1} edges`
+      : `DFS: no path from ${lbl(start)} to ${lbl(end)}`;
     push(0, null, null, "found", pathEdges);
     return f;
   },

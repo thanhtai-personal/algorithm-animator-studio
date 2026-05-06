@@ -184,6 +184,7 @@ const Index = () => {
     }
     recorder.stop();
     audioEngine.stopMusic();
+    audioEngine.setMusicPreset("off");
     const blob = await done;
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

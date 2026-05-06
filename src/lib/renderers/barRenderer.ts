@@ -27,7 +27,13 @@ export function drawBars(
   options: BarRenderOptions = {},
 ) {
   const arr = frame.arr;
-  const max = Math.max(...arr, 1);
+  if (!arr.length) return;
+
+  const min = Math.min(...arr, 0);
+  const max = Math.max(...arr, 0);
+  const range = Math.max(1, max - min);
+  const plotH = Math.max(0, chartH - 60);
+  const baseline = chartBottom - ((0 - min) / range) * plotH;
   const gap = Math.max(2, Math.floor(chartW / arr.length * 0.15));
   const barW = (chartW - gap * (arr.length - 1)) / arr.length;
   const progress = easeInOutCubic(clamp01(options.transitionProgress ?? 1));
@@ -36,10 +42,12 @@ export function drawBars(
   const shapes: BarShape[] = [];
 
   for (let i = 0; i < arr.length; i++) {
-    const h = (arr[i] / max) * (chartH - 60);
+    const valueY = chartBottom - ((arr[i] - min) / range) * plotH;
     const x = padding + i * (barW + gap);
-    shapes.push({ x, y: chartBottom - h, w: barW, h, value: arr[i], index: i });
+    shapes.push({ x, y: Math.min(valueY, baseline), w: barW, h: Math.abs(valueY - baseline), value: arr[i], index: i });
   }
+
+  drawZeroAxis(ctx, padding, baseline, chartW, min < 0 && max > 0);
 
   for (const shape of shapes) {
     if (moving.has(shape.index)) continue;
@@ -55,6 +63,20 @@ export function drawBars(
   }
 
   void chartTop;
+}
+
+function drawZeroAxis(ctx: CanvasRenderingContext2D, padding: number, baseline: number, chartW: number, visible: boolean) {
+  if (!visible) return;
+
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,255,255,0.24)";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 10]);
+  ctx.beginPath();
+  ctx.moveTo(padding, baseline);
+  ctx.lineTo(padding + chartW, baseline);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawMovingSwap(
@@ -124,7 +146,8 @@ function drawSingleBar(
     ctx.fillStyle = isSwap ? "#ffffff" : "rgba(255,255,255,0.85)";
     ctx.font = `${isSwap ? "800" : "600"} ${Math.min(28, Math.floor(shape.w * 0.6))}px ui-monospace, monospace`;
     ctx.textAlign = "center";
-    ctx.fillText(String(shape.value), shape.x + shape.w / 2, shape.y - 10);
+    const labelY = shape.value < 0 ? shape.y + shape.h + 22 : shape.y - 10;
+    ctx.fillText(String(shape.value), shape.x + shape.w / 2, labelY);
   }
 }
 
@@ -153,7 +176,7 @@ function drawSwapTrack(ctx: CanvasRenderingContext2D, a: BarShape, b: BarShape, 
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  const rr = Math.min(r, w / 2, h / 2);
+  const rr = Math.max(0, Math.min(r, w / 2, h / 2));
   ctx.beginPath();
   ctx.moveTo(x + rr, y);
   ctx.arcTo(x + w, y, x + w, y + h, rr);

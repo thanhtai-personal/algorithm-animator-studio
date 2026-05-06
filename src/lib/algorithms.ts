@@ -273,12 +273,14 @@ function ms(lo, hi) {
       while (j <= hi) tmp.push(a[j++]);
       for (let k = 0; k < tmp.length; k++) {
         a[lo + k] = tmp[k];
-        f.push(snap(a, 8, v, sorted, [lo + k], [], null, { event: "swap" }));
+        f.push(snap(a, 7, v, sorted, [lo + k], [], null, { event: "swap" }));
       }
     };
     const ms = (lo: number, hi: number) => {
       if (lo >= hi) { if (lo === hi) sorted.add(lo); return; }
       const mid = (lo + hi) >> 1;
+      v.lo = lo; v.hi = hi; v.mid = mid;
+      f.push(snap(a, 11, v, sorted));
       ms(lo, mid); ms(mid + 1, hi);
       merge(lo, mid, hi);
       for (let k = lo; k <= hi; k++) sorted.add(k);
@@ -286,7 +288,7 @@ function ms(lo, hi) {
     };
     ms(0, a.length - 1);
     for (let k = 0; k < a.length; k++) sorted.add(k);
-    f.push(snap(a, 0, v, sorted));
+    f.push(snap(a, 13, v, sorted));
     return f;
   },
 };

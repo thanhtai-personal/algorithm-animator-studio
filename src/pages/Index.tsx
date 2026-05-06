@@ -266,6 +266,18 @@ const Index = () => {
                   ))}
                 </SelectContent>
               </Select>
+              {COMPLEXITY[algoId] && (
+                <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-mono">
+                  <span className="px-2 py-0.5 rounded bg-yellow-400/15 text-yellow-300 border border-yellow-400/30">Time {COMPLEXITY[algoId].time}</span>
+                  {COMPLEXITY[algoId].best && COMPLEXITY[algoId].best !== COMPLEXITY[algoId].time && (
+                    <span className="px-2 py-0.5 rounded bg-emerald-400/15 text-emerald-300 border border-emerald-400/30">Best {COMPLEXITY[algoId].best}</span>
+                  )}
+                  {COMPLEXITY[algoId].worst && COMPLEXITY[algoId].worst !== COMPLEXITY[algoId].time && (
+                    <span className="px-2 py-0.5 rounded bg-rose-400/15 text-rose-300 border border-rose-400/30">Worst {COMPLEXITY[algoId].worst}</span>
+                  )}
+                  <span className="px-2 py-0.5 rounded bg-cyan-400/15 text-cyan-300 border border-cyan-400/30">Space {COMPLEXITY[algoId].space}</span>
+                </div>
+              )}
             </div>
             {!isGraph && (
               <div>

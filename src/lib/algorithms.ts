@@ -460,27 +460,42 @@ const dfs: AlgoDef = {
   run() {
     const g = makeSampleGraph();
     const adj = adjacency(g);
+    const start = 0, end = g.nodes.length - 1;
     const f: Frame[] = [];
     const visited: number[] = [];
-    const v: Record<string, number | string> = {};
-    const push = (line: number, current: number | null, edge: [number, number] | null = null, ev: Frame["event"] = null) => {
+    const parent: Record<number, number> = {};
+    const v: Record<string, number | string> = { start, end };
+    const push = (line: number, current: number | null, edge: [number, number] | null = null, ev: Frame["event"] = null, pathEdges?: [number, number][]) => {
       v.visited = visited.length;
       f.push({
         arr: [], highlight: [], swap: [], sorted: [], pivot: null,
         line, vars: { ...v }, event: ev,
-        graph: { ...g, visited: [...visited], current, activeEdge: edge },
+        graph: { ...g, visited: [...visited], current, activeEdge: edge, start, end, pathEdges },
       });
     };
+    let stop = false;
     const go = (u: number) => {
+      if (stop) return;
       visited.push(u);
       push(1, u, null, "visit");
+      if (u === end) { stop = true; return; }
       for (const { to } of adj[u]) {
+        if (stop) return;
         push(2, u, [u, to], "compare");
-        if (!visited.includes(to)) go(to);
+        if (!visited.includes(to)) { parent[to] = u; go(to); }
       }
     };
-    go(0);
-    push(0, null);
+    go(start);
+    const path: number[] = [];
+    if (visited.includes(end)) {
+      let cur: number | undefined = end;
+      while (cur !== undefined) { path.unshift(cur); if (cur === start) break; cur = parent[cur]; }
+    }
+    const pathEdges: [number, number][] = [];
+    for (let i = 0; i < path.length - 1; i++) pathEdges.push([path[i], path[i + 1]]);
+    v.path = path.length ? path.join("→") : "none";
+    v.label = path.length ? `Path ${start}→${end}` : "No path";
+    push(0, null, null, "found", pathEdges);
     return f;
   },
 };

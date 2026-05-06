@@ -76,7 +76,7 @@ export function renderFrame(
       parts.push({ label: "Best", value: complexity.best, color: "#86efac" });
     parts.push({ label: "Space", value: complexity.space, color: "#a5f3fc" });
     let x = width - padding;
-    const y = padding + cPx;
+    const y = padding + cPx + 80;
     for (let i = parts.length - 1; i >= 0; i--) {
       const p = parts[i];
       const text = `${p.label}: ${p.value}`;

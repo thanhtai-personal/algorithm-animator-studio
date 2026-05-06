@@ -13,6 +13,17 @@ export type GraphState = {
   pathEdges?: [number, number][];
 };
 
+export type CountingState = {
+  source: number[];
+  uniqueValues: number[];
+  counts: number[];
+  phase: "collect" | "sort" | "write" | "done";
+  activeSourceIndex?: number;
+  activeUniqueIndex?: number;
+  activeOutputIndex?: number;
+  movingValue?: number;
+};
+
 export type Frame = {
   arr: number[];
   highlight: number[];
@@ -25,6 +36,7 @@ export type Frame = {
   target?: number;
   found?: number | null;
   label?: string;
+  counting?: CountingState;
   event?: "compare" | "swap" | "found" | "visit" | null;
 };
 

@@ -27,6 +27,7 @@ export type {
   AlgoCategory,
   AlgoDef,
   Complexity,
+  CountingState,
   Frame,
   GraphEdge,
   GraphNode,

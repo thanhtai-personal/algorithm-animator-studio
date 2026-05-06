@@ -1,5 +1,6 @@
 import { Frame } from "./algorithms";
 import { drawBars } from "./barRenderer";
+import { drawCountingSort } from "./countingSortRenderer";
 
 export type Theme = {
   bg: string;
@@ -98,6 +99,8 @@ export function renderFrame(
 
   if (frame.graph) {
     drawGraph(ctx, frame, padding, chartTop, chartW, chartH, theme);
+  } else if (frame.counting) {
+    drawCountingSort(ctx, frame, padding, chartTop, chartW, chartH, theme);
   } else if (frame.arr && frame.arr.length) {
     drawBars(ctx, frame, padding, chartTop, chartW, chartH, chartBottom, theme, {
       previousFrame: opts.previousFrame,

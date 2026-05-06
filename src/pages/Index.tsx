@@ -263,26 +263,66 @@ const Index = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>{tr("inputArr")}</Label>
-              <Input className="mt-2" placeholder="5, 2, 8, 1, 9, 3" value={input} onChange={(e) => setInput(e.target.value)} />
-            </div>
+            {!isGraph && (
+              <div>
+                <Label>{tr("inputArr")}</Label>
+                <Input className="mt-2" placeholder="5, 2, 8, 1, 9, 3" value={input} onChange={(e) => setInput(e.target.value)} />
+              </div>
+            )}
             {isSearch && (
               <div>
                 <Label>{tr("target")}</Label>
                 <Input className="mt-2" placeholder="42" value={target} onChange={(e) => setTarget(e.target.value)} />
               </div>
             )}
-            <div>
-              <div className="flex justify-between mb-2">
-                <Label>{tr("randomSize")}</Label>
-                <span className="text-emerald-400 font-mono">{size}</span>
-              </div>
-              <Slider value={[size]} onValueChange={([v]) => setSize(v)} min={5} max={40} step={1} />
-            </div>
-            <Button onClick={newArray} variant="outline" className="w-full">
-              <RefreshCw className="w-4 h-4 mr-2" /> {tr("newArray")}
-            </Button>
+            {isGraph && (
+              <>
+                <div>
+                  <Label>{lang === "vi" ? "Cạnh đồ thị (A-B:trọng_số)" : "Edges (A-B:weight)"}</Label>
+                  <Textarea className="mt-2 font-mono text-xs h-24"
+                    placeholder="A-B:4, A-D:2, B-C:3"
+                    value={graphInput}
+                    onChange={(e) => setGraphInput(e.target.value)} />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {lang === "vi" ? "Cách nhau bởi dấu phẩy. Bỏ ':trọng_số' nếu không cần." : "Comma separated. Omit ':weight' for unweighted."}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">{lang === "vi" ? "Điểm bắt đầu" : "Start"}</Label>
+                    <Select value={graphLabels.includes(startLabel) ? startLabel : graphLabels[0]} onValueChange={setStartLabel}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {graphLabels.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">{lang === "vi" ? "Điểm kết thúc" : "End"}</Label>
+                    <Select value={graphLabels.includes(endLabel) ? endLabel : graphLabels[graphLabels.length - 1]} onValueChange={setEndLabel}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {graphLabels.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </>
+            )}
+            {!isGraph && (
+              <>
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <Label>{tr("randomSize")}</Label>
+                    <span className="text-emerald-400 font-mono">{size}</span>
+                  </div>
+                  <Slider value={[size]} onValueChange={([v]) => setSize(v)} min={5} max={40} step={1} />
+                </div>
+                <Button onClick={newArray} variant="outline" className="w-full">
+                  <RefreshCw className="w-4 h-4 mr-2" /> {tr("newArray")}
+                </Button>
+              </>
+            )}
           </Card>
 
           <Card className="p-4 space-y-3">

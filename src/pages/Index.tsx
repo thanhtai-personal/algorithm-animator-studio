@@ -19,6 +19,8 @@ function randArr(n: number) {
   return Array.from({ length: n }, () => Math.floor(Math.random() * 95) + 5);
 }
 
+const EXPORT_PASSWORD = "020321";
+
 const Index = () => {
   const [lang, setLang] = useState<Lang>("en");
   const tr = (k: Parameters<typeof t>[1]) => t(lang, k);
@@ -218,6 +220,16 @@ const Index = () => {
     toast.success(tr("exportDone"));
   };
 
+  const requestExport = () => {
+    const password = window.prompt(tr("exportPasswordPrompt"));
+    if (password === null) return;
+    if (password !== EXPORT_PASSWORD) {
+      toast.error(tr("wrongExportPassword"));
+      return;
+    }
+    void exportVideo();
+  };
+
   const current = frames[Math.min(frameIdx, frames.length - 1)];
   const isSearch = algo.category === "search";
   const isCustom = algoId === "custom";
@@ -410,7 +422,7 @@ const Index = () => {
               <Button variant="outline" size="icon" onClick={() => { setPlaying(false); setFrameIdx(0); }}>
                 <Square className="w-4 h-4" />
               </Button>
-              <Button onClick={exportVideo} disabled={exporting} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-slate-900">
+              <Button onClick={requestExport} disabled={exporting} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-slate-900">
                 <Download className="w-4 h-4 mr-2" />
                 {exporting ? `${tr("exporting")} ${exportProgress}%` : tr("exportVideo")}
               </Button>

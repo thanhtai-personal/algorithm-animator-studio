@@ -18,6 +18,8 @@ export const STRINGS = {
   pause: { en: "Pause", vi: "Tạm dừng" },
   exportVideo: { en: "Export video", vi: "Xuất video" },
   exporting: { en: "Exporting", vi: "Đang xuất" },
+  exportPasswordPrompt: { en: "Enter export password", vi: "Nhập mật khẩu để xuất video" },
+  wrongExportPassword: { en: "Wrong export password", vi: "Sai mật khẩu xuất video" },
   speed: { en: "Speed", vi: "Tốc độ" },
   ui: { en: "Appearance", vi: "Giao diện" },
   motion: { en: "Export", vi: "Xuất" },

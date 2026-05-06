@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ALGORITHMS, ALGO_GROUPS, Frame, parseGraph, makeSampleGraph } from "@/lib/algorithms";
+import { ALGORITHMS, ALGO_GROUPS, Frame, parseGraph } from "@/lib/algorithms";
 import { renderFrame, THEMES, Theme } from "@/lib/renderer";
 import { Lang, PLATFORMS, SFX_OPTIONS, MUSIC_PRESETS, t } from "@/lib/i18n";
 import { audioEngine, SfxKind, MusicPreset } from "@/lib/audio";
@@ -57,11 +57,12 @@ const Index = () => {
   // custom code
   const [customCode, setCustomCode] = useState(ALGORITHMS.custom.code);
 
-  // graph input
-  const defaultGraphLabels = makeSampleGraph().nodes.map((n) => n.label!);
-  const [graphInput, setGraphInput] = useState("A-B:4, A-D:2, B-C:3, B-E:5, C-F:2, D-E:1, D-G:6, E-F:4, E-H:3, F-H:2, G-H:5");
-  const [startLabel, setStartLabel] = useState(defaultGraphLabels[0]);
-  const [endLabel, setEndLabel] = useState(defaultGraphLabels[defaultGraphLabels.length - 1]);
+  // graph input — bigger default graph (12 nodes A..L)
+  const [graphInput, setGraphInput] = useState(
+    "A-B:4, A-C:2, B-D:5, C-D:8, C-E:10, D-E:2, D-F:6, E-G:3, F-G:1, F-H:7, G-I:4, H-I:2, H-J:5, I-K:6, J-K:3, J-L:8, K-L:2"
+  );
+  const [startLabel, setStartLabel] = useState("A");
+  const [endLabel, setEndLabel] = useState("L");
 
   const algo = ALGORITHMS[algoId];
   const isGraph = algo.category === "graph";
@@ -317,9 +318,19 @@ const Index = () => {
                 <div>
                   <div className="flex justify-between mb-2">
                     <Label>{tr("randomSize")}</Label>
-                    <span className="text-emerald-400 font-mono">{size}</span>
+                    <Input
+                      type="number"
+                      min={2}
+                      max={500}
+                      value={size}
+                      onChange={(e) => {
+                        const n = parseInt(e.target.value, 10);
+                        if (!Number.isNaN(n) && n > 0) setSize(Math.min(500, n));
+                      }}
+                      className="h-7 w-20 text-right text-emerald-400 font-mono"
+                    />
                   </div>
-                  <Slider value={[size]} onValueChange={([v]) => setSize(v)} min={5} max={40} step={1} />
+                  <Slider value={[Math.min(size, 100)]} onValueChange={([v]) => setSize(v)} min={2} max={100} step={1} />
                 </div>
                 <Button onClick={newArray} variant="outline" className="w-full">
                   <RefreshCw className="w-4 h-4 mr-2" /> {tr("newArray")}

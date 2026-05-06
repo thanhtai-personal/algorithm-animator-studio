@@ -449,8 +449,14 @@ while (queue.length) {
     }
     const pathEdges: [number, number][] = [];
     for (let i = 0; i < path.length - 1; i++) pathEdges.push([path[i], path[i + 1]]);
-    v.path = path.length ? path.join("→") : "none";
-    v.label = path.length ? `Path ${start}→${end}` : "No path";
+    const lbl = (id: number) => g.nodes[id]?.label ?? String(id);
+    const pathStr = path.map(lbl).join(" → ");
+    v.path = pathStr || "none";
+    v.task = `BFS: shortest unweighted path ${lbl(start)} → ${lbl(end)}`;
+    v.label = path.length
+      ? `Shortest path (BFS) ${lbl(start)}→${lbl(end)}: ${pathStr} • ${path.length - 1} edges`
+      : `BFS: no path from ${lbl(start)} to ${lbl(end)}`;
+    push(0, null, null, "found", pathEdges);
     push(0, null, null, "found", pathEdges);
     return f;
   },
@@ -502,8 +508,13 @@ const dfs: AlgoDef = {
     }
     const pathEdges: [number, number][] = [];
     for (let i = 0; i < path.length - 1; i++) pathEdges.push([path[i], path[i + 1]]);
-    v.path = path.length ? path.join("→") : "none";
-    v.label = path.length ? `Path ${start}→${end}` : "No path";
+    const lbl = (id: number) => g.nodes[id]?.label ?? String(id);
+    const pathStr = path.map(lbl).join(" → ");
+    v.path = pathStr || "none";
+    v.task = `DFS: find any path ${lbl(start)} → ${lbl(end)}`;
+    v.label = path.length
+      ? `DFS path ${lbl(start)}→${lbl(end)}: ${pathStr} • ${path.length - 1} edges`
+      : `DFS: no path from ${lbl(start)} to ${lbl(end)}`;
     push(0, null, null, "found", pathEdges);
     return f;
   },
@@ -573,9 +584,14 @@ while (pq.size) {
     }
     const pathEdges: [number, number][] = [];
     for (let i = 0; i < path.length - 1; i++) pathEdges.push([path[i], path[i + 1]]);
-    v.path = path.length ? path.join("→") : "none";
+    const lbl = (id: number) => g.nodes[id]?.label ?? String(id);
+    const pathStr = path.map(lbl).join(" → ");
+    v.path = pathStr || "none";
     v.cost = dist[end] === Infinity ? "∞" : dist[end];
-    v.label = path.length ? `Shortest ${start}→${end} = ${dist[end]}` : "Unreachable";
+    v.task = `Dijkstra: shortest weighted path ${lbl(start)} → ${lbl(end)}`;
+    v.label = path.length
+      ? `SHORTEST path ${lbl(start)}→${lbl(end)}: ${pathStr} • total cost = ${dist[end]}`
+      : `Dijkstra: ${lbl(end)} is unreachable from ${lbl(start)}`;
     push(0, null, null, "found", pathEdges);
     return f;
   },

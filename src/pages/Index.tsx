@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ALGORITHMS, ALGO_GROUPS, Frame } from "@/lib/algorithms";
 import { renderFrame, THEMES, Theme } from "@/lib/renderer";
-import { Lang, PLATFORMS, SFX_OPTIONS, t } from "@/lib/i18n";
-import { audioEngine, SfxKind } from "@/lib/audio";
+import { Lang, PLATFORMS, SFX_OPTIONS, MUSIC_PRESETS, t } from "@/lib/i18n";
+import { audioEngine, SfxKind, MusicPreset } from "@/lib/audio";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

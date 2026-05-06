@@ -68,6 +68,7 @@ const Index = () => {
   useEffect(() => { audioEngine.setSfxVolume(sfxVol / 100); }, [sfxVol]);
   useEffect(() => { audioEngine.setMusicVolume(musicVol / 100); }, [musicVol]);
   useEffect(() => { audioEngine.setMusicSource(musicUrl); }, [musicUrl]);
+  useEffect(() => { audioEngine.setMusicPreset(playing ? musicPreset : "off"); }, [musicPreset, playing]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 

@@ -199,6 +199,26 @@ function drawGraph(
   const isPathEdge = (a: number, b: number) =>
     !!g.pathEdges?.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
 
+  // Task header (what the algorithm is solving)
+  const taskText = String(frame.vars.task ?? "");
+  if (taskText) {
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.font = "600 22px ui-sans-serif, system-ui";
+    const tw = ctx.measureText(taskText).width + 28;
+    const bx = padding + w / 2 - tw / 2;
+    const by = top + 4;
+    ctx.fillStyle = "rgba(34, 211, 238, 0.18)";
+    ctx.strokeStyle = "rgba(34, 211, 238, 0.7)";
+    ctx.lineWidth = 2;
+    roundRect(ctx, bx, by, tw, 36, 10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#a5f3fc";
+    ctx.textBaseline = "middle";
+    ctx.fillText(taskText, padding + w / 2, by + 18);
+    ctx.restore();
+    ctx.textBaseline = "alphabetic";
+  }
+
   // edges
   ctx.lineWidth = 3;
   for (const e of g.edges) {

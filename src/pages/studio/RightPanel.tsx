@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSepa
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { THEMES } from "@/lib/renderer";
-import { ASSET_SFX_OPTIONS, getAssetSfxOption } from "@/lib/selectSounds";
+import { AssetSfxOption, getAssetSfxOption, SELECT_ASSET_SFX_OPTIONS, SWAP_ASSET_SFX_OPTIONS } from "@/lib/selectSounds";
 import { EXPORT_FORMATS, ExportFormat } from "./exportFormats";
 import { AlgorithmStudio } from "./useAlgorithmStudio";
 
@@ -106,8 +106,24 @@ function ExportTab({ studio: s }: Props) {
 function AudioTab({ studio: s }: Props) {
   return (
     <TabsContent value="audio" className="pt-4 space-y-4">
-      <SfxSelect label={s.tr("sfxCompare")} value={s.sfxCompare} onChange={(v) => s.setSfxCompare(v as SfxKind)} lang={s.lang} onTest={() => testSfx(s.sfxCompare)} />
-      <SfxSelect label={s.tr("sfxSwap")} value={s.sfxSwap} onChange={(v) => s.setSfxSwap(v as SfxKind)} lang={s.lang} onTest={() => testSfx(s.sfxSwap)} />
+      <SfxSelect
+        label={s.tr("sfxCompare")}
+        value={s.sfxCompare}
+        onChange={(v) => s.setSfxCompare(v as SfxKind)}
+        lang={s.lang}
+        assetLabel={s.lang === "vi" ? "Âm select/compare" : "Select/compare sounds"}
+        assetOptions={SELECT_ASSET_SFX_OPTIONS}
+        onTest={() => testSfx(s.sfxCompare)}
+      />
+      <SfxSelect
+        label={s.tr("sfxSwap")}
+        value={s.sfxSwap}
+        onChange={(v) => s.setSfxSwap(v as SfxKind)}
+        lang={s.lang}
+        assetLabel={s.lang === "vi" ? "Âm swap" : "Swap sounds"}
+        assetOptions={SWAP_ASSET_SFX_OPTIONS}
+        onTest={() => testSfx(s.sfxSwap)}
+      />
       <div className="flex items-center gap-2 pt-1">
         <span className="text-xs w-10">SFX</span>
         <Slider value={[s.sfxVol]} min={0} max={100} onValueChange={([v]) => s.setSfxVol(v)} />
@@ -118,7 +134,15 @@ function AudioTab({ studio: s }: Props) {
   );
 }
 
-function SfxSelect(props: { label: string; value: SfxKind; lang: "en" | "vi"; onChange: (value: string) => void; onTest: () => void }) {
+function SfxSelect(props: {
+  label: string;
+  value: SfxKind;
+  lang: "en" | "vi";
+  assetLabel: string;
+  assetOptions: AssetSfxOption[];
+  onChange: (value: string) => void;
+  onTest: () => void;
+}) {
   return (
     <div className="space-y-2">
       <Label className="text-sm">🔊 {props.label}</Label>
@@ -131,8 +155,8 @@ function SfxSelect(props: { label: string; value: SfxKind; lang: "en" | "vi"; on
           </SelectGroup>
           <SelectSeparator />
           <SelectGroup>
-            <SelectLabel>{props.lang === "vi" ? "Âm select/compare" : "Select/compare sounds"}</SelectLabel>
-            {ASSET_SFX_OPTIONS.map((o) => <SelectItem key={o.id} value={o.id}>{o.label[props.lang]}</SelectItem>)}
+            <SelectLabel>{props.assetLabel}</SelectLabel>
+            {props.assetOptions.map((o) => <SelectItem key={o.id} value={o.id}>{o.label[props.lang]}</SelectItem>)}
           </SelectGroup>
         </SelectContent>
       </Select>

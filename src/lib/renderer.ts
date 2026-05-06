@@ -32,7 +32,7 @@ export function renderFrame(
   width: number,
   height: number,
 ) {
-  const { theme, title, subtitle, code, showCode } = opts;
+  const { theme, title, subtitle, code, showCode, complexity } = opts;
 
   // Background gradient
   const bgGrad = ctx.createLinearGradient(0, 0, 0, height);

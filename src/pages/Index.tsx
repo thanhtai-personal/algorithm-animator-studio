@@ -318,9 +318,19 @@ const Index = () => {
                 <div>
                   <div className="flex justify-between mb-2">
                     <Label>{tr("randomSize")}</Label>
-                    <span className="text-emerald-400 font-mono">{size}</span>
+                    <Input
+                      type="number"
+                      min={2}
+                      max={500}
+                      value={size}
+                      onChange={(e) => {
+                        const n = parseInt(e.target.value, 10);
+                        if (!Number.isNaN(n) && n > 0) setSize(Math.min(500, n));
+                      }}
+                      className="h-7 w-20 text-right text-emerald-400 font-mono"
+                    />
                   </div>
-                  <Slider value={[size]} onValueChange={([v]) => setSize(v)} min={5} max={40} step={1} />
+                  <Slider value={[Math.min(size, 100)]} onValueChange={([v]) => setSize(v)} min={2} max={100} step={1} />
                 </div>
                 <Button onClick={newArray} variant="outline" className="w-full">
                   <RefreshCw className="w-4 h-4 mr-2" /> {tr("newArray")}

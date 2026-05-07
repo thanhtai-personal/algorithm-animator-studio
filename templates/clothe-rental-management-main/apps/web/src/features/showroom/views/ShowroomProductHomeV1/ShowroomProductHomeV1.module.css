@@ -1,0 +1,155 @@
+.pageRoot {
+  position: relative;
+  overflow-x: clip;
+}
+
+.filterSidebar {
+  align-self: stretch;
+}
+
+.filterSticky {
+  position: sticky;
+  top: 5rem;
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.desktopAmbient {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .desktopAmbient {
+    position: absolute;
+    inset: -8rem -5rem -6rem;
+    z-index: 0;
+    display: block;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .desktopAmbientOrb,
+  .desktopAmbientLine {
+    position: absolute;
+    pointer-events: none;
+  }
+
+  .desktopAmbientOrb {
+    width: clamp(14rem, 24vw, 26rem);
+    aspect-ratio: 1 / 1;
+    border-radius: 9999px;
+    filter: blur(24px);
+    opacity: 0.35;
+  }
+
+  .desktopAmbientOrbOne {
+    left: -6rem;
+    top: 7rem;
+    background: radial-gradient(circle, hsl(var(--primary) / 0.28), transparent 72%);
+    animation: showroom-global-orb-a 20s ease-in-out infinite;
+  }
+
+  .desktopAmbientOrbTwo {
+    right: -6rem;
+    top: 18%;
+    background: radial-gradient(circle, hsl(var(--secondary) / 0.24), transparent 72%);
+    animation: showroom-global-orb-b 24s ease-in-out infinite;
+  }
+
+  .desktopAmbientOrbThree {
+    left: 24%;
+    bottom: -7rem;
+    background: radial-gradient(circle, hsl(var(--accent) / 0.2), transparent 70%);
+    animation: showroom-global-orb-c 26s ease-in-out infinite;
+  }
+
+  .desktopAmbientLine {
+    border-radius: 9999px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--primary) / 0.3) 50%,
+      transparent 100%
+    );
+    opacity: 0.28;
+    filter: blur(0.5px);
+  }
+
+  .desktopAmbientLineOne {
+    top: 32%;
+    left: 8%;
+    width: min(34rem, 42vw);
+    height: 2px;
+    animation: showroom-global-line-a 16s ease-in-out infinite;
+  }
+
+  .desktopAmbientLineTwo {
+    right: 9%;
+    bottom: 20%;
+    width: min(28rem, 36vw);
+    height: 2px;
+    animation: showroom-global-line-b 19s ease-in-out infinite;
+  }
+}
+
+@keyframes showroom-global-orb-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(3rem, -1.5rem, 0) scale(1.06);
+  }
+}
+
+@keyframes showroom-global-orb-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-2.25rem, 1.75rem, 0) scale(1.04);
+  }
+}
+
+@keyframes showroom-global-orb-c {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(1.5rem, -2.25rem, 0) scale(1.05);
+  }
+}
+
+@keyframes showroom-global-line-a {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateX(1.4rem);
+    opacity: 0.34;
+  }
+}
+
+@keyframes showroom-global-line-b {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateX(-1.2rem);
+    opacity: 0.34;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desktopAmbientOrb,
+  .desktopAmbientLine {
+    animation: none !important;
+  }
+}

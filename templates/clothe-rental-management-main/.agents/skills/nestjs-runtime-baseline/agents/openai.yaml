@@ -1,0 +1,7 @@
+interface:
+  display_name: "NestJS Runtime Baseline"
+  short_description: "Harden Nest runtime defaults for validation, errors, config, and operations."
+  default_prompt: "Set up a robust NestJS runtime baseline before endpoint migration."
+
+policy:
+  allow_implicit_invocation: false

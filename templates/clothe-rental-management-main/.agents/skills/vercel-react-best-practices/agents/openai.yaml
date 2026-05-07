@@ -1,0 +1,7 @@
+interface:
+  display_name: "React/Next Best Practices"
+  short_description: "Performance-focused React and Next.js engineering guidance."
+  default_prompt: "Apply Vercel React/Next best practices to the changed files and preserve behavior."
+
+policy:
+  allow_implicit_invocation: true

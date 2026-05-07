@@ -1,0 +1,7 @@
+interface:
+  display_name: "Architecture Compliance Guard"
+  short_description: "Enforce implementation and task changes against current docs/architecture + .mcp.full.md."
+  default_prompt: "Validate and implement this change in full compliance with the current architecture docs and constitution."
+
+policy:
+  allow_implicit_invocation: true

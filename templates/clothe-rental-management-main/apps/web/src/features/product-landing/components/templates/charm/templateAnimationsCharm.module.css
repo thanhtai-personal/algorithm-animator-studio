@@ -1,0 +1,143 @@
+.templateScope {
+}
+
+:global(.kata-charm-text-accent) {
+  font-family: "Dancing Script", "Segoe Script", cursive;
+}
+
+:global(.kata-charm-shadow-cute) {
+  box-shadow: 0 4px 20px -4px hsl(var(--primary) / 0.15);
+}
+
+:global(.kata-charm-shadow-card) {
+  box-shadow: 0 8px 30px -8px hsl(var(--primary) / 0.12);
+}
+
+:global(.kata-charm-gradient-cute) {
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent) / 0.9));
+}
+
+:global(.kata-charm-gradient-lavender) {
+  background: linear-gradient(135deg, hsl(var(--secondary) / 0.82), hsl(var(--primary) / 0.72));
+}
+
+:global(.kata-charm-gradient-mint) {
+  background: linear-gradient(135deg, hsl(var(--accent) / 0.8), hsl(var(--secondary) / 0.75));
+}
+
+:global(.kata-charm-hover-lift) {
+  transition: transform 300ms ease, box-shadow 300ms ease;
+}
+
+:global(.kata-charm-hover-lift:hover) {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 40px -8px hsl(var(--primary) / 0.24);
+}
+
+:global(.kata-charm-animate-float) {
+  animation: kata-charm-float 3s ease-in-out infinite;
+}
+
+:global(.kata-charm-animate-bounce-soft) {
+  animation: kata-charm-bounce-soft 2s ease-in-out infinite;
+}
+
+:global(.kata-charm-animate-sparkle) {
+  animation: kata-charm-sparkle 2s ease-in-out infinite;
+}
+
+:global(.kata-charm-animate-slide-up) {
+  opacity: 0;
+  animation: kata-charm-slide-up 0.6s ease-out forwards;
+}
+
+:global(.kata-charm-animate-slide-up-delay-1) {
+  opacity: 0;
+  animation: kata-charm-slide-up 0.6s ease-out 0.1s forwards;
+}
+
+:global(.kata-charm-animate-slide-up-delay-2) {
+  opacity: 0;
+  animation: kata-charm-slide-up 0.6s ease-out 0.2s forwards;
+}
+
+:global(.kata-charm-animate-slide-up-delay-3) {
+  opacity: 0;
+  animation: kata-charm-slide-up 0.6s ease-out 0.3s forwards;
+}
+
+:global(.kata-charm-animate-slide-up-delay-4) {
+  opacity: 0;
+  animation: kata-charm-slide-up 0.6s ease-out 0.4s forwards;
+}
+
+@keyframes kata-charm-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes kata-charm-bounce-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes kata-charm-sparkle {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.72;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes kata-charm-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :global(.kata-charm-animate-float),
+  :global(.kata-charm-animate-bounce-soft),
+  :global(.kata-charm-animate-sparkle),
+  :global(.kata-charm-animate-slide-up),
+  :global(.kata-charm-animate-slide-up-delay-1),
+  :global(.kata-charm-animate-slide-up-delay-2),
+  :global(.kata-charm-animate-slide-up-delay-3),
+  :global(.kata-charm-animate-slide-up-delay-4) {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  :global(.kata-charm-hover-lift) {
+    transition: none;
+  }
+
+  :global(.kata-charm-hover-lift:hover) {
+    transform: none;
+    box-shadow: none;
+  }
+}

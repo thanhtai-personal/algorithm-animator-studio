@@ -1,0 +1,7 @@
+interface:
+  display_name: "React Native/Expo Best Practices"
+  short_description: "Performance and architecture guidance for React Native and Expo apps."
+  default_prompt: "Optimize the relevant React Native code paths while keeping current behavior."
+
+policy:
+  allow_implicit_invocation: true

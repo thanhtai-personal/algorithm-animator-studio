@@ -1,0 +1,137 @@
+{
+  "expo": {
+    "name": "QuanLyTaiChinh",
+    "slug": "quanlytaichinh",
+    "version": "1.0.7",
+    "orientation": "default",
+    "icon": "./assets/images/icon.png",
+    "scheme": "quanlytaichinh",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vouucac.quanlytaichinh",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "We need access to your camera to scan receipts.",
+        "NSMicrophoneUsageDescription": "We need access to your microphone for voice input.",
+        "NSSpeechRecognitionUsageDescription": "We need speech recognition to transcribe your voice input.",
+        "NSFaceIDUsageDescription": "Allow Face ID to unlock your account."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.vouucac.quanlytaichinh",
+      "versionCode": 10,
+      "permissions": [
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.WAKE_LOCK",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "com.android.vending.BILLING",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
+    },
+    "androidStatusBar": {
+      "translucent": true,
+      "backgroundColor": "#ffffff"
+    },
+    "androidNavigationBar": {
+      "backgroundColor": "#00000000"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "expo-localization",
+      [
+        "react-native-iap",
+        {
+          "paymentProvider": "Play Store"
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-1815769508579401~1383145027",
+          "iosAppId": "ca-app-pub-1815769508579401~2593759697",
+          "userTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "ndkVersion": "26.1.10909125",
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "packagingOptions": {
+              "pickFirst": [
+                "**/libc++_shared.so"
+              ]
+            }
+          }
+        }
+      ],
+      "expo-background-task",
+      "expo-audio",
+      "expo-speech-recognition",
+      "react-native-edge-to-edge",
+      "expo-secure-store",
+      "expo-image-picker",
+      "expo-local-authentication",
+      "expo-file-system",
+      "@sentry/react-native/expo",
+      "./plugins/withAppComponentFactoryFix",
+      "./plugins/withAndroidXJetifier"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "EXPO_OS": "android",
+      "API_BASE_URL": "https://kata-smart-spend.vercel.app",
+      "SUPABASE_URL": "https://qjkghnufxqvxtmpepqwg.supabase.co",
+      "SUPABASE_ANON_KEY": "sb_publishable_0XGs6K9RHxjhpdlXFID5Og_QFREnOwE",
+      "ADMOB_BANNER_UNIT_ID_ANDROID": "ca-app-pub-1815769508579401/4632124891",
+      "ADMOB_APP_OPEN_UNIT_ID_ANDROID": "ca-app-pub-1815769508579401/3151522268",
+      "ADMOB_BANNER_UNIT_ID_IOS": "ca-app-pub-1815769508579401/5846608993",
+      "ADMOB_APP_OPEN_UNIT_ID_IOS": "ca-app-pub-1815769508579401/9066193922",
+      "APP_STORE_URL_ANDROID": "https://play.google.com/store/apps/details?id=com.vouucac.quanlytaichinh",
+      "IAP_NO_ADS_MONTHLY": "no_ads_monthly",
+      "IAP_NO_ADS_LIFETIME": "no_ads_lifetime",
+      "SHOW_APP_OPEN_ADS": false,
+      "EXCHANGE_RATE_API_KEY": "MYfkuS7XyZ4mPrRU9UgIK3Xh30Ssar5f",
+      "AI_FREE_TRIAL_REQUESTS": 30,
+      "FORCE_RESET_LOCAL_DATA": "1.0.6",
+      "APP_VERSION": "1.0.7",
+      "SUPABASE_SERVICE_ROLE_KEY": "sb_secret_4zWgJs-qcX4cE_r6qACjBQ_wFWmonSm",
+      "eas": {
+        "projectId": "bb8a358b-6cd9-4dd4-88d3-64046854cdb9"
+      }
+    },
+    "owner": "kata-expo"
+  }
+}

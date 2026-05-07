@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ALGORITHMS, COMPLEXITY, Frame, parseGraph } from "@/lib/algorithms";
+import { ColumnVisualMode, preloadAnimalSprites } from "@/lib/animalColumns";
 import { audioEngine, SfxKind } from "@/lib/audio";
 import { BackgroundMusicId, getAssetMusicOption, isAssetMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
 import { Lang, PLATFORMS, t } from "@/lib/i18n";
@@ -31,6 +32,10 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const [title, setTitle] = useState("Bubble Sort");
   const [subtitle, setSubtitle] = useState("");
   const [showCode, setShowCode] = useState(true);
+  const [columnVisualMode, setColumnVisualMode] = useState<ColumnVisualMode>("bar");
+  const [animalSpriteScale, setAnimalSpriteScale] = useState(1);
+  const [animalJumpIntensity, setAnimalJumpIntensity] = useState(1);
+  const [animalHighlightJump, setAnimalHighlightJump] = useState(false);
   const [fps, setFps] = useState(30);
   const [speed, setSpeed] = useState(0.5);
   const [playing, setPlaying] = useState(false);
@@ -81,8 +86,15 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const isSearch = algo.category === "search";
   const isCustom = algoId === "custom";
   const codeForPanel = isCustom ? customCode : algo.code;
+  const animalColumns = useMemo(() => ({
+    mode: columnVisualMode,
+    spriteScale: animalSpriteScale,
+    jumpIntensity: animalJumpIntensity,
+    highlightJump: animalHighlightJump,
+  }), [columnVisualMode, animalSpriteScale, animalJumpIntensity, animalHighlightJump]);
 
   useEffect(() => { setTitle(algo.name); }, [algo]);
+  useEffect(() => { preloadAnimalSprites(); }, []);
   useEffect(() => {
     if (!shouldUseAlgorithmDemo(algoId, arr)) return;
     const nextSize = demoSizeForAlgorithm(algoId, size);
@@ -155,8 +167,9 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
       previousFrame,
       transitionProgress,
       algorithmId: algoId,
+      animalColumns,
     }, W, H);
-  }, [frames, frameIdx, transitionProgress, title, subtitle, theme, algo.code, showCode, algoId, customCode, W, H]);
+  }, [frames, frameIdx, transitionProgress, title, subtitle, theme, algo.code, showCode, algoId, customCode, animalColumns, W, H]);
 
   const playEvent = (f: Frame | null | undefined) => {
     if (!f) return;
@@ -270,7 +283,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     recorder.start();
 
     const code = algoId === "custom" ? customCode : algo.code;
-    const opts = { title, subtitle, theme, code, showCode, complexity: COMPLEXITY[algoId], algorithmId: algoId };
+    const opts = { title, subtitle, theme, code, showCode, complexity: COMPLEXITY[algoId], algorithmId: algoId, animalColumns };
     for (let i = 0; i < frames.length; i++) {
       playEvent(frames[i]);
       const previousFrame = i > 0 ? frames[i - 1] : null;
@@ -326,6 +339,10 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     title, setTitle: (value: string) => runConfigAction(() => setTitle(value)),
     subtitle, setSubtitle: (value: string) => runConfigAction(() => setSubtitle(value)),
     showCode, setShowCode: (value: boolean) => runConfigAction(() => setShowCode(value)),
+    columnVisualMode, setColumnVisualMode: (value: ColumnVisualMode) => runConfigAction(() => setColumnVisualMode(value)),
+    animalSpriteScale, setAnimalSpriteScale: (value: number) => runConfigAction(() => setAnimalSpriteScale(value)),
+    animalJumpIntensity, setAnimalJumpIntensity: (value: number) => runConfigAction(() => setAnimalJumpIntensity(value)),
+    animalHighlightJump, setAnimalHighlightJump: (value: boolean) => runConfigAction(() => setAnimalHighlightJump(value)),
     fps, setFps: (value: number) => runConfigAction(() => setFps(value)),
     speed, setSpeed: (value: number) => runConfigAction(() => setSpeed(value)),
     playing, setPlaying, frameIdx, setFrameIdx,

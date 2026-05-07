@@ -14,6 +14,7 @@ export type AnimalSpriteEntry = {
   label: string;
   src: string;
   heightWeight: number;
+  weightValue: number;
   actions: Record<"idle" | "jump", SpriteAction>;
   widthScale?: number;
   baselineOffset?: number;
@@ -53,6 +54,7 @@ export const ANIMAL_SPRITES: AnimalSpriteEntry[] = Object.entries(spriteModules)
       label,
       src: String(src),
       heightWeight,
+      weightValue: heightWeight,
       actions: createDefaultActions(),
       widthScale: 1,
       baselineOffset: 0,
@@ -61,22 +63,26 @@ export const ANIMAL_SPRITES: AnimalSpriteEntry[] = Object.entries(spriteModules)
   .filter((entry) => entry.heightWeight >= 1 && entry.heightWeight <= 20)
   .sort((a, b) => a.heightWeight - b.heightWeight);
 
+export const ANIMAL_WEIGHT_VALUES = ANIMAL_SPRITES.map((entry) => entry.weightValue);
+
 const imageCache = new Map<string, HTMLImageElement>();
 const spriteCache = new Map<string, Sprite>();
 
 export function spriteForWeight(weight: number): AnimalSpriteEntry | null {
   if (ANIMAL_SPRITES.length === 0) return null;
+  const exact = ANIMAL_SPRITES.find((entry) => entry.weightValue === weight);
+  if (exact) return exact;
   return ANIMAL_SPRITES.reduce((best, entry) =>
-    Math.abs(entry.heightWeight - weight) < Math.abs(best.heightWeight - weight) ? entry : best,
+    Math.abs(entry.weightValue - weight) < Math.abs(best.weightValue - weight) ? entry : best,
   );
 }
 
-export function weightForValue(value: number, values: number[]): number {
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  if (max === min) return 10;
-  const normalized = (value - min) / (max - min);
-  return Math.max(1, Math.min(20, Math.round(1 + normalized * 19)));
+export function weightForValue(value: number): number {
+  if (ANIMAL_WEIGHT_VALUES.includes(value)) return value;
+  return ANIMAL_WEIGHT_VALUES.reduce((best, weight) =>
+    Math.abs(weight - value) < Math.abs(best - value) ? weight : best,
+    ANIMAL_WEIGHT_VALUES[0] ?? value,
+  );
 }
 
 export function getSprite(entry: AnimalSpriteEntry): Sprite | null {

@@ -8,10 +8,11 @@ import { Lang, PLATFORMS, t } from "@/lib/i18n";
 import { renderFrame, THEMES, Theme } from "@/lib/renderer";
 import { getAssetSfxOption } from "@/lib/selectSounds";
 import { ExportFormat, getExportFormat } from "./exportFormats";
-import { demoArrayForAlgorithm, demoSizeForAlgorithm, parseInputArray, shouldUseAlgorithmDemo } from "./demoArrays";
+import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm, normalizeAnimalArray, parseInputArray, shouldUseAlgorithmDemo } from "./demoArrays";
 
 const SWAP_TRANSITION_MULTIPLIER = 1.8;
 const SWAP_EXPORT_SECONDS = 0.35;
+const DEFAULT_ANIMAL_ARRAY_SIZE = 14;
 
 type UseAlgorithmStudioOptions = {
   requireConfigAccess?: () => boolean;
@@ -98,7 +99,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   useEffect(() => {
     if (!shouldUseAlgorithmDemo(algoId, arr)) return;
     const nextSize = demoSizeForAlgorithm(algoId, size);
-    const next = demoArrayForAlgorithm(algoId, nextSize);
+    const next = columnVisualMode === "animal" ? demoAnimalArray(nextSize) : demoArrayForAlgorithm(algoId, nextSize);
     if (nextSize !== size) setSizeState(nextSize);
     setArr(next);
     setInput(next.join(", "));
@@ -219,10 +220,11 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     if (!requireConfigAccess()) return;
     const trimmed = input.trim();
     const inputMatchesCurrentArray = trimmed === arr.join(", ");
-    let next = trimmed && !inputMatchesCurrentArray
+    let next = columnVisualMode === "animal" ? demoAnimalArray(size) : trimmed && !inputMatchesCurrentArray
       ? parseInputArray(input)
       : demoArrayForAlgorithm(algoId, size);
-    if (!next.length) next = demoArrayForAlgorithm(algoId, size);
+    if (columnVisualMode === "animal") next = normalizeAnimalArray(next);
+    if (!next.length) next = columnVisualMode === "animal" ? demoAnimalArray(size) : demoArrayForAlgorithm(algoId, size);
     setArr(next);
     setInput(next.join(", "));
     setFrameIdx(0);
@@ -233,7 +235,20 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const setSize = (nextSize: number) => {
     if (!requireConfigAccess()) return;
     setSizeState(nextSize);
-    const next = demoArrayForAlgorithm(algoId, nextSize);
+    const next = columnVisualMode === "animal" ? demoAnimalArray(nextSize) : demoArrayForAlgorithm(algoId, nextSize);
+    setArr(next);
+    setInput(next.join(", "));
+    setFrameIdx(0);
+    setTransitionProgress(1);
+    setPlaying(false);
+  };
+
+  const setColumnVisualModeWithDefaults = (value: ColumnVisualMode) => {
+    if (!requireConfigAccess()) return;
+    setColumnVisualMode(value);
+    if (value !== "animal") return;
+    const next = demoAnimalArray(DEFAULT_ANIMAL_ARRAY_SIZE);
+    setSizeState(DEFAULT_ANIMAL_ARRAY_SIZE);
     setArr(next);
     setInput(next.join(", "));
     setFrameIdx(0);
@@ -332,14 +347,14 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
 
   return {
     lang, setLang, tr, algoId, setAlgoId, size, setSize,
-    input, setInput: (value: string) => runConfigAction(() => setInput(value)),
+    input, setInput: (value: string) => runConfigAction(() => { if (columnVisualMode !== "animal") setInput(value); }),
     target, setTarget: (value: string) => runConfigAction(() => setTarget(value)),
     themeName, setThemeName: (value: keyof typeof THEMES) => runConfigAction(() => setThemeName(value)),
     theme, setTheme: (value: Theme) => runConfigAction(() => setTheme(value)),
     title, setTitle: (value: string) => runConfigAction(() => setTitle(value)),
     subtitle, setSubtitle: (value: string) => runConfigAction(() => setSubtitle(value)),
     showCode, setShowCode: (value: boolean) => runConfigAction(() => setShowCode(value)),
-    columnVisualMode, setColumnVisualMode: (value: ColumnVisualMode) => runConfigAction(() => setColumnVisualMode(value)),
+    columnVisualMode, setColumnVisualMode: setColumnVisualModeWithDefaults,
     animalSpriteScale, setAnimalSpriteScale: (value: number) => runConfigAction(() => setAnimalSpriteScale(value)),
     animalJumpIntensity, setAnimalJumpIntensity: (value: number) => runConfigAction(() => setAnimalJumpIntensity(value)),
     animalHighlightJump, setAnimalHighlightJump: (value: boolean) => runConfigAction(() => setAnimalHighlightJump(value)),

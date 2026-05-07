@@ -62,7 +62,20 @@ export function LeftPanel({ studio }: Props) {
         {!s.isGraph && (
           <div>
             <Label>{s.tr("inputArr")}</Label>
-            <Input className="mt-2" placeholder="5, 2, 8, 1, 9, 3" value={s.input} onChange={(e) => s.setInput(e.target.value)} />
+            <Input
+              className="mt-2"
+              disabled={s.columnVisualMode === "animal"}
+              placeholder="5, 2, 8, 1, 9, 3"
+              value={s.input}
+              onChange={(e) => s.setInput(e.target.value)}
+            />
+            {s.columnVisualMode === "animal" && (
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                {s.lang === "vi"
+                  ? "Animal mode chỉ dùng trọng số cố định của từng sprite."
+                  : "Animal mode only uses each sprite's fixed weight."}
+              </p>
+            )}
           </div>
         )}
         {s.isSearch && (

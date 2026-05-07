@@ -1,0 +1,351 @@
+# Tiến Độ Module Nest Server
+
+## Checklist
+- [x] Modules/Nest-Server/001 | API migration foundation: tách API khỏi apps/web + cập nhật consumers | status=done | owner=codex | started=2026-04-01 | done=2026-04-01
+- [x] Modules/Nest-Server/002 | Inventory toàn bộ API web + khóa contract migrate | status=done | owner=codex | started=2026-04-01 | done=2026-04-01
+- [x] Modules/Nest-Server/003 | Nền tảng Nest production-ready (config, validation, error, auth base) | status=done | owner=codex | started=2026-04-01 | done=2026-04-01
+- [x] Modules/Nest-Server/004 | Migrate Auth APIs từ web sang nest-server | status=done | owner=codex | started=2026-04-01 | done=2026-04-01
+- [x] Modules/Nest-Server/005 | Migrate Settings/System/Feature-Flags APIs sang nest-server | status=done | owner=codex | started=2026-04-01 | done=2026-04-01
+- [x] Modules/Nest-Server/006 | Migrate Products/Inventory/Customers APIs sang nest-server | status=done | owner=codex | started=2026-04-01 | done=2026-04-01
+- [x] Modules/Nest-Server/007 | Migrate Orders/Returns/Payments/Reports APIs sang nest-server | status=done | owner=codex | started=2026-04-01 | done=2026-04-01
+- [x] Modules/Nest-Server/008 | Migrate Makeup/Procurement/Media APIs sang nest-server | status=done | owner=codex | started=2026-04-01 | done=2026-04-01
+- [x] Modules/Nest-Server/009 | Migrate toàn bộ Zalo Mini App APIs sang nest-server | status=done | owner=codex | started=2026-04-01 | done=2026-04-01
+- [x] Modules/Nest-Server/010 | Cutover caller ở apps/web sang nest-server | status=done | owner=codex | started=2026-04-01 | done=2026-04-01
+- [x] Modules/Nest-Server/011 | Cutover caller ở apps/zalo-mini-apps sang nest-server | status=done | owner=codex | started=2026-04-01 | done=2026-04-01
+- [x] Modules/Nest-Server/012 | Remove API routes khỏi apps/web + cleanup legacy server layer | status=done | owner=codex | started=2026-04-01 | done=2026-04-01
+- [x] Modules/Nest-Server/013 | Regression, rollout, observability, release gate cho cutover | status=done | owner=codex | started=2026-04-01 | done=2026-04-01
+- [x] Modules/Nest-Server/014 | Swagger/OpenAPI documentation cho apps/server | status=done | owner=codex | started=2026-04-03 | done=2026-04-03
+
+## Completion Log
+<!-- Append logs below this line. -->
+
+### 2026-04-01 - Modules/Nest-Server/001
+- Task file: docs/tasks/modules/nest-server/001_nest_server_api_migration_foundation_and_consumer_cutover.md
+- Status: done
+- Commit: n/a
+- Test reminder result:
+  - `cd apps/server && npm run lint` ✅ pass
+  - `cd apps/server && npm run build` ✅ pass
+  - `cd apps/web && npx eslint <changed-files>` ✅ pass
+  - `cd apps/zalo-mini-apps/* && npx eslint <changed-files>` ✅ pass
+  - `cd apps/web && npm run lint` ❌ fail do lỗi có sẵn ngoài phạm vi task
+- Main files changed:
+  - apps/server/src/main.ts
+  - apps/server/src/app.module.ts
+  - apps/server/src/common/common.module.ts
+  - apps/server/src/modules/auth/**
+  - apps/server/src/modules/mini-app/**
+  - apps/server/src/modules/health/**
+  - apps/web/src/server/utils/nestApiProxy.ts
+  - apps/web/src/app/api/auth/**/route.ts
+  - apps/web/src/app/api/v1/auth/**/route.ts
+  - apps/web/src/app/api/zalo-mini-app/**/route.ts
+  - apps/web/src/app/api/v1/zalo-mini-app/**/route.ts
+  - apps/web/src/features/auth/services/authBrowserService.ts
+  - apps/zalo-mini-apps/*/src/features/**/services/*ApiService.ts
+  - apps/zalo-mini-apps/*/src/lib/httpClient.ts
+  - apps/zalo-mini-apps/*/src/lib/voice/voiceTranscriptionRuntime.ts
+  - docs/features/endpoint_mapping_inventory.md
+- Known gaps:
+  - Chưa migrate các domain endpoint ngoài nhóm ưu tiên của Task 001; vẫn dùng legacy web API cho các nhóm đó.
+
+### 2026-04-01 - Modules/Nest-Server/002
+- Task file: docs/tasks/modules/nest-server/002_nest_server_api_inventory_and_contract_lock.md
+- Status: done
+- Commit: n/a
+- Test reminder result:
+  - `rg --files apps/web/src/app/api | sort` ✅ inventory file list generated
+  - `python3` scan route handlers under `apps/web/src/app/api/**/route.ts` ✅ 133 route handlers mapped
+  - `rg -n "(/api/|/api/v1/)" apps/web/src/features/**/services/*.ts apps/zalo-mini-apps/**/src/features/**/services/*.ts ...` ✅ 173 caller references mapped
+  - `rg -n "(/api/|/api/v1/)" apps/mobile ...` ✅ detected 1 mobile caller (`/api/ai/parse`) for follow-up
+- Main files changed:
+  - docs/features/endpoint_mapping_inventory.md
+  - progress/modules/nest-server/tasks.md
+- Known gaps:
+  - Caller scan focused on web features + mini-app features/services; non-service calls and dynamically built URLs may still need manual review in domain migration tasks.
+  - Mobile currently has `/api/ai/parse` caller outside `apps/web/src/app/api/**` scope; not included in this task's endpoint inventory baseline.
+
+### 2026-04-01 - Modules/Nest-Server/003
+- Task file: docs/tasks/modules/nest-server/003_nest_server_core_infra_and_runtime_baseline.md
+- Status: done
+- Commit: n/a
+- Test reminder result:
+  - `cd apps/server && npm run lint` ✅ pass
+  - `cd apps/server && npm run build` ✅ pass
+  - Runtime smoke attempt with local env + HTTP probes ❌ blocked by sandbox (`listen EPERM`), không thể bind test socket trong môi trường hiện tại.
+  - Route readiness verification qua Nest bootstrap logs ✅ mapped routes gồm `/api/v1/health`, `/api/v1/health/live`, `/api/v1/health/ready`.
+- Main files changed:
+  - apps/server/src/main.ts
+  - apps/server/src/common/config/app-config.service.ts
+  - apps/server/src/common/filters/global-http-exception.filter.ts
+  - apps/server/src/modules/health/health.controller.ts
+  - apps/server/src/modules/health/health.module.ts
+  - apps/server/src/modules/health/health.service.ts
+  - progress/modules/nest-server/tasks.md
+- Known gaps:
+  - Chưa chạy được HTTP smoke test end-to-end trong sandbox do hạn chế mở socket; cần xác nhận lại trên môi trường dev thực tế.
+
+### 2026-04-01 - Modules/Nest-Server/004
+- Task file: docs/tasks/modules/nest-server/004_nest_server_auth_api_migration.md
+- Status: done
+- Commit: n/a
+- Test reminder result:
+  - `cd apps/server && npm run lint` ✅ pass
+  - `cd apps/server && npm run build` ✅ pass
+  - `cd apps/web && npx eslint src/app/api/auth/sign-up/route.ts src/app/api/auth/delete-account/route.ts src/app/api/v1/auth/sign-up/route.ts src/app/api/v1/auth/delete-account/route.ts` ✅ pass
+- Main files changed:
+  - apps/server/src/modules/auth/auth.controller.ts
+  - apps/server/src/modules/auth/auth.module.ts
+  - apps/server/src/modules/auth/auth.service.ts
+  - apps/server/src/modules/auth/dto/sign-up.dto.ts
+  - apps/server/src/modules/auth/infrastructure/auth.data-access.ts
+  - apps/web/src/app/api/auth/sign-up/route.ts
+  - apps/web/src/app/api/auth/delete-account/route.ts
+  - apps/web/src/app/api/v1/auth/sign-up/route.ts
+  - apps/web/src/app/api/v1/auth/delete-account/route.ts
+  - apps/web/src/server/services/authService.ts (removed)
+  - docs/features/endpoint_mapping_inventory.md
+  - progress/modules/nest-server/tasks.md
+- Known gaps:
+  - Module `auth` đã tách data-access theo rule `Controller -> Service -> Data-access`, nhưng chưa tách đầy đủ 4 lớp `presentation/application/domain/infrastructure` theo kiến trúc dài hạn; sẽ chuẩn hóa thêm ở task nền kiến trúc module tiếp theo.
+
+### 2026-04-01 - Modules/Nest-Server/005
+- Task file: docs/tasks/modules/nest-server/005_nest_server_settings_and_feature_flags_api_migration.md
+- Status: done
+- Commit: n/a
+- Test reminder result:
+  - `cd apps/server && npm run lint` ✅ pass
+  - `cd apps/server && npm run build` ✅ pass
+  - `cd apps/web && npx eslint src/app/api/settings/**/*.ts` ✅ pass (đã chạy trên toàn bộ files `route.ts` thuộc `settings/**`)
+- Main files changed:
+  - apps/server/src/modules/settings/**
+  - apps/server/src/app.module.ts
+  - apps/web/src/app/api/settings/**/route.ts
+  - docs/features/endpoint_mapping_inventory.md
+  - progress/modules/nest-server/tasks.md
+- Known gaps:
+  - `apps/web/src/server/services/settingsService.ts` vẫn còn được dùng cho public showroom/branding routes (`/api/showroom/config`, `/api/public/branding`) và chưa thuộc phạm vi task này.
+
+### 2026-04-01 - Modules/Nest-Server/006
+- Task file: docs/tasks/modules/nest-server/006_nest_server_products_inventory_customers_api_migration.md
+- Status: done
+- Commit: n/a
+- Test reminder result:
+  - `cd apps/server && npm run lint` ✅ pass
+  - `cd apps/server && npm run build` ✅ pass
+  - `cd apps/web && npx eslint src/app/api/products/** src/app/api/inventory/** src/app/api/customers/**` ✅ pass
+- Main files changed:
+  - apps/server/src/modules/products/**
+  - apps/server/src/modules/inventory/**
+  - apps/server/src/modules/customers/**
+  - apps/server/src/modules/shared/domain/**
+  - apps/server/src/app.module.ts
+  - apps/web/src/app/api/products/**/route.ts
+  - apps/web/src/app/api/inventory/**/route.ts
+  - apps/web/src/app/api/customers/**/route.ts
+  - docs/features/endpoint_mapping_inventory.md
+  - progress/modules/nest-server/tasks.md
+- Known gaps:
+  - `apps/web/src/app/api/customer/account/route.ts` chưa nằm trong Task 006 scope nên chưa migrate sang Nest trong đợt này.
+
+### 2026-04-01 - Modules/Nest-Server/007
+- Task file: docs/tasks/modules/nest-server/007_nest_server_orders_returns_payments_reports_api_migration.md
+- Status: done
+- Commit: n/a
+- Test reminder result:
+  - `cd apps/server && npm run lint` ✅ pass
+  - `cd apps/server && npm run build` ✅ pass
+  - `cd apps/web && npx eslint src/app/api/orders src/app/api/return-orders src/app/api/payments src/app/api/reports` ✅ pass
+- Main files changed:
+  - apps/server/src/modules/orders/**
+  - apps/server/src/modules/returns/**
+  - apps/server/src/modules/payments/**
+  - apps/server/src/modules/reports/**
+  - apps/server/src/modules/products/infrastructure/products.data-access.ts
+  - apps/server/src/app.module.ts
+  - apps/web/src/app/api/orders/**/route.ts
+  - apps/web/src/app/api/return-orders/**/route.ts
+  - apps/web/src/app/api/payments/**/route.ts
+  - apps/web/src/app/api/reports/**/route.ts
+  - docs/features/endpoint_mapping_inventory.md
+  - docs/tasks/modules/nest-server/007_nest_server_orders_returns_payments_reports_api_migration.md
+  - progress/modules/nest-server/tasks.md
+- Known gaps:
+  - Chưa có regression suite tự động cho parity tài chính end-to-end (create order/return settle/report parity) trong phạm vi task; cần chạy UAT dataset thật ở task regression rollout.
+
+### 2026-04-01 - Modules/Nest-Server/008
+- Task file: docs/tasks/modules/nest-server/008_nest_server_makeup_procurement_media_api_migration.md
+- Status: done
+- Commit: n/a
+- Test reminder result:
+  - `cd apps/server && npm run lint` ✅ pass
+  - `cd apps/server && npm run build` ✅ pass
+  - `cd apps/web && npx eslint src/app/api/makeup src/app/api/procurement src/app/api/media src/server/utils/nestApiProxy.ts` ✅ pass
+- Main files changed:
+  - apps/server/src/modules/makeup/**
+  - apps/server/src/modules/procurement/**
+  - apps/server/src/modules/media/**
+  - apps/server/src/common/supabase/service-role-client.util.ts
+  - apps/server/src/app.module.ts
+  - apps/web/src/app/api/makeup/**/route.ts
+  - apps/web/src/app/api/procurement/**/route.ts
+  - apps/web/src/app/api/media/**/route.ts
+  - apps/web/src/server/utils/nestApiProxy.ts
+  - apps/web/src/server/services/makeup*.ts (removed)
+  - apps/web/src/server/services/procurementService.ts (removed)
+  - apps/web/src/server/services/mediaService.ts (removed)
+  - docs/features/endpoint_mapping_inventory.md
+  - progress/modules/nest-server/tasks.md
+- Known gaps:
+  - Regression scope business-level cho flow makeup/procurement/media mới xác nhận ở mức lint/build + contract routing; chưa chạy UAT dữ liệu thật trên môi trường staging/production.
+
+### 2026-04-01 - Modules/Nest-Server/009
+- Task file: docs/tasks/modules/nest-server/009_nest_server_zalo_mini_app_api_migration.md
+- Status: done
+- Commit: n/a
+- Test reminder result:
+  - `cd apps/server && npm run lint` ✅ pass
+  - `cd apps/server && npm run build` ✅ pass
+  - `cd apps/web && npx eslint src/app/api/zalo-mini-app/**/*.ts` ✅ pass
+- Main files changed:
+  - apps/server/src/modules/mini-app/mini-app.controller.ts
+  - apps/server/src/modules/mini-app/mini-app.service.ts
+  - apps/server/src/modules/mini-app/mini-app-extensions.service.ts
+  - apps/server/src/modules/mini-app/mini-app.module.ts
+  - apps/server/src/main.ts
+  - apps/web/src/app/api/zalo-mini-app/**/route.ts
+  - docs/features/endpoint_mapping_inventory.md
+  - docs/tasks/modules/nest-server/009_nest_server_zalo_mini_app_api_migration.md
+  - progress/modules/nest-server/tasks.md
+- Known gaps:
+  - Chưa chạy regression/UAT end-to-end cho webhook/payment callback với provider thật; hiện mới xác nhận parity ở mức contract + lint/build.
+
+### 2026-04-01 - Modules/Nest-Server/010
+- Task file: docs/tasks/modules/nest-server/010_web_client_api_cutover_to_nest_server.md
+- Status: done
+- Commit: n/a
+- Test reminder result:
+  - `cd apps/web && npx eslint src/app/api/v1/[...path]/route.ts src/features/{calendar,customers,dashboard,inventory,makeup,media,orders,payments,procurement,products,reports,settings}/services/*.ts` ✅ pass
+  - `cd apps/web && npm run typecheck` ✅ pass
+- Main files changed:
+  - apps/web/src/app/api/v1/[...path]/route.ts
+  - apps/web/src/features/calendar/services/calendarClientService.ts
+  - apps/web/src/features/customers/services/customersClientService.ts
+  - apps/web/src/features/dashboard/services/dashboardClientService.ts
+  - apps/web/src/features/inventory/services/inventoryClientService.ts
+  - apps/web/src/features/makeup/services/makeupClientService.ts
+  - apps/web/src/features/media/services/mediaClientService.ts
+  - apps/web/src/features/orders/services/ordersClientService.ts
+  - apps/web/src/features/orders/services/returnOrdersClientService.ts
+  - apps/web/src/features/payments/services/paymentsClientService.ts
+  - apps/web/src/features/procurement/services/procurementClientService.ts
+  - apps/web/src/features/products/services/productsClientService.ts
+  - apps/web/src/features/reports/services/reportsClientService.ts
+  - apps/web/src/features/settings/services/settingsClientService.ts
+  - docs/features/endpoint_mapping_inventory.md
+  - docs/tasks/modules/nest-server/010_web_client_api_cutover_to_nest_server.md
+  - progress/modules/nest-server/tasks.md
+- Known gaps:
+  - Các domain chưa migrate (`calendar`, `dashboard`, `notifications`, `public/branding`, `sales`, `showroom`, `customer/account`, `voice`) vẫn dùng legacy `/api/**` theo kế hoạch task tiếp theo.
+
+### 2026-04-01 - Modules/Nest-Server/011
+- Task file: docs/tasks/modules/nest-server/011_zalo_mini_apps_client_api_cutover_to_nest_server.md
+- Status: done
+- Commit: n/a
+- Test reminder result:
+  - `cd apps/zalo-mini-apps/kata-booking && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && npm run lint` ✅ pass
+  - `cd apps/zalo-mini-apps/kata-calendar && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && npm run lint` ✅ pass
+  - `cd apps/zalo-mini-apps/kata-rental-order && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && npm run lint` ✅ pass
+  - `cd apps/zalo-mini-apps/kata-rental-revenue && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && npm run lint` ✅ pass
+- Main files changed:
+  - apps/zalo-mini-apps/kata-booking/src/lib/httpClient.ts
+  - apps/zalo-mini-apps/kata-booking/src/features/checkout/services/zaloMiniAppCheckoutApiService.ts
+  - apps/zalo-mini-apps/kata-booking/src/features/orders/services/zaloMiniAppOrderDraftService.ts
+  - apps/zalo-mini-apps/kata-booking/src/features/makeup/services/zaloMiniAppMakeupService.ts
+  - apps/zalo-mini-apps/kata-booking/src/lib/voice/voiceTranscriptionClient.ts
+  - apps/zalo-mini-apps/kata-calendar/src/features/calendar/services/zaloMiniAppCalendarService.ts
+  - apps/zalo-mini-apps/kata-rental-order/src/features/rental-order/services/rentalOrderApiService.ts
+  - apps/zalo-mini-apps/kata-rental-revenue/src/features/rental-revenue/services/rentalRevenueApiService.ts
+  - docs/features/endpoint_mapping_inventory.md
+  - progress/modules/nest-server/tasks.md
+- Known gaps:
+  - `apps/zalo-mini-apps/kata-booking` vẫn giữ compatibility fallback cho `GET /api/showroom/products` qua `VITE_API_BASE_URL` vì source-of-truth endpoint showroom public chưa cutover sang `apps/server`.
+
+### 2026-04-01 - Modules/Nest-Server/012
+- Task file: docs/tasks/modules/nest-server/012_remove_web_api_routes_and_legacy_server_layer.md
+- Status: done
+- Commit: n/a
+- Test reminder result:
+  - `cd apps/web && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && npx eslint src/app/api src/server/services src/server/data-access src/server/utils/nestApiProxy.ts` ✅ pass
+  - `cd apps/web && rm -rf .next && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && npm run typecheck` ✅ pass
+  - `rg --files apps/web/src/app/api | wc -l` ✅ còn 20 route handlers (chỉ còn nhóm ngoại lệ + `v1/[...path]`)
+  - `rg -n "/api/(auth|customers|inventory|makeup|media|orders|payments|procurement|products|reports|return-orders|settings|zalo-mini-app)" apps/web/src/features apps/zalo-mini-apps --glob '!**/*.md'` ✅ không còn caller runtime trỏ legacy routes đã remove
+- Main files changed:
+  - apps/web/src/app/api/auth/** (removed)
+  - apps/web/src/app/api/customers/** (removed)
+  - apps/web/src/app/api/inventory/** (removed)
+  - apps/web/src/app/api/makeup/** (removed)
+  - apps/web/src/app/api/media/** (removed)
+  - apps/web/src/app/api/orders/** (removed)
+  - apps/web/src/app/api/payments/** (removed)
+  - apps/web/src/app/api/procurement/** (removed)
+  - apps/web/src/app/api/products/** (removed)
+  - apps/web/src/app/api/reports/** (removed)
+  - apps/web/src/app/api/return-orders/** (removed)
+  - apps/web/src/app/api/settings/** (removed)
+  - apps/web/src/app/api/zalo-mini-app/** (removed)
+  - apps/web/src/app/api/v1/auth/** (removed)
+  - apps/web/src/app/api/v1/zalo-mini-app/** (removed)
+  - apps/web/src/server/services/{customers,inventory,orders,payments,reports,returnOrders,zaloMiniApp*}.ts (removed)
+  - apps/web/src/server/data-access/{customers,inventory,orders,payments,reports,returnOrders,zaloMiniApp*}.ts (removed)
+  - docs/features/endpoint_mapping_inventory.md
+  - progress/modules/nest-server/tasks.md
+- Known gaps:
+  - Domain chưa migrate vẫn còn web API routes và legacy layer tương ứng: `calendar`, `customer/account`, `dashboard`, `notifications`, `public/branding`, `sales`, `showroom`, `voice`.
+  - Chưa chạy smoke test runtime end-to-end (web + mini-app) trong môi trường deploy thật sau khi remove routes; mới xác nhận bằng lint/typecheck + reference scan.
+
+### 2026-04-01 - Modules/Nest-Server/013
+- Task file: docs/tasks/modules/nest-server/013_cutover_regression_observability_and_release_gate.md
+- Status: done
+- Commit: n/a
+- Test reminder result:
+  - `cd apps/server && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && npx eslint src/common/interceptors/request-logging.interceptor.ts src/common/filters/global-http-exception.filter.ts src/common/http/endpoint-group.util.ts` ✅ pass
+  - `cd apps/server && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && npm run build` ✅ pass
+  - `cd apps/server && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && npm run release:gate:cutover` ✅ pass
+- Main files changed:
+  - apps/server/src/common/http/endpoint-group.util.ts
+  - apps/server/src/common/interceptors/request-logging.interceptor.ts
+  - apps/server/src/common/filters/global-http-exception.filter.ts
+  - apps/server/scripts/release-gate/check-nest-cutover-readiness.mjs
+  - apps/server/package.json
+  - docs/release/nest_api_cutover_release_gate.md
+  - docs/release/mvp_setup_release_runbook.md
+  - docs/guides/008_zalo_mini_app_ops_runbook.md
+  - docs/features/endpoint_mapping_inventory.md
+  - docs/tasks/modules/nest-server/013_cutover_regression_observability_and_release_gate.md
+  - progress/modules/nest-server/tasks.md
+- Known gaps:
+  - Chưa có dữ liệu staging/production để xác nhận checklist regression web + mini-app và quan sát threshold 30 phút sau deploy.
+  - Rollback dry-run mới dừng ở mức runbook/checklist, chưa chạy diễn tập trên staging trong phạm vi môi trường hiện tại.
+
+### 2026-04-03 - Modules/Nest-Server/014
+- Task file: docs/tasks/modules/nest-server/014_nest_server_swagger_openapi_documentation.md
+- Status: done
+- Commit: n/a
+- Test reminder result:
+  - `cd apps/server && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && npm run build` ✅ pass
+  - `cd apps/server && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && npx eslint src/main.ts src/common/config/app-config.service.ts` ✅ pass
+  - `cd apps/server && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && npm run lint` ❌ fail do lỗi có sẵn ngoài phạm vi task:
+    - `src/common/http/request-body.util.ts`
+    - `src/common/supabase/request-authenticated-client.util.ts`
+- Main files changed:
+  - apps/server/src/main.ts
+  - apps/server/src/common/config/app-config.service.ts
+  - apps/server/.env.example
+  - apps/server/README.md
+  - apps/server/package.json
+  - apps/server/package-lock.json
+  - docs/tasks/modules/nest-server/014_nest_server_swagger_openapi_documentation.md
+  - progress/modules/nest-server/tasks.md
+- Known gaps:
+  - Chưa chạy smoke test HTTP trực tiếp `/api/docs` và `/api/docs-json` trong sandbox vì không mở được server socket để probe runtime endpoint.

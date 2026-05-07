@@ -1,0 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 30% 97%;
+    --foreground: 25 30% 12%;
+
+    --card: 40 30% 99%;
+    --card-foreground: 25 30% 12%;
+
+    --popover: 40 30% 99%;
+    --popover-foreground: 25 30% 12%;
+
+    --primary: 15 55% 48%;
+    --primary-foreground: 40 30% 98%;
+
+    --secondary: 35 25% 92%;
+    --secondary-foreground: 25 30% 18%;
+
+    --muted: 35 20% 94%;
+    --muted-foreground: 25 10% 50%;
+
+    --accent: 35 25% 92%;
+    --accent-foreground: 25 30% 18%;
+
+    --destructive: 0 65% 52%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 35 20% 90%;
+    --input: 35 20% 90%;
+    --ring: 15 55% 48%;
+
+    --radius: 0.625rem;
+
+    /* Semantic colors */
+    --success: 152 55% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 36 90% 52%;
+    --warning-foreground: 25 30% 12%;
+    --danger: 0 65% 52%;
+    --danger-foreground: 0 0% 100%;
+
+    /* Surface layers */
+    --surface-raised: 40 25% 98%;
+    --surface-sunken: 35 20% 94%;
+
+    /* KPI specific */
+    --kpi-revenue: 152 55% 42%;
+    --kpi-profit: 200 65% 48%;
+    --kpi-deposit: 36 90% 52%;
+    --kpi-debt: 0 65% 52%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 25 20% 8%;
+    --foreground: 40 20% 92%;
+    --card: 25 18% 12%;
+    --card-foreground: 40 20% 92%;
+    --popover: 25 18% 12%;
+    --popover-foreground: 40 20% 92%;
+    --primary: 15 55% 52%;
+    --primary-foreground: 40 30% 98%;
+    --secondary: 25 15% 18%;
+    --secondary-foreground: 40 20% 88%;
+    --muted: 25 12% 20%;
+    --muted-foreground: 35 10% 55%;
+    --accent: 25 15% 18%;
+    --accent-foreground: 40 20% 88%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 25 12% 22%;
+    --input: 25 12% 22%;
+    --ring: 15 55% 52%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'DM Sans', 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'DM Sans', 'Inter', sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-money {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+}

@@ -1,0 +1,132 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap");
+
+.templateScope {
+}
+
+:global(.kata-modern-root) {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: "Inter", "Segoe UI", sans-serif;
+}
+
+:global(.kata-modern-font-serif) {
+  font-family: "Playfair Display", Georgia, serif;
+}
+
+:global(.kata-modern-glass-card) {
+  background: hsl(var(--card) / 0.82);
+  backdrop-filter: blur(16px);
+  border: 1px solid hsl(var(--border) / 0.72);
+  border-radius: 1rem;
+  box-shadow: 0 4px 30px hsl(var(--primary) / 0.12);
+}
+
+:global(.kata-modern-glass-nav) {
+  background: hsl(var(--background) / 0.84);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid hsl(var(--border) / 0.72);
+}
+
+:global(.kata-modern-text-gradient) {
+  background-image: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.9),
+    hsl(var(--accent) / 0.8)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+:global(.kata-modern-hover-lift) {
+  transition:
+    transform 500ms ease-out,
+    box-shadow 500ms ease-out;
+}
+
+:global(.kata-modern-hover-lift:hover) {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 60px hsl(var(--primary) / 0.22);
+}
+
+:global(.kata-modern-btn-primary-glow) {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  box-shadow: 0 0 40px hsl(var(--primary) / 0.2);
+  transition:
+    transform 300ms ease,
+    box-shadow 300ms ease,
+    opacity 300ms ease;
+}
+
+:global(.kata-modern-btn-primary-glow:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 0 60px hsl(var(--primary) / 0.35);
+}
+
+:global(.kata-modern-product-card-img) {
+  overflow: hidden;
+  border-radius: 1rem;
+}
+
+:global(.kata-modern-product-card-img > img) {
+  transition: transform 700ms ease-out;
+}
+
+:global(.kata-modern-product-card-img:hover > img) {
+  transform: scale(1.08);
+}
+
+:global(.kata-modern-floating) {
+  animation: kata-modern-float 6s ease-in-out infinite;
+}
+
+:global(.kata-modern-animate-fade-up) {
+  opacity: 0;
+  animation: kata-modern-fade-up 800ms ease-out forwards;
+}
+
+@keyframes kata-modern-fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes kata-modern-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :global(.kata-modern-hover-lift),
+  :global(.kata-modern-btn-primary-glow),
+  :global(.kata-modern-product-card-img > img) {
+    transition: none;
+  }
+
+  :global(.kata-modern-hover-lift:hover),
+  :global(.kata-modern-btn-primary-glow:hover),
+  :global(.kata-modern-product-card-img:hover > img) {
+    transform: none;
+    box-shadow: none;
+  }
+
+  :global(.kata-modern-floating),
+  :global(.kata-modern-animate-fade-up) {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

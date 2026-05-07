@@ -1,4 +1,6 @@
 import { Frame } from "../algorithms";
+import type { AnimalColumnSettings } from "../animalColumns";
+import { drawAnimalColumns } from "./animalColumnRenderer";
 import { drawBars } from "./barRenderer";
 import { drawCodePanel } from "./codePanelRenderer";
 import { drawCountingSort } from "./countingSortRenderer";
@@ -20,6 +22,7 @@ export type RenderOpts = {
   previousFrame?: Frame | null;
   transitionProgress?: number;
   algorithmId?: string;
+  animalColumns?: AnimalColumnSettings;
 };
 
 export function renderFrame(
@@ -54,7 +57,13 @@ export function renderFrame(
   } else if (frame.counting) {
     drawCountingSort(ctx, frame, padding, chartTop, chartW, chartH, theme);
   } else if (frame.arr && frame.arr.length) {
-    if (opts.algorithmId && opts.algorithmId !== "custom") {
+    if (opts.animalColumns?.mode === "animal") {
+      drawAnimalColumns(ctx, frame, padding, chartTop, chartW, chartH, chartBottom, theme, {
+        previousFrame: opts.previousFrame,
+        transitionProgress: opts.transitionProgress,
+        settings: opts.animalColumns,
+      });
+    } else if (opts.algorithmId && opts.algorithmId !== "custom") {
       drawSortEssence(ctx, frame, padding, chartTop, chartW, chartH, chartBottom, theme, {
         algorithmId: opts.algorithmId,
         previousFrame: opts.previousFrame,

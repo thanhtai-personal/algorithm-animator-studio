@@ -64,6 +64,45 @@ function AppearanceTab({ studio: s }: Props) {
           </Button>
         ))}
       </div>
+      <div className="space-y-3 border-t border-border/40 pt-3">
+        <div>
+          <Label>{s.lang === "vi" ? "Kiểu cột" : "Column style"}</Label>
+          <Select value={s.columnVisualMode} onValueChange={(v) => s.setColumnVisualMode(v as typeof s.columnVisualMode)}>
+            <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="bar">{s.lang === "vi" ? "Cột thường" : "Bar columns"}</SelectItem>
+              <SelectItem value="animal">{s.lang === "vi" ? "Animal columns" : "Animal columns"}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {s.columnVisualMode === "animal" ? (
+          <>
+            <div>
+              <div className="mb-2 flex justify-between">
+                <Label>{s.lang === "vi" ? "Kích thước sprite" : "Sprite scale"}</Label>
+                <span className="font-mono text-xs text-emerald-400">{s.animalSpriteScale.toFixed(1)}x</span>
+              </div>
+              <Slider value={[s.animalSpriteScale]} min={0.6} max={1.6} step={0.1} onValueChange={([v]) => s.setAnimalSpriteScale(v)} />
+            </div>
+            <div>
+              <div className="mb-2 flex justify-between">
+                <Label>{s.lang === "vi" ? "Độ nhảy" : "Jump intensity"}</Label>
+                <span className="font-mono text-xs text-emerald-400">{s.animalJumpIntensity.toFixed(1)}x</span>
+              </div>
+              <Slider value={[s.animalJumpIntensity]} min={0.4} max={1.8} step={0.1} onValueChange={([v]) => s.setAnimalJumpIntensity(v)} />
+            </div>
+            <label className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm">
+              {s.lang === "vi" ? "Highlight cũng nhảy" : "Highlighted animals jump"}
+              <input
+                type="checkbox"
+                checked={s.animalHighlightJump}
+                onChange={(e) => s.setAnimalHighlightJump(e.target.checked)}
+                className="h-4 w-4 accent-emerald-400"
+              />
+            </label>
+          </>
+        ) : null}
+      </div>
     </TabsContent>
   );
 }

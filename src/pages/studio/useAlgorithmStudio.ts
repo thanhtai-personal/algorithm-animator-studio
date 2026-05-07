@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ALGORITHMS, COMPLEXITY, Frame, parseGraph } from "@/lib/algorithms";
+import { ColumnVisualMode, preloadAnimalSprites } from "@/lib/animalColumns";
 import { audioEngine, SfxKind } from "@/lib/audio";
 import { BackgroundMusicId, getAssetMusicOption, isAssetMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
 import { Lang, PLATFORMS, t } from "@/lib/i18n";
@@ -9,11 +10,14 @@ import { getAssetSfxOption } from "@/lib/selectSounds";
 import { ExportFormat, getExportFormat } from "./exportFormats";
 import { demoArrayForAlgorithm, demoSizeForAlgorithm, parseInputArray, shouldUseAlgorithmDemo } from "./demoArrays";
 
-const EXPORT_PASSWORD = "020321";
 const SWAP_TRANSITION_MULTIPLIER = 1.8;
 const SWAP_EXPORT_SECONDS = 0.35;
 
-export function useAlgorithmStudio() {
+type UseAlgorithmStudioOptions = {
+  requireConfigAccess?: () => boolean;
+};
+
+export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const [lang, setLang] = useState<Lang>("en");
   const tr = (k: Parameters<typeof t>[1]) => t(lang, k);
 
@@ -28,6 +32,10 @@ export function useAlgorithmStudio() {
   const [title, setTitle] = useState("Bubble Sort");
   const [subtitle, setSubtitle] = useState("");
   const [showCode, setShowCode] = useState(true);
+  const [columnVisualMode, setColumnVisualMode] = useState<ColumnVisualMode>("bar");
+  const [animalSpriteScale, setAnimalSpriteScale] = useState(1);
+  const [animalJumpIntensity, setAnimalJumpIntensity] = useState(1);
+  const [animalHighlightJump, setAnimalHighlightJump] = useState(false);
   const [fps, setFps] = useState(30);
   const [speed, setSpeed] = useState(0.5);
   const [playing, setPlaying] = useState(false);
@@ -78,8 +86,15 @@ export function useAlgorithmStudio() {
   const isSearch = algo.category === "search";
   const isCustom = algoId === "custom";
   const codeForPanel = isCustom ? customCode : algo.code;
+  const animalColumns = useMemo(() => ({
+    mode: columnVisualMode,
+    spriteScale: animalSpriteScale,
+    jumpIntensity: animalJumpIntensity,
+    highlightJump: animalHighlightJump,
+  }), [columnVisualMode, animalSpriteScale, animalJumpIntensity, animalHighlightJump]);
 
   useEffect(() => { setTitle(algo.name); }, [algo]);
+  useEffect(() => { preloadAnimalSprites(); }, []);
   useEffect(() => {
     if (!shouldUseAlgorithmDemo(algoId, arr)) return;
     const nextSize = demoSizeForAlgorithm(algoId, size);
@@ -152,8 +167,9 @@ export function useAlgorithmStudio() {
       previousFrame,
       transitionProgress,
       algorithmId: algoId,
+      animalColumns,
     }, W, H);
-  }, [frames, frameIdx, transitionProgress, title, subtitle, theme, algo.code, showCode, algoId, customCode, W, H]);
+  }, [frames, frameIdx, transitionProgress, title, subtitle, theme, algo.code, showCode, algoId, customCode, animalColumns, W, H]);
 
   const playEvent = (f: Frame | null | undefined) => {
     if (!f) return;
@@ -200,6 +216,7 @@ export function useAlgorithmStudio() {
   }, [playing, fps, speed, frames, frameIdx]);
 
   const newArray = () => {
+    if (!requireConfigAccess()) return;
     const trimmed = input.trim();
     const inputMatchesCurrentArray = trimmed === arr.join(", ");
     let next = trimmed && !inputMatchesCurrentArray
@@ -214,6 +231,7 @@ export function useAlgorithmStudio() {
   };
 
   const setSize = (nextSize: number) => {
+    if (!requireConfigAccess()) return;
     setSizeState(nextSize);
     const next = demoArrayForAlgorithm(algoId, nextSize);
     setArr(next);
@@ -224,6 +242,7 @@ export function useAlgorithmStudio() {
   };
 
   const onMusicUpload = (file: File) => {
+    if (!requireConfigAccess()) return;
     if (musicUrl) URL.revokeObjectURL(musicUrl);
     setMusicUrl(URL.createObjectURL(file));
   };
@@ -264,7 +283,7 @@ export function useAlgorithmStudio() {
     recorder.start();
 
     const code = algoId === "custom" ? customCode : algo.code;
-    const opts = { title, subtitle, theme, code, showCode, complexity: COMPLEXITY[algoId], algorithmId: algoId };
+    const opts = { title, subtitle, theme, code, showCode, complexity: COMPLEXITY[algoId], algorithmId: algoId, animalColumns };
     for (let i = 0; i < frames.length; i++) {
       playEvent(frames[i]);
       const previousFrame = i > 0 ? frames[i - 1] : null;
@@ -301,23 +320,44 @@ export function useAlgorithmStudio() {
   };
 
   const requestExport = () => {
-    const password = window.prompt(tr("exportPasswordPrompt"));
-    if (password === null) return;
-    if (password !== EXPORT_PASSWORD) {
-      toast.error(tr("wrongExportPassword"));
-      return;
-    }
+    if (!requireConfigAccess()) return;
     void exportVideo();
   };
 
+  const requireConfigAccess = () => options.requireConfigAccess?.() ?? true;
+  const runConfigAction = (action: () => void) => {
+    if (!requireConfigAccess()) return;
+    action();
+  };
+
   return {
-    lang, setLang, tr, algoId, setAlgoId, size, setSize, input, setInput, target, setTarget,
-    themeName, setThemeName, theme, setTheme, title, setTitle, subtitle, setSubtitle, showCode,
-    setShowCode, fps, setFps, speed, setSpeed, playing, setPlaying, frameIdx, setFrameIdx,
-    exporting, exportProgress, exportFormat, setExportFormat, platformId, setPlatformId, platform,
-    W, H, sfxCompare, setSfxCompare, sfxSwap, setSfxSwap, sfxVol, setSfxVol, musicVol,
-    setMusicVol, musicPreset, setMusicPreset, customCode, setCustomCode, graphInput, setGraphInput,
-    startLabel, setStartLabel, endLabel, setEndLabel, algo, isGraph, graphLabels, frames, canvasRef,
+    lang, setLang, tr, algoId, setAlgoId, size, setSize,
+    input, setInput: (value: string) => runConfigAction(() => setInput(value)),
+    target, setTarget: (value: string) => runConfigAction(() => setTarget(value)),
+    themeName, setThemeName: (value: keyof typeof THEMES) => runConfigAction(() => setThemeName(value)),
+    theme, setTheme: (value: Theme) => runConfigAction(() => setTheme(value)),
+    title, setTitle: (value: string) => runConfigAction(() => setTitle(value)),
+    subtitle, setSubtitle: (value: string) => runConfigAction(() => setSubtitle(value)),
+    showCode, setShowCode: (value: boolean) => runConfigAction(() => setShowCode(value)),
+    columnVisualMode, setColumnVisualMode: (value: ColumnVisualMode) => runConfigAction(() => setColumnVisualMode(value)),
+    animalSpriteScale, setAnimalSpriteScale: (value: number) => runConfigAction(() => setAnimalSpriteScale(value)),
+    animalJumpIntensity, setAnimalJumpIntensity: (value: number) => runConfigAction(() => setAnimalJumpIntensity(value)),
+    animalHighlightJump, setAnimalHighlightJump: (value: boolean) => runConfigAction(() => setAnimalHighlightJump(value)),
+    fps, setFps: (value: number) => runConfigAction(() => setFps(value)),
+    speed, setSpeed: (value: number) => runConfigAction(() => setSpeed(value)),
+    playing, setPlaying, frameIdx, setFrameIdx,
+    exporting, exportProgress, exportFormat, setExportFormat: (value: ExportFormat) => runConfigAction(() => setExportFormat(value)),
+    platformId, setPlatformId: (value: typeof platformId) => runConfigAction(() => setPlatformId(value)), platform,
+    W, H, sfxCompare, setSfxCompare: (value: SfxKind) => runConfigAction(() => setSfxCompare(value)),
+    sfxSwap, setSfxSwap: (value: SfxKind) => runConfigAction(() => setSfxSwap(value)),
+    sfxVol, setSfxVol: (value: number) => runConfigAction(() => setSfxVol(value)),
+    musicVol, setMusicVol: (value: number) => runConfigAction(() => setMusicVol(value)),
+    musicPreset, setMusicPreset: (value: BackgroundMusicId) => runConfigAction(() => setMusicPreset(value)),
+    customCode, setCustomCode: (value: string) => runConfigAction(() => setCustomCode(value)),
+    graphInput, setGraphInput: (value: string) => runConfigAction(() => setGraphInput(value)),
+    startLabel, setStartLabel: (value: string) => runConfigAction(() => setStartLabel(value)),
+    endLabel, setEndLabel: (value: string) => runConfigAction(() => setEndLabel(value)),
+    algo, isGraph, graphLabels, frames, canvasRef,
     current, isSearch, isCustom, codeForPanel, newArray, onMusicUpload, requestExport,
   };
 }

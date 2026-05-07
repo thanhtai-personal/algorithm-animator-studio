@@ -1,0 +1,16 @@
+{
+  "app": {
+    "title": "KATA-Rental-Order",
+    "headerTitle": "KATA-Rental-Order",
+    "headerColor": "#D92712",
+    "textColor": "white",
+    "leftButton": "back",
+    "statusBar": "normal",
+    "actionBarHidden": false,
+    "hideAndroidBottomNavigationBar": false,
+    "hideIOSSafeAreaBottom": false
+  },
+  "listCSS": [],
+  "listSyncJS": [],
+  "listAsyncJS": []
+}

@@ -1,0 +1,176 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&family=Dancing+Script:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 340 30% 98%;
+    --foreground: 340 20% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 340 20% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 340 20% 20%;
+
+    --primary: 340 65% 65%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 30 60% 92%;
+    --secondary-foreground: 30 40% 30%;
+
+    --muted: 340 20% 95%;
+    --muted-foreground: 340 10% 50%;
+
+    --accent: 280 40% 90%;
+    --accent-foreground: 280 30% 30%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 340 20% 90%;
+    --input: 340 20% 90%;
+    --ring: 340 65% 65%;
+
+    --radius: 1rem;
+
+    --cute-pink: 340 65% 65%;
+    --cute-peach: 20 80% 88%;
+    --cute-lavender: 280 40% 88%;
+    --cute-mint: 160 40% 88%;
+    --cute-cream: 40 50% 95%;
+    --cute-rose: 350 60% 75%;
+
+    --font-body: 'Quicksand', sans-serif;
+    --font-accent: 'Dancing Script', cursive;
+
+    --shadow-cute: 0 4px 20px -4px hsl(340 65% 65% / 0.15);
+    --shadow-card: 0 8px 30px -8px hsl(340 65% 65% / 0.12);
+    --shadow-hover: 0 12px 40px -8px hsl(340 65% 65% / 0.2);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-body);
+    font-weight: 700;
+  }
+}
+
+@layer components {
+  .text-accent-script {
+    font-family: var(--font-accent);
+  }
+
+  .shadow-cute {
+    box-shadow: var(--shadow-cute);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-hover {
+    box-shadow: var(--shadow-hover);
+  }
+}
+
+@layer utilities {
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-bounce-soft {
+    animation: bounce-soft 2s ease-in-out infinite;
+  }
+
+  .animate-wiggle {
+    animation: wiggle 1s ease-in-out infinite;
+  }
+
+  .animate-sparkle {
+    animation: sparkle 2s ease-in-out infinite;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.6s ease-out forwards;
+  }
+
+  .animate-slide-up-delay-1 {
+    animation: slide-up 0.6s ease-out 0.1s forwards;
+    opacity: 0;
+  }
+
+  .animate-slide-up-delay-2 {
+    animation: slide-up 0.6s ease-out 0.2s forwards;
+    opacity: 0;
+  }
+
+  .animate-slide-up-delay-3 {
+    animation: slide-up 0.6s ease-out 0.3s forwards;
+    opacity: 0;
+  }
+
+  .animate-slide-up-delay-4 {
+    animation: slide-up 0.6s ease-out 0.4s forwards;
+    opacity: 0;
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .gradient-cute {
+    background: linear-gradient(135deg, hsl(var(--cute-pink)), hsl(var(--cute-peach)));
+  }
+
+  .gradient-lavender {
+    background: linear-gradient(135deg, hsl(var(--cute-lavender)), hsl(var(--cute-pink) / 0.5));
+  }
+
+  .gradient-mint {
+    background: linear-gradient(135deg, hsl(var(--cute-mint)), hsl(var(--cute-lavender)));
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes bounce-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.05); }
+}
+
+@keyframes slide-up {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}

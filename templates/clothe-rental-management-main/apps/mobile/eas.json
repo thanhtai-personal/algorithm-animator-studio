@@ -1,0 +1,53 @@
+{
+  "cli": {
+    "version": ">= 3.14.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "preview": {
+      "developmentClient": false,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "preview",
+        "EXPO_PUBLIC_SENTRY_RELEASE": "preview"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "developmentClient": false,
+      "distribution": "store",
+      "env": {
+        "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "production",
+        "EXPO_PUBLIC_SENTRY_RELEASE": "production"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    },
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_USE_NEW_ARCH": "0",
+        "EXPO_NEW_ARCH_ENABLED": "0",
+        "NODE_ENV": "development",
+        "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "development",
+        "EXPO_PUBLIC_SENTRY_RELEASE": "development"
+      }
+    },
+    "release": {
+      "env": {
+        "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "production",
+        "EXPO_PUBLIC_SENTRY_RELEASE": "release"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

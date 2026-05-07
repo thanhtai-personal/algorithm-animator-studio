@@ -1,0 +1,16 @@
+{
+  "app": {
+    "title": "KATA-Makeup-Booking",
+    "headerTitle": "KATA-Makeup-Booking",
+    "headerColor": "#1843EF",
+    "textColor": "white",
+    "leftButton": "back",
+    "statusBar": "normal",
+    "actionBarHidden": false,
+    "hideAndroidBottomNavigationBar": false,
+    "hideIOSSafeAreaBottom": false
+  },
+  "listCSS": [],
+  "listSyncJS": [],
+  "listAsyncJS": []
+}

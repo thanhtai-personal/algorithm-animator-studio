@@ -1,0 +1,19 @@
+{
+  "app": {
+    "textColor": {
+      "light": "black",
+      "dark": "white"
+    },
+    "statusBar": "transparent",
+    "actionBarHidden": true,
+    "title": "KATA-Makeup-Calendar",
+    "headerTitle": "KATA-Makeup-Calendar",
+    "headerColor": "#1843EF",
+    "leftButton": "back",
+    "hideAndroidBottomNavigationBar": false,
+    "hideIOSSafeAreaBottom": false
+  },
+  "listCSS": [],
+  "listSyncJS": [],
+  "listAsyncJS": []
+}

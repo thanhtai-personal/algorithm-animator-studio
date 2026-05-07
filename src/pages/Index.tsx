@@ -1,13 +1,48 @@
-import { Sparkles } from "lucide-react";
+import { LogIn, LogOut, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Lang } from "@/lib/i18n";
+import { AuthProfile, getCurrentProfile, isSuperAdminProfile, signOut } from "@/lib/auth";
 import { CenterPanel } from "./studio/CenterPanel";
 import { LeftPanel } from "./studio/LeftPanel";
 import { RightPanel } from "./studio/RightPanel";
 import { useAlgorithmStudio } from "./studio/useAlgorithmStudio";
 
 const Index = () => {
-  const studio = useAlgorithmStudio();
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<AuthProfile | null>(null);
+  const canConfigure = isSuperAdminProfile(profile);
+
+  useEffect(() => {
+    let cancelled = false;
+    getCurrentProfile()
+      .then((nextProfile) => {
+        if (!cancelled) setProfile(isSuperAdminProfile(nextProfile) ? nextProfile : null);
+      })
+      .catch(() => {
+        if (!cancelled) setProfile(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function requireConfigAccess() {
+    if (canConfigure) return true;
+    navigate("/auth", { replace: false, state: { from: "/" } });
+    return false;
+  }
+
+  const studio = useAlgorithmStudio({ requireConfigAccess });
+
+  async function handleSignOut() {
+    await signOut();
+    setProfile(null);
+    navigate("/auth", { replace: true });
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -26,6 +61,15 @@ const Index = () => {
             <SelectItem value="vi">Tiếng Việt</SelectItem>
           </SelectContent>
         </Select>
+        {canConfigure ? (
+          <Button aria-label="Đăng xuất" size="icon" variant="outline" onClick={handleSignOut}>
+            <LogOut className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button aria-label="Đăng nhập" size="icon" variant="outline" onClick={() => navigate("/auth", { state: { from: "/" } })}>
+            <LogIn className="h-4 w-4" />
+          </Button>
+        )}
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr_360px] gap-4 p-4">

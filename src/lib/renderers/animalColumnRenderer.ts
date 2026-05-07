@@ -38,10 +38,10 @@ export function drawAnimalColumns(
   const range = Math.max(1, max - min);
   const plotH = Math.max(0, chartH - 72);
   const baseline = chartBottom - ((0 - min) / range) * plotH;
-  const gap = Math.max(4, Math.floor((chartW / arr.length) * 0.12));
+  const gap = Math.max(8, Math.floor((chartW / arr.length) * 0.28));
   const slotW = (chartW - gap * (arr.length - 1)) / arr.length;
   const maxAnimalH = Math.min(chartH * 0.72, slotW * 4.4);
-  const minAnimalH = Math.max(24, Math.min(maxAnimalH * 0.3, slotW * 1.35));
+  const minAnimalH = Math.max(24, Math.min(maxAnimalH * 0.32, slotW * 1.5));
   const progress = easeInOutCubic(clamp01(options.transitionProgress ?? 1));
   const movingPair = getMovingSwapPair(frame, options.previousFrame);
   const moving = new Set(movingPair ?? []);
@@ -111,7 +111,7 @@ function drawSingleAnimal(
   const sprite = entry ? getSprite(entry) : null;
   const isActive = isSwap || frame.swap.includes(shape.index) || (settings.highlightJump && frame.highlight.includes(shape.index));
   const animalH = shape.h;
-  const animalW = Math.min(shape.w * 1.8, animalH * 0.86) * (entry?.widthScale ?? 1);
+  const animalW = Math.min(shape.w * 1.45, animalH * 0.86) * (entry?.widthScale ?? 1);
   const x = shape.x + shape.w / 2 - animalW / 2;
   const y = shape.y + (entry?.baselineOffset ?? 0);
 

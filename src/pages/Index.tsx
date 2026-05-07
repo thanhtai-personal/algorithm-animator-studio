@@ -1,4 +1,4 @@
-import { LogIn, LogOut, Sparkles } from "lucide-react";
+import { LogIn, LogOut, RadioTower, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -62,9 +62,15 @@ const Index = () => {
           </SelectContent>
         </Select>
         {canConfigure ? (
-          <Button aria-label="Đăng xuất" size="icon" variant="outline" onClick={handleSignOut}>
-            <LogOut className="h-4 w-4" />
-          </Button>
+          <>
+            <Button variant="outline" onClick={() => navigate("/social-publishing")}>
+              <RadioTower className="h-4 w-4" />
+              Social
+            </Button>
+            <Button aria-label="Đăng xuất" size="icon" variant="outline" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </>
         ) : (
           <Button aria-label="Đăng nhập" size="icon" variant="outline" onClick={() => navigate("/auth", { state: { from: "/" } })}>
             <LogIn className="h-4 w-4" />

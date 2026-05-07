@@ -42,7 +42,7 @@ function resolveApiBaseUrl(): string {
   return import.meta.env.PROD ? PROD_API_BASE_URL : DEV_API_BASE_URL;
 }
 
-function buildApiUrl(path: string): string {
+export function buildApiUrl(path: string): string {
   return `${resolveApiBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`;
 }
 

@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Auth from "./pages/Auth.tsx";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import SocialPublishing from "./pages/SocialPublishing.tsx";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/" element={<Index />} />
+          <Route path="/social-publishing" element={<SocialPublishing />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

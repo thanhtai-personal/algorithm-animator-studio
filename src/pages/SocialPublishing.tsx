@@ -200,7 +200,7 @@ export default function SocialPublishing() {
         </Button>
         <div className="flex-1">
           <h1 className="text-xl font-semibold">Social Publishing</h1>
-          <p className="text-sm text-muted-foreground">Configure admin-only publishing for Facebook, YouTube, and TikTok.</p>
+          <p className="text-sm text-muted-foreground">Configure admin-only publishing data locally for Facebook, YouTube, and TikTok.</p>
         </div>
       </header>
 
@@ -311,6 +311,9 @@ function PublishCard(props: {
   return (
     <Card className="space-y-4 p-4">
       <h2 className="text-lg font-semibold">Publish video</h2>
+      <p className="text-xs text-muted-foreground">
+        Jobs are saved locally. Auth still uses the API, but social publishing data is stored in this browser.
+      </p>
       <form className="space-y-3" onSubmit={props.onSubmit}>
         <Input accept="video/*" type="file" onChange={(event: ChangeEvent<HTMLInputElement>) => props.onFileChange(event.target.files?.[0] ?? null)} />
         {props.videoFile ? <p className="text-xs text-muted-foreground">{props.videoFile.name}</p> : null}

@@ -1,0 +1,136 @@
+:global(:root) {
+  --electric-border-color: #4fc3ff;
+  --electric-light-color: oklch(from var(--electric-border-color) l c h);
+  --electric-gradient-color: oklch(from var(--electric-border-color) 0.35 calc(c / 1.5) h / 0.45);
+  --electric-neutral-900: oklch(0.185 0 0);
+}
+
+:global(.dark) {
+  --electric-border-color: #7cd7ff;
+}
+
+.wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.hiddenSvg {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.cardContainer {
+  position: relative;
+  padding: 2px;
+  border-radius: 24px;
+  background:
+    linear-gradient(-30deg, var(--electric-gradient-color), transparent, var(--electric-gradient-color)),
+    linear-gradient(to bottom, var(--electric-neutral-900), var(--electric-neutral-900));
+}
+
+.innerContainer {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.borderOuter {
+  border: 2px solid rgba(221, 132, 72, 0.5);
+  border-radius: 24px;
+  padding-right: 4px;
+  padding-bottom: 4px;
+}
+
+.mainCard {
+  width: 100%;
+  height: 100%;
+  min-height: 196px;
+  border-radius: 24px;
+  border: 2px solid var(--electric-border-color);
+  margin-top: -4px;
+  margin-left: -4px;
+  filter: url(#turbulent-displace);
+  pointer-events: none;
+}
+
+.glowLayer1,
+.glowLayer2 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 24px;
+  pointer-events: none;
+}
+
+.glowLayer1 {
+  border: 2px solid rgba(221, 132, 72, 0.6);
+  filter: blur(1px);
+}
+
+.glowLayer2 {
+  border: 2px solid var(--electric-light-color);
+  filter: blur(4px);
+}
+
+.overlay1,
+.overlay2,
+.backgroundGlow {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 24px;
+  pointer-events: none;
+}
+
+.overlay1,
+.overlay2 {
+  transform: scale(1.08);
+  filter: blur(16px);
+  mix-blend-mode: overlay;
+}
+
+.overlay1 {
+  opacity: 1;
+  background: linear-gradient(-30deg, white, transparent 30%, transparent 70%, white);
+}
+
+.overlay2 {
+  opacity: 0.45;
+  background: linear-gradient(-30deg, white, transparent 30%, transparent 70%, white);
+}
+
+.backgroundGlow {
+  transform: scale(1.08);
+  filter: blur(32px);
+  opacity: 0.3;
+  z-index: -1;
+  background: linear-gradient(
+    -30deg,
+    var(--electric-light-color),
+    transparent,
+    var(--electric-border-color)
+  );
+}
+
+.contentContainer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: 24px;
+}

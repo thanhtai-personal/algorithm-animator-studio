@@ -8,6 +8,7 @@ import type { Theme } from "./theme";
 type Options = {
   previousFrame?: Frame | null;
   transitionProgress?: number;
+  labelMinY?: number;
   settings: AnimalColumnSettings;
 };
 
@@ -56,11 +57,14 @@ export function drawAnimalColumns(
   const baseline = landY;
   const gap = Math.max(8, Math.floor((chartW / arr.length) * 0.28));
   const slotW = (chartW - gap * (arr.length - 1)) / arr.length;
-  const maxAnimalH = Math.min(chartH * 0.72, slotW * 4.4);
+  const labelReserve = arr.length <= 30 ? Math.min(76, Math.max(46, chartH * 0.22)) : 0;
+  const animalAreaH = Math.max(30, chartH - landH - labelReserve);
+  const maxAnimalH = Math.max(30, Math.min(animalAreaH, slotW * 4.4));
   const minAnimalH = Math.max(24, Math.min(maxAnimalH * 0.32, slotW * 1.5));
   const progress = easeInOutCubic(clamp01(options.transitionProgress ?? 1));
   const movingPair = getMovingSwapPair(frame, options.previousFrame);
   const moving = new Set(movingPair ?? []);
+  const labelMinY = options.labelMinY ?? chartTop + 4;
   const shapes = arr.map((value, index) => {
     const weight = weightForValue(value);
     const h = (minAnimalH + ((weight - 1) / 19) * (maxAnimalH - minAnimalH)) * options.settings.spriteScale;
@@ -81,13 +85,13 @@ export function drawAnimalColumns(
 
   for (const shape of shapes) {
     if (moving.has(shape.index)) continue;
-    drawSingleAnimal(ctx, shape, frame, theme, options.settings, false, progress);
+    drawSingleAnimal(ctx, shape, frame, theme, options.settings, false, progress, labelMinY);
   }
 
-  if (movingPair) drawMovingSwap(ctx, shapes, movingPair, frame, theme, options.settings, progress, chartH);
+  if (movingPair) drawMovingSwap(ctx, shapes, movingPair, frame, theme, options.settings, progress, chartH, labelMinY);
   else {
     for (const shape of shapes) {
-      if (frame.swap.includes(shape.index)) drawSingleAnimal(ctx, shape, frame, theme, options.settings, true, progress);
+      if (frame.swap.includes(shape.index)) drawSingleAnimal(ctx, shape, frame, theme, options.settings, true, progress, labelMinY);
     }
   }
 
@@ -103,6 +107,7 @@ function drawMovingSwap(
   settings: AnimalColumnSettings,
   progress: number,
   chartH: number,
+  labelMinY: number,
 ) {
   const [a, b] = pair;
   const aShape = shapes[a];
@@ -111,8 +116,8 @@ function drawMovingSwap(
 
   const lift = Math.sin(progress * Math.PI) * Math.min(chartH * 0.18, 90) * settings.jumpIntensity;
   drawSwapTrack(ctx, aShape, bShape, theme.swap, progress);
-  drawSingleAnimal(ctx, { ...aShape, x: lerp(bShape.x, aShape.x, progress), y: aShape.y - lift }, frame, theme, settings, true, progress);
-  drawSingleAnimal(ctx, { ...bShape, x: lerp(aShape.x, bShape.x, progress), y: bShape.y - lift }, frame, theme, settings, true, progress);
+  drawSingleAnimal(ctx, { ...aShape, x: lerp(bShape.x, aShape.x, progress), y: aShape.y - lift }, frame, theme, settings, true, progress, labelMinY);
+  drawSingleAnimal(ctx, { ...bShape, x: lerp(aShape.x, bShape.x, progress), y: bShape.y - lift }, frame, theme, settings, true, progress, labelMinY);
 }
 
 function drawSingleAnimal(
@@ -123,10 +128,11 @@ function drawSingleAnimal(
   settings: AnimalColumnSettings,
   isSwap: boolean,
   progress: number,
+  labelMinY: number,
 ) {
   const entry = spriteForWeight(shape.weight);
   const sprite = entry ? getSprite(entry) : null;
-  const isActive = isSwap || frame.swap.includes(shape.index) || (settings.highlightJump && frame.highlight.includes(shape.index));
+  const isActive = isSwap || frame.swap.includes(shape.index);
   const animalH = shape.h;
   const animalW = Math.min(shape.w * 1.45, animalH * 0.86) * (entry?.widthScale ?? 1);
   const x = shape.x + shape.w / 2 - animalW / 2;
@@ -142,7 +148,7 @@ function drawSingleAnimal(
 
   if (frame.arr.length <= 30) {
     const isSelected = frame.highlight.includes(shape.index);
-    drawValueLabel(ctx, shape, y, isActive, isSelected);
+    drawValueLabel(ctx, shape, y, isActive, isSelected, labelMinY);
   }
 }
 
@@ -157,7 +163,7 @@ function drawFallbackAnimal(ctx: CanvasRenderingContext2D, x: number, y: number,
   ctx.fill();
 }
 
-function drawValueLabel(ctx: CanvasRenderingContext2D, shape: AnimalShape, y: number, active: boolean, selected: boolean) {
+function drawValueLabel(ctx: CanvasRenderingContext2D, shape: AnimalShape, y: number, active: boolean, selected: boolean, minY: number) {
   const label = String(shape.value);
   const boardW = Math.max(46, shape.w * 1.28);
   const boardH = Math.max(32, Math.min(56, boardW * 0.58));
@@ -165,7 +171,7 @@ function drawValueLabel(ctx: CanvasRenderingContext2D, shape: AnimalShape, y: nu
   const poleH = Math.max(10, Math.min(20, boardH * 0.48));
   const selectionLift = selected ? Math.max(16, Math.min(32, boardH * 0.62)) : 0;
   const boardX = centerX - boardW / 2;
-  const boardY = y - boardH - poleH - 7 - selectionLift;
+  const boardY = Math.max(minY, y - boardH - poleH - 7 - selectionLift);
   let fontSize = Math.min(boardH * 0.84, boardW * 0.6);
   ctx.font = `900 ${fontSize}px ui-monospace, "JetBrains Mono", monospace`;
   ctx.textAlign = "center";

@@ -55,7 +55,11 @@ export function renderFrame(
   if (frame.graph) {
     drawGraph(ctx, frame, padding, chartTop, chartW, chartH, theme);
   } else if (frame.counting) {
-    drawCountingSort(ctx, frame, padding, chartTop, chartW, chartH, theme);
+    drawCountingSort(ctx, frame, padding, chartTop, chartW, chartH, theme, {
+      animalColumns: opts.animalColumns,
+      previousFrame: opts.previousFrame,
+      transitionProgress: opts.transitionProgress,
+    });
   } else if (frame.arr && frame.arr.length) {
     if (opts.animalColumns?.mode === "animal") {
       drawAnimalColumns(ctx, frame, padding, chartTop, chartW, chartH, chartBottom, theme, {

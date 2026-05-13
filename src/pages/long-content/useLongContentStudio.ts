@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ALGORITHMS, COMPLEXITY, parseGraph } from "@/lib/algorithms";
+import { ALGORITHMS, COMPLEXITY, makeSampleGraph, parseGraph } from "@/lib/algorithms";
 import type { ColumnVisualMode } from "@/lib/animalColumns";
 import { preloadAnimalSprites } from "@/lib/animalColumns";
 import { buildLongContentScenes, getSceneAtTime, getTotalDuration } from "@/lib/longContentTimeline";
@@ -31,9 +31,9 @@ export function useLongContentStudio() {
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
 
-  const algo = ALGORITHMS[algoId];
-  const theme = THEMES[themeName];
-  const graph = useMemo(() => parseGraph(DEFAULT_GRAPH), []);
+  const algo = ALGORITHMS[algoId] ?? ALGORITHMS.bubble;
+  const theme = THEMES[themeName] ?? THEMES.neon;
+  const graph = useMemo(() => parseGraph(DEFAULT_GRAPH) ?? makeSampleGraph(), []);
   const scenes = useMemo(() => buildLongContentScenes({
     algo,
     complexity: COMPLEXITY[algoId],
@@ -56,7 +56,7 @@ export function useLongContentStudio() {
     if (!frames.length) return 0;
     const { scene, progress } = timelineState;
     const multiplier = scene.animation ? progress : elapsedSec / Math.max(1, totalDuration);
-    return Math.min(frames.length - 1, Math.floor(multiplier * (frames.length - 1)));
+    return clampFrameIndex(multiplier, frames.length);
   }, [elapsedSec, frames.length, timelineState, totalDuration]);
 
   useEffect(() => { preloadAnimalSprites(); }, []);
@@ -85,37 +85,44 @@ export function useLongContentStudio() {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx || !frames.length) return;
-    const state = getSceneAtTime(scenes, timeSec);
-    const localFrameIdx = getFrameIndexForTime(timeSec, state.scene.animation);
-    const frame = frames[localFrameIdx];
-    const previousFrame = localFrameIdx > 0 ? frames[localFrameIdx - 1] : null;
+    const safeTime = clampNumber(timeSec, 0, totalDuration);
+    const state = getSceneAtTime(scenes, safeTime);
+    const localFrameIdx = getFrameIndexForTime(safeTime, state.scene.animation);
+    const frame = frames[localFrameIdx] ?? frames[0];
+    const previousFrame = localFrameIdx > 0 ? frames[localFrameIdx - 1] ?? null : null;
+    if (!frame) return;
     renderLongContentFrame(ctx, {
       frame,
       previousFrame,
       scene: state.scene,
       sceneProgress: state.progress,
-      timelineProgress: timeSec / Math.max(1, totalDuration),
+      timelineProgress: clamp01(safeTime / Math.max(1, totalDuration)),
       algoId,
       algoName: algo.name,
       code: algo.code,
       theme,
       showCode,
       animalColumns: { mode: columnVisualMode, spriteScale: animalSpriteScale, jumpIntensity: animalJumpIntensity, highlightJump: animalHighlightJump },
-      frameLabel: `Frame ${localFrameIdx + 1}/${frames.length} · ${formatTime(timeSec)} / ${formatTime(totalDuration)}`,
+      frameLabel: `Frame ${localFrameIdx + 1}/${frames.length} · ${formatTime(safeTime)} / ${formatTime(totalDuration)}`,
     });
   }
 
   function getFrameIndexForTime(timeSec: number, sceneAnimation?: boolean) {
     if (!frames.length) return 0;
-    const state = getSceneAtTime(scenes, timeSec);
-    const progress = sceneAnimation ? state.progress : timeSec / Math.max(1, totalDuration);
-    return Math.min(frames.length - 1, Math.floor(progress * (frames.length - 1)));
+    const safeTime = clampNumber(timeSec, 0, totalDuration);
+    const state = getSceneAtTime(scenes, safeTime);
+    const progress = sceneAnimation ? state.progress : safeTime / Math.max(1, totalDuration);
+    return clampFrameIndex(progress, frames.length);
   }
 
   async function exportVideo() {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
+    if (!frames.length) {
+      toast.error("Chưa có frame animation để xuất video.");
+      return;
+    }
     const stream = canvas.captureStream(0) as MediaStream;
     const track = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack;
     const format = getExportFormat(exportFormat);
@@ -168,9 +175,25 @@ export function useLongContentStudio() {
 }
 
 function formatTime(totalSeconds: number) {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = Math.floor(totalSeconds % 60).toString().padStart(2, "0");
+  const safeSeconds = Number.isFinite(totalSeconds) ? Math.max(0, totalSeconds) : 0;
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = Math.floor(safeSeconds % 60).toString().padStart(2, "0");
   return `${minutes}:${seconds}`;
+}
+
+function clampFrameIndex(progress: number, frameCount: number) {
+  if (!frameCount) return 0;
+  const safeProgress = Number.isFinite(progress) ? clamp01(progress) : 0;
+  return clampNumber(Math.floor(safeProgress * (frameCount - 1)), 0, frameCount - 1);
+}
+
+function clampNumber(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) return min;
+  return Math.max(min, Math.min(max, value));
+}
+
+function clamp01(value: number) {
+  return clampNumber(value, 0, 1);
 }
 
 export type LongContentStudio = ReturnType<typeof useLongContentStudio>;

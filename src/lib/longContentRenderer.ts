@@ -8,7 +8,7 @@ const W = 1920;
 const H = 1080;
 
 type RenderLongContentParams = {
-  frame: Frame;
+  frame?: Frame | null;
   previousFrame?: Frame | null;
   scene: LongContentScene;
   sceneProgress: number;
@@ -141,6 +141,11 @@ function drawAnimationPanel(ctx: CanvasRenderingContext2D, params: RenderLongCon
   const animCtx = animCanvas.getContext("2d");
   if (!animCtx) return;
 
+  if (!params.frame) {
+    drawEmptyAnimationFallback(ctx, x + innerPad, y + innerPad, w - innerPad * 2, h - innerPad * 2);
+    return;
+  }
+
   renderFrame(animCtx, params.frame, {
     title: params.algoName,
     subtitle: params.scene.animation ? "Step-by-step animation" : params.scene.title,
@@ -158,6 +163,22 @@ function drawAnimationPanel(ctx: CanvasRenderingContext2D, params: RenderLongCon
   roundRect(ctx, x + innerPad, y + innerPad, w - innerPad * 2, h - innerPad * 2, 24);
   ctx.clip();
   ctx.drawImage(animCanvas, x + innerPad, y + innerPad, w - innerPad * 2, h - innerPad * 2);
+  ctx.restore();
+}
+
+function drawEmptyAnimationFallback(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+  ctx.save();
+  roundRect(ctx, x, y, w, h, 24);
+  ctx.clip();
+  ctx.fillStyle = "rgba(15,23,42,0.92)";
+  ctx.fillRect(x, y, w, h);
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(255,255,255,0.84)";
+  ctx.font = "800 34px ui-sans-serif, system-ui, sans-serif";
+  ctx.fillText("Preview chưa có frame hợp lệ", x + w / 2, y + h / 2 - 16);
+  ctx.fillStyle = "rgba(255,255,255,0.56)";
+  ctx.font = "500 24px ui-sans-serif, system-ui, sans-serif";
+  ctx.fillText("Hãy reset timeline hoặc chọn lại thuật toán.", x + w / 2, y + h / 2 + 28);
   ctx.restore();
 }
 

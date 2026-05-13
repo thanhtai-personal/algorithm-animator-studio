@@ -27,7 +27,7 @@ export type RenderOpts = {
 
 export function renderFrame(
   ctx: CanvasRenderingContext2D,
-  frame: Frame,
+  frame: Frame | null | undefined,
   opts: RenderOpts,
   width: number,
   height: number,
@@ -51,6 +51,11 @@ export function renderFrame(
 
   drawHeader(ctx, title, subtitle, width, height, headerH, isPortrait, theme);
   if (complexity) drawComplexityBadges(ctx, complexity, width, height, padding);
+
+  if (!frame) {
+    drawEmptyState(ctx, padding, chartTop, chartW, chartH, theme);
+    return;
+  }
 
   if (frame.graph) {
     drawGraph(ctx, frame, padding, chartTop, chartW, chartH, theme);
@@ -158,6 +163,16 @@ function drawComplexityBadges(
     x -= tw + 8;
   }
   ctx.textBaseline = "alphabetic";
+}
+
+function drawEmptyState(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, theme: Theme) {
+  ctx.fillStyle = "rgba(255,255,255,0.74)";
+  ctx.textAlign = "center";
+  ctx.font = `700 ${Math.max(18, Math.round(h * 0.065))}px ui-sans-serif, system-ui, sans-serif`;
+  ctx.fillText("No animation frame available", x + w / 2, y + h / 2);
+  ctx.fillStyle = theme.highlight;
+  ctx.font = `500 ${Math.max(14, Math.round(h * 0.035))}px ui-sans-serif, system-ui, sans-serif`;
+  ctx.fillText("Try another algorithm or reset the preview timeline.", x + w / 2, y + h / 2 + 42);
 }
 
 function drawTarget(ctx: CanvasRenderingContext2D, frame: Frame, padding: number, chartTop: number, height: number) {

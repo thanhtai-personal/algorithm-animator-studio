@@ -1,3 +1,5 @@
+import { ANIMAL_WEIGHT_VALUES, weightForValue } from "@/lib/animalColumns";
+
 function randArr(n: number) {
   return Array.from({ length: n }, () => Math.floor(Math.random() * 95) + 5);
 }
@@ -70,6 +72,16 @@ export function demoArrayForAlgorithm(algoId: string, n: number) {
   if (algoId === "heap") return shuffle(Array.from({ length: n }, (_, i) => Math.floor(15 + i * (85 / Math.max(1, n - 1)))));
   if (algoId === "cocktail" || algoId === "gnome") return shuffle(Array.from({ length: n }, (_, i) => (i % 7) * 7 + 10));
   return randArr(n);
+}
+
+export function demoAnimalArray(n: number) {
+  const values = ANIMAL_WEIGHT_VALUES.length ? ANIMAL_WEIGHT_VALUES : Array.from({ length: 20 }, (_, i) => i + 1);
+  const repeated = Array.from({ length: n }, (_, i) => values[i % values.length]);
+  return shuffle(repeated);
+}
+
+export function normalizeAnimalArray(values: number[]) {
+  return values.map((value) => weightForValue(value));
 }
 
 export function shouldUseAlgorithmDemo(algoId: string, arr: number[]) {

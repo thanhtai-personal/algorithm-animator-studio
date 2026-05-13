@@ -50,10 +50,23 @@ for (let bucket = 0; bucket < count.length; bucket++) {
       }));
     }
 
-    const sortedValues = [...uniqueValues].sort((x, y) => x - y);
+    const sortedValues = [...uniqueValues];
     const sortedCounts = sortedValues.map((n) => countByValue.get(n) ?? 0);
     v.phase = "sort unique chart";
     f.push(snap(a, 4, v, sorted, [], [], null, counting("sort", sortedValues, sortedCounts)));
+
+    const emitSort = (line: number, left: number, right: number, event: "compare" | "swap") => {
+      v.left = left; v.right = right;
+      f.push(snap(a, line, v, sorted, [left, right].filter((n) => n >= 0), event === "swap" ? [left, right] : [], null, {
+        event,
+        ...counting("sort", sortedValues, sortedCounts, {
+          activeUniqueIndex: left,
+          activeOutputIndex: right,
+          movingValue: sortedValues[left],
+        }),
+      }));
+    };
+    quickSortUnique(sortedValues, sortedCounts, 0, sortedValues.length - 1, emitSort);
 
     let index = 0;
     const remainingCounts = [...sortedCounts];
@@ -79,3 +92,47 @@ for (let bucket = 0; bucket < count.length; bucket++) {
     return f;
   },
 };
+
+function quickSortUnique(
+  values: number[],
+  counts: number[],
+  low: number,
+  high: number,
+  emit: (line: number, left: number, right: number, event: "compare" | "swap") => void,
+) {
+  if (low >= high) return;
+  const pivotIndex = partitionUnique(values, counts, low, high, emit);
+  quickSortUnique(values, counts, low, pivotIndex - 1, emit);
+  quickSortUnique(values, counts, pivotIndex + 1, high, emit);
+}
+
+function partitionUnique(
+  values: number[],
+  counts: number[],
+  low: number,
+  high: number,
+  emit: (line: number, left: number, right: number, event: "compare" | "swap") => void,
+) {
+  const pivotIndex = Math.floor((low + high) / 2);
+  swapPair(values, counts, pivotIndex, high);
+  if (pivotIndex !== high) emit(4, pivotIndex, high, "swap");
+  const pivot = values[high];
+  let store = low;
+  for (let i = low; i < high; i++) {
+    emit(4, i, high, "compare");
+    if (values[i] < pivot) {
+      swapPair(values, counts, i, store);
+      if (i !== store) emit(4, i, store, "swap");
+      store++;
+    }
+  }
+  swapPair(values, counts, store, high);
+  if (store !== high) emit(4, store, high, "swap");
+  return store;
+}
+
+function swapPair(values: number[], counts: number[], a: number, b: number) {
+  if (a === b) return;
+  [values[a], values[b]] = [values[b], values[a]];
+  [counts[a], counts[b]] = [counts[b], counts[a]];
+}

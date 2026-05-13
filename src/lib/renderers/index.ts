@@ -55,7 +55,11 @@ export function renderFrame(
   if (frame.graph) {
     drawGraph(ctx, frame, padding, chartTop, chartW, chartH, theme);
   } else if (frame.counting) {
-    drawCountingSort(ctx, frame, padding, chartTop, chartW, chartH, theme);
+    drawCountingSort(ctx, frame, padding, chartTop, chartW, chartH, theme, {
+      animalColumns: opts.animalColumns,
+      previousFrame: opts.previousFrame,
+      transitionProgress: opts.transitionProgress,
+    });
   } else if (frame.arr && frame.arr.length) {
     if (opts.animalColumns?.mode === "animal") {
       drawAnimalColumns(ctx, frame, padding, chartTop, chartW, chartH, chartBottom, theme, {
@@ -80,16 +84,19 @@ export function renderFrame(
   drawTarget(ctx, frame, padding, chartTop, height);
 
   if (showCode) {
+    const animalCodePanel = opts.animalColumns?.mode === "animal";
+    const codePanelGap = animalCodePanel ? 0 : Math.round(padding * 0.5);
     drawCodePanel(
       ctx,
       frame,
       code,
       padding,
-      chartBottom + Math.round(padding * 0.5),
+      chartBottom + codePanelGap,
       width - padding * 2,
-      codeH - Math.round(padding * 0.5) - padding / 2,
+      codeH - codePanelGap - padding / 2,
       theme,
       height,
+      animalCodePanel ? "grass" : "default",
     );
   }
 }

@@ -3,6 +3,9 @@ import { toast } from "sonner";
 import { ALGORITHMS, COMPLEXITY, makeSampleGraph, parseGraph } from "@/lib/algorithms";
 import type { ColumnVisualMode } from "@/lib/animalColumns";
 import { preloadAnimalSprites } from "@/lib/animalColumns";
+import { audioEngine } from "@/lib/audio";
+import { BackgroundMusicId, getAssetMusicOption, isAssetMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
+import type { Lang } from "@/lib/i18n";
 import { buildLongContentScenes, getSceneAtTime, getTotalDuration } from "@/lib/longContentTimeline";
 import { renderLongContentFrame } from "@/lib/longContentRenderer";
 import { THEMES } from "@/lib/renderer";
@@ -15,6 +18,8 @@ const DEFAULT_GRAPH = "A-B:4, A-C:2, B-D:5, C-D:8, C-E:10, D-E:2, D-F:6, E-G:3, 
 
 export function useLongContentStudio() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const lastSpokenSceneId = useRef<string | null>(null);
+  const [lang, setLang] = useState<Lang>("vi");
   const [algoId, setAlgoId] = useState("bubble");
   const [themeName, setThemeName] = useState<keyof typeof THEMES>("neon");
   const [showCode, setShowCode] = useState(true);
@@ -30,16 +35,20 @@ export function useLongContentStudio() {
   const [playing, setPlaying] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
+  const [narrationEnabled, setNarrationEnabled] = useState(true);
+  const [narrationRate, setNarrationRate] = useState(0.96);
+  const [narrationVol, setNarrationVol] = useState(85);
+  const [musicVol, setMusicVol] = useState(28);
+  const [musicPreset, setMusicPreset] = useState<BackgroundMusicId>("lofi");
+  const [musicUrl, setMusicUrl] = useState<string | null>(null);
 
   const algo = ALGORITHMS[algoId] ?? ALGORITHMS.bubble;
   const theme = THEMES[themeName] ?? THEMES.neon;
   const graph = useMemo(() => parseGraph(DEFAULT_GRAPH) ?? makeSampleGraph(), []);
-  const scenes = useMemo(() => buildLongContentScenes({
-    algo,
-    complexity: COMPLEXITY[algoId],
-    animationSeconds,
-    introSeconds,
-  }), [algo, algoId, animationSeconds, introSeconds]);
+  const sceneParams = { algo, complexity: COMPLEXITY[algoId], animationSeconds, introSeconds };
+  const scenes = useMemo(() => buildLongContentScenes({ ...sceneParams, lang }), [algo, algoId, animationSeconds, introSeconds, lang]);
+  const viScenes = useMemo(() => buildLongContentScenes({ ...sceneParams, lang: "vi" }), [algo, algoId, animationSeconds, introSeconds]);
+  const enScenes = useMemo(() => buildLongContentScenes({ ...sceneParams, lang: "en" }), [algo, algoId, animationSeconds, introSeconds]);
   const totalDuration = useMemo(() => getTotalDuration(scenes), [scenes]);
 
   const frames = useMemo(() => {
@@ -60,8 +69,49 @@ export function useLongContentStudio() {
   }, [elapsedSec, frames.length, timelineState, totalDuration]);
 
   useEffect(() => { preloadAnimalSprites(); }, []);
-  useEffect(() => { setElapsedSec(0); setPlaying(false); }, [algoId, animationSeconds, introSeconds]);
+  useEffect(() => { audioEngine.setMusicVolume(musicVol / 100); }, [musicVol]);
+  useEffect(() => { setElapsedSec(0); setPlaying(false); }, [algoId, animationSeconds, introSeconds, lang]);
   useEffect(() => { drawFrame(elapsedSec); });
+
+  useEffect(() => {
+    let cancelled = false;
+    if (isAssetMusicId(musicPreset)) {
+      const option = getAssetMusicOption(musicPreset);
+      if (!option) return;
+      void option.loadUrl().then((url) => {
+        if (!cancelled) audioEngine.setMusicSource(url);
+      }).catch(() => {});
+    } else if (musicPreset === "custom") {
+      audioEngine.setMusicSource(musicUrl);
+    } else {
+      audioEngine.setMusicSource(null);
+    }
+    return () => { cancelled = true; };
+  }, [musicPreset, musicUrl]);
+
+  useEffect(() => {
+    if (!playing) {
+      lastSpokenSceneId.current = null;
+      cancelNarration();
+      if (!exporting) audioEngine.stopMusic();
+      return;
+    }
+    audioEngine.resume();
+    startMusic();
+  }, [playing, exporting, musicPreset]);
+
+  useEffect(() => {
+    if (!playing || !narrationEnabled) return;
+    const scene = timelineState.scene;
+    if (!scene || lastSpokenSceneId.current === scene.id) return;
+    lastSpokenSceneId.current = scene.id;
+    speakNarration(scene.narration, lang, narrationRate, narrationVol / 100);
+  }, [playing, narrationEnabled, timelineState.scene.id, timelineState.scene.narration, lang, narrationRate, narrationVol]);
+
+  useEffect(() => () => {
+    cancelNarration();
+    audioEngine.stopMusic();
+  }, []);
 
   useEffect(() => {
     if (!playing) return;
@@ -123,8 +173,12 @@ export function useLongContentStudio() {
       toast.error("Chưa có frame animation để xuất video.");
       return;
     }
-    const stream = canvas.captureStream(0) as MediaStream;
-    const track = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack;
+    cancelNarration();
+    audioEngine.resume();
+    const videoStream = canvas.captureStream(0) as MediaStream;
+    const track = videoStream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack;
+    const audioStream = audioEngine.getRecordStream();
+    const combined = new MediaStream([...videoStream.getVideoTracks(), ...audioStream.getAudioTracks()]);
     const format = getExportFormat(exportFormat);
     const mimeType = format.mimeCandidates.find((candidate) => MediaRecorder.isTypeSupported(candidate));
     if (!mimeType) {
@@ -132,7 +186,7 @@ export function useLongContentStudio() {
       return;
     }
 
-    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 10_000_000 });
+    const recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 10_000_000 });
     const chunks: Blob[] = [];
     recorder.ondataavailable = (event) => event.data.size && chunks.push(event.data);
     const done = new Promise<Blob>((resolve) => {
@@ -142,6 +196,7 @@ export function useLongContentStudio() {
     setExporting(true);
     setExportProgress(0);
     setPlaying(false);
+    startMusic();
     recorder.start();
     const totalFrames = Math.max(1, Math.ceil(totalDuration * fps));
     for (let i = 0; i <= totalFrames; i++) {
@@ -152,26 +207,60 @@ export function useLongContentStudio() {
       await new Promise((resolve) => setTimeout(resolve, 1000 / fps));
     }
     recorder.stop();
+    audioEngine.stopMusic();
     const blob = await done;
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${algo.id}-long-16x9-${Date.now()}.${format.id}`;
+    link.download = `${algo.id}-${lang}-long-16x9-${Date.now()}.${format.id}`;
     link.click();
     URL.revokeObjectURL(url);
     setExporting(false);
-    toast.success("Đã xuất long video 16:9!");
+    toast.success(lang === "vi" ? "Đã xuất long video 16:9!" : "16:9 long video exported!");
+  }
+
+  function startMusic() {
+    audioEngine.setMusicVolume(musicVol / 100);
+    if (isProceduralMusicPreset(musicPreset)) audioEngine.setMusicPreset(musicPreset);
+    else {
+      audioEngine.setMusicPreset("custom");
+      audioEngine.startMusic();
+    }
+  }
+
+  function onMusicUpload(file: File) {
+    if (musicUrl) URL.revokeObjectURL(musicUrl);
+    setMusicUrl(URL.createObjectURL(file));
   }
 
   return {
-    canvasRef, algoId, setAlgoId, algo, themeName, setThemeName, showCode, setShowCode,
+    canvasRef, lang, setLang, algoId, setAlgoId, algo, themeName, setThemeName, showCode, setShowCode,
     columnVisualMode, setColumnVisualMode, animalSpriteScale, setAnimalSpriteScale,
     animalJumpIntensity, setAnimalJumpIntensity, animalHighlightJump, setAnimalHighlightJump,
     fps, setFps, animationSeconds, setAnimationSeconds, introSeconds, setIntroSeconds,
     exportFormat, setExportFormat, elapsedSec, setElapsedSec, playing, setPlaying,
-    exporting, exportProgress, scenes, totalDuration, timelineState, frameIdx, frames,
+    exporting, exportProgress, scenes, viScenes, enScenes, totalDuration, timelineState, frameIdx, frames,
+    narrationEnabled, setNarrationEnabled, narrationRate, setNarrationRate, narrationVol, setNarrationVol,
+    musicPreset, setMusicPreset, musicVol, setMusicVol, onMusicUpload,
     W: LONG_W, H: LONG_H, exportVideo,
   };
+}
+
+function speakNarration(text: string, lang: Lang, rate: number, volume: number) {
+  const synth = window.speechSynthesis;
+  if (!synth || !text.trim()) return;
+  synth.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = lang === "vi" ? "vi-VN" : "en-US";
+  utterance.rate = clampNumber(rate, 0.6, 1.3);
+  utterance.volume = clampNumber(volume, 0, 1);
+  const voice = synth.getVoices().find((item) => item.lang.toLowerCase().startsWith(lang === "vi" ? "vi" : "en"));
+  if (voice) utterance.voice = voice;
+  synth.speak(utterance);
+}
+
+function cancelNarration() {
+  window.speechSynthesis?.cancel();
 }
 
 function formatTime(totalSeconds: number) {

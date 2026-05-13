@@ -81,7 +81,7 @@ function drawLeftScriptPanel(ctx: CanvasRenderingContext2D, params: RenderLongCo
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = theme.highlight;
   ctx.font = "800 28px ui-sans-serif, system-ui, sans-serif";
-  ctx.fillText(scene.kind.toUpperCase(), contentX, panel.y + 58);
+  ctx.fillText((scene.kindLabel || scene.kind).toUpperCase(), contentX, panel.y + 58);
 
   let cursorY = panel.y + 130;
   ctx.fillStyle = "#ffffff";

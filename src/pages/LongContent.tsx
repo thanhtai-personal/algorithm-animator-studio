@@ -1,4 +1,4 @@
-import { ArrowLeft, Download, Film, Pause, Play, RefreshCcw, Youtube } from "lucide-react";
+import { ArrowLeft, Download, Film, Languages, Pause, Play, RefreshCcw, Upload, Volume2, Youtube } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ALGORITHMS, ALGO_GROUPS, COMPLEXITY } from "@/lib/algorithms";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { ASSET_MUSIC_OPTIONS, BackgroundMusicId } from "@/lib/backgroundMusic";
+import { Lang, MUSIC_PRESETS } from "@/lib/i18n";
 import { THEMES } from "@/lib/renderer";
 import { EXPORT_FORMATS, ExportFormat } from "./studio/exportFormats";
 import { LongContentStudio, useLongContentStudio } from "./long-content/useLongContentStudio";
@@ -26,7 +28,7 @@ export default function LongContent() {
         </div>
         <div className="flex-1">
           <h1 className="text-xl font-bold">Long Content Studio</h1>
-          <p className="text-xs text-muted-foreground">Sản xuất video YouTube 16:9 giải thích thuật toán bằng animation chi tiết.</p>
+          <p className="text-xs text-muted-foreground">Sản xuất video YouTube 16:9, có kịch bản VI/EN, đọc tự động và nhạc nền.</p>
         </div>
         <Button variant="outline" onClick={() => navigate("/")}>Short Studio</Button>
       </header>
@@ -48,6 +50,8 @@ function LeftControls({ studio: s }: { studio: LongContentStudio }) {
           <Film className="h-4 w-4 text-emerald-400" />
           <h2 className="font-semibold">Cấu hình nội dung</h2>
         </div>
+        <LanguageControls studio={s} />
+
         <div>
           <Label>Thuật toán</Label>
           <Select value={s.algoId} onValueChange={s.setAlgoId}>
@@ -86,6 +90,10 @@ function LeftControls({ studio: s }: { studio: LongContentStudio }) {
           </div>
         </div>
       </Card>
+
+      <NarrationControls studio={s} />
+
+      <MusicControls studio={s} />
 
       <Card className="space-y-4 p-4">
         <h2 className="font-semibold">Visual & export</h2>
@@ -141,9 +149,9 @@ function PreviewPanel({ studio: s }: { studio: LongContentStudio }) {
           </Button>
         </div>
         <Slider value={[s.elapsedSec]} min={0} max={s.totalDuration} step={0.1} onValueChange={([value]) => { s.setPlaying(false); s.setElapsedSec(value); }} />
-        <div className="flex justify-between text-xs text-muted-foreground">
+        <div className="flex justify-between gap-3 text-xs text-muted-foreground">
           <span>{s.timelineState.scene.title}</span>
-          <span>Frame {s.frameIdx + 1}/{s.frames.length} · Tổng thời lượng {Math.round(s.totalDuration)}s</span>
+          <span>{s.lang.toUpperCase()} · TTS {s.narrationEnabled ? "on" : "off"} · Frame {s.frameIdx + 1}/{s.frames.length} · {Math.round(s.totalDuration)}s</span>
         </div>
       </Card>
     </div>
@@ -154,24 +162,112 @@ function ScriptPanel({ studio: s }: { studio: LongContentStudio }) {
   return (
     <Card className="h-fit space-y-4 p-4">
       <div>
-        <h2 className="font-semibold">Kịch bản long content</h2>
-        <p className="text-xs text-muted-foreground">Mỗi scene sẽ được render thành overlay chữ + animation 16:9.</p>
+        <h2 className="font-semibold">Kịch bản song ngữ</h2>
+        <p className="text-xs text-muted-foreground">Tool luôn sinh cả tiếng Việt và tiếng Anh. Ngôn ngữ đang chọn sẽ được render lên video và đọc khi preview.</p>
       </div>
       <div className="space-y-3">
-        {s.scenes.map((scene, index) => (
-          <div key={scene.id} className={`rounded-lg border p-3 ${s.timelineState.scene.id === scene.id ? "border-emerald-400 bg-emerald-400/10" : "border-border bg-card/50"}`}>
-            <div className="flex items-center justify-between gap-3">
-              <p className="font-semibold">{index + 1}. {scene.title}</p>
-              <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs text-muted-foreground">{scene.durationSec}s</span>
+        {s.viScenes.map((viScene, index) => {
+          const enScene = s.enScenes[index];
+          const active = s.timelineState.scene.id === viScene.id;
+          return (
+            <div key={viScene.id} className={`rounded-lg border p-3 ${active ? "border-emerald-400 bg-emerald-400/10" : "border-border bg-card/50"}`}>
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-semibold">{index + 1}. {s.lang === "vi" ? viScene.title : enScene.title}</p>
+                <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs text-muted-foreground">{viScene.durationSec}s</span>
+              </div>
+              <BilingualScriptBlock label="VI" active={s.lang === "vi"} title={viScene.title} subtitle={viScene.subtitle} bullets={viScene.bullets} />
+              <BilingualScriptBlock label="EN" active={s.lang === "en"} title={enScene.title} subtitle={enScene.subtitle} bullets={enScene.bullets} />
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">{scene.subtitle}</p>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
-              {scene.bullets.slice(0, 3).map((bullet) => <li key={bullet}>{bullet}</li>)}
-            </ul>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
+  );
+}
+
+function LanguageControls({ studio: s }: { studio: LongContentStudio }) {
+  return (
+    <div>
+      <Label className="flex items-center gap-2"><Languages className="h-4 w-4" /> Ngôn ngữ video</Label>
+      <Select value={s.lang} onValueChange={(value) => s.setLang(value as Lang)}>
+        <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="vi">Tiếng Việt · xuất video VI</SelectItem>
+          <SelectItem value="en">English · export EN video</SelectItem>
+        </SelectContent>
+      </Select>
+      <p className="mt-2 text-xs text-muted-foreground">Kịch bản luôn có đủ VI/EN để bạn xuất hai bản video riêng.</p>
+    </div>
+  );
+}
+
+function NarrationControls({ studio: s }: { studio: LongContentStudio }) {
+  return (
+    <Card className="space-y-4 p-4">
+      <div className="flex items-center gap-2">
+        <Volume2 className="h-4 w-4 text-emerald-400" />
+        <h2 className="font-semibold">Đọc kịch bản tự động</h2>
+      </div>
+      <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
+        <Label>Đọc scene khi preview</Label>
+        <Switch checked={s.narrationEnabled} onCheckedChange={s.setNarrationEnabled} />
+      </div>
+      <NumberSlider label="Tốc độ đọc" value={s.narrationRate} min={0.7} max={1.2} suffix="x" step={0.05} onChange={s.setNarrationRate} />
+      <NumberSlider label="Âm lượng đọc" value={s.narrationVol} min={0} max={100} suffix="%" onChange={s.setNarrationVol} />
+      <p className="text-xs text-muted-foreground">TTS dùng giọng có sẵn của trình duyệt theo ngôn ngữ đang chọn. Bản export hiện nhúng nhạc nền; voice-over browser dùng để nghe/duyệt kịch bản khi preview.</p>
+    </Card>
+  );
+}
+
+function MusicControls({ studio: s }: { studio: LongContentStudio }) {
+  return (
+    <Card className="space-y-4 p-4">
+      <h2 className="font-semibold">Nhạc nền</h2>
+      <div>
+        <Label>Chọn nhạc</Label>
+        <Select value={s.musicPreset} onValueChange={(value) => s.setMusicPreset(value as BackgroundMusicId)}>
+          <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Preset tạo sẵn</SelectLabel>
+              {MUSIC_PRESETS.map((music) => <SelectItem key={music.id} value={music.id}>{music.label[s.lang]}</SelectItem>)}
+            </SelectGroup>
+            <SelectSeparator />
+            <SelectGroup>
+              <SelectLabel>Track có sẵn</SelectLabel>
+              {ASSET_MUSIC_OPTIONS.map((music) => <SelectItem key={music.id} value={music.id}>{music.label[s.lang]}</SelectItem>)}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+      <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+        <Upload className="h-3.5 w-3.5" /> Upload nhạc nền riêng (.mp3/.wav)
+        <input type="file" accept="audio/*" className="hidden" onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) {
+            s.onMusicUpload(file);
+            s.setMusicPreset("custom");
+          }
+        }} />
+      </label>
+      <NumberSlider label="Âm lượng nhạc" value={s.musicVol} min={0} max={100} suffix="%" onChange={s.setMusicVol} />
+      <p className="text-xs text-muted-foreground">Nhạc nền sẽ phát khi preview và được nhúng vào video export qua MediaRecorder.</p>
+    </Card>
+  );
+}
+
+function BilingualScriptBlock(props: { label: "VI" | "EN"; active: boolean; title: string; subtitle: string; bullets: string[] }) {
+  return (
+    <div className={`mt-3 rounded-md border px-3 py-2 ${props.active ? "border-emerald-400/50 bg-emerald-400/10" : "border-border/70 bg-background/40"}`}>
+      <div className="mb-1 flex items-center gap-2">
+        <span className="rounded bg-slate-900 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">{props.label}</span>
+        <p className="line-clamp-1 text-xs font-semibold">{props.title}</p>
+      </div>
+      <p className="text-xs text-muted-foreground">{props.subtitle}</p>
+      <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[11px] text-muted-foreground">
+        {props.bullets.slice(0, 2).map((bullet) => <li key={bullet}>{bullet}</li>)}
+      </ul>
+    </div>
   );
 }
 

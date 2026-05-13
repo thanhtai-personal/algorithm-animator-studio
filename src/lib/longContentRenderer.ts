@@ -63,7 +63,12 @@ function drawBrand(ctx: CanvasRenderingContext2D, channelName: string) {
 }
 
 function drawLeftScriptPanel(ctx: CanvasRenderingContext2D, params: RenderLongContentParams) {
-  const panel = { x: 70, y: 150, w: 650, h: 780 };
+  const panel = { x: 62, y: 132, w: 690, h: 820 };
+  const padX = 42;
+  const contentX = panel.x + padX;
+  const contentW = panel.w - padX * 2;
+  const bottomY = panel.y + panel.h - 44;
+
   ctx.fillStyle = "rgba(15,23,42,0.68)";
   ctx.strokeStyle = "rgba(255,255,255,0.12)";
   ctx.lineWidth = 2;
@@ -73,30 +78,48 @@ function drawLeftScriptPanel(ctx: CanvasRenderingContext2D, params: RenderLongCo
 
   const { scene, theme } = params;
   ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
   ctx.fillStyle = theme.highlight;
-  ctx.font = "800 32px ui-sans-serif, system-ui, sans-serif";
-  ctx.fillText(scene.kind.toUpperCase(), panel.x + 38, panel.y + 58);
+  ctx.font = "800 28px ui-sans-serif, system-ui, sans-serif";
+  ctx.fillText(scene.kind.toUpperCase(), contentX, panel.y + 58);
 
+  let cursorY = panel.y + 130;
   ctx.fillStyle = "#ffffff";
-  ctx.font = "900 58px ui-sans-serif, system-ui, sans-serif";
-  wrapText(ctx, scene.title, panel.x + 38, panel.y + 130, panel.w - 76, 66, 2);
+  cursorY = drawFittedText(ctx, scene.title, {
+    x: contentX,
+    y: cursorY,
+    maxWidth: contentW,
+    initialSize: 54,
+    minSize: 42,
+    weight: 900,
+    lineHeightRatio: 1.12,
+    maxLines: 2,
+  }) + 26;
 
   ctx.fillStyle = "rgba(255,255,255,0.82)";
-  ctx.font = "500 30px ui-sans-serif, system-ui, sans-serif";
-  const subtitleY = panel.y + (scene.title.length > 28 ? 270 : 220);
-  wrapText(ctx, scene.subtitle, panel.x + 38, subtitleY, panel.w - 76, 40, 3);
+  ctx.font = "500 28px ui-sans-serif, system-ui, sans-serif";
+  cursorY = drawWrappedText(ctx, scene.subtitle, contentX, cursorY, contentW, 38, 3) + 62;
 
-  const bulletStartY = subtitleY + 170;
-  ctx.font = "600 29px ui-sans-serif, system-ui, sans-serif";
-  scene.bullets.slice(0, 5).forEach((bullet, index) => {
-    const y = bulletStartY + index * 92;
+  ctx.font = "600 25px ui-sans-serif, system-ui, sans-serif";
+  const bulletTextX = contentX + 34;
+  const bulletW = contentW - 46;
+  const bullets = scene.bullets.slice(0, 5);
+
+  for (let index = 0; index < bullets.length; index++) {
+    const lines = getWrappedLines(ctx, bullets[index], bulletW, 2).lines;
+    const lineHeight = 32;
+    const blockHeight = Math.max(lineHeight, lines.length * lineHeight);
+    if (cursorY + blockHeight > bottomY) break;
+
     ctx.fillStyle = index === 0 ? theme.highlight : "rgba(255,255,255,0.92)";
     ctx.beginPath();
-    ctx.arc(panel.x + 48, y - 9, 7, 0, Math.PI * 2);
+    ctx.arc(contentX + 7, cursorY - 9, 7, 0, Math.PI * 2);
     ctx.fill();
+
     ctx.fillStyle = "rgba(255,255,255,0.9)";
-    wrapText(ctx, bullet, panel.x + 70, y, panel.w - 115, 34, 2);
-  });
+    lines.forEach((line, lineIndex) => ctx.fillText(line, bulletTextX, cursorY + lineIndex * lineHeight));
+    cursorY += blockHeight + 28;
+  }
 }
 
 function drawAnimationPanel(ctx: CanvasRenderingContext2D, params: RenderLongContentParams) {
@@ -173,7 +196,35 @@ function drawProgress(ctx: CanvasRenderingContext2D, x: number, y: number, w: nu
   ctx.fill();
 }
 
-function wrapText(
+type FittedTextOptions = {
+  x: number;
+  y: number;
+  maxWidth: number;
+  initialSize: number;
+  minSize: number;
+  weight: number;
+  lineHeightRatio: number;
+  maxLines: number;
+};
+
+function drawFittedText(ctx: CanvasRenderingContext2D, text: string, options: FittedTextOptions) {
+  let size = options.initialSize;
+  let wrapped = getWrappedLines(ctx, text, options.maxWidth, options.maxLines);
+
+  while (size > options.minSize) {
+    ctx.font = `${options.weight} ${size}px ui-sans-serif, system-ui, sans-serif`;
+    wrapped = getWrappedLines(ctx, text, options.maxWidth, options.maxLines);
+    if (!wrapped.truncated) break;
+    size -= 2;
+  }
+
+  ctx.font = `${options.weight} ${size}px ui-sans-serif, system-ui, sans-serif`;
+  const lineHeight = Math.round(size * options.lineHeightRatio);
+  wrapped.lines.forEach((line, index) => ctx.fillText(line, options.x, options.y + index * lineHeight));
+  return options.y + Math.max(1, wrapped.lines.length) * lineHeight;
+}
+
+function drawWrappedText(
   ctx: CanvasRenderingContext2D,
   text: string,
   x: number,
@@ -182,19 +233,46 @@ function wrapText(
   lineHeight: number,
   maxLines = 3,
 ) {
-  const words = text.split(" ");
+  const lines = getWrappedLines(ctx, text, maxWidth, maxLines).lines;
+  lines.forEach((line, index) => ctx.fillText(line, x, y + index * lineHeight));
+  return y + Math.max(1, lines.length) * lineHeight;
+}
+
+function getWrappedLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines = 3) {
+  const words = text.trim().split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let line = "";
+  let truncated = false;
+
   for (const word of words) {
     const next = line ? `${line} ${word}` : word;
-    if (ctx.measureText(next).width > maxWidth && line) {
-      lines.push(line);
-      line = word;
-      if (lines.length === maxLines) break;
-    } else line = next;
+    if (ctx.measureText(next).width <= maxWidth || !line) {
+      line = next;
+      continue;
+    }
+
+    lines.push(line);
+    line = word;
+    if (lines.length === maxLines) {
+      truncated = true;
+      line = "";
+      break;
+    }
   }
+
   if (line && lines.length < maxLines) lines.push(line);
-  lines.forEach((ln, index) => ctx.fillText(ln, x, y + index * lineHeight));
+  if (lines.length === 0) lines.push("");
+  if (truncated) lines[lines.length - 1] = fitWithEllipsis(ctx, lines[lines.length - 1], maxWidth);
+  return { lines, truncated };
+}
+
+function fitWithEllipsis(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
+  const suffix = "…";
+  let fitted = text;
+  while (fitted.length > 0 && ctx.measureText(`${fitted}${suffix}`).width > maxWidth) {
+    fitted = fitted.slice(0, -1).trimEnd();
+  }
+  return fitted ? `${fitted}${suffix}` : suffix;
 }
 
 let reusableCanvas: HTMLCanvasElement | null = null;

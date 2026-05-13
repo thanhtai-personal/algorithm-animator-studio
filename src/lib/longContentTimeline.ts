@@ -23,7 +23,7 @@ export function buildLongContentScenes(params: {
   const guide = getLongContentGuide(algo.id);
   const complexityBullets = [
     complexity?.best ? `Best case: ${complexity.best}` : null,
-    complexity?.time ? `Average/Time: ${complexity.time}` : null,
+    complexity?.time ? `Average: ${complexity.time}` : null,
     complexity?.worst ? `Worst case: ${complexity.worst}` : null,
     complexity?.space ? `Space: ${complexity.space}` : null,
     guide.takeaway,

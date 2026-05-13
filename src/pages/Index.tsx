@@ -1,4 +1,4 @@
-import { LogIn, LogOut, RadioTower, Sparkles } from "lucide-react";
+import { Film, LogIn, LogOut, RadioTower, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -61,6 +61,10 @@ const Index = () => {
             <SelectItem value="vi">Tiếng Việt</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="outline" onClick={() => navigate("/long-content")}>
+          <Film className="h-4 w-4" />
+          Long 16:9
+        </Button>
         {canConfigure ? (
           <>
             <Button variant="outline" onClick={() => navigate("/social-publishing")}>

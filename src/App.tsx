@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Auth from "./pages/Auth.tsx";
 import Index from "./pages/Index.tsx";
+import LongContent from "./pages/LongContent.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import SocialPublishing from "./pages/SocialPublishing.tsx";
 
@@ -28,6 +29,7 @@ const App = () => (
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/" element={<Index />} />
+          <Route path="/long-content" element={<LongContent />} />
           <Route path="/social-publishing" element={<SocialPublishing />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

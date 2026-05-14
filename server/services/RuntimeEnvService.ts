@@ -41,11 +41,15 @@ export function resolveRuntimeExecutable(value: string): string {
 function normalizeRuntimePaths(env: RuntimeEnvValues): RuntimeEnvValues {
   const normalized = { ...env };
 
-  for (const key of ["PIPER_EXE", "FFMPEG_EXE", "FFPROBE_EXE", "SERVER_DATA_DIR"]) {
+  for (const key of ["MODEL_DIR", "SERVER_DATA_DIR"]) {
     if (normalized[key]) {
-      normalized[key] = key === "SERVER_DATA_DIR"
-        ? resolveRuntimePath(normalized[key], APP_ROOT)
-        : resolveRuntimeExecutable(normalized[key]);
+      normalized[key] = resolveRuntimePath(normalized[key], APP_ROOT);
+    }
+  }
+
+  for (const key of ["PIPER_EXE", "FFMPEG_EXE", "FFPROBE_EXE"]) {
+    if (normalized[key]) {
+      normalized[key] = resolveRuntimeExecutable(normalized[key]);
     }
   }
 

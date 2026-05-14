@@ -2,38 +2,45 @@ import fs from "node:fs";
 import fsp from "node:fs/promises";
 import https from "node:https";
 import { MODEL_DIR, PIPER_EXE } from "../config/paths";
-import { MODELS } from "../config/piperModels";
+import { getPiperModels } from "../config/piperModels";
+import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
+import { resolveRuntimeExecutable } from "./RuntimeEnvService";
 import { modelJsonPath, toModelResponse } from "../utils/modelFiles";
 
-export async function getPiperRuntimeStatus() {
-  const models = Object.values(MODELS).map(toModelResponse);
+export async function getPiperRuntimeStatus(envOverrides: RuntimeEnvValues = {}) {
+  const env = readEnvValues(envOverrides);
+  const modelDir = env.MODEL_DIR || MODEL_DIR;
+  const piperExe = resolveRuntimeExecutable(env.PIPER_EXE || PIPER_EXE);
+  const models = Object.values(getPiperModels(modelDir)).map(toModelResponse);
   const availableCount = models.filter((model) => model.available).length;
 
   return {
-    ok: fs.existsSync(PIPER_EXE) && availableCount > 0,
-    piperExe: PIPER_EXE,
-    piperExists: fs.existsSync(PIPER_EXE),
-    modelDir: MODEL_DIR,
+    ok: fs.existsSync(piperExe) && availableCount > 0,
+    piperExe,
+    piperExists: fs.existsSync(piperExe),
+    modelDir,
     availableCount,
     models,
     installHint: [
-      "Piper exe mặc định nằm ở models/.venv/Scripts/piper.exe trên Windows hoặc models/.venv/bin/piper trên macOS/Linux.",
+      "Có thể đổi MODEL_DIR và PIPER_EXE trong Settings mà không cần restart server.",
       "Model cần đủ 2 file: *.onnx và *.onnx.json trong thư mục models.",
       "Có thể bấm Cài model nếu máy có internet. Piper executable vẫn cần được cài bằng pip/install script riêng.",
     ],
   };
 }
 
-export async function installPiperModel(modelKey: string) {
-  const model = MODELS[modelKey];
+export async function installPiperModel(modelKey: string, envOverrides: RuntimeEnvValues = {}) {
+  const env = readEnvValues(envOverrides);
+  const modelDir = env.MODEL_DIR || MODEL_DIR;
+  const model = getPiperModels(modelDir)[modelKey];
   if (!model) throw new Error("Model Piper không hợp lệ.");
   if (!model.modelUrl || !model.jsonUrl) throw new Error("Model này chưa có link tải tự động.");
 
-  await fsp.mkdir(MODEL_DIR, { recursive: true });
+  await fsp.mkdir(modelDir, { recursive: true });
   await downloadIfMissing(model.modelUrl, model.modelPath);
   await downloadIfMissing(model.jsonUrl, modelJsonPath(model.modelPath));
 
-  return { ok: true, model: toModelResponse(model), status: await getPiperRuntimeStatus() };
+  return { ok: true, model: toModelResponse(model), status: await getPiperRuntimeStatus(envOverrides) };
 }
 
 function downloadIfMissing(url: string, outputPath: string): Promise<void> {

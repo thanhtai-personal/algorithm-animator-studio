@@ -18,6 +18,7 @@ import { createGenerateRouter } from "./routes/generateRoutes";
 import { createHealthRouter } from "./routes/healthRoutes";
 import { createModelRouter } from "./routes/modelRoutes";
 import { createPiperRuntimeRouter } from "./routes/piperRuntimeRoutes";
+import { createSystemRouter } from "./routes/systemRoutes";
 import { createYoutubeRouter } from "./routes/youtubeRoutes";
 import { readRuntimeEnvFromRequest } from "./services/RuntimeEnvService";
 import { readEnvValues } from "./services/EnvFileService";
@@ -33,7 +34,7 @@ for (const dir of [GENERATED_DIR, GENERATED_PREVIEW_DIR]) {
 
 app.use(`/${GENERATED_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedDir));
 app.use(`/${GENERATED_PREVIEW_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedPreviewDir));
-app.use("/api", createHealthRouter(), createModelRouter(), createPiperRuntimeRouter(), createGenerateRouter(), createElevenLabsRouter(), createYoutubeRouter());
+app.use("/api", createHealthRouter(), createModelRouter(), createPiperRuntimeRouter(), createSystemRouter(), createGenerateRouter(), createElevenLabsRouter(), createYoutubeRouter());
 
 app.listen(PORT, () => {
   console.log(`Algo voice backend running at http://localhost:${PORT}`);

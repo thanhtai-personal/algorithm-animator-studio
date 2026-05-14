@@ -1,4 +1,4 @@
-import { Film, LogIn, LogOut, Sparkles, Youtube } from "lucide-react";
+import { Film, LogIn, LogOut, Settings, Sparkles, Youtube } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,10 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
   "/youtube": {
     title: "YouTube Publishing",
     subtitle: "Login with OAuth from server .env, then upload exported videos.",
+  },
+  "/settings": {
+    title: "Settings",
+    subtitle: "Configure local Piper runtime paths and health check.",
   },
   "/youtube-publishing": {
     title: "YouTube Publishing",
@@ -85,6 +89,9 @@ export function AppHeader() {
           </Button>
           <Button variant={location.pathname.startsWith("/youtube") || location.pathname === "/social-publishing" ? "default" : "outline"} onClick={() => navigate("/youtube")}>
             <Youtube className="mr-2 h-4 w-4" /> YouTube
+          </Button>
+          <Button variant={location.pathname === "/settings" ? "default" : "outline"} onClick={() => navigate("/settings")}>
+            <Settings className="mr-2 h-4 w-4" /> Settings
           </Button>
           <Select value={lang} onValueChange={(value) => changeLanguage(value as Lang)}>
             <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>

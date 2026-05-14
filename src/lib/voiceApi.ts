@@ -1,4 +1,5 @@
 import { buildApiUrl, parseApiResponse } from "./runtimeApi";
+import { buildRuntimeSettingsHeaders } from "./runtimeSettings";
 
 export type PiperModel = {
   key: string;
@@ -62,11 +63,11 @@ export type VoiceGenerateResult = {
 };
 
 export async function getVoiceHealth() {
-  return parseApiResponse<VoiceHealth>(await fetch(buildApiUrl("/api/health")));
+  return parseApiResponse<VoiceHealth>(await fetch(buildApiUrl("/api/health"), { headers: buildRuntimeSettingsHeaders() }));
 }
 
 export async function getPiperModels() {
-  const data = await parseApiResponse<{ models: PiperModel[] }>(await fetch(buildApiUrl("/api/models")));
+  const data = await parseApiResponse<{ models: PiperModel[] }>(await fetch(buildApiUrl("/api/models"), { headers: buildRuntimeSettingsHeaders() }));
   return data.models;
 }
 
@@ -79,7 +80,7 @@ export async function generatePiperVoice(payload: {
 }) {
   return parseApiResponse<VoiceGenerateResult>(await fetch(buildApiUrl("/api/generate"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   }));
 }
@@ -96,19 +97,19 @@ export async function generateElevenLabsVoice(payload: {
 }) {
   return parseApiResponse<VoiceGenerateResult>(await fetch(buildApiUrl("/api/elevenlabs/generate"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   }));
 }
 
 export async function getPiperRuntimeStatus() {
-  return parseApiResponse<PiperRuntimeStatus>(await fetch(buildApiUrl("/api/piper-runtime/status")));
+  return parseApiResponse<PiperRuntimeStatus>(await fetch(buildApiUrl("/api/piper-runtime/status"), { headers: buildRuntimeSettingsHeaders() }));
 }
 
 export async function installPiperModel(modelKey: string) {
   return parseApiResponse<{ ok: boolean; model: PiperModel; status: PiperRuntimeStatus }>(await fetch(buildApiUrl("/api/piper-runtime/install-model"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ modelKey }),
   }));
 }

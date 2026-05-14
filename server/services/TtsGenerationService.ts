@@ -4,6 +4,7 @@ import path from "node:path";
 import {
   GENERATED_PUBLIC_PATH,
   GENERATED_PREVIEW_PUBLIC_PATH,
+  MODEL_DIR,
   PIPER_EXE,
   SERVER_ORIGIN,
   buildGeneratedFileUrl,
@@ -12,7 +13,7 @@ import {
 } from "../config/paths";
 import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
 import { resolveRuntimeExecutable } from "./RuntimeEnvService";
-import { MODELS } from "../config/piperModels";
+import { getPiperModels } from "../config/piperModels";
 import type { GenerateBody, PiperModel } from "../models/PiperModel";
 import {
   clampSentenceSilence,
@@ -56,7 +57,8 @@ export function validateGenerateRequest(
     return badRequest("Chưa chọn mẫu giọng.");
   }
 
-  const selectedModel = MODELS[modelKey];
+  const env = readEnvValues(envOverrides);
+  const selectedModel = getPiperModels(env.MODEL_DIR || MODEL_DIR)[modelKey];
 
   if (!selectedModel) {
     return badRequest("Mẫu giọng không hợp lệ.");

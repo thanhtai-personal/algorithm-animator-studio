@@ -9,6 +9,7 @@ import Auth from "./pages/Auth.tsx";
 import Index from "./pages/Index.tsx";
 import LongContent from "./pages/LongContent.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import Settings from "./pages/Settings.tsx";
 import YoutubePublishing from "./pages/YoutubePublishing.tsx";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/social-publishing" element={<YoutubePublishing />} />
           <Route path="/youtube-publishing" element={<YoutubePublishing />} />
           <Route path="/youtube" element={<YoutubePublishing />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

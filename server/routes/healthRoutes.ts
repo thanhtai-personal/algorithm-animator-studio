@@ -16,7 +16,7 @@ export function createHealthRouter() {
       ok: true,
       piperExe,
       piperExists: fs.existsSync(piperExe),
-      modelDir: MODEL_DIR,
+      modelDir: env.MODEL_DIR || MODEL_DIR,
       generatedDir,
     });
   });

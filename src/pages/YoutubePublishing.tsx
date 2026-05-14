@@ -1,6 +1,5 @@
-import { ArrowLeft, CheckCircle2, ExternalLink, RefreshCcw, Upload, Youtube } from "lucide-react";
+import { ExternalLink, RefreshCcw, Upload } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -27,7 +26,6 @@ const DEFAULT_FORM: YoutubeUploadForm = {
 };
 
 export default function YoutubePublishing() {
-  const navigate = useNavigate();
   const [config, setConfig] = useState<YoutubeConfigStatus | null>(null);
   const [refreshToken, setRefreshToken] = useState(() => localStorage.getItem(TOKEN_KEY) || "");
   const [playlists, setPlaylists] = useState<YoutubePlaylist[]>([]);
@@ -39,7 +37,7 @@ export default function YoutubePublishing() {
 
   const selectedFile = videoFile ?? lastExported?.file ?? null;
   const canUpload = Boolean(selectedFile && refreshToken && config?.hasClientId && config?.hasClientSecret);
-  const redirectUri = useMemo(() => `${window.location.origin}/youtube-publishing`, []);
+  const redirectUri = useMemo(() => config?.redirectUri || `${window.location.origin}/youtube`, [config?.redirectUri]);
 
   useEffect(() => { void bootstrap(); }, []);
 
@@ -48,7 +46,7 @@ export default function YoutubePublishing() {
       const nextConfig = await getYoutubeConfig();
       setConfig(nextConfig);
       setForm((current) => ({ ...current, ...nextConfig.defaults, title: current.title || nextConfig.defaults.title }));
-      await exchangeCodeIfNeeded();
+      await exchangeCodeIfNeeded(nextConfig.redirectUri || `${window.location.origin}/youtube`);
       const token = localStorage.getItem(TOKEN_KEY) || refreshToken;
       if (token) await loadPlaylists(token);
     } catch (error) {
@@ -56,11 +54,11 @@ export default function YoutubePublishing() {
     }
   }
 
-  async function exchangeCodeIfNeeded() {
+  async function exchangeCodeIfNeeded(codeRedirectUri = redirectUri) {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
     if (!code) return;
-    const auth = await exchangeYoutubeCode(code, redirectUri);
+    const auth = await exchangeYoutubeCode(code, codeRedirectUri);
     if (!auth.refreshToken) throw new Error("Google không trả refresh token. Hãy revoke quyền cũ rồi cấp lại với prompt consent.");
     localStorage.setItem(TOKEN_KEY, auth.refreshToken);
     setRefreshToken(auth.refreshToken);
@@ -119,35 +117,36 @@ export default function YoutubePublishing() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="flex items-center gap-3 border-b border-border/40 px-6 py-5">
-        <Button variant="outline" size="icon" onClick={() => navigate("/long-content")}><ArrowLeft className="h-4 w-4" /></Button>
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-amber-400">
-          <Youtube className="h-6 w-6 text-slate-950" />
-        </div>
-        <div className="flex-1">
-          <h1 className="text-xl font-bold">YouTube Publishing</h1>
-          <p className="text-xs text-muted-foreground">Quản lý OAuth, playlist, metadata và upload video long 16:9 vừa export.</p>
-        </div>
-        <Button variant="outline" onClick={useLatestExport}><RefreshCcw className="mr-2 h-4 w-4" />Lấy video mới export</Button>
-      </header>
-
       <main className="grid gap-4 p-4 xl:grid-cols-[360px_1fr]">
         <Card className="h-fit space-y-4 p-4">
-          <h2 className="font-semibold">Kết nối YouTube</h2>
-          <StatusRow label="Client ID" ok={Boolean(config?.hasClientId)} />
-          <StatusRow label="Client Secret" ok={Boolean(config?.hasClientSecret)} />
-          <StatusRow label="Refresh token" ok={Boolean(refreshToken)} />
+          <div>
+            <h2 className="font-semibold">Kết nối YouTube</h2>
+            <p className="mt-1 text-xs text-muted-foreground">Client ID và Client Secret được đọc từ server .env, không nhập trên giao diện.</p>
+          </div>
+          <div className={`rounded-lg border px-3 py-2 text-sm ${config?.hasClientId && config?.hasClientSecret ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200" : "border-yellow-400/30 bg-yellow-400/10 text-yellow-200"}`}>
+            {config?.hasClientId && config?.hasClientSecret
+              ? "OAuth env đã sẵn sàng. Bấm Login YouTube để cấp quyền kênh."
+              : "Thiếu YOUTUBE_CLIENT_ID hoặc YOUTUBE_CLIENT_SECRET trong .env server."}
+          </div>
+          {refreshToken ? <p className="text-xs text-emerald-300">Đã có quyền YouTube trong trình duyệt này.</p> : null}
           <div className="grid gap-2">
-            <Button onClick={connectYoutube} disabled={loading || !config?.hasClientId || !config?.hasClientSecret}>Cấp quyền YouTube</Button>
+            <Button onClick={connectYoutube} disabled={loading || !config?.hasClientId || !config?.hasClientSecret}>
+              {refreshToken ? "Đăng nhập lại YouTube" : "Login YouTube"}
+            </Button>
             <Button variant="outline" onClick={() => loadPlaylists()} disabled={!refreshToken}>Tải playlist</Button>
             <Button variant="ghost" onClick={disconnect} disabled={!refreshToken}>Ngắt kết nối</Button>
           </div>
-          <p className="text-xs text-muted-foreground">OAuth secret nằm ở server .env. Refresh token hiện lưu localStorage để tool local dùng nhanh.</p>
+          <p className="text-xs text-muted-foreground">Refresh token chỉ lưu localStorage để tool local upload nhanh. Client secret không bao giờ đưa lên frontend.</p>
         </Card>
 
         <div className="space-y-4">
           <Card className="space-y-4 p-4">
-            <h2 className="font-semibold">Video nguồn</h2>
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <h2 className="font-semibold">Video nguồn</h2>
+              <Button variant="outline" size="sm" onClick={useLatestExport}>
+                <RefreshCcw className="mr-2 h-4 w-4" />Lấy video mới export
+              </Button>
+            </div>
             {lastExported ? <p className="text-sm text-emerald-300">Video mới export: {lastExported.fileName}</p> : <p className="text-sm text-muted-foreground">Chưa có video export trong phiên này.</p>}
             <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border p-3 text-sm text-muted-foreground">
               <Upload className="h-4 w-4" /> Chọn file video khác (.mp4/.webm)
@@ -213,10 +212,6 @@ export default function YoutubePublishing() {
 
 function normalizeForm(form: YoutubeUploadForm): YoutubeUploadForm {
   return { ...form, publishAt: form.publishAt ? new Date(form.publishAt).toISOString() : "" };
-}
-
-function StatusRow({ label, ok }: { label: string; ok: boolean }) {
-  return <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm"><span>{label}</span><span className={ok ? "text-emerald-300" : "text-muted-foreground"}>{ok ? <CheckCircle2 className="h-4 w-4" /> : "Chưa có"}</span></div>;
 }
 
 function Field(props: { label: string; value: string; type?: string; onChange: (value: string) => void }) {

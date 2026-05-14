@@ -1,5 +1,4 @@
-import { ArrowLeft, Download, Film, Languages, Pause, Play, RefreshCcw, Upload, Volume2, Youtube } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Download, Film, Languages, Pause, Play, RefreshCcw, Upload, Volume2 } from "lucide-react";
 import { ALGORITHMS, ALGO_GROUPS, COMPLEXITY } from "@/lib/algorithms";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,32 +13,16 @@ import { EXPORT_FORMATS, ExportFormat } from "./studio/exportFormats";
 import { LongContentStudio, useLongContentStudio } from "./long-content/useLongContentStudio";
 
 export default function LongContent() {
-  const navigate = useNavigate();
   const studio = useLongContentStudio();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="flex items-center gap-3 border-b border-border/40 px-6 py-5">
-        <Button variant="outline" size="icon" onClick={() => navigate("/") } aria-label="Về studio short">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-amber-400">
-          <Youtube className="h-6 w-6 text-slate-950" />
-        </div>
-        <div className="flex-1">
-          <h1 className="text-xl font-bold">Long Content Studio</h1>
-          <p className="text-xs text-muted-foreground">Sản xuất video YouTube 16:9, có kịch bản VI/EN, đọc tự động và nhạc nền.</p>
-        </div>
-        <Button variant="outline" onClick={() => navigate("/youtube-publishing")}>
-          <Youtube className="mr-2 h-4 w-4" /> YouTube
-        </Button>
-        <Button variant="outline" onClick={() => navigate("/")}>Short Studio</Button>
-      </header>
-
-      <main className="grid grid-cols-1 gap-4 p-4 xl:grid-cols-[360px_1fr_360px]">
+      <main className="grid grid-cols-1 gap-4 p-4 xl:grid-cols-[360px_1fr]">
         <LeftControls studio={studio} />
-        <PreviewPanel studio={studio} />
-        <ScriptPanel studio={studio} />
+        <div className="space-y-4">
+          <PreviewPanel studio={studio} />
+          <ScriptPanel studio={studio} />
+        </div>
       </main>
     </div>
   );
@@ -163,23 +146,32 @@ function PreviewPanel({ studio: s }: { studio: LongContentStudio }) {
 
 function ScriptPanel({ studio: s }: { studio: LongContentStudio }) {
   return (
-    <Card className="h-fit space-y-4 p-4">
-      <div>
-        <h2 className="font-semibold">Kịch bản song ngữ</h2>
-        <p className="text-xs text-muted-foreground">Tool luôn sinh cả tiếng Việt và tiếng Anh. Ngôn ngữ hệ thống đang chọn ở header sẽ được render lên video và đọc khi preview/export.</p>
+    <Card className="space-y-4 p-4">
+      <div className="flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h2 className="font-semibold">Kịch bản đang dùng</h2>
+          <p className="text-xs text-muted-foreground">Chỉ hiển thị kịch bản theo ngôn ngữ đang chọn ở header.</p>
+        </div>
+        <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200">
+          {s.lang === "vi" ? "Tiếng Việt" : "English"}
+        </span>
       </div>
-      <div className="space-y-3">
-        {s.viScenes.map((viScene, index) => {
-          const enScene = s.enScenes[index];
-          const active = s.timelineState.scene.id === viScene.id;
+      <div className="grid gap-3 lg:grid-cols-2">
+        {s.scenes.map((scene, index) => {
+          const active = s.timelineState.scene.id === scene.id;
           return (
-            <div key={viScene.id} className={`rounded-lg border p-3 ${active ? "border-emerald-400 bg-emerald-400/10" : "border-border bg-card/50"}`}>
+            <div key={scene.id} className={`rounded-lg border p-3 ${active ? "border-emerald-400 bg-emerald-400/10" : "border-border bg-card/50"}`}>
               <div className="flex items-center justify-between gap-3">
-                <p className="font-semibold">{index + 1}. {s.lang === "vi" ? viScene.title : enScene.title}</p>
-                <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs text-muted-foreground">{viScene.durationSec}s</span>
+                <p className="font-semibold">{index + 1}. {scene.title}</p>
+                <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs text-muted-foreground">{scene.durationSec}s</span>
               </div>
-              <BilingualScriptBlock label="VI" active={s.lang === "vi"} title={viScene.title} subtitle={viScene.subtitle} bullets={viScene.bullets} />
-              <BilingualScriptBlock label="EN" active={s.lang === "en"} title={enScene.title} subtitle={enScene.subtitle} bullets={enScene.bullets} />
+              <p className="mt-2 text-sm text-muted-foreground">{scene.subtitle}</p>
+              <p className="mt-2 text-sm leading-relaxed">{scene.narration}</p>
+              {scene.bullets.length ? (
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+                  {scene.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}
+                </ul>
+              ) : null}
             </div>
           );
         })}
@@ -196,7 +188,7 @@ function SystemLanguageInfo({ studio: s }: { studio: LongContentStudio }) {
         {s.lang === "vi" ? "Tiếng Việt" : "English"}
       </div>
       <p className="mt-2 text-xs text-muted-foreground">
-        Kịch bản, subtitle và voice-over tự dùng ngôn ngữ hệ thống đã chọn ở header. Đổi ngôn ngữ tại header của Short Studio để xuất bản VI hoặc EN.
+        Kịch bản, subtitle và voice-over tự dùng ngôn ngữ hệ thống đã chọn ở header. Đổi ngôn ngữ tại header chung để xuất bản VI hoặc EN.
       </p>
     </div>
   );
@@ -328,21 +320,6 @@ function MusicControls({ studio: s }: { studio: LongContentStudio }) {
       <NumberSlider label="Âm lượng nhạc" value={s.musicVol} min={0} max={100} suffix="%" onChange={s.setMusicVol} />
       <p className="text-xs text-muted-foreground">Nhạc nền sẽ phát khi preview và được nhúng vào video export qua MediaRecorder.</p>
     </Card>
-  );
-}
-
-function BilingualScriptBlock(props: { label: "VI" | "EN"; active: boolean; title: string; subtitle: string; bullets: string[] }) {
-  return (
-    <div className={`mt-3 rounded-md border px-3 py-2 ${props.active ? "border-emerald-400/50 bg-emerald-400/10" : "border-border/70 bg-background/40"}`}>
-      <div className="mb-1 flex items-center gap-2">
-        <span className="rounded bg-slate-900 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">{props.label}</span>
-        <p className="line-clamp-1 text-xs font-semibold">{props.title}</p>
-      </div>
-      <p className="text-xs text-muted-foreground">{props.subtitle}</p>
-      <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[11px] text-muted-foreground">
-        {props.bullets.slice(0, 2).map((bullet) => <li key={bullet}>{bullet}</li>)}
-      </ul>
-    </div>
   );
 }
 

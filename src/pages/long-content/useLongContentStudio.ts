@@ -79,8 +79,6 @@ export function useLongContentStudio() {
   const graph = useMemo(() => parseGraph(DEFAULT_GRAPH) ?? makeSampleGraph(), []);
   const sceneParams = { algo, complexity: COMPLEXITY[algoId], animationSeconds, introSeconds };
   const scenes = useMemo(() => buildLongContentScenes({ ...sceneParams, lang }), [algo, algoId, animationSeconds, introSeconds, lang]);
-  const viScenes = useMemo(() => buildLongContentScenes({ ...sceneParams, lang: "vi" }), [algo, algoId, animationSeconds, introSeconds]);
-  const enScenes = useMemo(() => buildLongContentScenes({ ...sceneParams, lang: "en" }), [algo, algoId, animationSeconds, introSeconds]);
   const totalDuration = useMemo(() => getTotalDuration(scenes), [scenes]);
   const narrationScript = useMemo(() => scenes.map((scene) => scene.narration).join("\n\n"), [scenes]);
   const currentVoiceScriptKey = useMemo(() => buildVoiceScriptKey({
@@ -423,7 +421,7 @@ export function useLongContentStudio() {
     animalJumpIntensity, setAnimalJumpIntensity, animalHighlightJump, setAnimalHighlightJump,
     fps, setFps, animationSeconds, setAnimationSeconds, introSeconds, setIntroSeconds,
     exportFormat, setExportFormat, elapsedSec, setElapsedSec, playing, setPlaying,
-    exporting, exportProgress, scenes, viScenes, enScenes, totalDuration, timelineState, frameIdx, frames,
+    exporting, exportProgress, scenes, totalDuration, timelineState, frameIdx, frames,
     narrationEnabled, setNarrationEnabled, narrationRate, setNarrationRate, narrationVol, setNarrationVol,
     musicPreset, setMusicPreset, musicVol, setMusicVol, onMusicUpload,
     voiceProvider, setVoiceProvider, voiceUrl, voiceFileName, voiceLoading, generateVoiceOver,

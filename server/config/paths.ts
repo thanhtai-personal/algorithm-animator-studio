@@ -31,7 +31,7 @@ export const SERVER_ORIGIN = normalizeLegacyLocalUrl(
 export const CLIENT_ORIGIN = normalizeLegacyLocalUrl(
   process.env.CLIENT_ORIGIN,
   [],
-  process.env.CLIENT_ORIGIN || "http://localhost:5173"
+  process.env.CLIENT_ORIGIN || "http://localhost:3000"
 );
 
 export const PIPER_EXE = process.env.PIPER_EXE || getDefaultPiperExe();

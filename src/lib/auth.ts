@@ -1,5 +1,3 @@
-const PROD_API_BASE_URL = "https://kata-center-api.vercel.app";
-const DEV_API_BASE_URL = "http://localhost:3056";
 const ACCESS_TOKEN_STORAGE_KEY = "auth:accessToken";
 const REFRESH_TOKEN_STORAGE_KEY = "auth:refreshToken";
 
@@ -39,7 +37,7 @@ function sanitize(value: string | null | undefined): string | null {
 function resolveApiBaseUrl(): string {
   const fromEnv = sanitize(import.meta.env.VITE_NEST_API_BASE_URL);
   if (fromEnv) return fromEnv.replace(/\/+$/, "");
-  return import.meta.env.PROD ? PROD_API_BASE_URL : DEV_API_BASE_URL;
+  return import.meta.env.API_BASE_URL;
 }
 
 export function buildApiUrl(path: string): string {

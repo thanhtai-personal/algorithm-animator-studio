@@ -6,7 +6,7 @@ import { preloadAnimalSprites } from "@/lib/animalColumns";
 import { audioEngine } from "@/lib/audio";
 import { BackgroundMusicId, getAssetMusicOption, isAssetMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
 import { type Lang, readSystemLang, subscribeSystemLang } from "@/lib/i18n";
-import { buildLongContentScenes, getSceneAtTime, getTotalDuration } from "@/lib/longContentTimeline";
+import { buildLongContentScenes, getSceneAtTime, getTotalDuration, type LongContentScene } from "@/lib/longContentTimeline";
 import { renderLongContentFrame } from "@/lib/longContentRenderer";
 import { THEMES } from "@/lib/renderer";
 import {
@@ -34,6 +34,8 @@ const DEFAULT_GRAPH = "A-B:4, A-C:2, B-D:5, C-D:8, C-E:10, D-E:2, D-F:6, E-G:3, 
 export type VoiceProvider = "browser" | "piper" | "elevenlabs";
 
 type BrowserTtsCapture = { stream: MediaStream; stop: () => void };
+type ScriptSceneField = "title" | "subtitle" | "narration" | "bulletsText";
+type ScriptSceneOverride = Partial<Record<ScriptSceneField, string>>;
 
 export function useLongContentStudio() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -73,12 +75,14 @@ export function useLongContentStudio() {
   const [elevenConfig, setElevenConfig] = useState<ElevenLabsConfig | null>(null);
   const [elevenModelId, setElevenModelId] = useState("eleven_flash_v2_5");
   const [elevenVoiceId, setElevenVoiceId] = useState("");
+  const [scriptOverrides, setScriptOverrides] = useState<Record<string, ScriptSceneOverride>>({});
 
   const algo = ALGORITHMS[algoId] ?? ALGORITHMS.bubble;
   const theme = THEMES[themeName] ?? THEMES.neon;
   const graph = useMemo(() => parseGraph(DEFAULT_GRAPH) ?? makeSampleGraph(), []);
   const sceneParams = { algo, complexity: COMPLEXITY[algoId], animationSeconds, introSeconds };
-  const scenes = useMemo(() => buildLongContentScenes({ ...sceneParams, lang }), [algo, algoId, animationSeconds, introSeconds, lang]);
+  const baseScenes = useMemo(() => buildLongContentScenes({ ...sceneParams, lang }), [algo, algoId, animationSeconds, introSeconds, lang]);
+  const scenes = useMemo(() => applyScriptOverrides(baseScenes, scriptOverrides), [baseScenes, scriptOverrides]);
   const totalDuration = useMemo(() => getTotalDuration(scenes), [scenes]);
   const narrationScript = useMemo(() => scenes.map((scene) => scene.narration).join("\n\n"), [scenes]);
   const currentVoiceScriptKey = useMemo(() => buildVoiceScriptKey({
@@ -129,7 +133,8 @@ export function useLongContentStudio() {
     setVoiceUrl("");
     setVoiceFileName("");
     setVoiceScriptKey("");
-  }, [algoId, animationSeconds, introSeconds, lang, narrationRate, piperModelKey, elevenModelId, elevenVoiceId]);
+  }, [algoId, animationSeconds, introSeconds, lang, narrationRate, piperModelKey, elevenModelId, elevenVoiceId, narrationScript]);
+  useEffect(() => { setScriptOverrides({}); }, [algoId, lang]);
   useEffect(() => { drawFrame(elapsedSec); });
 
   useEffect(() => {
@@ -415,6 +420,24 @@ export function useLongContentStudio() {
     setMusicUrl(URL.createObjectURL(file));
   }
 
+  function updateScriptScene(sceneId: string, field: ScriptSceneField, value: string) {
+    setScriptOverrides((current) => ({
+      ...current,
+      [sceneId]: {
+        ...current[sceneId],
+        [field]: value,
+      },
+    }));
+  }
+
+  function resetScriptScene(sceneId: string) {
+    setScriptOverrides((current) => {
+      const next = { ...current };
+      delete next[sceneId];
+      return next;
+    });
+  }
+
   return {
     canvasRef, lang, algoId, setAlgoId, algo, themeName, setThemeName, showCode, setShowCode,
     columnVisualMode, setColumnVisualMode, animalSpriteScale, setAnimalSpriteScale,
@@ -427,9 +450,28 @@ export function useLongContentStudio() {
     voiceProvider, setVoiceProvider, voiceUrl, voiceFileName, voiceLoading, generateVoiceOver,
     voiceHealth, piperRuntime, piperInstalling, installSelectedPiperModel, refreshPiperRuntime,
     piperModels, piperModelKey, setPiperModelKey, elevenConfig, elevenModelId, setElevenModelId,
-    elevenVoiceId, setElevenVoiceId, narrationScript,
+    elevenVoiceId, setElevenVoiceId, narrationScript, updateScriptScene, resetScriptScene,
+    resetAllScriptScenes: () => setScriptOverrides({}),
     W: LONG_W, H: LONG_H, exportVideo,
   };
+}
+
+function applyScriptOverrides(scenes: LongContentScene[], overrides: Record<string, ScriptSceneOverride>) {
+  return scenes.map((scene) => {
+    const override = overrides[scene.id];
+    if (!override) return scene;
+    const bullets = override.bulletsText === undefined
+      ? scene.bullets
+      : override.bulletsText.split("\n").map((line) => line.trim()).filter(Boolean);
+
+    return {
+      ...scene,
+      title: override.title ?? scene.title,
+      subtitle: override.subtitle ?? scene.subtitle,
+      narration: override.narration ?? scene.narration,
+      bullets,
+    };
+  });
 }
 
 function buildVoiceScriptKey(parts: { provider: VoiceProvider; algoId: string; lang: Lang; modelKey: string; elevenModelId: string; elevenVoiceId: string; rate: number; script: string }) {

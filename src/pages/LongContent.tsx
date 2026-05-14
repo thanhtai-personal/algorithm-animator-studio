@@ -10,6 +10,7 @@ import { ASSET_MUSIC_OPTIONS, BackgroundMusicId } from "@/lib/backgroundMusic";
 import { MUSIC_PRESETS } from "@/lib/i18n";
 import { THEMES } from "@/lib/renderer";
 import { EXPORT_FORMATS, ExportFormat } from "./studio/exportFormats";
+import { ScriptPanel } from "./long-content/ScriptPanel";
 import { LongContentStudio, useLongContentStudio } from "./long-content/useLongContentStudio";
 
 export default function LongContent() {
@@ -141,42 +142,6 @@ function PreviewPanel({ studio: s }: { studio: LongContentStudio }) {
         </div>
       </Card>
     </div>
-  );
-}
-
-function ScriptPanel({ studio: s }: { studio: LongContentStudio }) {
-  return (
-    <Card className="space-y-4 p-4">
-      <div className="flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h2 className="font-semibold">Kịch bản đang dùng</h2>
-          <p className="text-xs text-muted-foreground">Chỉ hiển thị kịch bản theo ngôn ngữ đang chọn ở header.</p>
-        </div>
-        <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200">
-          {s.lang === "vi" ? "Tiếng Việt" : "English"}
-        </span>
-      </div>
-      <div className="grid gap-3 lg:grid-cols-2">
-        {s.scenes.map((scene, index) => {
-          const active = s.timelineState.scene.id === scene.id;
-          return (
-            <div key={scene.id} className={`rounded-lg border p-3 ${active ? "border-emerald-400 bg-emerald-400/10" : "border-border bg-card/50"}`}>
-              <div className="flex items-center justify-between gap-3">
-                <p className="font-semibold">{index + 1}. {scene.title}</p>
-                <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs text-muted-foreground">{scene.durationSec}s</span>
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">{scene.subtitle}</p>
-              <p className="mt-2 text-sm leading-relaxed">{scene.narration}</p>
-              {scene.bullets.length ? (
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
-                  {scene.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}
-                </ul>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-    </Card>
   );
 }
 

@@ -5,6 +5,8 @@ export type PiperModel = {
   label: string;
   lang: Language;
   modelPath: string;
+  modelUrl?: string;
+  jsonUrl?: string;
 };
 
 export type GenerateBody = {

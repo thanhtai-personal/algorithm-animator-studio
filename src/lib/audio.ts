@@ -116,13 +116,53 @@ export class AudioEngine {
     this.voiceSrc.connect(this.voiceGain);
   }
 
-  playVoice(startSeconds = 0) {
+  hasVoiceSource() {
+    return Boolean(this.voiceEl?.src);
+  }
+
+  async waitForVoiceReady(timeoutMs = 15000): Promise<void> {
+    const el = this.voiceEl;
+    if (!el) throw new Error("Chưa có file voice-over để nhúng vào video.");
+    if (el.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) return;
+
+    await new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const cleanup = () => {
+        window.clearTimeout(timer);
+        el.removeEventListener("canplaythrough", onReady);
+        el.removeEventListener("canplay", onReady);
+        el.removeEventListener("loadeddata", onReady);
+        el.removeEventListener("error", onError);
+      };
+      const finish = (callback: () => void) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        callback();
+      };
+      const onReady = () => finish(resolve);
+      const onError = () => finish(() => reject(new Error("Không tải được file voice-over.")));
+      const timer = window.setTimeout(() => {
+        if (el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) finish(resolve);
+        else finish(() => reject(new Error("Voice-over tải quá lâu. Hãy kiểm tra backend/file audio.")));
+      }, timeoutMs);
+
+      el.addEventListener("canplaythrough", onReady, { once: true });
+      el.addEventListener("canplay", onReady, { once: true });
+      el.addEventListener("loadeddata", onReady, { once: true });
+      el.addEventListener("error", onError, { once: true });
+      el.load();
+    });
+  }
+
+  async playVoice(startSeconds = 0): Promise<void> {
     if (!this.voiceEl) return;
     this.resume();
+    await this.waitForVoiceReady();
     try { this.voiceEl.currentTime = Math.max(0, startSeconds); } catch { /* noop */ }
     this.voiceEl.playbackRate = 1;
     this.voiceEl.preservesPitch = true;
-    this.voiceEl.play().catch(() => {});
+    await this.voiceEl.play().catch(() => undefined);
   }
 
   stopVoice(reset: boolean) {

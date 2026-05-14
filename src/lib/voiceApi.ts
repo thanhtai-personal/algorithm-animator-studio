@@ -7,6 +7,17 @@ export type PiperModel = {
   available: boolean;
   modelPath: string;
   jsonPath: string;
+  canInstall?: boolean;
+};
+
+export type PiperRuntimeStatus = {
+  ok: boolean;
+  piperExe: string;
+  piperExists: boolean;
+  modelDir: string;
+  availableCount: number;
+  models: PiperModel[];
+  installHint: string[];
 };
 
 export type VoiceHealth = {
@@ -87,5 +98,17 @@ export async function generateElevenLabsVoice(payload: {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+  }));
+}
+
+export async function getPiperRuntimeStatus() {
+  return parseApiResponse<PiperRuntimeStatus>(await fetch(buildApiUrl("/api/piper-runtime/status")));
+}
+
+export async function installPiperModel(modelKey: string) {
+  return parseApiResponse<{ ok: boolean; model: PiperModel; status: PiperRuntimeStatus }>(await fetch(buildApiUrl("/api/piper-runtime/install-model"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ modelKey }),
   }));
 }

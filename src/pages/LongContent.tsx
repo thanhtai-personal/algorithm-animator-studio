@@ -203,7 +203,8 @@ function SystemLanguageInfo({ studio: s }: { studio: LongContentStudio }) {
 }
 
 function NarrationControls({ studio: s }: { studio: LongContentStudio }) {
-  const availablePiperModels = s.piperModels.filter((model) => model.lang === s.lang || model.available);
+  const availablePiperModels = [...s.piperModels].sort((a, b) => Number(b.lang === s.lang) - Number(a.lang === s.lang));
+  const selectedPiperModel = s.piperModels.find((model) => model.key === s.piperModelKey);
   return (
     <Card className="space-y-4 p-4">
       <div className="flex items-center gap-2">
@@ -219,9 +220,9 @@ function NarrationControls({ studio: s }: { studio: LongContentStudio }) {
         <Select value={s.voiceProvider} onValueChange={(value) => s.setVoiceProvider(value as typeof s.voiceProvider)}>
           <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="browser">Browser TTS · nghe thử nhanh</SelectItem>
-            <SelectItem value="piper">Piper local · nhúng vào video</SelectItem>
-            <SelectItem value="elevenlabs">ElevenLabs PRO · nhúng vào video</SelectItem>
+            <SelectItem value="browser">Browser TTS · ghi bằng tab audio khi export</SelectItem>
+            <SelectItem value="piper">Piper local · tạo file và nhúng vào video</SelectItem>
+            <SelectItem value="elevenlabs">ElevenLabs PRO · tạo file và nhúng vào video</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -232,13 +233,28 @@ function NarrationControls({ studio: s }: { studio: LongContentStudio }) {
             <SelectTrigger className="mt-2"><SelectValue placeholder="Chọn model Piper" /></SelectTrigger>
             <SelectContent>
               {availablePiperModels.map((model) => (
-                <SelectItem key={model.key} value={model.key} disabled={!model.available}>
+                <SelectItem key={model.key} value={model.key}>
                   {model.label}{model.available ? "" : " · thiếu file"}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <p className="mt-2 text-xs text-muted-foreground">Piper exe: {s.voiceHealth?.piperExists ? "đã sẵn sàng" : "chưa tìm thấy"}</p>
+          <div className="mt-3 rounded-lg border border-border bg-background/40 p-3 text-xs text-muted-foreground">
+            <div className="grid gap-1">
+              <span>Piper exe: <strong className={s.voiceHealth?.piperExists ? "text-emerald-300" : "text-rose-300"}>{s.voiceHealth?.piperExists ? "đã sẵn sàng" : "chưa tìm thấy"}</strong></span>
+              <span>Model dir: <strong>{s.piperRuntime?.modelDir || s.voiceHealth?.modelDir || "models"}</strong></span>
+              <span>Model đang chọn: <strong className={selectedPiperModel?.available ? "text-emerald-300" : "text-yellow-300"}>{selectedPiperModel?.available ? "đủ file" : "thiếu .onnx/.json"}</strong></span>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Button type="button" size="sm" variant="outline" onClick={s.refreshPiperRuntime}>
+                <RefreshCcw className="mr-2 h-3.5 w-3.5" /> Kiểm tra
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={s.installSelectedPiperModel} disabled={s.piperInstalling || !selectedPiperModel?.canInstall}>
+                {s.piperInstalling ? "Đang cài..." : "Cài model"}
+              </Button>
+            </div>
+            <p className="mt-2">Health check kiểm tra piper.exe, thư mục model và tải file .onnx + .onnx.json còn thiếu.</p>
+          </div>
         </div>
       ) : null}
       {s.voiceProvider === "elevenlabs" ? (
@@ -267,11 +283,11 @@ function NarrationControls({ studio: s }: { studio: LongContentStudio }) {
       <NumberSlider label="Tốc độ đọc" value={s.narrationRate} min={0.7} max={1.2} suffix="x" step={0.05} onChange={s.setNarrationRate} />
       <NumberSlider label="Âm lượng voice" value={s.narrationVol} min={0} max={100} suffix="%" onChange={s.setNarrationVol} />
       <Button className="w-full" variant={s.voiceProvider === "browser" ? "outline" : "default"} onClick={s.generateVoiceOver} disabled={s.voiceLoading}>
-        {s.voiceLoading ? "Đang tạo voice..." : s.voiceProvider === "browser" ? "Browser TTS chỉ preview" : "Tạo voice-over cho video"}
+        {s.voiceLoading ? "Đang tạo voice..." : s.voiceProvider === "browser" ? "Đọc thử Browser TTS" : "Tạo voice-over cho video"}
       </Button>
       {s.voiceUrl ? <audio className="w-full" controls src={s.voiceUrl} /> : null}
       <p className="text-xs text-muted-foreground">
-        Browser TTS không xuất được audio stream chuẩn để nhúng file. Piper/ElevenLabs sẽ tạo audio URL và mix vào MediaRecorder cùng nhạc nền.
+        Browser TTS sẽ được ghi khi export bằng tab audio: chọn tab hiện tại và bật Share tab audio. Piper/ElevenLabs sẽ tự tạo voice nếu chưa có hoặc kịch bản đổi.
         {s.voiceFileName ? ` File hiện tại: ${s.voiceFileName}` : ""}
       </p>
     </Card>

@@ -9,7 +9,20 @@ import { type Lang, readSystemLang, subscribeSystemLang } from "@/lib/i18n";
 import { buildLongContentScenes, getSceneAtTime, getTotalDuration } from "@/lib/longContentTimeline";
 import { renderLongContentFrame } from "@/lib/longContentRenderer";
 import { THEMES } from "@/lib/renderer";
-import { generateElevenLabsVoice, generatePiperVoice, getElevenLabsConfig, getPiperModels, getVoiceHealth, type ElevenLabsConfig, type PiperModel, type VoiceHealth } from "@/lib/voiceApi";
+import {
+  generateElevenLabsVoice,
+  generatePiperVoice,
+  getElevenLabsConfig,
+  getPiperModels,
+  getPiperRuntimeStatus,
+  getVoiceHealth,
+  installPiperModel,
+  type ElevenLabsConfig,
+  type PiperModel,
+  type PiperRuntimeStatus,
+  type VoiceGenerateResult,
+  type VoiceHealth,
+} from "@/lib/voiceApi";
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
 import { ExportFormat, getExportFormat } from "../studio/exportFormats";
 import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm } from "../studio/demoArrays";
@@ -19,6 +32,8 @@ const LONG_H = 1080;
 const DEFAULT_GRAPH = "A-B:4, A-C:2, B-D:5, C-D:8, C-E:10, D-E:2, D-F:6, E-G:3, F-G:1";
 
 export type VoiceProvider = "browser" | "piper" | "elevenlabs";
+
+type BrowserTtsCapture = { stream: MediaStream; stop: () => void };
 
 export function useLongContentStudio() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -48,8 +63,11 @@ export function useLongContentStudio() {
   const [voiceProvider, setVoiceProvider] = useState<VoiceProvider>("browser");
   const [voiceUrl, setVoiceUrl] = useState("");
   const [voiceFileName, setVoiceFileName] = useState("");
+  const [voiceScriptKey, setVoiceScriptKey] = useState("");
   const [voiceLoading, setVoiceLoading] = useState(false);
   const [voiceHealth, setVoiceHealth] = useState<VoiceHealth | null>(null);
+  const [piperRuntime, setPiperRuntime] = useState<PiperRuntimeStatus | null>(null);
+  const [piperInstalling, setPiperInstalling] = useState(false);
   const [piperModels, setPiperModels] = useState<PiperModel[]>([]);
   const [piperModelKey, setPiperModelKey] = useState("vi_vais1000");
   const [elevenConfig, setElevenConfig] = useState<ElevenLabsConfig | null>(null);
@@ -65,6 +83,16 @@ export function useLongContentStudio() {
   const enScenes = useMemo(() => buildLongContentScenes({ ...sceneParams, lang: "en" }), [algo, algoId, animationSeconds, introSeconds]);
   const totalDuration = useMemo(() => getTotalDuration(scenes), [scenes]);
   const narrationScript = useMemo(() => scenes.map((scene) => scene.narration).join("\n\n"), [scenes]);
+  const currentVoiceScriptKey = useMemo(() => buildVoiceScriptKey({
+    provider: voiceProvider,
+    algoId: algo.id,
+    lang,
+    modelKey: piperModelKey,
+    elevenModelId,
+    elevenVoiceId,
+    rate: narrationRate,
+    script: narrationScript,
+  }), [voiceProvider, algo.id, lang, piperModelKey, elevenModelId, elevenVoiceId, narrationRate, narrationScript]);
 
   const frames = useMemo(() => {
     if (algo.category === "graph") return algo.run([], { graph, start: 0, end: graph.nodes.length - 1 });
@@ -88,10 +116,22 @@ export function useLongContentStudio() {
   useEffect(() => { audioEngine.setVoiceVolume(narrationVol / 100); }, [narrationVol]);
   useEffect(() => { audioEngine.setVoiceSource(voiceUrl || null); }, [voiceUrl]);
   useEffect(() => {
-    const langModel = piperModels.find((model) => model.lang === lang && model.available);
-    if (langModel && piperModelKey !== langModel.key) setPiperModelKey(langModel.key);
+    if (!piperModels.length) return;
+    const current = piperModels.find((model) => model.key === piperModelKey);
+    if (current?.lang === lang) return;
+    const nextModel = piperModels.find((model) => model.lang === lang && model.available)
+      ?? piperModels.find((model) => model.lang === lang)
+      ?? current;
+    if (nextModel && nextModel.key !== piperModelKey) setPiperModelKey(nextModel.key);
   }, [lang, piperModelKey, piperModels]);
-  useEffect(() => { setElapsedSec(0); setPlaying(false); cancelNarration(); }, [algoId, animationSeconds, introSeconds, lang]);
+  useEffect(() => {
+    setElapsedSec(0);
+    setPlaying(false);
+    cancelNarration();
+    setVoiceUrl("");
+    setVoiceFileName("");
+    setVoiceScriptKey("");
+  }, [algoId, animationSeconds, introSeconds, lang, narrationRate, piperModelKey, elevenModelId, elevenVoiceId]);
   useEffect(() => { drawFrame(elapsedSec); });
 
   useEffect(() => {
@@ -115,7 +155,7 @@ export function useLongContentStudio() {
     }
     audioEngine.resume();
     startMusic();
-    if (narrationEnabled && voiceProvider !== "browser" && voiceUrl) audioEngine.playVoice(elapsedSec);
+    if (narrationEnabled && voiceProvider !== "browser" && voiceUrl) void audioEngine.playVoice(elapsedSec);
   }, [playing, exporting, musicPreset, voiceProvider, voiceUrl]);
 
   useEffect(() => {
@@ -147,11 +187,15 @@ export function useLongContentStudio() {
   }, [playing, totalDuration]);
 
   async function loadVoiceRuntime() {
-    const [health, models, pro] = await Promise.allSettled([getVoiceHealth(), getPiperModels(), getElevenLabsConfig()]);
+    const [health, runtime, models, pro] = await Promise.allSettled([getVoiceHealth(), getPiperRuntimeStatus(), getPiperModels(), getElevenLabsConfig()]);
     if (health.status === "fulfilled") setVoiceHealth(health.value);
+    if (runtime.status === "fulfilled") setPiperRuntime(runtime.value);
     if (models.status === "fulfilled") {
       setPiperModels(models.value);
-      const langModel = models.value.find((model) => model.lang === lang && model.available) ?? models.value.find((model) => model.available);
+      const langModel = models.value.find((model) => model.lang === lang && model.available)
+        ?? models.value.find((model) => model.lang === lang)
+        ?? models.value.find((model) => model.available)
+        ?? models.value[0];
       if (langModel) setPiperModelKey(langModel.key);
     }
     if (pro.status === "fulfilled") {
@@ -163,23 +207,71 @@ export function useLongContentStudio() {
 
   async function generateVoiceOver() {
     if (voiceProvider === "browser") {
-      toast.info("Browser TTS dùng để preview. Muốn nhúng voice vào file video, hãy chọn Piper hoặc ElevenLabs.");
+      speakNarration(narrationScript, lang, narrationRate, narrationVol / 100);
+      toast.info("Đang đọc thử bằng Browser TTS. Khi export, hãy chọn tab hiện tại và bật Share tab audio để ghi giọng đọc vào video.");
       return;
     }
+
     setVoiceLoading(true);
     setPlaying(false);
     try {
-      const fileName = `${algo.id}-${lang}-long-voice`;
-      const result = voiceProvider === "piper"
-        ? await generatePiperVoice({ text: narrationScript, modelKey: piperModelKey, sentenceSilence: 0.7, speechRate: narrationRate, fileName })
-        : await generateElevenLabsVoice({ text: narrationScript, modelId: elevenModelId, voiceId: elevenVoiceId, fileName });
-      setVoiceUrl(result.audioUrl);
-      setVoiceFileName(result.fileName);
+      const result = await generateVoiceOverForProvider(voiceProvider);
       toast.success(`Đã tạo voice-over: ${result.fileName}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Tạo voice-over thất bại.");
     } finally {
       setVoiceLoading(false);
+    }
+  }
+
+  async function generateVoiceOverForProvider(provider: Exclude<VoiceProvider, "browser">): Promise<VoiceGenerateResult> {
+    const fileName = `${algo.id}-${lang}-long-voice`;
+    const result = provider === "piper"
+      ? await generatePiperVoice({ text: narrationScript, modelKey: piperModelKey, sentenceSilence: 0.7, speechRate: narrationRate, fileName })
+      : await generateElevenLabsVoice({ text: narrationScript, modelId: elevenModelId, voiceId: elevenVoiceId, fileName });
+
+    setVoiceUrl(result.audioUrl);
+    setVoiceFileName(result.fileName);
+    setVoiceScriptKey(currentVoiceScriptKey);
+    audioEngine.setVoiceSource(result.audioUrl);
+    await audioEngine.waitForVoiceReady();
+    return result;
+  }
+
+  async function ensureVoiceForExport() {
+    if (!narrationEnabled || voiceProvider === "browser") return false;
+    if (voiceUrl && voiceScriptKey === currentVoiceScriptKey && audioEngine.hasVoiceSource()) {
+      await audioEngine.waitForVoiceReady();
+      return true;
+    }
+
+    toast.info("Đang tự tạo voice-over theo kịch bản trước khi export video...");
+    await generateVoiceOverForProvider(voiceProvider);
+    return true;
+  }
+
+  async function installSelectedPiperModel() {
+    setPiperInstalling(true);
+    try {
+      const result = await installPiperModel(piperModelKey);
+      setPiperRuntime(result.status);
+      setPiperModels(result.status.models);
+      toast.success(`Đã cài model: ${result.model.label}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Cài model Piper thất bại.");
+    } finally {
+      setPiperInstalling(false);
+    }
+  }
+
+  async function refreshPiperRuntime() {
+    try {
+      const [health, runtime, models] = await Promise.all([getVoiceHealth(), getPiperRuntimeStatus(), getPiperModels()]);
+      setVoiceHealth(health);
+      setPiperRuntime(runtime);
+      setPiperModels(models);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Không kiểm tra được Piper runtime.");
     }
   }
 
@@ -221,18 +313,30 @@ export function useLongContentStudio() {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx || !frames.length) return;
-    if (voiceProvider === "browser" && narrationEnabled) {
-      toast.warning("Browser TTS không thể nhúng trực tiếp vào MediaRecorder. Video sẽ có nhạc nền; hãy dùng Piper/ElevenLabs nếu cần voice-over trong file.");
-    }
+
     cancelNarration();
     audioEngine.resume();
+    let browserCapture: BrowserTtsCapture | null = null;
+    let shouldPlayVoice = false;
+
+    try {
+      if (narrationEnabled && voiceProvider === "browser") browserCapture = await prepareBrowserTtsCapture();
+      else shouldPlayVoice = await ensureVoiceForExport();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Không chuẩn bị được voice-over để export.");
+      return;
+    }
+
     const videoStream = canvas.captureStream(0) as MediaStream;
     const track = videoStream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack;
-    const audioStream = audioEngine.getRecordStream();
-    const combined = new MediaStream([...videoStream.getVideoTracks(), ...audioStream.getAudioTracks()]);
+    const audioTracks = browserCapture ? browserCapture.stream.getAudioTracks() : audioEngine.getRecordStream().getAudioTracks();
+    const combined = new MediaStream([...videoStream.getVideoTracks(), ...audioTracks]);
     const format = getExportFormat(exportFormat);
     const mimeType = format.mimeCandidates.find((candidate) => MediaRecorder.isTypeSupported(candidate));
-    if (!mimeType) return toast.error(`${format.label}: trình duyệt chưa hỗ trợ xuất định dạng này.`);
+    if (!mimeType) {
+      browserCapture?.stop();
+      return toast.error(`${format.label}: trình duyệt chưa hỗ trợ xuất định dạng này.`);
+    }
 
     const recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 10_000_000 });
     const chunks: Blob[] = [];
@@ -243,19 +347,25 @@ export function useLongContentStudio() {
     setExportProgress(0);
     setPlaying(false);
     startMusic();
-    if (voiceProvider !== "browser" && voiceUrl && narrationEnabled) audioEngine.playVoice(0);
     recorder.start();
+    if (shouldPlayVoice) await audioEngine.playVoice(0);
+
+    const spokenSceneIds = new Set<string>();
     const totalFrames = Math.max(1, Math.ceil(totalDuration * fps));
     for (let i = 0; i <= totalFrames; i++) {
       const time = Math.min(totalDuration, i / fps);
+      if (browserCapture && narrationEnabled) speakBrowserSceneForExport(time, spokenSceneIds);
       drawFrame(time);
       track.requestFrame();
       setExportProgress(Math.round((i / totalFrames) * 100));
       await new Promise((resolve) => setTimeout(resolve, 1000 / fps));
     }
+
     recorder.stop();
     audioEngine.stopMusic();
     audioEngine.stopVoice(true);
+    cancelNarration();
+    browserCapture?.stop();
     const blob = await done;
     const fileName = `${algo.id}-${lang}-long-16x9-${Date.now()}.${format.id}`;
     const file = new File([blob], fileName, { type: mimeType });
@@ -267,6 +377,33 @@ export function useLongContentStudio() {
     link.click();
     setExporting(false);
     toast.success("Đã xuất video và lưu vào danh sách đăng YouTube tạm thời.");
+  }
+
+  async function prepareBrowserTtsCapture(): Promise<BrowserTtsCapture> {
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      throw new Error("Trình duyệt chưa hỗ trợ capture tab audio. Hãy dùng Chrome/Edge hoặc chọn Piper/ElevenLabs.");
+    }
+
+    toast.info("Browser TTS export: chọn tab hiện tại và bật Share tab audio để ghi giọng đọc vào video.");
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    });
+    const audioTracks = stream.getAudioTracks();
+    if (!audioTracks.length) {
+      stream.getTracks().forEach((track) => track.stop());
+      throw new Error("Chưa bật Share tab audio nên không ghi được Browser TTS. Hãy export lại và bật chia sẻ âm thanh tab.");
+    }
+
+    return { stream, stop: () => stream.getTracks().forEach((track) => track.stop()) };
+  }
+
+  function speakBrowserSceneForExport(timeSec: number, spokenSceneIds: Set<string>) {
+    const state = getSceneAtTime(scenes, timeSec);
+    const scene = state.scene;
+    if (!scene || spokenSceneIds.has(scene.id)) return;
+    spokenSceneIds.add(scene.id);
+    speakNarration(scene.narration, lang, narrationRate, narrationVol / 100);
   }
 
   function startMusic() {
@@ -290,10 +427,15 @@ export function useLongContentStudio() {
     narrationEnabled, setNarrationEnabled, narrationRate, setNarrationRate, narrationVol, setNarrationVol,
     musicPreset, setMusicPreset, musicVol, setMusicVol, onMusicUpload,
     voiceProvider, setVoiceProvider, voiceUrl, voiceFileName, voiceLoading, generateVoiceOver,
-    voiceHealth, piperModels, piperModelKey, setPiperModelKey, elevenConfig, elevenModelId, setElevenModelId,
+    voiceHealth, piperRuntime, piperInstalling, installSelectedPiperModel, refreshPiperRuntime,
+    piperModels, piperModelKey, setPiperModelKey, elevenConfig, elevenModelId, setElevenModelId,
     elevenVoiceId, setElevenVoiceId, narrationScript,
     W: LONG_W, H: LONG_H, exportVideo,
   };
+}
+
+function buildVoiceScriptKey(parts: { provider: VoiceProvider; algoId: string; lang: Lang; modelKey: string; elevenModelId: string; elevenVoiceId: string; rate: number; script: string }) {
+  return [parts.provider, parts.algoId, parts.lang, parts.modelKey, parts.elevenModelId, parts.elevenVoiceId, parts.rate.toFixed(2), parts.script].join("::");
 }
 
 function speakNarration(text: string, lang: Lang, rate: number, volume: number) {

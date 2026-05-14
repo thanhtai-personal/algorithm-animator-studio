@@ -17,5 +17,6 @@ export function toModelResponse(model: PiperModel) {
     available: isModelAvailable(model),
     modelPath: model.modelPath,
     jsonPath: modelJsonPath(model.modelPath),
+    canInstall: Boolean(model.modelUrl && model.jsonUrl),
   };
 }

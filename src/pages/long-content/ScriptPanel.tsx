@@ -58,6 +58,12 @@ export function ScriptPanel({ studio: s }: { studio: LongContentStudio }) {
                 onChange={(value) => s.updateScriptScene(scene.id, "bulletsText", value)}
               />
               <ScriptField
+                label="Data input cho animation, nhập số cách nhau bằng dấu phẩy"
+                value={scene.dataSet?.join(", ") ?? ""}
+                rows={2}
+                onChange={(value) => s.updateScriptScene(scene.id, "dataSetText", value)}
+              />
+              <ScriptField
                 label="Voice-over narration"
                 value={scene.narration}
                 rows={5}

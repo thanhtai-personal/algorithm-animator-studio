@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ALGORITHMS, COMPLEXITY, makeSampleGraph, parseGraph } from "@/lib/algorithms";
+import type { AlgoDef, Frame } from "@/lib/algorithms";
 import type { ColumnVisualMode } from "@/lib/animalColumns";
 import { preloadAnimalSprites } from "@/lib/animalColumns";
 import { audioEngine } from "@/lib/audio";
@@ -33,7 +34,7 @@ const DEFAULT_GRAPH = "A-B:4, A-C:2, B-D:5, C-D:8, C-E:10, D-E:2, D-F:6, E-G:3, 
 
 export type VoiceProvider = "browser" | "piper" | "elevenlabs";
 
-type ScriptSceneField = "title" | "subtitle" | "narration" | "bulletsText";
+type ScriptSceneField = "title" | "subtitle" | "narration" | "bulletsText" | "dataSetText";
 type ScriptSceneOverride = Partial<Record<ScriptSceneField, string>>;
 
 export function useLongContentStudio() {
@@ -95,7 +96,7 @@ export function useLongContentStudio() {
     script: narrationScript,
   }), [voiceProvider, algo.id, lang, piperModelKey, elevenModelId, elevenVoiceId, narrationRate, narrationScript]);
 
-  const frames = useMemo(() => {
+  const baseFrames = useMemo(() => {
     if (algo.category === "graph") return algo.run([], { graph, start: 0, end: graph.nodes.length - 1 });
     const size = demoSizeForAlgorithm(algoId, algo.category === "search" ? 28 : 24);
     const arr = columnVisualMode === "animal" && algo.category === "sort"
@@ -103,8 +104,9 @@ export function useLongContentStudio() {
       : demoArrayForAlgorithm(algoId, size);
     return algo.run(arr, {});
   }, [algo, algoId, columnVisualMode, graph]);
-
+  const sceneFrames = useMemo(() => buildSceneFrames(scenes, algo), [algo, scenes]);
   const timelineState = useMemo(() => getSceneAtTime(scenes, elapsedSec), [scenes, elapsedSec]);
+  const frames = useMemo(() => sceneFrames[timelineState.scene.id] ?? baseFrames, [baseFrames, sceneFrames, timelineState.scene.id]);
   const frameIdx = useMemo(() => {
     if (!frames.length) return 0;
     const multiplier = timelineState.scene.animation ? timelineState.progress : elapsedSec / Math.max(1, totalDuration);
@@ -283,9 +285,10 @@ export function useLongContentStudio() {
     if (!canvas || !ctx || !frames.length) return;
     const safeTime = clampNumber(timeSec, 0, totalDuration);
     const state = getSceneAtTime(scenes, safeTime);
-    const localFrameIdx = getFrameIndexForTime(safeTime, state.scene.animation);
-    const frame = frames[localFrameIdx] ?? frames[0];
-    const previousFrame = localFrameIdx > 0 ? frames[localFrameIdx - 1] ?? null : null;
+    const localFrames = sceneFrames[state.scene.id] ?? baseFrames;
+    const localFrameIdx = getFrameIndexForTime(safeTime, state.scene.animation, localFrames.length);
+    const frame = localFrames[localFrameIdx] ?? localFrames[0];
+    const previousFrame = localFrameIdx > 0 ? localFrames[localFrameIdx - 1] ?? null : null;
     if (!frame) return;
     renderLongContentFrame(ctx, {
       frame,
@@ -299,16 +302,16 @@ export function useLongContentStudio() {
       theme,
       showCode,
       animalColumns: { mode: columnVisualMode, spriteScale: animalSpriteScale, jumpIntensity: animalJumpIntensity, highlightJump: animalHighlightJump },
-      frameLabel: `Frame ${localFrameIdx + 1}/${frames.length} · ${formatTime(safeTime)} / ${formatTime(totalDuration)}`,
+      frameLabel: `Data [${frame.arr.join(", ")}] · Frame ${localFrameIdx + 1}/${localFrames.length} · ${formatTime(safeTime)} / ${formatTime(totalDuration)}`,
     });
   }
 
-  function getFrameIndexForTime(timeSec: number, sceneAnimation?: boolean) {
-    if (!frames.length) return 0;
+  function getFrameIndexForTime(timeSec: number, sceneAnimation: boolean | undefined, frameCount: number) {
+    if (!frameCount) return 0;
     const safeTime = clampNumber(timeSec, 0, totalDuration);
     const state = getSceneAtTime(scenes, safeTime);
     const progress = sceneAnimation ? state.progress : safeTime / Math.max(1, totalDuration);
-    return clampFrameIndex(progress, frames.length);
+    return clampFrameIndex(progress, frameCount);
   }
 
   async function exportVideo() {
@@ -433,6 +436,7 @@ function applyScriptOverrides(scenes: LongContentScene[], overrides: Record<stri
     const bullets = override.bulletsText === undefined
       ? scene.bullets
       : override.bulletsText.split("\n").map((line) => line.trim()).filter(Boolean);
+    const dataSet = override.dataSetText === undefined ? scene.dataSet : parseDataSetText(override.dataSetText);
 
     return {
       ...scene,
@@ -440,8 +444,25 @@ function applyScriptOverrides(scenes: LongContentScene[], overrides: Record<stri
       subtitle: override.subtitle ?? scene.subtitle,
       narration: override.narration ?? scene.narration,
       bullets,
+      dataSet,
     };
   });
+}
+
+function parseDataSetText(value: string) {
+  const values = value
+    .split(/[\s,;]+/)
+    .map((part) => Number(part.trim()))
+    .filter((item) => Number.isFinite(item));
+  return values.length ? values : undefined;
+}
+
+function buildSceneFrames(scenes: LongContentScene[], algo: AlgoDef) {
+  if (algo.category !== "sort") return {};
+  return scenes.reduce<Record<string, Frame[]>>((acc, scene) => {
+    if (scene.dataSet?.length) acc[scene.id] = algo.run(scene.dataSet, {});
+    return acc;
+  }, {});
 }
 
 function buildVoiceScriptKey(parts: { provider: VoiceProvider; algoId: string; lang: Lang; modelKey: string; elevenModelId: string; elevenVoiceId: string; rate: number; script: string }) {

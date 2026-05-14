@@ -14,6 +14,7 @@ export type LongContentScene = {
   narration: string;
   durationSec: number;
   animation?: boolean;
+  dataSet?: number[];
 };
 
 const KIND_LABELS: Record<LongSceneKind, Record<Lang, string>> = {
@@ -132,6 +133,7 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? "Chào bạn, mình là người xây dựng KATA Tool. Đồng hành với mình trong quá trình thiết kế kịch bản và phân tích thuật toán là KATA Nova. Hôm nay, chúng ta dùng chính tool này để mổ xẻ Bubble Sort bằng animation."
         : "Welcome to KATA Tool. I build the teaching flow, and KATA Nova helps with script design and algorithm analysis. Today we will use this tool to break down Bubble Sort visually.",
       durationSec: Math.max(5, introSeconds),
+      dataSet: [8, 7, 6, 5, 4, 3, 2, 1],
     },
     {
       id: "hook",
@@ -145,6 +147,8 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? "Cùng là Bubble Sort, nhưng có lúc nó chạy rất nhanh, có lúc lại cực kỳ chậm. Trong video này, chúng ta sẽ đi từ trực giác, từng bước chạy, độ phức tạp, cho đến khi nào nên dùng và khi nào không nên dùng."
         : "Bubble Sort can look fast in one case and painfully slow in another. In this video we will cover the intuition, the step-by-step process, complexity, and when to use or avoid it.",
       durationSec: 8,
+      animation: true,
+      dataSet: [8, 7, 6, 5, 4, 3, 2, 1],
     },
     {
       id: "core-idea",
@@ -158,6 +162,8 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? "Bubble Sort hoạt động bằng một quy tắc rất đơn giản: nhìn hai phần tử kề nhau. Nếu phần tử bên trái lớn hơn phần tử bên phải, đổi chỗ chúng. Sau một lượt quét, phần tử lớn nhất nổi dần về cuối mảng."
         : "Bubble Sort follows a simple rule: look at two adjacent values. If the left value is greater than the right value, swap them. After one pass, the largest remaining value moves toward the end.",
       durationSec: 9,
+      animation: true,
+      dataSet: [5, 1, 4, 2, 8],
     },
     {
       id: "step-by-step",
@@ -171,6 +177,8 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? "Hãy xem Bubble Sort như một chuỗi sửa lỗi cục bộ. Nó không tìm ngay đáp án toàn cục, mà chỉ sửa từng cặp cạnh nhau. Khi lặp lại đủ nhiều lần, toàn bộ mảng trở nên có thứ tự."
         : "Think of Bubble Sort as a chain of local fixes. It does not solve the whole array at once. It fixes adjacent pairs, and repeated passes eventually make the entire array ordered.",
       durationSec: 13,
+      animation: true,
+      dataSet: [5, 1, 4, 2, 8],
     },
     {
       id: "animation",
@@ -185,6 +193,7 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         : "In the animation, watch three signals. The compared pair is highlighted. If the order is wrong, the bars swap. After each pass, the sorted region at the end grows.",
       durationSec: animationSeconds,
       animation: true,
+      dataSet: [5, 1, 4, 2, 8],
     },
     {
       id: "early-stop",
@@ -198,6 +207,8 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? "Nếu sau một lượt quét mà không có lần đổi chỗ nào, mảng đã sorted. Đây là tối ưu quan trọng nhất của Bubble Sort, giúp trường hợp tốt nhất trở thành tuyến tính."
         : "If a full pass has no swaps, the array is already sorted. This is Bubble Sort's most important optimization, turning the best case into linear time.",
       durationSec: 10,
+      animation: true,
+      dataSet: [1, 2, 3, 5, 4, 6, 7, 8],
     },
     {
       id: "complexity",
@@ -215,6 +226,8 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? "Về bộ nhớ, Bubble Sort rất tiết kiệm vì nó sort trực tiếp trên mảng, chỉ cần vài biến tạm. Nhưng về thời gian, vòng lặp lồng nhau làm số lần so sánh tăng theo bình phương của số phần tử."
         : "In memory usage, Bubble Sort is cheap because it sorts in place. In time, however, nested loops make comparisons grow quadratically with the number of elements.",
       durationSec: 12,
+      animation: true,
+      dataSet: [8, 7, 6, 5, 4, 3, 2, 1],
     },
     {
       id: "use-cases",
@@ -228,6 +241,8 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? "Bubble Sort phù hợp khi bạn đang học thuật toán, cần demo animation, hoặc xử lý dữ liệu rất nhỏ. Nó cũng có ý nghĩa khi dữ liệu gần như đã sorted và implementation có early stop."
         : "Bubble Sort is useful when learning algorithms, building visual demos, or handling very small data. It can also be acceptable when data is nearly sorted and early stop is implemented.",
       durationSec: 10,
+      animation: true,
+      dataSet: [1, 2, 3, 4, 6, 5, 7, 8],
     },
     {
       id: "avoid-cases",
@@ -241,6 +256,8 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? "Không nên dùng Bubble Sort khi dữ liệu lớn, khi cần hiệu năng ổn định trong production, hoặc khi sort nằm trong luồng realtime và backend tải cao."
         : "Avoid Bubble Sort for large data, production workloads that need stable performance, realtime UI flows, backend APIs, or heavy data pipelines.",
       durationSec: 10,
+      animation: true,
+      dataSet: [8, 7, 6, 5, 4, 3, 2, 1],
     },
     {
       id: "recap",
@@ -254,6 +271,7 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? "Bubble Sort không phải thuật toán bạn chọn cho dữ liệu lớn. Nhưng nó là một trong những thuật toán tốt nhất để học cách máy tính sắp xếp dữ liệu bằng so sánh và đổi chỗ."
         : "Bubble Sort is not the algorithm you choose for large data. But it is one of the best algorithms for learning how computers sort by comparing and swapping values.",
       durationSec: 8,
+      dataSet: [1, 2, 3, 4, 5, 6, 7, 8],
     },
   ];
 

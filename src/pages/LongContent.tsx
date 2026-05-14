@@ -30,6 +30,9 @@ export default function LongContent() {
           <h1 className="text-xl font-bold">Long Content Studio</h1>
           <p className="text-xs text-muted-foreground">Sản xuất video YouTube 16:9, có kịch bản VI/EN, đọc tự động và nhạc nền.</p>
         </div>
+        <Button variant="outline" onClick={() => navigate("/youtube-publishing")}>
+          <Youtube className="mr-2 h-4 w-4" /> YouTube
+        </Button>
         <Button variant="outline" onClick={() => navigate("/")}>Short Studio</Button>
       </header>
 
@@ -151,7 +154,7 @@ function PreviewPanel({ studio: s }: { studio: LongContentStudio }) {
         <Slider value={[s.elapsedSec]} min={0} max={s.totalDuration} step={0.1} onValueChange={([value]) => { s.setPlaying(false); s.setElapsedSec(value); }} />
         <div className="flex justify-between gap-3 text-xs text-muted-foreground">
           <span>{s.timelineState.scene.title}</span>
-          <span>{s.lang.toUpperCase()} · TTS {s.narrationEnabled ? "on" : "off"} · Frame {s.frameIdx + 1}/{s.frames.length} · {Math.round(s.totalDuration)}s</span>
+          <span>{s.lang.toUpperCase()} · Voice {s.voiceProvider} · Frame {s.frameIdx + 1}/{s.frames.length} · {Math.round(s.totalDuration)}s</span>
         </div>
       </Card>
     </div>
@@ -202,19 +205,77 @@ function LanguageControls({ studio: s }: { studio: LongContentStudio }) {
 }
 
 function NarrationControls({ studio: s }: { studio: LongContentStudio }) {
+  const availablePiperModels = s.piperModels.filter((model) => model.lang === s.lang || model.available);
   return (
     <Card className="space-y-4 p-4">
       <div className="flex items-center gap-2">
         <Volume2 className="h-4 w-4 text-emerald-400" />
-        <h2 className="font-semibold">Đọc kịch bản tự động</h2>
+        <h2 className="font-semibold">Voice-over kịch bản</h2>
       </div>
       <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
-        <Label>Đọc scene khi preview</Label>
+        <Label>Bật voice khi preview/export</Label>
         <Switch checked={s.narrationEnabled} onCheckedChange={s.setNarrationEnabled} />
       </div>
+      <div>
+        <Label>Nguồn giọng đọc</Label>
+        <Select value={s.voiceProvider} onValueChange={(value) => s.setVoiceProvider(value as typeof s.voiceProvider)}>
+          <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="browser">Browser TTS · nghe thử nhanh</SelectItem>
+            <SelectItem value="piper">Piper local · nhúng vào video</SelectItem>
+            <SelectItem value="elevenlabs">ElevenLabs PRO · nhúng vào video</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {s.voiceProvider === "piper" ? (
+        <div>
+          <Label>Piper model</Label>
+          <Select value={s.piperModelKey} onValueChange={s.setPiperModelKey}>
+            <SelectTrigger className="mt-2"><SelectValue placeholder="Chọn model Piper" /></SelectTrigger>
+            <SelectContent>
+              {availablePiperModels.map((model) => (
+                <SelectItem key={model.key} value={model.key} disabled={!model.available}>
+                  {model.label}{model.available ? "" : " · thiếu file"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="mt-2 text-xs text-muted-foreground">Piper exe: {s.voiceHealth?.piperExists ? "đã sẵn sàng" : "chưa tìm thấy"}</p>
+        </div>
+      ) : null}
+      {s.voiceProvider === "elevenlabs" ? (
+        <div className="grid gap-3">
+          <div>
+            <Label>ElevenLabs model</Label>
+            <Select value={s.elevenModelId} onValueChange={s.setElevenModelId}>
+              <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(s.elevenConfig?.models ?? []).map((model) => <SelectItem key={model.id} value={model.id}>{model.label} · {model.creditRateLabel}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Voice</Label>
+            <Select value={s.elevenVoiceId} onValueChange={s.setElevenVoiceId}>
+              <SelectTrigger className="mt-2"><SelectValue placeholder="Chọn voice ID" /></SelectTrigger>
+              <SelectContent>
+                {(s.elevenConfig?.voices ?? []).map((voice) => <SelectItem key={voice.id} value={voice.id}>{voice.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-xs text-muted-foreground">API key: {s.elevenConfig?.hasApiKey ? "đã cấu hình" : "chưa có ELEVENLABS_API_KEY"}</p>
+        </div>
+      ) : null}
       <NumberSlider label="Tốc độ đọc" value={s.narrationRate} min={0.7} max={1.2} suffix="x" step={0.05} onChange={s.setNarrationRate} />
-      <NumberSlider label="Âm lượng đọc" value={s.narrationVol} min={0} max={100} suffix="%" onChange={s.setNarrationVol} />
-      <p className="text-xs text-muted-foreground">TTS dùng giọng có sẵn của trình duyệt theo ngôn ngữ đang chọn. Bản export hiện nhúng nhạc nền; voice-over browser dùng để nghe/duyệt kịch bản khi preview.</p>
+      <NumberSlider label="Âm lượng voice" value={s.narrationVol} min={0} max={100} suffix="%" onChange={s.setNarrationVol} />
+      <Button className="w-full" variant={s.voiceProvider === "browser" ? "outline" : "default"} onClick={s.generateVoiceOver} disabled={s.voiceLoading}>
+        {s.voiceLoading ? "Đang tạo voice..." : s.voiceProvider === "browser" ? "Browser TTS chỉ preview" : "Tạo voice-over cho video"}
+      </Button>
+      {s.voiceUrl ? <audio className="w-full" controls src={s.voiceUrl} /> : null}
+      <p className="text-xs text-muted-foreground">
+        Browser TTS không xuất được audio stream chuẩn để nhúng file. Piper/ElevenLabs sẽ tạo audio URL và mix vào MediaRecorder cùng nhạc nền.
+        {s.voiceFileName ? ` File hiện tại: ${s.voiceFileName}` : ""}
+      </p>
     </Card>
   );
 }

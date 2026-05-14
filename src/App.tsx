@@ -9,6 +9,7 @@ import Index from "./pages/Index.tsx";
 import LongContent from "./pages/LongContent.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import SocialPublishing from "./pages/SocialPublishing.tsx";
+import YoutubePublishing from "./pages/YoutubePublishing.tsx";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,8 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/long-content" element={<LongContent />} />
           <Route path="/social-publishing" element={<SocialPublishing />} />
+          <Route path="/youtube-publishing" element={<YoutubePublishing />} />
+          <Route path="/youtube" element={<YoutubePublishing />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

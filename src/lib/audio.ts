@@ -8,9 +8,12 @@ export class AudioEngine {
   master: GainNode;
   sfxGain: GainNode;
   musicGain: GainNode;
+  voiceGain: GainNode;
   dest?: MediaStreamAudioDestinationNode;
   musicEl?: HTMLAudioElement;
   musicSrc?: MediaElementAudioSourceNode;
+  voiceEl?: HTMLAudioElement;
+  voiceSrc?: MediaElementAudioSourceNode;
   private musicLoopTimer: number | null = null;
   private musicLoopDelayMs = 0;
   private musicPlaying = false;
@@ -34,6 +37,9 @@ export class AudioEngine {
     this.musicGain = this.ctx.createGain();
     this.musicGain.gain.value = 0.3;
     this.musicGain.connect(this.master);
+    this.voiceGain = this.ctx.createGain();
+    this.voiceGain.gain.value = 0.85;
+    this.voiceGain.connect(this.master);
   }
 
   resume() {
@@ -42,6 +48,7 @@ export class AudioEngine {
 
   setSfxVolume(v: number) { this.sfxGain.gain.value = v; }
   setMusicVolume(v: number) { this.musicGain.gain.value = v; }
+  setVoiceVolume(v: number) { this.voiceGain.gain.value = v; }
 
   loadAssetSfx(id: AssetSfxId, url: string): Promise<AudioBuffer> {
     const cached = this.sfxBuffers.get(id);
@@ -72,6 +79,7 @@ export class AudioEngine {
       this.dest = this.ctx.createMediaStreamDestination();
       this.sfxGain.connect(this.dest);
       this.musicGain.connect(this.dest);
+      this.voiceGain.connect(this.dest);
     }
     return this.dest.stream;
   }
@@ -92,6 +100,39 @@ export class AudioEngine {
     this.musicSrc = this.ctx.createMediaElementSource(el);
     this.musicSrc.connect(this.musicGain);
   }
+
+  setVoiceSource(url: string | null) {
+    this.stopVoice(true);
+    if (this.voiceSrc) {
+      try { this.voiceSrc.disconnect(); } catch { /* noop */ }
+    }
+    if (!url) { this.voiceEl = undefined; this.voiceSrc = undefined; return; }
+    const el = new Audio(url);
+    el.loop = false;
+    el.preload = "auto";
+    el.crossOrigin = "anonymous";
+    this.voiceEl = el;
+    this.voiceSrc = this.ctx.createMediaElementSource(el);
+    this.voiceSrc.connect(this.voiceGain);
+  }
+
+  playVoice(startSeconds = 0) {
+    if (!this.voiceEl) return;
+    this.resume();
+    try { this.voiceEl.currentTime = Math.max(0, startSeconds); } catch { /* noop */ }
+    this.voiceEl.playbackRate = 1;
+    this.voiceEl.preservesPitch = true;
+    this.voiceEl.play().catch(() => {});
+  }
+
+  stopVoice(reset: boolean) {
+    if (!this.voiceEl) return;
+    this.voiceEl.pause();
+    if (reset) {
+      try { this.voiceEl.currentTime = 0; } catch { /* noop */ }
+    }
+  }
+
 
   /** Play one note in the procedural music loop. */
   private playMusicNote(freq: number, dur: number, type: OscillatorType, gain = 0.15) {

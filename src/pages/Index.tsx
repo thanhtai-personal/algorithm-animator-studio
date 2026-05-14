@@ -1,4 +1,4 @@
-import { Film, LogIn, LogOut, RadioTower, Sparkles } from "lucide-react";
+import { Film, LogIn, LogOut, RadioTower, Sparkles, Youtube } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,10 @@ const Index = () => {
         <Button variant="outline" onClick={() => navigate("/long-content")}>
           <Film className="h-4 w-4" />
           Long 16:9
+        </Button>
+        <Button variant="outline" onClick={() => navigate("/youtube-publishing")}>
+          <Youtube className="h-4 w-4" />
+          YouTube
         </Button>
         {canConfigure ? (
           <>

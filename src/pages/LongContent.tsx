@@ -177,7 +177,7 @@ function NarrationControls({ studio: s }: { studio: LongContentStudio }) {
         <Select value={s.voiceProvider} onValueChange={(value) => s.setVoiceProvider(value as typeof s.voiceProvider)}>
           <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="browser">Browser TTS · ghi bằng tab audio khi export</SelectItem>
+            <SelectItem value="browser">Browser TTS · preview only</SelectItem>
             <SelectItem value="piper">Piper local · tạo file và nhúng vào video</SelectItem>
             <SelectItem value="elevenlabs">ElevenLabs PRO · tạo file và nhúng vào video</SelectItem>
           </SelectContent>
@@ -244,7 +244,7 @@ function NarrationControls({ studio: s }: { studio: LongContentStudio }) {
       </Button>
       {s.voiceUrl ? <audio className="w-full" controls src={s.voiceUrl} /> : null}
       <p className="text-xs text-muted-foreground">
-        Browser TTS sẽ được ghi khi export bằng tab audio: chọn tab hiện tại và bật Share tab audio. Piper/ElevenLabs sẽ tự tạo voice nếu chưa có hoặc kịch bản đổi.
+        Browser TTS chỉ dùng để nghe thử trong preview vì trình duyệt không cung cấp audio stream ổn định cho export. Muốn video có voice, hãy chọn Piper hoặc ElevenLabs; app sẽ tự tạo lại voice nếu kịch bản đổi.
         {s.voiceFileName ? ` File hiện tại: ${s.voiceFileName}` : ""}
       </p>
     </Card>

@@ -33,7 +33,6 @@ const DEFAULT_GRAPH = "A-B:4, A-C:2, B-D:5, C-D:8, C-E:10, D-E:2, D-F:6, E-G:3, 
 
 export type VoiceProvider = "browser" | "piper" | "elevenlabs";
 
-type BrowserTtsCapture = { stream: MediaStream; stop: () => void };
 type ScriptSceneField = "title" | "subtitle" | "narration" | "bulletsText";
 type ScriptSceneOverride = Partial<Record<ScriptSceneField, string>>;
 
@@ -211,7 +210,7 @@ export function useLongContentStudio() {
   async function generateVoiceOver() {
     if (voiceProvider === "browser") {
       speakNarration(narrationScript, lang, narrationRate, narrationVol / 100);
-      toast.info("Đang đọc thử bằng Browser TTS. Khi export, hãy chọn tab hiện tại và bật Share tab audio để ghi giọng đọc vào video.");
+      toast.info("Đang đọc thử bằng Browser TTS. Browser TTS chỉ dùng để preview; export có voice cần Piper hoặc ElevenLabs.");
       return;
     }
 
@@ -319,12 +318,14 @@ export function useLongContentStudio() {
 
     cancelNarration();
     audioEngine.resume();
-    let browserCapture: BrowserTtsCapture | null = null;
     let shouldPlayVoice = false;
 
     try {
-      if (narrationEnabled && voiceProvider === "browser") browserCapture = await prepareBrowserTtsCapture();
-      else shouldPlayVoice = await ensureVoiceForExport();
+      if (narrationEnabled && voiceProvider === "browser") {
+        toast.error("Browser TTS chỉ dùng để preview. Để export có voice, hãy chọn Piper hoặc ElevenLabs rồi tạo voice-over.");
+        return;
+      }
+      shouldPlayVoice = await ensureVoiceForExport();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không chuẩn bị được voice-over để export.");
       return;
@@ -332,12 +333,11 @@ export function useLongContentStudio() {
 
     const videoStream = canvas.captureStream(0) as MediaStream;
     const track = videoStream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack;
-    const audioTracks = browserCapture ? browserCapture.stream.getAudioTracks() : audioEngine.getRecordStream().getAudioTracks();
+    const audioTracks = audioEngine.getRecordStream().getAudioTracks();
     const combined = new MediaStream([...videoStream.getVideoTracks(), ...audioTracks]);
     const format = getExportFormat(exportFormat);
     const mimeType = format.mimeCandidates.find((candidate) => MediaRecorder.isTypeSupported(candidate));
     if (!mimeType) {
-      browserCapture?.stop();
       return toast.error(`${format.label}: trình duyệt chưa hỗ trợ xuất định dạng này.`);
     }
 
@@ -353,11 +353,9 @@ export function useLongContentStudio() {
     recorder.start();
     if (shouldPlayVoice) await audioEngine.playVoice(0);
 
-    const spokenSceneIds = new Set<string>();
     const totalFrames = Math.max(1, Math.ceil(totalDuration * fps));
     for (let i = 0; i <= totalFrames; i++) {
       const time = Math.min(totalDuration, i / fps);
-      if (browserCapture && narrationEnabled) speakBrowserSceneForExport(time, spokenSceneIds);
       drawFrame(time);
       track.requestFrame();
       setExportProgress(Math.round((i / totalFrames) * 100));
@@ -368,7 +366,6 @@ export function useLongContentStudio() {
     audioEngine.stopMusic();
     audioEngine.stopVoice(true);
     cancelNarration();
-    browserCapture?.stop();
     const blob = await done;
     const fileName = `${algo.id}-${lang}-long-16x9-${Date.now()}.${format.id}`;
     const file = new File([blob], fileName, { type: mimeType });
@@ -380,33 +377,6 @@ export function useLongContentStudio() {
     link.click();
     setExporting(false);
     toast.success("Đã xuất video và lưu vào danh sách đăng YouTube tạm thời.");
-  }
-
-  async function prepareBrowserTtsCapture(): Promise<BrowserTtsCapture> {
-    if (!navigator.mediaDevices?.getDisplayMedia) {
-      throw new Error("Trình duyệt chưa hỗ trợ capture tab audio. Hãy dùng Chrome/Edge hoặc chọn Piper/ElevenLabs.");
-    }
-
-    toast.info("Browser TTS export: chọn tab hiện tại và bật Share tab audio để ghi giọng đọc vào video.");
-    const stream = await navigator.mediaDevices.getDisplayMedia({
-      video: true,
-      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-    });
-    const audioTracks = stream.getAudioTracks();
-    if (!audioTracks.length) {
-      stream.getTracks().forEach((track) => track.stop());
-      throw new Error("Chưa bật Share tab audio nên không ghi được Browser TTS. Hãy export lại và bật chia sẻ âm thanh tab.");
-    }
-
-    return { stream, stop: () => stream.getTracks().forEach((track) => track.stop()) };
-  }
-
-  function speakBrowserSceneForExport(timeSec: number, spokenSceneIds: Set<string>) {
-    const state = getSceneAtTime(scenes, timeSec);
-    const scene = state.scene;
-    if (!scene || spokenSceneIds.has(scene.id)) return;
-    spokenSceneIds.add(scene.id);
-    speakNarration(scene.narration, lang, narrationRate, narrationVol / 100);
   }
 
   function startMusic() {

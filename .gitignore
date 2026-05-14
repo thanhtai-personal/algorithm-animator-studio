@@ -24,3 +24,7 @@ dist-ssr
 *.sw?
 
 .env
+# Desktop/runtime builds
+release/
+dist-electron/
+runtime/

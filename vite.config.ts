@@ -11,6 +11,13 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    proxy: {
+      "/api": { target: "http://localhost:5050", changeOrigin: true },
+      "/generated": { target: "http://localhost:5050", changeOrigin: true },
+      "/generated-previews": { target: "http://localhost:5050", changeOrigin: true },
+      "/generated-videos": { target: "http://localhost:5050", changeOrigin: true },
+      "/background-music": { target: "http://localhost:5050", changeOrigin: true },
+    },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {

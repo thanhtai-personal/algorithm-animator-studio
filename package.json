@@ -11,10 +11,18 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "dev:client": "vite",
+    "dev:client": "vite --host 0.0.0.0 --port 3000",
     "dev:server": "tsx watch server/index.ts",
     "dev:full": "npm run dev",
-    "start:server": "tsx server/index.ts"
+    "start:server": "tsx server/index.ts",
+    "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --outfile=dist-electron/server/index.js",
+    "build:desktop": "cross-env DESKTOP_BUILD=true VITE_PUBLIC_WEB=false VITE_API_URL=http://127.0.0.1:8888 npm run build && npm run build:server",
+    "electron:dev": "cross-env ELECTRON_DEV_URL=http://localhost:3000 npx electron .",
+    "dist:win": "npm run build:desktop && electron-builder --win --x64 --config.directories.output=release/win",
+    "dist:win:nsis": "npm run build:desktop && electron-builder --win nsis --x64 --config.directories.output=release/win",
+    "dist:win:unpacked": "npm run build:desktop && electron-builder --win --x64 --dir --config.directories.output=release/win",
+    "dist:clean": "node -e \"require('fs').rmSync('release',{recursive:true,force:true});require('fs').rmSync('dist-electron',{recursive:true,force:true})\"",
+    "build:public": "cross-env VITE_PUBLIC_WEB=true npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -99,6 +107,57 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
     "vite": "^8.0.12",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "cross-env": "^7.0.3",
+    "electron": "^42.0.1",
+    "electron-builder": "^26.0.12",
+    "esbuild": "^0.27.1"
+  },
+  "main": "electron/main.cjs",
+  "description": "Algorithm animation, voice-over and YouTube publishing studio.",
+  "author": "Code Visual Lab",
+  "build": {
+    "appId": "vn.codevisuallab.algoshorts",
+    "productName": "AlgoShorts Studio",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist-electron/**/*",
+      "electron/**/*",
+      "package.json",
+      "public/**/*"
+    ],
+    "asar": true,
+    "extraResources": [
+      {
+        "from": "dist",
+        "to": "desktop-client",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "asarUnpack": [
+      "dist-electron/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "public/favicon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AlgoShorts Studio"
+    }
   }
 }

@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { PublicWebBanner } from "./components/PublicWebBanner";
 import { Analytics } from "@vercel/analytics/react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { AppHeader } from "@/components/AppHeader";
@@ -28,6 +29,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AnalyticsTracker />
+        <PublicWebBanner />
         <AppHeader />
         <Routes>
           <Route path="/auth" element={<Auth />} />

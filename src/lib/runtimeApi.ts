@@ -1,9 +1,11 @@
-const DEFAULT_API_URL = "http://localhost:5050";
+export const IS_PUBLIC_WEB = import.meta.env.VITE_PUBLIC_WEB === "true";
 
 export function buildApiUrl(path: string) {
-  const base = (import.meta.env.VITE_API_URL || DEFAULT_API_URL).replace(/\/+$/, "");
   const suffix = path.startsWith("/") ? path : `/${path}`;
-  return `${base}${suffix}`;
+  const configured = String(import.meta.env.VITE_API_URL || "").trim().replace(/\/+$/, "");
+
+  if (configured) return `${configured}${suffix}`;
+  return suffix;
 }
 
 export async function parseApiResponse<T>(response: Response): Promise<T> {

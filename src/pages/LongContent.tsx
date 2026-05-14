@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSepa
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { ASSET_MUSIC_OPTIONS, BackgroundMusicId } from "@/lib/backgroundMusic";
-import { Lang, MUSIC_PRESETS } from "@/lib/i18n";
+import { MUSIC_PRESETS } from "@/lib/i18n";
 import { THEMES } from "@/lib/renderer";
 import { EXPORT_FORMATS, ExportFormat } from "./studio/exportFormats";
 import { LongContentStudio, useLongContentStudio } from "./long-content/useLongContentStudio";
@@ -53,7 +53,7 @@ function LeftControls({ studio: s }: { studio: LongContentStudio }) {
           <Film className="h-4 w-4 text-emerald-400" />
           <h2 className="font-semibold">Cấu hình nội dung</h2>
         </div>
-        <LanguageControls studio={s} />
+        <SystemLanguageInfo studio={s} />
 
         <div>
           <Label>Thuật toán</Label>
@@ -166,7 +166,7 @@ function ScriptPanel({ studio: s }: { studio: LongContentStudio }) {
     <Card className="h-fit space-y-4 p-4">
       <div>
         <h2 className="font-semibold">Kịch bản song ngữ</h2>
-        <p className="text-xs text-muted-foreground">Tool luôn sinh cả tiếng Việt và tiếng Anh. Ngôn ngữ đang chọn sẽ được render lên video và đọc khi preview.</p>
+        <p className="text-xs text-muted-foreground">Tool luôn sinh cả tiếng Việt và tiếng Anh. Ngôn ngữ hệ thống đang chọn ở header sẽ được render lên video và đọc khi preview/export.</p>
       </div>
       <div className="space-y-3">
         {s.viScenes.map((viScene, index) => {
@@ -188,18 +188,16 @@ function ScriptPanel({ studio: s }: { studio: LongContentStudio }) {
   );
 }
 
-function LanguageControls({ studio: s }: { studio: LongContentStudio }) {
+function SystemLanguageInfo({ studio: s }: { studio: LongContentStudio }) {
   return (
-    <div>
-      <Label className="flex items-center gap-2"><Languages className="h-4 w-4" /> Ngôn ngữ video</Label>
-      <Select value={s.lang} onValueChange={(value) => s.setLang(value as Lang)}>
-        <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="vi">Tiếng Việt · xuất video VI</SelectItem>
-          <SelectItem value="en">English · export EN video</SelectItem>
-        </SelectContent>
-      </Select>
-      <p className="mt-2 text-xs text-muted-foreground">Kịch bản luôn có đủ VI/EN để bạn xuất hai bản video riêng.</p>
+    <div className="rounded-lg border border-border bg-card/50 p-3">
+      <Label className="flex items-center gap-2"><Languages className="h-4 w-4" /> Ngôn ngữ kịch bản</Label>
+      <div className="mt-2 rounded-md border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm font-semibold text-emerald-200">
+        {s.lang === "vi" ? "Tiếng Việt" : "English"}
+      </div>
+      <p className="mt-2 text-xs text-muted-foreground">
+        Kịch bản, subtitle và voice-over tự dùng ngôn ngữ hệ thống đã chọn ở header. Đổi ngôn ngữ tại header của Short Studio để xuất bản VI hoặc EN.
+      </p>
     </div>
   );
 }

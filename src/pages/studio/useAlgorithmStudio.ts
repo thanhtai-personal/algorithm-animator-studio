@@ -4,7 +4,7 @@ import { ALGORITHMS, COMPLEXITY, Frame, parseGraph } from "@/lib/algorithms";
 import { ColumnVisualMode, preloadAnimalSprites } from "@/lib/animalColumns";
 import { audioEngine, SfxKind } from "@/lib/audio";
 import { BackgroundMusicId, getAssetMusicOption, isAssetMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
-import { Lang, PLATFORMS, t } from "@/lib/i18n";
+import { Lang, PLATFORMS, readSystemLang, subscribeSystemLang, t, writeSystemLang } from "@/lib/i18n";
 import { renderFrame, THEMES, Theme } from "@/lib/renderer";
 import { getAssetSfxOption } from "@/lib/selectSounds";
 import { ExportFormat, getExportFormat } from "./exportFormats";
@@ -19,7 +19,11 @@ type UseAlgorithmStudioOptions = {
 };
 
 export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
-  const [lang, setLang] = useState<Lang>("en");
+  const [lang, setLangState] = useState<Lang>(() => readSystemLang("en"));
+  const setLang = (nextLang: Lang) => {
+    setLangState(nextLang);
+    writeSystemLang(nextLang);
+  };
   const tr = (k: Parameters<typeof t>[1]) => t(lang, k);
 
   const [algoId, setAlgoId] = useState("bubble");
@@ -63,6 +67,8 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   );
   const [startLabel, setStartLabel] = useState("A");
   const [endLabel, setEndLabel] = useState("L");
+
+  useEffect(() => subscribeSystemLang(setLangState), []);
 
   const algo = ALGORITHMS[algoId];
   const isGraph = algo.category === "graph";

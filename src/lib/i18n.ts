@@ -1,5 +1,44 @@
 export type Lang = "en" | "vi";
 
+export const SYSTEM_LANG_STORAGE_KEY = "algoshorts.systemLanguage";
+export const SYSTEM_LANG_CHANGE_EVENT = "algoshorts:system-language-change";
+
+export function normalizeLang(value: unknown, fallback: Lang = "en"): Lang {
+  return value === "vi" || value === "en" ? value : fallback;
+}
+
+export function readSystemLang(fallback: Lang = "en"): Lang {
+  if (typeof window === "undefined") return fallback;
+  return normalizeLang(window.localStorage.getItem(SYSTEM_LANG_STORAGE_KEY), fallback);
+}
+
+export function writeSystemLang(lang: Lang) {
+  if (typeof window === "undefined") return;
+  const nextLang = normalizeLang(lang);
+  window.localStorage.setItem(SYSTEM_LANG_STORAGE_KEY, nextLang);
+  window.dispatchEvent(new CustomEvent(SYSTEM_LANG_CHANGE_EVENT, { detail: nextLang }));
+}
+
+export function subscribeSystemLang(listener: (lang: Lang) => void) {
+  if (typeof window === "undefined") return () => {};
+
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === SYSTEM_LANG_STORAGE_KEY) listener(normalizeLang(event.newValue));
+  };
+  const onCustom = (event: Event) => {
+    listener(normalizeLang((event as CustomEvent<Lang>).detail));
+  };
+
+  window.addEventListener("storage", onStorage);
+  window.addEventListener(SYSTEM_LANG_CHANGE_EVENT, onCustom);
+
+  return () => {
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener(SYSTEM_LANG_CHANGE_EVENT, onCustom);
+  };
+}
+
+
 export const STRINGS = {
   appTitle: { en: "AlgoShorts Studio", vi: "AlgoShorts Studio" },
   tagline: {

@@ -5,7 +5,7 @@ import type { ColumnVisualMode } from "@/lib/animalColumns";
 import { preloadAnimalSprites } from "@/lib/animalColumns";
 import { audioEngine } from "@/lib/audio";
 import { BackgroundMusicId, getAssetMusicOption, isAssetMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
-import type { Lang } from "@/lib/i18n";
+import { type Lang, readSystemLang, subscribeSystemLang } from "@/lib/i18n";
 import { buildLongContentScenes, getSceneAtTime, getTotalDuration } from "@/lib/longContentTimeline";
 import { renderLongContentFrame } from "@/lib/longContentRenderer";
 import { THEMES } from "@/lib/renderer";
@@ -23,7 +23,7 @@ export type VoiceProvider = "browser" | "piper" | "elevenlabs";
 export function useLongContentStudio() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastSpokenSceneId = useRef<string | null>(null);
-  const [lang, setLang] = useState<Lang>("vi");
+  const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
   const [algoId, setAlgoId] = useState("bubble");
   const [themeName, setThemeName] = useState<keyof typeof THEMES>("neon");
   const [showCode, setShowCode] = useState(true);
@@ -83,9 +83,14 @@ export function useLongContentStudio() {
   }, [elapsedSec, frames.length, timelineState, totalDuration]);
 
   useEffect(() => { preloadAnimalSprites(); void loadVoiceRuntime(); }, []);
+  useEffect(() => subscribeSystemLang(setLang), []);
   useEffect(() => { audioEngine.setMusicVolume(musicVol / 100); }, [musicVol]);
   useEffect(() => { audioEngine.setVoiceVolume(narrationVol / 100); }, [narrationVol]);
   useEffect(() => { audioEngine.setVoiceSource(voiceUrl || null); }, [voiceUrl]);
+  useEffect(() => {
+    const langModel = piperModels.find((model) => model.lang === lang && model.available);
+    if (langModel && piperModelKey !== langModel.key) setPiperModelKey(langModel.key);
+  }, [lang, piperModelKey, piperModels]);
   useEffect(() => { setElapsedSec(0); setPlaying(false); cancelNarration(); }, [algoId, animationSeconds, introSeconds, lang]);
   useEffect(() => { drawFrame(elapsedSec); });
 
@@ -276,7 +281,7 @@ export function useLongContentStudio() {
   }
 
   return {
-    canvasRef, lang, setLang, algoId, setAlgoId, algo, themeName, setThemeName, showCode, setShowCode,
+    canvasRef, lang, algoId, setAlgoId, algo, themeName, setThemeName, showCode, setShowCode,
     columnVisualMode, setColumnVisualMode, animalSpriteScale, setAnimalSpriteScale,
     animalJumpIntensity, setAnimalJumpIntensity, animalHighlightJump, setAnimalHighlightJump,
     fps, setFps, animationSeconds, setAnimationSeconds, introSeconds, setIntroSeconds,

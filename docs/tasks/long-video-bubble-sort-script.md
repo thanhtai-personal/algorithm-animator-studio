@@ -12,18 +12,41 @@ Thông điệp chính:
 
 Thời lượng đề xuất: 8-10 phút.
 
+## Giới Thiệu Người Dẫn Và AI Đồng Hành
+
+Tên AI đồng hành trong kịch bản: **KATA Nova**.
+
+Vai trò trong video:
+
+- Người dẫn: đại diện cho tác giả, người xây dựng ý tưởng, định hướng nội dung và trải nghiệm học thuật toán.
+- KATA Nova: AI đồng hành hỗ trợ phân tích, dựng kịch bản, gợi ý dữ liệu minh họa, nhịp giải thích và hiệu ứng trực quan cho tool.
+- Tool là sản phẩm kết hợp giữa tư duy giảng dạy của người dẫn và khả năng hỗ trợ kỹ thuật của KATA Nova.
+
+Intro voice-over đề xuất:
+
+"Chào bạn, mình là người xây dựng KATA Tool. Trong series này, mình không làm một mình. Đồng hành với mình là KATA Nova, một AI assistant được dùng để cùng thiết kế kịch bản, phân tích thuật toán và biến những khái niệm khô khan thành animation dễ hiểu hơn. Hôm nay, chúng ta sẽ dùng chính tool này để mổ xẻ Bubble Sort."
+
+Visual intro:
+
+- Hiển thị logo hoặc tên "KATA Tool" ở trung tâm.
+- Bên trái là nhãn "Creator" hoặc tên thật/brand của bạn.
+- Bên phải là nhãn "KATA Nova".
+- Hai luồng ánh sáng hoặc hai đường timeline nhập vào một canvas thuật toán.
+- Chuyển cảnh sang các cột Bubble Sort đang chuyển động.
+
 ## Cấu Trúc Video
 
 | Mốc thời gian | Phân đoạn | Mục tiêu |
 | --- | --- | --- |
-| 00:00-00:35 | Hook | Cho người xem thấy Bubble Sort bằng một animation bắt mắt và đặt câu hỏi vì sao thuật toán này chậm nhưng vẫn đáng học. |
-| 00:35-01:30 | Ý tưởng cốt lõi | Giải thích "phần tử lớn nổi dần về cuối" bằng ví dụ trực quan. |
-| 01:30-03:30 | Chạy từng bước | Minh họa từng lượt quét với data nhỏ. |
-| 03:30-04:45 | Tối ưu swapped flag | Cho thấy trường hợp gần sorted có thể dừng sớm. |
-| 04:45-06:20 | Độ phức tạp | So sánh best, average, worst với data cụ thể. |
-| 06:20-07:35 | Khi nên dùng | Nêu các tình huống phù hợp: học tập, demo, data rất nhỏ, gần sorted. |
-| 07:35-08:45 | Khi không nên dùng | Nêu các tình huống không phù hợp: data lớn, production, realtime, server load. |
-| 08:45-09:30 | Tổng kết | Chốt lại bằng bảng decision guide và recap. |
+| 00:00-00:25 | Intro KATA Tool | Giới thiệu người dẫn, KATA Nova và cách tool được dùng để giải thích thuật toán bằng animation. |
+| 00:25-00:55 | Hook | Cho người xem thấy Bubble Sort bằng một animation bắt mắt và đặt câu hỏi vì sao thuật toán này chậm nhưng vẫn đáng học. |
+| 00:55-01:50 | Ý tưởng cốt lõi | Giải thích "phần tử lớn nổi dần về cuối" bằng ví dụ trực quan. |
+| 01:50-03:50 | Chạy từng bước | Minh họa từng lượt quét với data nhỏ. |
+| 03:50-05:05 | Tối ưu swapped flag | Cho thấy trường hợp gần sorted có thể dừng sớm. |
+| 05:05-06:40 | Độ phức tạp | So sánh best, average, worst với data cụ thể. |
+| 06:40-07:55 | Khi nên dùng | Nêu các tình huống phù hợp: học tập, demo, data rất nhỏ, gần sorted. |
+| 07:55-09:05 | Khi không nên dùng | Nêu các tình huống không phù hợp: data lớn, production, realtime, server load. |
+| 09:05-09:50 | Tổng kết | Chốt lại bằng bảng decision guide và recap. |
 
 ## Bộ Data Minh Họa
 
@@ -37,7 +60,20 @@ Thời lượng đề xuất: 8-10 phút.
 
 ## Kịch Bản Chi Tiết
 
-### 00:00-00:35 Hook
+### 00:00-00:25 Intro KATA Tool
+
+Visual:
+
+- Logo hoặc chữ "KATA Tool" xuất hiện trên nền tối.
+- Hai nhãn xuất hiện hai bên: "Creator" và "KATA Nova".
+- Dòng mô tả ngắn: "Human teaching direction + AI-assisted scripting + algorithm animation".
+- Hai đường sáng nhập vào canvas, tạo thành mảng dữ liệu đầu tiên.
+
+Voice-over:
+
+"Chào bạn, mình là người xây dựng KATA Tool. Đồng hành với mình trong quá trình thiết kế kịch bản và phân tích thuật toán là KATA Nova. KATA Tool là nơi mình kết hợp cách giảng giải của con người với khả năng hỗ trợ của AI để biến thuật toán thành animation dễ quan sát, dễ hiểu và dễ nhớ."
+
+### 00:25-00:55 Hook
 
 Visual:
 
@@ -50,7 +86,7 @@ Voice-over:
 
 "Cùng là Bubble Sort, nhưng có lúc nó chạy rất nhanh, có lúc lại cực kỳ chậm. Trong video này, chúng ta sẽ mổ xẻ Bubble Sort từ trực giác, từng bước chạy, độ phức tạp, cho đến câu hỏi quan trọng nhất: khi nào nên dùng và khi nào tuyệt đối không nên dùng."
 
-### 00:35-01:30 Ý Tưởng Cốt Lõi
+### 00:55-01:50 Ý Tưởng Cốt Lõi
 
 Visual:
 
@@ -64,7 +100,7 @@ Voice-over:
 
 "Bubble Sort hoạt động bằng một quy tắc rất đơn giản: nhìn hai phần tử kề nhau. Nếu phần tử bên trái lớn hơn phần tử bên phải, đổi chỗ chúng. Sau một lượt quét từ trái sang phải, phần tử lớn nhất sẽ nổi dần về cuối mảng, giống như bong bóng nổi lên mặt nước."
 
-### 01:30-03:30 Chạy Từng Bước
+### 01:50-03:50 Chạy Từng Bước
 
 Data chính: `[5, 1, 4, 2, 8]`
 
@@ -103,7 +139,7 @@ Voice-over:
 
 "Điểm quan trọng là Bubble Sort không cố tìm ngay phần tử nhỏ nhất hay lớn nhất bằng một phép tính đặc biệt. Nó chỉ sửa lỗi cục bộ giữa hai phần tử cạnh nhau. Nhưng khi lặp lại đủ nhiều lần, các lỗi cục bộ biến mất và toàn bộ mảng trở nên có thứ tự."
 
-### 03:30-04:45 Tối Ưu Swapped Flag
+### 03:50-05:05 Tối Ưu Swapped Flag
 
 Data: `[1, 2, 3, 5, 4, 6, 7, 8]`
 
@@ -135,7 +171,7 @@ Voice-over:
 
 "Nếu sau một lượt quét mà không có lần đổi chỗ nào, mảng đã sorted. Đây là tối ưu quan trọng nhất của Bubble Sort. Không có tối ưu này, ngay cả mảng đã sorted vẫn có thể bị quét lãng phí nhiều lần."
 
-### 04:45-06:20 Độ Phức Tạp Theo Trường Hợp
+### 05:05-06:40 Độ Phức Tạp Theo Trường Hợp
 
 Visual:
 

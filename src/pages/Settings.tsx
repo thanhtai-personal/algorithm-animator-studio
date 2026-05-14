@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { FolderOpen, RefreshCw, Save, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { AppHeader } from "@/components/AppHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -117,7 +116,6 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <AppHeader />
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6">
         <Card>
           <CardHeader>

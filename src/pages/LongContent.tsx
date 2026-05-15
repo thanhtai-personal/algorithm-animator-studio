@@ -1,4 +1,5 @@
-import { Download, Film, Languages, Pause, Play, RefreshCcw, Upload, Volume2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, Film, Languages, Pause, Play, RefreshCcw, Upload, Volume2 } from "lucide-react";
+import { ReactNode, useState } from "react";
 import { ALGORITHMS, ALGO_GROUPS, COMPLEXITY } from "@/lib/algorithms";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -32,11 +33,7 @@ export default function LongContent() {
 function LeftControls({ studio: s }: { studio: LongContentStudio }) {
   return (
     <div className="space-y-4">
-      <Card className="space-y-4 p-4">
-        <div className="flex items-center gap-2">
-          <Film className="h-4 w-4 text-emerald-400" />
-          <h2 className="font-semibold">Cấu hình nội dung</h2>
-        </div>
+      <CollapsibleSection title="Cấu hình nội dung" icon={<Film className="h-4 w-4 text-emerald-400" />}>
         <SystemLanguageInfo studio={s} />
 
         <div>
@@ -76,14 +73,13 @@ function LeftControls({ studio: s }: { studio: LongContentStudio }) {
             ))}
           </div>
         </div>
-      </Card>
+      </CollapsibleSection>
 
       <NarrationControls studio={s} />
 
       <MusicControls studio={s} />
 
-      <Card className="space-y-4 p-4">
-        <h2 className="font-semibold">Visual & export</h2>
+      <CollapsibleSection title="Visual & export">
         <div>
           <Label>Tỉ lệ video</Label>
           <div className="mt-2 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200">
@@ -108,8 +104,25 @@ function LeftControls({ studio: s }: { studio: LongContentStudio }) {
           <Download className="mr-2 h-4 w-4" />
           {s.exporting ? `Đang xuất ${s.exportProgress}%` : "Xuất long video 16:9"}
         </Button>
-      </Card>
+      </CollapsibleSection>
     </div>
+  );
+}
+
+function CollapsibleSection(props: { title: string; icon?: ReactNode; children: ReactNode }) {
+  const [open, setOpen] = useState(true);
+  const Icon = open ? ChevronDown : ChevronRight;
+  return (
+    <Card className="p-4">
+      <button type="button" className="flex w-full items-center justify-between gap-3 text-left" onClick={() => setOpen((value) => !value)}>
+        <span className="flex items-center gap-2">
+          {props.icon}
+          <span className="font-semibold">{props.title}</span>
+        </span>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </button>
+      {open ? <div className="mt-4 space-y-4">{props.children}</div> : null}
+    </Card>
   );
 }
 
@@ -163,11 +176,7 @@ function NarrationControls({ studio: s }: { studio: LongContentStudio }) {
   const availablePiperModels = [...s.piperModels].sort((a, b) => Number(b.lang === s.lang) - Number(a.lang === s.lang));
   const selectedPiperModel = s.piperModels.find((model) => model.key === s.piperModelKey);
   return (
-    <Card className="space-y-4 p-4">
-      <div className="flex items-center gap-2">
-        <Volume2 className="h-4 w-4 text-emerald-400" />
-        <h2 className="font-semibold">Voice-over kịch bản</h2>
-      </div>
+    <CollapsibleSection title="Voice-over kịch bản" icon={<Volume2 className="h-4 w-4 text-emerald-400" />}>
       <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
         <Label>Bật voice khi preview/export</Label>
         <Switch checked={s.narrationEnabled} onCheckedChange={s.setNarrationEnabled} />
@@ -247,14 +256,13 @@ function NarrationControls({ studio: s }: { studio: LongContentStudio }) {
         Browser TTS chỉ dùng để nghe thử trong preview vì trình duyệt không cung cấp audio stream ổn định cho export. Muốn video có voice, hãy chọn Piper hoặc ElevenLabs; app sẽ tự tạo lại voice nếu kịch bản đổi.
         {s.voiceFileName ? ` File hiện tại: ${s.voiceFileName}` : ""}
       </p>
-    </Card>
+    </CollapsibleSection>
   );
 }
 
 function MusicControls({ studio: s }: { studio: LongContentStudio }) {
   return (
-    <Card className="space-y-4 p-4">
-      <h2 className="font-semibold">Nhạc nền</h2>
+    <CollapsibleSection title="Nhạc nền">
       <div>
         <Label>Chọn nhạc</Label>
         <Select value={s.musicPreset} onValueChange={(value) => s.setMusicPreset(value as BackgroundMusicId)}>
@@ -284,7 +292,7 @@ function MusicControls({ studio: s }: { studio: LongContentStudio }) {
       </label>
       <NumberSlider label="Âm lượng nhạc" value={s.musicVol} min={0} max={100} suffix="%" onChange={s.setMusicVol} />
       <p className="text-xs text-muted-foreground">Nhạc nền sẽ phát khi preview và được nhúng vào video export qua MediaRecorder.</p>
-    </Card>
+    </CollapsibleSection>
   );
 }
 

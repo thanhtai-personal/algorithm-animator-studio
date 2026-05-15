@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ALGORITHMS, COMPLEXITY, makeSampleGraph, parseGraph } from "@/lib/algorithms";
-import type { AlgoDef, Frame } from "@/lib/algorithms";
 import type { ColumnVisualMode } from "@/lib/animalColumns";
 import { preloadAnimalSprites } from "@/lib/animalColumns";
 import { audioEngine } from "@/lib/audio";
 import { BackgroundMusicId, getAssetMusicOption, isAssetMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
 import { type Lang, readSystemLang, subscribeSystemLang } from "@/lib/i18n";
-import { buildLongContentScenes, getSceneAtTime, getTotalDuration, type LongContentScene } from "@/lib/longContentTimeline";
-import { renderLongContentFrame } from "@/lib/longContentRenderer";
+import { buildLongContentScenes, getSceneAtTime, getTotalDuration } from "@/lib/longContentTimeline";
 import { THEMES } from "@/lib/renderer";
 import {
   generateElevenLabsVoice,
@@ -27,17 +25,12 @@ import {
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
 import { ExportFormat, getExportFormat } from "../studio/exportFormats";
 import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm } from "../studio/demoArrays";
-
+import { applyScriptOverrides, buildSceneFrames, buildVoiceScriptKey, cancelNarration, clampFrameIndex, drawLongContentFrameAtTime, getLoadedVoiceDuration, getFrameIndexForTime as getTimelineFrameIndex, ScriptSceneField, ScriptSceneOverride, speakNarration } from "./studioHelpers";
+import { fitSceneDurationsToNarration } from "./voiceTiming";
 const LONG_W = 1920;
 const LONG_H = 1080;
 const DEFAULT_GRAPH = "A-B:4, A-C:2, B-D:5, C-D:8, C-E:10, D-E:2, D-F:6, E-G:3, F-G:1";
-const SCENE_VOICE_PADDING_SEC = 0.8;
-
 export type VoiceProvider = "browser" | "piper" | "elevenlabs";
-
-type ScriptSceneField = "title" | "subtitle" | "narration" | "bulletsText" | "dataSetText";
-type ScriptSceneOverride = Partial<Record<ScriptSceneField, string>>;
-
 export function useLongContentStudio() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastSpokenSceneId = useRef<string | null>(null);
@@ -78,7 +71,6 @@ export function useLongContentStudio() {
   const [elevenModelId, setElevenModelId] = useState("eleven_flash_v2_5");
   const [elevenVoiceId, setElevenVoiceId] = useState("");
   const [scriptOverrides, setScriptOverrides] = useState<Record<string, ScriptSceneOverride>>({});
-
   const algo = ALGORITHMS[algoId] ?? ALGORITHMS.bubble;
   const theme = THEMES[themeName] ?? THEMES.neon;
   const graph = useMemo(() => parseGraph(DEFAULT_GRAPH) ?? makeSampleGraph(), []);
@@ -101,7 +93,6 @@ export function useLongContentStudio() {
     rate: narrationRate,
     script: narrationScript,
   }), [voiceProvider, algo.id, lang, piperModelKey, elevenModelId, elevenVoiceId, narrationRate, narrationScript]);
-
   const baseFrames = useMemo(() => {
     if (algo.category === "graph") return algo.run([], { graph, start: 0, end: graph.nodes.length - 1 });
     const size = demoSizeForAlgorithm(algoId, algo.category === "search" ? 28 : 24);
@@ -118,7 +109,6 @@ export function useLongContentStudio() {
     const multiplier = timelineState.scene.animation ? timelineState.progress : elapsedSec / Math.max(1, totalDuration);
     return clampFrameIndex(multiplier, frames.length);
   }, [elapsedSec, frames.length, timelineState, totalDuration]);
-
   useEffect(() => { preloadAnimalSprites(); void loadVoiceRuntime(); }, []);
   useEffect(() => subscribeSystemLang(setLang), []);
   useEffect(() => { audioEngine.setMusicVolume(musicVol / 100); }, [musicVol]);
@@ -144,7 +134,6 @@ export function useLongContentStudio() {
   }, [algoId, animationSeconds, introSeconds, lang, narrationRate, piperModelKey, elevenModelId, elevenVoiceId, narrationScript]);
   useEffect(() => { setScriptOverrides({}); }, [algoId, lang]);
   useEffect(() => { drawFrame(elapsedSec); });
-
   useEffect(() => {
     let cancelled = false;
     if (isAssetMusicId(musicPreset)) {
@@ -155,7 +144,6 @@ export function useLongContentStudio() {
     else audioEngine.setMusicSource(null);
     return () => { cancelled = true; };
   }, [musicPreset, musicUrl]);
-
   useEffect(() => {
     if (!playing) {
       lastSpokenSceneId.current = null;
@@ -168,7 +156,6 @@ export function useLongContentStudio() {
     startMusic();
     if (narrationEnabled && voiceProvider !== "browser" && voiceUrl) void audioEngine.playVoice(elapsedSec);
   }, [playing, exporting, musicPreset, voiceProvider, voiceUrl]);
-
   useEffect(() => {
     if (!playing || !narrationEnabled || voiceProvider !== "browser") return;
     const scene = timelineState.scene;
@@ -176,9 +163,7 @@ export function useLongContentStudio() {
     lastSpokenSceneId.current = scene.id;
     speakNarration(scene.narration, lang, narrationRate, narrationVol / 100);
   }, [playing, narrationEnabled, voiceProvider, timelineState.scene.id, timelineState.scene.narration, lang, narrationRate, narrationVol]);
-
   useEffect(() => () => { cancelNarration(); audioEngine.stopVoice(true); audioEngine.stopMusic(); }, []);
-
   useEffect(() => {
     if (!playing) return;
     let raf = 0;
@@ -187,7 +172,17 @@ export function useLongContentStudio() {
       const delta = (now - previous) / 1000;
       previous = now;
       setElapsedSec((value) => {
+        const currentState = getSceneAtTime(scenes, value);
         const next = Math.min(totalDuration, value + delta);
+        if (
+          narrationEnabled
+          && voiceProvider === "browser"
+          && window.speechSynthesis?.speaking
+          && next >= currentState.end
+          && currentState.end < totalDuration
+        ) {
+          return Math.max(currentState.start, currentState.end - 0.05);
+        }
         if (next >= totalDuration) setPlaying(false);
         return next;
       });
@@ -195,8 +190,7 @@ export function useLongContentStudio() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [playing, totalDuration]);
-
+  }, [playing, totalDuration, scenes, narrationEnabled, voiceProvider]);
   async function loadVoiceRuntime() {
     const [health, runtime, models, pro] = await Promise.allSettled([getVoiceHealth(), getPiperRuntimeStatus(), getPiperModels(), getElevenLabsConfig()]);
     if (health.status === "fulfilled") setVoiceHealth(health.value);
@@ -215,14 +209,12 @@ export function useLongContentStudio() {
       if (pro.value.voices[0]) setElevenVoiceId(pro.value.voices[0].id);
     }
   }
-
   async function generateVoiceOver() {
     if (voiceProvider === "browser") {
       speakNarration(narrationScript, lang, narrationRate, narrationVol / 100);
       toast.info("Đang đọc thử bằng Browser TTS. Browser TTS chỉ dùng để preview; export có voice cần Piper hoặc ElevenLabs.");
       return;
     }
-
     setVoiceLoading(true);
     setPlaying(false);
     try {
@@ -234,13 +226,11 @@ export function useLongContentStudio() {
       setVoiceLoading(false);
     }
   }
-
   async function generateVoiceOverForProvider(provider: Exclude<VoiceProvider, "browser">): Promise<VoiceGenerateResult> {
     const fileName = `${algo.id}-${lang}-long-voice`;
     const result = provider === "piper"
       ? await generatePiperVoice({ text: narrationScript, modelKey: piperModelKey, sentenceSilence: 0.7, speechRate: narrationRate, fileName })
       : await generateElevenLabsVoice({ text: narrationScript, modelId: elevenModelId, voiceId: elevenVoiceId, fileName });
-
     setVoiceUrl(result.audioUrl);
     setVoiceFileName(result.fileName);
     setVoiceScriptKey(currentVoiceScriptKey);
@@ -249,19 +239,16 @@ export function useLongContentStudio() {
     setVoiceDurationSec(getLoadedVoiceDuration());
     return result;
   }
-
   async function ensureVoiceForExport() {
     if (!narrationEnabled || voiceProvider === "browser") return false;
     if (voiceUrl && voiceScriptKey === currentVoiceScriptKey && audioEngine.hasVoiceSource()) {
       await audioEngine.waitForVoiceReady();
       return true;
     }
-
     toast.info("Đang tự tạo voice-over theo kịch bản trước khi export video...");
     await generateVoiceOverForProvider(voiceProvider);
     return true;
   }
-
   async function installSelectedPiperModel() {
     setPiperInstalling(true);
     try {
@@ -275,7 +262,6 @@ export function useLongContentStudio() {
       setPiperInstalling(false);
     }
   }
-
   async function refreshPiperRuntime() {
     try {
       const [health, runtime, models] = await Promise.all([getVoiceHealth(), getPiperRuntimeStatus(), getPiperModels()]);
@@ -286,51 +272,31 @@ export function useLongContentStudio() {
       toast.error(error instanceof Error ? error.message : "Không kiểm tra được Piper runtime.");
     }
   }
-
   function drawFrame(timeSec: number) {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx || !frames.length) return;
-    const safeTime = clampNumber(timeSec, 0, totalDuration);
-    const state = getSceneAtTime(scenes, safeTime);
-    const localFrames = sceneFrames[state.scene.id] ?? baseFrames;
-    const localFrameIdx = getFrameIndexForTime(safeTime, state.scene.animation, localFrames.length);
-    const frame = localFrames[localFrameIdx] ?? localFrames[0];
-    const previousFrame = localFrameIdx > 0 ? localFrames[localFrameIdx - 1] ?? null : null;
-    if (!frame) return;
-    renderLongContentFrame(ctx, {
-      frame,
-      previousFrame,
-      scene: state.scene,
-      sceneProgress: state.progress,
-      timelineProgress: clamp01(safeTime / Math.max(1, totalDuration)),
+    drawLongContentFrameAtTime({
+      canvas: canvasRef.current,
+      timeSec,
+      scenes,
+      sceneFrames,
+      baseFrames,
       algoId,
       algoName: algo.name,
       code: algo.code,
       theme,
       showCode,
       animalColumns: { mode: columnVisualMode, spriteScale: animalSpriteScale, jumpIntensity: animalJumpIntensity, highlightJump: animalHighlightJump },
-      frameLabel: `Data [${frame.arr.join(", ")}] · Frame ${localFrameIdx + 1}/${localFrames.length} · ${formatTime(safeTime)} / ${formatTime(totalDuration)}`,
     });
   }
-
   function getFrameIndexForTime(timeSec: number, sceneAnimation: boolean | undefined, frameCount: number) {
-    if (!frameCount) return 0;
-    const safeTime = clampNumber(timeSec, 0, totalDuration);
-    const state = getSceneAtTime(scenes, safeTime);
-    const progress = sceneAnimation ? state.progress : safeTime / Math.max(1, totalDuration);
-    return clampFrameIndex(progress, frameCount);
+    return getTimelineFrameIndex(scenes, totalDuration, timeSec, sceneAnimation, frameCount);
   }
-
   async function exportVideo() {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx || !frames.length) return;
-
     cancelNarration();
     audioEngine.resume();
     let shouldPlayVoice = false;
-
     try {
       if (narrationEnabled && voiceProvider === "browser") {
         toast.error("Browser TTS chỉ dùng để preview. Để export có voice, hãy chọn Piper hoặc ElevenLabs rồi tạo voice-over.");
@@ -341,7 +307,6 @@ export function useLongContentStudio() {
       toast.error(error instanceof Error ? error.message : "Không chuẩn bị được voice-over để export.");
       return;
     }
-
     const videoStream = canvas.captureStream(0) as MediaStream;
     const track = videoStream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack;
     const audioTracks = audioEngine.getRecordStream().getAudioTracks();
@@ -351,19 +316,16 @@ export function useLongContentStudio() {
     if (!mimeType) {
       return toast.error(`${format.label}: trình duyệt chưa hỗ trợ xuất định dạng này.`);
     }
-
     const recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 10_000_000 });
     const chunks: Blob[] = [];
     recorder.ondataavailable = (event) => event.data.size && chunks.push(event.data);
     const done = new Promise<Blob>((resolve) => { recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType })); });
-
     setExporting(true);
     setExportProgress(0);
     setPlaying(false);
     startMusic();
     recorder.start();
     if (shouldPlayVoice) await audioEngine.playVoice(0);
-
     const totalFrames = Math.max(1, Math.ceil(totalDuration * fps));
     for (let i = 0; i <= totalFrames; i++) {
       const time = Math.min(totalDuration, i / fps);
@@ -372,7 +334,6 @@ export function useLongContentStudio() {
       setExportProgress(Math.round((i / totalFrames) * 100));
       await new Promise((resolve) => setTimeout(resolve, 1000 / fps));
     }
-
     recorder.stop();
     audioEngine.stopMusic();
     audioEngine.stopVoice(true);
@@ -389,18 +350,15 @@ export function useLongContentStudio() {
     setExporting(false);
     toast.success("Đã xuất video và lưu vào danh sách đăng YouTube tạm thời.");
   }
-
   function startMusic() {
     audioEngine.setMusicVolume(musicVol / 100);
     if (isProceduralMusicPreset(musicPreset)) audioEngine.setMusicPreset(musicPreset);
     else { audioEngine.setMusicPreset("custom"); audioEngine.startMusic(); }
   }
-
   function onMusicUpload(file: File) {
     if (musicUrl) URL.revokeObjectURL(musicUrl);
     setMusicUrl(URL.createObjectURL(file));
   }
-
   function updateScriptScene(sceneId: string, field: ScriptSceneField, value: string) {
     setScriptOverrides((current) => ({
       ...current,
@@ -410,7 +368,6 @@ export function useLongContentStudio() {
       },
     }));
   }
-
   function resetScriptScene(sceneId: string) {
     setScriptOverrides((current) => {
       const next = { ...current };
@@ -418,7 +375,6 @@ export function useLongContentStudio() {
       return next;
     });
   }
-
   return {
     canvasRef, lang, algoId, setAlgoId, algo, themeName, setThemeName, showCode, setShowCode,
     columnVisualMode, setColumnVisualMode, animalSpriteScale, setAnimalSpriteScale,
@@ -436,109 +392,4 @@ export function useLongContentStudio() {
     W: LONG_W, H: LONG_H, exportVideo,
   };
 }
-
-function applyScriptOverrides(scenes: LongContentScene[], overrides: Record<string, ScriptSceneOverride>) {
-  return scenes.map((scene) => {
-    const override = overrides[scene.id];
-    if (!override) return scene;
-    const bullets = override.bulletsText === undefined
-      ? scene.bullets
-      : override.bulletsText.split("\n").map((line) => line.trim()).filter(Boolean);
-    const dataSet = override.dataSetText === undefined ? scene.dataSet : parseDataSetText(override.dataSetText);
-
-    return {
-      ...scene,
-      title: override.title ?? scene.title,
-      subtitle: override.subtitle ?? scene.subtitle,
-      narration: override.narration ?? scene.narration,
-      bullets,
-      dataSet,
-    };
-  });
-}
-
-function fitSceneDurationsToNarration(scenes: LongContentScene[], lang: Lang, narrationRate: number, voiceDurationSec: number) {
-  const estimates = scenes.map((scene) => estimateNarrationDuration(scene.narration, lang, narrationRate));
-  const estimateTotal = estimates.reduce((sum, value) => sum + value, 0);
-  const finiteVoiceDuration = Number.isFinite(voiceDurationSec) ? voiceDurationSec : 0;
-  const voiceDrivenTotal = finiteVoiceDuration > estimateTotal
-    ? finiteVoiceDuration + SCENE_VOICE_PADDING_SEC * scenes.length
-    : 0;
-
-  return scenes.map((scene, index) => {
-    const estimate = estimates[index] ?? 0;
-    const voiceShare = voiceDrivenTotal && estimateTotal > 0
-      ? (estimate / estimateTotal) * voiceDrivenTotal
-      : 0;
-    return {
-      ...scene,
-      durationSec: Math.max(scene.durationSec, estimate + SCENE_VOICE_PADDING_SEC, voiceShare),
-    };
-  });
-}
-
-function estimateNarrationDuration(text: string, lang: Lang, narrationRate: number) {
-  const normalized = text.trim().replace(/\s+/g, " ");
-  if (!normalized) return 0;
-  const wordCount = normalized.split(" ").filter(Boolean).length;
-  const punctuationPauses = (normalized.match(/[,.!?;:，。！？]/g)?.length ?? 0) * 0.18;
-  const wordsPerMinute = (lang === "vi" ? 145 : 155) * clampNumber(narrationRate, 0.7, 1.2);
-  return (wordCount / wordsPerMinute) * 60 + punctuationPauses;
-}
-
-function getLoadedVoiceDuration() {
-  const duration = audioEngine.voiceEl?.duration;
-  return Number.isFinite(duration) && duration > 0 ? duration : 0;
-}
-
-function parseDataSetText(value: string) {
-  const values = value
-    .split(/[\s,;]+/)
-    .map((part) => Number(part.trim()))
-    .filter((item) => Number.isFinite(item));
-  return values.length ? values : undefined;
-}
-
-function buildSceneFrames(scenes: LongContentScene[], algo: AlgoDef) {
-  if (algo.category !== "sort") return {};
-  return scenes.reduce<Record<string, Frame[]>>((acc, scene) => {
-    if (scene.dataSet?.length) acc[scene.id] = algo.run(scene.dataSet, {});
-    return acc;
-  }, {});
-}
-
-function buildVoiceScriptKey(parts: { provider: VoiceProvider; algoId: string; lang: Lang; modelKey: string; elevenModelId: string; elevenVoiceId: string; rate: number; script: string }) {
-  return [parts.provider, parts.algoId, parts.lang, parts.modelKey, parts.elevenModelId, parts.elevenVoiceId, parts.rate.toFixed(2), parts.script].join("::");
-}
-
-function speakNarration(text: string, lang: Lang, rate: number, volume: number) {
-  const synth = window.speechSynthesis;
-  if (!synth || !text.trim()) return;
-  synth.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = lang === "vi" ? "vi-VN" : "en-US";
-  utterance.rate = clampNumber(rate, 0.6, 1.3);
-  utterance.volume = clampNumber(volume, 0, 1);
-  const voice = synth.getVoices().find((item) => item.lang.toLowerCase().startsWith(lang === "vi" ? "vi" : "en"));
-  if (voice) utterance.voice = voice;
-  synth.speak(utterance);
-}
-
-function cancelNarration() { window.speechSynthesis?.cancel(); }
-
-function formatTime(totalSeconds: number) {
-  const safeSeconds = Number.isFinite(totalSeconds) ? Math.max(0, totalSeconds) : 0;
-  const minutes = Math.floor(safeSeconds / 60);
-  const seconds = Math.floor(safeSeconds % 60).toString().padStart(2, "0");
-  return `${minutes}:${seconds}`;
-}
-
-function clampFrameIndex(progress: number, frameCount: number) {
-  if (!frameCount) return 0;
-  const safeProgress = Number.isFinite(progress) ? clamp01(progress) : 0;
-  return clampNumber(Math.floor(safeProgress * (frameCount - 1)), 0, frameCount - 1);
-}
-function clampNumber(value: number, min: number, max: number) { return !Number.isFinite(value) ? min : Math.max(min, Math.min(max, value)); }
-function clamp01(value: number) { return clampNumber(value, 0, 1); }
-
 export type LongContentStudio = ReturnType<typeof useLongContentStudio>;

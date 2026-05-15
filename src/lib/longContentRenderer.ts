@@ -150,6 +150,11 @@ function drawAnimationPanel(ctx: CanvasRenderingContext2D, params: RenderLongCon
   const animCtx = animCanvas.getContext("2d");
   if (!animCtx) return;
 
+  if (!params.scene.animation) {
+    drawConceptVisual(ctx, params.scene, params.theme, x + innerPad, y + innerPad, w - innerPad * 2, h - innerPad * 2);
+    return;
+  }
+
   if (!params.frame) {
     drawEmptyAnimationFallback(ctx, x + innerPad, y + innerPad, w - innerPad * 2, h - innerPad * 2);
     return;
@@ -173,6 +178,58 @@ function drawAnimationPanel(ctx: CanvasRenderingContext2D, params: RenderLongCon
   ctx.clip();
   ctx.drawImage(animCanvas, x + innerPad, y + innerPad, w - innerPad * 2, h - innerPad * 2);
   ctx.restore();
+}
+
+function drawConceptVisual(ctx: CanvasRenderingContext2D, scene: LongContentScene, theme: Theme, x: number, y: number, w: number, h: number) {
+  ctx.save();
+  roundRect(ctx, x, y, w, h, 24);
+  ctx.clip();
+  ctx.fillStyle = "rgba(15,23,42,0.92)";
+  ctx.fillRect(x, y, w, h);
+
+  const cx = x + w / 2;
+  const cy = y + h * 0.42;
+  ctx.strokeStyle = theme.highlight;
+  ctx.lineWidth = 5;
+  ctx.globalAlpha = 0.76;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 118, -Math.PI * 0.2, Math.PI * 1.45);
+  ctx.stroke();
+  ctx.globalAlpha = 0.22;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 174, Math.PI * 0.1, Math.PI * 1.9);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = theme.highlight;
+  ctx.font = "900 30px ui-sans-serif, system-ui, sans-serif";
+  ctx.fillText((scene.kindLabel || scene.kind).toUpperCase(), cx, cy - 12);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "900 46px ui-sans-serif, system-ui, sans-serif";
+  drawCenteredWrappedText(ctx, scene.title, cx, cy + 48, w - 190, 54, 2);
+
+  ctx.textAlign = "left";
+  ctx.font = "700 25px ui-sans-serif, system-ui, sans-serif";
+  const items = scene.bullets.slice(0, 3);
+  const startY = y + h - 168;
+  items.forEach((item, index) => {
+    const itemY = startY + index * 48;
+    ctx.fillStyle = index === 0 ? theme.highlight : "rgba(255,255,255,0.72)";
+    ctx.beginPath();
+    ctx.arc(x + 108, itemY - 8, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.86)";
+    const lines = getWrappedLines(ctx, item, w - 250, 1).lines;
+    ctx.fillText(lines[0] ?? item, x + 132, itemY);
+  });
+  ctx.restore();
+}
+
+function drawCenteredWrappedText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number, maxLines: number) {
+  const lines = getWrappedLines(ctx, text, maxWidth, maxLines).lines;
+  const firstY = y - ((lines.length - 1) * lineHeight) / 2;
+  lines.forEach((line, index) => ctx.fillText(line, x, firstY + index * lineHeight));
 }
 
 function drawEmptyAnimationFallback(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {

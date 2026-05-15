@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronRight, Download, Film, Languages, Pause, Play, RefreshCcw, Upload, Volume2 } from "lucide-react";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ALGORITHMS, ALGO_GROUPS, COMPLEXITY } from "@/lib/algorithms";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,6 +9,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSepa
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { ASSET_MUSIC_OPTIONS, BackgroundMusicId } from "@/lib/backgroundMusic";
+import { AuthProfile, getCurrentProfile, isSuperAdminProfile } from "@/lib/auth";
 import { MUSIC_PRESETS } from "@/lib/i18n";
 import { THEMES } from "@/lib/renderer";
 import { EXPORT_FORMATS, ExportFormat } from "./studio/exportFormats";
@@ -15,12 +17,37 @@ import { ScriptPanel } from "./long-content/ScriptPanel";
 import { LongContentStudio, useLongContentStudio } from "./long-content/useLongContentStudio";
 
 export default function LongContent() {
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<AuthProfile | null>(null);
   const studio = useLongContentStudio();
+  const canExport = isSuperAdminProfile(profile);
+
+  useEffect(() => {
+    let cancelled = false;
+    getCurrentProfile()
+      .then((nextProfile) => {
+        if (!cancelled) setProfile(isSuperAdminProfile(nextProfile) ? nextProfile : null);
+      })
+      .catch(() => {
+        if (!cancelled) setProfile(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function requestExport() {
+    if (!canExport) {
+      navigate("/auth", { replace: false, state: { from: "/long-content" } });
+      return;
+    }
+    void studio.exportVideo();
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <main className="grid grid-cols-1 gap-4 p-4 xl:grid-cols-[360px_1fr]">
-        <LeftControls studio={studio} />
+        <LeftControls studio={studio} onExport={requestExport} />
         <div className="space-y-4">
           <PreviewPanel studio={studio} />
           <ScriptPanel studio={studio} />
@@ -30,7 +57,7 @@ export default function LongContent() {
   );
 }
 
-function LeftControls({ studio: s }: { studio: LongContentStudio }) {
+function LeftControls({ studio: s, onExport }: { studio: LongContentStudio; onExport: () => void }) {
   return (
     <div className="space-y-4">
       <CollapsibleSection title="Cấu hình nội dung" icon={<Film className="h-4 w-4 text-emerald-400" />}>
@@ -100,7 +127,7 @@ function LeftControls({ studio: s }: { studio: LongContentStudio }) {
           <Switch checked={s.showCode} onCheckedChange={s.setShowCode} />
         </div>
         {s.algo.category === "sort" ? <AnimalControls studio={s} /> : null}
-        <Button className="w-full bg-emerald-500 text-slate-950 hover:bg-emerald-600" onClick={s.exportVideo} disabled={s.exporting}>
+        <Button className="w-full bg-emerald-500 text-slate-950 hover:bg-emerald-600" onClick={onExport} disabled={s.exporting}>
           <Download className="mr-2 h-4 w-4" />
           {s.exporting ? `Đang xuất ${s.exportProgress}%` : "Xuất long video 16:9"}
         </Button>

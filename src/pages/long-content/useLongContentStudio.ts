@@ -106,8 +106,8 @@ export function useLongContentStudio() {
   const frames = useMemo(() => sceneFrames[timelineState.scene.id] ?? baseFrames, [baseFrames, sceneFrames, timelineState.scene.id]);
   const frameIdx = useMemo(() => {
     if (!frames.length) return 0;
-    const multiplier = timelineState.scene.animation ? timelineState.progress : elapsedSec / Math.max(1, totalDuration);
-    return clampFrameIndex(multiplier, frames.length);
+    if (!timelineState.scene.animation) return 0;
+    return clampFrameIndex(timelineState.progress, frames.length);
   }, [elapsedSec, frames.length, timelineState, totalDuration]);
   useEffect(() => { preloadAnimalSprites(); void loadVoiceRuntime(); }, []);
   useEffect(() => subscribeSystemLang(setLang), []);

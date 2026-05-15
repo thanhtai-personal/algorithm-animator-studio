@@ -1,0 +1,4 @@
+interface:
+  display_name: "Algorithm Lecture Video"
+  short_description: "Guided algorithm video lessons"
+  default_prompt: "Create a lecture-style algorithm video using synchronized narration, focused visuals, and export-safe timing."

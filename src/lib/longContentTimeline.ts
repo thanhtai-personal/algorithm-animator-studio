@@ -130,8 +130,8 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? ["Compare hai phần tử kề nhau.", "Swap khi thứ tự chưa đúng.", "Mỗi pass đưa giá trị lớn dần về cuối mảng."]
         : ["Compare adjacent values.", "Swap when the order is wrong.", "Each pass moves larger values toward the end."],
       narration: vi
-        ? "Chào bạn, mình KATA AI. Hôm nay mình sẽ biến Bubble Sort từ một đoạn code khô khan thành một câu chuyện chuyển động. Bạn chỉ cần nhìn vào các cột, màu sắc và nhịp đổi chỗ, rồi thuật toán sẽ tự trở nên dễ hiểu."
-        : "Hi, I am KATA AI. Today we will turn Bubble Sort from a dry piece of code into a moving story. Watch the bars, the colors, and the rhythm of each swap, and the algorithm will start to make sense.",
+        ? "Chào bạn, mình là trợ lý KATA. Vào thẳng Bubble Sort nhé: thuật toán sẽ so sánh từng cặp kề nhau, sai thứ tự thì đổi chỗ, và sau mỗi lượt quét phần tử lớn dần sẽ trôi về cuối mảng."
+        : "Hi, I am the KATA AI supporter. Let us go straight into Bubble Sort: the algorithm compares adjacent pairs, swaps them when the order is wrong, and after each pass the larger values drift toward the end.",
       durationSec: Math.max(5, introSeconds),
       dataSet: [8, 7, 6, 5, 4, 3, 2, 1],
     },
@@ -144,10 +144,9 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? ["Worst case: nhiều compare và swap.", "Nearly sorted: có thể dừng sớm.", "Câu hỏi chính: khi nào nên dùng và khi nào không nên dùng?"]
         : ["Worst case: many comparisons and swaps.", "Nearly sorted: early stop is possible.", "Main question: when should we use it, and when should we avoid it?"],
       narration: vi
-        ? "Điều thú vị là cùng một thuật toán, nhưng chỉ cần dữ liệu thay đổi, cảm giác tốc độ đã khác hẳn. Có lúc Bubble Sort đi rất nhẹ nhàng. Có lúc nó phải đổi chỗ liên tục như đang gỡ một nút thắt. Mình sẽ dẫn bạn đi từ trực giác đến cách đánh giá khi nào nên dùng nó."
-        : "Here is the interesting part: the same algorithm can feel completely different when the data changes. Sometimes Bubble Sort glides through the list. Sometimes it keeps swapping as if it is untangling a knot. We will move from intuition to the real decision of when to use it.",
+        ? "Điều thú vị là Bubble Sort rất dễ giải thích, nhưng không phải lúc nào cũng đáng dùng. Nếu dữ liệu gần đúng thứ tự, nó có thể đi khá nhẹ. Nếu dữ liệu bị đảo ngược, gần như cặp nào cũng phải kiểm tra rồi đổi chỗ. Nói cách khác, cùng một thuật toán nhưng chất lượng input quyết định cảm giác nhanh hay chậm. Vì vậy trước khi xem chart chạy, mình muốn bạn nắm câu hỏi chính: Bubble Sort đang sửa lỗi cục bộ từng cặp, và chi phí sẽ tăng mạnh khi có quá nhiều lỗi cục bộ."
+        : "The interesting part is that Bubble Sort is easy to explain, but not always worth using. If the data is almost sorted, it can move lightly. If the data is reversed, almost every pair must be checked and swapped. In other words, the same algorithm can feel fast or slow depending on the input quality. Before we run the chart, hold on to the main question: Bubble Sort fixes local pair mistakes, and the cost grows when there are too many of those mistakes.",
       durationSec: 8,
-      animation: true,
       dataSet: [8, 7, 6, 5, 4, 3, 2, 1],
     },
     {
@@ -159,10 +158,9 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? ["Mỗi pass quét từ trái sang phải.", "Phần tử lớn nhất còn lại nổi về cuối vùng chưa sorted.", "Màu xanh đánh dấu vị trí đã chắc chắn đúng."]
         : ["Each pass scans from left to right.", "The largest remaining value floats to the end of the unsorted region.", "Green marks positions that are locked."],
       narration: vi
-        ? "Cốt lõi của Bubble Sort rất đời thường: chỉ nhìn hai phần tử đứng cạnh nhau. Nếu bên trái lớn hơn bên phải, ta đổi chỗ. Làm như vậy lặp đi lặp lại, phần tử lớn sẽ dần nổi về cuối mảng, giống như bọt khí nổi lên mặt nước."
-        : "The core idea is very human: only look at two neighboring values. If the left one is bigger than the right one, swap them. Repeat that simple action, and larger values drift toward the end, like bubbles rising to the surface.",
+        ? "Cốt lõi của Bubble Sort rất đời thường: đừng cố giải cả mảng một lúc, chỉ sửa từng cặp đứng cạnh nhau. Nếu phần tử bên trái lớn hơn phần tử bên phải, thứ tự cục bộ đang sai và cần đổi chỗ. Nếu cặp đó đã đúng, bỏ qua và xét cặp kế tiếp. Khi thao tác này lặp lại từ trái sang phải, phần tử lớn nhất trong vùng chưa sorted sẽ dần bị đẩy về cuối."
+        : "The core idea is very human: do not solve the whole list at once, just fix neighboring pairs. If the left value is greater than the right value, that local order is wrong and needs a swap. If the pair is already correct, skip it and inspect the next pair. Repeating this from left to right gradually pushes the largest unsorted value to the end.",
       durationSec: 9,
-      animation: true,
       dataSet: [5, 1, 4, 2, 8],
     },
     {
@@ -174,8 +172,8 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? ["Pass 1 đưa 8 về cuối.", "Pass 2 sửa cặp 4 và 2.", "Pass 3 không còn swap, có thể dừng sớm."]
         : ["Pass 1 moves 8 to the end.", "Pass 2 fixes the pair 4 and 2.", "Pass 3 has no swaps, so we can stop early."],
       narration: vi
-        ? "Ở ví dụ này, đừng cố nhìn toàn bộ mảng một lần. Hãy nhìn như Bubble Sort nhìn: từng cặp một. Mỗi lần đổi chỗ chỉ sửa một lỗi nhỏ, nhưng nhiều lỗi nhỏ được sửa liên tiếp sẽ tạo thành một kết quả đúng cho cả mảng."
-        : "In this example, do not try to solve the whole list at once. Look the way Bubble Sort looks: one pair at a time. Each swap fixes one small mistake, and enough small fixes eventually create a fully ordered array.",
+        ? "Với mảng 5, 1, 4, 2, 8, mình sẽ đọc theo đúng luồng xử lý. Đầu tiên so sánh 5 và 1: 5 lớn hơn 1 nên swap, để 1 đi về bên trái. Tiếp theo 5 gặp 4: vẫn sai thứ tự nên swap tiếp. Rồi 5 gặp 2: lại swap, vì 2 cần đứng trước 5. Khi 5 gặp 8 thì không đổi, vì 5 nhỏ hơn 8. Hết lượt đầu, 8 đã nằm đúng ở cuối. Lượt sau tiếp tục sửa các lỗi còn lại như cặp 4 và 2, cho đến khi một lượt quét không còn swap nào."
+        : "With the array 5, 1, 4, 2, 8, I will narrate the actual flow. First compare 5 and 1: 5 is greater than 1, so we swap and let 1 move left. Next 5 meets 4: still out of order, so swap again. Then 5 meets 2: swap again, because 2 belongs before 5. When 5 meets 8, there is no swap because 5 is smaller than 8. After the first pass, 8 is locked at the end. The next pass keeps fixing the remaining mistakes, such as 4 and 2, until a full pass has no swaps.",
       durationSec: 13,
       animation: true,
       dataSet: [5, 1, 4, 2, 8],
@@ -189,8 +187,8 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? ["Cyan: cặp đang compare.", "Cam/hồng: thao tác swap.", "Xanh: vùng đã đúng vị trí.", "Counter cho biết pass, comparisons và swaps."]
         : ["Cyan: compared pair.", "Orange/pink: swap.", "Green: locked sorted region.", "Counters show passes, comparisons and swaps."],
       narration: vi
-        ? "Bây giờ mình sẽ dẫn mắt bạn theo từng quyết định. Khi con trỏ nằm trên hai cột, thuật toán đang so sánh hai giá trị kề nhau. Nếu giá trị bên trái lớn hơn bên phải, ví dụ 5 lớn hơn 1, Bubble Sort phải đổi chỗ để giá trị nhỏ hơn đi về bên trái. Nếu cặp đã đúng thứ tự, thuật toán giữ nguyên và đi tiếp sang cặp kế tiếp. Sau mỗi lượt quét, vùng màu xanh ở cuối mảng là phần đã chắc chắn đúng vị trí."
-        : "Now I will guide your eye through each decision. When the pointer sits on two bars, the algorithm is comparing adjacent values. If the left value is larger than the right value, for example 5 is greater than 1, Bubble Sort swaps them so the smaller value moves left. If the pair is already ordered, it stays in place and the scan moves on. After each pass, the green region at the end is locked.",
+        ? "Bây giờ mình sẽ nói sát theo animation. Khi con trỏ nằm trên hai cột màu cyan, đó là một phép compare. Nếu cột bên trái cao hơn, thuật toán kết luận thứ tự đang sai và chuyển sang trạng thái swap, thường được tô cam hoặc hồng. Ví dụ 5 đứng trước 1 thì phải đổi, vì mảng tăng dần không cho giá trị lớn đứng trước giá trị nhỏ. Sau swap, 1 lùi về bên trái, còn 5 tiếp tục được so sánh với phần tử kế tiếp. Nếu gặp 8, 5 không cần đổi vì thứ tự đã đúng. Cứ như vậy, mỗi pass đẩy giá trị lớn nhất còn lại sang phải. Vùng màu xanh ở cuối không còn là chỗ để đoán nữa; đó là vùng đã được khóa, thuật toán sẽ không cần sửa lại."
+        : "Now I will narrate close to the animation. When the pointer sits on two cyan bars, that is a comparison. If the left bar is taller, the order is wrong and the algorithm moves into a swap state, usually shown in orange or pink. For example, 5 before 1 must be swapped, because ascending order does not allow a larger value before a smaller one. After the swap, 1 moves left while 5 keeps being compared with the next value. If it meets 8, there is no swap because the order is already correct. Each pass pushes the largest remaining value to the right. The green region at the end is no longer something to guess about; it is locked.",
       durationSec: animationSeconds,
       animation: true,
       dataSet: [5, 1, 4, 2, 8],
@@ -204,8 +202,8 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? ["Best case với early stop: O(n).", "Không có early stop, thuật toán vẫn quét lãng phí.", "Data gần sorted là trường hợp Bubble Sort dễ chấp nhận nhất."]
         : ["Best case with early stop: O(n).", "Without early stop, the algorithm keeps scanning unnecessarily.", "Nearly sorted data is Bubble Sort's most acceptable case."],
       narration: vi
-        ? "Đây là chi tiết khiến Bubble Sort bớt ngây thơ hơn. Nếu một lượt quét đi hết mảng mà không cần đổi chỗ lần nào, ta biết mảng đã sorted. Lúc đó dừng ngay, không quét thêm cho tốn thời gian."
-        : "This is the detail that makes Bubble Sort less naive. If a full pass finishes without a single swap, the array is already sorted. At that point, stop immediately instead of scanning again for no reason.",
+        ? "Đây là chi tiết khiến Bubble Sort bớt ngây thơ hơn. Hãy nghe cách swapped flag hoạt động: đầu mỗi pass, ta giả sử chưa có đổi chỗ. Nếu trong lúc quét mà có swap, flag bật lên, nghĩa là mảng vẫn còn lỗi cục bộ. Nhưng nếu đi hết một pass mà không swap lần nào, mọi cặp kề nhau đều đã đúng thứ tự. Khi đó không cần chờ thêm animation nữa; thuật toán có bằng chứng để dừng ngay."
+        : "This is the detail that makes Bubble Sort less naive. Here is how the swapped flag works: at the start of each pass, assume no swap has happened. If a swap occurs during the scan, the flag turns on, meaning the list still has local mistakes. But if a full pass finishes with no swaps, every adjacent pair is already in order. At that point the algorithm has proof to stop immediately.",
       durationSec: 10,
       animation: true,
       dataSet: [1, 2, 3, 5, 4, 6, 7, 8],
@@ -223,8 +221,8 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         vi ? "Worst case đảo ngược có thể cần xấp xỉ n(n - 1) / 2 comparisons và swaps." : "The reversed worst case can need about n(n - 1) / 2 comparisons and swaps.",
       ],
       narration: vi
-        ? "Về bộ nhớ, Bubble Sort khá gọn vì nó sắp xếp trực tiếp trên mảng. Nhưng cái giá nằm ở thời gian. Khi số phần tử tăng lên, số lần so sánh có thể tăng rất nhanh, đặc biệt với dữ liệu đảo ngược hoặc lộn xộn."
-        : "In memory, Bubble Sort is compact because it sorts in place. The cost is time. As the list grows, comparisons can rise very quickly, especially when the data is reversed or messy.",
+        ? "Về bộ nhớ, Bubble Sort khá gọn vì nó sắp xếp trực tiếp trên mảng, gần như không cần mảng phụ. Nhưng cái giá nằm ở thời gian. Nếu có n phần tử, một pass phải nhìn qua nhiều cặp kề nhau. Với dữ liệu đảo ngược, gần như mỗi lần nhìn lại dẫn tới swap, nên số thao tác phình lên theo bình phương. Vì vậy khi n tăng, video có thể chỉ thêm vài cột, nhưng lượng compare và swap tăng rất mạnh."
+        : "In memory, Bubble Sort is compact because it sorts in place and barely needs extra storage. The cost is time. With n values, one pass must inspect many adjacent pairs. On reversed data, almost every inspection leads to a swap, so the work grows quadratically. That means the video may add only a few more bars, but the number of comparisons and swaps rises sharply.",
       durationSec: 12,
       animation: true,
       dataSet: [8, 7, 6, 5, 4, 3, 2, 1],
@@ -241,7 +239,6 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? "Vậy Bubble Sort có vô dụng không? Không. Nó rất tốt để học cách thuật toán suy nghĩ bằng compare, swap và invariant. Với dữ liệu rất nhỏ, hoặc dữ liệu gần như đã sorted kèm early stop, nó vẫn có chỗ đứng trong demo và bài học."
         : "So is Bubble Sort useless? No. It is excellent for learning how algorithms think through comparisons, swaps, and invariants. With tiny data, or nearly sorted data plus early stop, it still has a place in demos and lessons.",
       durationSec: 10,
-      animation: true,
       dataSet: [1, 2, 3, 4, 6, 5, 7, 8],
     },
     {
@@ -256,7 +253,6 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? "Nhưng nếu bước sang dữ liệu lớn hoặc hệ thống production, hãy để Bubble Sort ở lại trong lớp học. Khi hiệu năng là vấn đề thật, bạn nên dùng sort built-in hoặc các thuật toán mạnh hơn như Quick Sort, Merge Sort, Heap Sort hoặc Tim Sort."
         : "But once you move to large data or production systems, leave Bubble Sort in the classroom. When performance matters, use the built-in sort or stronger algorithms such as Quick Sort, Merge Sort, Heap Sort, or Tim Sort.",
       durationSec: 10,
-      animation: true,
       dataSet: [8, 7, 6, 5, 4, 3, 2, 1],
     },
     {

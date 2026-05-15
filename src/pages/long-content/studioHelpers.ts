@@ -94,9 +94,8 @@ export function drawLongContentFrameAtTime(params: {
   const state = getSceneAtTime(params.scenes, safeTime);
   const localFrames = params.sceneFrames[state.scene.id] ?? params.baseFrames;
   const localFrameIdx = getFrameIndexForTime(params.scenes, totalDuration, safeTime, state.scene.animation, localFrames.length);
-  const frame = localFrames[localFrameIdx] ?? localFrames[0];
-  const previousFrame = localFrameIdx > 0 ? localFrames[localFrameIdx - 1] ?? null : null;
-  if (!frame) return;
+  const frame = state.scene.animation ? localFrames[localFrameIdx] ?? localFrames[0] : null;
+  const previousFrame = state.scene.animation && localFrameIdx > 0 ? localFrames[localFrameIdx - 1] ?? null : null;
   renderLongContentFrame(ctx, {
     frame,
     previousFrame,
@@ -109,16 +108,18 @@ export function drawLongContentFrameAtTime(params: {
     theme: params.theme,
     showCode: params.showCode,
     animalColumns: params.animalColumns,
-    frameLabel: `Data [${frame.arr.join(", ")}] · Frame ${localFrameIdx + 1}/${localFrames.length} · ${formatTime(safeTime)} / ${formatTime(totalDuration)}`,
+    frameLabel: state.scene.animation && frame
+      ? `Data [${frame.arr.join(", ")}] · Frame ${localFrameIdx + 1}/${localFrames.length} · ${formatTime(safeTime)} / ${formatTime(totalDuration)}`
+      : `${state.scene.kindLabel} · ${formatTime(safeTime)} / ${formatTime(totalDuration)}`,
   });
 }
 
 export function getFrameIndexForTime(scenes: LongContentScene[], totalDuration: number, timeSec: number, sceneAnimation: boolean | undefined, frameCount: number) {
   if (!frameCount) return 0;
+  if (!sceneAnimation) return 0;
   const safeTime = clampNumber(timeSec, 0, totalDuration);
   const state = getSceneAtTime(scenes, safeTime);
-  const progress = sceneAnimation ? state.progress : safeTime / Math.max(1, totalDuration);
-  return clampFrameIndex(progress, frameCount);
+  return clampFrameIndex(state.progress, frameCount);
 }
 
 function parseDataSetText(value: string) {

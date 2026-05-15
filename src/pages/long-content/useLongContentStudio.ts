@@ -82,7 +82,7 @@ export function useLongContentStudio() {
     [editedScenes, lang, narrationRate, voiceDurationSec],
   );
   const totalDuration = useMemo(() => getTotalDuration(scenes), [scenes]);
-  const narrationScript = useMemo(() => scenes.map((scene) => scene.narration).join("\n\n"), [scenes]);
+  const narrationScript = useMemo(() => scenes.map((scene) => scene.narration).join(" "), [scenes]);
   const currentVoiceScriptKey = useMemo(() => buildVoiceScriptKey({
     provider: voiceProvider,
     algoId: algo.id,
@@ -229,7 +229,7 @@ export function useLongContentStudio() {
   async function generateVoiceOverForProvider(provider: Exclude<VoiceProvider, "browser">): Promise<VoiceGenerateResult> {
     const fileName = `${algo.id}-${lang}-long-voice`;
     const result = provider === "piper"
-      ? await generatePiperVoice({ text: narrationScript, modelKey: piperModelKey, sentenceSilence: 0.7, speechRate: narrationRate, fileName })
+      ? await generatePiperVoice({ text: narrationScript, modelKey: piperModelKey, sentenceSilence: 0.22, speechRate: narrationRate, fileName })
       : await generateElevenLabsVoice({ text: narrationScript, modelId: elevenModelId, voiceId: elevenVoiceId, fileName });
     setVoiceUrl(result.audioUrl);
     setVoiceFileName(result.fileName);

@@ -1,5 +1,6 @@
 import { COMPLEXITY, Frame } from "./algorithms";
 import type { AnimalColumnSettings } from "./animalColumns";
+import { drawFocusPointer } from "./focusPointerRenderer";
 import { LongContentScene } from "./longContentTimeline";
 import { renderFrame, Theme } from "./renderer";
 import { roundRect, shade } from "./renderers/shapes";
@@ -30,6 +31,14 @@ export function renderLongContentFrame(ctx: CanvasRenderingContext2D, params: Re
   drawLeftScriptPanel(ctx, params);
   drawAnimationPanel(ctx, params);
   drawBottomBar(ctx, scene, sceneProgress, timelineProgress, params.frameLabel);
+  drawFocusPointer(ctx, {
+    frame: params.frame,
+    previousFrame: params.previousFrame,
+    scene,
+    sceneProgress,
+    theme,
+    showCode: params.showCode,
+  });
 }
 
 function drawBackground(ctx: CanvasRenderingContext2D, theme: Theme) {

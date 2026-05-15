@@ -122,13 +122,13 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
     {
       id: "kata-intro",
       kind: "intro",
-      title: vi ? "KATA Tool cùng KATA Nova" : "KATA Tool with KATA Nova",
+      title: vi ? "Bubble Sort trực quan" : "Bubble Sort visually",
       subtitle: vi
-        ? "Creator định hướng cách giảng giải, KATA Nova hỗ trợ phân tích và dựng kịch bản."
-        : "The creator drives the teaching direction, while KATA Nova helps shape the script and analysis.",
+        ? "Sắp xếp bằng cách so sánh từng cặp kề nhau và đổi chỗ khi sai thứ tự."
+        : "Sort by comparing adjacent pairs and swapping them when they are out of order.",
       bullets: vi
-        ? ["Human teaching direction + AI-assisted scripting.", "Mục tiêu: biến thuật toán thành animation dễ hiểu.", "Video chỉ được export sau khi bạn review text và tạo voice."]
-        : ["Human teaching direction + AI-assisted scripting.", "Goal: turn algorithms into clear animation.", "Export only after text review and voice generation."],
+        ? ["Compare hai phần tử kề nhau.", "Swap khi thứ tự chưa đúng.", "Mỗi pass đưa giá trị lớn dần về cuối mảng."]
+        : ["Compare adjacent values.", "Swap when the order is wrong.", "Each pass moves larger values toward the end."],
       narration: vi
         ? "Chào bạn, mình KATA AI. Hôm nay mình sẽ biến Bubble Sort từ một đoạn code khô khan thành một câu chuyện chuyển động. Bạn chỉ cần nhìn vào các cột, màu sắc và nhịp đổi chỗ, rồi thuật toán sẽ tự trở nên dễ hiểu."
         : "Hi, I am KATA AI. Today we will turn Bubble Sort from a dry piece of code into a moving story. Watch the bars, the colors, and the rhythm of each swap, and the algorithm will start to make sense.",
@@ -189,8 +189,8 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? ["Cyan: cặp đang compare.", "Cam/hồng: thao tác swap.", "Xanh: vùng đã đúng vị trí.", "Counter cho biết pass, comparisons và swaps."]
         : ["Cyan: compared pair.", "Orange/pink: swap.", "Green: locked sorted region.", "Counters show passes, comparisons and swaps."],
       narration: vi
-        ? "Bây giờ hãy theo dõi ba tín hiệu. Màu nổi bật cho biết cặp đang được so sánh. Khi thứ tự sai, hai cột đổi chỗ. Và sau mỗi pass, vùng đã chắc chắn đúng ở cuối mảng sẽ lớn dần. Chỉ cần bám ba tín hiệu này, bạn sẽ không bị lạc trong animation."
-        : "Now watch three signals. The highlight shows the pair being compared. When the order is wrong, the two bars swap. After each pass, the locked sorted region grows at the end. Follow those three signals and the animation stays easy to read.",
+        ? "Bây giờ mình sẽ dẫn mắt bạn theo từng quyết định. Khi con trỏ nằm trên hai cột, thuật toán đang so sánh hai giá trị kề nhau. Nếu giá trị bên trái lớn hơn bên phải, ví dụ 5 lớn hơn 1, Bubble Sort phải đổi chỗ để giá trị nhỏ hơn đi về bên trái. Nếu cặp đã đúng thứ tự, thuật toán giữ nguyên và đi tiếp sang cặp kế tiếp. Sau mỗi lượt quét, vùng màu xanh ở cuối mảng là phần đã chắc chắn đúng vị trí."
+        : "Now I will guide your eye through each decision. When the pointer sits on two bars, the algorithm is comparing adjacent values. If the left value is larger than the right value, for example 5 is greater than 1, Bubble Sort swaps them so the smaller value moves left. If the pair is already ordered, it stays in place and the scan moves on. After each pass, the green region at the end is locked.",
       durationSec: animationSeconds,
       animation: true,
       dataSet: [5, 1, 4, 2, 8],

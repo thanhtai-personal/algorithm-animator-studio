@@ -31,6 +31,7 @@ import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm } from "..
 const LONG_W = 1920;
 const LONG_H = 1080;
 const DEFAULT_GRAPH = "A-B:4, A-C:2, B-D:5, C-D:8, C-E:10, D-E:2, D-F:6, E-G:3, F-G:1";
+const SCENE_VOICE_PADDING_SEC = 0.8;
 
 export type VoiceProvider = "browser" | "piper" | "elevenlabs";
 
@@ -65,6 +66,7 @@ export function useLongContentStudio() {
   const [voiceProvider, setVoiceProvider] = useState<VoiceProvider>("browser");
   const [voiceUrl, setVoiceUrl] = useState("");
   const [voiceFileName, setVoiceFileName] = useState("");
+  const [voiceDurationSec, setVoiceDurationSec] = useState(0);
   const [voiceScriptKey, setVoiceScriptKey] = useState("");
   const [voiceLoading, setVoiceLoading] = useState(false);
   const [voiceHealth, setVoiceHealth] = useState<VoiceHealth | null>(null);
@@ -82,7 +84,11 @@ export function useLongContentStudio() {
   const graph = useMemo(() => parseGraph(DEFAULT_GRAPH) ?? makeSampleGraph(), []);
   const sceneParams = { algo, complexity: COMPLEXITY[algoId], animationSeconds, introSeconds };
   const baseScenes = useMemo(() => buildLongContentScenes({ ...sceneParams, lang }), [algo, algoId, animationSeconds, introSeconds, lang]);
-  const scenes = useMemo(() => applyScriptOverrides(baseScenes, scriptOverrides), [baseScenes, scriptOverrides]);
+  const editedScenes = useMemo(() => applyScriptOverrides(baseScenes, scriptOverrides), [baseScenes, scriptOverrides]);
+  const scenes = useMemo(
+    () => fitSceneDurationsToNarration(editedScenes, lang, narrationRate, voiceDurationSec),
+    [editedScenes, lang, narrationRate, voiceDurationSec],
+  );
   const totalDuration = useMemo(() => getTotalDuration(scenes), [scenes]);
   const narrationScript = useMemo(() => scenes.map((scene) => scene.narration).join("\n\n"), [scenes]);
   const currentVoiceScriptKey = useMemo(() => buildVoiceScriptKey({
@@ -133,6 +139,7 @@ export function useLongContentStudio() {
     cancelNarration();
     setVoiceUrl("");
     setVoiceFileName("");
+    setVoiceDurationSec(0);
     setVoiceScriptKey("");
   }, [algoId, animationSeconds, introSeconds, lang, narrationRate, piperModelKey, elevenModelId, elevenVoiceId, narrationScript]);
   useEffect(() => { setScriptOverrides({}); }, [algoId, lang]);
@@ -239,6 +246,7 @@ export function useLongContentStudio() {
     setVoiceScriptKey(currentVoiceScriptKey);
     audioEngine.setVoiceSource(result.audioUrl);
     await audioEngine.waitForVoiceReady();
+    setVoiceDurationSec(getLoadedVoiceDuration());
     return result;
   }
 
@@ -420,7 +428,7 @@ export function useLongContentStudio() {
     exporting, exportProgress, scenes, totalDuration, timelineState, frameIdx, frames,
     narrationEnabled, setNarrationEnabled, narrationRate, setNarrationRate, narrationVol, setNarrationVol,
     musicPreset, setMusicPreset, musicVol, setMusicVol, onMusicUpload,
-    voiceProvider, setVoiceProvider, voiceUrl, voiceFileName, voiceLoading, generateVoiceOver,
+    voiceProvider, setVoiceProvider, voiceUrl, voiceFileName, voiceDurationSec, voiceLoading, generateVoiceOver,
     voiceHealth, piperRuntime, piperInstalling, installSelectedPiperModel, refreshPiperRuntime,
     piperModels, piperModelKey, setPiperModelKey, elevenConfig, elevenModelId, setElevenModelId,
     elevenVoiceId, setElevenVoiceId, narrationScript, updateScriptScene, resetScriptScene,
@@ -447,6 +455,40 @@ function applyScriptOverrides(scenes: LongContentScene[], overrides: Record<stri
       dataSet,
     };
   });
+}
+
+function fitSceneDurationsToNarration(scenes: LongContentScene[], lang: Lang, narrationRate: number, voiceDurationSec: number) {
+  const estimates = scenes.map((scene) => estimateNarrationDuration(scene.narration, lang, narrationRate));
+  const estimateTotal = estimates.reduce((sum, value) => sum + value, 0);
+  const finiteVoiceDuration = Number.isFinite(voiceDurationSec) ? voiceDurationSec : 0;
+  const voiceDrivenTotal = finiteVoiceDuration > estimateTotal
+    ? finiteVoiceDuration + SCENE_VOICE_PADDING_SEC * scenes.length
+    : 0;
+
+  return scenes.map((scene, index) => {
+    const estimate = estimates[index] ?? 0;
+    const voiceShare = voiceDrivenTotal && estimateTotal > 0
+      ? (estimate / estimateTotal) * voiceDrivenTotal
+      : 0;
+    return {
+      ...scene,
+      durationSec: Math.max(scene.durationSec, estimate + SCENE_VOICE_PADDING_SEC, voiceShare),
+    };
+  });
+}
+
+function estimateNarrationDuration(text: string, lang: Lang, narrationRate: number) {
+  const normalized = text.trim().replace(/\s+/g, " ");
+  if (!normalized) return 0;
+  const wordCount = normalized.split(" ").filter(Boolean).length;
+  const punctuationPauses = (normalized.match(/[,.!?;:，。！？]/g)?.length ?? 0) * 0.18;
+  const wordsPerMinute = (lang === "vi" ? 145 : 155) * clampNumber(narrationRate, 0.7, 1.2);
+  return (wordCount / wordsPerMinute) * 60 + punctuationPauses;
+}
+
+function getLoadedVoiceDuration() {
+  const duration = audioEngine.voiceEl?.duration;
+  return Number.isFinite(duration) && duration > 0 ? duration : 0;
 }
 
 function parseDataSetText(value: string) {

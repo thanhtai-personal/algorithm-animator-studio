@@ -130,7 +130,7 @@ function buildBubbleSortScenes(params: { complexity?: Complexity; animationSecon
         ? ["Human teaching direction + AI-assisted scripting.", "Mục tiêu: biến thuật toán thành animation dễ hiểu.", "Video chỉ được export sau khi bạn review text và tạo voice."]
         : ["Human teaching direction + AI-assisted scripting.", "Goal: turn algorithms into clear animation.", "Export only after text review and voice generation."],
       narration: vi
-        ? "Chào bạn, mình là người xây dựng KATA Tool. Đồng hành với mình trong quá trình thiết kế kịch bản và phân tích thuật toán là KATA Nova. Hôm nay, chúng ta dùng chính tool này để mổ xẻ Bubble Sort bằng animation."
+        ? "Chào bạn, mình KATA AI, hôm nay chúng ta dùng chính tool này để mổ xẻ Bubble Sort bằng animation."
         : "Welcome to KATA Tool. I build the teaching flow, and KATA Nova helps with script design and algorithm analysis. Today we will use this tool to break down Bubble Sort visually.",
       durationSec: Math.max(5, introSeconds),
       dataSet: [8, 7, 6, 5, 4, 3, 2, 1],

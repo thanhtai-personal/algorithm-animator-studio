@@ -9,6 +9,29 @@ import type { LongContentStudio } from "./useLongContentStudio";
 
 type Scene = LongContentStudio["scenes"][number];
 
+const labels = {
+  title: { vi: "Nội dung đang phát", en: "Now playing script" },
+  description: {
+    vi: "Chỉ hiện scene hiện tại và nội dung lân cận theo preview. Mở full script để sửa toàn bộ kịch bản.",
+    en: "Shows the current scene and nearby content from the preview. Open the full script to edit the full video script.",
+  },
+  language: { vi: "Tiếng Việt", en: "English" },
+  openFull: { vi: "Xem full", en: "View full" },
+  fullScript: { vi: "Full kịch bản video", en: "Full video script" },
+  sheetDescription: {
+    vi: "Sửa text tại đây rồi quay lại preview. Voice-over và export sẽ dùng nội dung đã chỉnh.",
+    en: "Edit text here, then return to the preview. Voice-over and export will use the edited content.",
+  },
+  back: { vi: "Quay lại", en: "Back" },
+  resetAll: { vi: "Reset toàn bộ", en: "Reset all" },
+  resetScene: { vi: "Reset", en: "Reset" },
+  titleField: { vi: "Tiêu đề", en: "Title" },
+  subtitleField: { vi: "Subtitle", en: "Subtitle" },
+  bulletsField: { vi: "Bullet hiển thị, mỗi dòng là một bullet", en: "Display bullets, one bullet per line" },
+  dataField: { vi: "Data input cho animation, nhập số cách nhau bằng dấu phẩy", en: "Animation input data, comma-separated numbers" },
+  narrationField: { vi: "Voice-over narration", en: "Voice-over narration" },
+} as const;
+
 export function ScriptPanel({ studio: s }: { studio: LongContentStudio }) {
   const [open, setOpen] = useState(false);
   const activeIndex = s.scenes.findIndex((scene) => scene.id === s.timelineState.scene.id);
@@ -22,17 +45,17 @@ export function ScriptPanel({ studio: s }: { studio: LongContentStudio }) {
       <Card className="space-y-4 p-4">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
-            <h2 className="font-semibold">Noi dung dang phat</h2>
+            <h2 className="font-semibold">{labels.title[s.lang]}</h2>
             <p className="text-xs text-muted-foreground">
-              Chi hien scene hien tai va noi dung lan can theo preview. Mo full script de sua toan bo kich ban.
+              {labels.description[s.lang]}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200">
-              {s.lang === "vi" ? "Tieng Viet" : "English"}
+              {labels.language[s.lang]}
             </span>
             <Button type="button" size="sm" variant="outline" onClick={() => setOpen(true)}>
-              <BookOpen className="mr-2 h-3.5 w-3.5" /> Xem full
+              <BookOpen className="mr-2 h-3.5 w-3.5" /> {labels.openFull[s.lang]}
             </Button>
           </div>
         </div>
@@ -55,23 +78,23 @@ export function ScriptPanel({ studio: s }: { studio: LongContentStudio }) {
             <SheetHeader className="space-y-3">
               <div className="flex items-start justify-between gap-4 pr-8">
                 <div>
-                  <SheetTitle>Full kich ban video</SheetTitle>
+                  <SheetTitle>{labels.fullScript[s.lang]}</SheetTitle>
                   <SheetDescription>
-                    Sua text tai day roi quay lai preview. Voice-over va export se dung noi dung da chinh.
+                    {labels.sheetDescription[s.lang]}
                   </SheetDescription>
                 </div>
                 <SheetClose asChild>
                   <Button type="button" variant="outline">
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Quay lai
+                    <ArrowLeft className="mr-2 h-4 w-4" /> {labels.back[s.lang]}
                   </Button>
                 </SheetClose>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200">
-                  {s.lang === "vi" ? "Tieng Viet" : "English"}
+                  {labels.language[s.lang]}
                 </span>
                 <Button type="button" size="sm" variant="outline" onClick={s.resetAllScriptScenes}>
-                  <RotateCcw className="mr-2 h-3.5 w-3.5" /> Reset toan bo
+                  <RotateCcw className="mr-2 h-3.5 w-3.5" /> {labels.resetAll[s.lang]}
                 </Button>
               </div>
             </SheetHeader>
@@ -85,6 +108,7 @@ export function ScriptPanel({ studio: s }: { studio: LongContentStudio }) {
                 scene={scene}
                 index={index}
                 active={s.timelineState.scene.id === scene.id}
+                lang={s.lang}
               />
             ))}
           </div>
@@ -108,8 +132,8 @@ function SceneSummary({ scene, index, active }: { scene: Scene; index: number; a
   );
 }
 
-function SceneEditor(props: { studio: LongContentStudio; scene: Scene; index: number; active: boolean }) {
-  const { studio: s, scene, index, active } = props;
+function SceneEditor(props: { studio: LongContentStudio; scene: Scene; index: number; active: boolean; lang: LongContentStudio["lang"] }) {
+  const { studio: s, scene, index, active, lang } = props;
   return (
     <div className={`space-y-3 rounded-lg border p-3 ${active ? "border-emerald-400 bg-emerald-400/10" : "border-border bg-card/50"}`}>
       <div className="flex items-center justify-between gap-3">
@@ -117,16 +141,16 @@ function SceneEditor(props: { studio: LongContentStudio; scene: Scene; index: nu
         <div className="flex items-center gap-2">
           <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs text-muted-foreground">{scene.durationSec}s</span>
           <Button type="button" size="sm" variant="ghost" onClick={() => s.resetScriptScene(scene.id)}>
-            Reset
+            {labels.resetScene[lang]}
           </Button>
         </div>
       </div>
 
-      <ScriptField label="Tieu de" value={scene.title} rows={2} onChange={(value) => s.updateScriptScene(scene.id, "title", value)} />
-      <ScriptField label="Subtitle" value={scene.subtitle} rows={2} onChange={(value) => s.updateScriptScene(scene.id, "subtitle", value)} />
-      <ScriptField label="Bullet hien thi, moi dong la mot bullet" value={scene.bullets.join("\n")} rows={4} onChange={(value) => s.updateScriptScene(scene.id, "bulletsText", value)} />
-      <ScriptField label="Data input cho animation, nhap so cach nhau bang dau phay" value={scene.dataSet?.join(", ") ?? ""} rows={2} onChange={(value) => s.updateScriptScene(scene.id, "dataSetText", value)} />
-      <ScriptField label="Voice-over narration" value={scene.narration} rows={5} onChange={(value) => s.updateScriptScene(scene.id, "narration", value)} />
+      <ScriptField label={labels.titleField[lang]} value={scene.title} rows={2} onChange={(value) => s.updateScriptScene(scene.id, "title", value)} />
+      <ScriptField label={labels.subtitleField[lang]} value={scene.subtitle} rows={2} onChange={(value) => s.updateScriptScene(scene.id, "subtitle", value)} />
+      <ScriptField label={labels.bulletsField[lang]} value={scene.bullets.join("\n")} rows={4} onChange={(value) => s.updateScriptScene(scene.id, "bulletsText", value)} />
+      <ScriptField label={labels.dataField[lang]} value={scene.dataSet?.join(", ") ?? ""} rows={2} onChange={(value) => s.updateScriptScene(scene.id, "dataSetText", value)} />
+      <ScriptField label={labels.narrationField[lang]} value={scene.narration} rows={5} onChange={(value) => s.updateScriptScene(scene.id, "narration", value)} />
     </div>
   );
 }

@@ -6,12 +6,11 @@ import { audioEngine, SfxKind } from "@/lib/audio";
 import { BackgroundMusicId, getAssetMusicOption, isAssetMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
 import { Lang, PLATFORMS, readSystemLang, subscribeSystemLang, t, writeSystemLang } from "@/lib/i18n";
 import { renderFrame, THEMES, Theme } from "@/lib/renderer";
-import { getAssetSfxOption } from "@/lib/selectSounds";
-import { ExportFormat, getExportFormat } from "./exportFormats";
+import { ExportFormat } from "./exportFormats";
 import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm, normalizeAnimalArray, parseInputArray, shouldUseAlgorithmDemo } from "./demoArrays";
+import { exportAlgorithmVideo, preloadExportSfx } from "./videoExport";
 
 const SWAP_TRANSITION_MULTIPLIER = 1.8;
-const SWAP_EXPORT_SECONDS = 0.35;
 const DEFAULT_ANIMAL_ARRAY_SIZE = 14;
 
 type UseAlgorithmStudioOptions = {
@@ -117,10 +116,10 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   useEffect(() => { audioEngine.setSfxVolume(sfxVol / 100); }, [sfxVol]);
   useEffect(() => { audioEngine.setMusicVolume(musicVol / 100); }, [musicVol]);
   useEffect(() => {
-    void preloadAssetSfx(sfxCompare);
+    void preloadExportSfx(sfxCompare);
   }, [sfxCompare]);
   useEffect(() => {
-    void preloadAssetSfx(sfxSwap);
+    void preloadExportSfx(sfxSwap);
   }, [sfxSwap]);
   useEffect(() => {
     let cancelled = false;
@@ -269,75 +268,38 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   };
 
   const exportVideo = async () => {
-    const c = canvasRef.current;
-    const ctx = c?.getContext("2d");
-    if (!c || !ctx) return;
-
-    audioEngine.resume();
-    const videoStream = c.captureStream(0) as MediaStream;
-    const track = videoStream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack;
-    const audioStream = audioEngine.getRecordStream();
-    const combined = new MediaStream([...videoStream.getVideoTracks(), ...audioStream.getAudioTracks()]);
-    const format = getExportFormat(exportFormat);
-    const mimeType = format.mimeCandidates.find((m) => MediaRecorder.isTypeSupported(m));
-    if (!mimeType) {
-      toast.error(`${format.label}: ${tr("unsupportedExport")}`);
-      return;
-    }
-    await Promise.all([preloadAssetSfx(sfxCompare), preloadAssetSfx(sfxSwap)]);
-
-    const recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 8_000_000 });
-    const chunks: Blob[] = [];
-    recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
-    const done = new Promise<Blob>((resolve) => {
-      recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
-    });
-
     setExporting(true);
     setExportProgress(0);
     setPlaying(false);
-    if (isProceduralMusicPreset(musicPreset)) audioEngine.setMusicPreset(musicPreset);
-    else {
-      audioEngine.setMusicPreset("custom");
-      audioEngine.startMusic();
-    }
-    recorder.start();
 
     const code = algoId === "custom" ? customCode : algo.code;
-    const opts = { title, subtitle, theme, code, showCode, complexity: COMPLEXITY[algoId], algorithmId: algoId, animalColumns };
-    for (let i = 0; i < frames.length; i++) {
-      playEvent(frames[i]);
-      const previousFrame = i > 0 ? frames[i - 1] : null;
-      const transitionFrames = shouldAnimateSwap(frames[i], previousFrame)
-        ? Math.max(6, Math.round(fps * SWAP_EXPORT_SECONDS))
-        : 1;
-      for (let step = 1; step <= transitionFrames; step++) {
-        renderFrame(ctx, frames[i], {
-          ...opts,
-          previousFrame,
-          transitionProgress: step / transitionFrames,
-        }, W, H);
-        track.requestFrame();
-        await new Promise((r) => setTimeout(r, 1000 / fps));
-      }
-      setExportProgress(Math.round(((i + 1) / frames.length) * 100));
+    try {
+      const exported = await exportAlgorithmVideo({
+        frames,
+        fps,
+        width: W,
+        height: H,
+        title,
+        subtitle,
+        theme,
+        code,
+        showCode,
+        complexity: COMPLEXITY[algoId],
+        algorithmId: algo.id,
+        platformId: platform.id,
+        exportFormat,
+        animalColumns,
+        musicPreset,
+        sfxCompare,
+        sfxSwap,
+        onProgress: setExportProgress,
+        onUnsupportedFormat: (label) => toast.error(`${label}: ${tr("unsupportedExport")}`),
+        playEvent,
+      });
+      if (exported) toast.success(tr("exportDone"));
+    } finally {
+      setExporting(false);
     }
-    for (let i = 0; i < fps * 3; i++) {
-      track.requestFrame();
-      await new Promise((r) => setTimeout(r, 1000 / fps));
-    }
-    recorder.stop();
-    audioEngine.stopMusic();
-    audioEngine.setMusicPreset("off");
-    const blob = await done;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${algo.id}-${platform.id}-${Date.now()}.${format.id}`;
-    a.click();
-    URL.revokeObjectURL(url);
-    setExporting(false);
-    toast.success(tr("exportDone"));
   };
 
   const requestExport = () => {
@@ -391,15 +353,4 @@ function shouldAnimateSwap(frame: Frame, previousFrame: Frame | null) {
   return previousFrame.arr.length === frame.arr.length
     && previousFrame.arr[a] === frame.arr[b]
     && previousFrame.arr[b] === frame.arr[a];
-}
-
-async function preloadAssetSfx(kind: SfxKind) {
-  const option = getAssetSfxOption(kind);
-  if (!option) return;
-  try {
-    const url = await option.loadUrl();
-    await audioEngine.loadAssetSfx(option.id, url);
-  } catch {
-    // Export/playback should keep running even if one optional SFX asset fails.
-  }
 }

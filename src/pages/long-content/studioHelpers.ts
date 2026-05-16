@@ -92,15 +92,24 @@ export function drawLongContentFrameAtTime(params: {
   const totalDuration = getTotalDuration(params.scenes);
   const safeTime = clampNumber(params.timeSec, 0, totalDuration);
   const state = getSceneAtTime(params.scenes, safeTime);
+  const sceneIndex = params.scenes.findIndex((scene) => scene.id === state.scene.id);
+  const previousScene = sceneIndex > 0 ? params.scenes[sceneIndex - 1] : null;
+  const previousSceneWasAnimation = Boolean(previousScene?.animation);
   const localFrames = params.sceneFrames[state.scene.id] ?? params.baseFrames;
+  const closingFrames = previousSceneWasAnimation && previousScene
+    ? params.sceneFrames[previousScene.id] ?? params.baseFrames
+    : [];
   const localFrameIdx = getFrameIndexForTime(params.scenes, totalDuration, safeTime, state.scene.animation, localFrames.length);
-  const frame = state.scene.animation ? localFrames[localFrameIdx] ?? localFrames[0] : null;
+  const frame = state.scene.animation
+    ? localFrames[localFrameIdx] ?? localFrames[0]
+    : closingFrames[closingFrames.length - 1] ?? null;
   const previousFrame = state.scene.animation && localFrameIdx > 0 ? localFrames[localFrameIdx - 1] ?? null : null;
   renderLongContentFrame(ctx, {
     frame,
     previousFrame,
     scene: state.scene,
     sceneProgress: state.progress,
+    previousSceneWasAnimation,
     timelineProgress: clamp01(safeTime / Math.max(1, totalDuration)),
     algoId: params.algoId,
     algoName: params.algoName,

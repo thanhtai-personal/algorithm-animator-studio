@@ -13,6 +13,7 @@ type RenderLongContentParams = {
   previousFrame?: Frame | null;
   scene: LongContentScene;
   sceneProgress: number;
+  previousSceneWasAnimation?: boolean;
   timelineProgress: number;
   algoId: string;
   algoName: string;
@@ -26,19 +27,44 @@ type RenderLongContentParams = {
 
 export function renderLongContentFrame(ctx: CanvasRenderingContext2D, params: RenderLongContentParams) {
   const { theme, scene, sceneProgress, timelineProgress } = params;
+  const layout = getSceneLayout(params.scene.animation, params.previousSceneWasAnimation, sceneProgress);
   drawBackground(ctx, theme);
   drawBrand(ctx, params.channelName ?? "Code Visual Lab");
-  drawLeftScriptPanel(ctx, params);
-  drawAnimationPanel(ctx, params);
+  drawScriptPanel(ctx, params, layout.textPanel);
+  drawAnimationPanel(ctx, params, layout.chartReveal);
   drawBottomBar(ctx, scene, sceneProgress, timelineProgress, params.frameLabel);
-  drawFocusPointer(ctx, {
-    frame: params.frame,
-    previousFrame: params.previousFrame,
-    scene,
-    sceneProgress,
-    theme,
-    showCode: params.showCode,
-  });
+  if (layout.chartReveal > 0.98 || !scene.animation) {
+    drawFocusPointer(ctx, {
+      frame: params.frame,
+      previousFrame: params.previousFrame,
+      scene,
+      sceneProgress,
+      theme,
+      showCode: params.showCode,
+      textPanel: layout.textPanel,
+      chartReveal: layout.chartReveal,
+    });
+  }
+}
+
+type PanelRect = { x: number; y: number; w: number; h: number };
+
+function getSceneLayout(sceneHasChart: boolean | undefined, previousSceneWasAnimation: boolean | undefined, sceneProgress: number) {
+  const chartReveal = getChartReveal(sceneHasChart, previousSceneWasAnimation, sceneProgress);
+  const textPanel = {
+    x: 62,
+    y: 132,
+    w: lerp(1790, 690, chartReveal),
+    h: 820,
+  };
+  return { chartReveal, textPanel };
+}
+
+function getChartReveal(sceneHasChart: boolean | undefined, previousSceneWasAnimation: boolean | undefined, sceneProgress: number) {
+  const transition = 0.18;
+  if (sceneHasChart) return easeOutCubic(clamp01(sceneProgress / transition));
+  if (previousSceneWasAnimation) return 1 - easeOutCubic(clamp01(sceneProgress / transition));
+  return 0;
 }
 
 function drawBackground(ctx: CanvasRenderingContext2D, theme: Theme) {
@@ -71,8 +97,7 @@ function drawBrand(ctx: CanvasRenderingContext2D, channelName: string) {
   ctx.fillText("Long-form algorithm animation · 16:9 YouTube", 72, 102);
 }
 
-function drawLeftScriptPanel(ctx: CanvasRenderingContext2D, params: RenderLongContentParams) {
-  const panel = { x: 62, y: 132, w: 690, h: 820 };
+function drawScriptPanel(ctx: CanvasRenderingContext2D, params: RenderLongContentParams, panel: PanelRect) {
   const padX = 42;
   const contentX = panel.x + padX;
   const contentW = panel.w - padX * 2;
@@ -98,11 +123,11 @@ function drawLeftScriptPanel(ctx: CanvasRenderingContext2D, params: RenderLongCo
     x: contentX,
     y: cursorY,
     maxWidth: contentW,
-    initialSize: 54,
+    initialSize: panel.w > 900 ? 72 : 54,
     minSize: 42,
     weight: 900,
     lineHeightRatio: 1.12,
-    maxLines: 2,
+    maxLines: panel.w > 900 ? 3 : 2,
   }) + 26;
 
   ctx.fillStyle = "rgba(255,255,255,0.82)";
@@ -112,7 +137,7 @@ function drawLeftScriptPanel(ctx: CanvasRenderingContext2D, params: RenderLongCo
   ctx.font = "600 25px ui-sans-serif, system-ui, sans-serif";
   const bulletTextX = contentX + 34;
   const bulletW = contentW - 46;
-  const bullets = scene.bullets.slice(0, 5);
+  const bullets = scene.bullets.slice(0, panel.w > 900 ? 6 : 5);
 
   for (let index = 0; index < bullets.length; index++) {
     const lines = getWrappedLines(ctx, bullets[index], bulletW, 2).lines;
@@ -131,11 +156,14 @@ function drawLeftScriptPanel(ctx: CanvasRenderingContext2D, params: RenderLongCo
   }
 }
 
-function drawAnimationPanel(ctx: CanvasRenderingContext2D, params: RenderLongContentParams) {
-  const x = 770;
+function drawAnimationPanel(ctx: CanvasRenderingContext2D, params: RenderLongContentParams, reveal: number) {
+  if (reveal <= 0.01) return;
+  const baseX = 770;
   const y = 120;
-  const w = 1080;
+  const x = lerp(W + 40, baseX, reveal);
+  const w = 1080 * reveal;
   const h = 730;
+  if (w < 40) return;
   ctx.fillStyle = "rgba(2,6,23,0.72)";
   ctx.strokeStyle = "rgba(255,255,255,0.16)";
   ctx.lineWidth = 2;
@@ -144,19 +172,15 @@ function drawAnimationPanel(ctx: CanvasRenderingContext2D, params: RenderLongCon
   ctx.stroke();
 
   const innerPad = 26;
+  if (w <= innerPad * 2 + 2) return;
   const animCanvas = getReusableCanvas();
   animCanvas.width = 1280;
   animCanvas.height = 720;
   const animCtx = animCanvas.getContext("2d");
   if (!animCtx) return;
 
-  if (!params.scene.animation) {
-    drawConceptVisual(ctx, params.scene, params.theme, x + innerPad, y + innerPad, w - innerPad * 2, h - innerPad * 2);
-    return;
-  }
-
   if (!params.frame) {
-    drawEmptyAnimationFallback(ctx, x + innerPad, y + innerPad, w - innerPad * 2, h - innerPad * 2);
+    drawEmptyAnimationFallback(ctx, x + innerPad, y + innerPad, Math.max(1, w - innerPad * 2), h - innerPad * 2);
     return;
   }
 
@@ -178,58 +202,6 @@ function drawAnimationPanel(ctx: CanvasRenderingContext2D, params: RenderLongCon
   ctx.clip();
   ctx.drawImage(animCanvas, x + innerPad, y + innerPad, w - innerPad * 2, h - innerPad * 2);
   ctx.restore();
-}
-
-function drawConceptVisual(ctx: CanvasRenderingContext2D, scene: LongContentScene, theme: Theme, x: number, y: number, w: number, h: number) {
-  ctx.save();
-  roundRect(ctx, x, y, w, h, 24);
-  ctx.clip();
-  ctx.fillStyle = "rgba(15,23,42,0.92)";
-  ctx.fillRect(x, y, w, h);
-
-  const cx = x + w / 2;
-  const cy = y + h * 0.42;
-  ctx.strokeStyle = theme.highlight;
-  ctx.lineWidth = 5;
-  ctx.globalAlpha = 0.76;
-  ctx.beginPath();
-  ctx.arc(cx, cy, 118, -Math.PI * 0.2, Math.PI * 1.45);
-  ctx.stroke();
-  ctx.globalAlpha = 0.22;
-  ctx.beginPath();
-  ctx.arc(cx, cy, 174, Math.PI * 0.1, Math.PI * 1.9);
-  ctx.stroke();
-  ctx.globalAlpha = 1;
-
-  ctx.textAlign = "center";
-  ctx.fillStyle = theme.highlight;
-  ctx.font = "900 30px ui-sans-serif, system-ui, sans-serif";
-  ctx.fillText((scene.kindLabel || scene.kind).toUpperCase(), cx, cy - 12);
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "900 46px ui-sans-serif, system-ui, sans-serif";
-  drawCenteredWrappedText(ctx, scene.title, cx, cy + 48, w - 190, 54, 2);
-
-  ctx.textAlign = "left";
-  ctx.font = "700 25px ui-sans-serif, system-ui, sans-serif";
-  const items = scene.bullets.slice(0, 3);
-  const startY = y + h - 168;
-  items.forEach((item, index) => {
-    const itemY = startY + index * 48;
-    ctx.fillStyle = index === 0 ? theme.highlight : "rgba(255,255,255,0.72)";
-    ctx.beginPath();
-    ctx.arc(x + 108, itemY - 8, 7, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "rgba(255,255,255,0.86)";
-    const lines = getWrappedLines(ctx, item, w - 250, 1).lines;
-    ctx.fillText(lines[0] ?? item, x + 132, itemY);
-  });
-  ctx.restore();
-}
-
-function drawCenteredWrappedText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number, maxLines: number) {
-  const lines = getWrappedLines(ctx, text, maxWidth, maxLines).lines;
-  const firstY = y - ((lines.length - 1) * lineHeight) / 2;
-  lines.forEach((line, index) => ctx.fillText(line, x, firstY + index * lineHeight));
 }
 
 function drawEmptyAnimationFallback(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
@@ -360,6 +332,19 @@ function fitWithEllipsis(ctx: CanvasRenderingContext2D, text: string, maxWidth: 
     fitted = fitted.slice(0, -1).trimEnd();
   }
   return fitted ? `${fitted}${suffix}` : suffix;
+}
+
+function lerp(from: number, to: number, progress: number) {
+  return from + (to - from) * progress;
+}
+
+function easeOutCubic(value: number) {
+  const safe = clamp01(value);
+  return 1 - Math.pow(1 - safe, 3);
+}
+
+function clamp01(value: number) {
+  return Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
 }
 
 let reusableCanvas: HTMLCanvasElement | null = null;

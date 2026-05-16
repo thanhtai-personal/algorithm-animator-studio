@@ -16,6 +16,8 @@ Use this skill together with the repo's ReactJS skill when editing the implement
 - Keep the voice active whenever an algorithm visual is moving. If the chart runs, the narration must explain what is being compared, why a swap/update happens, what changes after the operation, or what invariant has become true.
 - Do not run a chart just to fill time. Only show a moving chart when there is a concrete example, a clear input, and narration that needs the movement.
 - Use static concept visuals for intro, hook, use-case, avoid-case, recap, or high-level framing scenes. These scenes should communicate professional topic content, not decorative or unrelated animation.
+- Do not duplicate the same scene information in two panels. If there is no chart, let the text/content panel use the full available width.
+- When a chart becomes necessary, animate it into the layout: the chart should expand into view while the text panel narrows. When the chart is no longer needed, animate the chart closed and let the text panel expand again.
 - Avoid greetings, role assignment, production notes, or meta commentary on the visible video. These may be spoken if useful, but the video surface should show domain content.
 - Do not say "look at this and it will become clear" or equivalent. Explain the reasoning. The presenter is responsible for interpretation.
 - Prefer a tight, continuous lecture rhythm. Avoid long sentence gaps, blank pauses, or slow chart movement without explanation.

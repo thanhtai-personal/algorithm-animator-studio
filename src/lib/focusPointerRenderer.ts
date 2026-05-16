@@ -10,6 +10,8 @@ type FocusPointerParams = {
   sceneProgress: number;
   theme: Theme;
   showCode: boolean;
+  textPanel?: { x: number; y: number; w: number; h: number };
+  chartReveal?: number;
 };
 
 export function drawFocusPointer(ctx: CanvasRenderingContext2D, params: FocusPointerParams) {
@@ -39,7 +41,7 @@ export function drawFocusPointer(ctx: CanvasRenderingContext2D, params: FocusPoi
 
 function getFocusPoint(params: FocusPointerParams) {
   const { scene, sceneProgress, frame, showCode } = params;
-  if (!scene.animation || !frame) return getScriptPanelFocus(sceneProgress, scene.bullets.length, scene.kindLabel);
+  if (!scene.animation || !frame) return getScriptPanelFocus(sceneProgress, scene.bullets.length, scene.kindLabel, params.textPanel);
 
   const panel = { x: 770, y: 120, w: 1080, h: 730 };
   const inner = { x: panel.x + 26, y: panel.y + 26, w: panel.w - 52, h: panel.h - 52 };
@@ -68,12 +70,12 @@ function getFocusPoint(params: FocusPointerParams) {
   return { x: inner.x + inner.w * (0.28 + 0.48 * sceneProgress), y: inner.y + inner.h * 0.48, label: scene.kindLabel };
 }
 
-function getScriptPanelFocus(sceneProgress: number, bulletCount: number, fallback: string) {
-  const panel = { x: 62, y: 132, w: 690, h: 820 };
+function getScriptPanelFocus(sceneProgress: number, bulletCount: number, fallback: string, textPanel?: { x: number; y: number; w: number; h: number }) {
+  const panel = textPanel ?? { x: 62, y: 132, w: 690, h: 820 };
   const maxBullet = Math.max(0, Math.min(4, bulletCount - 1));
   const bulletIndex = Math.min(maxBullet, Math.floor(sceneProgress * Math.max(1, bulletCount)));
   if (sceneProgress < 0.3 || bulletCount === 0) return { x: panel.x + 112, y: panel.y + 185, label: fallback };
-  return { x: panel.x + 96, y: panel.y + 410 + bulletIndex * 78, label: "Ý chính" };
+  return { x: panel.x + 96, y: panel.y + Math.min(panel.h - 120, 410 + bulletIndex * 78), label: "Ý chính" };
 }
 
 function getFrameFocusLabel(frame: Frame, previousFrame?: Frame | null) {

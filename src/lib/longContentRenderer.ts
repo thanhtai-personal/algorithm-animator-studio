@@ -61,7 +61,7 @@ function getSceneLayout(sceneHasChart: boolean | undefined, previousSceneWasAnim
 }
 
 function getChartReveal(sceneHasChart: boolean | undefined, previousSceneWasAnimation: boolean | undefined, sceneProgress: number) {
-  const transition = 0.18;
+  const transition = 0.045;
   if (sceneHasChart) return easeOutCubic(clamp01(sceneProgress / transition));
   if (previousSceneWasAnimation) return 1 - easeOutCubic(clamp01(sceneProgress / transition));
   return 0;

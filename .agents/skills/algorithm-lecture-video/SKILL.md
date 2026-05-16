@@ -18,6 +18,7 @@ Use this skill together with the repo's ReactJS skill when editing the implement
 - Use static concept visuals for intro, hook, use-case, avoid-case, recap, or high-level framing scenes. These scenes should communicate professional topic content, not decorative or unrelated animation.
 - Do not duplicate the same scene information in two panels. If there is no chart, let the text/content panel use the full available width.
 - When a chart becomes necessary, animate it into the layout: the chart should expand into view while the text panel narrows. When the chart is no longer needed, animate the chart closed and let the text panel expand again.
+- Keep chart open/close transitions short. Do not tie them to a large percentage of long scenes, because that makes the chart feel late and out of sync with the speaker.
 - Avoid greetings, role assignment, production notes, or meta commentary on the visible video. These may be spoken if useful, but the video surface should show domain content.
 - Do not say "look at this and it will become clear" or equivalent. Explain the reasoning. The presenter is responsible for interpretation.
 - Prefer a tight, continuous lecture rhythm. Avoid long sentence gaps, blank pauses, or slow chart movement without explanation.
@@ -55,6 +56,7 @@ Each scene should answer:
 
 - Never switch scene before the voice for that scene has finished.
 - Estimate duration from narration and add a small tail, but do not create large silent buffers.
+- Do not keep original scene durations as hard minimums after narration is known. Let voice length drive scene duration so the step changes soon after the explanation ends.
 - Join narration with normal sentence spacing, not blank paragraphs that create unnatural pauses.
 - Browser TTS is preview-only when it cannot be captured reliably for export; generated audio such as Piper/ElevenLabs should drive export timing.
 - After script or timing changes, regenerate the voice-over so exported audio matches the timeline.

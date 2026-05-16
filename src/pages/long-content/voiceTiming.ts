@@ -1,9 +1,11 @@
 import type { Lang } from "@/lib/i18n";
 import type { LongContentScene } from "@/lib/longContentTimeline";
 
-const SCENE_VOICE_PADDING_SEC = 0.8;
-const ACTUAL_VOICE_TAIL_PADDING_SEC = 0.8;
-const CONSERVATIVE_VOICE_FACTOR = 1.2;
+const SCENE_VOICE_PADDING_SEC = 0.25;
+const ACTUAL_VOICE_TAIL_PADDING_SEC = 0.25;
+const CONSERVATIVE_VOICE_FACTOR = 1.04;
+const MIN_CONCEPT_SCENE_SEC = 3.2;
+const MIN_ANIMATION_SCENE_SEC = 4.8;
 
 export function fitSceneDurationsToNarration(
   scenes: LongContentScene[],
@@ -23,13 +25,10 @@ export function fitSceneDurationsToNarration(
     const voiceShare = voiceDrivenTotal && estimateTotal > 0
       ? (estimate / estimateTotal) * voiceDrivenTotal
       : 0;
+    const voiceTarget = Math.max(estimate * CONSERVATIVE_VOICE_FACTOR, voiceShare) + SCENE_VOICE_PADDING_SEC;
     return {
       ...scene,
-      durationSec: Math.max(
-        scene.durationSec,
-        estimate * CONSERVATIVE_VOICE_FACTOR + SCENE_VOICE_PADDING_SEC,
-        voiceShare,
-      ),
+      durationSec: Math.max(scene.animation ? MIN_ANIMATION_SCENE_SEC : MIN_CONCEPT_SCENE_SEC, voiceTarget),
     };
   });
 }
@@ -38,8 +37,8 @@ export function estimateNarrationDuration(text: string, lang: Lang, narrationRat
   const normalized = text.trim().replace(/\s+/g, " ");
   if (!normalized) return 0;
   const wordCount = normalized.split(" ").filter(Boolean).length;
-  const punctuationPauses = (normalized.match(/[,.!?;:，。！？]/g)?.length ?? 0) * 0.18;
-  const wordsPerMinute = (lang === "vi" ? 128 : 140) * clampNumber(narrationRate, 0.7, 1.2);
+  const punctuationPauses = (normalized.match(/[,.!?;:，。！？]/g)?.length ?? 0) * 0.12;
+  const wordsPerMinute = (lang === "vi" ? 210 : 158) * clampNumber(narrationRate, 0.7, 1.2);
   return (wordCount / wordsPerMinute) * 60 + punctuationPauses;
 }
 

@@ -100,7 +100,7 @@ export async function uploadYoutubeVideo(params: {
     requestBody: {
       snippet: {
         title: params.body.title || defaults.title || params.originalFileName,
-        description: params.body.description || defaults.description,
+        description: appendMusicLicense(params.body.description || defaults.description, params.body.musicLicenseText),
         categoryId: params.body.categoryId || defaults.categoryId,
         tags: splitCsv(params.body.tags || defaults.tags),
       },
@@ -211,6 +211,13 @@ function splitCsv(value: string): string[] | undefined {
     .filter(Boolean);
 
   return items.length ? items : undefined;
+}
+
+function appendMusicLicense(description: string, licenseText: string | undefined) {
+  const license = licenseText?.trim();
+  if (!license || description.includes(license)) return description;
+  const separator = description.trim() ? "\n\n" : "";
+  return `${description.trim()}${separator}Music license:\n${license}`;
 }
 
 function readBooleanEnv(

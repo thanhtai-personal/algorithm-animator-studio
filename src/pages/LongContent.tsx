@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Download, Film, Languages, Pause, Play, RefreshCcw, Upload, Volume2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, Film, Languages, Pause, Play, RefreshCcw, Volume2 } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ALGORITHMS, ALGO_GROUPS, COMPLEXITY } from "@/lib/algorithms";
@@ -8,11 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { ASSET_MUSIC_OPTIONS, BackgroundMusicId } from "@/lib/backgroundMusic";
 import { AuthProfile, getCurrentProfile, isSuperAdminProfile } from "@/lib/auth";
-import { MUSIC_PRESETS } from "@/lib/i18n";
 import { THEMES } from "@/lib/renderer";
 import { EXPORT_FORMATS, ExportFormat } from "./studio/exportFormats";
+import { MusicPanel } from "./long-content/MusicPanel";
 import { ScriptPanel } from "./long-content/ScriptPanel";
 import { LongContentStudio, useLongContentStudio } from "./long-content/useLongContentStudio";
 
@@ -47,9 +46,8 @@ export default function LongContent() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <main className="grid grid-cols-1 gap-4 p-4 xl:grid-cols-[360px_1fr]">
-        <LeftControls studio={studio} />
+        <LeftControls studio={studio} onExport={requestExport} />
         <div className="space-y-4">
-          <VisualExportPanel studio={studio} onExport={requestExport} />
           <PreviewPanel studio={studio} />
           <MusicPanel studio={studio} />
           <ScriptPanel studio={studio} />
@@ -59,9 +57,10 @@ export default function LongContent() {
   );
 }
 
-function LeftControls({ studio: s }: { studio: LongContentStudio }) {
+function LeftControls({ studio: s, onExport }: { studio: LongContentStudio; onExport: () => void }) {
   return (
     <div className="space-y-4">
+      <VisualExportPanel studio={s} onExport={onExport} />
       <CollapsibleSection title="Cấu hình nội dung" icon={<Film className="h-4 w-4 text-emerald-400" />}>
         <SystemLanguageInfo studio={s} />
 
@@ -111,19 +110,19 @@ function LeftControls({ studio: s }: { studio: LongContentStudio }) {
 
 function VisualExportPanel({ studio: s, onExport }: { studio: LongContentStudio; onExport: () => void }) {
   return (
-    <Card className="space-y-4 p-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+    <Card className="space-y-4 border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.34),0_0_28px_rgba(16,185,129,0.06)]">
+      <div className="space-y-3">
         <div>
           <h2 className="font-semibold">Visual & export</h2>
-          <p className="text-xs text-muted-foreground">Cấu hình hình ảnh xuất video ngay trước khung preview.</p>
+          <p className="text-xs text-muted-foreground">Cấu hình hình ảnh và xuất video.</p>
         </div>
-        <Button className="bg-emerald-500 text-slate-950 hover:bg-emerald-600" onClick={onExport} disabled={s.exporting}>
+        <Button className="w-full bg-emerald-500 text-slate-950 hover:bg-emerald-600" onClick={onExport} disabled={s.exporting}>
           <Download className="mr-2 h-4 w-4" />
           {s.exporting ? `Đang xuất ${s.exportProgress}%` : "Xuất long video 16:9"}
         </Button>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-[1fr_220px_260px]">
+      <div className="grid gap-3">
         <div>
           <Label>Tỉ lệ video</Label>
           <div className="mt-2 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200">
@@ -139,7 +138,7 @@ function VisualExportPanel({ studio: s, onExport }: { studio: LongContentStudio;
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2 lg:mt-6">
+        <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
           <Label>Hiện code trong animation</Label>
           <Switch checked={s.showCode} onCheckedChange={s.setShowCode} />
         </div>
@@ -154,7 +153,7 @@ function CollapsibleSection(props: { title: string; icon?: ReactNode; children: 
   const [open, setOpen] = useState(true);
   const Icon = open ? ChevronDown : ChevronRight;
   return (
-    <Card className="p-4">
+    <Card className="border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.34),0_0_28px_rgba(16,185,129,0.05)]">
       <button type="button" className="flex w-full items-center justify-between gap-3 text-left" onClick={() => setOpen((value) => !value)}>
         <span className="flex items-center gap-2">
           {props.icon}
@@ -170,7 +169,7 @@ function CollapsibleSection(props: { title: string; icon?: ReactNode; children: 
 function PreviewPanel({ studio: s }: { studio: LongContentStudio }) {
   return (
     <div className="flex flex-col items-center gap-4">
-      <Card className="w-full p-3">
+      <Card className="w-full border-border/70 p-3 shadow-[0_16px_42px_rgba(15,23,42,0.38),0_0_34px_rgba(14,165,233,0.06)]">
         <canvas
           ref={s.canvasRef}
           width={s.W}
@@ -179,7 +178,7 @@ function PreviewPanel({ studio: s }: { studio: LongContentStudio }) {
           style={{ width: "100%", maxHeight: "72vh", aspectRatio: "16 / 9" }}
         />
       </Card>
-      <Card className="w-full max-w-4xl space-y-3 p-4">
+      <Card className="w-full max-w-4xl space-y-3 border-border/70 p-4 shadow-[0_14px_34px_rgba(15,23,42,0.32),0_0_24px_rgba(16,185,129,0.05)]">
         <div className="flex gap-2">
           <Button className="flex-1" onClick={() => s.setPlaying(!s.playing)} disabled={s.exporting}>
             {s.playing ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
@@ -196,47 +195,6 @@ function PreviewPanel({ studio: s }: { studio: LongContentStudio }) {
         </div>
       </Card>
     </div>
-  );
-}
-
-function MusicPanel({ studio: s }: { studio: LongContentStudio }) {
-  return (
-    <Card className="space-y-4 p-4">
-      <div>
-        <h2 className="font-semibold">Nhạc nền</h2>
-        <p className="text-xs text-muted-foreground">Nhạc nền phát khi preview và được nhúng vào video export.</p>
-      </div>
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_220px] lg:items-end">
-        <div>
-          <Label>Chọn nhạc</Label>
-          <Select value={s.musicPreset} onValueChange={(value) => s.setMusicPreset(value as BackgroundMusicId)}>
-            <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Preset tạo sẵn</SelectLabel>
-                {MUSIC_PRESETS.map((music) => <SelectItem key={music.id} value={music.id}>{music.label[s.lang]}</SelectItem>)}
-              </SelectGroup>
-              <SelectSeparator />
-              <SelectGroup>
-                <SelectLabel>Track có sẵn</SelectLabel>
-                {ASSET_MUSIC_OPTIONS.map((music) => <SelectItem key={music.id} value={music.id}>{music.label[s.lang]}</SelectItem>)}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-        <NumberSlider label="Âm lượng nhạc" value={s.musicVol} min={0} max={100} suffix="%" onChange={s.setMusicVol} />
-        <label className="flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground">
-          <Upload className="h-3.5 w-3.5" /> Upload .mp3/.wav
-          <input type="file" accept="audio/*" className="hidden" onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) {
-              s.onMusicUpload(file);
-              s.setMusicPreset("custom");
-            }
-          }} />
-        </label>
-      </div>
-    </Card>
   );
 }
 
@@ -369,7 +327,7 @@ function NumberSlider(props: { label: string; value: number; min: number; max: n
 
 function AnimalControls({ studio: s, compact = false }: { studio: LongContentStudio; compact?: boolean }) {
   return (
-    <div className="space-y-3 rounded-lg border border-border p-3">
+    <div className="space-y-3 rounded-lg border border-border/70 bg-background/30 p-3 shadow-[0_10px_24px_rgba(15,23,42,0.24)]">
       <div>
         <Label>Kiểu cột</Label>
         <Select value={s.columnVisualMode} onValueChange={(value) => s.setColumnVisualMode(value as typeof s.columnVisualMode)}>

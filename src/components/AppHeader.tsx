@@ -1,4 +1,5 @@
-import { Film, LogIn, LogOut, Settings, Sparkles, Youtube } from "lucide-react";
+import { Film, LogIn, LogOut, Moon, Settings, Sparkles, Sun, Youtube } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -36,11 +37,14 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
 export function AppHeader() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { resolvedTheme, setTheme } = useTheme();
   const [profile, setProfile] = useState<AuthProfile | null>(null);
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
+  const [mounted, setMounted] = useState(false);
   const meta = useMemo(() => PAGE_META[location.pathname] ?? PAGE_META["/"], [location.pathname]);
   const canConfigure = isSuperAdminProfile(profile);
 
+  useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
     let cancelled = false;
     getCurrentProfile()
@@ -69,8 +73,12 @@ export function AppHeader() {
     navigate("/auth", { replace: true });
   }
 
+  function toggleTheme() {
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
+  }
+
   return (
-    <header className="border-b border-border/40 px-4 py-4 md:px-6">
+    <header className="border-b border-border/40 bg-background/95 px-4 py-4 backdrop-blur md:px-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-400">
@@ -100,6 +108,9 @@ export function AppHeader() {
               <SelectItem value="vi">Tiếng Việt</SelectItem>
             </SelectContent>
           </Select>
+          <Button aria-label="Đổi dark/light theme" size="icon" variant="outline" onClick={toggleTheme}>
+            {mounted && resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
           {canConfigure ? (
             <Button aria-label="Đăng xuất" size="icon" variant="outline" onClick={handleSignOut}>
               <LogOut className="h-4 w-4" />

@@ -7,7 +7,8 @@ const bgAudioModules = import.meta.glob<string>("@/assets/audios/bg-audio/*", {
 });
 
 export type AssetMusicId = `asset:${string}`;
-export type BackgroundMusicId = MusicPreset | AssetMusicId;
+export type LibraryMusicId = `library:${string}`;
+export type BackgroundMusicId = MusicPreset | AssetMusicId | LibraryMusicId;
 
 export type AssetMusicOption = {
   id: AssetMusicId;
@@ -37,6 +38,10 @@ export const ASSET_MUSIC_OPTIONS: AssetMusicOption[] = Object.entries(bgAudioMod
 
 export function isAssetMusicId(id: BackgroundMusicId): id is AssetMusicId {
   return id.startsWith("asset:");
+}
+
+export function isLibraryMusicId(id: BackgroundMusicId): id is LibraryMusicId {
+  return id.startsWith("library:");
 }
 
 export function getAssetMusicOption(id: BackgroundMusicId) {

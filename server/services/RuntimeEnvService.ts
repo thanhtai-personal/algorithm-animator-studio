@@ -8,7 +8,10 @@ type HeaderReader = {
 
 export function readRuntimeEnvFromRequest(req: HeaderReader): RuntimeEnvValues {
   const headerValue = req.header("X-Kata-Settings") || req.header("x-kata-settings") || "";
+  return readRuntimeEnvFromEncodedSettings(headerValue);
+}
 
+export function readRuntimeEnvFromEncodedSettings(headerValue: string): RuntimeEnvValues {
   if (!headerValue.trim()) {
     return {};
   }
@@ -41,7 +44,7 @@ export function resolveRuntimeExecutable(value: string): string {
 function normalizeRuntimePaths(env: RuntimeEnvValues): RuntimeEnvValues {
   const normalized = { ...env };
 
-  for (const key of ["MODEL_DIR", "SERVER_DATA_DIR"]) {
+  for (const key of ["MODEL_DIR", "SERVER_DATA_DIR", "MUSIC_LIBRARY_DIR"]) {
     if (normalized[key]) {
       normalized[key] = resolveRuntimePath(normalized[key], APP_ROOT);
     }

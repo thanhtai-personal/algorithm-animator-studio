@@ -35,9 +35,9 @@ type PiperModel = {
 
 type SelectPathResponse = { ok: boolean; path: string };
 
-type SettingsForm = Required<Pick<RuntimeSettings, "MODEL_DIR" | "PIPER_EXE">>;
+type SettingsForm = Required<Pick<RuntimeSettings, "MODEL_DIR" | "PIPER_EXE" | "MUSIC_LIBRARY_DIR">>;
 
-const EMPTY_FORM: SettingsForm = { MODEL_DIR: "", PIPER_EXE: "" };
+const EMPTY_FORM: SettingsForm = { MODEL_DIR: "", PIPER_EXE: "", MUSIC_LIBRARY_DIR: "" };
 
 export default function Settings() {
   const [form, setForm] = useState<SettingsForm>(() => ({ ...EMPTY_FORM, ...getRuntimeSettings() }));
@@ -146,6 +146,17 @@ export default function Settings() {
               onChange={(value) => updateField("PIPER_EXE", value)}
               onSelect={() => selectPath("file", "PIPER_EXE", "Chọn piper.exe")}
               onOpen={() => openPath(form.PIPER_EXE)}
+            />
+            <PathInput
+              id="music-library-dir"
+              label="MUSIC_LIBRARY_DIR"
+              description="Thư mục chứa thư viện nhạc nền. Mỗi track nằm trong một folder riêng, kèm License.txt nếu cần ghi credit YouTube."
+              value={form.MUSIC_LIBRARY_DIR}
+              placeholder="C:/Users/.../Music/youtube-audios"
+              busy={selecting === "MUSIC_LIBRARY_DIR"}
+              onChange={(value) => updateField("MUSIC_LIBRARY_DIR", value)}
+              onSelect={() => selectPath("directory", "MUSIC_LIBRARY_DIR", "Chọn thư mục thư viện nhạc nền")}
+              onOpen={() => openPath(form.MUSIC_LIBRARY_DIR)}
             />
 
             <div className="flex flex-wrap gap-2">

@@ -42,7 +42,7 @@ export function ScriptPanel({ studio: s }: { studio: LongContentStudio }) {
 
   return (
     <>
-      <Card className="space-y-4 p-4">
+      <Card className="space-y-4 border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.34),0_0_28px_rgba(16,185,129,0.05)]">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
             <h2 className="font-semibold">{labels.title[s.lang]}</h2>
@@ -120,7 +120,7 @@ export function ScriptPanel({ studio: s }: { studio: LongContentStudio }) {
 
 function SceneSummary({ scene, index, active }: { scene: Scene; index: number; active: boolean }) {
   return (
-    <div className={`space-y-2 rounded-lg border p-3 ${active ? "border-emerald-400 bg-emerald-400/10" : "border-border bg-card/50"}`}>
+    <div className={`space-y-2 rounded-lg border p-3 shadow-[0_10px_24px_rgba(15,23,42,0.22)] ${active ? "border-emerald-400 bg-emerald-400/10" : "border-border bg-card/50"}`}>
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-semibold">{index + 1}. {scene.kindLabel}</p>
         <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs text-muted-foreground">{scene.durationSec}s</span>
@@ -135,7 +135,7 @@ function SceneSummary({ scene, index, active }: { scene: Scene; index: number; a
 function SceneEditor(props: { studio: LongContentStudio; scene: Scene; index: number; active: boolean; lang: LongContentStudio["lang"] }) {
   const { studio: s, scene, index, active, lang } = props;
   return (
-    <div className={`space-y-3 rounded-lg border p-3 ${active ? "border-emerald-400 bg-emerald-400/10" : "border-border bg-card/50"}`}>
+    <div className={`space-y-3 rounded-lg border p-3 shadow-[0_10px_24px_rgba(15,23,42,0.22)] ${active ? "border-emerald-400 bg-emerald-400/10" : "border-border bg-card/50"}`}>
       <div className="flex items-center justify-between gap-3">
         <p className="font-semibold">{index + 1}. {scene.kindLabel}</p>
         <div className="flex items-center gap-2">

@@ -17,6 +17,8 @@ export class AudioEngine {
   private musicLoopTimer: number | null = null;
   private musicLoopDelayMs = 0;
   private musicPlaying = false;
+  private musicPlaylist: string[] = [];
+  private musicPlaylistIndex = 0;
   private sfxBuffers = new Map<AssetSfxId, AudioBuffer>();
   private sfxBufferPromises = new Map<AssetSfxId, Promise<AudioBuffer>>();
 
@@ -86,6 +88,8 @@ export class AudioEngine {
 
   setMusicSource(url: string | null) {
     this.stopCustomMusic();
+    this.musicPlaylist = url ? [url] : [];
+    this.musicPlaylistIndex = 0;
     if (this.musicSrc) {
       try { this.musicSrc.disconnect(); } catch { /* noop */ }
     }
@@ -99,6 +103,12 @@ export class AudioEngine {
     this.musicEl = el;
     this.musicSrc = this.ctx.createMediaElementSource(el);
     this.musicSrc.connect(this.musicGain);
+  }
+
+  setMusicSources(urls: string[]) {
+    const playlist = urls.filter(Boolean);
+    this.setMusicSource(playlist[0] ?? null);
+    this.musicPlaylist = playlist;
   }
 
   setVoiceSource(url: string | null) {
@@ -267,7 +277,13 @@ export class AudioEngine {
     this.clearCustomLoopTimer();
     this.musicLoopTimer = window.setTimeout(() => {
       if (!this.musicPlaying || !this.musicEl) return;
-      this.musicEl.currentTime = 0;
+      if (this.musicPlaylist.length > 1) {
+        this.musicPlaylistIndex = (this.musicPlaylistIndex + 1) % this.musicPlaylist.length;
+        this.musicEl.src = this.musicPlaylist[this.musicPlaylistIndex];
+        this.musicEl.load();
+      } else {
+        this.musicEl.currentTime = 0;
+      }
       this.playCustomMusic();
     }, this.musicLoopDelayMs);
   }

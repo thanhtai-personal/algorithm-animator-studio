@@ -15,6 +15,7 @@ export const DEFAULT_ENV_VALUES: Record<string, string> = {
   FFMPEG_EXE: "ffmpeg",
   FFPROBE_EXE: "ffprobe",
   SERVER_DATA_DIR: "server/data",
+  MUSIC_LIBRARY_DIR: "",
   MODEL_DIR: "models",
   AI_SHORTS_API_URL: "https://generativelanguage.googleapis.com/v1beta",
   AI_SHORTS_API_KEY: "",

@@ -10,6 +10,7 @@ export type YoutubeUploadBody = {
   publishAt?: string;
   playlistId?: string;
   refreshToken?: string;
+  musicLicenseText?: string;
 };
 
 export type YoutubeUploadGeneratedBody = YoutubeUploadBody & {

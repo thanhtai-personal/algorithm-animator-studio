@@ -4,30 +4,18 @@ import { ALGORITHMS, COMPLEXITY, makeSampleGraph, parseGraph } from "@/lib/algor
 import type { ColumnVisualMode } from "@/lib/animalColumns";
 import { preloadAnimalSprites } from "@/lib/animalColumns";
 import { audioEngine } from "@/lib/audio";
-import { BackgroundMusicId, getAssetMusicOption, isAssetMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
+import { isProceduralMusicPreset } from "@/lib/backgroundMusic";
 import { type Lang, readSystemLang, subscribeSystemLang } from "@/lib/i18n";
 import { buildLongContentScenes, getSceneAtTime, getTotalDuration } from "@/lib/longContentTimeline";
 import { THEMES } from "@/lib/renderer";
-import {
-  generateElevenLabsVoice,
-  generatePiperVoice,
-  getElevenLabsConfig,
-  getPiperModels,
-  getPiperRuntimeStatus,
-  getVoiceHealth,
-  installPiperModel,
-  type ElevenLabsConfig,
-  type PiperModel,
-  type PiperRuntimeStatus,
-  type VoiceGenerateResult,
-  type VoiceHealth,
-} from "@/lib/voiceApi";
+import { generateElevenLabsVoice, generatePiperVoice, getElevenLabsConfig, getPiperModels, getPiperRuntimeStatus, getVoiceHealth, installPiperModel, type ElevenLabsConfig, type PiperModel, type PiperRuntimeStatus, type VoiceGenerateResult, type VoiceHealth } from "@/lib/voiceApi";
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
 import { ExportFormat, getExportFormat } from "../studio/exportFormats";
 import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm } from "../studio/demoArrays";
 import { applyScriptOverrides, buildSceneFrames, cancelNarration, clampFrameIndex, drawLongContentFrameAtTime, getLoadedVoiceDuration, ScriptSceneField, ScriptSceneOverride, speakNarration } from "./studioHelpers";
 import { buildGeneratedVoiceScriptKey, type GeneratedVoiceProvider, useRestoreGeneratedVoiceCache, writeCachedGeneratedVoice } from "./voiceCache";
 import { fitSceneDurationsToNarration } from "./voiceTiming";
+import { useLongContentMusic } from "./useLongContentMusic";
 const LONG_W = 1920, LONG_H = 1080;
 const DEFAULT_GRAPH = "A-B:4, A-C:2, B-D:5, C-D:8, C-E:10, D-E:2, D-F:6, E-G:3, F-G:1";
 export type VoiceProvider = "browser" | "piper" | "elevenlabs";
@@ -54,7 +42,6 @@ export function useLongContentStudio() {
   const [narrationRate, setNarrationRate] = useState(0.96);
   const [narrationVol, setNarrationVol] = useState(85);
   const [musicVol, setMusicVol] = useState(28);
-  const [musicPreset, setMusicPreset] = useState<BackgroundMusicId>("lofi");
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
   const [voiceProvider, setVoiceProvider] = useState<VoiceProvider>("browser");
   const [voiceUrl, setVoiceUrl] = useState("");
@@ -75,6 +62,7 @@ export function useLongContentStudio() {
   const algo = ALGORITHMS[algoId] ?? ALGORITHMS.bubble;
   const theme = THEMES[themeName] ?? THEMES.neon;
   const graph = useMemo(() => parseGraph(DEFAULT_GRAPH) ?? makeSampleGraph(), []);
+  const music = useLongContentMusic(lang, musicUrl);
   const sceneParams = { algo, complexity: COMPLEXITY[algoId], animationSeconds, introSeconds };
   const baseScenes = useMemo(() => buildLongContentScenes({ ...sceneParams, lang }), [algo, algoId, animationSeconds, introSeconds, lang]);
   const editedScenes = useMemo(() => applyScriptOverrides(baseScenes, scriptOverrides), [baseScenes, scriptOverrides]);
@@ -132,16 +120,7 @@ export function useLongContentStudio() {
   });
   useEffect(() => { setScriptOverrides({}); }, [algoId, lang]);
   useEffect(() => { drawFrame(elapsedSec); });
-  useEffect(() => {
-    let cancelled = false;
-    if (isAssetMusicId(musicPreset)) {
-      const option = getAssetMusicOption(musicPreset);
-      if (!option) return;
-      void option.loadUrl().then((url) => { if (!cancelled) audioEngine.setMusicSource(url); }).catch(() => {});
-    } else if (musicPreset === "custom") audioEngine.setMusicSource(musicUrl);
-    else audioEngine.setMusicSource(null);
-    return () => { cancelled = true; };
-  }, [musicPreset, musicUrl]);
+  useEffect(() => { audioEngine.setMusicSources(music.selectedUrls); }, [music.selectedUrls]);
   useEffect(() => {
     if (!playing) {
       lastSpokenSceneId.current = null;
@@ -153,7 +132,7 @@ export function useLongContentStudio() {
     audioEngine.resume();
     startMusic();
     if (narrationEnabled && voiceProvider !== "browser" && voiceUrl) void audioEngine.playVoice(elapsedSec);
-  }, [playing, exporting, musicPreset, voiceProvider, voiceUrl]);
+  }, [playing, exporting, music.selectedIds, voiceProvider, voiceUrl]);
   useEffect(() => {
     if (!playing || !narrationEnabled || voiceProvider !== "browser") return;
     const scene = timelineState.scene;
@@ -342,7 +321,7 @@ export function useLongContentStudio() {
     const fileName = `${algo.id}-${lang}-long-16x9-${Date.now()}.${format.id}`;
     const file = new File([blob], fileName, { type: mimeType });
     const url = URL.createObjectURL(file);
-    setLastExportedVideo(file, url);
+    setLastExportedVideo(file, url, { youtubeDescriptionAppend: music.selectedLicenseText });
     const link = document.createElement("a");
     link.href = url;
     link.download = fileName;
@@ -352,12 +331,14 @@ export function useLongContentStudio() {
   }
   function startMusic() {
     audioEngine.setMusicVolume(musicVol / 100);
-    if (isProceduralMusicPreset(musicPreset)) audioEngine.setMusicPreset(musicPreset);
+    const preset = music.selectedIds[0] ?? "off";
+    if (isProceduralMusicPreset(preset)) audioEngine.setMusicPreset(preset);
     else { audioEngine.setMusicPreset("custom"); audioEngine.startMusic(); }
   }
   function onMusicUpload(file: File) {
     if (musicUrl) URL.revokeObjectURL(musicUrl);
     setMusicUrl(URL.createObjectURL(file));
+    music.setSelectedIds(["custom"]);
   }
   function updateScriptScene(sceneId: string, field: ScriptSceneField, value: string) {
     setScriptOverrides((current) => ({
@@ -388,7 +369,7 @@ export function useLongContentStudio() {
     exportFormat, setExportFormat, elapsedSec, setElapsedSec, playing, setPlaying,
     exporting, exportProgress, scenes, totalDuration, timelineState, frameIdx, frames,
     narrationEnabled, setNarrationEnabled, narrationRate, setNarrationRate, narrationVol, setNarrationVol,
-    musicPreset, setMusicPreset, musicVol, setMusicVol, onMusicUpload,
+    music, musicVol, setMusicVol, onMusicUpload,
     voiceProvider, setVoiceProvider, voiceUrl, voiceFileName, voiceDurationSec, voiceLoading, generateVoiceOver,
     voiceHealth, piperRuntime, piperInstalling, installSelectedPiperModel, refreshPiperRuntime,
     piperModels, piperModelKey, setPiperModelKey, elevenConfig, elevenModelId, setElevenModelId,

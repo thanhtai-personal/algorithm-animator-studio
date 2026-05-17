@@ -20,6 +20,7 @@ export type YoutubeUploadForm = {
   madeForKids: boolean;
   notifySubscribers: boolean;
   containsSyntheticMedia: boolean;
+  musicLicenseText?: string;
 };
 
 export type YoutubeUploadResult = {
@@ -72,6 +73,7 @@ export async function uploadYoutubeVideo(file: File, refreshToken: string, form:
   append(data, "madeForKids", String(form.madeForKids));
   append(data, "notifySubscribers", String(form.notifySubscribers));
   append(data, "containsSyntheticMedia", String(form.containsSyntheticMedia));
+  append(data, "musicLicenseText", form.musicLicenseText || "");
 
   return parseApiResponse<YoutubeUploadResult>(await fetch(buildApiUrl("/api/youtube/upload"), {
     method: "POST",

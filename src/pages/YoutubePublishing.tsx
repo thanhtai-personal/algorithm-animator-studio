@@ -40,6 +40,7 @@ export default function YoutubePublishing() {
   const [result, setResult] = useState<YoutubeUploadResult | null>(null);
 
   const selectedFile = videoFile ?? lastExported?.file ?? null;
+  const selectedMusicLicense = !videoFile ? lastExported?.youtubeDescriptionAppend : undefined;
   const canUpload = Boolean(selectedFile && refreshToken && config?.hasClientId && config?.hasClientSecret);
   const redirectUri = useMemo(() => config?.redirectUri || `${window.location.origin}/youtube`, [config?.redirectUri]);
 
@@ -113,7 +114,7 @@ export default function YoutubePublishing() {
     setLoading(true);
     setResult(null);
     try {
-      const next = await uploadYoutubeVideo(selectedFile, refreshToken, normalizeForm(form));
+      const next = await uploadYoutubeVideo(selectedFile, refreshToken, normalizeForm({ ...form, musicLicenseText: selectedMusicLicense }));
       setResult(next);
       toast.success(next.playlistWarning ? "Video đã đăng, nhưng playlist có cảnh báo." : "Đã upload YouTube.");
     } catch (error) {
@@ -186,6 +187,7 @@ export default function YoutubePublishing() {
             <div>
               <Label>Description</Label>
               <Textarea className="mt-2 min-h-32" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
+              {selectedMusicLicense ? <p className="mt-2 text-xs text-yellow-300">Music license sẽ tự được nối vào mô tả khi upload.</p> : null}
             </div>
             <Field label="Tags" value={form.tags} onChange={(value) => setForm({ ...form, tags: value })} />
             <div className="grid gap-3 md:grid-cols-3">

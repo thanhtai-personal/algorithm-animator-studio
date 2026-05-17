@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PublicWebBanner } from "./components/PublicWebBanner";
 import { Analytics } from "@vercel/analytics/react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
 import { AppHeader } from "@/components/AppHeader";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -24,25 +25,27 @@ const AnalyticsTracker = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AnalyticsTracker />
-        <PublicWebBanner />
-        <AppHeader />
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/" element={<Index />} />
-          <Route path="/long-content" element={<LongContent />} />
-          <Route path="/social-publishing" element={<YoutubePublishing />} />
-          <Route path="/youtube-publishing" element={<YoutubePublishing />} />
-          <Route path="/youtube" element={<YoutubePublishing />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} storageKey="algoshorts.theme">
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AnalyticsTracker />
+          <PublicWebBanner />
+          <AppHeader />
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/" element={<Index />} />
+            <Route path="/long-content" element={<LongContent />} />
+            <Route path="/social-publishing" element={<YoutubePublishing />} />
+            <Route path="/youtube-publishing" element={<YoutubePublishing />} />
+            <Route path="/youtube" element={<YoutubePublishing />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

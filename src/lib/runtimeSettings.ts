@@ -1,10 +1,11 @@
 export type RuntimeSettings = {
   MODEL_DIR?: string;
   PIPER_EXE?: string;
+  MUSIC_LIBRARY_DIR?: string;
 };
 
 const STORAGE_KEY = "algo.runtimeSettings";
-const KNOWN_KEYS = ["MODEL_DIR", "PIPER_EXE"] as const;
+const KNOWN_KEYS = ["MODEL_DIR", "PIPER_EXE", "MUSIC_LIBRARY_DIR"] as const;
 
 type RuntimeSettingKey = typeof KNOWN_KEYS[number];
 
@@ -38,6 +39,11 @@ export function buildRuntimeSettingsHeaders(extra?: HeadersInit): HeadersInit {
     headers.set("X-Kata-Settings", encodeBase64Url(JSON.stringify(settings)));
   }
   return headers;
+}
+
+export function getRuntimeSettingsToken() {
+  const settings = getRuntimeSettings();
+  return Object.keys(settings).length > 0 ? encodeBase64Url(JSON.stringify(settings)) : "";
 }
 
 function sanitizeRuntimeSettings(values: Record<string, unknown>): RuntimeSettings {

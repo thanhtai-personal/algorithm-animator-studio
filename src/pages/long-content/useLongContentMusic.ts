@@ -16,7 +16,7 @@ export type MusicCardTrack = {
 
 export function useLongContentMusic(lang: Lang, customUrl: string | null) {
   const [libraryTracks, setLibraryTracks] = useState<MusicCardTrack[]>([]);
-  const [selectedIds, setSelectedIds] = useState<BackgroundMusicId[]>(["lofi"]);
+  const [selectedIds, setSelectedIds] = useState<BackgroundMusicId[]>(["off"]);
   const [search, setSearch] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [selectedUrls, setSelectedUrls] = useState<string[]>([]);

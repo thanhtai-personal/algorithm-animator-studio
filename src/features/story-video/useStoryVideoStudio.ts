@@ -31,6 +31,10 @@ import type {
 const DRAFT_KEY = "algoshorts.story-video.v1";
 const DEFAULT_TEXT = "Dán nội dung truyện tại đây, hoặc dùng phần lấy text từ web bên dưới để nhập danh sách URL chương.";
 
+type UseStoryVideoStudioOptions = {
+  requireVideoGenerationAccess?: () => boolean;
+};
+
 type StoryVideoDraft = {
   topicId: StoryTopicId;
   text: string;
@@ -61,7 +65,7 @@ function readDraft(): Partial<StoryVideoDraft> {
   }
 }
 
-export function useStoryVideoStudio() {
+export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
   const draft = useMemo(readDraft, []);
   const initialTopic = getStoryTopicPreset(draft.topicId || "tien-hiep");
   const [topicId, setTopicId] = useState<StoryTopicId>(initialTopic.id);
@@ -237,6 +241,7 @@ export function useStoryVideoStudio() {
   }
 
   async function generateVideo() {
+    if (!requireVideoGenerationAccess()) return;
     if (!backgroundFile) return setMessage("Chưa chọn ảnh/GIF/video nền.");
     setLoading((state) => ({ ...state, video: true }));
     setMessage("");
@@ -266,6 +271,10 @@ export function useStoryVideoStudio() {
     } finally {
       setLoading((state) => ({ ...state, video: false }));
     }
+  }
+
+  function requireVideoGenerationAccess() {
+    return options.requireVideoGenerationAccess?.() ?? true;
   }
 
   return {

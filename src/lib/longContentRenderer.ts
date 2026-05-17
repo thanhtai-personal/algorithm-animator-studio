@@ -1,6 +1,7 @@
 import { COMPLEXITY, Frame } from "./algorithms";
 import type { AnimalColumnSettings } from "./animalColumns";
 import { drawFocusPointer } from "./focusPointerRenderer";
+import type { Lang } from "./i18n";
 import { LongContentScene } from "./longContentTimeline";
 import { renderFrame, Theme } from "./renderer";
 import { roundRect, shade } from "./renderers/shapes";
@@ -19,6 +20,7 @@ type RenderLongContentParams = {
   algoId: string;
   algoName: string;
   code: string;
+  lang: Lang;
   theme: Theme;
   showCode: boolean;
   animalColumns: AnimalColumnSettings;
@@ -31,7 +33,7 @@ export function renderLongContentFrame(ctx: CanvasRenderingContext2D, params: Re
   const { theme, scene, sceneProgress, timelineProgress } = params;
   const layout = getSceneLayout(params.scene.animation, params.previousSceneWasAnimation, sceneProgress, params.sceneElapsedSec);
   drawBackground(ctx, theme);
-  drawBrand(ctx, params.channelName ?? "Code Visual Lab");
+  drawBrand(ctx, params.channelName ?? "Code Visual Lab", params.lang);
   drawScriptPanel(ctx, params, layout.textPanel);
   drawAnimationPanel(ctx, params, layout.chartReveal);
   drawBottomBar(ctx, scene, sceneProgress, timelineProgress, params.frameLabel);
@@ -43,6 +45,7 @@ export function renderLongContentFrame(ctx: CanvasRenderingContext2D, params: Re
       sceneProgress,
       theme,
       showCode: params.showCode,
+      lang: params.lang,
       textPanel: layout.textPanel,
       chartReveal: layout.chartReveal,
     });
@@ -99,14 +102,14 @@ function drawBackground(ctx: CanvasRenderingContext2D, theme: Theme) {
   ctx.globalAlpha = 1;
 }
 
-function drawBrand(ctx: CanvasRenderingContext2D, channelName: string) {
+function drawBrand(ctx: CanvasRenderingContext2D, channelName: string, lang: Lang) {
   ctx.textAlign = "left";
   ctx.fillStyle = "rgba(255,255,255,0.78)";
   ctx.font = "700 28px ui-sans-serif, system-ui, sans-serif";
   ctx.fillText(channelName, 72, 68);
   ctx.fillStyle = "rgba(255,255,255,0.34)";
   ctx.font = "500 22px ui-sans-serif, system-ui, sans-serif";
-  ctx.fillText("Long-form algorithm animation · 16:9 YouTube", 72, 102);
+  ctx.fillText(label(lang, "Animation thuật toán dài · YouTube 16:9", "Long-form algorithm animation · 16:9 YouTube"), 72, 102);
 }
 
 function drawScriptPanel(ctx: CanvasRenderingContext2D, params: RenderLongContentParams, panel: PanelRect) {
@@ -192,16 +195,17 @@ function drawAnimationPanel(ctx: CanvasRenderingContext2D, params: RenderLongCon
   if (!animCtx) return;
 
   if (!params.frame) {
-    drawEmptyAnimationFallback(ctx, x + innerPad, y + innerPad, Math.max(1, w - innerPad * 2), h - innerPad * 2);
+    drawEmptyAnimationFallback(ctx, x + innerPad, y + innerPad, Math.max(1, w - innerPad * 2), h - innerPad * 2, params.lang);
     return;
   }
 
   renderFrame(animCtx, params.frame, {
     title: params.algoName,
-    subtitle: params.scene.animation ? "Step-by-step animation" : params.scene.title,
+    subtitle: params.scene.animation ? label(params.lang, "Animation từng bước", "Step-by-step animation") : params.scene.title,
     theme: params.theme,
     code: params.code,
     showCode: params.showCode,
+    lang: params.lang,
     complexity: COMPLEXITY[params.algoId],
     previousFrame: params.previousFrame,
     transitionProgress: params.frameTransitionProgress ?? params.sceneProgress,
@@ -216,7 +220,7 @@ function drawAnimationPanel(ctx: CanvasRenderingContext2D, params: RenderLongCon
   ctx.restore();
 }
 
-function drawEmptyAnimationFallback(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+function drawEmptyAnimationFallback(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, lang: Lang) {
   ctx.save();
   roundRect(ctx, x, y, w, h, 24);
   ctx.clip();
@@ -225,10 +229,10 @@ function drawEmptyAnimationFallback(ctx: CanvasRenderingContext2D, x: number, y:
   ctx.textAlign = "center";
   ctx.fillStyle = "rgba(255,255,255,0.84)";
   ctx.font = "800 34px ui-sans-serif, system-ui, sans-serif";
-  ctx.fillText("Preview chưa có frame hợp lệ", x + w / 2, y + h / 2 - 16);
+  ctx.fillText(label(lang, "Preview chưa có frame hợp lệ", "No valid preview frame"), x + w / 2, y + h / 2 - 16);
   ctx.fillStyle = "rgba(255,255,255,0.56)";
   ctx.font = "500 24px ui-sans-serif, system-ui, sans-serif";
-  ctx.fillText("Hãy reset timeline hoặc chọn lại thuật toán.", x + w / 2, y + h / 2 + 28);
+  ctx.fillText(label(lang, "Hãy reset timeline hoặc chọn lại thuật toán.", "Reset the timeline or choose another algorithm."), x + w / 2, y + h / 2 + 28);
   ctx.restore();
 }
 
@@ -265,6 +269,10 @@ function drawProgress(ctx: CanvasRenderingContext2D, x: number, y: number, w: nu
   ctx.fillStyle = fill;
   roundRect(ctx, x, y, Math.max(h, w * value), h, h / 2);
   ctx.fill();
+}
+
+function label(lang: Lang, vi: string, en: string) {
+  return lang === "vi" ? vi : en;
 }
 
 type FittedTextOptions = {

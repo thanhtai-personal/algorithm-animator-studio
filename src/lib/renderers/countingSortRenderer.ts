@@ -1,5 +1,6 @@
 import type { Frame } from "../algorithms";
 import { getSprite, spriteForWeight, weightForValue, type AnimalColumnSettings } from "../animalColumns";
+import type { Lang } from "../i18n";
 import { drawAnimalColumns } from "./animalColumnRenderer";
 import type { Theme } from "./theme";
 
@@ -17,10 +18,12 @@ export function drawCountingSort(
     animalColumns?: AnimalColumnSettings;
     previousFrame?: Frame | null;
     transitionProgress?: number;
+    lang?: Lang;
   } = {},
 ) {
   const state = frame.counting;
   if (!state) return;
+  const lang = opts.lang ?? "en";
   const animalMode = opts.animalColumns?.mode === "animal";
 
   const gap = Math.max(12, h * 0.04);
@@ -30,8 +33,8 @@ export function drawCountingSort(
   const bottomY = y + topH + gap;
   const outputValues = state.phase === "write" || state.phase === "done" ? frame.arr : state.source;
 
-  drawSection(ctx, x, topY, w, topH, state.phase === "write" ? "Old chart: sorted output" : "Old chart: original values");
-  drawSection(ctx, x, bottomY, w, bottomH, state.phase === "sort" ? "New chart: unique values sorted" : "New chart: unique values + counts");
+  drawSection(ctx, x, topY, w, topH, state.phase === "write" ? label(lang, "Biểu đồ cũ: output đã sort", "Old chart: sorted output") : label(lang, "Biểu đồ cũ: giá trị ban đầu", "Old chart: original values"));
+  drawSection(ctx, x, bottomY, w, bottomH, state.phase === "sort" ? label(lang, "Biểu đồ mới: giá trị duy nhất đã sort", "New chart: unique values sorted") : label(lang, "Biểu đồ mới: giá trị duy nhất + số lượng", "New chart: unique values + counts"));
 
   const outputChart = { x: x + 18, y: topY + 42, w: w - 36, h: topH - 58 };
   const outputBars = layoutBars(outputValues, outputChart.x, outputChart.y, outputChart.w, outputChart.h - 24);
@@ -73,7 +76,7 @@ export function drawCountingSort(
       activeIndex: state.activeUniqueIndex,
     });
 
-  const phaseText = phaseLabel(state.phase);
+  const phaseText = phaseLabel(state.phase, lang);
   ctx.save();
   ctx.fillStyle = theme.highlight;
   ctx.font = "700 18px ui-monospace, monospace";
@@ -358,11 +361,15 @@ function drawCountBadge(ctx: CanvasRenderingContext2D, x: number, y: number, cou
   ctx.restore();
 }
 
-function phaseLabel(phase: NonNullable<Frame["counting"]>["phase"]) {
-  if (phase === "collect") return "collect unique values";
-  if (phase === "sort") return "sort unique chart";
-  if (phase === "write") return "move back + decrement count";
-  return "done";
+function phaseLabel(phase: NonNullable<Frame["counting"]>["phase"], lang: Lang) {
+  if (phase === "collect") return label(lang, "gom giá trị duy nhất", "collect unique values");
+  if (phase === "sort") return label(lang, "sort biểu đồ duy nhất", "sort unique chart");
+  if (phase === "write") return label(lang, "ghi ngược + giảm count", "move back + decrement count");
+  return label(lang, "xong", "done");
+}
+
+function label(lang: Lang, vi: string, en: string) {
+  return lang === "vi" ? vi : en;
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {

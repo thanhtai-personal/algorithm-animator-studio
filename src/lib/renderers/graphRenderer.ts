@@ -1,4 +1,5 @@
 import type { Frame } from "../algorithms";
+import type { Lang } from "../i18n";
 import { roundRect } from "./shapes";
 import type { Theme } from "./theme";
 
@@ -10,6 +11,7 @@ export function drawGraph(
   w: number,
   h: number,
   theme: Theme,
+  lang: Lang = "en",
 ) {
   const g = frame.graph!;
   const px = (n: { x: number; y: number }) => ({ x: padding + n.x * w, y: top + n.y * h });
@@ -116,7 +118,7 @@ export function drawGraph(
     if (isStart || isEnd) {
       ctx.fillStyle = color;
       ctx.font = "bold 14px ui-sans-serif, system-ui";
-      ctx.fillText(isStart ? "START" : "END", p.x, p.y + 50);
+      ctx.fillText(isStart ? label(lang, "BẮT ĐẦU", "START") : label(lang, "KẾT THÚC", "END"), p.x, p.y + 50);
     }
   }
   ctx.textBaseline = "alphabetic";
@@ -124,6 +126,10 @@ export function drawGraph(
   if (g.pathEdges && g.pathEdges.length) {
     drawResultBanner(ctx, frame, padding, top, w, h);
   }
+}
+
+function label(lang: Lang, vi: string, en: string) {
+  return lang === "vi" ? vi : en;
 }
 
 function drawResultBanner(ctx: CanvasRenderingContext2D, frame: Frame, padding: number, top: number, w: number, h: number) {

@@ -1,4 +1,5 @@
 import type { Frame } from "../algorithms";
+import type { Lang } from "../i18n";
 import { drawBars } from "./barRenderer";
 import { roundRect } from "./shapes";
 import type { Theme } from "./theme";
@@ -7,6 +8,7 @@ type Options = {
   algorithmId: string;
   previousFrame?: Frame | null;
   transitionProgress?: number;
+  lang?: Lang;
 };
 
 export function drawSortEssence(
@@ -26,7 +28,7 @@ export function drawSortEssence(
   drawBars(ctx, frame, padding, chartTop, chartW, barsH, barsBottom, theme, options);
 
   const panelY = barsBottom + Math.max(10, chartH * 0.025);
-  drawPanel(ctx, padding, panelY, chartW, panelH, titleFor(options.algorithmId), theme);
+  drawPanel(ctx, padding, panelY, chartW, panelH, titleFor(options.algorithmId, options.lang ?? "en"), theme);
   const x = padding + 18;
   const y = panelY + 38;
   const w = chartW - 36;
@@ -272,24 +274,24 @@ function labelVar(frame: Frame, key: string) {
   return frame.vars[key] == null ? "" : `${key}=${frame.vars[key]}`;
 }
 
-function titleFor(id: string) {
-  const titles: Record<string, string> = {
-    bubble: "Bubble pass: adjacent comparisons grow a sorted tail",
-    selection: "Selection scan: find min, place into sorted prefix",
-    insertion: "Insertion window: shift values, insert key",
-    quick: "Quick partition: pivot splits left/right regions",
-    merge: "Merge ranges: compare two sorted halves",
-    heap: "Heap view: parent dominates children, max moves to tail",
-    radix: "Radix buckets: route values by current digit",
-    bucket: "Bucket ranges: distribute, sort each bucket, concatenate",
-    shell: "Shell gaps: gapped insertion sort",
-    cocktail: "Cocktail shaker: bubble both directions",
-    comb: "Comb gap: shrink long-distance comparisons",
-    gnome: "Gnome walk: step back when local order breaks",
-    tim: "TimSort runs: insertion-sorted runs then merges",
-    intro: "IntroSort hybrid: quick, insertion, heap fallback",
+function titleFor(id: string, lang: Lang) {
+  const titles: Record<string, { vi: string; en: string }> = {
+    bubble: { vi: "Bubble pass: so sánh kề nhau để tạo đuôi đã sort", en: "Bubble pass: adjacent comparisons grow a sorted tail" },
+    selection: { vi: "Selection scan: tìm min, đặt vào prefix đã sort", en: "Selection scan: find min, place into sorted prefix" },
+    insertion: { vi: "Insertion window: dịch giá trị, chèn key", en: "Insertion window: shift values, insert key" },
+    quick: { vi: "Quick partition: pivot chia vùng trái/phải", en: "Quick partition: pivot splits left/right regions" },
+    merge: { vi: "Merge ranges: so sánh hai nửa đã sort", en: "Merge ranges: compare two sorted halves" },
+    heap: { vi: "Heap view: parent lớn hơn con, max ra cuối", en: "Heap view: parent dominates children, max moves to tail" },
+    radix: { vi: "Radix buckets: đưa giá trị theo chữ số hiện tại", en: "Radix buckets: route values by current digit" },
+    bucket: { vi: "Bucket ranges: phân phối, sort từng bucket, nối lại", en: "Bucket ranges: distribute, sort each bucket, concatenate" },
+    shell: { vi: "Shell gaps: insertion sort theo khoảng cách", en: "Shell gaps: gapped insertion sort" },
+    cocktail: { vi: "Cocktail shaker: bubble theo hai chiều", en: "Cocktail shaker: bubble both directions" },
+    comb: { vi: "Comb gap: thu nhỏ so sánh khoảng cách xa", en: "Comb gap: shrink long-distance comparisons" },
+    gnome: { vi: "Gnome walk: lùi lại khi sai thứ tự cục bộ", en: "Gnome walk: step back when local order breaks" },
+    tim: { vi: "TimSort runs: sort run nhỏ rồi merge", en: "TimSort runs: insertion-sorted runs then merges" },
+    intro: { vi: "IntroSort hybrid: quick, insertion, heap fallback", en: "IntroSort hybrid: quick, insertion, heap fallback" },
   };
-  return titles[id] ?? "Sorting lens";
+  return titles[id]?.[lang] ?? (lang === "vi" ? "Góc nhìn sorting" : "Sorting lens");
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {

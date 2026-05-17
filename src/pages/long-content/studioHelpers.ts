@@ -83,6 +83,7 @@ export function drawLongContentFrameAtTime(params: {
   algoId: string;
   algoName: string;
   code: string;
+  lang: Lang;
   theme: Theme;
   showCode: boolean;
   animalColumns: AnimalColumnSettings;
@@ -116,12 +117,13 @@ export function drawLongContentFrameAtTime(params: {
     algoId: params.algoId,
     algoName: params.algoName,
     code: params.code,
+    lang: params.lang,
     theme: params.theme,
     showCode: params.showCode,
     animalColumns: params.animalColumns,
     frameTransitionProgress: frameState.transitionProgress,
     frameLabel: state.scene.animation && frame
-      ? `Data [${frame.arr.join(", ")}] · Frame ${localFrameIdx + 1}/${localFrames.length} · ${formatTime(safeTime)} / ${formatTime(totalDuration)}`
+      ? `${params.lang === "vi" ? "Dữ liệu" : "Data"} [${frame.arr.join(", ")}] · ${params.lang === "vi" ? "Khung" : "Frame"} ${localFrameIdx + 1}/${localFrames.length} · ${formatTime(safeTime)} / ${formatTime(totalDuration)}`
       : `${state.scene.kindLabel} · ${formatTime(safeTime)} / ${formatTime(totalDuration)}`,
   });
 }

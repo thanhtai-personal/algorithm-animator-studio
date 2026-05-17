@@ -1,6 +1,7 @@
 import landTileUrl from "@/assets/sprites/land-tile.jpg";
 import { LandTileMapSprite, type LandTileMap } from "@/lib/sprites/LandTileMapSprite";
 import type { Frame } from "../algorithms";
+import type { Lang } from "../i18n";
 import { roundRect } from "./shapes";
 import type { Theme } from "./theme";
 
@@ -22,6 +23,7 @@ export function drawCodePanel(
   theme: Theme,
   canvasHeight: number,
   style: CodePanelStyle = "default",
+  lang: Lang = "en",
 ) {
   if (style === "grass") {
     drawGrassPanel(ctx, cx, cy, cw, ch);
@@ -40,7 +42,7 @@ export function drawCodePanel(
   ctx.fillStyle = style === "grass" ? "#ffffff" : "#e2e8f0";
   ctx.font = `${style === "grass" ? "800" : "600"} 26px ui-sans-serif, system-ui, sans-serif`;
   ctx.textAlign = "left";
-  ctx.fillText("Code (JS)", cx + 52, cy + 36);
+  ctx.fillText(lang === "vi" ? "Mã (JS)" : "Code (JS)", cx + 52, cy + 36);
 
   const varsStr = Object.entries(frame.vars).map(([k, v]) => `${k}=${v}`).join("  ");
   if (varsStr) {

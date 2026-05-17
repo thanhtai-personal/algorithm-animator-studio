@@ -1,5 +1,6 @@
 import { Frame } from "../algorithms";
 import type { AnimalColumnSettings } from "../animalColumns";
+import type { Lang } from "../i18n";
 import { drawAnimalColumns } from "./animalColumnRenderer";
 import { drawBars } from "./barRenderer";
 import { drawCodePanel } from "./codePanelRenderer";
@@ -23,6 +24,7 @@ export type RenderOpts = {
   transitionProgress?: number;
   algorithmId?: string;
   animalColumns?: AnimalColumnSettings;
+  lang?: Lang;
 };
 
 export function renderFrame(
@@ -50,20 +52,22 @@ export function renderFrame(
   const chartW = width - padding * 2;
 
   drawHeader(ctx, title, subtitle, width, height, headerH, isPortrait, theme);
-  if (complexity) drawComplexityBadges(ctx, complexity, width, height, padding);
+  const lang = opts.lang ?? "en";
+  if (complexity) drawComplexityBadges(ctx, complexity, width, height, padding, lang);
 
   if (!frame) {
-    drawEmptyState(ctx, padding, chartTop, chartW, chartH, theme);
+    drawEmptyState(ctx, padding, chartTop, chartW, chartH, theme, lang);
     return;
   }
 
   if (frame.graph) {
-    drawGraph(ctx, frame, padding, chartTop, chartW, chartH, theme);
+    drawGraph(ctx, frame, padding, chartTop, chartW, chartH, theme, lang);
   } else if (frame.counting) {
     drawCountingSort(ctx, frame, padding, chartTop, chartW, chartH, theme, {
       animalColumns: opts.animalColumns,
       previousFrame: opts.previousFrame,
       transitionProgress: opts.transitionProgress,
+      lang,
     });
   } else if (frame.arr && frame.arr.length) {
     if (opts.animalColumns?.mode === "animal") {
@@ -77,6 +81,7 @@ export function renderFrame(
         algorithmId: opts.algorithmId,
         previousFrame: opts.previousFrame,
         transitionProgress: opts.transitionProgress,
+        lang,
       });
     } else {
       drawBars(ctx, frame, padding, chartTop, chartW, chartH, chartBottom, theme, {
@@ -86,7 +91,7 @@ export function renderFrame(
     }
   }
 
-  drawTarget(ctx, frame, padding, chartTop, height);
+  drawTarget(ctx, frame, padding, chartTop, height, lang);
 
   if (showCode) {
     const animalCodePanel = opts.animalColumns?.mode === "animal";
@@ -102,6 +107,7 @@ export function renderFrame(
       theme,
       height,
       animalCodePanel ? "grass" : "default",
+      lang,
     );
   }
 }
@@ -133,19 +139,20 @@ function drawComplexityBadges(
   width: number,
   height: number,
   padding: number,
+  lang: Lang,
 ) {
   const cPx = Math.max(14, Math.round(height * 0.018));
   ctx.font = `600 ${cPx}px ui-monospace, monospace`;
   ctx.textAlign = "right";
   ctx.textBaseline = "middle";
   const parts: { label: string; value: string; color: string }[] = [
-    { label: "Time", value: complexity.time, color: "#fde047" },
+    { label: label(lang, "Thời gian", "Time"), value: complexity.time, color: "#fde047" },
   ];
   if (complexity.worst && complexity.worst !== complexity.time)
-    parts.push({ label: "Worst", value: complexity.worst, color: "#fb7185" });
+    parts.push({ label: label(lang, "Xấu nhất", "Worst"), value: complexity.worst, color: "#fb7185" });
   if (complexity.best && complexity.best !== complexity.time)
-    parts.push({ label: "Best", value: complexity.best, color: "#86efac" });
-  parts.push({ label: "Space", value: complexity.space, color: "#a5f3fc" });
+    parts.push({ label: label(lang, "Tốt nhất", "Best"), value: complexity.best, color: "#86efac" });
+  parts.push({ label: label(lang, "Bộ nhớ", "Space"), value: complexity.space, color: "#a5f3fc" });
 
   let x = width - padding;
   const y = padding + cPx + 75;
@@ -165,22 +172,28 @@ function drawComplexityBadges(
   ctx.textBaseline = "alphabetic";
 }
 
-function drawEmptyState(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, theme: Theme) {
+function drawEmptyState(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, theme: Theme, lang: Lang) {
   ctx.fillStyle = "rgba(255,255,255,0.74)";
   ctx.textAlign = "center";
   ctx.font = `700 ${Math.max(18, Math.round(h * 0.065))}px ui-sans-serif, system-ui, sans-serif`;
-  ctx.fillText("No animation frame available", x + w / 2, y + h / 2);
+  ctx.fillText(label(lang, "Chưa có frame animation", "No animation frame available"), x + w / 2, y + h / 2);
   ctx.fillStyle = theme.highlight;
   ctx.font = `500 ${Math.max(14, Math.round(h * 0.035))}px ui-sans-serif, system-ui, sans-serif`;
-  ctx.fillText("Try another algorithm or reset the preview timeline.", x + w / 2, y + h / 2 + 42);
+  ctx.fillText(label(lang, "Hãy chọn thuật toán khác hoặc reset timeline.", "Try another algorithm or reset the preview timeline."), x + w / 2, y + h / 2 + 42);
 }
 
-function drawTarget(ctx: CanvasRenderingContext2D, frame: Frame, padding: number, chartTop: number, height: number) {
+function drawTarget(ctx: CanvasRenderingContext2D, frame: Frame, padding: number, chartTop: number, height: number, lang: Lang) {
   if (typeof frame.target === "undefined" || frame.target === null) return;
   ctx.fillStyle = "#fff";
   ctx.textAlign = "left";
   const px = Math.round(height * 0.022);
   ctx.font = `600 ${px}px ui-monospace, monospace`;
-  const result = frame.found != null ? `  →  ${frame.found >= 0 ? "found@" + frame.found : "not found"}` : "";
-  ctx.fillText(`target = ${frame.target}${result}`, padding + 8, chartTop + 6 + px);
+  const result = frame.found != null
+    ? `  ->  ${frame.found >= 0 ? `${label(lang, "thấy", "found")}@${frame.found}` : label(lang, "không thấy", "not found")}`
+    : "";
+  ctx.fillText(`${label(lang, "mục tiêu", "target")} = ${frame.target}${result}`, padding + 8, chartTop + 6 + px);
+}
+
+function label(lang: Lang, vi: string, en: string) {
+  return lang === "vi" ? vi : en;
 }

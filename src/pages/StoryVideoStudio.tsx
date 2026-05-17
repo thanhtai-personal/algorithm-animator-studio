@@ -1,4 +1,6 @@
 import { AlertCircle, RefreshCcw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StoryExtractPanel } from "@/features/story-video/components/StoryExtractPanel";
@@ -6,9 +8,35 @@ import { StoryTopicPanel } from "@/features/story-video/components/StoryTopicPan
 import { StoryVideoPanel } from "@/features/story-video/components/StoryVideoPanel";
 import { StoryVoicePanel } from "@/features/story-video/components/StoryVoicePanel";
 import { useStoryVideoStudio } from "@/features/story-video/useStoryVideoStudio";
+import { AuthProfile, getCurrentProfile, isSuperAdminProfile } from "@/lib/auth";
 
 export default function StoryVideoStudio() {
-  const studio = useStoryVideoStudio();
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<AuthProfile | null>(null);
+  const canGenerateVideo = isSuperAdminProfile(profile);
+
+  useEffect(() => {
+    let cancelled = false;
+    getCurrentProfile()
+      .then((nextProfile) => {
+        if (!cancelled) setProfile(isSuperAdminProfile(nextProfile) ? nextProfile : null);
+      })
+      .catch(() => {
+        if (!cancelled) setProfile(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function requireVideoGenerationAccess() {
+    if (canGenerateVideo) return true;
+    navigate("/auth", { replace: false, state: { from: "/story-video" } });
+    return false;
+  }
+
+  const studio = useStoryVideoStudio({ requireVideoGenerationAccess });
 
   return (
     <div className="min-h-screen bg-background text-foreground">

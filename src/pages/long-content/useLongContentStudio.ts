@@ -264,6 +264,7 @@ export function useLongContentStudio() {
       algoId,
       algoName: algo.name,
       code: algo.code,
+      lang,
       theme,
       showCode,
       animalColumns: { mode: columnVisualMode, spriteScale: animalSpriteScale, jumpIntensity: animalJumpIntensity, highlightJump: animalHighlightJump },

@@ -1,4 +1,5 @@
 import { Frame } from "./algorithms";
+import type { Lang } from "./i18n";
 import { LongContentScene } from "./longContentTimeline";
 import type { Theme } from "./renderer";
 import { roundRect } from "./renderers/shapes";
@@ -10,6 +11,7 @@ type FocusPointerParams = {
   sceneProgress: number;
   theme: Theme;
   showCode: boolean;
+  lang: Lang;
   textPanel?: { x: number; y: number; w: number; h: number };
   chartReveal?: number;
 };
@@ -40,8 +42,8 @@ export function drawFocusPointer(ctx: CanvasRenderingContext2D, params: FocusPoi
 }
 
 function getFocusPoint(params: FocusPointerParams) {
-  const { scene, sceneProgress, frame, showCode } = params;
-  if (!scene.animation || !frame) return getScriptPanelFocus(sceneProgress, scene.bullets.length, scene.kindLabel, params.textPanel);
+  const { scene, sceneProgress, frame, showCode, lang } = params;
+  if (!scene.animation || !frame) return getScriptPanelFocus(sceneProgress, scene.bullets.length, scene.kindLabel, lang, params.textPanel);
 
   const panel = { x: 770, y: 120, w: 1080, h: 730 };
   const inner = { x: panel.x + 26, y: panel.y + 26, w: panel.w - 52, h: panel.h - 52 };
@@ -63,44 +65,50 @@ function getFocusPoint(params: FocusPointerParams) {
     return {
       x: inner.x + (localX / anim.w) * inner.w,
       y: inner.y + (localY / anim.h) * inner.h,
-      label: getFrameFocusLabel(frame, params.previousFrame),
+      label: getFrameFocusLabel(frame, lang, params.previousFrame),
     };
   }
 
   return { x: inner.x + inner.w * (0.28 + 0.48 * sceneProgress), y: inner.y + inner.h * 0.48, label: scene.kindLabel };
 }
 
-function getScriptPanelFocus(sceneProgress: number, bulletCount: number, fallback: string, textPanel?: { x: number; y: number; w: number; h: number }) {
+function getScriptPanelFocus(sceneProgress: number, bulletCount: number, fallback: string, lang: Lang, textPanel?: { x: number; y: number; w: number; h: number }) {
   const panel = textPanel ?? { x: 62, y: 132, w: 690, h: 820 };
   const maxBullet = Math.max(0, Math.min(4, bulletCount - 1));
   const bulletIndex = Math.min(maxBullet, Math.floor(sceneProgress * Math.max(1, bulletCount)));
   if (sceneProgress < 0.3 || bulletCount === 0) return { x: panel.x + 112, y: panel.y + 185, label: fallback };
-  return { x: panel.x + 96, y: panel.y + Math.min(panel.h - 120, 410 + bulletIndex * 78), label: "Ý chính" };
+  return { x: panel.x + 96, y: panel.y + Math.min(panel.h - 120, 410 + bulletIndex * 78), label: label(lang, "Ý chính", "Key point") };
 }
 
-function getFrameFocusLabel(frame: Frame, previousFrame?: Frame | null) {
+function getFrameFocusLabel(frame: Frame, lang: Lang, previousFrame?: Frame | null) {
   if (frame.event === "swap" || frame.swap.length) {
     const pair = frame.swap.length >= 2 ? frame.swap : frame.highlight;
     const [a, b] = pair;
     const before = previousFrame?.arr ?? frame.arr;
     if (a != null && b != null && before[a] != null && before[b] != null) {
-      return `${before[a]} > ${before[b]} nên đổi chỗ`;
+      return label(lang, `${before[a]} > ${before[b]} nên đổi chỗ`, `${before[a]} > ${before[b]}, swap them`);
     }
-    return "Sai thứ tự nên đổi chỗ";
+    return label(lang, "Sai thứ tự nên đổi chỗ", "Wrong order, swap them");
   }
 
   if (frame.event === "compare" || frame.highlight.length) {
     const [a, b] = frame.highlight;
     if (a != null && b != null && frame.arr[a] != null && frame.arr[b] != null) {
-      const relation = frame.arr[a] > frame.arr[b] ? "sẽ cần đổi chỗ" : "đúng thứ tự, giữ nguyên";
-      return `So sánh ${frame.arr[a]} và ${frame.arr[b]}: ${relation}`;
+      const relation = frame.arr[a] > frame.arr[b]
+        ? label(lang, "sẽ cần đổi chỗ", "swap needed")
+        : label(lang, "đúng thứ tự, giữ nguyên", "already ordered");
+      return label(lang, `So sánh ${frame.arr[a]} và ${frame.arr[b]}: ${relation}`, `Compare ${frame.arr[a]} and ${frame.arr[b]}: ${relation}`);
     }
-    return "So sánh cặp đang được tô sáng";
+    return label(lang, "So sánh cặp đang được tô sáng", "Compare the highlighted pair");
   }
 
-  if (frame.event === "done") return "Mảng đã hoàn tất";
-  if (frame.sorted.length) return "Vùng xanh đã đúng vị trí";
-  return "Theo dõi bước này";
+  if (frame.event === "done") return label(lang, "Mảng đã hoàn tất", "Array complete");
+  if (frame.sorted.length) return label(lang, "Vùng xanh đã đúng vị trí", "Green region is fixed");
+  return label(lang, "Theo dõi bước này", "Follow this step");
+}
+
+function label(lang: Lang, vi: string, en: string) {
+  return lang === "vi" ? vi : en;
 }
 
 function drawPointerIcon(ctx: CanvasRenderingContext2D, x: number, y: number, color: string) {

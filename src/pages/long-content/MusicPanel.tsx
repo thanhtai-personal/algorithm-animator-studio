@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import type { BackgroundMusicId } from "@/lib/backgroundMusic";
+import { isProceduralMusicPreset, type BackgroundMusicId } from "@/lib/backgroundMusic";
 import type { LongContentStudio } from "./useLongContentStudio";
 
 export function MusicPanel({ studio: s }: { studio: LongContentStudio }) {
@@ -54,13 +54,25 @@ export function MusicPanel({ studio: s }: { studio: LongContentStudio }) {
 
 function MusicCard(props: { id: BackgroundMusicId; title: string; subtitle: string; order: number; hasLicense: boolean; onClick: () => void }) {
   const active = props.order > 0;
+  const exclusivePreset = isProceduralMusicPreset(props.id) && props.id !== "off";
+  const cardClass = active
+    ? exclusivePreset
+      ? "border-yellow-400/60 bg-slate-800/70 text-slate-100 shadow-[0_0_16px_rgba(148,163,184,0.12)]"
+      : "border-yellow-400/70 bg-yellow-400/10 text-yellow-50 shadow-[0_0_18px_rgba(250,204,21,0.12)]"
+    : exclusivePreset
+      ? "border-slate-700/80 bg-slate-900/55 text-slate-300 hover:border-slate-500 hover:bg-slate-800/70"
+      : "border-border bg-card/60 hover:border-emerald-400/50 hover:bg-emerald-400/10";
+  const subtitle = exclusivePreset ? `${props.subtitle} · không ghép track khác` : props.subtitle;
+
   return (
-    <button type="button" onClick={props.onClick} className={`min-h-24 rounded-lg border p-3 text-left transition ${active ? "border-yellow-400/70 bg-yellow-400/10 text-yellow-50 shadow-[0_0_18px_rgba(250,204,21,0.12)]" : "border-border bg-card/60 hover:border-emerald-400/50 hover:bg-emerald-400/10"}`}>
+    <button type="button" onClick={props.onClick} className={`min-h-24 rounded-lg border p-3 text-left transition ${cardClass}`}>
       <div className="flex items-start justify-between gap-2">
         <span className="line-clamp-2 text-sm font-semibold">{props.title}</span>
         {active ? <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-yellow-400 text-xs font-bold text-slate-950">{props.order}</span> : null}
       </div>
-      <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{props.subtitle}{props.hasLicense ? " · License" : ""}</p>
+      <p className={`mt-2 line-clamp-2 text-xs ${exclusivePreset ? "text-slate-400" : "text-muted-foreground"}`}>
+        {subtitle}{props.hasLicense ? " · License" : ""}
+      </p>
     </button>
   );
 }

@@ -150,9 +150,51 @@ function getInterpolatedFrameState(
 
 function getLectureFramePosition(progress: number, frames: Frame[], scene?: LongContentScene, algoId?: string) {
   if (algoId !== "bubble" || !scene?.animation) return clamp01(progress) * (frames.length - 1);
-  if (scene.id === "step-by-step") return getBubblePassWeightedPosition(progress, frames, [0.64, 0.23, 0.1, 0.03]);
+  if (scene.id === "step-by-step") return getBubbleStepByStepCuePosition(progress, frames);
   if (scene.id === "animation") return getBubblePassWeightedPosition(progress, frames, [0.42, 0.28, 0.18, 0.12]);
   return getWeightedOperationPosition(progress, frames);
+}
+
+function getBubbleStepByStepCuePosition(progress: number, frames: Frame[]) {
+  const cues = [
+    { at: 0, frame: 0 },
+    { at: 0.16, frame: findBubbleFrame(frames, 0, 0, "compare") },
+    { at: 0.3, frame: findBubbleFrame(frames, 0, 0, "swap") },
+    { at: 0.43, frame: findBubbleFrame(frames, 0, 1, "compare") },
+    { at: 0.51, frame: findBubbleFrame(frames, 0, 1, "swap") },
+    { at: 0.59, frame: findBubbleFrame(frames, 0, 2, "compare") },
+    { at: 0.66, frame: findBubbleFrame(frames, 0, 2, "swap") },
+    { at: 0.73, frame: findBubbleFrame(frames, 0, 3, "compare") },
+    { at: 0.8, frame: findBubblePassEndFrame(frames, 0) },
+    { at: 0.88, frame: findBubbleFrame(frames, 1, 1, "compare") },
+    { at: 0.94, frame: findBubbleFrame(frames, 1, 1, "swap") },
+    { at: 1, frame: frames.length - 1 },
+  ].filter((cue) => cue.frame >= 0);
+
+  return getCuePosition(clamp01(progress), cues);
+}
+
+function getCuePosition(progress: number, cues: Array<{ at: number; frame: number }>) {
+  if (cues.length <= 1) return cues[0]?.frame ?? 0;
+  for (let index = 0; index < cues.length - 1; index++) {
+    const current = cues[index];
+    const next = cues[index + 1];
+    if (progress <= next.at) {
+      const span = Math.max(0.001, next.at - current.at);
+      const local = clamp01((progress - current.at) / span);
+      const holdThenMove = local < 0.72 ? 0 : easeInOutCubic((local - 0.72) / 0.28);
+      return current.frame + (next.frame - current.frame) * holdThenMove;
+    }
+  }
+  return cues[cues.length - 1].frame;
+}
+
+function findBubbleFrame(frames: Frame[], pass: number, j: number, event: Frame["event"]) {
+  return frames.findIndex((frame) => frame.vars.i === pass && frame.vars.j === j && frame.event === event);
+}
+
+function findBubblePassEndFrame(frames: Frame[], pass: number) {
+  return frames.findIndex((frame) => frame.vars.i === pass && frame.sorted.length && !frame.event);
 }
 
 function getBubblePassWeightedPosition(progress: number, frames: Frame[], passWeights: number[]) {

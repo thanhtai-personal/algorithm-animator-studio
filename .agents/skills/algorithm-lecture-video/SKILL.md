@@ -72,6 +72,16 @@ Each scene should answer:
 - Keep motion synchronized with narration. If voice explains a comparison or swap, the visual focus should arrive before or during that sentence, not after it.
 - Remove idle motion that does not teach anything. A smooth animation is only useful when it clarifies a state change, decision, or invariant.
 
+## Voice-Animation Step Sync
+
+- Do not map a whole operation-heavy scene linearly from `progress 0..1` to all algorithm frames. Linear mapping can make the chart advance to the next compare/swap while narration is still explaining the previous one.
+- For scenes that describe concrete operations, build or infer cue points for each spoken action: compare, decision, swap, write/update, pass end, sorted/locked region, and early stop.
+- Hold the current algorithm frame while the matching sentence is being spoken. Move to the next frame only near the end of that cue, using a short eased transition.
+- A later pass or loop must not begin visually until the narration has finished the current pass's compare/swap explanation. Prefer a deliberate hold over premature motion.
+- If exact per-cue audio timings are unavailable, use a cue map with conservative holds. Treat the first cue in each operation as explanation time and the final part of the cue interval as transition time.
+- When generated TTS can return segment durations, split narration at the same semantic boundaries used by the chart cues. Scene-level duration sync is acceptable for concept scenes, but operation scenes need cue-level sync.
+- For Bubble Sort step-by-step examples, keep pass 1 compare/swap cues together before advancing to pass 2. The sorted tail should lock only after the voice has explained why the pass is complete.
+
 ## Voice Timing
 
 - Never switch scene before the voice for that scene has finished.

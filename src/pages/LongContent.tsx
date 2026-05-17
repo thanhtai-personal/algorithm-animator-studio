@@ -266,7 +266,7 @@ function NarrationControls({ studio: s }: { studio: LongContentStudio }) {
       <div>
         <Label>Nguồn giọng đọc</Label>
         <Select value={s.voiceProvider} onValueChange={(value) => s.setVoiceProvider(value as typeof s.voiceProvider)}>
-          <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="mt-2 border-yellow-400/70 bg-yellow-400/10 font-semibold text-yellow-50 shadow-[0_0_0_1px_rgba(250,204,21,0.18),0_0_22px_rgba(250,204,21,0.12)] hover:bg-yellow-400/15 focus:ring-yellow-400/40"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="browser">Browser TTS · preview only</SelectItem>
             <SelectItem value="piper">Piper local · tạo file và nhúng vào video</SelectItem>

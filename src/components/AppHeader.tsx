@@ -1,4 +1,4 @@
-import { Film, LogIn, LogOut, Moon, Settings, Sparkles, Sun, Youtube } from "lucide-react";
+import { BookOpen, Film, LogIn, LogOut, Moon, Settings, Sparkles, Sun, Youtube } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -15,6 +15,10 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
   "/long-content": {
     title: "Long Content Studio",
     subtitle: "Create 16:9 YouTube explainers with animation, script, voice and music.",
+  },
+  "/story-video": {
+    title: "Story Video Studio",
+    subtitle: "Create reading-story videos from URLs, text, voice-over and background media.",
   },
   "/youtube": {
     title: "YouTube Publishing",
@@ -42,6 +46,7 @@ export function AppHeader() {
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
   const [mounted, setMounted] = useState(false);
   const meta = useMemo(() => PAGE_META[location.pathname] ?? PAGE_META["/"], [location.pathname]);
+  const contentMode = location.pathname === "/story-video" ? "story-video" : location.pathname === "/long-content" ? "algorithm-long" : "algorithm-shorts";
   const canConfigure = isSuperAdminProfile(profile);
 
   useEffect(() => { setMounted(true); }, []);
@@ -77,6 +82,12 @@ export function AppHeader() {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
   }
 
+  function changeContentMode(value: string) {
+    if (value === "story-video") navigate("/story-video");
+    else if (value === "algorithm-long") navigate("/long-content");
+    else navigate("/");
+  }
+
   return (
     <header className="border-b border-border/40 bg-background/95 px-4 py-4 backdrop-blur md:px-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
@@ -92,8 +103,19 @@ export function AppHeader() {
 
         <nav className="flex flex-wrap items-center gap-2">
           <Button variant={location.pathname === "/" ? "default" : "outline"} onClick={() => navigate("/")}>Short Studio</Button>
+          <Select value={contentMode} onValueChange={changeContentMode}>
+            <SelectTrigger className="w-[190px]"><SelectValue placeholder="Chọn chủ đề" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="algorithm-shorts">Algorithm Shorts</SelectItem>
+              <SelectItem value="algorithm-long">Algorithm Long 16:9</SelectItem>
+              <SelectItem value="story-video">Kênh đọc truyện</SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant={location.pathname === "/long-content" ? "default" : "outline"} onClick={() => navigate("/long-content")}>
             <Film className="mr-2 h-4 w-4" /> Long 16:9
+          </Button>
+          <Button variant={location.pathname === "/story-video" ? "default" : "outline"} onClick={() => navigate("/story-video")}>
+            <BookOpen className="mr-2 h-4 w-4" /> Đọc truyện
           </Button>
           <Button variant={location.pathname.startsWith("/youtube") || location.pathname === "/social-publishing" ? "default" : "outline"} onClick={() => navigate("/youtube")}>
             <Youtube className="mr-2 h-4 w-4" /> YouTube

@@ -5,13 +5,19 @@ import path from "node:path";
 import {
   GENERATED_DIR,
   GENERATED_PREVIEW_DIR,
+  GENERATED_VIDEO_DIR,
+  GENERATED_BACKGROUND_MUSIC_DIR,
   GENERATED_PUBLIC_PATH,
   GENERATED_PREVIEW_PUBLIC_PATH,
+  GENERATED_VIDEO_PUBLIC_PATH,
+  GENERATED_BACKGROUND_MUSIC_PUBLIC_PATH,
   MODEL_DIR,
   PIPER_EXE,
   PORT,
   getGeneratedDir,
   getGeneratedPreviewDir,
+  getGeneratedVideoDir,
+  getGeneratedBackgroundMusicDir,
 } from "./config/paths";
 import { createElevenLabsRouter } from "./routes/elevenLabsRoutes";
 import { createGenerateRouter } from "./routes/generateRoutes";
@@ -20,6 +26,9 @@ import { createMusicLibraryRouter } from "./routes/musicLibraryRoutes";
 import { createModelRouter } from "./routes/modelRoutes";
 import { createPiperRuntimeRouter } from "./routes/piperRuntimeRoutes";
 import { createSystemRouter } from "./routes/systemRoutes";
+import { createVideoRouter } from "./routes/videoRoutes";
+import { createWebExtractRouter } from "./routes/webExtractRoutes";
+import { createResourceRouter } from "./routes/resourceRoutes";
 import { createYoutubeRouter } from "./routes/youtubeRoutes";
 import { readRuntimeEnvFromRequest } from "./services/RuntimeEnvService";
 import { readEnvValues } from "./services/EnvFileService";
@@ -29,13 +38,15 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "20mb" }));
 
-for (const dir of [GENERATED_DIR, GENERATED_PREVIEW_DIR]) {
+for (const dir of [GENERATED_DIR, GENERATED_PREVIEW_DIR, GENERATED_VIDEO_DIR, GENERATED_BACKGROUND_MUSIC_DIR]) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
 app.use(`/${GENERATED_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedDir));
 app.use(`/${GENERATED_PREVIEW_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedPreviewDir));
-app.use("/api", createHealthRouter(), createModelRouter(), createMusicLibraryRouter(), createPiperRuntimeRouter(), createSystemRouter(), createGenerateRouter(), createElevenLabsRouter(), createYoutubeRouter());
+app.use(`/${GENERATED_VIDEO_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedVideoDir));
+app.use(`/${GENERATED_BACKGROUND_MUSIC_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedBackgroundMusicDir));
+app.use("/api", createHealthRouter(), createModelRouter(), createMusicLibraryRouter(), createPiperRuntimeRouter(), createSystemRouter(), createResourceRouter(), createWebExtractRouter(), createGenerateRouter(), createElevenLabsRouter(), createVideoRouter(), createYoutubeRouter());
 
 app.listen(PORT, () => {
   console.log(`Algo voice backend running at http://localhost:${PORT}`);

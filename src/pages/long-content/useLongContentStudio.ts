@@ -119,7 +119,9 @@ export function useLongContentStudio() {
     setVoiceSegmentDurationsSec, setVoiceScriptKey,
   });
   useEffect(() => { setScriptOverrides({}); }, [algoId, lang]);
-  useEffect(() => { drawFrame(elapsedSec); });
+  useEffect(() => {
+    if (!exporting) drawFrame(elapsedSec);
+  });
   useEffect(() => { audioEngine.setMusicSources(music.selectedUrls); }, [music.selectedUrls]);
   useEffect(() => {
     if (!playing) {
@@ -254,9 +256,9 @@ export function useLongContentStudio() {
       toast.error(error instanceof Error ? error.message : "Không kiểm tra được Piper runtime.");
     }
   }
-  function drawFrame(timeSec: number) {
+  function drawFrame(timeSec: number, targetCanvas: HTMLCanvasElement | null = canvasRef.current) {
     drawLongContentFrameAtTime({
-      canvas: canvasRef.current,
+      canvas: targetCanvas,
       timeSec,
       scenes,
       sceneFrames,
@@ -271,9 +273,7 @@ export function useLongContentStudio() {
     });
   }
   async function exportVideo() {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx || !frames.length) return;
+    if (!canvasRef.current || !frames.length) return;
     cancelNarration();
     audioEngine.resume();
     let shouldPlayVoice = false;
@@ -287,38 +287,57 @@ export function useLongContentStudio() {
       toast.error(error instanceof Error ? error.message : "Không chuẩn bị được voice-over để export.");
       return;
     }
-    const videoStream = canvas.captureStream(0) as MediaStream;
-    const track = videoStream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack;
-    const audioTracks = audioEngine.getRecordStream().getAudioTracks();
-    const combined = new MediaStream([...videoStream.getVideoTracks(), ...audioTracks]);
     const format = getExportFormat(exportFormat);
     const mimeType = format.mimeCandidates.find((candidate) => MediaRecorder.isTypeSupported(candidate));
     if (!mimeType) {
       return toast.error(`${format.label}: trình duyệt chưa hỗ trợ xuất định dạng này.`);
     }
+    setExporting(true);
+    setExportProgress(0);
+    setPlaying(false);
+    const exportCanvas = document.createElement("canvas");
+    exportCanvas.width = LONG_W;
+    exportCanvas.height = LONG_H;
+    drawFrame(0, exportCanvas);
+
+    const videoStream = exportCanvas.captureStream(0) as MediaStream;
+    const track = videoStream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack;
+    const audioTracks = audioEngine.getRecordStream().getAudioTracks();
+    const combined = new MediaStream([...videoStream.getVideoTracks(), ...audioTracks]);
     const recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 10_000_000 });
     const chunks: Blob[] = [];
     recorder.ondataavailable = (event) => event.data.size && chunks.push(event.data);
     const done = new Promise<Blob>((resolve) => { recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType })); });
-    setExporting(true);
-    setExportProgress(0);
-    setPlaying(false);
-    startMusic();
-    recorder.start();
-    if (shouldPlayVoice) await audioEngine.playVoice(0);
-    const totalFrames = Math.max(1, Math.ceil(totalDuration * fps));
-    for (let i = 0; i <= totalFrames; i++) {
-      const time = Math.min(totalDuration, i / fps);
-      drawFrame(time);
+    let blob: Blob;
+    try {
+      startMusic();
+      recorder.start();
       track.requestFrame();
-      setExportProgress(Math.round((i / totalFrames) * 100));
-      await new Promise((resolve) => setTimeout(resolve, 1000 / fps));
+      if (shouldPlayVoice) await audioEngine.playVoice(0);
+      const totalFrames = Math.max(1, Math.ceil(totalDuration * fps));
+      let lastProgress = -1;
+      for (let i = 0; i <= totalFrames; i++) {
+        const time = Math.min(totalDuration, i / fps);
+        drawFrame(time, exportCanvas);
+        track.requestFrame();
+        const progress = Math.round((i / totalFrames) * 100);
+        if (progress !== lastProgress) {
+          lastProgress = progress;
+          setExportProgress(progress);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1000 / Math.max(1, fps)));
+      }
+      recorder.stop();
+      blob = await done;
+    } finally {
+      audioEngine.stopMusic();
+      audioEngine.stopVoice(true);
+      cancelNarration();
+      videoStream.getTracks().forEach((streamTrack) => streamTrack.stop());
+      if (recorder.state !== "inactive") recorder.stop();
+      setExporting(false);
+      drawFrame(elapsedSec);
     }
-    recorder.stop();
-    audioEngine.stopMusic();
-    audioEngine.stopVoice(true);
-    cancelNarration();
-    const blob = await done;
     const fileName = `${algo.id}-${lang}-long-16x9-${Date.now()}.${format.id}`;
     const file = new File([blob], fileName, { type: mimeType });
     const url = URL.createObjectURL(file);
@@ -327,7 +346,6 @@ export function useLongContentStudio() {
     link.href = url;
     link.download = fileName;
     link.click();
-    setExporting(false);
     toast.success("Đã xuất video và lưu vào danh sách đăng YouTube tạm thời.");
   }
   function startMusic() {

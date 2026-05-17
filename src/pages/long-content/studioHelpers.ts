@@ -37,7 +37,7 @@ export function buildSceneFrames(scenes: LongContentScene[], algo: AlgoDef) {
 }
 
 export function buildVoiceScriptKey(parts: { provider: VoiceProvider; algoId: string; lang: Lang; modelKey: string; elevenModelId: string; elevenVoiceId: string; rate: number; script: string }) {
-  return [parts.provider, parts.algoId, parts.lang, parts.modelKey, parts.elevenModelId, parts.elevenVoiceId, parts.rate.toFixed(2), parts.script].join("::");
+  return ["scene-segmented-v3", parts.provider, parts.algoId, parts.lang, parts.modelKey, parts.elevenModelId, parts.elevenVoiceId, parts.rate.toFixed(2), parts.script].join("::");
 }
 
 export function speakNarration(text: string, lang: Lang, rate: number, volume: number) {
@@ -92,6 +92,7 @@ export function drawLongContentFrameAtTime(params: {
   const totalDuration = getTotalDuration(params.scenes);
   const safeTime = clampNumber(params.timeSec, 0, totalDuration);
   const state = getSceneAtTime(params.scenes, safeTime);
+  const sceneElapsedSec = Math.max(0, safeTime - state.start);
   const sceneIndex = params.scenes.findIndex((scene) => scene.id === state.scene.id);
   const previousScene = sceneIndex > 0 ? params.scenes[sceneIndex - 1] : null;
   const previousSceneWasAnimation = Boolean(previousScene?.animation);
@@ -99,16 +100,17 @@ export function drawLongContentFrameAtTime(params: {
   const closingFrames = previousSceneWasAnimation && previousScene
     ? params.sceneFrames[previousScene.id] ?? params.baseFrames
     : [];
-  const localFrameIdx = getFrameIndexForTime(params.scenes, totalDuration, safeTime, state.scene.animation, localFrames.length);
+  const frameState = getInterpolatedFrameState(state.progress, state.scene.animation, localFrames, state.scene, params.algoId);
+  const localFrameIdx = frameState.index;
   const frame = state.scene.animation
-    ? localFrames[localFrameIdx] ?? localFrames[0]
+    ? frameState.frame
     : closingFrames[closingFrames.length - 1] ?? null;
-  const previousFrame = state.scene.animation && localFrameIdx > 0 ? localFrames[localFrameIdx - 1] ?? null : null;
   renderLongContentFrame(ctx, {
     frame,
-    previousFrame,
+    previousFrame: frameState.previousFrame,
     scene: state.scene,
     sceneProgress: state.progress,
+    sceneElapsedSec,
     previousSceneWasAnimation,
     timelineProgress: clamp01(safeTime / Math.max(1, totalDuration)),
     algoId: params.algoId,
@@ -117,10 +119,116 @@ export function drawLongContentFrameAtTime(params: {
     theme: params.theme,
     showCode: params.showCode,
     animalColumns: params.animalColumns,
+    frameTransitionProgress: frameState.transitionProgress,
     frameLabel: state.scene.animation && frame
       ? `Data [${frame.arr.join(", ")}] · Frame ${localFrameIdx + 1}/${localFrames.length} · ${formatTime(safeTime)} / ${formatTime(totalDuration)}`
       : `${state.scene.kindLabel} · ${formatTime(safeTime)} / ${formatTime(totalDuration)}`,
   });
+}
+
+function getInterpolatedFrameState(
+  progress: number,
+  sceneAnimation: boolean | undefined,
+  frames: Frame[],
+  scene?: LongContentScene,
+  algoId?: string,
+) {
+  if (!sceneAnimation || frames.length <= 1) {
+    return { frame: frames[0] ?? null, previousFrame: null, index: 0, transitionProgress: 1 };
+  }
+  const position = getLectureFramePosition(progress, frames, scene, algoId);
+  const previousIndex = Math.floor(position);
+  const nextIndex = Math.min(frames.length - 1, Math.ceil(position));
+  const transitionProgress = previousIndex === nextIndex ? 1 : position - previousIndex;
+  return {
+    frame: frames[nextIndex] ?? frames[previousIndex] ?? frames[0] ?? null,
+    previousFrame: previousIndex === nextIndex ? null : frames[previousIndex] ?? null,
+    index: nextIndex,
+    transitionProgress: easeInOutCubic(transitionProgress),
+  };
+}
+
+function getLectureFramePosition(progress: number, frames: Frame[], scene?: LongContentScene, algoId?: string) {
+  if (algoId !== "bubble" || !scene?.animation) return clamp01(progress) * (frames.length - 1);
+  if (scene.id === "step-by-step") return getBubblePassWeightedPosition(progress, frames, [0.64, 0.23, 0.1, 0.03]);
+  if (scene.id === "animation") return getBubblePassWeightedPosition(progress, frames, [0.42, 0.28, 0.18, 0.12]);
+  return getWeightedOperationPosition(progress, frames);
+}
+
+function getBubblePassWeightedPosition(progress: number, frames: Frame[], passWeights: number[]) {
+  const groups = groupBubbleFramesByPass(frames);
+  if (groups.length <= 1) return getWeightedOperationPosition(progress, frames);
+  const weights = groups.map((_, index) => passWeights[index] ?? passWeights[passWeights.length - 1] ?? 1);
+  const totalWeight = weights.reduce((sum, value) => sum + value, 0) || 1;
+  let cursor = 0;
+  const safeProgress = clamp01(progress);
+
+  for (let index = 0; index < groups.length; index++) {
+    const share = weights[index] / totalWeight;
+    const next = cursor + share;
+    if (safeProgress <= next || index === groups.length - 1) {
+      const localProgress = share > 0 ? clamp01((safeProgress - cursor) / share) : 1;
+      const [start, end] = groups[index];
+      return start + getWeightedOperationLocalPosition(localProgress, frames.slice(start, end + 1));
+    }
+    cursor = next;
+  }
+
+  return frames.length - 1;
+}
+
+function groupBubbleFramesByPass(frames: Frame[]) {
+  const groups: Array<[number, number]> = [];
+  let currentPass: number | null = null;
+  let start = 0;
+
+  frames.forEach((frame, index) => {
+    const pass = typeof frame.vars.i === "number" ? frame.vars.i : currentPass;
+    if (pass == null) return;
+    if (currentPass == null) {
+      currentPass = pass;
+      start = 0;
+      return;
+    }
+    if (pass !== currentPass) {
+      groups.push([start, index - 1]);
+      currentPass = pass;
+      start = index;
+    }
+  });
+
+  if (currentPass != null) groups.push([start, frames.length - 1]);
+  return groups;
+}
+
+function getWeightedOperationPosition(progress: number, frames: Frame[]) {
+  return getWeightedOperationLocalPosition(progress, frames);
+}
+
+function getWeightedOperationLocalPosition(progress: number, frames: Frame[]) {
+  if (frames.length <= 1) return 0;
+  const weights = frames.map(getFrameHoldWeight);
+  const total = weights.reduce((sum, value) => sum + value, 0) || 1;
+  const target = clamp01(progress) * total;
+  let cursor = 0;
+
+  for (let index = 0; index < frames.length; index++) {
+    const next = cursor + weights[index];
+    if (target <= next || index === frames.length - 1) {
+      const local = weights[index] > 0 ? (target - cursor) / weights[index] : 1;
+      return Math.max(0, index - 1) + easeInOutCubic(clamp01(local));
+    }
+    cursor = next;
+  }
+
+  return frames.length - 1;
+}
+
+function getFrameHoldWeight(frame: Frame) {
+  if (frame.event === "compare") return 2.8;
+  if (frame.event === "swap") return 3.4;
+  if (frame.sorted.length) return 2.2;
+  return 1.1;
 }
 
 export function getFrameIndexForTime(scenes: LongContentScene[], totalDuration: number, timeSec: number, sceneAnimation: boolean | undefined, frameCount: number) {
@@ -134,4 +242,9 @@ export function getFrameIndexForTime(scenes: LongContentScene[], totalDuration: 
 function parseDataSetText(value: string) {
   const values = value.split(/[\s,;]+/).map((part) => Number(part.trim())).filter((item) => Number.isFinite(item));
   return values.length ? values : undefined;
+}
+
+function easeInOutCubic(value: number) {
+  const safe = clamp01(value);
+  return safe < 0.5 ? 4 * safe * safe * safe : 1 - Math.pow(-2 * safe + 2, 3) / 2;
 }

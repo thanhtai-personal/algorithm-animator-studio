@@ -11,6 +11,7 @@ export type PiperModel = {
 
 export type GenerateBody = {
   text?: string;
+  segments?: string[];
   modelKey?: string;
   sentenceSilence?: number;
   speechRate?: number;

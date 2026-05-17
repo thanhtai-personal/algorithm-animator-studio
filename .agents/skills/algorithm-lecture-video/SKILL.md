@@ -52,6 +52,26 @@ Each scene should answer:
 - If there is motion, what exact sentence explains the current operation?
 - What visible text is professional topic content rather than presenter/meta text?
 
+## Slide Design
+
+- Design each scene like a professional teaching slide: one primary idea, one visual hierarchy, and no decorative content that competes with the explanation.
+- Concept slides should feel like focused lecture slides, not generic hero pages. Use a strong title, short subtitle, and compact bullets or diagram labels.
+- Keep text panels scannable: prefer short technical bullets over transcript-like paragraphs. The narration carries nuance; the slide carries structure.
+- If no chart is needed, let the content panel use the available width. Avoid keeping an empty chart frame open just to balance the layout.
+- If a chart is needed, make the chart and text complementary: the text names the rule/invariant, while the chart demonstrates the current operation.
+- Avoid duplicating the same information in title, subtitle, bullets, callout, and frame label. Each text surface should add a distinct job.
+- Preserve reading comfort on 16:9 exports: stable margins, predictable alignment, high contrast, and no text overlapping pointer/callout elements.
+- Use slide transitions to support comprehension: reveal the chart when the explanation reaches the example, and close it when the lesson returns to concept/evaluation.
+
+## Motion Quality
+
+- Prefer smooth interpolation between algorithm frames instead of jumping directly from one discrete frame to the next.
+- When rendering a step, pass the previous frame and an eased `transitionProgress` so swaps, highlights, and pointer/callouts have visible continuity.
+- Chart open/close should be time-based and short, around `0.7s`, rather than tied to a large percentage of scene duration. Long scenes should not make the chart feel late.
+- Use easing for panel layout changes and per-frame animation. Hard jumps make the video feel like a debug preview instead of a finished presentation.
+- Keep motion synchronized with narration. If voice explains a comparison or swap, the visual focus should arrive before or during that sentence, not after it.
+- Remove idle motion that does not teach anything. A smooth animation is only useful when it clarifies a state change, decision, or invariant.
+
 ## Voice Timing
 
 - Never switch scene before the voice for that scene has finished.

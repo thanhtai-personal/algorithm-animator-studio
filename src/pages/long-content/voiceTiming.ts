@@ -1,18 +1,26 @@
 import type { Lang } from "@/lib/i18n";
 import type { LongContentScene } from "@/lib/longContentTimeline";
 
-const SCENE_VOICE_PADDING_SEC = 0.25;
-const ACTUAL_VOICE_TAIL_PADDING_SEC = 0.25;
-const CONSERVATIVE_VOICE_FACTOR = 1.04;
-const MIN_CONCEPT_SCENE_SEC = 3.2;
-const MIN_ANIMATION_SCENE_SEC = 4.8;
+const SCENE_VOICE_PADDING_SEC = 0.08;
+const ACTUAL_VOICE_TAIL_PADDING_SEC = 0.08;
+const CONSERVATIVE_VOICE_FACTOR = 1.015;
+const MIN_CONCEPT_SCENE_SEC = 2.4;
+const MIN_ANIMATION_SCENE_SEC = 3.6;
 
 export function fitSceneDurationsToNarration(
   scenes: LongContentScene[],
   lang: Lang,
   narrationRate: number,
   voiceDurationSec: number,
+  segmentDurationsSec: number[] = [],
 ) {
+  if (segmentDurationsSec.length === scenes.length) {
+    return scenes.map((scene, index) => ({
+      ...scene,
+      durationSec: Math.max(0.35, segmentDurationsSec[index] ?? scene.durationSec),
+    }));
+  }
+
   const estimates = scenes.map((scene) => estimateNarrationDuration(scene.narration, lang, narrationRate));
   const estimateTotal = estimates.reduce((sum, value) => sum + value, 0);
   const finiteVoiceDuration = Number.isFinite(voiceDurationSec) ? voiceDurationSec : 0;

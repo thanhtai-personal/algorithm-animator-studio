@@ -13,6 +13,7 @@ type RenderLongContentParams = {
   previousFrame?: Frame | null;
   scene: LongContentScene;
   sceneProgress: number;
+  sceneElapsedSec: number;
   previousSceneWasAnimation?: boolean;
   timelineProgress: number;
   algoId: string;
@@ -22,12 +23,13 @@ type RenderLongContentParams = {
   showCode: boolean;
   animalColumns: AnimalColumnSettings;
   frameLabel: string;
+  frameTransitionProgress?: number;
   channelName?: string;
 };
 
 export function renderLongContentFrame(ctx: CanvasRenderingContext2D, params: RenderLongContentParams) {
   const { theme, scene, sceneProgress, timelineProgress } = params;
-  const layout = getSceneLayout(params.scene.animation, params.previousSceneWasAnimation, sceneProgress);
+  const layout = getSceneLayout(params.scene.animation, params.previousSceneWasAnimation, sceneProgress, params.sceneElapsedSec);
   drawBackground(ctx, theme);
   drawBrand(ctx, params.channelName ?? "Code Visual Lab");
   drawScriptPanel(ctx, params, layout.textPanel);
@@ -49,8 +51,13 @@ export function renderLongContentFrame(ctx: CanvasRenderingContext2D, params: Re
 
 type PanelRect = { x: number; y: number; w: number; h: number };
 
-function getSceneLayout(sceneHasChart: boolean | undefined, previousSceneWasAnimation: boolean | undefined, sceneProgress: number) {
-  const chartReveal = getChartReveal(sceneHasChart, previousSceneWasAnimation, sceneProgress);
+function getSceneLayout(
+  sceneHasChart: boolean | undefined,
+  previousSceneWasAnimation: boolean | undefined,
+  sceneProgress: number,
+  sceneElapsedSec: number,
+) {
+  const chartReveal = getChartReveal(sceneHasChart, previousSceneWasAnimation, sceneProgress, sceneElapsedSec);
   const textPanel = {
     x: 62,
     y: 132,
@@ -60,10 +67,15 @@ function getSceneLayout(sceneHasChart: boolean | undefined, previousSceneWasAnim
   return { chartReveal, textPanel };
 }
 
-function getChartReveal(sceneHasChart: boolean | undefined, previousSceneWasAnimation: boolean | undefined, sceneProgress: number) {
-  const transition = 0.045;
-  if (sceneHasChart) return easeOutCubic(clamp01(sceneProgress / transition));
-  if (previousSceneWasAnimation) return 1 - easeOutCubic(clamp01(sceneProgress / transition));
+function getChartReveal(
+  sceneHasChart: boolean | undefined,
+  previousSceneWasAnimation: boolean | undefined,
+  sceneProgress: number,
+  sceneElapsedSec: number,
+) {
+  const normalized = Math.max(sceneProgress, sceneElapsedSec / 0.7);
+  if (sceneHasChart) return easeOutCubic(clamp01(normalized));
+  if (previousSceneWasAnimation) return 1 - easeOutCubic(clamp01(normalized));
   return 0;
 }
 
@@ -192,7 +204,7 @@ function drawAnimationPanel(ctx: CanvasRenderingContext2D, params: RenderLongCon
     showCode: params.showCode,
     complexity: COMPLEXITY[params.algoId],
     previousFrame: params.previousFrame,
-    transitionProgress: params.sceneProgress,
+    transitionProgress: params.frameTransitionProgress ?? params.sceneProgress,
     algorithmId: params.algoId,
     animalColumns: params.animalColumns,
   }, animCanvas.width, animCanvas.height);

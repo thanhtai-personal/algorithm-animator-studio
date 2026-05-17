@@ -30,6 +30,7 @@ const PREVIEW_WORD_LIMIT = 350;
 
 export type ValidatedTtsRequest = {
   cleanedText: string;
+  cleanedSegments?: string[];
   fileName?: string;
   selectedModel: PiperModel;
   sentenceSilence?: number;
@@ -49,10 +50,6 @@ export function validateGenerateRequest(
 ): TtsValidationResult {
   const { text, modelKey } = body;
 
-  if (!text?.trim()) {
-    return badRequest("Text không được để trống.");
-  }
-
   if (!modelKey) {
     return badRequest("Chưa chọn mẫu giọng.");
   }
@@ -69,7 +66,15 @@ export function validateGenerateRequest(
     return modelFileError;
   }
 
-  const cleanedText = prepareText(text, selectedModel.lang);
+  const cleanedSegments = Array.isArray(body.segments)
+    ? body.segments.map((segment) => prepareText(segment || "", selectedModel.lang)).filter(Boolean)
+    : undefined;
+
+  if (!text?.trim() && !cleanedSegments?.length) {
+    return badRequest("Text không được để trống.");
+  }
+
+  const cleanedText = cleanedSegments?.length ? cleanedSegments.join("\n") : prepareText(text || "", selectedModel.lang);
 
   if (!cleanedText.trim()) {
     return badRequest("Text sau khi xử lý bị rỗng.");
@@ -77,6 +82,7 @@ export function validateGenerateRequest(
 
   return {
     cleanedText,
+    cleanedSegments,
     fileName: body.fileName,
     selectedModel,
     sentenceSilence: body.sentenceSilence,
@@ -122,6 +128,7 @@ export async function generateAudioFile(
 
   const result = await runPiper({
     text: params.cleanedText,
+    segments: params.cleanedSegments,
     modelPath: params.selectedModel.modelPath,
     outputPath,
     sentenceSilence: finalSentenceSilence,
@@ -157,6 +164,7 @@ export async function generateAudioFile(
     sentenceSilence: finalSentenceSilence,
     speechRate: finalSpeechRate,
     warning: result.stderr || "",
+    segmentDurationsSec: result.segmentDurationsSec,
   };
 }
 

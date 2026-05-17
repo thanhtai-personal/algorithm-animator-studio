@@ -7,6 +7,7 @@ import { stripAnsi } from "../utils/text";
 
 type RunPiperParams = {
   text: string;
+  segments?: string[];
   modelPath: string;
   outputPath: string;
   sentenceSilence: number;
@@ -14,8 +15,8 @@ type RunPiperParams = {
   piperExe: string;
 };
 
-export async function runPiper(params: RunPiperParams): Promise<{ stdout: string; stderr: string }> {
-  const segments = splitPiperInputSegments(params.text);
+export async function runPiper(params: RunPiperParams): Promise<{ stdout: string; stderr: string; segmentDurationsSec?: number[] }> {
+  const segments = params.segments?.length ? params.segments : splitPiperInputSegments(params.text);
 
   if (segments.length <= 1 || params.sentenceSilence <= 0) {
     return runPiperSingle(params);
@@ -73,9 +74,10 @@ function runPiperSingle(params: RunPiperParams): Promise<{ stdout: string; stder
 async function runPiperWithForcedSentenceSilence(
   params: RunPiperParams,
   segments: string[]
-): Promise<{ stdout: string; stderr: string }> {
+): Promise<{ stdout: string; stderr: string; segmentDurationsSec: number[] }> {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "kata-piper-segments-"));
   const tempFiles: string[] = [];
+  const segmentDurationsSec: number[] = [];
   const stdoutParts: string[] = [];
   const stderrParts: string[] = [];
 
@@ -91,6 +93,9 @@ async function runPiperWithForcedSentenceSilence(
         sentenceSilence: 0,
       });
 
+      const audio = readWavPcmFile(segmentPath);
+      const audioSeconds = audio.data.length / audio.byteRate;
+      segmentDurationsSec.push(audioSeconds + (index < segments.length - 1 ? params.sentenceSilence : 0));
       stdoutParts.push(result.stdout);
       stderrParts.push(result.stderr);
     }
@@ -108,6 +113,7 @@ async function runPiperWithForcedSentenceSilence(
     return {
       stdout: stdoutParts.filter(Boolean).join("\n"),
       stderr: stderrParts.filter(Boolean).join("\n"),
+      segmentDurationsSec,
     };
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });

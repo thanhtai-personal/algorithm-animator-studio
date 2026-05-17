@@ -60,6 +60,7 @@ export type VoiceGenerateResult = {
   inputCharacters?: number;
   billedCharacters?: number;
   estimatedUsd?: number;
+  segmentDurationsSec?: number[];
 };
 
 export async function getVoiceHealth() {
@@ -73,6 +74,7 @@ export async function getPiperModels() {
 
 export async function generatePiperVoice(payload: {
   text: string;
+  segments?: string[];
   modelKey: string;
   sentenceSilence: number;
   speechRate: number;

@@ -47,9 +47,11 @@ export default function LongContent() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <main className="grid grid-cols-1 gap-4 p-4 xl:grid-cols-[360px_1fr]">
-        <LeftControls studio={studio} onExport={requestExport} />
+        <LeftControls studio={studio} />
         <div className="space-y-4">
+          <VisualExportPanel studio={studio} onExport={requestExport} />
           <PreviewPanel studio={studio} />
+          <MusicPanel studio={studio} />
           <ScriptPanel studio={studio} />
         </div>
       </main>
@@ -57,7 +59,7 @@ export default function LongContent() {
   );
 }
 
-function LeftControls({ studio: s, onExport }: { studio: LongContentStudio; onExport: () => void }) {
+function LeftControls({ studio: s }: { studio: LongContentStudio }) {
   return (
     <div className="space-y-4">
       <CollapsibleSection title="Cấu hình nội dung" icon={<Film className="h-4 w-4 text-emerald-400" />}>
@@ -103,10 +105,25 @@ function LeftControls({ studio: s, onExport }: { studio: LongContentStudio; onEx
       </CollapsibleSection>
 
       <NarrationControls studio={s} />
+    </div>
+  );
+}
 
-      <MusicControls studio={s} />
+function VisualExportPanel({ studio: s, onExport }: { studio: LongContentStudio; onExport: () => void }) {
+  return (
+    <Card className="space-y-4 p-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h2 className="font-semibold">Visual & export</h2>
+          <p className="text-xs text-muted-foreground">Cấu hình hình ảnh xuất video ngay trước khung preview.</p>
+        </div>
+        <Button className="bg-emerald-500 text-slate-950 hover:bg-emerald-600" onClick={onExport} disabled={s.exporting}>
+          <Download className="mr-2 h-4 w-4" />
+          {s.exporting ? `Đang xuất ${s.exportProgress}%` : "Xuất long video 16:9"}
+        </Button>
+      </div>
 
-      <CollapsibleSection title="Visual & export">
+      <div className="grid gap-3 lg:grid-cols-[1fr_220px_260px]">
         <div>
           <Label>Tỉ lệ video</Label>
           <div className="mt-2 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200">
@@ -122,17 +139,14 @@ function LeftControls({ studio: s, onExport }: { studio: LongContentStudio; onEx
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
+        <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2 lg:mt-6">
           <Label>Hiện code trong animation</Label>
           <Switch checked={s.showCode} onCheckedChange={s.setShowCode} />
         </div>
-        {s.algo.category === "sort" ? <AnimalControls studio={s} /> : null}
-        <Button className="w-full bg-emerald-500 text-slate-950 hover:bg-emerald-600" onClick={onExport} disabled={s.exporting}>
-          <Download className="mr-2 h-4 w-4" />
-          {s.exporting ? `Đang xuất ${s.exportProgress}%` : "Xuất long video 16:9"}
-        </Button>
-      </CollapsibleSection>
-    </div>
+      </div>
+
+      {s.algo.category === "sort" ? <AnimalControls studio={s} compact /> : null}
+    </Card>
   );
 }
 
@@ -182,6 +196,47 @@ function PreviewPanel({ studio: s }: { studio: LongContentStudio }) {
         </div>
       </Card>
     </div>
+  );
+}
+
+function MusicPanel({ studio: s }: { studio: LongContentStudio }) {
+  return (
+    <Card className="space-y-4 p-4">
+      <div>
+        <h2 className="font-semibold">Nhạc nền</h2>
+        <p className="text-xs text-muted-foreground">Nhạc nền phát khi preview và được nhúng vào video export.</p>
+      </div>
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_220px] lg:items-end">
+        <div>
+          <Label>Chọn nhạc</Label>
+          <Select value={s.musicPreset} onValueChange={(value) => s.setMusicPreset(value as BackgroundMusicId)}>
+            <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Preset tạo sẵn</SelectLabel>
+                {MUSIC_PRESETS.map((music) => <SelectItem key={music.id} value={music.id}>{music.label[s.lang]}</SelectItem>)}
+              </SelectGroup>
+              <SelectSeparator />
+              <SelectGroup>
+                <SelectLabel>Track có sẵn</SelectLabel>
+                {ASSET_MUSIC_OPTIONS.map((music) => <SelectItem key={music.id} value={music.id}>{music.label[s.lang]}</SelectItem>)}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+        <NumberSlider label="Âm lượng nhạc" value={s.musicVol} min={0} max={100} suffix="%" onChange={s.setMusicVol} />
+        <label className="flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+          <Upload className="h-3.5 w-3.5" /> Upload .mp3/.wav
+          <input type="file" accept="audio/*" className="hidden" onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) {
+              s.onMusicUpload(file);
+              s.setMusicPreset("custom");
+            }
+          }} />
+        </label>
+      </div>
+    </Card>
   );
 }
 
@@ -287,42 +342,6 @@ function NarrationControls({ studio: s }: { studio: LongContentStudio }) {
   );
 }
 
-function MusicControls({ studio: s }: { studio: LongContentStudio }) {
-  return (
-    <CollapsibleSection title="Nhạc nền">
-      <div>
-        <Label>Chọn nhạc</Label>
-        <Select value={s.musicPreset} onValueChange={(value) => s.setMusicPreset(value as BackgroundMusicId)}>
-          <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Preset tạo sẵn</SelectLabel>
-              {MUSIC_PRESETS.map((music) => <SelectItem key={music.id} value={music.id}>{music.label[s.lang]}</SelectItem>)}
-            </SelectGroup>
-            <SelectSeparator />
-            <SelectGroup>
-              <SelectLabel>Track có sẵn</SelectLabel>
-              {ASSET_MUSIC_OPTIONS.map((music) => <SelectItem key={music.id} value={music.id}>{music.label[s.lang]}</SelectItem>)}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
-      <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-        <Upload className="h-3.5 w-3.5" /> Upload nhạc nền riêng (.mp3/.wav)
-        <input type="file" accept="audio/*" className="hidden" onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) {
-            s.onMusicUpload(file);
-            s.setMusicPreset("custom");
-          }
-        }} />
-      </label>
-      <NumberSlider label="Âm lượng nhạc" value={s.musicVol} min={0} max={100} suffix="%" onChange={s.setMusicVol} />
-      <p className="text-xs text-muted-foreground">Nhạc nền sẽ phát khi preview và được nhúng vào video export qua MediaRecorder.</p>
-    </CollapsibleSection>
-  );
-}
-
 function ComplexityBadges({ algoId }: { algoId: string }) {
   const item = COMPLEXITY[algoId];
   if (!item) return null;
@@ -348,7 +367,7 @@ function NumberSlider(props: { label: string; value: number; min: number; max: n
   );
 }
 
-function AnimalControls({ studio: s }: { studio: LongContentStudio }) {
+function AnimalControls({ studio: s, compact = false }: { studio: LongContentStudio; compact?: boolean }) {
   return (
     <div className="space-y-3 rounded-lg border border-border p-3">
       <div>
@@ -362,14 +381,14 @@ function AnimalControls({ studio: s }: { studio: LongContentStudio }) {
         </Select>
       </div>
       {s.columnVisualMode === "animal" ? (
-        <>
+        <div className={compact ? "grid gap-3 md:grid-cols-3" : "space-y-3"}>
           <NumberSlider label="Sprite" value={s.animalSpriteScale} min={0.6} max={1.6} suffix="x" step={0.1} onChange={s.setAnimalSpriteScale} />
           <NumberSlider label="Độ nhảy" value={s.animalJumpIntensity} min={0.4} max={1.8} suffix="x" step={0.1} onChange={s.setAnimalJumpIntensity} />
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 px-3 py-2">
             <Label>Highlight cũng nhảy</Label>
             <Switch checked={s.animalHighlightJump} onCheckedChange={s.setAnimalHighlightJump} />
           </div>
-        </>
+        </div>
       ) : null}
     </div>
   );

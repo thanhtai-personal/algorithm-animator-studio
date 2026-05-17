@@ -25,10 +25,10 @@ import {
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
 import { ExportFormat, getExportFormat } from "../studio/exportFormats";
 import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm } from "../studio/demoArrays";
-import { applyScriptOverrides, buildSceneFrames, buildVoiceScriptKey, cancelNarration, clampFrameIndex, drawLongContentFrameAtTime, getLoadedVoiceDuration, getFrameIndexForTime as getTimelineFrameIndex, ScriptSceneField, ScriptSceneOverride, speakNarration } from "./studioHelpers";
+import { applyScriptOverrides, buildSceneFrames, cancelNarration, clampFrameIndex, drawLongContentFrameAtTime, getLoadedVoiceDuration, ScriptSceneField, ScriptSceneOverride, speakNarration } from "./studioHelpers";
+import { buildGeneratedVoiceScriptKey, type GeneratedVoiceProvider, useRestoreGeneratedVoiceCache, writeCachedGeneratedVoice } from "./voiceCache";
 import { fitSceneDurationsToNarration } from "./voiceTiming";
-const LONG_W = 1920;
-const LONG_H = 1080;
+const LONG_W = 1920, LONG_H = 1080;
 const DEFAULT_GRAPH = "A-B:4, A-C:2, B-D:5, C-D:8, C-E:10, D-E:2, D-F:6, E-G:3, F-G:1";
 export type VoiceProvider = "browser" | "piper" | "elevenlabs";
 export function useLongContentStudio() {
@@ -60,6 +60,7 @@ export function useLongContentStudio() {
   const [voiceUrl, setVoiceUrl] = useState("");
   const [voiceFileName, setVoiceFileName] = useState("");
   const [voiceDurationSec, setVoiceDurationSec] = useState(0);
+  const [voiceSegmentDurationsSec, setVoiceSegmentDurationsSec] = useState<number[]>([]);
   const [voiceScriptKey, setVoiceScriptKey] = useState("");
   const [voiceLoading, setVoiceLoading] = useState(false);
   const [voiceHealth, setVoiceHealth] = useState<VoiceHealth | null>(null);
@@ -78,21 +79,12 @@ export function useLongContentStudio() {
   const baseScenes = useMemo(() => buildLongContentScenes({ ...sceneParams, lang }), [algo, algoId, animationSeconds, introSeconds, lang]);
   const editedScenes = useMemo(() => applyScriptOverrides(baseScenes, scriptOverrides), [baseScenes, scriptOverrides]);
   const scenes = useMemo(
-    () => fitSceneDurationsToNarration(editedScenes, lang, narrationRate, voiceDurationSec),
-    [editedScenes, lang, narrationRate, voiceDurationSec],
+    () => fitSceneDurationsToNarration(editedScenes, lang, narrationRate, voiceDurationSec, voiceSegmentDurationsSec),
+    [editedScenes, lang, narrationRate, voiceDurationSec, voiceSegmentDurationsSec],
   );
   const totalDuration = useMemo(() => getTotalDuration(scenes), [scenes]);
-  const narrationScript = useMemo(() => scenes.map((scene) => scene.narration).join(" "), [scenes]);
-  const currentVoiceScriptKey = useMemo(() => buildVoiceScriptKey({
-    provider: voiceProvider,
-    algoId: algo.id,
-    lang,
-    modelKey: piperModelKey,
-    elevenModelId,
-    elevenVoiceId,
-    rate: narrationRate,
-    script: narrationScript,
-  }), [voiceProvider, algo.id, lang, piperModelKey, elevenModelId, elevenVoiceId, narrationRate, narrationScript]);
+  const narrationSegments = useMemo(() => editedScenes.map((scene) => scene.narration), [editedScenes]);
+  const narrationScript = useMemo(() => narrationSegments.join(" "), [narrationSegments]);
   const baseFrames = useMemo(() => {
     if (algo.category === "graph") return algo.run([], { graph, start: 0, end: graph.nodes.length - 1 });
     const size = demoSizeForAlgorithm(algoId, algo.category === "search" ? 28 : 24);
@@ -130,8 +122,14 @@ export function useLongContentStudio() {
     setVoiceUrl("");
     setVoiceFileName("");
     setVoiceDurationSec(0);
+    setVoiceSegmentDurationsSec([]);
     setVoiceScriptKey("");
   }, [algoId, animationSeconds, introSeconds, lang, narrationRate, piperModelKey, elevenModelId, elevenVoiceId, narrationScript]);
+  useRestoreGeneratedVoiceCache({
+    algoId: algo.id, lang, piperModelKey, elevenModelId, elevenVoiceId, narrationRate, narrationScript,
+    voiceUrl, voiceLoading, voiceProvider, setVoiceProvider, setVoiceUrl, setVoiceFileName, setVoiceDurationSec,
+    setVoiceSegmentDurationsSec, setVoiceScriptKey,
+  });
   useEffect(() => { setScriptOverrides({}); }, [algoId, lang]);
   useEffect(() => { drawFrame(elapsedSec); });
   useEffect(() => {
@@ -226,22 +224,27 @@ export function useLongContentStudio() {
       setVoiceLoading(false);
     }
   }
-  async function generateVoiceOverForProvider(provider: Exclude<VoiceProvider, "browser">): Promise<VoiceGenerateResult> {
+  async function generateVoiceOverForProvider(provider: GeneratedVoiceProvider): Promise<VoiceGenerateResult> {
     const fileName = `${algo.id}-${lang}-long-voice`;
     const result = provider === "piper"
-      ? await generatePiperVoice({ text: narrationScript, modelKey: piperModelKey, sentenceSilence: 0.22, speechRate: narrationRate, fileName })
+      ? await generatePiperVoice({ text: narrationScript, segments: narrationSegments, modelKey: piperModelKey, sentenceSilence: 0.08, speechRate: narrationRate, fileName })
       : await generateElevenLabsVoice({ text: narrationScript, modelId: elevenModelId, voiceId: elevenVoiceId, fileName });
+    const scriptKey = getVoiceScriptKeyForProvider(provider);
     setVoiceUrl(result.audioUrl);
     setVoiceFileName(result.fileName);
-    setVoiceScriptKey(currentVoiceScriptKey);
+    setVoiceScriptKey(scriptKey);
     audioEngine.setVoiceSource(result.audioUrl);
     await audioEngine.waitForVoiceReady();
-    setVoiceDurationSec(getLoadedVoiceDuration());
+    const durationSec = getLoadedVoiceDuration();
+    const segmentDurationsSec = result.segmentDurationsSec ?? [];
+    setVoiceDurationSec(durationSec);
+    setVoiceSegmentDurationsSec(segmentDurationsSec);
+    writeCachedGeneratedVoice({ provider, scriptKey, audioUrl: result.audioUrl, fileName: result.fileName, durationSec, segmentDurationsSec, savedAt: Date.now() });
     return result;
   }
   async function ensureVoiceForExport() {
     if (!narrationEnabled || voiceProvider === "browser") return false;
-    if (voiceUrl && voiceScriptKey === currentVoiceScriptKey && audioEngine.hasVoiceSource()) {
+    if (voiceUrl && voiceScriptKey === getVoiceScriptKeyForProvider(voiceProvider) && audioEngine.hasVoiceSource()) {
       await audioEngine.waitForVoiceReady();
       return true;
     }
@@ -286,9 +289,6 @@ export function useLongContentStudio() {
       showCode,
       animalColumns: { mode: columnVisualMode, spriteScale: animalSpriteScale, jumpIntensity: animalJumpIntensity, highlightJump: animalHighlightJump },
     });
-  }
-  function getFrameIndexForTime(timeSec: number, sceneAnimation: boolean | undefined, frameCount: number) {
-    return getTimelineFrameIndex(scenes, totalDuration, timeSec, sceneAnimation, frameCount);
   }
   async function exportVideo() {
     const canvas = canvasRef.current;
@@ -373,6 +373,11 @@ export function useLongContentStudio() {
       const next = { ...current };
       delete next[sceneId];
       return next;
+    });
+  }
+  function getVoiceScriptKeyForProvider(provider: GeneratedVoiceProvider) {
+    return buildGeneratedVoiceScriptKey({
+      provider, algoId: algo.id, lang, piperModelKey, elevenModelId, elevenVoiceId, narrationRate, narrationScript,
     });
   }
   return {

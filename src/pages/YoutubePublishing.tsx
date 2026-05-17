@@ -42,7 +42,7 @@ export default function YoutubePublishing() {
   const selectedFile = videoFile ?? lastExported?.file ?? null;
   const selectedMusicLicense = !videoFile ? lastExported?.youtubeDescriptionAppend : undefined;
   const canUpload = Boolean(selectedFile && refreshToken && config?.hasClientId && config?.hasClientSecret);
-  const redirectUri = useMemo(() => config?.redirectUri || `${window.location.origin}/youtube`, [config?.redirectUri]);
+  const redirectUri = useMemo(() => resolveYoutubeRedirectUri(config?.redirectUri), [config?.redirectUri]);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,7 +69,7 @@ export default function YoutubePublishing() {
       const nextConfig = await getYoutubeConfig();
       setConfig(nextConfig);
       setForm((current) => ({ ...current, ...nextConfig.defaults, title: current.title || nextConfig.defaults.title }));
-      await exchangeCodeIfNeeded(nextConfig.redirectUri || `${window.location.origin}/youtube`);
+      await exchangeCodeIfNeeded(resolveYoutubeRedirectUri(nextConfig.redirectUri));
       const token = localStorage.getItem(TOKEN_KEY) || refreshToken;
       if (token) await loadPlaylists(token);
     } catch (error) {
@@ -247,6 +247,23 @@ function ScreenMessage({ text }: { text: string }) {
 
 function normalizeForm(form: YoutubeUploadForm): YoutubeUploadForm {
   return { ...form, publishAt: form.publishAt ? new Date(form.publishAt).toISOString() : "" };
+}
+
+function resolveYoutubeRedirectUri(configuredRedirectUri?: string) {
+  const browserRedirectUri = `${window.location.origin}/youtube`;
+  const configured = configuredRedirectUri?.trim();
+  if (!configured) return browserRedirectUri;
+
+  try {
+    const configuredUrl = new URL(configured);
+    const browserUrl = new URL(browserRedirectUri);
+    const configuredIsLocal = ["localhost", "127.0.0.1", "0.0.0.0"].includes(configuredUrl.hostname);
+    const browserIsLocal = ["localhost", "127.0.0.1", "0.0.0.0"].includes(browserUrl.hostname);
+    if (configuredIsLocal && !browserIsLocal) return browserRedirectUri;
+    return configured;
+  } catch {
+    return browserRedirectUri;
+  }
 }
 
 function Field(props: { label: string; value: string; type?: string; onChange: (value: string) => void }) {

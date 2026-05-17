@@ -1,0 +1,7 @@
+interface:
+  display_name: "Piper React Maintainer"
+  short_description: "Maintain the local Piper TTS app cleanly"
+  default_prompt: "Use $piper-react-maintainer to refactor or extend the Piper React local TTS app."
+
+policy:
+  allow_implicit_invocation: true

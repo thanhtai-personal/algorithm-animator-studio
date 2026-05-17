@@ -1,0 +1,154 @@
+{
+  "name": "piper-react",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "react-router build",
+    "dev:client": "vite --host 0.0.0.0 --port 6868 --strictPort",
+    "start": "react-router-serve ./build/server/index.js",
+    "typecheck": "react-router typegen && tsc",
+    "dev:server": "tsx watch server/index.ts",
+    "dev": "concurrently \"vite --host 0.0.0.0 --port 6868 --strictPort\" \"tsx watch server/index.ts\"",
+    "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --packages=external --outfile=dist-electron/server/index.js",
+    "build:desktop": "cross-env DESKTOP_BUILD=true VITE_API_URL=http://127.0.0.1:8888 VITE_CLIENT_ORIGIN=http://127.0.0.1:6868 npm run build && npm run build:server",
+    "electron:dev": "cross-env ELECTRON_DEV_URL=http://localhost:6868 npx electron .",
+    "dist:win": "npm run build:desktop && electron-builder --win --x64 --config.directories.output=release/win",
+    "dist:win:nsis": "npm run build:desktop && electron-builder --win nsis --x64 --config.directories.output=release/win",
+    "dist:win:unpacked": "npm run build:desktop && electron-builder --win --x64 --dir --config.directories.output=release/win",
+    "dist:mac": "npm run build:desktop && electron-builder --mac dmg zip --x64 --arm64 --config.directories.output=release/mac",
+    "dist:mac:x64": "npm run build:desktop && electron-builder --mac dmg zip --x64 --config.directories.output=release/mac",
+    "dist:mac:arm64": "npm run build:desktop && electron-builder --mac dmg zip --arm64 --config.directories.output=release/mac",
+    "dist:mac:dir": "npm run build:desktop && electron-builder --mac --dir --config.directories.output=release/mac",
+    "dist:clean": "node -e \"require('fs').rmSync('release',{recursive:true,force:true})\"",
+    "build:public": "cross-env VITE_PUBLIC_WEB=true npm run build",
+    "preview:public": "cross-env VITE_PUBLIC_WEB=true vite preview --host 0.0.0.0 --port 6868"
+  },
+  "dependencies": {
+    "@react-router/node": "7.15.0",
+    "@react-router/serve": "7.15.0",
+    "cheerio": "^1.0.0",
+    "concurrently": "^9.2.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "googleapis": "^171.4.0",
+    "isbot": "^5.1.36",
+    "multer": "^2.1.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-router": "7.15.0",
+    "vite-plugin-pwa": "^1.1.0"
+  },
+  "devDependencies": {
+    "@react-router/dev": "7.15.0",
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.1.0",
+    "@types/node": "^22.19.18",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "cross-env": "^7.0.3",
+    "electron": "^42.0.1",
+    "electron-builder": "^26.0.12",
+    "esbuild": "^0.27.1",
+    "tailwindcss": "^4.2.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.3"
+  },
+  "version": "0.1.0",
+  "main": "electron/main.cjs",
+  "build": {
+    "appId": "vn.kata.studio",
+    "productName": "Kata Studio",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "build/client/**/*",
+      "dist-electron/**/*",
+      "electron/**/*",
+      "package.json",
+      "assets/**/*"
+    ],
+    "asar": true,
+    "extraResources": [
+      {
+        "from": "build/client",
+        "to": "desktop-client",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "runtime",
+        "to": "runtime",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "asarUnpack": [
+      "dist-electron/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/app-icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Kata Studio"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "icon": "assets/app-icon.icns"
+    },
+    "dmg": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "title": "${productName} ${version}",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
+  },
+  "description": "Local TTS, video creation and YouTube upload desktop app.",
+  "author": "Kata Studio"
+}

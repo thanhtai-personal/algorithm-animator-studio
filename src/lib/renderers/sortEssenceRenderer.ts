@@ -40,6 +40,7 @@ export function drawSortEssence(
   else if (options.algorithmId === "radix") drawRadixLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "bucket") drawBucketLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "shell" || options.algorithmId === "comb") drawGapLens(ctx, frame, x, y, w, h, theme);
+  else if (options.algorithmId === "odd_even") drawOddEvenLens(ctx, frame, x, y, w, h, theme, options.lang ?? "en");
   else if (options.algorithmId === "cocktail") drawCocktailLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "gnome") drawGnomeLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "selection") drawSelectionLens(ctx, frame, x, y, w, h, theme);
@@ -146,6 +147,72 @@ function drawCocktailLens(ctx: CanvasRenderingContext2D, frame: Frame, x: number
   const color = direction === "backward" ? theme.swap : theme.highlight;
   drawDirectionArrow(ctx, x + 12, y + h * 0.18, w - 24, direction === "backward" ? -1 : 1, color);
   drawSmallText(ctx, `start=${frame.vars.start ?? "-"}  end=${frame.vars.end ?? "-"}  direction=${direction}`, x + 4, y + 16, color, "left");
+}
+
+function drawOddEvenLens(ctx: CanvasRenderingContext2D, frame: Frame, x: number, y: number, w: number, h: number, theme: Theme, lang: Lang) {
+  const phase = String(frame.vars.phase ?? "odd");
+  const activeParity = phase === "even" ? 0 : 1;
+  const activeColor = phase === "even" ? theme.swap : theme.highlight;
+  const inactiveColor = phase === "even" ? "rgba(250,204,21,0.25)" : "rgba(244,114,182,0.22)";
+  const stripY = y + h * 0.38;
+  const stripH = h * 0.32;
+
+  drawIndexStrip(ctx, frame, x, stripY, w, stripH, theme, (i) => {
+    if (frame.highlight.includes(i)) return activeColor;
+    if (frame.swap.includes(i)) return theme.swap;
+    if (frame.sorted.includes(i)) return theme.sorted;
+    return i % 2 === activeParity ? inactiveColor : "rgba(148,163,184,0.42)";
+  });
+
+  drawOddEvenPairBands(ctx, x, stripY - 10, w, frame.arr.length, activeParity, activeColor);
+  drawPhaseBadge(ctx, x + 4, y + 14, phase, activeColor, lang);
+  drawSmallText(
+    ctx,
+    lang === "vi"
+      ? `pass=${frame.vars.pass ?? "-"}  chỉ so sánh cặp ${phase === "odd" ? "1-2, 3-4, ..." : "0-1, 2-3, ..."}`
+      : `pass=${frame.vars.pass ?? "-"}  compare only ${phase === "odd" ? "1-2, 3-4, ..." : "0-1, 2-3, ..."} pairs`,
+    x + 104,
+    y + 16,
+    activeColor,
+    "left",
+  );
+}
+
+function drawOddEvenPairBands(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, n: number, parity: number, color: string) {
+  const gap = Math.max(2, Math.min(8, w / n * 0.12));
+  const cellW = (w - gap * (n - 1)) / n;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 4;
+  ctx.lineCap = "round";
+  for (let i = parity; i + 1 < n; i += 2) {
+    const a = x + i * (cellW + gap) + cellW * 0.18;
+    const b = x + (i + 1) * (cellW + gap) + cellW * 0.82;
+    ctx.beginPath();
+    ctx.moveTo(a, y);
+    ctx.lineTo(b, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawPhaseBadge(ctx: CanvasRenderingContext2D, x: number, y: number, phase: string, color: string, lang: Lang) {
+  const text = phase === "even"
+    ? label(lang, "EVEN", "EVEN")
+    : label(lang, "ODD", "ODD");
+  ctx.save();
+  ctx.fillStyle = "rgba(15,23,42,0.9)";
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  roundRect(ctx, x, y - 12, 82, 24, 8);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.font = "800 13px ui-monospace, monospace";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x + 41, y);
+  ctx.restore();
 }
 
 function drawGnomeLens(ctx: CanvasRenderingContext2D, frame: Frame, x: number, y: number, w: number, h: number, theme: Theme) {
@@ -285,6 +352,7 @@ function titleFor(id: string, lang: Lang) {
     radix: { vi: "Radix buckets: đưa giá trị theo chữ số hiện tại", en: "Radix buckets: route values by current digit" },
     bucket: { vi: "Bucket ranges: phân phối, sort từng bucket, nối lại", en: "Bucket ranges: distribute, sort each bucket, concatenate" },
     shell: { vi: "Shell gaps: insertion sort theo khoảng cách", en: "Shell gaps: gapped insertion sort" },
+    odd_even: { vi: "Odd-Even: xen kẽ pass cặp lẻ rồi cặp chẵn", en: "Odd-Even: alternate odd-pair and even-pair passes" },
     cocktail: { vi: "Cocktail shaker: bubble theo hai chiều", en: "Cocktail shaker: bubble both directions" },
     comb: { vi: "Comb gap: thu nhỏ so sánh khoảng cách xa", en: "Comb gap: shrink long-distance comparisons" },
     gnome: { vi: "Gnome walk: lùi lại khi sai thứ tự cục bộ", en: "Gnome walk: step back when local order breaks" },
@@ -292,6 +360,10 @@ function titleFor(id: string, lang: Lang) {
     intro: { vi: "IntroSort hybrid: quick, insertion, heap fallback", en: "IntroSort hybrid: quick, insertion, heap fallback" },
   };
   return titles[id]?.[lang] ?? (lang === "vi" ? "Góc nhìn sorting" : "Sorting lens");
+}
+
+function label(lang: Lang, vi: string, en: string) {
+  return lang === "vi" ? vi : en;
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {

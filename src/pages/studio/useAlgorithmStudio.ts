@@ -3,8 +3,9 @@ import { toast } from "sonner";
 import { ALGORITHMS, COMPLEXITY, Frame, parseGraph } from "@/lib/algorithms";
 import { ColumnVisualMode, preloadAnimalSprites } from "@/lib/animalColumns";
 import { audioEngine, SfxKind } from "@/lib/audio";
-import { BackgroundMusicId, getAssetMusicOption, isAssetMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
+import { BackgroundMusicId, getAssetMusicOption, isAssetMusicId, isLibraryMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
 import { Lang, PLATFORMS, readSystemLang, subscribeSystemLang, t, writeSystemLang } from "@/lib/i18n";
+import { getMusicLibraryTracks, type MusicLibraryTrack } from "@/lib/musicLibrary";
 import { renderFrame, THEMES, Theme } from "@/lib/renderer";
 import { ExportFormat } from "./exportFormats";
 import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm, normalizeAnimalArray, parseInputArray, shouldUseAlgorithmDemo } from "./demoArrays";
@@ -60,6 +61,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const [musicVol, setMusicVol] = useState(30);
   const [musicPreset, setMusicPreset] = useState<BackgroundMusicId>("off");
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
+  const [libraryMusicTracks, setLibraryMusicTracks] = useState<MusicLibraryTrack[]>([]);
   const [customCode, setCustomCode] = useState(ALGORITHMS.custom.code);
   const [graphInput, setGraphInput] = useState(
     "A-B:4, A-C:2, B-D:5, C-D:8, C-E:10, D-E:2, D-F:6, E-G:3, F-G:1, F-H:7, G-I:4, H-I:2, H-J:5, I-K:6, J-K:3, J-L:8, K-L:2"
@@ -113,6 +115,18 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     setPlaying(false);
   }, [algoId]);
   useEffect(() => { setTheme(THEMES[themeName]); }, [themeName]);
+  useEffect(() => {
+    let cancelled = false;
+    const loadTracks = () => getMusicLibraryTracks()
+      .then((tracks) => { if (!cancelled) setLibraryMusicTracks(tracks); })
+      .catch((error) => toast.error(error instanceof Error ? error.message : "Không đọc được MUSIC_LIBRARY_DIR."));
+    void loadTracks();
+    window.addEventListener("algo:runtime-settings-change", loadTracks);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("algo:runtime-settings-change", loadTracks);
+    };
+  }, []);
   useEffect(() => { audioEngine.setSfxVolume(sfxVol / 100); }, [sfxVol]);
   useEffect(() => { audioEngine.setMusicVolume(musicVol / 100); }, [musicVol]);
   useEffect(() => {
@@ -134,6 +148,13 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
           audioEngine.startMusic();
         }
       });
+    } else if (isLibraryMusicId(musicPreset)) {
+      const track = libraryMusicTracks.find((item) => item.id === musicPreset);
+      audioEngine.setMusicSource(track?.audioUrl ?? null);
+      if (track && playing) {
+        audioEngine.setMusicPreset("custom");
+        audioEngine.startMusic();
+      }
     } else if (musicPreset === "custom") {
       audioEngine.setMusicSource(musicUrl);
       if (playing) {
@@ -144,7 +165,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
       audioEngine.setMusicSource(null);
     }
     return () => { cancelled = true; };
-  }, [musicPreset, musicUrl, playing]);
+  }, [musicPreset, musicUrl, playing, libraryMusicTracks]);
   useEffect(() => {
     if (!playing) {
       audioEngine.stopMusic();
@@ -336,6 +357,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     sfxVol, setSfxVol: (value: number) => runConfigAction(() => setSfxVol(value)),
     musicVol, setMusicVol: (value: number) => runConfigAction(() => setMusicVol(value)),
     musicPreset, setMusicPreset: (value: BackgroundMusicId) => runConfigAction(() => setMusicPreset(value)),
+    libraryMusicTracks,
     customCode, setCustomCode: (value: string) => runConfigAction(() => setCustomCode(value)),
     graphInput, setGraphInput: (value: string) => runConfigAction(() => setGraphInput(value)),
     startLabel, setStartLabel: (value: string) => runConfigAction(() => setStartLabel(value)),

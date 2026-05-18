@@ -55,11 +55,23 @@ function randIntroArr(n: number) {
   return Array.from({ length: n }, (_, i) => n - i + Math.floor(Math.random() * 4));
 }
 
+function randOddEvenArr(n: number) {
+  const values = Array.from({ length: n }, (_, i) => 10 + i * 6);
+  for (let i = 1; i + 1 < values.length; i += 4) {
+    [values[i], values[i + 1]] = [values[i + 1], values[i]];
+  }
+  for (let i = 0; i + 1 < values.length; i += 4) {
+    [values[i], values[i + 1]] = [values[i + 1], values[i]];
+  }
+  return values;
+}
+
 export function demoSizeForAlgorithm(algoId: string, currentSize: number) {
   if (algoId === "tim") return Math.max(currentSize, 40);
   if (algoId === "intro") return Math.max(currentSize, 32);
   if (algoId === "radix") return Math.max(currentSize, 18);
   if (algoId === "bucket") return Math.max(currentSize, 24);
+  if (algoId === "odd_even") return Math.min(currentSize, 12);
   return currentSize;
 }
 
@@ -69,6 +81,7 @@ export function demoArrayForAlgorithm(algoId: string, n: number) {
   if (algoId === "bucket") return shuffle(randBucketArr(n));
   if (algoId === "tim") return randTimArr(n);
   if (algoId === "intro") return randIntroArr(n);
+  if (algoId === "odd_even") return randOddEvenArr(n);
   if (algoId === "heap") return shuffle(Array.from({ length: n }, (_, i) => Math.floor(15 + i * (85 / Math.max(1, n - 1)))));
   if (algoId === "cocktail" || algoId === "gnome") return shuffle(Array.from({ length: n }, (_, i) => (i % 7) * 7 + 10));
   return randArr(n);
@@ -89,6 +102,7 @@ export function shouldUseAlgorithmDemo(algoId: string, arr: number[]) {
   if (algoId === "counting") return shouldUseCountingDemo(arr);
   if (algoId === "tim") return arr.length < 40;
   if (algoId === "intro") return arr.length < 24;
+  if (algoId === "odd_even") return arr.length > 14;
   if (algoId === "radix") return !arr.some((n) => Math.abs(n) >= 100) || !arr.some((n) => n < 0);
   if (algoId === "bucket") return arr.length < 20 || new Set(arr.map((n) => Math.floor(n / 20))).size < 3;
   return false;

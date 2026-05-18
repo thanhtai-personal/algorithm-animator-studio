@@ -7,6 +7,7 @@ Source of truth: `src/lib/algorithms/index.ts`.
 | ID | Algorithm |
 | --- | --- |
 | `bubble` | Bubble Sort |
+| `odd_even` | Odd-Even Sort |
 | `selection` | Selection Sort |
 | `insertion` | Insertion Sort |
 | `quick` | Quick Sort |
@@ -51,7 +52,6 @@ These algorithms are not in Short Studio yet. `Priority` marks good first candid
 
 | ID | Algorithm | Priority |
 | --- | --- | --- |
-| `odd_even` | Odd-Even Sort | Short first |
 | `pancake` | Pancake Sort | Short first |
 | `cycle` | Cycle Sort | Later |
 | `pigeonhole` | Pigeonhole Sort | Later |

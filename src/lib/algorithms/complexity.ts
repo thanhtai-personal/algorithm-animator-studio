@@ -2,6 +2,7 @@ import type { Complexity } from "./types";
 
 export const COMPLEXITY: Record<string, Complexity> = {
   bubble: { time: "O(n²)", best: "O(n)", worst: "O(n²)", space: "O(1)" },
+  odd_even: { time: "O(n²)", best: "O(n)", worst: "O(n²)", space: "O(1)" },
   selection: { time: "O(n²)", best: "O(n²)", worst: "O(n²)", space: "O(1)" },
   insertion: { time: "O(n²)", best: "O(n)", worst: "O(n²)", space: "O(1)" },
   quick: { time: "O(n log n)", best: "O(n log n)", worst: "O(n²)", space: "O(log n)" },

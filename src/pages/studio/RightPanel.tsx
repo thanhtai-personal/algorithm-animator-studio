@@ -1,7 +1,7 @@
 import { Upload } from "lucide-react";
 import { MUSIC_PRESETS, PLATFORMS, SFX_OPTIONS } from "@/lib/i18n";
 import { audioEngine, SfxKind } from "@/lib/audio";
-import { ASSET_MUSIC_OPTIONS, BackgroundMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
+import { ASSET_MUSIC_OPTIONS, BackgroundMusicId, getAssetMusicOption, isAssetMusicId, isLibraryMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -236,6 +236,19 @@ function MusicControls({ studio: s }: Props) {
             <SelectLabel>{s.lang === "vi" ? "Nhạc nền có sẵn" : "Bundled tracks"}</SelectLabel>
             {ASSET_MUSIC_OPTIONS.map((m) => <SelectItem key={m.id} value={m.id}>{m.label[s.lang]}</SelectItem>)}
           </SelectGroup>
+          {s.libraryMusicTracks.length ? (
+            <>
+              <SelectSeparator />
+              <SelectGroup>
+                <SelectLabel>MUSIC_LIBRARY_DIR</SelectLabel>
+                {s.libraryMusicTracks.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.title}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </>
+          ) : null}
         </SelectContent>
       </Select>
       <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
@@ -248,17 +261,35 @@ function MusicControls({ studio: s }: Props) {
         <span className="text-xs font-mono w-10 text-right">{s.musicVol}%</span>
       </div>
       <div className="flex justify-end">
-        <Button size="sm" variant="outline" onClick={() => {
-          audioEngine.resume();
-          if (isProceduralMusicPreset(s.musicPreset)) audioEngine.setMusicPreset(s.musicPreset);
-          else {
-            audioEngine.setMusicPreset("custom");
-            audioEngine.startMusic();
-          }
-          setTimeout(() => { audioEngine.stopMusic(); audioEngine.setMusicPreset("off"); }, 4000);
-        }}>{s.tr("test")} 4s</Button>
+        <Button size="sm" variant="outline" onClick={() => testMusic(s)}>{s.tr("test")} 4s</Button>
       </div>
       <p className="text-xs text-muted-foreground">{s.tr("audioInVideo")}</p>
     </div>
   );
+}
+
+function testMusic(s: AlgorithmStudio) {
+  audioEngine.resume();
+  if (isProceduralMusicPreset(s.musicPreset)) {
+    audioEngine.setMusicPreset(s.musicPreset);
+    setTimeout(() => { audioEngine.stopMusic(); audioEngine.setMusicPreset("off"); }, 4000);
+    return;
+  }
+
+  const start = (url?: string) => {
+    if (url) audioEngine.setMusicSource(url);
+    audioEngine.setMusicPreset("custom");
+    audioEngine.startMusic();
+    setTimeout(() => { audioEngine.stopMusic(); audioEngine.setMusicPreset("off"); }, 4000);
+  };
+
+  if (isAssetMusicId(s.musicPreset)) {
+    void getAssetMusicOption(s.musicPreset)?.loadUrl().then(start);
+    return;
+  }
+  if (isLibraryMusicId(s.musicPreset)) {
+    start(s.libraryMusicTracks.find((track) => track.id === s.musicPreset)?.audioUrl);
+    return;
+  }
+  start();
 }

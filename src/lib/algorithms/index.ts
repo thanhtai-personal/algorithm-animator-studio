@@ -4,6 +4,7 @@ import { dfs } from "./graph/dfs";
 import { dijkstra } from "./graph/dijkstra";
 import { binarySearch } from "./search/binary";
 import { linearSearch } from "./search/linear";
+import { bitonicSort } from "./sorting/bitonic";
 import { bubbleSort } from "./sorting/bubble";
 import { bucketSort } from "./sorting/bucket";
 import { cocktailSort } from "./sorting/cocktail";
@@ -41,6 +42,7 @@ export const ALGORITHMS: Record<string, AlgoDef> = {
   bubble: bubbleSort,
   odd_even: oddEvenSort,
   pancake: pancakeSort,
+  bitonic: bitonicSort,
   selection: selectionSort,
   insertion: insertionSort,
   quick: quickSort,
@@ -69,7 +71,7 @@ export const ALGO_GROUPS: { label: { en: string; vi: string }; ids: string[] }[]
   {
     label: { en: "Sorting", vi: "Sắp xếp" },
     ids: [
-      "bubble", "odd_even", "pancake", "selection", "insertion", "quick", "merge", "heap",
+      "bubble", "odd_even", "pancake", "bitonic", "selection", "insertion", "quick", "merge", "heap",
       "counting", "radix", "bucket", "shell", "cocktail", "comb", "gnome", "tim", "intro",
     ],
   },

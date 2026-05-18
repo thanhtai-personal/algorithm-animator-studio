@@ -44,6 +44,14 @@ export const LONG_CONTENT_GUIDES: Record<string, LongContentGuide> = {
     watch: sharedSortWatch,
     takeaway: t("Ít swap hơn Bubble Sort, nhưng vẫn phải quét O(n²).", "It uses fewer swaps than Bubble Sort, but still scans in O(n²)."),
   },
+  bitonic: {
+    hook: t("Bitonic Sort sắp xếp bằng mạng compare-swap có cấu trúc rất đều.", "Bitonic Sort orders values through a highly structured compare-swap network."),
+    useCase: t("Rất hợp để dạy sorting network, xử lý song song và GPU-style sorting.", "Great for teaching sorting networks, parallel processing, and GPU-style sorting."),
+    mentalModel: t("Tạo hai nửa ngược chiều để thành dãy bitonic, rồi liên tục compare-swap các cặp cách nhau một gap để merge về một chiều.", "Build two opposite-direction halves into a bitonic sequence, then repeatedly compare-swap gap pairs to merge in one direction."),
+    steps: t(["Chia mảng thành hai nửa.", "Sắp nửa trái tăng dần và nửa phải giảm dần.", "Merge bitonic bằng các cặp compare-swap có gap giảm dần."], ["Split the array into two halves.", "Sort the left half ascending and the right half descending.", "Merge the bitonic sequence with decreasing-gap compare-swap pairs."]),
+    watch: t(["Các cặp được so sánh thường cách nhau theo gap lớn rồi nhỏ dần.", "Hướng asc/desc cho biết nửa nào đang được tạo thành dãy bitonic."], ["Compared pairs are often separated by a large gap that shrinks.", "The asc/desc direction shows which half is forming the bitonic sequence."]),
+    takeaway: t("Không phải sort mặc định cho CPU thường, nhưng rất trực quan để hiểu sorting network và song song hóa.", "It is not the default CPU sort, but it is excellent for understanding sorting networks and parallelism."),
+  },
   insertion: {
     hook: t("Insertion Sort giống xếp bài trên tay: rút một lá rồi chèn vào đúng chỗ.", "Insertion Sort is like sorting cards in your hand: take one card and insert it into place."),
     useCase: t("Rất tốt cho mảng nhỏ hoặc dữ liệu gần như đã sắp xếp.", "Excellent for small arrays or data that is already almost sorted."),

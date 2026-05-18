@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { YoutubeMetadataPreview } from "@/components/YoutubeMetadataPreview";
 import { AuthProfile, getCurrentProfile, isSuperAdminProfile } from "@/lib/auth";
 import { THEMES } from "@/lib/renderer";
 import { EXPORT_FORMATS, ExportFormat } from "./studio/exportFormats";
@@ -50,6 +51,7 @@ export default function LongContent() {
         <div className="space-y-4">
           <PreviewPanel studio={studio} />
           <MusicPanel studio={studio} />
+          <YoutubeMetadataPreview algoId={studio.algo.id} lang={studio.lang} variant="long" musicLicenseText={studio.music.selectedLicenseText} />
           <ScriptPanel studio={studio} />
         </div>
       </main>

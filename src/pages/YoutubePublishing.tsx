@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { getCurrentProfile, isSuperAdminProfile } from "@/lib/auth";
 import { exchangeYoutubeCode, getYoutubeAuthUrl, getYoutubeConfig, getYoutubePlaylists, uploadYoutubeVideo, type YoutubeConfigStatus, type YoutubePlaylist, type YoutubeUploadForm, type YoutubeUploadResult } from "@/lib/youtubeApi";
 import { getLastExportedVideo, type ExportedVideoAsset } from "@/lib/studioMediaRegistry";
+import { appendYoutubeDescriptionCredit } from "@/lib/youtubeMetadata";
 
 const TOKEN_KEY = "algoshorts.youtube.refreshToken";
 type AuthStatus = "loading" | "allowed" | "denied";
@@ -41,6 +42,7 @@ export default function YoutubePublishing() {
 
   const selectedFile = videoFile ?? lastExported?.file ?? null;
   const selectedMusicLicense = !videoFile ? lastExported?.youtubeDescriptionAppend : undefined;
+  const displayedDescription = appendYoutubeDescriptionCredit(form.description, selectedMusicLicense);
   const canUpload = Boolean(selectedFile && refreshToken && config?.hasClientId && config?.hasClientSecret);
   const redirectUri = useMemo(() => resolveYoutubeRedirectUri(config?.redirectUri), [config?.redirectUri]);
 
@@ -68,7 +70,8 @@ export default function YoutubePublishing() {
     try {
       const nextConfig = await getYoutubeConfig();
       setConfig(nextConfig);
-      setForm((current) => ({ ...current, ...nextConfig.defaults, title: current.title || nextConfig.defaults.title }));
+      const latest = getLastExportedVideo();
+      setForm((current) => applyExportMetadata({ ...current, ...nextConfig.defaults, title: current.title || nextConfig.defaults.title }, latest));
       await exchangeCodeIfNeeded(resolveYoutubeRedirectUri(nextConfig.redirectUri));
       const token = localStorage.getItem(TOKEN_KEY) || refreshToken;
       if (token) await loadPlaylists(token);
@@ -76,6 +79,10 @@ export default function YoutubePublishing() {
       toast.error(error instanceof Error ? error.message : "Không đọc được cấu hình YouTube.");
     }
   }
+
+  useEffect(() => {
+    if (!videoFile && lastExported?.youtubeMetadata) setForm((current) => applyExportMetadata(current, lastExported));
+  }, [lastExported, videoFile]);
 
   async function exchangeCodeIfNeeded(codeRedirectUri = redirectUri) {
     const params = new URLSearchParams(window.location.search);
@@ -114,7 +121,7 @@ export default function YoutubePublishing() {
     setLoading(true);
     setResult(null);
     try {
-      const next = await uploadYoutubeVideo(selectedFile, refreshToken, normalizeForm({ ...form, musicLicenseText: selectedMusicLicense }));
+      const next = await uploadYoutubeVideo(selectedFile, refreshToken, normalizeForm({ ...form, description: displayedDescription, musicLicenseText: selectedMusicLicense }));
       setResult(next);
       toast.success(next.playlistWarning ? "Video đã đăng, nhưng playlist có cảnh báo." : "Đã upload YouTube.");
     } catch (error) {
@@ -186,8 +193,9 @@ export default function YoutubePublishing() {
             <Field label="Title" value={form.title} onChange={(value) => setForm({ ...form, title: value })} />
             <div>
               <Label>Description</Label>
-              <Textarea className="mt-2 min-h-32" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
-              {selectedMusicLicense ? <p className="mt-2 text-xs text-yellow-300">Music license sẽ tự được nối vào mô tả khi upload.</p> : null}
+              <Textarea className="mt-2 min-h-48" value={displayedDescription} onChange={(event) => setForm({ ...form, description: event.target.value })} />
+              {lastExported?.youtubeMetadata && !videoFile ? <p className="mt-2 text-xs text-emerald-300">Đã tự điền metadata theo thuật toán của video export.</p> : null}
+              {selectedMusicLicense ? <p className="mt-2 text-xs text-yellow-300">Music license đã được thêm vào cuối mô tả.</p> : null}
             </div>
             <Field label="Tags" value={form.tags} onChange={(value) => setForm({ ...form, tags: value })} />
             <div className="grid gap-3 md:grid-cols-3">
@@ -247,6 +255,15 @@ function ScreenMessage({ text }: { text: string }) {
 
 function normalizeForm(form: YoutubeUploadForm): YoutubeUploadForm {
   return { ...form, publishAt: form.publishAt ? new Date(form.publishAt).toISOString() : "" };
+}
+
+function applyExportMetadata(form: YoutubeUploadForm, asset: ExportedVideoAsset | null): YoutubeUploadForm {
+  if (!asset?.youtubeMetadata) return form;
+  return {
+    ...form,
+    ...asset.youtubeMetadata,
+    description: appendYoutubeDescriptionCredit(asset.youtubeMetadata.description, asset.youtubeDescriptionAppend),
+  };
 }
 
 function resolveYoutubeRedirectUri(configuredRedirectUri?: string) {

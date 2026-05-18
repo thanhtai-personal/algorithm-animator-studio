@@ -39,7 +39,7 @@ export function drawSortEssence(
   else if (options.algorithmId === "merge" || options.algorithmId === "tim") drawMergeLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "radix") drawRadixLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "bucket") drawBucketLens(ctx, frame, x, y, w, h, theme);
-  else if (options.algorithmId === "shell" || options.algorithmId === "comb") drawGapLens(ctx, frame, x, y, w, h, theme);
+  else if (options.algorithmId === "shell" || options.algorithmId === "comb" || options.algorithmId === "bitonic") drawGapLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "odd_even") drawOddEvenLens(ctx, frame, x, y, w, h, theme, options.lang ?? "en");
   else if (options.algorithmId === "cocktail") drawCocktailLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "gnome") drawGnomeLens(ctx, frame, x, y, w, h, theme);
@@ -352,6 +352,7 @@ function titleFor(id: string, lang: Lang) {
     radix: { vi: "Radix buckets: đưa giá trị theo chữ số hiện tại", en: "Radix buckets: route values by current digit" },
     bucket: { vi: "Bucket ranges: phân phối, sort từng bucket, nối lại", en: "Bucket ranges: distribute, sort each bucket, concatenate" },
     shell: { vi: "Shell gaps: insertion sort theo khoảng cách", en: "Shell gaps: gapped insertion sort" },
+    bitonic: { vi: "Bitonic network: compare-swap theo gap và hướng", en: "Bitonic network: compare-swap by gap and direction" },
     odd_even: { vi: "Odd-Even: xen kẽ pass cặp lẻ rồi cặp chẵn", en: "Odd-Even: alternate odd-pair and even-pair passes" },
     cocktail: { vi: "Cocktail shaker: bubble theo hai chiều", en: "Cocktail shaker: bubble both directions" },
     comb: { vi: "Comb gap: thu nhỏ so sánh khoảng cách xa", en: "Comb gap: shrink long-distance comparisons" },

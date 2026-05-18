@@ -5,6 +5,7 @@ import { AnimalColumnSettings } from "@/lib/animalColumns";
 import { renderFrame, Theme } from "@/lib/renderer";
 import { getAssetSfxOption } from "@/lib/selectSounds";
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
+import type { YoutubeAlgorithmMetadata } from "@/lib/youtubeMetadata";
 import { getExportFormat, ExportFormat } from "./exportFormats";
 
 const SWAP_EXPORT_SECONDS = 0.35;
@@ -25,6 +26,8 @@ type ExportVideoParams = {
   exportFormat: ExportFormat;
   animalColumns: AnimalColumnSettings;
   musicPreset: BackgroundMusicId;
+  youtubeMetadata?: YoutubeAlgorithmMetadata;
+  youtubeDescriptionAppend?: string;
   sfxCompare: SfxKind;
   sfxSwap: SfxKind;
   onProgress: (progress: number) => void;
@@ -120,7 +123,7 @@ export async function exportAlgorithmVideo(params: ExportVideoParams) {
   const url = URL.createObjectURL(blob);
   const fileName = `${params.algorithmId}-${params.platformId}-${Date.now()}.${format.id}`;
   const file = new File([blob], fileName, { type: mimeType });
-  setLastExportedVideo(file, url);
+  setLastExportedVideo(file, url, { youtubeMetadata: params.youtubeMetadata, youtubeDescriptionAppend: params.youtubeDescriptionAppend });
 
   const a = document.createElement("a");
   a.href = url;

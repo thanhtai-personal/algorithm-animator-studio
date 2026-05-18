@@ -7,8 +7,9 @@ import { BackgroundMusicId, getAssetMusicOption, isAssetMusicId, isLibraryMusicI
 import { Lang, PLATFORMS, readSystemLang, subscribeSystemLang, t, writeSystemLang } from "@/lib/i18n";
 import { getMusicLibraryTracks, type MusicLibraryTrack } from "@/lib/musicLibrary";
 import { renderFrame, THEMES, Theme } from "@/lib/renderer";
+import { buildYoutubeMetadata } from "@/lib/youtubeMetadata";
 import { ExportFormat } from "./exportFormats";
-import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm, normalizeAnimalArray, parseInputArray, shouldUseAlgorithmDemo } from "./demoArrays";
+import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm, maxDemoSizeForAlgorithm, normalizeAnimalArray, parseInputArray, shouldUseAlgorithmDemo } from "./demoArrays";
 import { exportAlgorithmVideo, preloadExportSfx } from "./videoExport";
 
 const SWAP_TRANSITION_MULTIPLIER = 1.8;
@@ -93,6 +94,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const current = frames[Math.min(frameIdx, frames.length - 1)];
   const isSearch = algo.category === "search";
   const isCustom = algoId === "custom";
+  const randomSizeMax = maxDemoSizeForAlgorithm(algoId);
   const codeForPanel = isCustom ? customCode : algo.code;
   const animalColumns = useMemo(() => ({
     mode: columnVisualMode,
@@ -261,8 +263,9 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
 
   const setSize = (nextSize: number) => {
     if (!requireConfigAccess()) return;
-    setSizeState(nextSize);
-    const next = columnVisualMode === "animal" ? demoAnimalArray(nextSize) : demoArrayForAlgorithm(algoId, nextSize);
+    const effectiveSize = demoSizeForAlgorithm(algoId, nextSize);
+    setSizeState(effectiveSize);
+    const next = columnVisualMode === "animal" ? demoAnimalArray(effectiveSize) : demoArrayForAlgorithm(algoId, effectiveSize);
     setArr(next);
     setInput(next.join(", "));
     setFrameIdx(0);
@@ -295,6 +298,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     setPlaying(false);
 
     const code = algoId === "custom" ? customCode : algo.code;
+    const musicLicenseText = libraryMusicTracks.find((track) => track.id === musicPreset)?.licenseText;
     try {
       const exported = await exportAlgorithmVideo({
         frames,
@@ -312,6 +316,8 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
         exportFormat,
         animalColumns,
         musicPreset,
+        youtubeMetadata: buildYoutubeMetadata(algo.id, lang, "short"),
+        youtubeDescriptionAppend: musicLicenseText,
         sfxCompare,
         sfxSwap,
         onProgress: setExportProgress,
@@ -369,7 +375,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     graphInput, setGraphInput: (value: string) => runConfigAction(() => setGraphInput(value)),
     startLabel, setStartLabel: (value: string) => runConfigAction(() => setStartLabel(value)),
     endLabel, setEndLabel: (value: string) => runConfigAction(() => setEndLabel(value)),
-    algo, isGraph, graphLabels, frames, canvasRef,
+    algo, isGraph, graphLabels, frames, canvasRef, randomSizeMax,
     current, isSearch, isCustom, codeForPanel, newArray, onMusicUpload, requestExport,
   };
 }

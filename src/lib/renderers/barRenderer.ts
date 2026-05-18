@@ -15,6 +15,12 @@ type BarShape = {
   index: number;
 };
 
+type PrefixFlip = {
+  from: number;
+  to: number;
+  indices: number[];
+};
+
 export function drawBars(
   ctx: CanvasRenderingContext2D,
   frame: Frame,
@@ -38,7 +44,8 @@ export function drawBars(
   const barW = (chartW - gap * (arr.length - 1)) / arr.length;
   const progress = easeInOutCubic(clamp01(options.transitionProgress ?? 1));
   const movingPair = getMovingSwapPair(frame, options.previousFrame);
-  const moving = new Set(movingPair ?? []);
+  const prefixFlip = movingPair ? null : getMovingPrefixFlip(frame, options.previousFrame);
+  const moving = new Set(movingPair ?? prefixFlip?.indices ?? []);
   const shapes: BarShape[] = [];
 
   for (let i = 0; i < arr.length; i++) {
@@ -56,6 +63,8 @@ export function drawBars(
 
   if (movingPair) {
     drawMovingSwap(ctx, shapes, movingPair, frame, theme, progress, chartH);
+  } else if (prefixFlip) {
+    drawMovingPrefixFlip(ctx, shapes, prefixFlip, frame, theme, progress, chartH);
   } else {
     for (const shape of shapes) {
       if (frame.swap.includes(shape.index)) drawSingleBar(ctx, shape, frame, theme, true, 1);
@@ -110,6 +119,34 @@ function drawMovingSwap(
   drawSingleBar(ctx, movingToB, frame, theme, true, progress);
 }
 
+function drawMovingPrefixFlip(
+  ctx: CanvasRenderingContext2D,
+  shapes: BarShape[],
+  flip: PrefixFlip,
+  frame: Frame,
+  theme: Theme,
+  progress: number,
+  chartH: number,
+) {
+  const lift = Math.sin(progress * Math.PI) * Math.min(58, chartH * 0.16);
+  drawFlipTrack(ctx, shapes, flip, theme.swap, progress);
+
+  for (const index of flip.indices) {
+    const shape = shapes[index];
+    if (!shape) continue;
+    const sourceIndex = flip.from + flip.to - index;
+    const sourceShape = shapes[sourceIndex];
+    if (!sourceShape) continue;
+    const distanceFromCenter = Math.abs(index - (flip.from + flip.to) / 2);
+    const arcLift = lift * (0.55 + distanceFromCenter / Math.max(1, flip.indices.length - 1));
+    drawSingleBar(ctx, {
+      ...shape,
+      x: lerp(sourceShape.x, shape.x, progress),
+      y: shape.y - arcLift,
+    }, frame, theme, true, progress);
+  }
+}
+
 function drawSingleBar(
   ctx: CanvasRenderingContext2D,
   shape: BarShape,
@@ -159,6 +196,18 @@ function getMovingSwapPair(frame: Frame, previousFrame?: Frame | null): [number,
   return [a, b];
 }
 
+function getMovingPrefixFlip(frame: Frame, previousFrame?: Frame | null): PrefixFlip | null {
+  if (!previousFrame || frame.event !== "swap" || frame.swap.length < 3) return null;
+  if (previousFrame.arr.length !== frame.arr.length) return null;
+  const from = numberVar(frame, "from") ?? frame.swap[0];
+  const to = numberVar(frame, "to") ?? frame.swap[frame.swap.length - 1];
+  if (from == null || to == null || from < 0 || to >= frame.arr.length || from >= to) return null;
+  const indices = Array.from({ length: to - from + 1 }, (_, i) => from + i);
+  if (indices.length !== frame.swap.length || !indices.every((index) => frame.swap.includes(index))) return null;
+  const isReversed = indices.every((index) => previousFrame.arr[from + to - index] === frame.arr[index]);
+  return isReversed ? { from, to, indices } : null;
+}
+
 function drawSwapTrack(ctx: CanvasRenderingContext2D, a: BarShape, b: BarShape, color: string, progress: number) {
   const ax = a.x + a.w / 2;
   const bx = b.x + b.w / 2;
@@ -171,6 +220,25 @@ function drawSwapTrack(ctx: CanvasRenderingContext2D, a: BarShape, b: BarShape, 
   ctx.beginPath();
   ctx.moveTo(ax, y);
   ctx.quadraticCurveTo((ax + bx) / 2, y - Math.abs(bx - ax) * 0.18, bx, y);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawFlipTrack(ctx: CanvasRenderingContext2D, shapes: BarShape[], flip: PrefixFlip, color: string, progress: number) {
+  const first = shapes[flip.from];
+  const last = shapes[flip.to];
+  if (!first || !last) return;
+  const x1 = first.x + first.w / 2;
+  const x2 = last.x + last.w / 2;
+  const y = Math.min(...flip.indices.map((index) => shapes[index]?.y ?? Number.POSITIVE_INFINITY)) - 26;
+  ctx.save();
+  ctx.globalAlpha = 0.3 + 0.45 * Math.sin(progress * Math.PI);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 4;
+  ctx.setLineDash([12, 10]);
+  ctx.beginPath();
+  ctx.moveTo(x1, y);
+  ctx.quadraticCurveTo((x1 + x2) / 2, y - Math.abs(x2 - x1) * 0.16 - 18, x2, y);
   ctx.stroke();
   ctx.restore();
 }
@@ -196,4 +264,9 @@ function lerp(from: number, to: number, progress: number) {
 
 function easeInOutCubic(value: number) {
   return value < 0.5 ? 4 * value * value * value : 1 - Math.pow(-2 * value + 2, 3) / 2;
+}
+
+function numberVar(frame: Frame, key: string) {
+  const value = frame.vars[key];
+  return typeof value === "number" ? value : undefined;
 }

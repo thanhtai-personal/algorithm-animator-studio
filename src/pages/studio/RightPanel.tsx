@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { YoutubeMetadataPreview } from "@/components/YoutubeMetadataPreview";
 import { THEMES } from "@/lib/renderer";
 import { AssetSfxOption, getAssetSfxOption, SELECT_ASSET_SFX_OPTIONS, SWAP_ASSET_SFX_OPTIONS } from "@/lib/selectSounds";
 import { EXPORT_FORMATS, ExportFormat } from "./exportFormats";
@@ -138,6 +139,12 @@ function ExportTab({ studio: s }: Props) {
         <Slider value={[s.fps]} min={15} max={60} step={1} onValueChange={([v]) => s.setFps(v)} />
       </div>
       <p className="text-xs text-muted-foreground">{s.tr("exportNote")}</p>
+      <YoutubeMetadataPreview
+        algoId={s.algo.id}
+        lang={s.lang}
+        variant="short"
+        musicLicenseText={s.libraryMusicTracks.find((track) => track.id === s.musicPreset)?.licenseText}
+      />
     </TabsContent>
   );
 }

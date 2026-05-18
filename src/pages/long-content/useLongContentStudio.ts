@@ -10,14 +10,14 @@ import { buildLongContentScenes, getSceneAtTime, getTotalDuration } from "@/lib/
 import { THEMES } from "@/lib/renderer";
 import { generateElevenLabsVoice, generatePiperVoice, getElevenLabsConfig, getPiperModels, getPiperRuntimeStatus, getVoiceHealth, installPiperModel, type ElevenLabsConfig, type PiperModel, type PiperRuntimeStatus, type VoiceGenerateResult, type VoiceHealth } from "@/lib/voiceApi";
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
+import { buildYoutubeMetadata } from "@/lib/youtubeMetadata";
 import { ExportFormat, getExportFormat } from "../studio/exportFormats";
 import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm } from "../studio/demoArrays";
 import { applyScriptOverrides, buildSceneFrames, cancelNarration, clampFrameIndex, drawLongContentFrameAtTime, getLoadedVoiceDuration, ScriptSceneField, ScriptSceneOverride, speakNarration } from "./studioHelpers";
 import { buildGeneratedVoiceScriptKey, type GeneratedVoiceProvider, useRestoreGeneratedVoiceCache, writeCachedGeneratedVoice } from "./voiceCache";
 import { fitSceneDurationsToNarration } from "./voiceTiming";
 import { useLongContentMusic } from "./useLongContentMusic";
-const LONG_W = 1920, LONG_H = 1080;
-const DEFAULT_GRAPH = "A-B:4, A-C:2, B-D:5, C-D:8, C-E:10, D-E:2, D-F:6, E-G:3, F-G:1";
+const LONG_W = 1920, LONG_H = 1080, DEFAULT_GRAPH = "A-B:4, A-C:2, B-D:5, C-D:8, C-E:10, D-E:2, D-F:6, E-G:3, F-G:1";
 export type VoiceProvider = "browser" | "piper" | "elevenlabs";
 export function useLongContentStudio() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -341,7 +341,7 @@ export function useLongContentStudio() {
     const fileName = `${algo.id}-${lang}-long-16x9-${Date.now()}.${format.id}`;
     const file = new File([blob], fileName, { type: mimeType });
     const url = URL.createObjectURL(file);
-    setLastExportedVideo(file, url, { youtubeDescriptionAppend: music.selectedLicenseText });
+    setLastExportedVideo(file, url, { youtubeDescriptionAppend: music.selectedLicenseText, youtubeMetadata: buildYoutubeMetadata(algo.id, lang, "long") });
     const link = document.createElement("a");
     link.href = url;
     link.download = fileName;

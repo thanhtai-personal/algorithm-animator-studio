@@ -13,3 +13,4 @@ When working on React, TypeScript, Vite, UI components, hooks, routing, frontend
 - This line-count rule is an agent coding rule, not a build-time script.
 - Existing lint failures in generated UI files may be unrelated; do not refactor broad shadcn UI code just to satisfy unrelated lint warnings.
 - Prefer existing stack and patterns: React 18, Vite, TypeScript, Tailwind, shadcn/Radix UI, lucide-react, sonner.
+- If the user asks for or approves a decision that appears technically suboptimal, do not implement it immediately. First ask for confirmation, explain why it is suboptimal, and present the recommended alternative with the concrete tradeoffs.

@@ -95,16 +95,16 @@ export function LeftPanel({ studio }: Props) {
                 <Input
                   type="number"
                   min={2}
-                  max={500}
+                  max={s.randomSizeMax}
                   value={s.size}
                   onChange={(e) => {
                     const n = parseInt(e.target.value, 10);
-                    if (!Number.isNaN(n) && n > 0) s.setSize(Math.min(500, n));
+                    if (!Number.isNaN(n) && n > 0) s.setSize(Math.min(s.randomSizeMax, n));
                   }}
                   className="h-7 w-20 text-right text-emerald-400 font-mono"
                 />
               </div>
-              <Slider value={[Math.min(s.size, 100)]} onValueChange={([v]) => s.setSize(v)} min={2} max={100} step={1} />
+              <Slider value={[Math.min(s.size, s.randomSizeMax, 100)]} onValueChange={([v]) => s.setSize(v)} min={2} max={Math.min(s.randomSizeMax, 100)} step={1} />
             </div>
             <Button onClick={s.newArray} variant="outline" className="w-full">
               <RefreshCw className="w-4 h-4 mr-2" /> {s.tr("newArray")}

@@ -63,6 +63,8 @@ export const ALGORITHMS: Record<string, AlgoDef> = {
   custom: customAlgo,
 };
 
+export const DEFAULT_ALGORITHM_ID = Object.keys(ALGORITHMS).filter((id) => id !== "custom").at(-1) ?? "bubble";
+
 export const ALGO_GROUPS: { label: { en: string; vi: string }; ids: string[] }[] = [
   {
     label: { en: "Sorting", vi: "Sắp xếp" },

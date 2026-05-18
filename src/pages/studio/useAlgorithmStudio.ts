@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ALGORITHMS, COMPLEXITY, Frame, parseGraph } from "@/lib/algorithms";
+import { ALGORITHMS, COMPLEXITY, DEFAULT_ALGORITHM_ID, Frame, parseGraph } from "@/lib/algorithms";
 import { ColumnVisualMode, preloadAnimalSprites } from "@/lib/animalColumns";
 import { audioEngine, SfxKind } from "@/lib/audio";
 import { BackgroundMusicId, getAssetMusicOption, isAssetMusicId, isLibraryMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
@@ -26,15 +26,15 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   };
   const tr = (k: Parameters<typeof t>[1]) => t(lang, k);
 
-  const [algoId, setAlgoId] = useState("bubble");
+  const [algoId, setAlgoId] = useState(DEFAULT_ALGORITHM_ID);
   const [size, setSizeState] = useState(20);
-  const initialArr = useMemo(() => demoArrayForAlgorithm("bubble", 20), []);
+  const initialArr = useMemo(() => demoArrayForAlgorithm(DEFAULT_ALGORITHM_ID, 20), []);
   const [input, setInput] = useState(initialArr.join(", "));
   const [target, setTarget] = useState("");
   const [arr, setArr] = useState<number[]>(initialArr);
   const [themeName, setThemeName] = useState<keyof typeof THEMES>("neon");
   const [theme, setTheme] = useState<Theme>(THEMES.neon);
-  const [title, setTitle] = useState("Bubble Sort");
+  const [title, setTitle] = useState(ALGORITHMS[DEFAULT_ALGORITHM_ID].name);
   const [subtitle, setSubtitle] = useState("");
   const [showCode, setShowCode] = useState(true);
   const [columnVisualMode, setColumnVisualMode] = useState<ColumnVisualMode>("bar");
@@ -251,6 +251,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
       : demoArrayForAlgorithm(algoId, size);
     if (columnVisualMode === "animal") next = normalizeAnimalArray(next);
     if (!next.length) next = columnVisualMode === "animal" ? demoAnimalArray(size) : demoArrayForAlgorithm(algoId, size);
+    setSizeState(next.length);
     setArr(next);
     setInput(next.join(", "));
     setFrameIdx(0);
@@ -333,10 +334,16 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     if (!requireConfigAccess()) return;
     action();
   };
+  const setInputWithSize = (value: string) => runConfigAction(() => {
+    if (columnVisualMode === "animal") return;
+    setInput(value);
+    const parsed = parseInputArray(value);
+    if (parsed.length) setSizeState(parsed.length);
+  });
 
   return {
     lang, setLang, tr, algoId, setAlgoId, size, setSize,
-    input, setInput: (value: string) => runConfigAction(() => { if (columnVisualMode !== "animal") setInput(value); }),
+    input, setInput: setInputWithSize,
     target, setTarget: (value: string) => runConfigAction(() => setTarget(value)),
     themeName, setThemeName: (value: keyof typeof THEMES) => runConfigAction(() => setThemeName(value)),
     theme, setTheme: (value: Theme) => runConfigAction(() => setTheme(value)),

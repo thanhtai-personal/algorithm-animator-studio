@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ALGORITHMS, COMPLEXITY, makeSampleGraph, parseGraph } from "@/lib/algorithms";
+import { ALGORITHMS, COMPLEXITY, DEFAULT_ALGORITHM_ID, makeSampleGraph, parseGraph } from "@/lib/algorithms";
 import type { ColumnVisualMode } from "@/lib/animalColumns";
 import { preloadAnimalSprites } from "@/lib/animalColumns";
 import { audioEngine } from "@/lib/audio";
@@ -23,7 +23,7 @@ export function useLongContentStudio() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastSpokenSceneId = useRef<string | null>(null);
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
-  const [algoId, setAlgoId] = useState("bubble");
+  const [algoId, setAlgoId] = useState(DEFAULT_ALGORITHM_ID);
   const [themeName, setThemeName] = useState<keyof typeof THEMES>("neon");
   const [showCode, setShowCode] = useState(true);
   const [columnVisualMode, setColumnVisualMode] = useState<ColumnVisualMode>("bar");
@@ -59,7 +59,7 @@ export function useLongContentStudio() {
   const [elevenModelId, setElevenModelId] = useState("eleven_flash_v2_5");
   const [elevenVoiceId, setElevenVoiceId] = useState("");
   const [scriptOverrides, setScriptOverrides] = useState<Record<string, ScriptSceneOverride>>({});
-  const algo = ALGORITHMS[algoId] ?? ALGORITHMS.bubble;
+  const algo = ALGORITHMS[algoId] ?? ALGORITHMS[DEFAULT_ALGORITHM_ID];
   const theme = THEMES[themeName] ?? THEMES.neon;
   const graph = useMemo(() => parseGraph(DEFAULT_GRAPH) ?? makeSampleGraph(), []);
   const music = useLongContentMusic(lang, musicUrl);

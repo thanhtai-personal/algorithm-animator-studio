@@ -15,6 +15,7 @@ import { insertionSort } from "./sorting/insertion";
 import { introSort } from "./sorting/intro";
 import { mergeSort } from "./sorting/merge";
 import { oddEvenSort } from "./sorting/oddEven";
+import { pancakeSort } from "./sorting/pancake";
 import { quickSort } from "./sorting/quick";
 import { radixSort } from "./sorting/radix";
 import { selectionSort } from "./sorting/selection";
@@ -39,6 +40,7 @@ export type {
 export const ALGORITHMS: Record<string, AlgoDef> = {
   bubble: bubbleSort,
   odd_even: oddEvenSort,
+  pancake: pancakeSort,
   selection: selectionSort,
   insertion: insertionSort,
   quick: quickSort,
@@ -65,7 +67,7 @@ export const ALGO_GROUPS: { label: { en: string; vi: string }; ids: string[] }[]
   {
     label: { en: "Sorting", vi: "Sắp xếp" },
     ids: [
-      "bubble", "odd_even", "selection", "insertion", "quick", "merge", "heap",
+      "bubble", "odd_even", "pancake", "selection", "insertion", "quick", "merge", "heap",
       "counting", "radix", "bucket", "shell", "cocktail", "comb", "gnome", "tim", "intro",
     ],
   },

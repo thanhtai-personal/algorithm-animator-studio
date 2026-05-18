@@ -24,6 +24,7 @@ describe("example", () => {
     ["tim", [5, 21, 7, 23, 19, 10, 1, 3, 2], [1, 2, 3, 5, 7, 10, 19, 21, 23], "O(n log n)"],
     ["intro", [10, 7, 8, 9, 1, 5, 3, 2, 6, 4], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "O(n log n)"],
     ["bitonic", [10, 30, 11, 20, 4, 33, 2, 1], [1, 2, 4, 10, 11, 20, 30, 33], "O(n log² n)"],
+    ["bitonic", [10, 30, 11, 20, 4, 33, 2], [2, 4, 10, 11, 20, 30, 33], "O(n log² n)"],
   ])("runs %s sort to a sorted final frame", (id, input, expected, time) => {
     const frames = ALGORITHMS[id].run(input);
     expect(frames.at(-1)?.arr).toEqual(expected);

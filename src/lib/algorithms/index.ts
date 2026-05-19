@@ -5,6 +5,7 @@ import { dijkstra } from "./graph/dijkstra";
 import { binarySearch } from "./search/binary";
 import { linearSearch } from "./search/linear";
 import { bitonicSort } from "./sorting/bitonic";
+import { bogoSort } from "./sorting/bogo";
 import { bubbleSort } from "./sorting/bubble";
 import { bucketSort } from "./sorting/bucket";
 import { cocktailSort } from "./sorting/cocktail";
@@ -82,6 +83,7 @@ export const ALGORITHMS: Record<string, AlgoDef> = {
   tournament: tournamentSort,
   smooth: smoothSort,
   stooge: stoogeSort,
+  bogo: bogoSort,
   custom: customAlgo,
 };
 
@@ -92,7 +94,7 @@ export const ALGO_GROUPS: { label: { en: string; vi: string }; ids: string[] }[]
     label: { en: "Sorting", vi: "Sắp xếp" },
     ids: [
       "bubble", "odd_even", "pancake", "bitonic", "selection", "insertion", "quick", "merge", "heap",
-      "counting", "radix", "bucket", "shell", "cocktail", "comb", "gnome", "tim", "intro", "tree_sort", "cycle", "pigeonhole", "strand", "tournament", "smooth", "stooge",
+      "counting", "radix", "bucket", "shell", "cocktail", "comb", "gnome", "tim", "intro", "tree_sort", "cycle", "pigeonhole", "strand", "tournament", "smooth", "stooge", "bogo",
     ],
   },
   { label: { en: "Searching", vi: "Tìm kiếm" }, ids: ["linear", "binary"] },

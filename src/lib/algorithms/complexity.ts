@@ -5,6 +5,7 @@ export const COMPLEXITY: Record<string, Complexity> = {
   odd_even: { time: "O(n²)", best: "O(n)", worst: "O(n²)", space: "O(1)" },
   pancake: { time: "O(n²)", best: "O(n²)", worst: "O(n²)", space: "O(1)" },
   bitonic: { time: "O(n log² n)", best: "O(n log² n)", worst: "O(n log² n)", space: "O(log n)" },
+  bogo: { time: "O(n · n!)", best: "O(n)", worst: "unbounded", space: "O(1)" },
   cycle: { time: "O(n²)", best: "O(n²)", worst: "O(n²)", space: "O(1)" },
   selection: { time: "O(n²)", best: "O(n²)", worst: "O(n²)", space: "O(1)" },
   insertion: { time: "O(n²)", best: "O(n)", worst: "O(n²)", space: "O(1)" },

@@ -10,6 +10,7 @@ Source of truth: `src/lib/algorithms/index.ts`.
 | `odd_even` | Odd-Even Sort |
 | `pancake` | Pancake Sort |
 | `bitonic` | Bitonic Sort |
+| `bogo` | Bogo Sort |
 | `selection` | Selection Sort |
 | `insertion` | Insertion Sort |
 | `quick` | Quick Sort |
@@ -61,7 +62,6 @@ These algorithms are not in Short Studio yet. `Priority` marks good first candid
 
 | ID | Algorithm | Priority |
 | --- | --- | --- |
-| `bogo` | Bogo Sort | Short first |
 | `flash` | Flash Sort | Later |
 
 ### Searching TODO

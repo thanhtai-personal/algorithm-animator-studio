@@ -60,6 +60,14 @@ export const LONG_CONTENT_GUIDES: Record<string, LongContentGuide> = {
     watch: t(["Các cặp được so sánh thường cách nhau theo gap lớn rồi nhỏ dần.", "Hướng asc/desc cho biết nửa nào đang được tạo thành dãy bitonic."], ["Compared pairs are often separated by a large gap that shrinks.", "The asc/desc direction shows which half is forming the bitonic sequence."]),
     takeaway: t("Không phải sort mặc định cho CPU thường, nhưng rất trực quan để hiểu sorting network và song song hóa.", "It is not the default CPU sort, but it is excellent for understanding sorting networks and parallelism."),
   },
+  bogo: {
+    hook: t("Bogo Sort là thuật toán cố tình ngớ ngẩn: cứ xáo trộn ngẫu nhiên cho đến khi may mắn đúng thứ tự.", "Bogo Sort is intentionally ridiculous: keep shuffling randomly until the array is magically sorted."),
+    useCase: t("Dùng để làm short hài hước và dạy vì sao brute force ngẫu nhiên gần như không bao giờ là chiến lược tốt.", "Use it for funny shorts and to teach why random brute force is almost never a good strategy."),
+    mentalModel: t("Giống trộn bộ bài rồi hy vọng nó tự thành đúng thứ tự sau một lần xáo.", "It is like shuffling a deck and hoping it lands in perfect order."),
+    steps: t(["Kiểm tra mảng đã sắp xếp chưa.", "Nếu chưa, xáo trộn toàn bộ mảng.", "Lặp lại cho đến khi gặp một lần xáo may mắn."], ["Check whether the array is sorted.", "If not, shuffle the entire array.", "Repeat until a lucky shuffle finally appears." ]),
+    watch: t(["Mỗi attempt là một lần xáo trộn mới.", "Các cặp được kiểm tra từ trái sang phải để xem mảng đã sorted chưa.", "Short nên dùng mảng rất nhỏ vì số lần thử có thể bùng nổ."], ["Each attempt is a fresh shuffle.", "Adjacent pairs are checked left to right to see whether the array is sorted.", "Shorts should use tiny arrays because attempts can explode." ]),
+    takeaway: t("Bogo Sort vui để xem, cực tệ để dùng: average O(n · n!) và worst-case không có giới hạn.", "Bogo Sort is fun to watch and terrible to use: average O(n · n!) with an unbounded worst case."),
+  },
   insertion: {
     hook: t("Insertion Sort giống xếp bài trên tay: rút một lá rồi chèn vào đúng chỗ.", "Insertion Sort is like sorting cards in your hand: take one card and insert it into place."),
     useCase: t("Rất tốt cho mảng nhỏ hoặc dữ liệu gần như đã sắp xếp.", "Excellent for small arrays or data that is already almost sorted."),

@@ -12,6 +12,7 @@ const TITLES: Record<string, { vi: string; en: string }> = {
   pigeonhole: { vi: "Pigeonhole: đưa giá trị vào hole theo offset min", en: "Pigeonhole: route values into min-offset holes" },
   strand: { vi: "Strand Sort: kéo dãy con tăng rồi merge vào output", en: "Strand Sort: extract increasing strands, then merge output" },
   tournament: { vi: "Tournament Sort: cây đấu loại chọn min mỗi lượt", en: "Tournament Sort: knockout tree selects each minimum" },
+  smooth: { vi: "Smooth Sort: forest heap Leonardo, sift và trinkle", en: "Smooth Sort: Leonardo heap forest, sift and trinkle" },
   bucket: { vi: "Bucket ranges: phân phối, sort từng bucket, nối lại", en: "Bucket ranges: distribute, sort each bucket, concatenate" },
   shell: { vi: "Shell gaps: insertion sort theo khoảng cách", en: "Shell gaps: gapped insertion sort" },
   bitonic: { vi: "Bitonic network: compare-swap theo gap và hướng", en: "Bitonic network: compare-swap by gap and direction" },

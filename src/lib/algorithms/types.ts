@@ -60,6 +60,18 @@ export type TournamentState = {
   phase?: "build" | "compare" | "promote" | "extract" | "done";
 };
 
+export type SmoothTree = {
+  start: number;
+  end: number;
+  order: number;
+};
+
+export type SmoothState = {
+  trees: SmoothTree[];
+  activeRoots?: number[];
+  phase?: "grow" | "merge" | "sift" | "trinkle" | "extract" | "done";
+};
+
 export type Frame = {
   arr: number[];
   highlight: number[];
@@ -76,6 +88,7 @@ export type Frame = {
   buckets?: BucketState;
   treeSort?: TreeSortState;
   tournament?: TournamentState;
+  smooth?: SmoothState;
   event?: "compare" | "swap" | "found" | "visit" | null;
 };
 

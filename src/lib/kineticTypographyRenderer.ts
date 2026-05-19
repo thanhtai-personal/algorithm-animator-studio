@@ -25,7 +25,7 @@ type Params = {
   longVideoType: LongVideoType;
 };
 
-type KineticCard = { top?: string; main: string; bottom?: string; accent?: string; invert?: boolean; rotate?: number };
+type KineticCard = { top?: string; main: string; bottom?: string; accent?: string; invert?: boolean; rotate?: number; values?: number[]; pair?: number };
 type BubbleMode = "compare" | "swap" | "pass" | "biggest" | "lock" | "best" | "worst" | "space";
 
 export function renderKineticTypography(ctx: CanvasRenderingContext2D, params: Params) {
@@ -52,12 +52,12 @@ function getKineticCards(params: Params): KineticCard[] {
 function getBubbleKineticCards(sceneId: string, lang: Lang): KineticCard[] {
   const vi = lang === "vi";
   const shared = [
-    { top: vi ? "BƯỚC 1" : "STEP 1", main: vi ? "NHÌN 2 CỘT" : "PICK A PAIR", bottom: vi ? "chỉ xét hai phần tử kề nhau" : "only adjacent values" },
-    { top: vi ? "NẾU" : "IF", main: "TRÁI > PHẢI", bottom: vi ? "thì đổi chỗ ngay" : "swap immediately", accent: "#fb7185", rotate: -3 },
-    { top: vi ? "NẾU KHÔNG" : "ELSE", main: vi ? "GIỮ NGUYÊN" : "KEEP ORDER", bottom: vi ? "cặp này đã đúng" : "this pair is already ordered", accent: "#4ade80" },
-    { top: vi ? "QUÉT" : "SCAN", main: vi ? "SANG PHẢI" : "TO THE RIGHT", bottom: vi ? "cặp kế tiếp, rồi cặp kế tiếp" : "pair after pair", accent: "#38bdf8" },
-    { top: vi ? "SAU 1 PASS" : "AFTER 1 PASS", main: vi ? "LỚN NHẤT" : "LARGEST", bottom: vi ? "nằm ở cuối mảng" : "lands at the end", accent: "#facc15", rotate: 3 },
-    { main: vi ? "KHÓA ĐUÔI" : "LOCK THE TAIL", bottom: vi ? "vùng cuối đã sorted" : "the right side is sorted", accent: "#4ade80", invert: true },
+    { top: vi ? "BƯỚC 1" : "STEP 1", main: vi ? "NHÌN 2 CỘT" : "PICK A PAIR", bottom: vi ? "chỉ xét hai phần tử kề nhau" : "only adjacent values", values: [5, 1, 4, 2, 8], pair: 0 },
+    { top: vi ? "NẾU" : "IF", main: vi ? "TRÁI > PHẢI" : "LEFT > RIGHT", bottom: vi ? "thì đổi chỗ ngay" : "swap immediately", accent: "#fb7185", rotate: -3, values: [5, 1, 4, 2, 8], pair: 0 },
+    { top: vi ? "NẾU KHÔNG" : "ELSE", main: vi ? "GIỮ NGUYÊN" : "KEEP ORDER", bottom: vi ? "cặp này đã đúng" : "this pair is already ordered", accent: "#4ade80", values: [1, 4, 5, 8], pair: 2 },
+    { top: vi ? "QUÉT" : "SCAN", main: vi ? "SANG PHẢI" : "TO THE RIGHT", bottom: vi ? "cặp kế tiếp, rồi cặp kế tiếp" : "pair after pair", accent: "#38bdf8", values: [1, 5, 4, 2, 8], pair: 1 },
+    { top: vi ? "SAU 1 PASS" : "AFTER 1 PASS", main: vi ? "LỚN NHẤT" : "LARGEST", bottom: vi ? "nằm ở cuối mảng" : "lands at the end", accent: "#facc15", rotate: 3, values: [1, 4, 2, 5, 8], pair: 3 },
+    { main: vi ? "KHÓA ĐUÔI" : "LOCK THE TAIL", bottom: vi ? "vùng cuối đã sắp xếp" : "the right side is sorted", accent: "#4ade80", invert: true, values: [1, 4, 2, 5, 8], pair: 3 },
   ];
   const complexity = [
     { top: vi ? "BEST CASE" : "BEST CASE", main: "O(n)", bottom: vi ? "một pass không có swap" : "one pass, no swaps", accent: "#4ade80", invert: true },
@@ -73,7 +73,7 @@ function getBubbleKineticCards(sceneId: string, lang: Lang): KineticCard[] {
     ],
     hook: [
       { main: vi ? "CÙNG LUẬT" : "SAME RULE", bottom: vi ? "nhưng input quyết định tốc độ" : "input decides the cost" },
-      { main: vi ? "ĐÃ SORTED" : "ALREADY SORTED", bottom: vi ? "gần như chỉ kiểm tra" : "mostly just checks", accent: "#4ade80", invert: true },
+      { main: vi ? "ĐÃ SẮP XẾP" : "ALREADY SORTED", bottom: vi ? "gần như chỉ kiểm tra" : "mostly just checks", accent: "#4ade80", invert: true },
       { main: vi ? "ĐẢO NGƯỢC" : "REVERSED", bottom: vi ? "swap rất nhiều" : "swaps a lot", accent: "#fb7185" },
       ...complexity,
     ],
@@ -83,17 +83,17 @@ function getBubbleKineticCards(sceneId: string, lang: Lang): KineticCard[] {
       { main: vi ? "TỪ LOCAL" : "LOCAL FIXES", bottom: vi ? "thành thứ tự toàn mảng" : "become global order", accent: "#4ade80" },
     ],
     "step-by-step": [
-      { top: vi ? "INPUT" : "INPUT", main: "5 1 4 2 8", bottom: vi ? "bắt đầu từ cặp đầu tiên" : "start from the first pair", accent: "#38bdf8" },
-      { top: vi ? "SO SÁNH" : "COMPARE", main: "5 > 1", bottom: vi ? "sai thứ tự -> swap" : "wrong order -> swap", accent: "#fb7185" },
-      { top: vi ? "SO SÁNH" : "COMPARE", main: "5 > 4", bottom: vi ? "5 tiếp tục trượt sang phải" : "5 keeps moving right", accent: "#fb7185" },
-      { top: vi ? "SO SÁNH" : "COMPARE", main: "5 > 2", bottom: vi ? "swap lần nữa" : "swap again", accent: "#fb7185" },
-      { top: vi ? "SO SÁNH" : "COMPARE", main: "5 < 8", bottom: vi ? "đúng thứ tự, không swap" : "already ordered, no swap", accent: "#4ade80" },
-      { main: vi ? "8 ĐÃ Ở CUỐI" : "8 REACHES THE END", bottom: vi ? "phần tử lớn nhất được khóa" : "largest value is locked", accent: "#facc15" },
+      { top: vi ? "INPUT" : "INPUT", main: "5 1 4 2 8", bottom: vi ? "bắt đầu từ cặp đầu tiên" : "start from the first pair", accent: "#38bdf8", values: [5, 1, 4, 2, 8], pair: 0 },
+      { top: vi ? "SO SÁNH" : "COMPARE", main: "5 > 1", bottom: vi ? "sai thứ tự -> swap" : "wrong order -> swap", accent: "#fb7185", values: [5, 1, 4, 2, 8], pair: 0 },
+      { top: vi ? "SO SÁNH" : "COMPARE", main: "5 > 4", bottom: vi ? "5 tiếp tục trượt sang phải" : "5 keeps moving right", accent: "#fb7185", values: [1, 5, 4, 2, 8], pair: 1 },
+      { top: vi ? "SO SÁNH" : "COMPARE", main: "5 > 2", bottom: vi ? "swap lần nữa" : "swap again", accent: "#fb7185", values: [1, 4, 5, 2, 8], pair: 2 },
+      { top: vi ? "SO SÁNH" : "COMPARE", main: "5 < 8", bottom: vi ? "đúng thứ tự, không swap" : "already ordered, no swap", accent: "#4ade80", values: [1, 4, 2, 5, 8], pair: 3 },
+      { main: vi ? "8 ĐÃ Ở CUỐI" : "8 REACHES THE END", bottom: vi ? "phần tử lớn nhất được khóa" : "largest value is locked", accent: "#facc15", values: [1, 4, 2, 5, 8], pair: 3 },
     ],
     animation: [
       { main: vi ? "MÀU CYAN" : "CYAN", bottom: vi ? "cặp đang so sánh" : "current pair" },
       { main: vi ? "MÀU ĐỎ" : "RED", bottom: vi ? "hai cột đang swap" : "values are swapping", accent: "#fb7185" },
-      { main: vi ? "MÀU XANH" : "GREEN", bottom: vi ? "đuôi đã sorted" : "sorted tail", accent: "#4ade80", invert: true },
+      { main: vi ? "MÀU XANH" : "GREEN", bottom: vi ? "đuôi đã sắp xếp" : "sorted tail", accent: "#4ade80", invert: true },
       { main: vi ? "ĐẾM CHI PHÍ" : "COUNT THE COST", bottom: vi ? "compare + swap" : "compare + swap", accent: "#38bdf8" },
     ],
     "early-stop": [
@@ -132,7 +132,7 @@ function drawKineticCard(ctx: CanvasRenderingContext2D, card: KineticCard, local
   const inEase = easeOutBack(clamp01(local / 0.22));
   const outEase = local > 0.74 ? easeOutCubic((local - 0.74) / 0.26) : 0;
   const scale = (0.62 + 0.42 * inEase) * (1 - 0.18 * outEase);
-  const y = H / 2 + (1 - inEase) * 120 - outEase * 110;
+  const y = 390 + (1 - inEase) * 95 - outEase * 92;
   const x = W / 2 + (1 - inEase) * (card.rotate && card.rotate < 0 ? -180 : 180);
   ctx.save();
   ctx.translate(x, y);
@@ -173,16 +173,17 @@ function drawKineticIllustration(ctx: CanvasRenderingContext2D, params: Params, 
 
 function drawBubbleKineticIllustration(ctx: CanvasRenderingContext2D, params: Params, card: KineticCard, local: number, accent: string) {
   const mode = getBubbleMode(card);
-  const arr = getBubbleModeArray(params, mode);
+  const arr = card.values ?? getBubbleModeArray(mode);
+  const pair = getBubblePair(card, mode, arr.length);
   const pop = easeOutBack(clamp01(local / 0.28));
   ctx.save();
   ctx.translate(0, (1 - pop) * 46);
   ctx.globalAlpha = 0.92;
   ctx.fillStyle = card.invert ? "rgba(5,5,5,0.2)" : "rgba(255,255,255,0.1)";
-  roundRect(ctx, 250, 660, 1420, 220, 40);
+  roundRect(ctx, 250, 700, 1420, 230, 40);
   ctx.fill();
-  drawBubbleMiniBars(ctx, arr, mode, accent, card.invert, local);
-  drawBubbleMotionCue(ctx, mode, accent, card.invert, local, params.lang);
+  drawBubbleMiniBars(ctx, arr, mode, accent, card.invert, local, pair);
+  drawBubbleMotionCue(ctx, mode, accent, card.invert, local, params.lang, pair, arr.length);
   ctx.restore();
 }
 
@@ -198,24 +199,30 @@ function getBubbleMode(card: KineticCard): BubbleMode {
   return "compare";
 }
 
-function getBubbleModeArray(params: Params, mode: BubbleMode) {
-  if (params.frame?.arr.length && mode !== "best" && mode !== "worst") return params.frame.arr.slice(0, 8);
+function getBubbleModeArray(mode: BubbleMode) {
   if (mode === "best") return [1, 2, 3, 4, 5, 6, 7, 8];
   if (mode === "worst") return [8, 7, 6, 5, 4, 3, 2, 1];
   if (mode === "lock") return [1, 2, 4, 5, 8];
   return [5, 1, 4, 2, 8];
 }
 
-function drawBubbleMiniBars(ctx: CanvasRenderingContext2D, values: number[], mode: BubbleMode, accent: string, invert: boolean | undefined, local: number) {
+function getBubblePair(card: KineticCard, mode: BubbleMode, length: number) {
+  if (typeof card.pair === "number") return Math.max(0, Math.min(length - 2, card.pair));
+  if (mode === "biggest" || mode === "lock") return Math.max(0, length - 2);
+  if (mode === "pass") return Math.max(0, Math.min(length - 2, Math.floor(length * 0.55)));
+  return 0;
+}
+
+function drawBubbleMiniBars(ctx: CanvasRenderingContext2D, values: number[], mode: BubbleMode, accent: string, invert: boolean | undefined, local: number, pair: number) {
   const max = Math.max(...values, 1);
-  const x = 420, y = 826, w = 860, gap = 18;
+  const x = 420, y = 880, w = 860, gap = 18;
   const cell = (w - gap * (values.length - 1)) / values.length;
   const swapT = mode === "swap" ? easeInOutCubic(clamp01((local - 0.12) / 0.76)) : 0;
   values.forEach((value, index) => {
-    const active = getBubbleActive(index, values.length, mode);
+    const active = getBubbleActive(index, values.length, mode, pair);
     const h = 44 + (value / max) * 132;
     const lift = active && mode === "swap" ? -34 * Math.sin(swapT * Math.PI) : active && mode === "biggest" ? -18 : 0;
-    const swapOffset = mode === "swap" && index < 2 ? (index === 0 ? 1 : -1) * (cell + gap) * swapT : 0;
+    const swapOffset = mode === "swap" && (index === pair || index === pair + 1) ? (index === pair ? 1 : -1) * (cell + gap) * swapT : 0;
     const pulse = active && mode === "swap" ? 1 + 0.04 * Math.sin(clamp01(local) * Math.PI * 4) : 1;
     const hot = mode === "swap" || mode === "worst" ? "#fb7185" : accent;
     ctx.fillStyle = active ? hot : invert ? "rgba(5,5,5,0.35)" : "rgba(255,255,255,0.26)";
@@ -231,51 +238,54 @@ function drawBubbleMiniBars(ctx: CanvasRenderingContext2D, values: number[], mod
     ctx.fillText(String(value), 0, 42);
     ctx.restore();
   });
-  if (mode === "swap") drawSwapTrack(ctx, x, y, cell, gap, swapT);
+  if (mode === "swap") drawSwapTrack(ctx, x, y, cell, gap, pair, swapT);
 }
 
-function getBubbleActive(index: number, length: number, mode: BubbleMode) {
+function getBubbleActive(index: number, length: number, mode: BubbleMode, pair: number) {
   if (mode === "lock") return index >= length - 2;
   if (mode === "biggest") return index === length - 1 || index === Math.max(0, length - 2);
   if (mode === "pass") return index <= Math.floor(length * 0.7);
   if (mode === "best" || mode === "space") return index < length;
   if (mode === "worst") return index < Math.min(length, 5);
-  return index < 2;
+  return index === pair || index === pair + 1;
 }
 
-function drawBubbleMotionCue(ctx: CanvasRenderingContext2D, mode: BubbleMode, accent: string, invert: boolean | undefined, local: number, lang: Lang) {
+function drawBubbleMotionCue(ctx: CanvasRenderingContext2D, mode: BubbleMode, accent: string, invert: boolean | undefined, local: number, lang: Lang, pair: number, length: number) {
+  const cell = (860 - 18 * (length - 1)) / length;
+  const left = 420 + pair * (cell + 18) + cell / 2;
+  const right = left + cell + 18;
   ctx.strokeStyle = mode === "swap" || mode === "worst" ? "#fb7185" : accent;
   ctx.fillStyle = invert ? "#050505" : "#ffffff";
   ctx.lineWidth = 8;
   ctx.font = "950 54px ui-sans-serif, system-ui, sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText(getBubbleCueLabel(mode, lang), 1320, 760);
+  ctx.fillText(getBubbleCueLabel(mode, lang), 1320, 804);
   if (mode === "swap") {
-    const shift = easeInOutCubic(clamp01((local - 0.12) / 0.76)) * 150;
-    ctx.beginPath(); ctx.moveTo(450, 618); ctx.bezierCurveTo(500, 570, 610, 570, 660, 618); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(660, 650); ctx.bezierCurveTo(610, 700, 500, 700, 450, 650); ctx.stroke();
+    const shift = easeInOutCubic(clamp01((local - 0.12) / 0.76));
+    ctx.beginPath(); ctx.moveTo(left, 710); ctx.bezierCurveTo(left + 50, 668, right - 50, 668, right, 710); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(right, 740); ctx.bezierCurveTo(right - 50, 782, left + 50, 782, left, 740); ctx.stroke();
     ctx.fillStyle = "#fb7185";
-    ctx.beginPath(); ctx.arc(450 + shift, 618 - Math.sin(shift / 150 * Math.PI) * 42, 12, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(660 - shift, 650 + Math.sin(shift / 150 * Math.PI) * 42, 12, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(left + (right - left) * shift, 710 - Math.sin(shift * Math.PI) * 36, 12, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(right - (right - left) * shift, 740 + Math.sin(shift * Math.PI) * 36, 12, 0, Math.PI * 2); ctx.fill();
   } else if (mode === "biggest" || mode === "pass") {
     const sweep = 420 + easeOutCubic(local) * 680;
-    ctx.beginPath(); ctx.moveTo(420, 630); ctx.lineTo(sweep, 630); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(sweep - 28, 606); ctx.lineTo(sweep, 630); ctx.lineTo(sweep - 28, 654); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(420, 704); ctx.lineTo(sweep, 704); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sweep - 28, 680); ctx.lineTo(sweep, 704); ctx.lineTo(sweep - 28, 728); ctx.stroke();
   } else if (mode === "worst") {
     for (let i = 0; i < 4; i++) {
-      ctx.beginPath(); ctx.moveTo(420 + i * 120, 630 + i * 12); ctx.lineTo(500 + i * 120, 630 + i * 12); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(420 + i * 120, 704 + i * 12); ctx.lineTo(500 + i * 120, 704 + i * 12); ctx.stroke();
     }
   } else {
-    roundRect(ctx, 410, 626, 218, 236, 24);
+    roundRect(ctx, left - cell / 2 - 10, 718, cell * 2 + 38, 192, 24);
     ctx.stroke();
   }
 }
 
-function drawSwapTrack(ctx: CanvasRenderingContext2D, x: number, y: number, cell: number, gap: number, progress: number) {
-  const left = x + cell / 2;
-  const right = x + cell + gap + cell / 2;
-  const top = y - 204;
-  const bottom = y + 66;
+function drawSwapTrack(ctx: CanvasRenderingContext2D, x: number, y: number, cell: number, gap: number, pair: number, progress: number) {
+  const left = x + pair * (cell + gap) + cell / 2;
+  const right = left + cell + gap;
+  const top = y - 170;
+  const bottom = y + 40;
   ctx.save();
   ctx.strokeStyle = "rgba(251,113,133,0.82)";
   ctx.lineWidth = 6;

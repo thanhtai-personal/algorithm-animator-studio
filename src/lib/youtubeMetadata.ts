@@ -63,6 +63,7 @@ export function buildYoutubeMetadata(algoId: string, lang: Lang, variant: "short
 
   const sections = isVi
     ? [
+      variant === "short" ? `Xem bản long video giải thích đầy đủ ${algo.name} trên kênh để hiểu từng bước, độ phức tạp và ví dụ chạy chi tiết.` : "",
       variant === "long"
         ? `${algo.name} được giải thích theo phong cách ${style.name} để bạn thấy từng bước thuật toán hoạt động trên dữ liệu thật.`
         : `${algo.name} được giải thích bằng animation trực quan để bạn thấy từng bước thuật toán hoạt động trên dữ liệu thật.`,
@@ -77,6 +78,7 @@ export function buildYoutubeMetadata(algoId: string, lang: Lang, variant: "short
       "Video được tạo bằng Kata Algorithm Animator Studio.",
     ]
     : [
+      variant === "short" ? `Watch the full long-form ${algo.name} explanation on the channel for step-by-step reasoning, complexity and a detailed walkthrough.` : "",
       variant === "long"
         ? `${algo.name} is explained in a ${style.name} format so you can see how each step works on real data.`
         : `${algo.name} is explained with a visual animation so you can see how each step works on real data.`,
@@ -94,7 +96,13 @@ export function buildYoutubeMetadata(algoId: string, lang: Lang, variant: "short
   return {
     title,
     description: sections.filter(Boolean).join("\n\n"),
-    tags: uniqueTags([algo.name, algo.id.replace(/_/g, " "), ...(EXTRA_TAGS[algo.id] ?? []), ...BASE_TAGS]).join(", "),
+    tags: uniqueTags([
+      algo.name,
+      algo.id.replace(/_/g, " "),
+      ...(EXTRA_TAGS[algo.id] ?? []),
+      ...(variant === "short" ? ["youtube shorts", "shorts", "short video", "long video", "full explanation"] : []),
+      ...BASE_TAGS,
+    ]).join(", "),
     lang,
     videoType,
   };

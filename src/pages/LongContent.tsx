@@ -52,7 +52,6 @@ export default function LongContent() {
         <div className="space-y-4">
           <PreviewPanel studio={studio} />
           <MusicPanel studio={studio} />
-          <YoutubeMetadataPreview algoId={studio.algo.id} lang={studio.lang} variant="long" musicLicenseText={studio.music.selectedLicenseText} />
           <ScriptPanel studio={studio} />
         </div>
       </main>
@@ -64,6 +63,7 @@ function LeftControls({ studio: s, onExport }: { studio: LongContentStudio; onEx
   return (
     <div className="space-y-4">
       <VisualExportPanel studio={s} onExport={onExport} />
+      <YoutubeMetadataPreview algoId={s.algo.id} lang={s.lang} variant="long" longVideoType={s.longVideoType} musicLicenseText={s.music.selectedLicenseText} />
       <CollapsibleSection title="Cấu hình nội dung" icon={<Film className="h-4 w-4 text-emerald-400" />}>
         <SystemLanguageInfo studio={s} />
 
@@ -156,10 +156,14 @@ function VisualExportPanel({ studio: s, onExport }: { studio: LongContentStudio;
 
 function VideoTypeSelect({ studio: s }: { studio: LongContentStudio }) {
   const selected = LONG_VIDEO_TYPES.find((type) => type.id === s.longVideoType);
+  function selectVideoType(value: LongVideoType) {
+    s.setLongVideoType(value);
+    s.setNarrationEnabled(value === "classic");
+  }
   return (
     <div>
       <Label>Type video</Label>
-      <Select value={s.longVideoType} onValueChange={(value) => s.setLongVideoType(value as LongVideoType)}>
+      <Select value={s.longVideoType} onValueChange={(value) => selectVideoType(value as LongVideoType)}>
         <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
         <SelectContent>
           {LONG_VIDEO_TYPES.map((type) => (

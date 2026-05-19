@@ -42,7 +42,7 @@ export default function YoutubePublishing() {
 
   const selectedFile = videoFile ?? lastExported?.file ?? null;
   const selectedMusicLicense = !videoFile ? lastExported?.youtubeDescriptionAppend : undefined;
-  const displayedDescription = appendYoutubeDescriptionCredit(form.description, selectedMusicLicense);
+  const displayedDescription = appendYoutubeDescriptionCredit(form.description, selectedMusicLicense, !videoFile ? lastExported?.youtubeMetadata?.lang : undefined);
   const canUpload = Boolean(selectedFile && refreshToken && config?.hasClientId && config?.hasClientSecret);
   const redirectUri = useMemo(() => resolveYoutubeRedirectUri(config?.redirectUri), [config?.redirectUri]);
 
@@ -195,7 +195,7 @@ export default function YoutubePublishing() {
               <Label>Description</Label>
               <Textarea className="mt-2 min-h-48" value={displayedDescription} onChange={(event) => setForm({ ...form, description: event.target.value })} />
               {lastExported?.youtubeMetadata && !videoFile ? <p className="mt-2 text-xs text-emerald-300">Đã tự điền metadata theo thuật toán của video export.</p> : null}
-              {selectedMusicLicense ? <p className="mt-2 text-xs text-yellow-300">Music license đã được thêm vào cuối mô tả.</p> : null}
+              {selectedMusicLicense ? <p className="mt-2 text-xs text-yellow-300">Bản quyền nhạc đã được thêm vào cuối mô tả.</p> : null}
             </div>
             <Field label="Tags" value={form.tags} onChange={(value) => setForm({ ...form, tags: value })} />
             <div className="grid gap-3 md:grid-cols-3">
@@ -262,7 +262,7 @@ function applyExportMetadata(form: YoutubeUploadForm, asset: ExportedVideoAsset 
   return {
     ...form,
     ...asset.youtubeMetadata,
-    description: appendYoutubeDescriptionCredit(asset.youtubeMetadata.description, asset.youtubeDescriptionAppend),
+    description: appendYoutubeDescriptionCredit(asset.youtubeMetadata.description, asset.youtubeDescriptionAppend, asset.youtubeMetadata.lang),
   };
 }
 

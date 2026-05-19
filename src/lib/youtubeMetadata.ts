@@ -1,11 +1,14 @@
 import { ALGORITHMS, COMPLEXITY } from "./algorithms";
 import { getLongContentGuide, pickGuideText } from "./longContentData";
+import type { LongVideoType } from "./longVideoTypes";
 import type { Lang } from "./i18n";
 
 export type YoutubeAlgorithmMetadata = {
   title: string;
   description: string;
   tags: string;
+  lang: Lang;
+  videoType?: LongVideoType;
 };
 
 const BASE_TAGS = ["algorithm", "programming", "visualization", "computer science", "coding", "tutorial", "kata studio"];
@@ -46,18 +49,24 @@ const EXTRA_TAGS: Record<string, string[]> = {
   custom: ["custom algorithm", "algorithm animation", "code visualization"],
 };
 
-export function buildYoutubeMetadata(algoId: string, lang: Lang, variant: "short" | "long"): YoutubeAlgorithmMetadata {
+export function buildYoutubeMetadata(algoId: string, lang: Lang, variant: "short" | "long", videoType: LongVideoType = "classic"): YoutubeAlgorithmMetadata {
   const algo = ALGORITHMS[algoId] ?? ALGORITHMS.custom;
   const guide = pickGuideText(getLongContentGuide(algo.id), lang);
   const complexity = COMPLEXITY[algo.id];
   const isVi = lang === "vi";
+  const style = getVideoTypeCopy(videoType, lang);
   const title = variant === "long"
-    ? (isVi ? `${algo.name} giải thích đầy đủ bằng animation` : `${algo.name} Explained with Full Animation`)
+    ? (videoType === "classic"
+      ? (isVi ? `${algo.name} giải thích đầy đủ bằng animation` : `${algo.name} Explained with Full Animation`)
+      : (isVi ? `${algo.name} ${style.titleSuffix} | giải thích bằng animation` : `${algo.name} ${style.titleSuffix} | Animated Explanation`))
     : (isVi ? `${algo.name} trực quan trong 60 giây` : `${algo.name} Visualized in 60 Seconds`);
 
   const sections = isVi
     ? [
-      `${algo.name} được giải thích bằng animation trực quan để bạn thấy từng bước thuật toán hoạt động trên dữ liệu thật.`,
+      variant === "long"
+        ? `${algo.name} được giải thích theo phong cách ${style.name} để bạn thấy từng bước thuật toán hoạt động trên dữ liệu thật.`
+        : `${algo.name} được giải thích bằng animation trực quan để bạn thấy từng bước thuật toán hoạt động trên dữ liệu thật.`,
+      variant === "long" ? style.description : "",
       `Ý chính: ${guide.hook}`,
       `Khi nên dùng: ${guide.useCase}`,
       `Mô hình tư duy: ${guide.mentalModel}`,
@@ -68,7 +77,10 @@ export function buildYoutubeMetadata(algoId: string, lang: Lang, variant: "short
       "Video được tạo bằng Kata Algorithm Animator Studio.",
     ]
     : [
-      `${algo.name} is explained with a visual animation so you can see how each step works on real data.`,
+      variant === "long"
+        ? `${algo.name} is explained in a ${style.name} format so you can see how each step works on real data.`
+        : `${algo.name} is explained with a visual animation so you can see how each step works on real data.`,
+      variant === "long" ? style.description : "",
       `Core idea: ${guide.hook}`,
       `When to use it: ${guide.useCase}`,
       `Mental model: ${guide.mentalModel}`,
@@ -83,13 +95,16 @@ export function buildYoutubeMetadata(algoId: string, lang: Lang, variant: "short
     title,
     description: sections.filter(Boolean).join("\n\n"),
     tags: uniqueTags([algo.name, algo.id.replace(/_/g, " "), ...(EXTRA_TAGS[algo.id] ?? []), ...BASE_TAGS]).join(", "),
+    lang,
+    videoType,
   };
 }
 
-export function appendYoutubeDescriptionCredit(description: string, licenseText?: string) {
+export function appendYoutubeDescriptionCredit(description: string, licenseText?: string, lang: Lang = "en") {
   const license = licenseText?.trim();
   if (!license || description.includes(license)) return description;
-  return `${description.trim()}${description.trim() ? "\n\n" : ""}Music license:\n${license}`;
+  const label = lang === "vi" ? "Bản quyền nhạc" : "Music license";
+  return `${description.trim()}${description.trim() ? "\n\n" : ""}${label}:\n${license}`;
 }
 
 function uniqueTags(tags: string[]) {
@@ -100,4 +115,36 @@ function uniqueTags(tags: string[]) {
     seen.add(key);
     return true;
   });
+}
+
+function getVideoTypeCopy(type: LongVideoType, lang: Lang) {
+  const vi = lang === "vi";
+  if (type === "kinetic-typography") return {
+    name: vi ? "Kinetic Typography" : "Kinetic Typography",
+    titleSuffix: vi ? "Kinetic Typography" : "Kinetic Typography",
+    description: vi
+      ? "Video dùng text chuyển động nhanh theo nhạc, kết hợp minh họa compare, swap, sorted tail và độ phức tạp."
+      : "The video uses fast beat-synced text with short compare, swap, sorted-tail and complexity illustrations.",
+  };
+  if (type === "animated-explainer") return {
+    name: vi ? "Animated Explainer" : "Animated Explainer",
+    titleSuffix: vi ? "Animated Explainer" : "Animated Explainer",
+    description: vi
+      ? "Video dùng icon, nhân vật và scene chuyển động để biến ý tưởng thuật toán thành câu chuyện trực quan."
+      : "The video uses icons, characters and moving scenes to turn the algorithm idea into a visual story.",
+  };
+  if (type === "ui-kinetic-explainer") return {
+    name: vi ? "UI Kinetic Explainer" : "UI Kinetic Explainer",
+    titleSuffix: vi ? "UI Kinetic Explainer" : "UI Kinetic Explainer",
+    description: vi
+      ? "Video mô phỏng giao diện app/web, hiển thị trạng thái thuật toán bằng panel, chart và motion kiểu demo sản phẩm."
+      : "The video simulates an app/web interface with panels, charts and product-demo style motion.",
+  };
+  return {
+    name: vi ? "classic lecture" : "classic lecture",
+    titleSuffix: vi ? "giải thích đầy đủ" : "Full Lecture",
+    description: vi
+      ? "Video theo phong cách bài giảng cổ điển với slide, chart thuật toán và voice-over giải thích chi tiết."
+      : "The video uses a classic lecture format with slides, algorithm charts and detailed voice-over.",
+  };
 }

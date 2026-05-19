@@ -5,17 +5,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { appendYoutubeDescriptionCredit, buildYoutubeMetadata } from "@/lib/youtubeMetadata";
 import type { Lang } from "@/lib/i18n";
+import type { LongVideoType } from "@/lib/longVideoTypes";
 
 type Props = {
   algoId: string;
   lang: Lang;
   variant: "short" | "long";
+  longVideoType?: LongVideoType;
   musicLicenseText?: string;
 };
 
-export function YoutubeMetadataPreview({ algoId, lang, variant, musicLicenseText }: Props) {
-  const metadata = buildYoutubeMetadata(algoId, lang, variant);
-  const description = appendYoutubeDescriptionCredit(metadata.description, musicLicenseText);
+export function YoutubeMetadataPreview({ algoId, lang, variant, longVideoType = "classic", musicLicenseText }: Props) {
+  const metadata = buildYoutubeMetadata(algoId, lang, variant, longVideoType);
+  const description = appendYoutubeDescriptionCredit(metadata.description, musicLicenseText, lang);
 
   return (
     <Card className="space-y-3 border-border/70 p-4">
@@ -28,7 +30,7 @@ export function YoutubeMetadataPreview({ algoId, lang, variant, musicLicenseText
       <MetadataField label="Title" value={metadata.title} />
       <MetadataField label="Description" value={description} rows={9} />
       <MetadataField label="Tags" value={metadata.tags} rows={3} />
-      {musicLicenseText?.trim() ? <p className="text-xs text-yellow-300">Music license đã được thêm vào cuối description.</p> : null}
+      {musicLicenseText?.trim() ? <p className="text-xs text-yellow-300">{lang === "vi" ? "Bản quyền nhạc đã được thêm vào cuối description." : "Music license has been added to the description."}</p> : null}
     </Card>
   );
 }

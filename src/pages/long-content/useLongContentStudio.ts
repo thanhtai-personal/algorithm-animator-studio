@@ -8,6 +8,7 @@ import { isProceduralMusicPreset } from "@/lib/backgroundMusic";
 import { type Lang, readSystemLang, subscribeSystemLang } from "@/lib/i18n";
 import { buildLongContentScenes, getSceneAtTime, getTotalDuration } from "@/lib/longContentTimeline";
 import type { LongVideoType } from "@/lib/longVideoTypes";
+import { buildLongVideoVoiceSegments } from "@/lib/longVideoVoice";
 import { THEMES } from "@/lib/renderer";
 import { generateElevenLabsVoice, generatePiperVoice, getElevenLabsConfig, getPiperModels, getPiperRuntimeStatus, getVoiceHealth, installPiperModel, type ElevenLabsConfig, type PiperModel, type PiperRuntimeStatus, type VoiceGenerateResult, type VoiceHealth } from "@/lib/voiceApi";
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
@@ -73,7 +74,7 @@ export function useLongContentStudio() {
     [editedScenes, lang, narrationRate, voiceDurationSec, voiceSegmentDurationsSec],
   );
   const totalDuration = useMemo(() => getTotalDuration(scenes), [scenes]);
-  const narrationSegments = useMemo(() => editedScenes.map((scene) => scene.narration), [editedScenes]);
+  const narrationSegments = useMemo(() => buildLongVideoVoiceSegments(editedScenes, longVideoType, algo.name, lang), [algo.name, editedScenes, lang, longVideoType]);
   const narrationScript = useMemo(() => narrationSegments.join(" "), [narrationSegments]);
   const baseFrames = useMemo(() => {
     if (algo.category === "graph") return algo.run([], { graph, start: 0, end: graph.nodes.length - 1 });
@@ -117,7 +118,7 @@ export function useLongContentStudio() {
     setVoiceDurationSec(0);
     setVoiceSegmentDurationsSec([]);
     setVoiceScriptKey("");
-  }, [algoId, animationSeconds, introSeconds, lang, narrationRate, piperModelKey, elevenModelId, elevenVoiceId, narrationScript]);
+  }, [algoId, animationSeconds, introSeconds, lang, longVideoType, narrationRate, piperModelKey, elevenModelId, elevenVoiceId, narrationScript]);
   useRestoreGeneratedVoiceCache({
     algoId: algo.id, lang, piperModelKey, elevenModelId, elevenVoiceId, narrationRate, narrationScript,
     voiceUrl, voiceLoading, voiceProvider, setVoiceProvider, setVoiceUrl, setVoiceFileName, setVoiceDurationSec,
@@ -211,7 +212,7 @@ export function useLongContentStudio() {
     }
   }
   async function generateVoiceOverForProvider(provider: GeneratedVoiceProvider): Promise<VoiceGenerateResult> {
-    const fileName = `${algo.id}-${lang}-long-voice`;
+    const fileName = `${algo.id}-${longVideoType}-${lang}-long-voice`;
     const result = provider === "piper"
       ? await generatePiperVoice({ text: narrationScript, segments: narrationSegments, modelKey: piperModelKey, sentenceSilence: 0.08, speechRate: narrationRate, fileName })
       : await generateElevenLabsVoice({ text: narrationScript, modelId: elevenModelId, voiceId: elevenVoiceId, fileName });
@@ -347,7 +348,7 @@ export function useLongContentStudio() {
     const fileName = `${algo.id}-${longVideoType}-${lang}-long-16x9-${Date.now()}.${format.id}`;
     const file = new File([blob], fileName, { type: mimeType });
     const url = URL.createObjectURL(file);
-    setLastExportedVideo(file, url, { youtubeDescriptionAppend: music.selectedLicenseText, youtubeMetadata: buildYoutubeMetadata(algo.id, lang, "long") });
+    setLastExportedVideo(file, url, { youtubeDescriptionAppend: music.selectedLicenseText, youtubeMetadata: buildYoutubeMetadata(algo.id, lang, "long", longVideoType) });
     const link = document.createElement("a");
     link.href = url;
     link.download = fileName;
@@ -377,7 +378,7 @@ export function useLongContentStudio() {
   }
   function getVoiceScriptKeyForProvider(provider: GeneratedVoiceProvider) {
     return buildGeneratedVoiceScriptKey({
-      provider, algoId: algo.id, lang, piperModelKey, elevenModelId, elevenVoiceId, narrationRate, narrationScript,
+      provider, algoId: `${algo.id}-${longVideoType}`, lang, piperModelKey, elevenModelId, elevenVoiceId, narrationRate, narrationScript,
     });
   }
   return {

@@ -1,10 +1,11 @@
 import { COMPLEXITY, type Frame } from "./algorithms";
 import type { Lang } from "./i18n";
+import { renderKineticTypography } from "./kineticTypographyRenderer";
 import type { LongContentScene } from "./longContentTimeline";
 import type { LongVideoType } from "./longVideoTypes";
 import type { Theme } from "./renderer";
 import { renderFrame } from "./renderer";
-import { roundRect, shade } from "./renderers/shapes";
+import { roundRect } from "./renderers/shapes";
 
 const W = 1920;
 const H = 1080;
@@ -32,33 +33,6 @@ export function renderStyledLongContentFrame(ctx: CanvasRenderingContext2D, para
   renderUiKineticExplainer(ctx, params);
 }
 
-function renderKineticTypography(ctx: CanvasRenderingContext2D, params: Params) {
-  const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, "#050505");
-  bg.addColorStop(1, "#151515");
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
-  drawBeatBars(ctx, params.sceneProgress, params.timelineProgress);
-
-  const words = getKineticWords(params);
-  const centerX = W / 2;
-  const centerY = H / 2;
-  const active = Math.min(words.length - 1, Math.floor(params.sceneProgress * Math.max(1, words.length)));
-  words.forEach((word, index) => {
-    const delta = index - active;
-    const local = params.sceneProgress * words.length - index;
-    const visible = clamp01(1 - Math.abs(delta) * 0.28);
-    const scale = index === active ? 1 + 0.08 * Math.sin(params.timelineProgress * Math.PI * 28) : 0.72;
-    ctx.globalAlpha = visible;
-    ctx.fillStyle = index === active ? "#4ade80" : "rgba(255,255,255,0.88)";
-    ctx.font = `${index === active ? 950 : 850} ${Math.round(92 * scale)}px ui-sans-serif, system-ui, sans-serif`;
-    ctx.textAlign = "center";
-    ctx.fillText(word, centerX + delta * 270, centerY + delta * 86 + Math.sin(local * Math.PI) * 18);
-  });
-  ctx.globalAlpha = 1;
-  drawKineticFooter(ctx, params);
-}
-
 function renderAnimatedExplainer(ctx: CanvasRenderingContext2D, params: Params) {
   drawSoftBackground(ctx, "#f8fafc", "#dcfce7");
   const characterX = 250 + easeOutCubic(params.sceneProgress) * 110;
@@ -76,30 +50,6 @@ function renderUiKineticExplainer(ctx: CanvasRenderingContext2D, params: Params)
   drawDashboardHeader(ctx, params);
   if (params.frame) drawEmbeddedAlgorithm(ctx, params);
   drawInspector(ctx, params);
-}
-
-function getKineticWords(params: Params) {
-  const source = [params.scene.title, params.scene.subtitle, ...params.scene.bullets.slice(0, 2)].join(" ");
-  const words = source.replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter((word) => word.length > 1);
-  return words.slice(0, 14).length ? words.slice(0, 14) : [params.algoName];
-}
-
-function drawBeatBars(ctx: CanvasRenderingContext2D, sceneProgress: number, timelineProgress: number) {
-  for (let i = 0; i < 48; i++) {
-    const x = (i / 47) * W;
-    const height = 80 + Math.sin(i * 0.8 + timelineProgress * Math.PI * 32) * 54;
-    ctx.fillStyle = i % 5 === 0 ? "rgba(74,222,128,0.35)" : "rgba(255,255,255,0.08)";
-    roundRect(ctx, x - 8, H - 170 - height * clamp01(sceneProgress + 0.15), 16, height, 8);
-    ctx.fill();
-  }
-}
-
-function drawKineticFooter(ctx: CanvasRenderingContext2D, params: Params) {
-  ctx.fillStyle = "rgba(255,255,255,0.65)";
-  ctx.font = "700 26px ui-sans-serif, system-ui, sans-serif";
-  ctx.textAlign = "left";
-  ctx.fillText(`${params.algoName} · ${params.scene.kindLabel}`, 74, 78);
-  drawProgress(ctx, 74, H - 78, W - 148, 12, params.timelineProgress, "#4ade80");
 }
 
 function drawSoftBackground(ctx: CanvasRenderingContext2D, from: string, to: string) {

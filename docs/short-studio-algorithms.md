@@ -24,6 +24,9 @@ Source of truth: `src/lib/algorithms/index.ts`.
 | `gnome` | Gnome Sort |
 | `tim` | Tim Sort |
 | `intro` | Intro Sort |
+| `tree_sort` | Tree Sort |
+| `cycle` | Cycle Sort |
+| `pigeonhole` | Pigeonhole Sort |
 
 ## Searching
 
@@ -54,10 +57,7 @@ These algorithms are not in Short Studio yet. `Priority` marks good first candid
 
 | ID | Algorithm | Priority |
 | --- | --- | --- |
-| `cycle` | Cycle Sort | Later |
-| `pigeonhole` | Pigeonhole Sort | Later |
 | `strand` | Strand Sort | Later |
-| `tree_sort` | Tree Sort | Short first |
 | `tournament` | Tournament Sort | Later |
 | `smooth` | Smooth Sort | Later |
 | `stooge` | Stooge Sort | Later |

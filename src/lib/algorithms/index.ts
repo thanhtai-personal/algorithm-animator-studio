@@ -10,6 +10,7 @@ import { bucketSort } from "./sorting/bucket";
 import { cocktailSort } from "./sorting/cocktail";
 import { combSort } from "./sorting/comb";
 import { countingSort } from "./sorting/counting";
+import { cycleSort } from "./sorting/cycle";
 import { gnomeSort } from "./sorting/gnome";
 import { heapSort } from "./sorting/heap";
 import { insertionSort } from "./sorting/insertion";
@@ -17,11 +18,13 @@ import { introSort } from "./sorting/intro";
 import { mergeSort } from "./sorting/merge";
 import { oddEvenSort } from "./sorting/oddEven";
 import { pancakeSort } from "./sorting/pancake";
+import { pigeonholeSort } from "./sorting/pigeonhole";
 import { quickSort } from "./sorting/quick";
 import { radixSort } from "./sorting/radix";
 import { selectionSort } from "./sorting/selection";
 import { shellSort } from "./sorting/shell";
 import { timSort } from "./sorting/tim";
+import { treeSort } from "./sorting/treeSort";
 import type { AlgoDef } from "./types";
 
 export { COMPLEXITY } from "./complexity";
@@ -36,6 +39,8 @@ export type {
   GraphEdge,
   GraphNode,
   GraphState,
+  TreeSortNode,
+  TreeSortState,
 } from "./types";
 
 export const ALGORITHMS: Record<string, AlgoDef> = {
@@ -62,6 +67,9 @@ export const ALGORITHMS: Record<string, AlgoDef> = {
   bfs,
   dfs,
   dijkstra,
+  tree_sort: treeSort,
+  cycle: cycleSort,
+  pigeonhole: pigeonholeSort,
   custom: customAlgo,
 };
 
@@ -72,7 +80,7 @@ export const ALGO_GROUPS: { label: { en: string; vi: string }; ids: string[] }[]
     label: { en: "Sorting", vi: "Sắp xếp" },
     ids: [
       "bubble", "odd_even", "pancake", "bitonic", "selection", "insertion", "quick", "merge", "heap",
-      "counting", "radix", "bucket", "shell", "cocktail", "comb", "gnome", "tim", "intro",
+      "counting", "radix", "bucket", "shell", "cocktail", "comb", "gnome", "tim", "intro", "tree_sort", "cycle", "pigeonhole",
     ],
   },
   { label: { en: "Searching", vi: "Tìm kiếm" }, ids: ["linear", "binary"] },

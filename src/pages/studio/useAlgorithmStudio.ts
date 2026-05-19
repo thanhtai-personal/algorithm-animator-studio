@@ -13,6 +13,7 @@ import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm, maxDemoSi
 import { exportAlgorithmVideo, preloadExportSfx } from "./videoExport";
 
 const SWAP_TRANSITION_MULTIPLIER = 1.8;
+const TREE_SORT_FRAME_MULTIPLIER = 2.4;
 const DEFAULT_ANIMAL_ARRAY_SIZE = 14;
 
 type UseAlgorithmStudioOptions = {
@@ -222,9 +223,10 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
       const baseInterval = 1000 / (fps * speed);
       const currentFrame = frames[Math.min(frameIdx, frames.length - 1)];
       const previousFrame = frameIdx > 0 ? frames[frameIdx - 1] : null;
+      const algorithmMultiplier = algoId === "tree_sort" ? TREE_SORT_FRAME_MULTIPLIER : 1;
       const interval = shouldAnimateSwap(currentFrame, previousFrame)
-        ? baseInterval * SWAP_TRANSITION_MULTIPLIER
-        : baseInterval;
+        ? baseInterval * SWAP_TRANSITION_MULTIPLIER * algorithmMultiplier
+        : baseInterval * algorithmMultiplier;
       const elapsed = time - lastRef.current;
       setTransitionProgress(Math.min(1, elapsed / interval));
       if (elapsed >= interval) {
@@ -242,7 +244,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     rafRef.current = requestAnimationFrame(tick);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing, fps, speed, frames, frameIdx]);
+  }, [playing, fps, speed, frames, frameIdx, algoId]);
 
   const newArray = () => {
     if (!requireConfigAccess()) return;

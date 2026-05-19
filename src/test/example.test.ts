@@ -25,6 +25,9 @@ describe("example", () => {
     ["intro", [10, 7, 8, 9, 1, 5, 3, 2, 6, 4], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "O(n log n)"],
     ["bitonic", [10, 30, 11, 20, 4, 33, 2, 1], [1, 2, 4, 10, 11, 20, 30, 33], "O(n log² n)"],
     ["bitonic", [10, 30, 11, 20, 4, 33, 2], [2, 4, 10, 11, 20, 30, 33], "O(n log² n)"],
+    ["cycle", [20, 40, 50, 10, 30, 20], [10, 20, 20, 30, 40, 50], "O(n²)"],
+    ["pigeonhole", [8, 3, 2, 7, 4, 6, 8], [2, 3, 4, 6, 7, 8, 8], "O(n + k)"],
+    ["tree_sort", [7, 3, 9, 1, 5, 3, 8], [1, 3, 3, 5, 7, 8, 9], "O(n log n)"],
   ])("runs %s sort to a sorted final frame", (id, input, expected, time) => {
     const frames = ALGORITHMS[id].run(input);
     expect(frames.at(-1)?.arr).toEqual(expected);

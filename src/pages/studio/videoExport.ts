@@ -9,6 +9,7 @@ import type { YoutubeAlgorithmMetadata } from "@/lib/youtubeMetadata";
 import { getExportFormat, ExportFormat } from "./exportFormats";
 
 const SWAP_EXPORT_SECONDS = 0.35;
+const TREE_SORT_EXPORT_SECONDS = 0.12;
 
 type ExportVideoParams = {
   frames: Frame[];
@@ -93,7 +94,7 @@ export async function exportAlgorithmVideo(params: ExportVideoParams) {
       const previousFrame = i > 0 ? params.frames[i - 1] : null;
       const transitionFrames = shouldAnimateSwap(params.frames[i], previousFrame)
         ? Math.max(6, Math.round(params.fps * SWAP_EXPORT_SECONDS))
-        : 1;
+        : frameHoldCount(params.algorithmId, params.fps);
 
       for (let step = 1; step <= transitionFrames; step++) {
         renderFrame(ctx, params.frames[i], {
@@ -134,6 +135,11 @@ export async function exportAlgorithmVideo(params: ExportVideoParams) {
 
 function waitFrame(fps: number) {
   return new Promise((resolve) => window.setTimeout(resolve, 1000 / fps));
+}
+
+function frameHoldCount(algorithmId: string, fps: number) {
+  if (algorithmId === "tree_sort") return Math.max(2, Math.round(fps * TREE_SORT_EXPORT_SECONDS));
+  return 1;
 }
 
 function shouldAnimateSwap(frame: Frame, previousFrame: Frame | null) {

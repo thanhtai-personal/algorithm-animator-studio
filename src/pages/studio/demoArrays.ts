@@ -22,6 +22,13 @@ function shouldUseCountingDemo(arr: number[]) {
   return new Set(arr).size > Math.max(8, Math.ceil(arr.length * 0.45));
 }
 
+function shouldUsePigeonholeDemo(arr: number[]) {
+  if (!arr.length) return true;
+  const min = Math.min(...arr);
+  const max = Math.max(...arr);
+  return max - min + 1 > 18;
+}
+
 function randRadixArr(n: number) {
   const seeds = [-902, -170, -45, 2, 24, 66, 75, 170, 305, 802, 999];
   return Array.from({ length: n }, (_, i) => {
@@ -76,6 +83,21 @@ function randBitonicArr(n: number) {
   return shuffle(values);
 }
 
+function randTreeSortArr(n: number) {
+  const values = Array.from({ length: n }, (_, i) => 10 + i * 4);
+  return shuffle(values);
+}
+
+function randCycleArr(n: number) {
+  const base = [42, 18, 42, 7, 63, 18, 31, 55, 7, 70, 24, 31];
+  return Array.from({ length: n }, (_, i) => base[i % base.length] + Math.floor(i / base.length) * 3);
+}
+
+function randPigeonholeArr(n: number) {
+  const values = [12, 15, 12, 18, 10, 14, 18, 16, 11, 15, 13, 17, 10, 14];
+  return Array.from({ length: n }, (_, i) => values[i % values.length]);
+}
+
 export function demoSizeForAlgorithm(algoId: string, currentSize: number) {
   if (algoId === "tim") return Math.max(currentSize, 40);
   if (algoId === "intro") return Math.max(currentSize, 32);
@@ -84,11 +106,17 @@ export function demoSizeForAlgorithm(algoId: string, currentSize: number) {
   if (algoId === "odd_even") return Math.min(currentSize, 12);
   if (algoId === "pancake") return Math.min(currentSize, 12);
   if (algoId === "bitonic") return Math.min(currentSize, 32);
+  if (algoId === "tree_sort") return Math.min(currentSize, 24);
+  if (algoId === "cycle") return Math.min(currentSize, 18);
+  if (algoId === "pigeonhole") return Math.min(currentSize, 16);
   return currentSize;
 }
 
 export function maxDemoSizeForAlgorithm(algoId: string) {
+  if (algoId === "tree_sort") return 24;
   if (algoId === "bitonic") return 32;
+  if (algoId === "cycle") return 18;
+  if (algoId === "pigeonhole") return 16;
   if (algoId === "odd_even" || algoId === "pancake") return 12;
   return 500;
 }
@@ -102,6 +130,9 @@ export function demoArrayForAlgorithm(algoId: string, n: number) {
   if (algoId === "odd_even") return randOddEvenArr(n);
   if (algoId === "pancake") return randPancakeArr(n);
   if (algoId === "bitonic") return randBitonicArr(n);
+  if (algoId === "tree_sort") return randTreeSortArr(n);
+  if (algoId === "cycle") return shuffle(randCycleArr(n));
+  if (algoId === "pigeonhole") return shuffle(randPigeonholeArr(n));
   if (algoId === "heap") return shuffle(Array.from({ length: n }, (_, i) => Math.floor(15 + i * (85 / Math.max(1, n - 1)))));
   if (algoId === "cocktail" || algoId === "gnome") return shuffle(Array.from({ length: n }, (_, i) => (i % 7) * 7 + 10));
   return randArr(n);
@@ -125,6 +156,9 @@ export function shouldUseAlgorithmDemo(algoId: string, arr: number[]) {
   if (algoId === "odd_even") return arr.length > 14;
   if (algoId === "pancake") return arr.length > 14;
   if (algoId === "bitonic") return arr.length > 32;
+  if (algoId === "tree_sort") return arr.length > 24;
+  if (algoId === "cycle") return arr.length > 18;
+  if (algoId === "pigeonhole") return arr.length > 16 || shouldUsePigeonholeDemo(arr);
   if (algoId === "radix") return !arr.some((n) => Math.abs(n) >= 100) || !arr.some((n) => n < 0);
   if (algoId === "bucket") return arr.length < 20 || new Set(arr.map((n) => Math.floor(n / 20))).size < 3;
   return false;

@@ -31,6 +31,21 @@ export type BucketState = {
   phase?: string;
 };
 
+export type TreeSortNode = {
+  id: number;
+  value: number;
+  left?: number;
+  right?: number;
+};
+
+export type TreeSortState = {
+  nodes: TreeSortNode[];
+  root?: number;
+  active?: number;
+  writing?: number;
+  phase?: "insert" | "write" | "done";
+};
+
 export type Frame = {
   arr: number[];
   highlight: number[];
@@ -45,6 +60,7 @@ export type Frame = {
   label?: string;
   counting?: CountingState;
   buckets?: BucketState;
+  treeSort?: TreeSortState;
   event?: "compare" | "swap" | "found" | "visit" | null;
 };
 

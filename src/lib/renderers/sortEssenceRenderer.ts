@@ -1,8 +1,12 @@
 import type { Frame } from "../algorithms";
 import type { Lang } from "../i18n";
 import { drawBars } from "./barRenderer";
+import { drawBitonicLens } from "./bitonicRenderer";
+import { drawCycleSortLens } from "./cycleSortRenderer";
 import { roundRect } from "./shapes";
+import { titleForSortEssence } from "./sortEssenceTitles";
 import type { Theme } from "./theme";
+import { drawTreeSortLens } from "./treeSortRenderer";
 
 type Options = {
   algorithmId: string;
@@ -22,13 +26,14 @@ export function drawSortEssence(
   theme: Theme,
   options: Options,
 ) {
-  const panelH = Math.min(Math.max(92, chartH * 0.24), 170);
-  const barsBottom = chartBottom - panelH - Math.max(10, chartH * 0.025);
+  const panelGap = Math.max(10, chartH * 0.025);
+  const panelH = panelHeightFor(options.algorithmId, chartH, panelGap);
+  const barsBottom = chartBottom - panelH - panelGap;
   const barsH = Math.max(120, barsBottom - chartTop);
   drawBars(ctx, frame, padding, chartTop, chartW, barsH, barsBottom, theme, options);
 
-  const panelY = barsBottom + Math.max(10, chartH * 0.025);
-  drawPanel(ctx, padding, panelY, chartW, panelH, titleFor(options.algorithmId, options.lang ?? "en"), theme);
+  const panelY = barsBottom + panelGap;
+  drawPanel(ctx, padding, panelY, chartW, panelH, titleForSortEssence(options.algorithmId, options.lang ?? "en"), theme);
   const x = padding + 18;
   const y = panelY + 38;
   const w = chartW - 36;
@@ -39,13 +44,24 @@ export function drawSortEssence(
   else if (options.algorithmId === "merge" || options.algorithmId === "tim") drawMergeLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "radix") drawRadixLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "bucket") drawBucketLens(ctx, frame, x, y, w, h, theme);
-  else if (options.algorithmId === "shell" || options.algorithmId === "comb" || options.algorithmId === "bitonic") drawGapLens(ctx, frame, x, y, w, h, theme);
+  else if (options.algorithmId === "bitonic") drawBitonicLens(ctx, frame, x, y, w, h, theme);
+  else if (options.algorithmId === "shell" || options.algorithmId === "comb") drawGapLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "odd_even") drawOddEvenLens(ctx, frame, x, y, w, h, theme, options.lang ?? "en");
   else if (options.algorithmId === "cocktail") drawCocktailLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "gnome") drawGnomeLens(ctx, frame, x, y, w, h, theme);
+  else if (options.algorithmId === "cycle") drawCycleSortLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "selection") drawSelectionLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "insertion") drawInsertionLens(ctx, frame, x, y, w, h, theme);
+  else if (options.algorithmId === "tree_sort") drawTreeSortLens(ctx, frame, x, y, w, h, theme);
   else drawPassLens(ctx, frame, x, y, w, h, theme);
+}
+
+function panelHeightFor(algorithmId: string, chartH: number, panelGap: number) {
+  const maxPanelH = Math.max(92, chartH - 120 - panelGap);
+  if (algorithmId === "tree_sort") {
+    return Math.min(maxPanelH, Math.max(150, Math.min(chartH * 0.48, 300)));
+  }
+  return Math.min(maxPanelH, Math.min(Math.max(92, chartH * 0.24), 170));
 }
 
 function drawHeapLens(ctx: CanvasRenderingContext2D, frame: Frame, x: number, y: number, w: number, h: number, theme: Theme) {
@@ -339,28 +355,6 @@ function numberVar(frame: Frame, key: string) {
 
 function labelVar(frame: Frame, key: string) {
   return frame.vars[key] == null ? "" : `${key}=${frame.vars[key]}`;
-}
-
-function titleFor(id: string, lang: Lang) {
-  const titles: Record<string, { vi: string; en: string }> = {
-    bubble: { vi: "Bubble pass: so sánh kề nhau để tạo đuôi đã sort", en: "Bubble pass: adjacent comparisons grow a sorted tail" },
-    selection: { vi: "Selection scan: tìm min, đặt vào prefix đã sort", en: "Selection scan: find min, place into sorted prefix" },
-    insertion: { vi: "Insertion window: dịch giá trị, chèn key", en: "Insertion window: shift values, insert key" },
-    quick: { vi: "Quick partition: pivot chia vùng trái/phải", en: "Quick partition: pivot splits left/right regions" },
-    merge: { vi: "Merge ranges: so sánh hai nửa đã sort", en: "Merge ranges: compare two sorted halves" },
-    heap: { vi: "Heap view: parent lớn hơn con, max ra cuối", en: "Heap view: parent dominates children, max moves to tail" },
-    radix: { vi: "Radix buckets: đưa giá trị theo chữ số hiện tại", en: "Radix buckets: route values by current digit" },
-    bucket: { vi: "Bucket ranges: phân phối, sort từng bucket, nối lại", en: "Bucket ranges: distribute, sort each bucket, concatenate" },
-    shell: { vi: "Shell gaps: insertion sort theo khoảng cách", en: "Shell gaps: gapped insertion sort" },
-    bitonic: { vi: "Bitonic network: compare-swap theo gap và hướng", en: "Bitonic network: compare-swap by gap and direction" },
-    odd_even: { vi: "Odd-Even: xen kẽ pass cặp lẻ rồi cặp chẵn", en: "Odd-Even: alternate odd-pair and even-pair passes" },
-    cocktail: { vi: "Cocktail shaker: bubble theo hai chiều", en: "Cocktail shaker: bubble both directions" },
-    comb: { vi: "Comb gap: thu nhỏ so sánh khoảng cách xa", en: "Comb gap: shrink long-distance comparisons" },
-    gnome: { vi: "Gnome walk: lùi lại khi sai thứ tự cục bộ", en: "Gnome walk: step back when local order breaks" },
-    tim: { vi: "TimSort runs: sort run nhỏ rồi merge", en: "TimSort runs: insertion-sorted runs then merges" },
-    intro: { vi: "IntroSort hybrid: quick, insertion, heap fallback", en: "IntroSort hybrid: quick, insertion, heap fallback" },
-  };
-  return titles[id]?.[lang] ?? (lang === "vi" ? "Góc nhìn sorting" : "Sorting lens");
 }
 
 function label(lang: Lang, vi: string, en: string) {

@@ -44,6 +44,14 @@ export const LONG_CONTENT_GUIDES: Record<string, LongContentGuide> = {
     watch: sharedSortWatch,
     takeaway: t("Ít swap hơn Bubble Sort, nhưng vẫn phải quét O(n²).", "It uses fewer swaps than Bubble Sort, but still scans in O(n²)."),
   },
+  cycle: {
+    hook: t("Cycle Sort cố gắng ghi mỗi giá trị vào đúng vị trí cuối cùng với số lần write rất ít.", "Cycle Sort tries to write each value directly into its final slot with very few writes."),
+    useCase: t("Hợp để dạy bài toán khi thao tác ghi tốn kém, ví dụ bộ nhớ flash hoặc EEPROM.", "Useful for teaching cases where writes are expensive, such as flash memory or EEPROM."),
+    mentalModel: t("Với một item, đếm có bao nhiêu giá trị nhỏ hơn nó để biết vị trí đúng, ghi vào đó, rồi tiếp tục mang giá trị bị đẩy ra đi tìm chỗ mới.", "For an item, count how many values are smaller to find its final position, write it there, then carry the displaced value to its own slot."),
+    steps: t(["Chọn cycleStart và giữ item đang mang.", "Đếm các phần tử nhỏ hơn item để tìm pos đích.", "Ghi item vào pos, mang phần tử bị đẩy ra và lặp lại cho đến khi quay về cycleStart."], ["Pick cycleStart and carry its item.", "Count values smaller than the item to find the target position.", "Write the item into that position, carry the displaced value, and repeat until the cycle returns to cycleStart."]),
+    watch: t(["Badge item là giá trị đang được mang ngoài mảng.", "Mũi tên cho thấy item sẽ được ghi vào pos nào.", "Các duplicate được bỏ qua để tránh ghi đè sai slot."], ["The item badge is the value being carried outside the array.", "The arrow shows which position the item will be written into.", "Duplicates are skipped to avoid overwriting the wrong slot."]),
+    takeaway: t("Thời gian vẫn O(n²), nhưng số lần ghi gần tối thiểu; đây là điểm khác biệt lớn so với các sort cơ bản khác.", "Time is still O(n²), but writes are near-minimal; that is the key difference from other basic sorts."),
+  },
   bitonic: {
     hook: t("Bitonic Sort sắp xếp bằng mạng compare-swap có cấu trúc rất đều.", "Bitonic Sort orders values through a highly structured compare-swap network."),
     useCase: t("Rất hợp để dạy sorting network, xử lý song song và GPU-style sorting.", "Great for teaching sorting networks, parallel processing, and GPU-style sorting."),
@@ -91,6 +99,14 @@ export const LONG_CONTENT_GUIDES: Record<string, LongContentGuide> = {
     steps: t(["Tạo bảng đếm theo từng giá trị.", "Quét mảng để tăng số lượng tương ứng.", "Ghi lại output bằng cách trải các giá trị theo số lần đã đếm."], ["Create a count table for each value.", "Scan the array and increment the matching count.", "Write the output by expanding each value according to its count."]),
     watch: t(["Bảng đếm cho thấy tần suất từng giá trị.", "Vùng output được ghi lại từ nhỏ đến lớn."], ["The count table shows how often each value appears.", "The output region is rebuilt from small to large values."]),
     takeaway: t("Có thể gần O(n + k), nhưng chỉ hợp khi miền giá trị k không quá lớn.", "It can be close to O(n + k), but only when the value range k is not too large."),
+  },
+  pigeonhole: {
+    hook: t("Pigeonhole Sort tạo một lỗ cho từng giá trị trong khoảng min..max rồi thả phần tử vào đúng lỗ.", "Pigeonhole Sort creates one hole for every value in min..max, then drops each item into its matching hole."),
+    useCase: t("Hợp khi dữ liệu là số nguyên và khoảng giá trị nhỏ so với số phần tử.", "Useful when data is integer-based and the value range is small compared with the number of items."),
+    mentalModel: t("Giá trị value đi vào hole value - min; sau đó đọc các hole từ trái sang phải để thu được mảng tăng dần.", "A value goes into hole value - min; reading holes from left to right produces ascending order."),
+    steps: t(["Tìm min và max để biết số hole cần tạo.", "Duyệt mảng, đưa từng giá trị vào hole tương ứng.", "Đọc các hole từ nhỏ đến lớn và ghi lại output."], ["Find min and max to know how many holes are needed.", "Scan the array and place each value into its matching hole.", "Read holes from low to high and write the output back."]),
+    watch: t(["Biểu đồ dưới là các hole theo giá trị liên tiếp.", "Số trong badge cho biết mỗi hole đang chứa bao nhiêu phần tử.", "Nếu range quá rộng, số hole tăng nhanh và thuật toán mất lợi thế."], ["The lower chart shows consecutive value holes.", "The badge shows how many items each hole contains.", "If the range is too wide, hole count grows quickly and the algorithm loses its advantage."]),
+    takeaway: t("Nhanh O(n + k) khi k nhỏ, nhưng tốn bộ nhớ O(n + k) và không phù hợp với miền giá trị lớn.", "Fast at O(n + k) when k is small, but it needs O(n + k) memory and does not fit large value ranges."),
   },
   radix: {
     hook: t("Radix Sort sắp xếp số theo từng chữ số, từ hàng đơn vị lên cao hơn.", "Radix Sort sorts numbers digit by digit, from the ones place upward."),
@@ -155,6 +171,14 @@ export const LONG_CONTENT_GUIDES: Record<string, LongContentGuide> = {
     steps: t(["Chạy Quick Sort với giới hạn độ sâu.", "Khi vùng nhỏ, dùng Insertion Sort để giảm overhead.", "Khi đệ quy vượt ngưỡng, chuyển sang Heap Sort."], ["Run Quick Sort with a depth limit.", "Use Insertion Sort for tiny regions to reduce overhead.", "Switch to Heap Sort when recursion exceeds the threshold." ]),
     watch: t(["Pivot vẫn điều khiển quá trình partition.", "Các pha chuyển chiến thuật giúp tránh worst-case của Quick Sort."], ["The pivot still controls partitioning.", "The strategy switch helps avoid Quick Sort's worst case." ]),
     takeaway: t("Kết hợp tốc độ trung bình tốt của Quick Sort với worst-case O(n log n).", "Combines Quick Sort's good average speed with O(n log n) worst-case protection."),
+  },
+  tree_sort: {
+    hook: t("Tree Sort đưa từng giá trị vào cây tìm kiếm nhị phân rồi đọc inorder để ra thứ tự tăng dần.", "Tree Sort inserts values into a binary search tree, then reads inorder to produce sorted order."),
+    useCase: t("Hợp để dạy mối liên hệ giữa BST và sắp xếp, nhất là khi muốn thấy dữ liệu chuyển thành cấu trúc cây.", "Useful for teaching the relationship between BSTs and sorting, especially when data becomes a tree structure."),
+    mentalModel: t("Mỗi giá trị nhỏ hơn đi trái, lớn hơn hoặc bằng đi phải; inorder luôn thăm trái, node, phải nên tạo ra thứ tự tăng.", "Smaller values go left, larger or equal values go right; inorder visits left, node, right, so it yields ascending order."),
+    steps: t(["Chèn từng phần tử vào BST.", "So sánh tại mỗi node để đi trái hoặc phải.", "Duyệt inorder và ghi lại mảng theo thứ tự tăng dần."], ["Insert each value into the BST.", "Compare at each node to move left or right.", "Run inorder traversal and write values back in ascending order."]),
+    watch: t(["Pha insert cho thấy giá trị đang đi qua các node.", "Pha write cho thấy inorder traversal lấp dần mảng output."], ["The insert phase shows each value moving through tree nodes.", "The write phase shows inorder traversal filling the output array."]),
+    takeaway: t("Average O(n log n), nhưng nếu cây lệch nặng thì worst-case O(n²); cây cân bằng sẽ tốt hơn.", "Average time is O(n log n), but a badly skewed tree degrades to O(n²); balanced trees improve it."),
   },
   linear: {
     hook: t("Linear Search đi từng phần tử cho đến khi tìm thấy mục tiêu.", "Linear Search checks one value at a time until it finds the target."),

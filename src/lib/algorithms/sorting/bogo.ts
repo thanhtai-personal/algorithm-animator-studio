@@ -23,8 +23,10 @@ function isSorted(arr) {
       kind: "bogo",
       phase: "start",
       attempt: 0,
+      chance: chanceLabel(a.length),
+      strategy: "none",
     };
-    const maxAttempts = Math.max(8, Math.min(48, a.length * 6));
+    const maxAttempts = Math.max(5, Math.min(10, a.length + 3));
     const sortedTarget = [...a].sort((left, right) => left - right);
 
     const emit = (
@@ -43,16 +45,31 @@ function isSorted(arr) {
       attempt += 1;
       v.attempt = attempt;
       v.phase = attempt === maxAttempts ? "lucky shuffle" : "shuffle";
+      v.strategy = "random reset";
+      v.shuffleStep = 0;
 
       if (attempt === maxAttempts) {
-        for (let i = 0; i < a.length; i++) a[i] = sortedTarget[i];
-        emit(1, allIndexes(a), allIndexes(a), "swap");
+        shuffleIntoTarget(a, sortedTarget, (left, right, step) => {
+          v.shuffleStep = step;
+          v.i = left;
+          v.j = right;
+          emit(1, [left, right], [left, right], "swap");
+        });
       } else {
-        shuffleDeterministic(a, attempt);
-        emit(1, allIndexes(a), allIndexes(a), "swap");
+        shuffleDeterministic(a, attempt, (left, right, step) => {
+          v.shuffleStep = step;
+          v.i = left;
+          v.j = right;
+          emit(1, [left, right], [left, right], "swap");
+        });
+      }
+
+      if (Number(v.shuffleStep) === 0) {
+        emit(1, allIndexes(a), [], null);
       }
 
       v.phase = "check sorted";
+      v.strategy = "scan only";
       let sortedThisAttempt = true;
       for (let i = 0; i < a.length - 1; i++) {
         v.i = i;
@@ -60,7 +77,8 @@ function isSorted(arr) {
         emit(6, [i, i + 1], [], "compare");
         if (a[i] > a[i + 1]) {
           sortedThisAttempt = false;
-          v.phase = "not sorted";
+          v.phase = "failed check";
+          v.strategy = "throw away order";
           emit(7, [i, i + 1], [], null);
           break;
         }
@@ -70,7 +88,8 @@ function isSorted(arr) {
     }
 
     for (let i = 0; i < a.length; i++) sorted.add(i);
-    v.phase = "done";
+    v.phase = "done by chance";
+    v.strategy = "luck won";
     v.attempt = attempt;
     emit(10);
     return frames;
@@ -84,15 +103,39 @@ function isSorted(values: number[]) {
   return true;
 }
 
-function shuffleDeterministic(values: number[], seed: number) {
+function shuffleDeterministic(values: number[], seed: number, onSwap: (left: number, right: number, step: number) => void) {
   let state = seed * 1103515245 + 12345;
+  let step = 0;
   for (let i = values.length - 1; i > 0; i--) {
     state = (state * 1103515245 + 12345) >>> 0;
     const j = state % (i + 1);
+    if (i === j) continue;
     [values[i], values[j]] = [values[j], values[i]];
+    step += 1;
+    onSwap(i, j, step);
+  }
+}
+
+function shuffleIntoTarget(values: number[], target: number[], onSwap: (left: number, right: number, step: number) => void) {
+  let step = 0;
+  for (let i = 0; i < values.length; i++) {
+    if (values[i] === target[i]) continue;
+    const j = values.findIndex((value, index) => index > i && value === target[i]);
+    if (j < 0) continue;
+    [values[i], values[j]] = [values[j], values[i]];
+    step += 1;
+    onSwap(i, j, step);
   }
 }
 
 function allIndexes(values: number[]) {
   return Array.from({ length: values.length }, (_, index) => index);
+}
+
+function chanceLabel(length: number) {
+  const n = Math.max(1, length);
+  if (n > 7) return `1/${n}!`;
+  let factorial = 1;
+  for (let i = 2; i <= n; i++) factorial *= i;
+  return `1/${factorial}`;
 }

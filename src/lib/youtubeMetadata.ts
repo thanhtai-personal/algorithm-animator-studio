@@ -15,7 +15,7 @@ const EXTRA_TAGS: Record<string, string[]> = {
   odd_even: ["odd even sort", "parallel sorting", "sorting network"],
   pancake: ["pancake sort", "prefix reversal", "flip sorting"],
   bitonic: ["bitonic sort", "sorting network", "parallel sorting"],
-  bogo: ["bogo sort", "stupid sort", "random shuffle", "worst sorting algorithm"],
+  bogo: ["bogo sort", "stupid sort", "random shuffle", "worst sorting algorithm", "shuffle and check", "algorithm parody"],
   cycle: ["cycle sort", "minimum writes", "in place sorting"],
   selection: ["selection sort", "minimum selection", "sorting algorithm"],
   insertion: ["insertion sort", "nearly sorted data", "stable sort"],

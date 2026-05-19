@@ -5,7 +5,6 @@ import { drawBitonicLens } from "./bitonicRenderer";
 import { drawBogoSortLens } from "./bogoSortRenderer";
 import { drawBucketContents } from "./bucketContentsRenderer";
 import { drawCycleSortLens } from "./cycleSortRenderer";
-import { roundRect } from "./shapes";
 import { drawSmoothSortLens } from "./smoothSortRenderer";
 import { titleForSortEssence } from "./sortEssenceTitles";
 import { drawStoogeSortLens } from "./stoogeSortRenderer";
@@ -69,6 +68,9 @@ function panelHeightFor(algorithmId: string, chartH: number, panelGap: number) {
   const maxPanelH = Math.max(92, chartH - 120 - panelGap);
   if (algorithmId === "tree_sort" || algorithmId === "tournament" || algorithmId === "smooth" || algorithmId === "stooge") {
     return Math.min(maxPanelH, Math.max(150, Math.min(chartH * 0.48, 300)));
+  }
+  if (algorithmId === "bogo") {
+    return Math.min(maxPanelH, Math.max(180, Math.min(chartH * 0.34, 240)));
   }
   return Math.min(maxPanelH, Math.min(Math.max(92, chartH * 0.24), 170));
 }

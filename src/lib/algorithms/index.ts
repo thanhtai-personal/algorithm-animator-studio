@@ -24,6 +24,7 @@ import { radixSort } from "./sorting/radix";
 import { selectionSort } from "./sorting/selection";
 import { shellSort } from "./sorting/shell";
 import { smoothSort } from "./sorting/smooth";
+import { stoogeSort } from "./sorting/stooge";
 import { strandSort } from "./sorting/strand";
 import { timSort } from "./sorting/tim";
 import { tournamentSort } from "./sorting/tournament";
@@ -80,6 +81,7 @@ export const ALGORITHMS: Record<string, AlgoDef> = {
   strand: strandSort,
   tournament: tournamentSort,
   smooth: smoothSort,
+  stooge: stoogeSort,
   custom: customAlgo,
 };
 
@@ -90,7 +92,7 @@ export const ALGO_GROUPS: { label: { en: string; vi: string }; ids: string[] }[]
     label: { en: "Sorting", vi: "Sắp xếp" },
     ids: [
       "bubble", "odd_even", "pancake", "bitonic", "selection", "insertion", "quick", "merge", "heap",
-      "counting", "radix", "bucket", "shell", "cocktail", "comb", "gnome", "tim", "intro", "tree_sort", "cycle", "pigeonhole", "strand", "tournament", "smooth",
+      "counting", "radix", "bucket", "shell", "cocktail", "comb", "gnome", "tim", "intro", "tree_sort", "cycle", "pigeonhole", "strand", "tournament", "smooth", "stooge",
     ],
   },
   { label: { en: "Searching", vi: "Tìm kiếm" }, ids: ["linear", "binary"] },

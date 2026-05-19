@@ -30,6 +30,7 @@ describe("example", () => {
     ["strand", [4, 2, 5, 1, 3, 6], [1, 2, 3, 4, 5, 6], "O(n²)"],
     ["tournament", [9, 3, 7, 1, 8, 2], [1, 2, 3, 7, 8, 9], "O(n²)"],
     ["smooth", [8, 12, 16, 20, 24, 18, 22, 26, 30, 34], [8, 12, 16, 18, 20, 22, 24, 26, 30, 34], "O(n log n)"],
+    ["stooge", [5, 3, 4, 1, 2, 0], [0, 1, 2, 3, 4, 5], "O(n^2.7095)"],
     ["tree_sort", [7, 3, 9, 1, 5, 3, 8], [1, 3, 3, 5, 7, 8, 9], "O(n log n)"],
   ])("runs %s sort to a sorted final frame", (id, input, expected, time) => {
     const frames = ALGORITHMS[id].run(input);

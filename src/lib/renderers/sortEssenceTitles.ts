@@ -13,6 +13,7 @@ const TITLES: Record<string, { vi: string; en: string }> = {
   strand: { vi: "Strand Sort: kéo dãy con tăng rồi merge vào output", en: "Strand Sort: extract increasing strands, then merge output" },
   tournament: { vi: "Tournament Sort: cây đấu loại chọn min mỗi lượt", en: "Tournament Sort: knockout tree selects each minimum" },
   smooth: { vi: "Smooth Sort: forest heap Leonardo, sift và trinkle", en: "Smooth Sort: Leonardo heap forest, sift and trinkle" },
+  stooge: { vi: "Stooge Sort: đệ quy 2/3 trái, 2/3 phải, trái lại", en: "Stooge Sort: recurse left 2/3, right 2/3, left again" },
   bucket: { vi: "Bucket ranges: phân phối, sort từng bucket, nối lại", en: "Bucket ranges: distribute, sort each bucket, concatenate" },
   shell: { vi: "Shell gaps: insertion sort theo khoảng cách", en: "Shell gaps: gapped insertion sort" },
   bitonic: { vi: "Bitonic network: compare-swap theo gap và hướng", en: "Bitonic network: compare-swap by gap and direction" },

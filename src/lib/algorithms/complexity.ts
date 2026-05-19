@@ -16,6 +16,7 @@ export const COMPLEXITY: Record<string, Complexity> = {
   strand: { time: "O(n²)", best: "O(n)", worst: "O(n²)", space: "O(n)" },
   tournament: { time: "O(n²)", best: "O(n²)", worst: "O(n²)", space: "O(n)" },
   smooth: { time: "O(n log n)", best: "O(n)", worst: "O(n log n)", space: "O(1)" },
+  stooge: { time: "O(n^2.7095)", best: "O(n^2.7095)", worst: "O(n^2.7095)", space: "O(log n)" },
   radix: { time: "O(d(n + b))", best: "O(d(n + b))", worst: "O(d(n + b))", space: "O(n + b)" },
   bucket: { time: "O(n + k)", best: "O(n + k)", worst: "O(n²)", space: "O(n + k)" },
   shell: { time: "O(n log² n)", best: "O(n log n)", worst: "O(n²)", space: "O(1)" },

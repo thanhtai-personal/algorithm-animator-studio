@@ -7,6 +7,7 @@ import { drawCycleSortLens } from "./cycleSortRenderer";
 import { roundRect } from "./shapes";
 import { drawSmoothSortLens } from "./smoothSortRenderer";
 import { titleForSortEssence } from "./sortEssenceTitles";
+import { drawStoogeSortLens } from "./stoogeSortRenderer";
 import type { Theme } from "./theme";
 import { drawTournamentLens } from "./tournamentRenderer";
 import { drawTreeSortLens } from "./treeSortRenderer";
@@ -58,12 +59,13 @@ export function drawSortEssence(
   else if (options.algorithmId === "tree_sort") drawTreeSortLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "tournament") drawTournamentLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "smooth") drawSmoothSortLens(ctx, frame, x, y, w, h, theme);
+  else if (options.algorithmId === "stooge") drawStoogeSortLens(ctx, frame, x, y, w, h, theme);
   else drawPassLens(ctx, frame, x, y, w, h, theme);
 }
 
 function panelHeightFor(algorithmId: string, chartH: number, panelGap: number) {
   const maxPanelH = Math.max(92, chartH - 120 - panelGap);
-  if (algorithmId === "tree_sort" || algorithmId === "tournament" || algorithmId === "smooth") {
+  if (algorithmId === "tree_sort" || algorithmId === "tournament" || algorithmId === "smooth" || algorithmId === "stooge") {
     return Math.min(maxPanelH, Math.max(150, Math.min(chartH * 0.48, 300)));
   }
   return Math.min(maxPanelH, Math.min(Math.max(92, chartH * 0.24), 170));

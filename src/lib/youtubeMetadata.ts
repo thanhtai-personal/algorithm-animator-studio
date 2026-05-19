@@ -26,6 +26,7 @@ const EXTRA_TAGS: Record<string, string[]> = {
   strand: ["strand sort", "merge sorting", "adaptive sorting"],
   tournament: ["tournament sort", "selection tree", "knockout sorting"],
   smooth: ["smooth sort", "leonardo heap", "adaptive sorting"],
+  stooge: ["stooge sort", "recursive sorting", "inefficient sorting"],
   radix: ["radix sort", "digit sorting", "bucket sorting"],
   bucket: ["bucket sort", "distribution sort", "data distribution"],
   shell: ["shell sort", "gap sequence", "insertion sort"],

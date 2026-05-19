@@ -30,6 +30,7 @@ Source of truth: `src/lib/algorithms/index.ts`.
 | `strand` | Strand Sort |
 | `tournament` | Tournament Sort |
 | `smooth` | Smooth Sort |
+| `stooge` | Stooge Sort |
 
 ## Searching
 
@@ -60,7 +61,6 @@ These algorithms are not in Short Studio yet. `Priority` marks good first candid
 
 | ID | Algorithm | Priority |
 | --- | --- | --- |
-| `stooge` | Stooge Sort | Later |
 | `bogo` | Bogo Sort | Short first |
 | `flash` | Flash Sort | Later |
 

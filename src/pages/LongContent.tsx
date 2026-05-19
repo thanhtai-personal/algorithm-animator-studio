@@ -10,6 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { YoutubeMetadataPreview } from "@/components/YoutubeMetadataPreview";
 import { AuthProfile, getCurrentProfile, isSuperAdminProfile } from "@/lib/auth";
+import { LONG_VIDEO_TYPES, type LongVideoType } from "@/lib/longVideoTypes";
 import { THEMES } from "@/lib/renderer";
 import { EXPORT_FORMATS, ExportFormat } from "./studio/exportFormats";
 import { MusicPanel } from "./long-content/MusicPanel";
@@ -87,6 +88,8 @@ function LeftControls({ studio: s, onExport }: { studio: LongContentStudio; onEx
           {COMPLEXITY[s.algoId] ? <ComplexityBadges algoId={s.algoId} /> : null}
         </div>
 
+        <VideoTypeSelect studio={s} />
+
         <div className="grid grid-cols-2 gap-3">
           <NumberSlider label="Intro" value={s.introSeconds} min={3} max={10} suffix="s" onChange={s.setIntroSeconds} />
           <NumberSlider label="Animation" value={s.animationSeconds} min={12} max={90} suffix="s" onChange={s.setAnimationSeconds} />
@@ -151,6 +154,24 @@ function VisualExportPanel({ studio: s, onExport }: { studio: LongContentStudio;
   );
 }
 
+function VideoTypeSelect({ studio: s }: { studio: LongContentStudio }) {
+  const selected = LONG_VIDEO_TYPES.find((type) => type.id === s.longVideoType);
+  return (
+    <div>
+      <Label>Type video</Label>
+      <Select value={s.longVideoType} onValueChange={(value) => s.setLongVideoType(value as LongVideoType)}>
+        <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {LONG_VIDEO_TYPES.map((type) => (
+            <SelectItem key={type.id} value={type.id}>{type.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <p className="mt-2 text-xs text-muted-foreground">{selected?.description}</p>
+    </div>
+  );
+}
+
 function CollapsibleSection(props: { title: string; icon?: ReactNode; children: ReactNode }) {
   const [open, setOpen] = useState(true);
   const Icon = open ? ChevronDown : ChevronRight;
@@ -193,7 +214,7 @@ function PreviewPanel({ studio: s }: { studio: LongContentStudio }) {
         <Slider value={[s.elapsedSec]} min={0} max={s.totalDuration} step={0.1} onValueChange={([value]) => { s.setPlaying(false); s.setElapsedSec(value); }} />
         <div className="flex justify-between gap-3 text-xs text-muted-foreground">
           <span>{s.timelineState.scene.title}</span>
-          <span>{s.lang.toUpperCase()} · Voice {s.voiceProvider} · Frame {s.frameIdx + 1}/{s.frames.length} · {Math.round(s.totalDuration)}s</span>
+          <span>{s.lang.toUpperCase()} · {LONG_VIDEO_TYPES.find((type) => type.id === s.longVideoType)?.label} · Voice {s.narrationEnabled ? s.voiceProvider : "off"} · Frame {s.frameIdx + 1}/{s.frames.length} · {Math.round(s.totalDuration)}s</span>
         </div>
       </Card>
     </div>
@@ -220,8 +241,11 @@ function NarrationControls({ studio: s }: { studio: LongContentStudio }) {
   return (
     <CollapsibleSection title="Voice-over kịch bản" icon={<Volume2 className="h-4 w-4 text-emerald-400" />}>
       <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
-        <Label>Bật voice khi preview/export</Label>
-        <Switch checked={s.narrationEnabled} onCheckedChange={s.setNarrationEnabled} />
+        <div>
+          <Label>Bật voice khi preview/export</Label>
+          {s.longVideoType === "classic" ? <p className="mt-1 text-xs text-muted-foreground">Classic lecture luôn cần voice để giữ nhịp thuyết trình.</p> : null}
+        </div>
+        <Switch checked={s.narrationEnabled} onCheckedChange={s.setNarrationEnabled} disabled={s.longVideoType === "classic"} />
       </div>
       <div>
         <Label>Nguồn giọng đọc</Label>
@@ -295,7 +319,7 @@ function NarrationControls({ studio: s }: { studio: LongContentStudio }) {
       </Button>
       {s.voiceUrl ? <audio className="w-full" controls src={s.voiceUrl} /> : null}
       <p className="text-xs text-muted-foreground">
-        Browser TTS chỉ dùng để nghe thử trong preview vì trình duyệt không cung cấp audio stream ổn định cho export. Muốn video có voice, hãy chọn Piper hoặc ElevenLabs; app sẽ tự tạo lại voice nếu kịch bản đổi.
+        Có thể tắt voice hoàn toàn bằng switch phía trên. Browser TTS chỉ dùng để nghe thử trong preview vì trình duyệt không cung cấp audio stream ổn định cho export. Muốn video export có voice, hãy chọn Piper hoặc ElevenLabs; app sẽ tự tạo lại voice nếu kịch bản đổi.
         {s.voiceFileName ? ` File hiện tại: ${s.voiceFileName}` : ""}
       </p>
     </CollapsibleSection>

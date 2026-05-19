@@ -7,6 +7,7 @@ import { audioEngine } from "@/lib/audio";
 import { isProceduralMusicPreset } from "@/lib/backgroundMusic";
 import { type Lang, readSystemLang, subscribeSystemLang } from "@/lib/i18n";
 import { buildLongContentScenes, getSceneAtTime, getTotalDuration } from "@/lib/longContentTimeline";
+import type { LongVideoType } from "@/lib/longVideoTypes";
 import { THEMES } from "@/lib/renderer";
 import { generateElevenLabsVoice, generatePiperVoice, getElevenLabsConfig, getPiperModels, getPiperRuntimeStatus, getVoiceHealth, installPiperModel, type ElevenLabsConfig, type PiperModel, type PiperRuntimeStatus, type VoiceGenerateResult, type VoiceHealth } from "@/lib/voiceApi";
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
@@ -25,6 +26,7 @@ export function useLongContentStudio() {
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
   const [algoId, setAlgoId] = useState(DEFAULT_ALGORITHM_ID);
   const [themeName, setThemeName] = useState<keyof typeof THEMES>("neon");
+  const [longVideoType, setLongVideoType] = useState<LongVideoType>("classic");
   const [showCode, setShowCode] = useState(true);
   const [columnVisualMode, setColumnVisualMode] = useState<ColumnVisualMode>("bar");
   const [animalSpriteScale, setAnimalSpriteScale] = useState(1);
@@ -94,6 +96,9 @@ export function useLongContentStudio() {
   useEffect(() => { audioEngine.setMusicVolume(musicVol / 100); }, [musicVol]);
   useEffect(() => { audioEngine.setVoiceVolume(narrationVol / 100); }, [narrationVol]);
   useEffect(() => { audioEngine.setVoiceSource(voiceUrl || null); }, [voiceUrl]);
+  useEffect(() => {
+    if (longVideoType === "classic" && !narrationEnabled) setNarrationEnabled(true);
+  }, [longVideoType, narrationEnabled]);
   useEffect(() => {
     if (!piperModels.length) return;
     const current = piperModels.find((model) => model.key === piperModelKey);
@@ -269,6 +274,7 @@ export function useLongContentStudio() {
       lang,
       theme,
       showCode,
+      longVideoType,
       animalColumns: { mode: columnVisualMode, spriteScale: animalSpriteScale, jumpIntensity: animalJumpIntensity, highlightJump: animalHighlightJump },
     });
   }
@@ -338,7 +344,7 @@ export function useLongContentStudio() {
       setExporting(false);
       drawFrame(elapsedSec);
     }
-    const fileName = `${algo.id}-${lang}-long-16x9-${Date.now()}.${format.id}`;
+    const fileName = `${algo.id}-${longVideoType}-${lang}-long-16x9-${Date.now()}.${format.id}`;
     const file = new File([blob], fileName, { type: mimeType });
     const url = URL.createObjectURL(file);
     setLastExportedVideo(file, url, { youtubeDescriptionAppend: music.selectedLicenseText, youtubeMetadata: buildYoutubeMetadata(algo.id, lang, "long") });
@@ -360,13 +366,7 @@ export function useLongContentStudio() {
     music.setSelectedIds(["custom"]);
   }
   function updateScriptScene(sceneId: string, field: ScriptSceneField, value: string) {
-    setScriptOverrides((current) => ({
-      ...current,
-      [sceneId]: {
-        ...current[sceneId],
-        [field]: value,
-      },
-    }));
+    setScriptOverrides((current) => ({ ...current, [sceneId]: { ...current[sceneId], [field]: value } }));
   }
   function resetScriptScene(sceneId: string) {
     setScriptOverrides((current) => {
@@ -381,7 +381,7 @@ export function useLongContentStudio() {
     });
   }
   return {
-    canvasRef, lang, algoId, setAlgoId, algo, themeName, setThemeName, showCode, setShowCode,
+    canvasRef, lang, algoId, setAlgoId, algo, themeName, setThemeName, longVideoType, setLongVideoType, showCode, setShowCode,
     columnVisualMode, setColumnVisualMode, animalSpriteScale, setAnimalSpriteScale,
     animalJumpIntensity, setAnimalJumpIntensity, animalHighlightJump, setAnimalHighlightJump,
     fps, setFps, animationSeconds, setAnimationSeconds, introSeconds, setIntroSeconds,
@@ -392,8 +392,7 @@ export function useLongContentStudio() {
     voiceProvider, setVoiceProvider, voiceUrl, voiceFileName, voiceDurationSec, voiceLoading, generateVoiceOver,
     voiceHealth, piperRuntime, piperInstalling, installSelectedPiperModel, refreshPiperRuntime,
     piperModels, piperModelKey, setPiperModelKey, elevenConfig, elevenModelId, setElevenModelId,
-    elevenVoiceId, setElevenVoiceId, narrationScript, updateScriptScene, resetScriptScene,
-    resetAllScriptScenes: () => setScriptOverrides({}),
+    elevenVoiceId, setElevenVoiceId, narrationScript, updateScriptScene, resetScriptScene, resetAllScriptScenes: () => setScriptOverrides({}),
     W: LONG_W, H: LONG_H, exportVideo,
   };
 }

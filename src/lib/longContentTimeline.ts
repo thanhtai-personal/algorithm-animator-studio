@@ -1,4 +1,5 @@
 import { AlgoDef, Complexity } from "./algorithms";
+import { buildInsertionSortScenes } from "./insertionLongContentTimeline";
 import type { Lang } from "./i18n";
 import { getLongContentGuide, pickGuideText } from "./longContentData";
 
@@ -39,6 +40,9 @@ export function buildLongContentScenes(params: {
   const { algo, complexity, animationSeconds, introSeconds, lang } = params;
   if (algo.id === "bubble") {
     return buildBubbleSortScenes({ complexity, animationSeconds, introSeconds, lang });
+  }
+  if (algo.id === "insertion") {
+    return buildInsertionSortScenes({ algo, complexity, animationSeconds, introSeconds, lang });
   }
 
   const guide = pickGuideText(getLongContentGuide(algo.id), lang);

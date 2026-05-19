@@ -4,6 +4,7 @@ import type { AnimalColumnSettings } from "@/lib/animalColumns";
 import type { Lang } from "@/lib/i18n";
 import type { LongContentScene } from "@/lib/longContentTimeline";
 import { getSceneAtTime, getTotalDuration } from "@/lib/longContentTimeline";
+import type { LongVideoType } from "@/lib/longVideoTypes";
 import { renderLongContentFrame } from "@/lib/longContentRenderer";
 import type { Theme } from "@/lib/renderer";
 
@@ -87,6 +88,7 @@ export function drawLongContentFrameAtTime(params: {
   theme: Theme;
   showCode: boolean;
   animalColumns: AnimalColumnSettings;
+  longVideoType: LongVideoType;
 }) {
   const ctx = params.canvas?.getContext("2d");
   if (!params.canvas || !ctx || !params.baseFrames.length) return;
@@ -121,6 +123,7 @@ export function drawLongContentFrameAtTime(params: {
     theme: params.theme,
     showCode: params.showCode,
     animalColumns: params.animalColumns,
+    longVideoType: params.longVideoType,
     frameTransitionProgress: frameState.transitionProgress,
     frameLabel: state.scene.animation && frame
       ? `${params.lang === "vi" ? "Dữ liệu" : "Data"} [${frame.arr.join(", ")}] · ${params.lang === "vi" ? "Khung" : "Frame"} ${localFrameIdx + 1}/${localFrames.length} · ${formatTime(safeTime)} / ${formatTime(totalDuration)}`
@@ -151,9 +154,35 @@ function getInterpolatedFrameState(
 }
 
 function getLectureFramePosition(progress: number, frames: Frame[], scene?: LongContentScene, algoId?: string) {
-  if (algoId !== "bubble" || !scene?.animation) return clamp01(progress) * (frames.length - 1);
+  if (!scene?.animation) return clamp01(progress) * (frames.length - 1);
+  if (algoId === "insertion") return getInsertionCuePosition(progress, frames, scene);
+  if (algoId !== "bubble") return clamp01(progress) * (frames.length - 1);
   if (scene.id === "step-by-step") return getBubbleStepByStepCuePosition(progress, frames);
   if (scene.id === "animation") return getBubblePassWeightedPosition(progress, frames, [0.42, 0.28, 0.18, 0.12]);
+  return getWeightedOperationPosition(progress, frames);
+}
+
+function getInsertionCuePosition(progress: number, frames: Frame[], scene: LongContentScene) {
+  if (scene.id === "micro-example") {
+    const cues = [
+      { at: 0, frame: 0 },
+      { at: 0.13, frame: findInsertionFrame(frames, 1, 0, "compare") },
+      { at: 0.24, frame: findInsertionFrame(frames, 1, 0, "swap") },
+      { at: 0.34, frame: findInsertionDoneFrame(frames, 1) },
+      { at: 0.47, frame: findInsertionFrame(frames, 2, 1, "compare") },
+      { at: 0.56, frame: findInsertionFrame(frames, 2, 1, "swap") },
+      { at: 0.64, frame: findInsertionDoneFrame(frames, 2) },
+      { at: 0.76, frame: findInsertionFrame(frames, 4, 3, "compare") },
+      { at: 0.86, frame: findInsertionLastShiftFrame(frames, 4) },
+      { at: 1, frame: findInsertionDoneFrame(frames, 4) },
+    ].filter((cue) => cue.frame >= 0);
+    return getCuePosition(clamp01(progress), cues);
+  }
+
+  if (scene.id === "shift-walkthrough") {
+    return getInsertionRoundWeightedPosition(progress, frames, [0.18, 0.2, 0.12, 0.32, 0.18]);
+  }
+
   return getWeightedOperationPosition(progress, frames);
 }
 
@@ -197,6 +226,64 @@ function findBubbleFrame(frames: Frame[], pass: number, j: number, event: Frame[
 
 function findBubblePassEndFrame(frames: Frame[], pass: number) {
   return frames.findIndex((frame) => frame.vars.i === pass && frame.sorted.length && !frame.event);
+}
+
+function findInsertionFrame(frames: Frame[], i: number, j: number, event: Frame["event"]) {
+  return frames.findIndex((frame) => frame.vars.i === i && frame.vars.j === j && frame.event === event);
+}
+
+function findInsertionDoneFrame(frames: Frame[], i: number) {
+  return frames.findIndex((frame) => frame.vars.i === i && frame.sorted.includes(i) && !frame.event);
+}
+
+function findInsertionLastShiftFrame(frames: Frame[], i: number) {
+  for (let index = frames.length - 1; index >= 0; index--) {
+    if (frames[index].vars.i === i && frames[index].event === "swap") return index;
+  }
+  return -1;
+}
+
+function getInsertionRoundWeightedPosition(progress: number, frames: Frame[], roundWeights: number[]) {
+  const groups = groupInsertionFramesByRound(frames);
+  if (groups.length <= 1) return getWeightedOperationPosition(progress, frames);
+  const totalWeight = groups.reduce((sum, _, index) => sum + (roundWeights[index] ?? 1), 0) || 1;
+  let cursor = 0;
+  const safeProgress = clamp01(progress);
+
+  for (let index = 0; index < groups.length; index++) {
+    const share = (roundWeights[index] ?? 1) / totalWeight;
+    const next = cursor + share;
+    if (safeProgress <= next || index === groups.length - 1) {
+      const localProgress = share > 0 ? clamp01((safeProgress - cursor) / share) : 1;
+      const [start, end] = groups[index];
+      return start + getWeightedOperationLocalPosition(localProgress, frames.slice(start, end + 1));
+    }
+    cursor = next;
+  }
+
+  return frames.length - 1;
+}
+
+function groupInsertionFramesByRound(frames: Frame[]) {
+  const groups: Array<[number, number]> = [];
+  let currentRound: number | null = null;
+  let start = 0;
+  frames.forEach((frame, index) => {
+    const round = typeof frame.vars.i === "number" ? frame.vars.i : currentRound;
+    if (round == null) return;
+    if (currentRound == null) {
+      currentRound = round;
+      start = index;
+      return;
+    }
+    if (round !== currentRound) {
+      groups.push([start, index - 1]);
+      currentRound = round;
+      start = index;
+    }
+  });
+  if (currentRound != null) groups.push([start, frames.length - 1]);
+  return groups;
 }
 
 function getBubblePassWeightedPosition(progress: number, frames: Frame[], passWeights: number[]) {

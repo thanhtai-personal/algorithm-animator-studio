@@ -3,8 +3,10 @@ import type { AnimalColumnSettings } from "./animalColumns";
 import { drawFocusPointer } from "./focusPointerRenderer";
 import type { Lang } from "./i18n";
 import { LongContentScene } from "./longContentTimeline";
+import type { LongVideoType } from "./longVideoTypes";
 import { renderFrame, Theme } from "./renderer";
 import { roundRect, shade } from "./renderers/shapes";
+import { renderStyledLongContentFrame } from "./styledLongContentRenderer";
 
 const W = 1920;
 const H = 1080;
@@ -27,9 +29,15 @@ type RenderLongContentParams = {
   frameLabel: string;
   frameTransitionProgress?: number;
   channelName?: string;
+  longVideoType?: LongVideoType;
 };
 
 export function renderLongContentFrame(ctx: CanvasRenderingContext2D, params: RenderLongContentParams) {
+  if (params.longVideoType && params.longVideoType !== "classic") {
+    renderStyledLongContentFrame(ctx, { ...params, longVideoType: params.longVideoType });
+    return;
+  }
+
   const { theme, scene, sceneProgress, timelineProgress } = params;
   const layout = getSceneLayout(params.scene.animation, params.previousSceneWasAnimation, sceneProgress, params.sceneElapsedSec);
   drawBackground(ctx, theme);

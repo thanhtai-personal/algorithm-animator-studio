@@ -21,6 +21,12 @@ type PrefixFlip = {
   indices: number[];
 };
 
+type ReorderMove = {
+  from: BarShape;
+  to: BarShape;
+  targetIndex: number;
+};
+
 export function drawBars(
   ctx: CanvasRenderingContext2D,
   frame: Frame,
@@ -45,7 +51,8 @@ export function drawBars(
   const progress = easeInOutCubic(clamp01(options.transitionProgress ?? 1));
   const movingPair = getMovingSwapPair(frame, options.previousFrame);
   const prefixFlip = movingPair ? null : getMovingPrefixFlip(frame, options.previousFrame);
-  const moving = new Set(movingPair ?? prefixFlip?.indices ?? []);
+  const reorderMoves = movingPair || prefixFlip ? [] : getMovingReorder(frame, options.previousFrame, padding, barW, gap, min, range, plotH, baseline);
+  const moving = new Set(movingPair ?? prefixFlip?.indices ?? reorderMoves.map((move) => move.targetIndex));
   const shapes: BarShape[] = [];
 
   for (let i = 0; i < arr.length; i++) {
@@ -65,6 +72,8 @@ export function drawBars(
     drawMovingSwap(ctx, shapes, movingPair, frame, theme, progress, chartH);
   } else if (prefixFlip) {
     drawMovingPrefixFlip(ctx, shapes, prefixFlip, frame, theme, progress, chartH);
+  } else if (reorderMoves.length) {
+    drawMovingReorder(ctx, reorderMoves, frame, theme, progress, chartH);
   } else {
     for (const shape of shapes) {
       if (frame.swap.includes(shape.index)) drawSingleBar(ctx, shape, frame, theme, true, 1);
@@ -147,6 +156,31 @@ function drawMovingPrefixFlip(
   }
 }
 
+function drawMovingReorder(
+  ctx: CanvasRenderingContext2D,
+  moves: ReorderMove[],
+  frame: Frame,
+  theme: Theme,
+  progress: number,
+  chartH: number,
+) {
+  const liftBase = Math.sin(progress * Math.PI) * Math.min(52, chartH * 0.13);
+
+  for (const move of moves) {
+    drawReorderTrack(ctx, move.from, move.to, theme.swap, progress);
+  }
+
+  for (const move of moves) {
+    const distance = Math.abs(move.to.x - move.from.x);
+    const lift = liftBase * (0.72 + Math.min(0.55, distance / Math.max(1, chartH) * 0.35));
+    drawSingleBar(ctx, {
+      ...move.to,
+      x: lerp(move.from.x, move.to.x, progress),
+      y: lerp(move.from.y, move.to.y, progress) - lift,
+    }, frame, theme, true, progress);
+  }
+}
+
 function drawSingleBar(
   ctx: CanvasRenderingContext2D,
   shape: BarShape,
@@ -208,6 +242,75 @@ function getMovingPrefixFlip(frame: Frame, previousFrame?: Frame | null): Prefix
   return isReversed ? { from, to, indices } : null;
 }
 
+function getMovingReorder(
+  frame: Frame,
+  previousFrame: Frame | null | undefined,
+  padding: number,
+  barW: number,
+  gap: number,
+  min: number,
+  range: number,
+  plotH: number,
+  baseline: number,
+): ReorderMove[] {
+  if (!previousFrame || !["strand", "tournament"].includes(String(frame.vars.kind)) || frame.arr.length !== previousFrame.arr.length) return [];
+  if (frame.event !== "swap" && frame.event !== "visit") return [];
+  if (!sameMultiset(previousFrame.arr, frame.arr)) return [];
+
+  const used = new Set<number>();
+  const moves: ReorderMove[] = [];
+  for (let targetIndex = 0; targetIndex < frame.arr.length; targetIndex++) {
+    const value = frame.arr[targetIndex];
+    const sourceIndex = findSourceIndex(previousFrame.arr, value, targetIndex, used);
+    if (sourceIndex == null) return [];
+    used.add(sourceIndex);
+    if (sourceIndex === targetIndex) continue;
+    moves.push({
+      from: makeShape(previousFrame.arr[sourceIndex], sourceIndex, padding, barW, gap, min, range, plotH, baseline),
+      to: makeShape(value, targetIndex, padding, barW, gap, min, range, plotH, baseline),
+      targetIndex,
+    });
+  }
+  return moves.slice(0, 18);
+}
+
+function makeShape(
+  value: number,
+  index: number,
+  padding: number,
+  barW: number,
+  gap: number,
+  min: number,
+  range: number,
+  plotH: number,
+  baseline: number,
+): BarShape {
+  const valueY = baseline - ((value - 0) / range) * plotH;
+  const x = padding + index * (barW + gap);
+  return { x, y: Math.min(valueY, baseline), w: barW, h: Math.abs(valueY - baseline), value, index };
+}
+
+function findSourceIndex(values: number[], value: number, targetIndex: number, used: Set<number>) {
+  if (values[targetIndex] === value && !used.has(targetIndex)) return targetIndex;
+  for (let i = 0; i < values.length; i++) {
+    if (values[i] === value && !used.has(i)) return i;
+  }
+  return null;
+}
+
+function sameMultiset(a: number[], b: number[]) {
+  if (a.length !== b.length) return false;
+  const counts = new Map<number, number>();
+  for (const value of a) counts.set(value, (counts.get(value) ?? 0) + 1);
+  for (const value of b) {
+    const next = (counts.get(value) ?? 0) - 1;
+    if (next < 0) return false;
+    if (next === 0) counts.delete(value);
+    else counts.set(value, next);
+  }
+  return counts.size === 0;
+}
+
 function drawSwapTrack(ctx: CanvasRenderingContext2D, a: BarShape, b: BarShape, color: string, progress: number) {
   const ax = a.x + a.w / 2;
   const bx = b.x + b.w / 2;
@@ -220,6 +323,23 @@ function drawSwapTrack(ctx: CanvasRenderingContext2D, a: BarShape, b: BarShape, 
   ctx.beginPath();
   ctx.moveTo(ax, y);
   ctx.quadraticCurveTo((ax + bx) / 2, y - Math.abs(bx - ax) * 0.18, bx, y);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawReorderTrack(ctx: CanvasRenderingContext2D, from: BarShape, to: BarShape, color: string, progress: number) {
+  const ax = from.x + from.w / 2;
+  const bx = to.x + to.w / 2;
+  if (Math.abs(ax - bx) < 1) return;
+  const y = Math.min(from.y, to.y) - 24;
+  ctx.save();
+  ctx.globalAlpha = 0.16 + 0.22 * Math.sin(progress * Math.PI);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 10]);
+  ctx.beginPath();
+  ctx.moveTo(ax, y);
+  ctx.quadraticCurveTo((ax + bx) / 2, y - Math.abs(bx - ax) * 0.12 - 12, bx, y);
   ctx.stroke();
   ctx.restore();
 }

@@ -386,6 +386,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
 export type AlgorithmStudio = ReturnType<typeof useAlgorithmStudio>;
 
 function shouldAnimateSwap(frame: Frame, previousFrame: Frame | null) {
+  if ((frame.vars.kind === "strand" || frame.vars.kind === "tournament") && previousFrame && frame.event === "swap") return true;
   if (!previousFrame || frame.event !== "swap" || frame.swap.length !== 2) return false;
   const [a, b] = frame.swap;
   return previousFrame.arr.length === frame.arr.length

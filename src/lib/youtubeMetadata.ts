@@ -24,6 +24,7 @@ const EXTRA_TAGS: Record<string, string[]> = {
   counting: ["counting sort", "non comparison sort", "integer sorting"],
   pigeonhole: ["pigeonhole sort", "integer sorting", "range based sorting"],
   strand: ["strand sort", "merge sorting", "adaptive sorting"],
+  tournament: ["tournament sort", "selection tree", "knockout sorting"],
   radix: ["radix sort", "digit sorting", "bucket sorting"],
   bucket: ["bucket sort", "distribution sort", "data distribution"],
   shell: ["shell sort", "gap sequence", "insertion sort"],

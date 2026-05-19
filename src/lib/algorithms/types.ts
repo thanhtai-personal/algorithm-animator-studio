@@ -46,6 +46,20 @@ export type TreeSortState = {
   phase?: "insert" | "write" | "done";
 };
 
+export type TournamentNode = {
+  id: number;
+  value: number;
+  sourceIndex: number;
+};
+
+export type TournamentState = {
+  rounds: TournamentNode[][];
+  activeIds?: number[];
+  winnerId?: number;
+  output: number[];
+  phase?: "build" | "compare" | "promote" | "extract" | "done";
+};
+
 export type Frame = {
   arr: number[];
   highlight: number[];
@@ -61,6 +75,7 @@ export type Frame = {
   counting?: CountingState;
   buckets?: BucketState;
   treeSort?: TreeSortState;
+  tournament?: TournamentState;
   event?: "compare" | "swap" | "found" | "visit" | null;
 };
 

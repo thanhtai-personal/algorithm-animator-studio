@@ -2,10 +2,12 @@ import type { Frame } from "../algorithms";
 import type { Lang } from "../i18n";
 import { drawBars } from "./barRenderer";
 import { drawBitonicLens } from "./bitonicRenderer";
+import { drawBucketContents } from "./bucketContentsRenderer";
 import { drawCycleSortLens } from "./cycleSortRenderer";
 import { roundRect } from "./shapes";
 import { titleForSortEssence } from "./sortEssenceTitles";
 import type { Theme } from "./theme";
+import { drawTournamentLens } from "./tournamentRenderer";
 import { drawTreeSortLens } from "./treeSortRenderer";
 
 type Options = {
@@ -43,7 +45,7 @@ export function drawSortEssence(
   else if (options.algorithmId === "quick" || options.algorithmId === "intro") drawPartitionLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "merge" || options.algorithmId === "tim") drawMergeLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "radix") drawRadixLens(ctx, frame, x, y, w, h, theme);
-  else if (options.algorithmId === "bucket" || options.algorithmId === "strand") drawBucketLens(ctx, frame, x, y, w, h, theme);
+  else if (options.algorithmId === "bucket" || options.algorithmId === "strand") drawBucketLens(ctx, frame, x, y, w, h, theme, options);
   else if (options.algorithmId === "bitonic") drawBitonicLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "shell" || options.algorithmId === "comb") drawGapLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "odd_even") drawOddEvenLens(ctx, frame, x, y, w, h, theme, options.lang ?? "en");
@@ -53,12 +55,13 @@ export function drawSortEssence(
   else if (options.algorithmId === "selection") drawSelectionLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "insertion") drawInsertionLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "tree_sort") drawTreeSortLens(ctx, frame, x, y, w, h, theme);
+  else if (options.algorithmId === "tournament") drawTournamentLens(ctx, frame, x, y, w, h, theme);
   else drawPassLens(ctx, frame, x, y, w, h, theme);
 }
 
 function panelHeightFor(algorithmId: string, chartH: number, panelGap: number) {
   const maxPanelH = Math.max(92, chartH - 120 - panelGap);
-  if (algorithmId === "tree_sort") {
+  if (algorithmId === "tree_sort" || algorithmId === "tournament") {
     return Math.min(maxPanelH, Math.max(150, Math.min(chartH * 0.48, 300)));
   }
   return Math.min(maxPanelH, Math.min(Math.max(92, chartH * 0.24), 170));
@@ -143,9 +146,23 @@ function drawRadixLens(ctx: CanvasRenderingContext2D, frame: Frame, x: number, y
   drawSmallText(ctx, `exp=${frame.vars.exp ?? "-"}  digit=${frame.vars.digit ?? "-"}  phase=${frame.vars.phase ?? "-"}`, x + 4, y + 12, theme.highlight, "left");
 }
 
-function drawBucketLens(ctx: CanvasRenderingContext2D, frame: Frame, x: number, y: number, w: number, h: number, theme: Theme) {
+function drawBucketLens(ctx: CanvasRenderingContext2D, frame: Frame, x: number, y: number, w: number, h: number, theme: Theme, options: Options) {
   const count = Math.max(1, Number(frame.vars.bucketCount ?? 1));
-  if (frame.buckets) drawBucketContents(ctx, frame.buckets.labels, frame.buckets.buckets, x, y + 18, w, h - 24, theme, numberVar(frame, "bucketIndex"));
+  if (frame.buckets) {
+    drawBucketContents(
+      ctx,
+      frame.buckets.labels,
+      frame.buckets.buckets,
+      x,
+      y + 18,
+      w,
+      h - 24,
+      theme,
+      numberVar(frame, "bucketIndex") ?? frame.buckets.activeBucket,
+      options.previousFrame?.buckets?.buckets,
+      options.transitionProgress ?? 1,
+    );
+  }
   else drawBuckets(ctx, count, x, y + 18, w, h - 24, theme, numberVar(frame, "bucketIndex"), (i) => `B${i}`);
   if (frame.vars.kind === "strand") {
     drawSmallText(ctx, `phase=${frame.vars.phase ?? "-"}  last=${frame.vars.strandLast ?? "-"}  output=${frame.vars.outputSize ?? "-"}`, x + 4, y + 12, theme.highlight, "left");
@@ -299,26 +316,6 @@ function drawBuckets(ctx: CanvasRenderingContext2D, count: number, x: number, y:
     ctx.lineWidth = on ? 3 : 1.5;
     roundRect(ctx, bx, y, bw, h, 10); ctx.fill(); ctx.stroke();
     drawSmallText(ctx, label(i), bx + bw / 2, y + h / 2, on ? theme.highlight : "#cbd5e1", "center");
-  }
-}
-
-function drawBucketContents(ctx: CanvasRenderingContext2D, labels: string[], buckets: number[][], x: number, y: number, w: number, h: number, theme: Theme, active?: number) {
-  const count = Math.max(1, labels.length);
-  const gap = Math.max(4, Math.min(10, w / count * 0.1));
-  const bw = (w - gap * (count - 1)) / count;
-  for (let i = 0; i < count; i++) {
-    const bx = x + i * (bw + gap);
-    const on = active === i;
-    ctx.fillStyle = on ? "rgba(250,204,21,0.22)" : "rgba(30,41,59,0.74)";
-    ctx.strokeStyle = on ? theme.highlight : "rgba(148,163,184,0.34)";
-    ctx.lineWidth = on ? 3 : 1.5;
-    roundRect(ctx, bx, y, bw, h, 10); ctx.fill(); ctx.stroke();
-    drawSmallText(ctx, labels[i] ?? String(i), bx + bw / 2, y + 14, on ? theme.highlight : "#cbd5e1", "center");
-    const items = buckets[i] ?? [];
-    const maxRows = Math.max(1, Math.floor((h - 30) / 16));
-    items.slice(-maxRows).forEach((value, row) => {
-      drawSmallText(ctx, String(value), bx + bw / 2, y + 34 + row * 16, on ? "#fff" : "#c4b5fd", "center");
-    });
   }
 }
 

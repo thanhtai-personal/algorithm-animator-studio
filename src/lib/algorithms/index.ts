@@ -25,6 +25,7 @@ import { selectionSort } from "./sorting/selection";
 import { shellSort } from "./sorting/shell";
 import { strandSort } from "./sorting/strand";
 import { timSort } from "./sorting/tim";
+import { tournamentSort } from "./sorting/tournament";
 import { treeSort } from "./sorting/treeSort";
 import type { AlgoDef } from "./types";
 
@@ -42,6 +43,8 @@ export type {
   GraphState,
   TreeSortNode,
   TreeSortState,
+  TournamentNode,
+  TournamentState,
 } from "./types";
 
 export const ALGORITHMS: Record<string, AlgoDef> = {
@@ -72,6 +75,7 @@ export const ALGORITHMS: Record<string, AlgoDef> = {
   cycle: cycleSort,
   pigeonhole: pigeonholeSort,
   strand: strandSort,
+  tournament: tournamentSort,
   custom: customAlgo,
 };
 
@@ -82,7 +86,7 @@ export const ALGO_GROUPS: { label: { en: string; vi: string }; ids: string[] }[]
     label: { en: "Sorting", vi: "Sắp xếp" },
     ids: [
       "bubble", "odd_even", "pancake", "bitonic", "selection", "insertion", "quick", "merge", "heap",
-      "counting", "radix", "bucket", "shell", "cocktail", "comb", "gnome", "tim", "intro", "tree_sort", "cycle", "pigeonhole", "strand",
+      "counting", "radix", "bucket", "shell", "cocktail", "comb", "gnome", "tim", "intro", "tree_sort", "cycle", "pigeonhole", "strand", "tournament",
     ],
   },
   { label: { en: "Searching", vi: "Tìm kiếm" }, ids: ["linear", "binary"] },

@@ -103,6 +103,11 @@ function randStrandArr(n: number) {
   return Array.from({ length: n }, (_, i) => values[i % values.length]);
 }
 
+function randTournamentArr(n: number) {
+  const values = [41, 13, 29, 7, 35, 18, 52, 24, 10, 46, 31, 16];
+  return Array.from({ length: n }, (_, i) => values[i % values.length]);
+}
+
 export function demoSizeForAlgorithm(algoId: string, currentSize: number) {
   if (algoId === "tim") return Math.max(currentSize, 40);
   if (algoId === "intro") return Math.max(currentSize, 32);
@@ -115,6 +120,7 @@ export function demoSizeForAlgorithm(algoId: string, currentSize: number) {
   if (algoId === "cycle") return Math.min(currentSize, 18);
   if (algoId === "pigeonhole") return Math.min(currentSize, 16);
   if (algoId === "strand") return Math.min(currentSize, 16);
+  if (algoId === "tournament") return Math.min(currentSize, 12);
   return currentSize;
 }
 
@@ -124,6 +130,7 @@ export function maxDemoSizeForAlgorithm(algoId: string) {
   if (algoId === "cycle") return 18;
   if (algoId === "pigeonhole") return 16;
   if (algoId === "strand") return 16;
+  if (algoId === "tournament") return 12;
   if (algoId === "odd_even" || algoId === "pancake") return 12;
   return 500;
 }
@@ -141,6 +148,7 @@ export function demoArrayForAlgorithm(algoId: string, n: number) {
   if (algoId === "cycle") return shuffle(randCycleArr(n));
   if (algoId === "pigeonhole") return shuffle(randPigeonholeArr(n));
   if (algoId === "strand") return randStrandArr(n);
+  if (algoId === "tournament") return randTournamentArr(n);
   if (algoId === "heap") return shuffle(Array.from({ length: n }, (_, i) => Math.floor(15 + i * (85 / Math.max(1, n - 1)))));
   if (algoId === "cocktail" || algoId === "gnome") return shuffle(Array.from({ length: n }, (_, i) => (i % 7) * 7 + 10));
   return randArr(n);
@@ -168,6 +176,7 @@ export function shouldUseAlgorithmDemo(algoId: string, arr: number[]) {
   if (algoId === "cycle") return arr.length > 18;
   if (algoId === "pigeonhole") return arr.length > 16 || shouldUsePigeonholeDemo(arr);
   if (algoId === "strand") return arr.length > 16;
+  if (algoId === "tournament") return arr.length > 12;
   if (algoId === "radix") return !arr.some((n) => Math.abs(n) >= 100) || !arr.some((n) => n < 0);
   if (algoId === "bucket") return arr.length < 20 || new Set(arr.map((n) => Math.floor(n / 20))).size < 3;
   return false;

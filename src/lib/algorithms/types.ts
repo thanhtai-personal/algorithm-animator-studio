@@ -17,7 +17,7 @@ export type CountingState = {
   source: number[];
   uniqueValues: number[];
   counts: number[];
-  phase: "collect" | "sort" | "write" | "done";
+  phase: "init" | "collect" | "sort" | "write" | "done";
   activeSourceIndex?: number;
   activeUniqueIndex?: number;
   activeOutputIndex?: number;

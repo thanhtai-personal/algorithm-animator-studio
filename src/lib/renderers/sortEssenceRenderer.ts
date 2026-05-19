@@ -43,7 +43,7 @@ export function drawSortEssence(
   else if (options.algorithmId === "quick" || options.algorithmId === "intro") drawPartitionLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "merge" || options.algorithmId === "tim") drawMergeLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "radix") drawRadixLens(ctx, frame, x, y, w, h, theme);
-  else if (options.algorithmId === "bucket") drawBucketLens(ctx, frame, x, y, w, h, theme);
+  else if (options.algorithmId === "bucket" || options.algorithmId === "strand") drawBucketLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "bitonic") drawBitonicLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "shell" || options.algorithmId === "comb") drawGapLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "odd_even") drawOddEvenLens(ctx, frame, x, y, w, h, theme, options.lang ?? "en");
@@ -147,6 +147,10 @@ function drawBucketLens(ctx: CanvasRenderingContext2D, frame: Frame, x: number, 
   const count = Math.max(1, Number(frame.vars.bucketCount ?? 1));
   if (frame.buckets) drawBucketContents(ctx, frame.buckets.labels, frame.buckets.buckets, x, y + 18, w, h - 24, theme, numberVar(frame, "bucketIndex"));
   else drawBuckets(ctx, count, x, y + 18, w, h - 24, theme, numberVar(frame, "bucketIndex"), (i) => `B${i}`);
+  if (frame.vars.kind === "strand") {
+    drawSmallText(ctx, `phase=${frame.vars.phase ?? "-"}  last=${frame.vars.strandLast ?? "-"}  output=${frame.vars.outputSize ?? "-"}`, x + 4, y + 12, theme.highlight, "left");
+    return;
+  }
   drawSmallText(ctx, `range ${frame.vars.min ?? "-"}..${frame.vars.max ?? "-"}  active=${frame.vars.bucketIndex ?? "-"}`, x + 4, y + 12, theme.highlight, "left");
 }
 

@@ -10,6 +10,7 @@ import { getExportFormat, ExportFormat } from "./exportFormats";
 
 const SWAP_EXPORT_SECONDS = 0.35;
 const TREE_SORT_EXPORT_SECONDS = 0.12;
+const PIGEONHOLE_EXPORT_SECONDS = 0.16;
 
 type ExportVideoParams = {
   frames: Frame[];
@@ -139,6 +140,7 @@ function waitFrame(fps: number) {
 
 function frameHoldCount(algorithmId: string, fps: number) {
   if (algorithmId === "tree_sort") return Math.max(2, Math.round(fps * TREE_SORT_EXPORT_SECONDS));
+  if (algorithmId === "pigeonhole") return Math.max(3, Math.round(fps * PIGEONHOLE_EXPORT_SECONDS));
   return 1;
 }
 

@@ -13,6 +13,7 @@ export const COMPLEXITY: Record<string, Complexity> = {
   heap: { time: "O(n log n)", best: "O(n log n)", worst: "O(n log n)", space: "O(1)" },
   counting: { time: "O(n + k)", best: "O(n + k)", worst: "O(n + k)", space: "O(k)" },
   pigeonhole: { time: "O(n + k)", best: "O(n + k)", worst: "O(n + k)", space: "O(n + k)" },
+  strand: { time: "O(n²)", best: "O(n)", worst: "O(n²)", space: "O(n)" },
   radix: { time: "O(d(n + b))", best: "O(d(n + b))", worst: "O(d(n + b))", space: "O(n + b)" },
   bucket: { time: "O(n + k)", best: "O(n + k)", worst: "O(n²)", space: "O(n + k)" },
   shell: { time: "O(n log² n)", best: "O(n log n)", worst: "O(n²)", space: "O(1)" },

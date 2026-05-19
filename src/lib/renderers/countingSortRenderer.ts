@@ -24,6 +24,7 @@ export function drawCountingSort(
   const state = frame.counting;
   if (!state) return;
   const lang = opts.lang ?? "en";
+  const isPigeonhole = frame.vars.kind === "pigeonhole";
   const animalMode = opts.animalColumns?.mode === "animal";
 
   const gap = Math.max(12, h * 0.04);
@@ -33,8 +34,8 @@ export function drawCountingSort(
   const bottomY = y + topH + gap;
   const outputValues = state.phase === "write" || state.phase === "done" ? frame.arr : state.source;
 
-  drawSection(ctx, x, topY, w, topH, state.phase === "write" ? label(lang, "Biểu đồ cũ: output đã sort", "Old chart: sorted output") : label(lang, "Biểu đồ cũ: giá trị ban đầu", "Old chart: original values"));
-  drawSection(ctx, x, bottomY, w, bottomH, state.phase === "sort" ? label(lang, "Biểu đồ mới: giá trị duy nhất đã sort", "New chart: unique values sorted") : label(lang, "Biểu đồ mới: giá trị duy nhất + số lượng", "New chart: unique values + counts"));
+  drawSection(ctx, x, topY, w, topH, isPigeonhole && state.phase === "init" ? label(lang, "Bước 1: tìm min/max từ input", "Step 1: find min/max from input") : state.phase === "write" ? label(lang, "Biểu đồ cũ: output đã sort", "Old chart: sorted output") : label(lang, "Biểu đồ cũ: giá trị ban đầu", "Old chart: original values"));
+  drawSection(ctx, x, bottomY, w, bottomH, isPigeonhole ? label(lang, "Các hole: min..max + số lượng", "Holes: min..max + counts") : state.phase === "sort" ? label(lang, "Biểu đồ mới: giá trị duy nhất đã sort", "New chart: unique values sorted") : label(lang, "Biểu đồ mới: giá trị duy nhất + số lượng", "New chart: unique values + counts"));
 
   const outputChart = { x: x + 18, y: topY + 42, w: w - 36, h: topH - 58 };
   const outputBars = layoutBars(outputValues, outputChart.x, outputChart.y, outputChart.w, outputChart.h - 24);
@@ -42,7 +43,7 @@ export function drawCountingSort(
     const animalFrame = {
       ...frame,
       arr: outputValues,
-      highlight: state.phase === "collect" && state.activeSourceIndex != null ? [state.activeSourceIndex] : [],
+      highlight: (state.phase === "collect" || state.phase === "init") && state.activeSourceIndex != null ? [state.activeSourceIndex] : [],
       swap: state.phase === "write" && state.activeOutputIndex != null ? [state.activeOutputIndex] : [],
       sorted: state.phase === "write" ? frame.sorted : [],
     };
@@ -55,7 +56,7 @@ export function drawCountingSort(
   } else {
     drawValueChart(ctx, outputValues, outputChart.x, outputChart.y, outputChart.w, outputChart.h, {
       theme,
-      activeIndex: state.phase === "collect" ? state.activeSourceIndex : state.activeOutputIndex,
+      activeIndex: state.phase === "collect" || state.phase === "init" ? state.activeSourceIndex : state.activeOutputIndex,
       sorted: frame.sorted,
       dimAfter: state.phase === "write" ? frame.sorted.length : undefined,
     });
@@ -76,7 +77,7 @@ export function drawCountingSort(
       activeIndex: state.activeUniqueIndex,
     });
 
-  const phaseText = phaseLabel(state.phase, lang);
+  const phaseText = phaseLabel(state.phase, lang, frame);
   ctx.save();
   ctx.fillStyle = theme.highlight;
   ctx.font = "700 18px ui-monospace, monospace";
@@ -85,7 +86,7 @@ export function drawCountingSort(
   ctx.fillText(phaseText, x + w - 20, topY + 22);
   ctx.restore();
 
-  if (state.phase === "collect" && state.activeSourceIndex != null && state.activeUniqueIndex != null) {
+  if ((state.phase === "collect" || state.phase === "init") && state.activeSourceIndex != null && state.activeUniqueIndex != null) {
     if (animalMode) {
       drawCountingAnimalHop(ctx, outputBars[state.activeSourceIndex], uniqueBars[state.activeUniqueIndex], state.movingValue, opts.transitionProgress ?? 1, true);
     } else {
@@ -153,11 +154,12 @@ function drawUniqueChart(
   items.forEach((item, index) => {
     const bar = bars[index];
     byOriginalIndex[item.originalIndex] = bar;
+    if (item.count < 0) return;
     const active = opts.activeIndex === item.originalIndex;
     const empty = item.count <= 0;
-    drawBar(ctx, bar, active ? opts.theme.swap : opts.theme.pivot, active, empty);
+    drawBar(ctx, bar, empty ? "rgba(148,163,184,0.5)" : active ? opts.theme.swap : opts.theme.pivot, active && !empty, empty);
     drawLabel(ctx, String(item.value), bar.cx, y + h - 24, empty ? "rgba(221,214,254,0.45)" : active ? opts.theme.swap : "#ddd6fe");
-    drawCountBadge(ctx, bar.cx, y + h - 7, item.count, active ? opts.theme.highlight : opts.theme.sorted, empty);
+    drawCountBadge(ctx, bar.cx, y + h - 7, item.count, empty ? "rgba(148,163,184,0.5)" : active ? opts.theme.highlight : opts.theme.sorted, empty);
   });
   return byOriginalIndex;
 }
@@ -201,7 +203,7 @@ function drawUniqueAnimalChart(
   bars.forEach((bar, index) => {
     const active = opts.activeIndex === index;
     const empty = (counts[index] ?? 0) <= 0;
-    drawCountBadge(ctx, bar.cx, y + h - 9, counts[index] ?? 0, active ? opts.theme.highlight : opts.theme.sorted, empty);
+    drawCountBadge(ctx, bar.cx, y + h - 9, counts[index] ?? 0, empty ? "rgba(148,163,184,0.5)" : active ? opts.theme.highlight : opts.theme.sorted, empty);
   });
   return bars;
 }
@@ -361,7 +363,10 @@ function drawCountBadge(ctx: CanvasRenderingContext2D, x: number, y: number, cou
   ctx.restore();
 }
 
-function phaseLabel(phase: NonNullable<Frame["counting"]>["phase"], lang: Lang) {
+function phaseLabel(phase: NonNullable<Frame["counting"]>["phase"], lang: Lang, frame: Frame) {
+  if (frame.vars.kind === "pigeonhole" && phase === "init") return `${label(lang, "tạo hole", "create hole")} ${frame.vars.formula ?? ""}`.trim();
+  if (frame.vars.kind === "pigeonhole" && phase === "collect") return `${label(lang, "xác định hole", "locate hole")} ${frame.vars.formula ?? ""}`.trim();
+  if (frame.vars.kind === "pigeonhole" && phase === "write") return label(lang, "đọc hole theo thứ tự", "read holes in order");
   if (phase === "collect") return label(lang, "gom giá trị duy nhất", "collect unique values");
   if (phase === "sort") return label(lang, "sort biểu đồ duy nhất", "sort unique chart");
   if (phase === "write") return label(lang, "ghi ngược + giảm count", "move back + decrement count");

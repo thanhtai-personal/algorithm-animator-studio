@@ -16,6 +16,7 @@ const EXTRA_TAGS: Record<string, string[]> = {
   pancake: ["pancake sort", "prefix reversal", "flip sorting"],
   bitonic: ["bitonic sort", "sorting network", "parallel sorting"],
   bogo: ["bogo sort", "stupid sort", "random shuffle", "worst sorting algorithm", "shuffle and check", "algorithm parody"],
+  flash: ["flash sort", "distribution sort", "classification sort", "insertion cleanup"],
   cycle: ["cycle sort", "minimum writes", "in place sorting"],
   selection: ["selection sort", "minimum selection", "sorting algorithm"],
   insertion: ["insertion sort", "nearly sorted data", "stable sort"],

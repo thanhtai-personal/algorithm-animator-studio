@@ -18,6 +18,7 @@ const TITLES: Record<string, { vi: string; en: string }> = {
   shell: { vi: "Shell gaps: insertion sort theo khoảng cách", en: "Shell gaps: gapped insertion sort" },
   bitonic: { vi: "Bitonic network: compare-swap theo gap và hướng", en: "Bitonic network: compare-swap by gap and direction" },
   bogo: { vi: "Bogo Sort: không chiến lược, chỉ xáo và kiểm tra", en: "Bogo Sort: no strategy, just shuffle and check" },
+  flash: { vi: "Flash Sort: ước lượng class rồi dọn bằng insertion", en: "Flash Sort: estimate classes, then clean up with insertion" },
   odd_even: { vi: "Odd-Even: xen kẽ pass cặp lẻ rồi cặp chẵn", en: "Odd-Even: alternate odd-pair and even-pair passes" },
   cocktail: { vi: "Cocktail shaker: bubble theo hai chiều", en: "Cocktail shaker: bubble both directions" },
   comb: { vi: "Comb gap: thu nhỏ so sánh khoảng cách xa", en: "Comb gap: shrink long-distance comparisons" },

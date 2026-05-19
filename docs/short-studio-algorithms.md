@@ -11,6 +11,7 @@ Source of truth: `src/lib/algorithms/index.ts`.
 | `pancake` | Pancake Sort |
 | `bitonic` | Bitonic Sort |
 | `bogo` | Bogo Sort |
+| `flash` | Flash Sort |
 | `selection` | Selection Sort |
 | `insertion` | Insertion Sort |
 | `quick` | Quick Sort |
@@ -60,9 +61,7 @@ These algorithms are not in Short Studio yet. `Priority` marks good first candid
 
 ### Sorting TODO
 
-| ID | Algorithm | Priority |
-| --- | --- | --- |
-| `flash` | Flash Sort | Later |
+No remaining sorting TODO items in this list.
 
 ### Searching TODO
 

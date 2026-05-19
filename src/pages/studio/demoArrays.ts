@@ -83,6 +83,16 @@ function randBitonicArr(n: number) {
   return shuffle(values);
 }
 
+function randFlashArr(n: number) {
+  const anchors = [6, 9, 12, 16, 19, 23, 27, 31, 35, 39, 44, 48, 52, 57, 61, 65, 70, 74, 79, 83, 88, 92, 96, 99];
+  const values = Array.from({ length: n }, (_, i) => {
+    const anchor = anchors[i % anchors.length];
+    const wave = Math.floor(i / anchors.length) * 1.5;
+    return Math.min(99, Math.round(anchor + wave));
+  });
+  return shuffle(values);
+}
+
 function randTreeSortArr(n: number) {
   const values = Array.from({ length: n }, (_, i) => 10 + i * 4);
   return shuffle(values);
@@ -126,6 +136,7 @@ export function demoSizeForAlgorithm(algoId: string, currentSize: number) {
   if (algoId === "odd_even") return Math.min(currentSize, 12);
   if (algoId === "pancake") return Math.min(currentSize, 12);
   if (algoId === "bitonic") return Math.min(currentSize, 32);
+  if (algoId === "flash") return Math.min(Math.max(currentSize, 36), 48);
   if (algoId === "tree_sort") return Math.min(currentSize, 24);
   if (algoId === "cycle") return Math.min(currentSize, 18);
   if (algoId === "pigeonhole") return Math.min(currentSize, 16);
@@ -139,6 +150,7 @@ export function demoSizeForAlgorithm(algoId: string, currentSize: number) {
 export function maxDemoSizeForAlgorithm(algoId: string) {
   if (algoId === "tree_sort") return 24;
   if (algoId === "bitonic") return 32;
+  if (algoId === "flash") return 48;
   if (algoId === "cycle") return 18;
   if (algoId === "pigeonhole") return 16;
   if (algoId === "strand") return 16;
@@ -158,6 +170,7 @@ export function demoArrayForAlgorithm(algoId: string, n: number) {
   if (algoId === "odd_even") return randOddEvenArr(n);
   if (algoId === "pancake") return randPancakeArr(n);
   if (algoId === "bitonic") return randBitonicArr(n);
+  if (algoId === "flash") return randFlashArr(n);
   if (algoId === "tree_sort") return randTreeSortArr(n);
   if (algoId === "cycle") return shuffle(randCycleArr(n));
   if (algoId === "pigeonhole") return shuffle(randPigeonholeArr(n));
@@ -188,6 +201,7 @@ export function shouldUseAlgorithmDemo(algoId: string, arr: number[]) {
   if (algoId === "odd_even") return arr.length > 14;
   if (algoId === "pancake") return arr.length > 14;
   if (algoId === "bitonic") return arr.length > 32;
+  if (algoId === "flash") return arr.length < 30 || arr.length > 48 || new Set(arr).size < Math.min(10, arr.length);
   if (algoId === "tree_sort") return arr.length > 24;
   if (algoId === "cycle") return arr.length > 18;
   if (algoId === "pigeonhole") return arr.length > 16 || shouldUsePigeonholeDemo(arr);

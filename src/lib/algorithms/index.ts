@@ -8,6 +8,7 @@ import { bitonicSort } from "./sorting/bitonic";
 import { bogoSort } from "./sorting/bogo";
 import { bubbleSort } from "./sorting/bubble";
 import { bucketSort } from "./sorting/bucket";
+import { flashSort } from "./sorting/flash";
 import { cocktailSort } from "./sorting/cocktail";
 import { combSort } from "./sorting/comb";
 import { countingSort } from "./sorting/counting";
@@ -84,6 +85,7 @@ export const ALGORITHMS: Record<string, AlgoDef> = {
   smooth: smoothSort,
   stooge: stoogeSort,
   bogo: bogoSort,
+  flash: flashSort,
   custom: customAlgo,
 };
 
@@ -94,7 +96,7 @@ export const ALGO_GROUPS: { label: { en: string; vi: string }; ids: string[] }[]
     label: { en: "Sorting", vi: "Sắp xếp" },
     ids: [
       "bubble", "odd_even", "pancake", "bitonic", "selection", "insertion", "quick", "merge", "heap",
-      "counting", "radix", "bucket", "shell", "cocktail", "comb", "gnome", "tim", "intro", "tree_sort", "cycle", "pigeonhole", "strand", "tournament", "smooth", "stooge", "bogo",
+      "counting", "radix", "bucket", "shell", "cocktail", "comb", "gnome", "tim", "intro", "tree_sort", "cycle", "pigeonhole", "strand", "tournament", "smooth", "stooge", "bogo", "flash",
     ],
   },
   { label: { en: "Searching", vi: "Tìm kiếm" }, ids: ["linear", "binary"] },

@@ -50,11 +50,13 @@ Source of truth: `src/lib/algorithms/index.ts`.
 | `dijkstra` | Dijkstra |
 | `astar` | A* Pathfinding |
 
-## Visual Modes
+## Studio Modes
 
-| ID | Mode | Notes |
+| Route | Mode | Notes |
 | --- | --- | --- |
-| `algorithm-world` | Algorithm World | Cinematic world/maze renderer; first preset supports A* Shifting Labyrinth with realtime obstacles. |
+| `/` | Algorithm Shorts | Classic and kinetic short animation setup. |
+| `/algorithm-world` | Algorithm World | Dedicated cinematic world/maze setup; first preset supports A* Shifting Labyrinth with realtime obstacles. |
+| `/long-content` | Algorithm Long 16:9 | Long-form YouTube explainer setup. |
 
 ## Custom
 

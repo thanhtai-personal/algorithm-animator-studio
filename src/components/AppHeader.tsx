@@ -12,6 +12,10 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
     title: "AlgoShorts Studio",
     subtitle: "Create short algorithm animations for Shorts, Reels and TikTok.",
   },
+  "/algorithm-world": {
+    title: "Algorithm World",
+    subtitle: "Build cinematic algorithm worlds such as A* through dynamic mazes.",
+  },
   "/long-content": {
     title: "Long Content Studio",
     subtitle: "Create 16:9 YouTube explainers with animation, script, voice and music.",
@@ -46,7 +50,13 @@ export function AppHeader() {
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
   const [mounted, setMounted] = useState(false);
   const meta = useMemo(() => PAGE_META[location.pathname] ?? PAGE_META["/"], [location.pathname]);
-  const contentMode = location.pathname === "/story-video" ? "story-video" : location.pathname === "/long-content" ? "algorithm-long" : "algorithm-shorts";
+  const contentMode = location.pathname === "/story-video"
+    ? "story-video"
+    : location.pathname === "/long-content"
+      ? "algorithm-long"
+      : location.pathname === "/algorithm-world"
+        ? "algorithm-world"
+        : "algorithm-shorts";
   const isAuthenticated = profile !== null;
   const authLabel = lang === "vi" ? (isAuthenticated ? "Đăng xuất" : "Đăng nhập") : (isAuthenticated ? "Logout" : "Login");
   const authAriaLabel = lang === "vi" ? authLabel : `${authLabel} account`;
@@ -101,6 +111,7 @@ export function AppHeader() {
   function changeContentMode(value: string) {
     if (value === "story-video") navigate("/story-video");
     else if (value === "algorithm-long") navigate("/long-content");
+    else if (value === "algorithm-world") navigate("/algorithm-world");
     else navigate("/");
   }
 
@@ -122,6 +133,7 @@ export function AppHeader() {
             <SelectTrigger className="h-10 w-[210px] shrink-0"><SelectValue placeholder="Chọn studio" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="algorithm-shorts">Algorithm Shorts</SelectItem>
+              <SelectItem value="algorithm-world">Algorithm World</SelectItem>
               <SelectItem value="algorithm-long">Algorithm Long 16:9</SelectItem>
               <SelectItem value="story-video">Kênh đọc truyện</SelectItem>
             </SelectContent>

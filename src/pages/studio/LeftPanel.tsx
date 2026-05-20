@@ -73,11 +73,6 @@ export function LeftPanel({ studio }: Props) {
               {s.lang === "vi" ? "Kinetic short hiện tối ưu trước cho Bubble Sort." : "Kinetic short is currently optimized for Bubble Sort first."}
             </p>
           ) : null}
-          {s.shortVideoType === "algorithm-world" && s.algo.id !== "astar" ? (
-            <p className="mt-2 text-xs text-amber-300">
-              {s.lang === "vi" ? "Algorithm World hiện tối ưu trước cho A* Pathfinding." : "Algorithm World is optimized for A* Pathfinding first."}
-            </p>
-          ) : null}
         </div>
         {!s.isGraph && (
           <div>
@@ -159,7 +154,9 @@ function WorldInputs({ studio: s }: Props) {
           : "A* runs in a dynamic maze with open set, closed set, f = g + h, real-time walls and replanning."}
       </p>
       <p className="text-cyan-200/80">
-        {s.lang === "vi" ? "Nên chọn kiểu video Algorithm World để xuất short cinematic." : "Use Algorithm World video type for the cinematic short."}
+        {s.lang === "vi"
+          ? "Muốn setup riêng cho world/maze, hãy dùng mode Algorithm World ở header."
+          : "Use the Algorithm World mode in the header for the dedicated world/maze setup."}
       </p>
     </div>
   );

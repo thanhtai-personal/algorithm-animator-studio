@@ -7,6 +7,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import AlgorithmWorld from "./pages/AlgorithmWorld.tsx";
 import Auth from "./pages/Auth.tsx";
 import Index from "./pages/Index.tsx";
 import LongContent from "./pages/LongContent.tsx";
@@ -37,6 +38,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<Index />} />
+            <Route path="/algorithm-world" element={<AlgorithmWorld />} />
             <Route path="/long-content" element={<LongContent />} />
             <Route path="/story-video" element={<StoryVideoStudio />} />
             <Route path="/social-publishing" element={<YoutubePublishing />} />

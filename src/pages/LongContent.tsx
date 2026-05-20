@@ -8,15 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { YoutubeMetadataPreview } from "@/components/YoutubeMetadataPreview";
 import { AuthProfile, getCurrentProfile, isSuperAdminProfile } from "@/lib/auth";
 import { LONG_VIDEO_TYPES, type LongVideoType } from "@/lib/longVideoTypes";
 import { THEMES } from "@/lib/renderer";
 import { EXPORT_FORMATS, ExportFormat } from "./studio/exportFormats";
-import { BackgroundImagePanel } from "./long-content/BackgroundImagePanel";
 import { KineticSfxPanel } from "./long-content/KineticSfxPanel";
-import { MusicPanel } from "./long-content/MusicPanel";
-import { ScriptPanel } from "./long-content/ScriptPanel";
+import { LongContentTabs } from "./long-content/LongContentTabs";
 import { LongContentStudio, useLongContentStudio } from "./long-content/useLongContentStudio";
 
 export default function LongContent() {
@@ -49,14 +46,10 @@ export default function LongContent() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <main className="grid grid-cols-1 gap-4 p-4 xl:grid-cols-[360px_1fr]">
+      <main className="grid grid-cols-1 gap-4 p-4 xl:grid-cols-[340px_minmax(0,1fr)_380px]">
         <LeftControls studio={studio} onExport={requestExport} />
-        <div className="space-y-4">
-          <PreviewPanel studio={studio} />
-          <BackgroundImagePanel studio={studio} />
-          <MusicPanel studio={studio} />
-          <ScriptPanel studio={studio} />
-        </div>
+        <PreviewPanel studio={studio} />
+        <LongContentTabs studio={studio} />
       </main>
     </div>
   );
@@ -66,7 +59,6 @@ function LeftControls({ studio: s, onExport }: { studio: LongContentStudio; onEx
   return (
     <div className="space-y-4">
       <VisualExportPanel studio={s} onExport={onExport} />
-      <YoutubeMetadataPreview algoId={s.algo.id} lang={s.lang} variant="long" longVideoType={s.longVideoType} musicLicenseText={s.music.selectedLicenseText} />
       <CollapsibleSection title="Cấu hình nội dung" icon={<Film className="h-4 w-4 text-emerald-400" />}>
         <SystemLanguageInfo studio={s} />
 

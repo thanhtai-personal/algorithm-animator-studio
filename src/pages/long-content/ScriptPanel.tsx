@@ -32,7 +32,7 @@ const labels = {
   narrationField: { vi: "Voice-over narration", en: "Voice-over narration" },
 } as const;
 
-export function ScriptPanel({ studio: s }: { studio: LongContentStudio }) {
+export function ScriptPanel({ studio: s, compact = false }: { studio: LongContentStudio; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const activeIndex = s.scenes.findIndex((scene) => scene.id === s.timelineState.scene.id);
   const nearbyScenes = useMemo(() => {
@@ -43,7 +43,7 @@ export function ScriptPanel({ studio: s }: { studio: LongContentStudio }) {
   return (
     <>
       <Card className="space-y-4 border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.34),0_0_28px_rgba(16,185,129,0.05)]">
-        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div className={`flex flex-col gap-2 ${compact ? "" : "md:flex-row md:items-end md:justify-between"}`}>
           <div>
             <h2 className="font-semibold">{labels.title[s.lang]}</h2>
             <p className="text-xs text-muted-foreground">
@@ -60,7 +60,7 @@ export function ScriptPanel({ studio: s }: { studio: LongContentStudio }) {
           </div>
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-3">
+        <div className={`grid gap-3 ${compact ? "" : "lg:grid-cols-3"}`}>
           {nearbyScenes.map((scene) => (
             <SceneSummary
               key={scene.id}

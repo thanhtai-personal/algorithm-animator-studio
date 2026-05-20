@@ -68,6 +68,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const [sfxVol, setSfxVol] = useState(60);
   const [musicVol, setMusicVol] = useState(30);
   const [musicPreset, setMusicPreset] = useState<BackgroundMusicId>("off");
+  const [musicSearch, setMusicSearch] = useState("");
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
   const [libraryMusicTracks, setLibraryMusicTracks] = useState<MusicLibraryTrack[]>([]);
   const [customCode, setCustomCode] = useState(ALGORITHMS.custom.code);
@@ -371,6 +372,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     sfxVol, setSfxVol: (value: number) => runConfigAction(() => setSfxVol(value)),
     musicVol, setMusicVol: (value: number) => runConfigAction(() => setMusicVol(value)),
     musicPreset, setMusicPreset: (value: BackgroundMusicId) => runConfigAction(() => setMusicPreset(value)),
+    musicSearch, setMusicSearch: (value: string) => runConfigAction(() => setMusicSearch(value)),
     libraryMusicTracks,
     customCode, setCustomCode: (value: string) => runConfigAction(() => setCustomCode(value)),
     graphInput, setGraphInput: (value: string) => runConfigAction(() => setGraphInput(value)),

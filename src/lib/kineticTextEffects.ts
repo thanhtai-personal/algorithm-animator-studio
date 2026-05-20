@@ -139,9 +139,15 @@ function pickTextEffect(card: KineticTextCard) {
 }
 
 function drawFitted(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, maxWidth: number, weight: number) {
-  const fitted = fitFontSize(ctx, text, size, maxWidth, Math.max(28, size * 0.48), weight);
+  const fitted = fitFontSize(ctx, text, size, maxWidth, Math.max(20, size * 0.34), weight);
   ctx.font = `${weight} ${fitted}px ui-sans-serif, system-ui, sans-serif`;
-  withTextShadow(ctx, fitted, () => ctx.fillText(text, x, y));
+  const width = ctx.measureText(text).width;
+  const scaleX = width > maxWidth ? Math.max(0.72, maxWidth / width) : 1;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scaleX, 1);
+  withTextShadow(ctx, fitted, () => ctx.fillText(text, 0, 0));
+  ctx.restore();
 }
 
 function fitFontSize(ctx: CanvasRenderingContext2D, text: string, initial: number, maxWidth: number, min: number, weight: number) {

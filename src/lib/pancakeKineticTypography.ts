@@ -24,7 +24,7 @@ export function getPancakeKineticCards(sceneId: string, lang: Lang): KineticCard
   const byScene: Record<string, KineticCard[]> = {
     intro: [
       { main: "PANCAKE SORT", bottom: vi ? "sắp xếp bằng lật prefix" : "sort by prefix flips", accent: "#facc15" },
-      { main: vi ? "LUẬT DUY NHẤT" : "ONLY MOVE", bottom: vi ? "đảo ngược đoạn bắt đầu từ index 0" : "reverse a segment starting at index 0", accent: "#fb7185" },
+      { main: vi ? "LUẬT DUY NHẤT" : "ONLY MOVE", bottom: vi ? "đảo prefix từ index 0" : "reverse a prefix from index 0", accent: "#fb7185" },
       { main: vi ? "XÂY TỪ CUỐI" : "BUILD FROM END", bottom: vi ? "mỗi vòng chốt thêm một vị trí" : "each round fixes one position", accent: "#4ade80", invert: true },
     ],
     "mental-model": [
@@ -46,7 +46,7 @@ export function getPancakeKineticCards(sceneId: string, lang: Lang): KineticCard
     ],
     recap: [
       { main: vi ? "MỖI VÒNG" : "EACH ROUND", bottom: vi ? "chốt đúng một vị trí cuối prefix" : "fixes one prefix-end position", accent: "#38bdf8" },
-      { main: vi ? "0, 1, HOẶC 2 LẦN LẬT" : "0, 1, OR 2 FLIPS", bottom: vi ? "tùy mục tiêu đang nằm ở đâu" : "depending on where the target already is", accent: "#fb7185", values: [3, 6, 1, 5, 2, 4], pair: 5 },
+      { main: vi ? "0, 1, HOẶC 2 LẦN LẬT" : "0, 1, OR 2 FLIPS", bottom: vi ? "tùy vị trí mục tiêu" : "depends on target position", accent: "#fb7185", values: [3, 6, 1, 5, 2, 4], pair: 5 },
       { main: vi ? "PREFIX NGẮN DẦN" : "PREFIX SHRINKS", bottom: vi ? "suffix đã sorted được giữ nguyên" : "the sorted suffix remains fixed", accent: "#4ade80", invert: true },
       ...complexity.slice(0, 4),
     ],

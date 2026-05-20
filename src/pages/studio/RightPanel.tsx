@@ -16,8 +16,9 @@ import { ShortMusicPanel } from "./ShortMusicPanel";
 import { AlgorithmStudio } from "./useAlgorithmStudio";
 
 type Props = { studio: AlgorithmStudio };
+type RightPanelProps = Props & { showMusicPanel?: boolean };
 
-export function RightPanel({ studio: s }: Props) {
+export function RightPanel({ studio: s, showMusicPanel = true }: RightPanelProps) {
   return (
     <Card className="p-4 h-fit">
       <Tabs defaultValue="ui">
@@ -28,7 +29,7 @@ export function RightPanel({ studio: s }: Props) {
         </TabsList>
         <AppearanceTab studio={s} />
         <ExportTab studio={s} />
-        <AudioTab studio={s} />
+        <AudioTab studio={s} showMusicPanel={showMusicPanel} />
       </Tabs>
     </Card>
   );
@@ -151,7 +152,7 @@ function ExportTab({ studio: s }: Props) {
   );
 }
 
-function AudioTab({ studio: s }: Props) {
+function AudioTab({ studio: s, showMusicPanel = true }: RightPanelProps) {
   return (
     <TabsContent value="audio" className="pt-4 space-y-4">
       <SfxSelect
@@ -177,7 +178,7 @@ function AudioTab({ studio: s }: Props) {
         <Slider value={[s.sfxVol]} min={0} max={100} onValueChange={([v]) => s.setSfxVol(v)} />
         <span className="text-xs font-mono w-10 text-right">{s.sfxVol}%</span>
       </div>
-      <ShortMusicPanel studio={s} />
+      {showMusicPanel ? <ShortMusicPanel studio={s} /> : null}
     </TabsContent>
   );
 }

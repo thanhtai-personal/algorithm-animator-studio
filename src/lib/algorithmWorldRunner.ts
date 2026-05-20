@@ -3,6 +3,7 @@ import type {
   AlgorithmWorldCell,
   AlgorithmWorldMazeId,
   AlgorithmWorldPhase,
+  AlgorithmWorldPresentationMode,
   AlgorithmWorldProblemType,
   AlgorithmWorldScenarioOptions,
   Frame,
@@ -25,24 +26,26 @@ import {
 
 type ScoreMap = Record<string, number>;
 type SearchResult = { frames: Frame[]; path: AlgorithmWorldCell[]; visitedCount: number; reached: boolean };
-type BuildArgs = Required<Pick<AlgorithmWorldScenarioOptions, "videoMode" | "compareEnabled" | "problemType" | "mazeId" | "primaryAlgorithm" | "secondaryAlgorithm">>;
+type BuildArgs = Required<Pick<AlgorithmWorldScenarioOptions, "videoMode" | "compareEnabled" | "presentationMode" | "problemType" | "mazeId" | "primaryAlgorithm" | "secondaryAlgorithm">>;
 
 export function createAlgorithmWorldFrames(opts: AlgorithmWorldScenarioOptions = {}) {
   const args: BuildArgs = {
     videoMode: opts.videoMode ?? "short",
     compareEnabled: opts.compareEnabled ?? opts.videoMode === "long",
+    presentationMode: opts.presentationMode ?? "explainer",
     problemType: opts.problemType ?? "fastest",
     mazeId: opts.mazeId ?? "astar_labyrinth",
     primaryAlgorithm: opts.primaryAlgorithm ?? "astar",
     secondaryAlgorithm: opts.secondaryAlgorithm ?? "dijkstra",
   };
-  if (args.compareEnabled) return createCompareFrames(args);
-  return createSingleFrames(args.primaryAlgorithm, args.problemType, args.mazeId);
+  const compareEnabled = args.compareEnabled || args.presentationMode === "vehicle_race";
+  if (compareEnabled) return createCompareFrames(args);
+  return createSingleFrames(args.primaryAlgorithm, args.problemType, args.mazeId, args.presentationMode);
 }
 
 function createCompareFrames(args: BuildArgs) {
-  const left = createSingleFrames(args.primaryAlgorithm, args.problemType, args.mazeId);
-  const right = createSingleFrames(args.secondaryAlgorithm, args.problemType, args.mazeId);
+  const left = createSingleFrames(args.primaryAlgorithm, args.problemType, args.mazeId, args.presentationMode);
+  const right = createSingleFrames(args.secondaryAlgorithm, args.problemType, args.mazeId, args.presentationMode);
   const max = Math.max(left.length, right.length);
   const frames: Frame[] = [];
   for (let i = 0; i < max; i++) {
@@ -54,6 +57,7 @@ function createCompareFrames(args: BuildArgs) {
         ...leftFrame.vars,
         task: args.problemType === "escape" ? "Find a path to the exit" : "Find the fastest path to the exit",
         layout: args.videoMode,
+        presentation: args.presentationMode,
         compareLeft: worldAlgorithmName(args.primaryAlgorithm),
         compareRight: worldAlgorithmName(args.secondaryAlgorithm),
       },
@@ -68,7 +72,7 @@ function createCompareFrames(args: BuildArgs) {
   return frames;
 }
 
-function createSingleFrames(algorithm: AlgorithmWorldAlgorithmId, problemType: AlgorithmWorldProblemType, mazeId: AlgorithmWorldMazeId) {
+function createSingleFrames(algorithm: AlgorithmWorldAlgorithmId, problemType: AlgorithmWorldProblemType, mazeId: AlgorithmWorldMazeId, presentationMode: AlgorithmWorldPresentationMode) {
   const baseWalls = makeMazeWalls(mazeId);
   const dynamicSets = makeDynamicObstacleSets(mazeId);
   const frames: Frame[] = [];
@@ -89,6 +93,7 @@ function createSingleFrames(algorithm: AlgorithmWorldAlgorithmId, problemType: A
     previousPath: [],
     replanCount: 0,
     mazeId,
+    presentationMode,
     line: 0,
   });
 
@@ -104,6 +109,7 @@ function createSingleFrames(algorithm: AlgorithmWorldAlgorithmId, problemType: A
       committedPrefix,
       replanCount: wave,
       mazeId,
+      presentationMode,
     });
     frames.push(...result.frames);
     previousPath = mergePath(committedPrefix, result.path);
@@ -127,6 +133,7 @@ function createSingleFrames(algorithm: AlgorithmWorldAlgorithmId, problemType: A
       pulseCells: blockers,
       replanCount: wave + 1,
       mazeId,
+      presentationMode,
       line: 8,
       event: "swap",
     });
@@ -143,6 +150,7 @@ function createSingleFrames(algorithm: AlgorithmWorldAlgorithmId, problemType: A
     committedPrefix,
     replanCount: dynamicSets.length,
     mazeId,
+    presentationMode,
   });
   frames.push(...final.frames);
   pushWorldFrame(frames, algorithm, problemType, {
@@ -157,6 +165,7 @@ function createSingleFrames(algorithm: AlgorithmWorldAlgorithmId, problemType: A
     previousPath,
     replanCount: dynamicSets.length,
     mazeId,
+    presentationMode,
     visitedCount: final.visitedCount,
     line: 0,
     event: "found",
@@ -175,6 +184,7 @@ function runSearch(params: {
   committedPrefix: AlgorithmWorldCell[];
   replanCount: number;
   mazeId: AlgorithmWorldMazeId;
+  presentationMode: AlgorithmWorldPresentationMode;
 }): SearchResult {
   const blocked = cellListToKeys([...params.baseWalls, ...params.dynamicWalls]);
   const frontier: AlgorithmWorldCell[] = [params.start];
@@ -209,6 +219,8 @@ function runSearch(params: {
       scores: scoreSnapshot(current, gScore, hScore, fScore),
       replanCount: params.replanCount,
       mazeId: params.mazeId,
+      presentationMode: params.presentationMode,
+      stepCount: frames.length + 1,
       visitedCount: closed.length,
       line: reached ? 0 : 2,
       event: reached ? "found" : "visit",
@@ -243,6 +255,8 @@ function runSearch(params: {
         scores: scoreSnapshot(next, gScore, hScore, fScore),
         replanCount: params.replanCount,
         mazeId: params.mazeId,
+        presentationMode: params.presentationMode,
+        stepCount: frames.length + 1,
         visitedCount: closed.length,
         line: 6,
         event: "compare",
@@ -304,6 +318,38 @@ function scoreSnapshot(cell: AlgorithmWorldCell, gScore: ScoreMap, hScore: Score
   return { g: gScore[key] ?? 0, h: hScore[key] ?? 0, f: fScore[key] ?? 0 };
 }
 
+function visibleCellsFor(params: {
+  openSet: AlgorithmWorldCell[];
+  closedSet: AlgorithmWorldCell[];
+  current: AlgorithmWorldCell | null;
+  path: AlgorithmWorldCell[];
+  previousPath: AlgorithmWorldCell[];
+  shatteredPath?: AlgorithmWorldCell[];
+  pulseCells?: AlgorithmWorldCell[];
+}) {
+  const visible = new Map<string, AlgorithmWorldCell>();
+  const reveal = (cell: AlgorithmWorldCell | null | undefined, radius = 1) => {
+    if (!cell) return;
+    for (let dy = -radius; dy <= radius; dy++) {
+      for (let dx = -radius; dx <= radius; dx++) {
+        const next = { x: cell.x + dx, y: cell.y + dy };
+        if (next.x < 0 || next.x >= WORLD_COLS || next.y < 0 || next.y >= WORLD_ROWS) continue;
+        visible.set(cellKey(next), next);
+      }
+    }
+  };
+  reveal(WORLD_START, 2);
+  reveal(WORLD_GOAL, 1);
+  params.closedSet.forEach((cell) => reveal(cell, 1));
+  params.openSet.forEach((cell) => reveal(cell, 1));
+  params.path.forEach((cell) => reveal(cell, 1));
+  params.previousPath.forEach((cell) => reveal(cell, 0));
+  params.shatteredPath?.forEach((cell) => reveal(cell, 0));
+  params.pulseCells?.forEach((cell) => reveal(cell, 1));
+  reveal(params.current, 2);
+  return [...visible.values()];
+}
+
 function pushWorldFrame(frames: Frame[], algorithm: AlgorithmWorldAlgorithmId, problemType: AlgorithmWorldProblemType, params: {
   phase: AlgorithmWorldPhase;
   status: string;
@@ -319,7 +365,9 @@ function pushWorldFrame(frames: Frame[], algorithm: AlgorithmWorldAlgorithmId, p
   scores?: { g: number; h: number; f: number };
   replanCount: number;
   mazeId: AlgorithmWorldMazeId;
+  presentationMode: AlgorithmWorldPresentationMode;
   visitedCount?: number;
+  stepCount?: number;
   line: number;
   event?: Frame["event"];
 }) {
@@ -364,6 +412,9 @@ function pushWorldFrame(frames: Frame[], algorithm: AlgorithmWorldAlgorithmId, p
       runtimeLabel: worldAlgorithmRuntime(algorithm),
       problemType,
       mazeId: params.mazeId,
+      presentationMode: params.presentationMode,
+      visibleCells: visibleCellsFor(params),
+      stepCount: params.stepCount ?? frames.length + 1,
       visitedCount: params.visitedCount ?? params.closedSet.length,
       pathLength: params.path.length || undefined,
     },

@@ -10,7 +10,7 @@ import type { AlgorithmStudio } from "./useAlgorithmStudio";
 
 type Track = { id: BackgroundMusicId; title: string; subtitle: string; hasLicense?: boolean };
 
-export function ShortMusicPanel({ studio: s }: { studio: AlgorithmStudio }) {
+export function ShortMusicPanel({ studio: s, standalone = false }: { studio: AlgorithmStudio; standalone?: boolean }) {
   const tracks: Track[] = [
     ...MUSIC_PRESETS.filter((item) => item.id !== "custom").map((item) => ({
       id: item.id as BackgroundMusicId,
@@ -22,7 +22,7 @@ export function ShortMusicPanel({ studio: s }: { studio: AlgorithmStudio }) {
   ];
   const filtered = tracks.filter((track) => `${track.title} ${track.subtitle}`.toLowerCase().includes(s.musicSearch.trim().toLowerCase()));
   return (
-    <div className="space-y-4 border-t border-border/40 pt-3">
+    <div className={standalone ? "space-y-4" : "space-y-4 border-t border-border/40 pt-3"}>
       <div className="flex flex-col gap-2">
         <Label className="text-sm">🎵 {s.tr("bgMusicPreset")}</Label>
         <Input value={s.musicSearch} onChange={(event) => s.setMusicSearch(event.target.value)} placeholder={s.lang === "vi" ? "Tìm nhạc theo tên..." : "Search music..."} />

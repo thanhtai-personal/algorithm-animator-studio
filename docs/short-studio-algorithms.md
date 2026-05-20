@@ -164,3 +164,10 @@ This module was renamed from the temporary **Algorithm World** label to **Maze P
 | `astar` | A* Pathfinding | `O(E log V)` | Fastest path with heuristic guidance | `astar_labyrinth` |
 
 Maze Pathfinding tasks distinguish between `escape` (find a valid path to the exit) and `fastest` (find the quickest/shortest route to the exit). Short 9:16 can render either one algorithm or two algorithms stacked top/bottom. Long 16:9 is intended for side-by-side comparison.
+
+#### Maze Pathfinding UI update
+
+- Setup cards are grouped into tabs (`Setup`, `Maze`, `Algorithms`, `Frames`) to reduce vertical scrolling.
+- Background music is surfaced as a standalone card on the maze page, while the general audio tab keeps SFX controls.
+- VS mode disables the code overlay because the comparison layouts need the full canvas for top/bottom or left/right rendering.
+- Video type now includes `Pro: Car race`, a game-like mode where each car runs a different pathfinding algorithm. The renderer uses fog-of-war cells so cars reveal the maze while searching instead of visually seeing the full map in advance.

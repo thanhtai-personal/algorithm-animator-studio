@@ -55,20 +55,26 @@ function drawWorldPanel(ctx: CanvasRenderingContext2D, world: AlgorithmWorldStat
   const gridX = x + (w - gridW) / 2;
   const gridY = mazeTop + Math.max(4, (mazeAreaH - gridH) / 2);
 
+  const raceMode = world.presentationMode === "vehicle_race";
+  const visible = raceMode ? new Set((world.visibleCells ?? []).map(cellKey)) : null;
+  const visibleWalls = visible ? world.walls.filter((item) => visible.has(cellKey(item))) : world.walls;
+  const visibleDynamicWalls = visible ? world.dynamicWalls.filter((item) => visible.has(cellKey(item))) : world.dynamicWalls;
+
   drawSceneCard(ctx, x, y, w, h, theme);
   if (opts.label) drawPanelLabel(ctx, opts.label, world.runtimeLabel ?? "", x, y + 14, w, theme);
   drawMazeBase(ctx, world.cols, world.rows, cell, gridX, gridY);
+  if (raceMode) drawFogOfWar(ctx, world, visible ?? new Set(), cell, gridX, gridY);
   drawCells(ctx, world.closedSet, cell, gridX, gridY, "rgba(99,102,241,0.42)", "rgba(129,140,248,0.8)");
   drawCells(ctx, world.openSet, cell, gridX, gridY, "rgba(34,211,238,0.34)", "rgba(103,232,249,0.8)");
-  drawPath(ctx, world.previousPath, cell, gridX, gridY, "rgba(148,163,184,0.32)", 0, true);
+  if (!raceMode || world.phase === "done") drawPath(ctx, world.previousPath, cell, gridX, gridY, "rgba(148,163,184,0.32)", 0, true);
   drawPath(ctx, world.shatteredPath ?? [], cell, gridX, gridY, "rgba(248,113,113,0.9)", 8, true);
-  drawWalls(ctx, world.walls, cell, gridX, gridY, false);
-  drawWalls(ctx, world.dynamicWalls, cell, gridX, gridY, true);
+  drawWalls(ctx, visibleWalls, cell, gridX, gridY, false);
+  drawWalls(ctx, visibleDynamicWalls, cell, gridX, gridY, true);
   drawCells(ctx, world.pulseCells ?? [], cell, gridX, gridY, "rgba(251,113,133,0.62)", "#fecdd3");
-  drawPath(ctx, world.path, cell, gridX, gridY, "#a3e635", 16, false);
+  drawPath(ctx, world.path, cell, gridX, gridY, raceMode ? "#facc15" : "#a3e635", 16, false);
   drawEndpoint(ctx, world.start, cell, gridX, gridY, "#22d3ee", label(lang, "VÀO", "IN"));
   drawEndpoint(ctx, world.goal, cell, gridX, gridY, "#f43f5e", label(lang, "RA", "OUT"));
-  if (world.current) drawCurrent(ctx, world.current, cell, gridX, gridY, theme.highlight);
+  if (world.current) raceMode ? drawVehicle(ctx, world, cell, gridX, gridY, theme) : drawCurrent(ctx, world.current, cell, gridX, gridY, theme.highlight);
   drawHud(ctx, world, x + 14, y + h - footerH + 12, w - 28, footerH - 24, theme, lang);
 }
 
@@ -116,6 +122,20 @@ function drawMazeBase(ctx: CanvasRenderingContext2D, cols: number, rows: number,
   }
   for (let row = 0; row <= rows; row++) {
     ctx.beginPath(); ctx.moveTo(x, y + row * cell); ctx.lineTo(x + cols * cell, y + row * cell); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawFogOfWar(ctx: CanvasRenderingContext2D, world: AlgorithmWorldState, visible: Set<string>, cell: number, x: number, y: number) {
+  ctx.save();
+  for (let row = 0; row < world.rows; row++) {
+    for (let col = 0; col < world.cols; col++) {
+      if (visible.has(`${col},${row}`)) continue;
+      ctx.fillStyle = "rgba(2,6,23,0.82)";
+      ctx.fillRect(x + col * cell + 1, y + row * cell + 1, cell - 2, cell - 2);
+      ctx.strokeStyle = "rgba(15,23,42,0.9)";
+      ctx.strokeRect(x + col * cell + 1, y + row * cell + 1, cell - 2, cell - 2);
+    }
   }
   ctx.restore();
 }
@@ -198,6 +218,44 @@ function drawCurrent(ctx: CanvasRenderingContext2D, c: AlgorithmWorldCell, cell:
   ctx.restore();
 }
 
+function drawVehicle(ctx: CanvasRenderingContext2D, world: AlgorithmWorldState, cell: number, x: number, y: number, theme: Theme) {
+  if (!world.current) return;
+  const c = world.current;
+  const cx = x + c.x * cell + cell / 2;
+  const cy = y + c.y * cell + cell / 2;
+  const bodyW = Math.max(12, cell * 0.9);
+  const bodyH = Math.max(8, cell * 0.56);
+  const color = vehicleColor(world.algorithmId, theme);
+  ctx.save();
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 18;
+  ctx.fillStyle = color;
+  ctx.strokeStyle = "rgba(255,255,255,0.78)";
+  ctx.lineWidth = Math.max(1.5, cell * 0.08);
+  roundRect(ctx, cx - bodyW / 2, cy - bodyH / 2, bodyW, bodyH, Math.max(4, cell * 0.18));
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "rgba(2,6,23,0.9)";
+  ctx.beginPath(); ctx.arc(cx - bodyW * 0.3, cy + bodyH * 0.48, Math.max(2, cell * 0.12), 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + bodyW * 0.3, cy + bodyH * 0.48, Math.max(2, cell * 0.12), 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.9)";
+  ctx.beginPath();
+  ctx.moveTo(cx + bodyW * 0.36, cy);
+  ctx.lineTo(cx + bodyW * 0.12, cy - bodyH * 0.2);
+  ctx.lineTo(cx + bodyW * 0.12, cy + bodyH * 0.2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function vehicleColor(id: AlgorithmWorldState["algorithmId"], theme: Theme) {
+  if (id === "dfs") return "#fb7185";
+  if (id === "bfs") return "#38bdf8";
+  if (id === "dijkstra") return "#facc15";
+  if (id === "astar") return "#34d399";
+  return theme.highlight;
+}
+
 function drawHud(ctx: CanvasRenderingContext2D, world: AlgorithmWorldState, x: number, y: number, w: number, h: number, theme: Theme, lang: Lang) {
   ctx.save();
   ctx.fillStyle = "rgba(2,6,23,0.76)";
@@ -213,7 +271,8 @@ function drawHud(ctx: CanvasRenderingContext2D, world: AlgorithmWorldState, x: n
   const rows = [
     [label(lang, "Pha", "Phase"), phaseLabel(world.phase, lang)],
     [label(lang, "Runtime", "Runtime"), world.runtimeLabel ?? "—"],
-    [label(lang, "Visited", "Visited"), String(world.visitedCount ?? world.closedSet.length)],
+    [label(lang, "Bước", "Steps"), String(world.stepCount ?? "—")],
+    [label(lang, "Đã thăm", "Visited"), String(world.visitedCount ?? world.closedSet.length)],
     [label(lang, "Độ dài path", "Path length"), String((world.pathLength ?? world.path.length) || "—")],
     ["f = g + h", String(world.scores?.f ?? "—")],
   ];
@@ -250,6 +309,7 @@ function label(lang: Lang, vi: string, en: string) {
 
 function localizedStatus(world: AlgorithmWorldState, lang: Lang) {
   const algo = world.algorithmName ?? "Algorithm";
+  if (world.presentationMode === "vehicle_race" && world.phase !== "done") return label(lang, `Xe ${algo} chỉ nhìn vùng đã dò được, không thấy toàn bộ bản đồ.`, `${algo} car only sees discovered cells, not the full map.`);
   if (world.phase === "setup") return label(lang, `${algo} bắt đầu ở lối vào và tìm đường ra.`, `${algo} starts at the maze entrance and looks for the exit.`);
   if (world.phase === "obstacle") return label(lang, "Tường realtime xuất hiện, đường cũ bị phá nên thuật toán phải tính lại.", "Real-time walls appear, breaking the old route and forcing a recalculation.");
   if (world.phase === "replan") return label(lang, `${algo} đang tính lại sau khi mê cung thay đổi.`, `${algo} replans after the maze changed.`);

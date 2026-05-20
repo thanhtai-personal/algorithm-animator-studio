@@ -43,6 +43,7 @@ export type {
   AlgorithmWorldCompareState,
   AlgorithmWorldMazeId,
   AlgorithmWorldPhase,
+  AlgorithmWorldPresentationMode,
   AlgorithmWorldProblemType,
   AlgorithmWorldScenarioOptions,
   AlgorithmWorldState,

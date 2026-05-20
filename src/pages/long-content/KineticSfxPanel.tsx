@@ -8,6 +8,9 @@ import { SFX_OPTIONS } from "@/lib/i18n";
 import { getAssetSfxOption, SWAP_ASSET_SFX_OPTIONS } from "@/lib/selectSounds";
 import type { LongContentStudio } from "./useLongContentStudio";
 
+const BASE_SFX_OPTIONS = SFX_OPTIONS.filter((option) => !option.id.startsWith("swap-"));
+const TRANSITION_SFX_OPTIONS = SFX_OPTIONS.filter((option) => option.id.startsWith("swap-"));
+
 export function KineticSfxPanel({ studio: s }: { studio: LongContentStudio }) {
   if (s.longVideoType !== "kinetic-typography") return null;
   return (
@@ -19,7 +22,12 @@ export function KineticSfxPanel({ studio: s }: { studio: LongContentStudio }) {
           <SelectContent>
             <SelectGroup>
               <SelectLabel>{s.lang === "vi" ? "Âm tạo sẵn" : "Procedural sounds"}</SelectLabel>
-              {SFX_OPTIONS.map((option) => <SelectItem key={option.id} value={option.id}>{option.label[s.lang]}</SelectItem>)}
+              {BASE_SFX_OPTIONS.map((option) => <SelectItem key={option.id} value={option.id}>{option.label[s.lang]}</SelectItem>)}
+            </SelectGroup>
+            <SelectSeparator />
+            <SelectGroup>
+              <SelectLabel>{s.lang === "vi" ? "Âm chuyển slide / swap" : "Slide transition / swap sounds"}</SelectLabel>
+              {TRANSITION_SFX_OPTIONS.map((option) => <SelectItem key={option.id} value={option.id}>{option.label[s.lang]}</SelectItem>)}
             </SelectGroup>
             <SelectSeparator />
             <SelectGroup>

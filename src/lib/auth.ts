@@ -1,5 +1,6 @@
 const ACCESS_TOKEN_STORAGE_KEY = "auth:accessToken";
 const REFRESH_TOKEN_STORAGE_KEY = "auth:refreshToken";
+export const AUTH_STATE_EVENT = "algorithm-studio:auth-state";
 
 export type AuthProfile = {
   id: string;
@@ -54,6 +55,7 @@ function persistTokens(session: AuthSession): void {
 
   if (accessToken) localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, accessToken);
   if (refreshToken) localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken);
+  window.dispatchEvent(new Event(AUTH_STATE_EVENT));
 }
 
 export function readAccessToken(): string | null {
@@ -67,6 +69,7 @@ function readRefreshToken(): string | null {
 export function clearAuthTokens(): void {
   localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
   localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+  window.dispatchEvent(new Event(AUTH_STATE_EVENT));
 }
 
 function normalizeRole(role: string | null | undefined): string | null {
@@ -115,7 +118,10 @@ async function refreshAuthSession(): Promise<string | null> {
 
   const data = (await response.json().catch(() => ({}))) as RefreshResponse;
   const session = normalizeSession(data);
-  if (!response.ok || !session.access_token) return null;
+  if (!response.ok || !session.access_token) {
+    clearAuthTokens();
+    return null;
+  }
 
   persistTokens(session);
   return sanitize(session.access_token);

@@ -110,6 +110,11 @@ export const SFX_OPTIONS = [
   { id: "key",     label: { en: "Keyboard",vi: "Phím" } },
   { id: "retro",   label: { en: "Retro 8-bit", vi: "Retro 8-bit" } },
   { id: "blip",    label: { en: "Blip",    vi: "Blip" } },
+  { id: "swap-snap", label: { en: "Swap Snap", vi: "Swap Snap" } },
+  { id: "swap-whoosh", label: { en: "Swap Whoosh", vi: "Swap Whoosh" } },
+  { id: "swap-tick", label: { en: "Swap Double Tick", vi: "Swap Double Tick" } },
+  { id: "swap-punch", label: { en: "Swap Punch", vi: "Swap Punch" } },
+  { id: "swap-spark", label: { en: "Swap Spark", vi: "Swap Spark" } },
 ] as const;
 
 export const MUSIC_PRESETS = [

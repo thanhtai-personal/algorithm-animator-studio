@@ -1,10 +1,10 @@
-import { BookOpen, Film, LogIn, LogOut, Moon, Settings, Sparkles, Sun, Youtube } from "lucide-react";
+import { LogIn, LogOut, Moon, Settings, Sparkles, Sun, Youtube } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AuthProfile, getCurrentProfile, isSuperAdminProfile, signOut } from "@/lib/auth";
+import { AUTH_STATE_EVENT, AuthProfile, getCurrentProfile, signOut } from "@/lib/auth";
 import { type Lang, readSystemLang, subscribeSystemLang, writeSystemLang } from "@/lib/i18n";
 
 const PAGE_META: Record<string, { title: string; subtitle: string }> = {
@@ -47,23 +47,39 @@ export function AppHeader() {
   const [mounted, setMounted] = useState(false);
   const meta = useMemo(() => PAGE_META[location.pathname] ?? PAGE_META["/"], [location.pathname]);
   const contentMode = location.pathname === "/story-video" ? "story-video" : location.pathname === "/long-content" ? "algorithm-long" : "algorithm-shorts";
-  const canConfigure = isSuperAdminProfile(profile);
+  const isAuthenticated = profile !== null;
+  const authLabel = lang === "vi" ? (isAuthenticated ? "Đăng xuất" : "Đăng nhập") : (isAuthenticated ? "Logout" : "Login");
+  const authAriaLabel = lang === "vi" ? authLabel : `${authLabel} account`;
+  const authFrom = location.pathname === "/auth" ? "/" : location.pathname;
 
-  useEffect(() => { setMounted(true); }, []);
-  useEffect(() => {
-    let cancelled = false;
+  const refreshProfile = useCallback(() => {
+    let active = true;
     getCurrentProfile()
       .then((nextProfile) => {
-        if (!cancelled) setProfile(isSuperAdminProfile(nextProfile) ? nextProfile : null);
+        if (active) setProfile(nextProfile);
       })
       .catch(() => {
-        if (!cancelled) setProfile(null);
+        if (active) setProfile(null);
       });
 
     return () => {
-      cancelled = true;
+      active = false;
     };
-  }, [location.pathname]);
+  }, []);
+
+  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    const cancelRefresh = refreshProfile();
+    const handleAuthChange = () => { refreshProfile(); };
+    window.addEventListener(AUTH_STATE_EVENT, handleAuthChange);
+    window.addEventListener("focus", handleAuthChange);
+
+    return () => {
+      cancelRefresh();
+      window.removeEventListener(AUTH_STATE_EVENT, handleAuthChange);
+      window.removeEventListener("focus", handleAuthChange);
+    };
+  }, [location.pathname, refreshProfile]);
 
   useEffect(() => subscribeSystemLang(setLang), []);
 
@@ -89,57 +105,73 @@ export function AppHeader() {
   }
 
   return (
-    <header className="border-b border-border/40 bg-background/95 px-4 py-4 backdrop-blur md:px-6">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
+    <header className="border-b border-border/40 bg-background/95 px-3 py-3 backdrop-blur md:px-5">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-400">
-            <Sparkles className="h-6 w-6 text-slate-900" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-400">
+            <Sparkles className="h-5 w-5 text-slate-900" />
           </div>
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-bold">{meta.title}</h1>
+            <h1 className="truncate text-base font-bold md:text-lg">{meta.title}</h1>
             <p className="truncate text-xs text-muted-foreground">{meta.subtitle}</p>
           </div>
         </div>
 
-        <nav className="flex flex-wrap items-center gap-2">
-          <Button variant={location.pathname === "/" ? "default" : "outline"} onClick={() => navigate("/")}>Short Studio</Button>
+        <nav className="flex items-center gap-2 overflow-x-auto pb-1 xl:pb-0">
           <Select value={contentMode} onValueChange={changeContentMode}>
-            <SelectTrigger className="w-[190px]"><SelectValue placeholder="Chọn chủ đề" /></SelectTrigger>
+            <SelectTrigger className="h-10 w-[210px] shrink-0"><SelectValue placeholder="Chọn studio" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="algorithm-shorts">Algorithm Shorts</SelectItem>
               <SelectItem value="algorithm-long">Algorithm Long 16:9</SelectItem>
               <SelectItem value="story-video">Kênh đọc truyện</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant={location.pathname === "/long-content" ? "default" : "outline"} onClick={() => navigate("/long-content")}>
-            <Film className="mr-2 h-4 w-4" /> Long 16:9
+          <Button
+            className="h-10 shrink-0"
+            variant={location.pathname.startsWith("/youtube") || location.pathname === "/social-publishing" ? "default" : "outline"}
+            onClick={() => navigate("/youtube")}
+          >
+            <Youtube className="h-4 w-4" />
+            <span className="hidden sm:inline">YouTube</span>
           </Button>
-          <Button variant={location.pathname === "/story-video" ? "default" : "outline"} onClick={() => navigate("/story-video")}>
-            <BookOpen className="mr-2 h-4 w-4" /> Đọc truyện
-          </Button>
-          <Button variant={location.pathname.startsWith("/youtube") || location.pathname === "/social-publishing" ? "default" : "outline"} onClick={() => navigate("/youtube")}>
-            <Youtube className="mr-2 h-4 w-4" /> YouTube
-          </Button>
-          <Button variant={location.pathname === "/settings" ? "default" : "outline"} onClick={() => navigate("/settings")}>
-            <Settings className="mr-2 h-4 w-4" /> Settings
+          <Button
+            aria-label="Settings"
+            className="h-10 shrink-0"
+            size="icon"
+            variant={location.pathname === "/settings" ? "default" : "outline"}
+            onClick={() => navigate("/settings")}
+          >
+            <Settings className="h-4 w-4" />
           </Button>
           <Select value={lang} onValueChange={(value) => changeLanguage(value as Lang)}>
-            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-10 w-28 shrink-0"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="en">English</SelectItem>
               <SelectItem value="vi">Tiếng Việt</SelectItem>
             </SelectContent>
           </Select>
-          <Button aria-label="Đổi dark/light theme" size="icon" variant="outline" onClick={toggleTheme}>
+          <Button aria-label="Đổi dark/light theme" className="h-10 shrink-0" size="icon" variant="outline" onClick={toggleTheme}>
             {mounted && resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
-          {canConfigure ? (
-            <Button aria-label="Đăng xuất" size="icon" variant="outline" onClick={handleSignOut}>
+          {isAuthenticated ? (
+            <Button
+              aria-label={authAriaLabel}
+              className="h-10 shrink-0 border-red-500/70 bg-red-600 text-white hover:bg-red-700"
+              variant="outline"
+              onClick={handleSignOut}
+            >
               <LogOut className="h-4 w-4" />
+              <span className="hidden md:inline">{authLabel}</span>
             </Button>
           ) : (
-            <Button aria-label="Đăng nhập" size="icon" variant="outline" onClick={() => navigate("/auth", { state: { from: location.pathname } })}>
+            <Button
+              aria-label={authAriaLabel}
+              className="h-10 shrink-0 border-emerald-500/70 bg-emerald-600 text-white hover:bg-emerald-700"
+              variant="outline"
+              onClick={() => navigate("/auth", { state: { from: authFrom } })}
+            >
               <LogIn className="h-4 w-4" />
+              <span className="hidden md:inline">{authLabel}</span>
             </Button>
           )}
         </nav>

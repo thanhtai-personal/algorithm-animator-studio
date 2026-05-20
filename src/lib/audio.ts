@@ -1,4 +1,6 @@
-export type ProceduralSfxKind = "off" | "pop" | "click" | "beep" | "marimba" | "piano" | "key" | "retro" | "blip";
+export type ProceduralSfxKind =
+  | "off" | "pop" | "click" | "beep" | "marimba" | "piano" | "key" | "retro" | "blip"
+  | "swap-snap" | "swap-whoosh" | "swap-tick" | "swap-punch" | "swap-spark";
 export type AssetSfxId = `asset-sfx:${string}`;
 export type SfxKind = ProceduralSfxKind | AssetSfxId;
 export type MusicPreset = "off" | "lofi" | "ambient" | "chill" | "upbeat" | "custom";
@@ -308,16 +310,17 @@ export class AudioEngine {
     const t0 = this.ctx.currentTime;
     const p = Math.max(0, Math.min(1, pitch));
 
-    const oneShot = (type: OscillatorType, f0: number, f1: number, dur: number, gain = 0.35) => {
+    const oneShot = (type: OscillatorType, f0: number, f1: number, dur: number, gain = 0.35, offset = 0) => {
+      const start = t0 + offset;
       const o = this.ctx.createOscillator();
       const g = this.ctx.createGain();
       o.type = type;
-      o.frequency.setValueAtTime(f0, t0);
-      if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t0 + dur);
-      g.gain.setValueAtTime(gain, t0);
-      g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+      o.frequency.setValueAtTime(f0, start);
+      if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(40, f1), start + dur);
+      g.gain.setValueAtTime(gain, start);
+      g.gain.exponentialRampToValueAtTime(0.001, start + dur);
       o.connect(g).connect(this.sfxGain);
-      o.start(t0); o.stop(t0 + dur + 0.02);
+      o.start(start); o.stop(start + dur + 0.02);
     };
 
     // pitched base ~ 220–880 Hz
@@ -340,6 +343,31 @@ export class AudioEngine {
       case "key":     oneShot("square", pitched, pitched, 0.06, 0.18); break;
       case "retro":   oneShot("sawtooth", pitched, pitched * 1.5, 0.08, 0.2); break;
       case "blip":    oneShot("sine", pitched * 1.5, pitched * 0.8, 0.07, 0.25); break;
+      case "swap-snap": {
+        oneShot("square", 1800, 900, 0.035, 0.22);
+        oneShot("triangle", 420, 210, 0.1, 0.2, 0.025);
+        break;
+      }
+      case "swap-whoosh": {
+        oneShot("sawtooth", 160, 980, 0.18, 0.12);
+        oneShot("sine", 660, 1320, 0.1, 0.08, 0.045);
+        break;
+      }
+      case "swap-tick": {
+        oneShot("square", 1400, 1400, 0.025, 0.16);
+        oneShot("square", 1700, 1700, 0.025, 0.14, 0.075);
+        break;
+      }
+      case "swap-punch": {
+        oneShot("sine", 150, 70, 0.13, 0.28);
+        oneShot("square", 520, 260, 0.045, 0.16);
+        break;
+      }
+      case "swap-spark": {
+        oneShot("triangle", 880, 1320, 0.08, 0.14);
+        oneShot("sine", 1760, 2340, 0.09, 0.1, 0.04);
+        break;
+      }
     }
   }
 

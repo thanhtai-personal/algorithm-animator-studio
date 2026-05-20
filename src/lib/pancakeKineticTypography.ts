@@ -93,7 +93,7 @@ function drawStack(ctx: CanvasRenderingContext2D, values: number[], mode: Pancak
   const maxW = 930;
   const minW = 300;
   const flip = mode === "flipTop" || mode === "flipEnd";
-  const t = flip ? easeInOutCubic(clamp01(local / 0.7)) : 0;
+  const t = flip ? easeInOutCubic(clamp01(local / 0.76)) : 0;
   values.forEach((value, index) => {
     const inPrefix = index <= prefixEnd;
     const targetIndex = flip && inPrefix ? prefixEnd - index : index;
@@ -122,7 +122,7 @@ function drawSpatula(ctx: CanvasRenderingContext2D, mode: PancakeMode, prefixEnd
   const layerH = 34;
   const y = 898 - (length - prefixEnd) * layerH - 24;
   const width = 930;
-  const t = easeInOutCubic(clamp01(local / 0.7));
+  const t = easeInOutCubic(clamp01(local / 0.76));
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
   ctx.strokeStyle = `${accent}dd`;

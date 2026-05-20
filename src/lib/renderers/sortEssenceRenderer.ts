@@ -6,6 +6,7 @@ import { drawBogoSortLens } from "./bogoSortRenderer";
 import { drawBucketContents } from "./bucketContentsRenderer";
 import { drawCycleSortLens } from "./cycleSortRenderer";
 import { drawFlashSortLens } from "./flashSortRenderer";
+import { drawPancakeSortLens } from "./pancakeSortRenderer";
 import { drawSmoothSortLens } from "./smoothSortRenderer";
 import { titleForSortEssence } from "./sortEssenceTitles";
 import { drawStoogeSortLens } from "./stoogeSortRenderer";
@@ -54,6 +55,7 @@ export function drawSortEssence(
   else if (options.algorithmId === "flash") drawFlashSortLens(ctx, frame, x, y, w, h, theme, options.lang ?? "en", options.previousFrame, options.transitionProgress ?? 1);
   else if (options.algorithmId === "shell" || options.algorithmId === "comb") drawGapLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "odd_even") drawOddEvenLens(ctx, frame, x, y, w, h, theme, options.lang ?? "en");
+  else if (options.algorithmId === "pancake") drawPancakeSortLens(ctx, frame, x, y, w, h, theme, options.lang ?? "en");
   else if (options.algorithmId === "cocktail") drawCocktailLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "gnome") drawGnomeLens(ctx, frame, x, y, w, h, theme);
   else if (options.algorithmId === "cycle") drawCycleSortLens(ctx, frame, x, y, w, h, theme);

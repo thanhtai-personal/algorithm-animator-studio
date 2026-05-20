@@ -20,6 +20,7 @@ const TITLES: Record<string, { vi: string; en: string }> = {
   bogo: { vi: "Bogo Sort: không chiến lược, chỉ xáo và kiểm tra", en: "Bogo Sort: no strategy, just shuffle and check" },
   flash: { vi: "Flash Sort: ước lượng class rồi dọn bằng insertion", en: "Flash Sort: estimate classes, then clean up with insertion" },
   odd_even: { vi: "Odd-Even: xen kẽ pass cặp lẻ rồi cặp chẵn", en: "Odd-Even: alternate odd-pair and even-pair passes" },
+  pancake: { vi: "Pancake Sort: tìm max rồi flip prefix về cuối", en: "Pancake Sort: find max, then flip prefix to the end" },
   cocktail: { vi: "Cocktail shaker: bubble theo hai chiều", en: "Cocktail shaker: bubble both directions" },
   comb: { vi: "Comb gap: thu nhỏ so sánh khoảng cách xa", en: "Comb gap: shrink long-distance comparisons" },
   gnome: { vi: "Gnome walk: lùi lại khi sai thứ tự cục bộ", en: "Gnome walk: step back when local order breaks" },

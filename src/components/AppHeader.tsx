@@ -7,41 +7,34 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AUTH_STATE_EVENT, AuthProfile, getCurrentProfile, signOut } from "@/lib/auth";
 import { type Lang, readSystemLang, subscribeSystemLang, writeSystemLang } from "@/lib/i18n";
 
-const getPageMeta = (lang: Lang): Record<string, { title: string; subtitle: string }> => ({
+const APP_TITLE = "KATA Studio";
+
+const getPageMeta = (lang: Lang): Record<string, { subtitle: string }> => ({
   "/": {
-    title: "AlgoShorts Studio",
     subtitle: lang === "vi" ? "Tạo video thuật toán ngắn cho Shorts, Reels và TikTok." : "Create short algorithm animations for Shorts, Reels and TikTok.",
   },
   "/maze-pathfinding": {
-    title: lang === "vi" ? "Tìm đường ra mê cung" : "Maze Pathfinding",
     subtitle: lang === "vi" ? "Tạo video tìm lối ra, so sánh DFS, BFS, Dijkstra và A*." : "Create maze escape videos comparing DFS, BFS, Dijkstra and A*.",
   },
   "/algorithm-world": {
-    title: lang === "vi" ? "Tìm đường ra mê cung" : "Maze Pathfinding",
     subtitle: lang === "vi" ? "Tên Algorithm World sẽ dùng cho module lớn hơn sau này." : "Algorithm World is reserved for a broader module later.",
   },
   "/long-content": {
-    title: lang === "vi" ? "Algorithm Long 16:9" : "Long Content Studio",
     subtitle: lang === "vi" ? "Tạo video YouTube 16:9 có animation, script, voice và nhạc." : "Create 16:9 YouTube explainers with animation, script, voice and music.",
   },
   "/story-video": {
-    title: lang === "vi" ? "Kênh đọc truyện" : "Story Video Studio",
     subtitle: lang === "vi" ? "Tạo video đọc truyện từ URL, văn bản, giọng đọc và nền." : "Create reading-story videos from URLs, text, voice-over and background media.",
   },
   "/youtube": {
-    title: lang === "vi" ? "Đăng YouTube" : "YouTube Publishing",
     subtitle: lang === "vi" ? "Đăng nhập OAuth qua server .env rồi upload video đã xuất." : "Login with OAuth from server .env, then upload exported videos.",
   },
   "/settings": {
-    title: lang === "vi" ? "Cài đặt" : "Settings",
     subtitle: lang === "vi" ? "Cấu hình local Piper runtime path và kiểm tra trạng thái." : "Configure local Piper runtime paths and health check.",
   },
   "/youtube-publishing": {
-    title: lang === "vi" ? "Đăng YouTube" : "YouTube Publishing",
     subtitle: lang === "vi" ? "Đăng nhập OAuth qua server .env rồi upload video đã xuất." : "Login with OAuth from server .env, then upload exported videos.",
   },
   "/social-publishing": {
-    title: lang === "vi" ? "Đăng YouTube" : "YouTube Publishing",
     subtitle: lang === "vi" ? "Đăng nhập OAuth qua server .env rồi upload video đã xuất." : "Login with OAuth from server .env, then upload exported videos.",
   },
 });
@@ -130,7 +123,7 @@ export function AppHeader() {
             <Sparkles className="h-5 w-5 text-slate-900" />
           </div>
           <div className="min-w-0">
-            <h1 className="truncate text-base font-bold md:text-lg">{meta.title}</h1>
+            <h1 className="truncate text-base font-bold md:text-lg">{APP_TITLE}</h1>
             <p className="truncate text-xs text-muted-foreground">{meta.subtitle}</p>
           </div>
         </div>

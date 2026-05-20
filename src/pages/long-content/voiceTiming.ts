@@ -17,7 +17,7 @@ export function fitSceneDurationsToNarration(
   if (segmentDurationsSec.length === scenes.length) {
     return scenes.map((scene, index) => ({
       ...scene,
-      durationSec: Math.max(0.35, segmentDurationsSec[index] ?? scene.durationSec),
+      durationSec: getSegmentDrivenDuration(scene, segmentDurationsSec[index], lang, narrationRate),
     }));
   }
 
@@ -48,6 +48,15 @@ export function estimateNarrationDuration(text: string, lang: Lang, narrationRat
   const punctuationPauses = (normalized.match(/[,.!?;:，。！？]/g)?.length ?? 0) * 0.12;
   const wordsPerMinute = (lang === "vi" ? 210 : 158) * clampNumber(narrationRate, 0.7, 1.2);
   return (wordCount / wordsPerMinute) * 60 + punctuationPauses;
+}
+
+function getSegmentDrivenDuration(scene: LongContentScene, segmentDurationSec: number | undefined, lang: Lang, narrationRate: number) {
+  const measured = Number.isFinite(segmentDurationSec) ? Math.max(0, Number(segmentDurationSec)) : 0;
+  const estimate = estimateNarrationDuration(scene.narration, lang, narrationRate);
+  const minScene = scene.animation ? MIN_ANIMATION_SCENE_SEC : MIN_CONCEPT_SCENE_SEC;
+  const suspiciouslyShort = estimate > 0 && measured > 0 && measured < estimate * 0.45;
+  const guardedVoiceDuration = suspiciouslyShort ? estimate * 0.82 : measured;
+  return Math.max(minScene, guardedVoiceDuration + SCENE_VOICE_PADDING_SEC);
 }
 
 function clampNumber(value: number, min: number, max: number) {

@@ -28,7 +28,7 @@ export function getPancakeKineticCards(sceneId: string, lang: Lang): KineticCard
       { main: vi ? "XÂY TỪ CUỐI" : "BUILD FROM END", bottom: vi ? "mỗi vòng chốt thêm một vị trí" : "each round fixes one position", accent: "#4ade80", invert: true },
     ],
     "mental-model": [
-      { main: vi ? "CHỒNG BÁNH" : "PANCAKE STACK", bottom: vi ? "muốn đổi vị trí phải lật từ trên" : "to rearrange, flip from the top", accent: "#facc15" },
+      { main: vi ? "PANCAKE STACK" : "PANCAKE STACK", bottom: vi ? "muốn đổi vị trí phải flip từ đầu" : "to rearrange, flip from the top", accent: "#facc15" },
       { main: vi ? "ĐOẠN CHƯA XONG" : "UNFINISHED PART", bottom: vi ? "prefix ngắn dần sau mỗi vòng" : "the prefix becomes shorter each round", accent: "#38bdf8", values: [3, 6, 1, 5, 2, 4], pair: 5 },
       { main: vi ? "MỘT ĐIỂM ĐẾN" : "ONE DESTINATION", bottom: vi ? "cuối prefix là vị trí cần chốt" : "the prefix end is the target slot", accent: "#4ade80", invert: true, values: [3, 6, 1, 5, 2, 4], pair: 5 },
     ],
@@ -58,7 +58,7 @@ export function drawPancakeKineticIllustration(ctx: CanvasRenderingContext2D, fr
   const mode = getMode(card);
   const values = card.values ?? frame?.arr ?? [3, 6, 1, 5, 2, 4];
   const prefixEnd = Math.max(0, Math.min(values.length - 1, card.pair ?? Number(frame?.vars.to ?? 1)));
-  const pop = easeOutBack(clamp01(local / 0.28));
+  const pop = easeOutBack(clamp01(local / 0.18));
   ctx.save();
   ctx.translate(0, (1 - pop) * 46);
   ctx.globalAlpha = 0.95;
@@ -93,19 +93,19 @@ function drawStack(ctx: CanvasRenderingContext2D, values: number[], mode: Pancak
   const maxW = 930;
   const minW = 300;
   const flip = mode === "flipTop" || mode === "flipEnd";
-  const t = flip ? easeInOutCubic(local) : 0;
+  const t = flip ? easeInOutCubic(clamp01(local / 0.7)) : 0;
   values.forEach((value, index) => {
     const inPrefix = index <= prefixEnd;
     const targetIndex = flip && inPrefix ? prefixEnd - index : index;
     const y0 = baseY - (values.length - index) * layerH;
     const y1 = baseY - (values.length - targetIndex) * layerH;
-    const y = flip && inPrefix ? lerp(y0, y1, t) - Math.sin(t * Math.PI) * 72 : y0;
+    const y = flip && inPrefix ? lerp(y0, y1, t) - Math.sin(t * Math.PI) * 92 : y0;
     const width = minW + (value / maxValue) * (maxW - minW);
     const active = inPrefix && (mode === "scan" || mode === "max" || mode === "flipTop" || mode === "flipEnd");
     const locked = mode === "lock" && index >= Math.max(0, values.length - 1);
     ctx.save();
     ctx.translate(cx, y + layerH / 2);
-    if (flip && inPrefix) ctx.rotate((index % 2 ? -1 : 1) * Math.sin(t * Math.PI) * 0.08);
+    if (flip && inPrefix) ctx.rotate((index % 2 ? -1 : 1) * Math.sin(t * Math.PI) * 0.11);
     ctx.fillStyle = locked ? "#4ade80" : active ? (mode === "scan" ? accent : "#fb7185") : "rgba(148,163,184,0.86)";
     roundRect(ctx, -width / 2, -layerH / 2, width, layerH - 6, 22);
     ctx.fill();
@@ -122,7 +122,7 @@ function drawSpatula(ctx: CanvasRenderingContext2D, mode: PancakeMode, prefixEnd
   const layerH = 34;
   const y = 898 - (length - prefixEnd) * layerH - 24;
   const width = 930;
-  const t = easeInOutCubic(local);
+  const t = easeInOutCubic(clamp01(local / 0.7));
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
   ctx.strokeStyle = `${accent}dd`;

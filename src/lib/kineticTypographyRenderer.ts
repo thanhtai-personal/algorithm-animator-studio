@@ -37,7 +37,8 @@ export function renderKineticTypography(ctx: CanvasRenderingContext2D, params: P
   const cards = getKineticCards(params);
   const timing = getKineticBeatTiming(params, cards.length);
   const beat = Math.min(cards.length - 1, Math.floor(timing.progress * cards.length));
-  const local = timing.progress * cards.length - beat;
+  const rawLocal = timing.progress * cards.length - beat;
+  const local = params.algoId === "pancake" ? Math.min(1, rawLocal * 1.45) : rawLocal;
   const card = cards[beat];
   const accent = card.accent ?? "#4ade80";
   drawKineticBackground(ctx, params.backgroundImage, "#050505");
@@ -78,7 +79,7 @@ function getKineticBeatTiming(params: Params, cardCount: number) {
     if (params.sceneProgress >= 1 / speed) return { progress: 0.999 };
     return { progress };
   }
-  if (params.algoId === "pancake") return { progress: Math.min(0.999, params.sceneProgress * 1.55) };
+  if (params.algoId === "pancake") return { progress: Math.min(0.999, params.sceneProgress * 2.25) };
   const virtualCount = Math.max(8, minCount);
   const beat = Math.floor(params.sceneProgress * virtualCount);
   return { progress: ((beat % minCount) + (params.sceneProgress * virtualCount - beat)) / minCount };

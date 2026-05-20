@@ -39,7 +39,7 @@ function getPancakeBeat(params: ShortKineticParams): PancakeBeat {
   if (params.frameIndex >= params.frameCount - 2 || frame.sorted.length === frame.arr.length) return {
     kicker: vi ? "KẾT QUẢ" : "RESULT",
     main: "SORTED",
-    sub: vi ? "Mỗi vòng khóa thêm một bánh ở đáy" : "Each round locks one pancake at the bottom",
+    sub: vi ? "Mỗi vòng khóa thêm một vị trí ở cuối" : "Each round locks one pancake at the bottom",
     accent: "#4ade80",
     mode: "done",
   };

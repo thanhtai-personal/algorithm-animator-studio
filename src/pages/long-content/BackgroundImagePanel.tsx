@@ -14,33 +14,33 @@ export function BackgroundImagePanel({ studio: s }: { studio: LongContentStudio 
         <h2 className="font-semibold">Ảnh nền video</h2>
         <p className="mt-1 text-xs text-muted-foreground">Nhập link ảnh hoặc upload nhiều ảnh. Duration trống sẽ tự chia đều theo độ dài video.</p>
       </div>
-      <div className="grid gap-2 lg:grid-cols-[1fr_150px_170px]">
+      <div className="grid gap-2 sm:grid-cols-[1fr_auto] xl:grid-cols-[1fr_150px_170px]">
         <div className="relative">
           <Link className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input className="pl-9" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://.../background.jpg" />
         </div>
-        <Button type="button" variant="outline" onClick={() => { s.addBackgroundUrl(url); setUrl(""); }}>
+        <Button type="button" variant="outline" className="min-w-[150px]" onClick={() => { s.addBackgroundUrl(url); setUrl(""); }}>
           <ImagePlus className="mr-2 h-4 w-4" /> Thêm link
         </Button>
-        <label className="flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+        <label className="flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground sm:col-span-2 xl:col-span-1">
           <Upload className="h-4 w-4" /> Upload ảnh
           <input type="file" accept="image/*" multiple className="hidden" onChange={(event) => s.uploadBackgroundFiles(event.target.files)} />
         </label>
       </div>
       {s.backgroundImages.length ? (
-        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-2">
           {s.backgroundImages.map((item, index) => (
-            <div key={item.id} className="grid grid-cols-[56px_1fr_92px_32px] items-center gap-2 rounded-lg border border-border/70 bg-background/35 p-2">
-              <img src={item.src} alt="" className="h-12 w-14 rounded object-cover" />
-              <div className="min-w-0">
+            <div key={item.id} className="grid gap-3 rounded-lg border border-border/70 bg-background/35 p-3 sm:grid-cols-[72px_minmax(0,1fr)] xl:grid-cols-[72px_minmax(0,1fr)_104px_36px] xl:items-center">
+              <img src={item.src} alt="" className="h-14 w-[72px] rounded-md object-cover" />
+              <div className="min-w-0 self-center">
                 <p className="truncate text-sm font-medium">{index + 1}. {item.label}</p>
                 <p className="text-xs text-muted-foreground">{item.image ? "Đã tải" : "Đang tải..."}</p>
               </div>
-              <div>
-                <Label className="sr-only">Duration</Label>
+              <div className="sm:col-span-2 xl:col-span-1">
+                <Label className="mb-1 block text-[11px] text-muted-foreground">Duration</Label>
                 <Input value={item.durationSec ?? ""} inputMode="decimal" placeholder="auto" onChange={(event) => s.updateBackgroundDuration(item.id, event.target.value)} />
               </div>
-              <button type="button" className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" onClick={() => s.removeBackground(item.id)}>
+              <button type="button" className="flex h-10 w-full items-center justify-center rounded-md border border-border/70 text-muted-foreground hover:bg-destructive/10 hover:text-destructive sm:col-span-2 xl:col-span-1 xl:w-9 xl:border-0" onClick={() => s.removeBackground(item.id)}>
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>

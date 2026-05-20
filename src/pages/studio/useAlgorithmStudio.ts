@@ -16,6 +16,7 @@ import { renderStudioPreview } from "./renderStudioPreview";
 
 const SWAP_TRANSITION_MULTIPLIER = 1.8;
 const KINETIC_ODD_EVEN_FRAME_MULTIPLIER = 8;
+const KINETIC_PANCAKE_FRAME_MULTIPLIER = 9;
 const TREE_SORT_FRAME_MULTIPLIER = 2.4;
 const PIGEONHOLE_FRAME_MULTIPLIER = 2.1;
 const DEFAULT_ANIMAL_ARRAY_SIZE = 14;
@@ -217,7 +218,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
       const baseInterval = 1000 / (fps * speed);
       const currentFrame = frames[Math.min(frameIdx, frames.length - 1)];
       const previousFrame = frameIdx > 0 ? frames[frameIdx - 1] : null;
-      const algorithmMultiplier = shortVideoType === "kinetic-typography" && algoId === "odd_even" ? KINETIC_ODD_EVEN_FRAME_MULTIPLIER : algoId === "tree_sort" ? TREE_SORT_FRAME_MULTIPLIER : algoId === "pigeonhole" ? PIGEONHOLE_FRAME_MULTIPLIER : 1;
+      const algorithmMultiplier = shortVideoType === "kinetic-typography" && algoId === "odd_even" ? KINETIC_ODD_EVEN_FRAME_MULTIPLIER : shortVideoType === "kinetic-typography" && algoId === "pancake" ? KINETIC_PANCAKE_FRAME_MULTIPLIER : algoId === "tree_sort" ? TREE_SORT_FRAME_MULTIPLIER : algoId === "pigeonhole" ? PIGEONHOLE_FRAME_MULTIPLIER : 1;
       const interval = shouldAnimateSwap(currentFrame, previousFrame)
         ? baseInterval * SWAP_TRANSITION_MULTIPLIER * algorithmMultiplier
         : baseInterval * algorithmMultiplier;
@@ -384,6 +385,7 @@ export type AlgorithmStudio = ReturnType<typeof useAlgorithmStudio>;
 
 function shouldAnimateSwap(frame: Frame, previousFrame: Frame | null) {
   if ((frame.vars.kind === "strand" || frame.vars.kind === "tournament") && previousFrame && frame.event === "swap") return true;
+  if (String(frame.vars.phase ?? "").includes("flip") && previousFrame && frame.event === "swap") return true;
   if (!previousFrame || frame.event !== "swap" || frame.swap.length !== 2) return false;
   const [a, b] = frame.swap;
   return previousFrame.arr.length === frame.arr.length

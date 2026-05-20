@@ -15,6 +15,7 @@ function buildMotionVoiceSegment(scene: LongContentScene, type: LongVideoType, a
 
 function kineticVoice(scene: LongContentScene, algoName: string, lang: Lang) {
   if (algoName.toLowerCase().includes("odd-even")) return oddEvenKineticVoice(scene, algoName, lang);
+  if (algoName.toLowerCase().includes("pancake")) return pancakeKineticVoice(scene, algoName, lang);
   if (lang === "vi") {
     const phrase = pickKineticPhrase(scene);
     return `${algoName}. ${phrase}. Nhịp nhanh. Nhìn từ khóa, theo chuyển động.`;
@@ -37,6 +38,22 @@ function oddEvenKineticVoice(scene: LongContentScene, algoName: string, lang: La
           : title === "odd-even-mental-model"
             ? (vi ? "Các cặp trong cùng pha không chồng nhau. Đây là ý tưởng sorting network." : "Pairs in one phase do not overlap. This is the sorting-network idea.")
             : (vi ? "Hai nhịp để sửa các cặp kề nhau." : "Two beats to repair adjacent pairs.");
+  return `${algoName}. ${phrase}`;
+}
+
+function pancakeKineticVoice(scene: LongContentScene, algoName: string, lang: Lang) {
+  const vi = lang === "vi";
+  const phrase = scene.id === "mental-model"
+    ? (vi ? "Mô hình là một đoạn chưa xong ở phía trên và một suffix đã cố định ở phía cuối." : "The model is an unfinished prefix on top and a fixed suffix at the end.")
+    : scene.id === "steps"
+      ? (vi ? "Mỗi vòng chọn giá trị lớn nhất của prefix. Nếu cần thì lật lên đầu, rồi lật về cuối đoạn; nếu đã đúng chỗ thì bỏ qua." : "Each round selects the largest value in the prefix. If needed, flip it to the front, then to the segment end; if it is already placed, skip the flip.")
+      : scene.id === "animation"
+        ? (vi ? "Với input này, sáu được đưa vào index năm; vòng sau chỉ còn xét prefix ngắn hơn." : "On this input, six is placed at index five; the next round only checks a shorter prefix.")
+        : scene.id === "complexity"
+          ? (vi ? "Best case O n bình phương. Average O n bình phương. Worst case O n bình phương. Space O một. Không ổn định." : "Best case O n squared. Average O n squared. Worst case O n squared. Space O one. Not stable.")
+          : scene.id === "recap"
+            ? (vi ? "Ghi nhớ invariant: suffix cuối mảng luôn đúng, còn prefix phía trước ngắn dần sau mỗi vòng." : "Remember the invariant: the suffix at the end is correct, and the prefix before it shrinks each round.")
+            : (vi ? "Sắp xếp bằng prefix reversal, không phải đổi từng cặp kề nhau." : "Sort by prefix reversal, not by adjacent pair swaps.");
   return `${algoName}. ${phrase}`;
 }
 

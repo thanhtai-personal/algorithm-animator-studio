@@ -14,6 +14,8 @@ import { getExportFormat, ExportFormat } from "./exportFormats";
 const SWAP_EXPORT_SECONDS = 0.35;
 const KINETIC_ODD_EVEN_SWAP_SECONDS = 0.62;
 const KINETIC_ODD_EVEN_HOLD_SECONDS = 0.28;
+const KINETIC_PANCAKE_FLIP_SECONDS = 0.78;
+const KINETIC_PANCAKE_HOLD_SECONDS = 0.32;
 const TREE_SORT_EXPORT_SECONDS = 0.12;
 const PIGEONHOLE_EXPORT_SECONDS = 0.16;
 
@@ -174,7 +176,7 @@ function waitFrame(fps: number) {
 
 function getTransitionFrameCount(params: ExportVideoParams, frame: Frame, previousFrame: Frame | null) {
   if (shouldAnimateSwap(frame, previousFrame)) {
-    const seconds = params.shortVideoType === "kinetic-typography" && params.algorithmId === "odd_even" ? KINETIC_ODD_EVEN_SWAP_SECONDS : SWAP_EXPORT_SECONDS;
+    const seconds = kineticSwapSeconds(params.algorithmId, params.shortVideoType);
     return Math.max(6, Math.round(params.fps * seconds));
   }
   return frameHoldCount(params.algorithmId, params.fps, params.shortVideoType);
@@ -182,13 +184,22 @@ function getTransitionFrameCount(params: ExportVideoParams, frame: Frame, previo
 
 function frameHoldCount(algorithmId: string, fps: number, shortVideoType: ShortVideoType) {
   if (shortVideoType === "kinetic-typography" && algorithmId === "odd_even") return Math.max(5, Math.round(fps * KINETIC_ODD_EVEN_HOLD_SECONDS));
+  if (shortVideoType === "kinetic-typography" && algorithmId === "pancake") return Math.max(6, Math.round(fps * KINETIC_PANCAKE_HOLD_SECONDS));
   if (algorithmId === "tree_sort") return Math.max(2, Math.round(fps * TREE_SORT_EXPORT_SECONDS));
   if (algorithmId === "pigeonhole") return Math.max(3, Math.round(fps * PIGEONHOLE_EXPORT_SECONDS));
   return 1;
 }
 
+function kineticSwapSeconds(algorithmId: string, shortVideoType: ShortVideoType) {
+  if (shortVideoType !== "kinetic-typography") return SWAP_EXPORT_SECONDS;
+  if (algorithmId === "odd_even") return KINETIC_ODD_EVEN_SWAP_SECONDS;
+  if (algorithmId === "pancake") return KINETIC_PANCAKE_FLIP_SECONDS;
+  return SWAP_EXPORT_SECONDS;
+}
+
 function shouldAnimateSwap(frame: Frame, previousFrame: Frame | null) {
   if ((frame.vars.kind === "strand" || frame.vars.kind === "tournament") && previousFrame && frame.event === "swap") return true;
+  if (String(frame.vars.phase ?? "").includes("flip") && previousFrame && frame.event === "swap") return true;
   if (!previousFrame || frame.event !== "swap" || frame.swap.length !== 2) return false;
   const [a, b] = frame.swap;
   return previousFrame.arr.length === frame.arr.length

@@ -2,8 +2,9 @@ import type { Frame } from "./algorithms";
 import { withTextShadow } from "./canvasText";
 import type { Lang } from "./i18n";
 import { roundRect } from "./renderers/shapes";
+import { renderShortKineticPancake } from "./shortKineticPancakeRenderer";
 
-type Params = {
+export type ShortKineticParams = {
   frame: Frame;
   previousFrame?: Frame | null;
   frameIndex: number;
@@ -15,6 +16,7 @@ type Params = {
   title: string;
   subtitle: string;
 };
+type Params = ShortKineticParams;
 
 type BubbleBeat = {
   kicker: string;
@@ -26,6 +28,7 @@ type BubbleBeat = {
 
 export function renderShortKineticTypography(ctx: CanvasRenderingContext2D, params: Params, w: number, h: number) {
   drawBackground(ctx, w, h, params.frameIndex / Math.max(1, params.frameCount - 1));
+  if (params.algorithmId === "pancake") return renderShortKineticPancake(ctx, params, w, h);
   if (params.algorithmId === "odd_even") {
     const beat = getOddEvenBeat(params);
     drawTopMeta(ctx, params, w); drawBeatText(ctx, beat, params.transitionProgress, w, h);
@@ -34,10 +37,8 @@ export function renderShortKineticTypography(ctx: CanvasRenderingContext2D, para
   }
   if (params.algorithmId !== "bubble") return drawFallback(ctx, params, w, h);
   const beat = getBubbleBeat(params);
-  drawTopMeta(ctx, params, w);
-  drawBeatText(ctx, beat, params.transitionProgress, w, h);
-  drawBubbleBars(ctx, params, beat, w, h);
-  drawFooter(ctx, params, beat.accent, w, h);
+  drawTopMeta(ctx, params, w); drawBeatText(ctx, beat, params.transitionProgress, w, h);
+  drawBubbleBars(ctx, params, beat, w, h); drawFooter(ctx, params, beat.accent, w, h);
 }
 
 function getBubbleBeat(params: Params): BubbleBeat {
@@ -392,7 +393,6 @@ function easeInOutCubic(value: number) {
   const safe = Math.max(0, Math.min(1, value));
   return safe < 0.5 ? 4 * safe * safe * safe : 1 - Math.pow(-2 * safe + 2, 3) / 2;
 }
-
 function easeOutBack(value: number) {
   const c1 = 1.70158, c3 = c1 + 1;
   const safe = Math.max(0, Math.min(1, value));

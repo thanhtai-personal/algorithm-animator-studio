@@ -146,17 +146,17 @@ function WorldInputs({ studio: s }: Props) {
   return (
     <div className="rounded-lg border border-cyan-400/25 bg-cyan-400/10 p-3 text-xs text-cyan-100 space-y-2">
       <div className="font-semibold text-cyan-200">
-        {s.lang === "vi" ? "Preset: Shifting Labyrinth" : "Preset: Shifting Labyrinth"}
+        {s.lang === "vi" ? "Preset: Maze Pathfinding" : "Preset: Maze Pathfinding"}
       </div>
       <p>
         {s.lang === "vi"
-          ? "A* sẽ tự chạy trong maze động: open set, closed set, f = g + h, tường realtime và replan."
-          : "A* runs in a dynamic maze with open set, closed set, f = g + h, real-time walls and replanning."}
+          ? "A* chạy trong module tìm đường ra mê cung: open set, closed set, f = g + h, tường realtime và replan."
+          : "A* runs in Maze Pathfinding with open set, closed set, f = g + h, real-time walls and replanning."}
       </p>
       <p className="text-cyan-200/80">
         {s.lang === "vi"
-          ? "Muốn setup riêng cho world/maze, hãy dùng mode Algorithm World ở header."
-          : "Use the Algorithm World mode in the header for the dedicated world/maze setup."}
+          ? "Muốn setup mê cung riêng, hãy dùng mode Tìm đường ra mê cung ở header."
+          : "Use Maze Pathfinding in the header for the dedicated maze setup."}
       </p>
     </div>
   );

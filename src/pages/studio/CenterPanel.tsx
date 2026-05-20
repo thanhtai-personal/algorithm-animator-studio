@@ -1,4 +1,4 @@
-import { Download, Pause, Play, Square } from "lucide-react";
+import { Download, Lock, Pause, Play, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -30,8 +30,8 @@ export function CenterPanel({ studio: s }: Props) {
             <Square className="w-4 h-4" />
           </Button>
           <Button onClick={s.requestExport} disabled={s.exporting} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-slate-900">
-            <Download className="w-4 h-4 mr-2" />
-            {s.exporting ? `${s.tr("exporting")} ${s.exportProgress}%` : s.tr("exportVideo")}
+            {s.exportLocked ? <Lock className="w-4 h-4 mr-2" /> : <Download className="w-4 h-4 mr-2" />}
+            {s.exporting ? `${s.tr("exporting")} ${s.exportProgress}%` : s.exportLocked ? (s.lang === "vi" ? "Đăng nhập để xuất" : "Login to export") : s.tr("exportVideo")}
           </Button>
         </div>
         <Slider

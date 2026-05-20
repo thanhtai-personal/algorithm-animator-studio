@@ -7,6 +7,7 @@ import {
   Frame,
   parseGraph,
   type AlgorithmWorldAlgorithmId,
+  type AlgorithmWorldMazeId,
   type AlgorithmWorldProblemType,
   type AlgorithmWorldVideoMode,
 } from "@/lib/algorithms";
@@ -32,13 +33,17 @@ const DEFAULT_ANIMAL_ARRAY_SIZE = 14;
 
 type UseAlgorithmStudioOptions = {
   requireConfigAccess?: () => boolean;
+  requireExportAccess?: () => boolean;
+  exportLocked?: boolean;
   initialAlgorithmId?: string;
   initialTitle?: string;
   initialSubtitle?: string;
   initialPlatformId?: (typeof PLATFORMS)[number]["id"];
   initialShowCode?: boolean;
   initialWorldVideoMode?: AlgorithmWorldVideoMode;
+  initialWorldCompareEnabled?: boolean;
   initialWorldProblemType?: AlgorithmWorldProblemType;
+  initialWorldMazeId?: AlgorithmWorldMazeId;
   initialWorldPrimaryAlgorithm?: AlgorithmWorldAlgorithmId;
   initialWorldSecondaryAlgorithm?: AlgorithmWorldAlgorithmId;
 };
@@ -67,7 +72,9 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const [showCode, setShowCode] = useState(options.initialShowCode ?? true);
   const [shortVideoType, setShortVideoType] = useState<ShortVideoType>("classic");
   const [worldVideoMode, setWorldVideoModeState] = useState<AlgorithmWorldVideoMode>(options.initialWorldVideoMode ?? "short");
+  const [worldCompareEnabled, setWorldCompareEnabledState] = useState(options.initialWorldCompareEnabled ?? (options.initialWorldVideoMode === "long"));
   const [worldProblemType, setWorldProblemTypeState] = useState<AlgorithmWorldProblemType>(options.initialWorldProblemType ?? "fastest");
+  const [worldMazeId, setWorldMazeIdState] = useState<AlgorithmWorldMazeId>(options.initialWorldMazeId ?? "astar_labyrinth");
   const [worldPrimaryAlgorithm, setWorldPrimaryAlgorithmState] = useState<AlgorithmWorldAlgorithmId>(options.initialWorldPrimaryAlgorithm ?? "astar");
   const [worldSecondaryAlgorithm, setWorldSecondaryAlgorithmState] = useState<AlgorithmWorldAlgorithmId>(options.initialWorldSecondaryAlgorithm ?? "dijkstra");
   const [columnVisualMode, setColumnVisualMode] = useState<ColumnVisualMode>("bar");
@@ -120,14 +127,16 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
       graph: parsedGraph ?? undefined,
       worldScenario: {
         videoMode: worldVideoMode,
+        compareEnabled: worldCompareEnabled,
         problemType: worldProblemType,
+        mazeId: worldMazeId,
         primaryAlgorithm: worldPrimaryAlgorithm,
         secondaryAlgorithm: worldSecondaryAlgorithm,
       },
       start: startId >= 0 ? startId : undefined,
       end: endId >= 0 ? endId : undefined,
     });
-  }, [algo, arr, target, customCode, parsedGraph, startId, endId, worldVideoMode, worldProblemType, worldPrimaryAlgorithm, worldSecondaryAlgorithm]);
+  }, [algo, arr, target, customCode, parsedGraph, startId, endId, worldVideoMode, worldCompareEnabled, worldProblemType, worldMazeId, worldPrimaryAlgorithm, worldSecondaryAlgorithm]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const current = frames[Math.min(frameIdx, frames.length - 1)];
@@ -369,7 +378,8 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   };
 
   const requestExport = () => {
-    if (!requireConfigAccess()) return;
+    const canExport = options.requireExportAccess ? options.requireExportAccess() : requireConfigAccess();
+    if (!canExport) return;
     void exportVideo();
   };
 
@@ -395,9 +405,13 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     subtitle, setSubtitle: (value: string) => runConfigAction(() => setSubtitle(value)),
     shortVideoType, setShortVideoType: (value: ShortVideoType) => runConfigAction(() => setShortVideoType(value)),
     worldVideoMode,
-    setWorldVideoMode: (value: AlgorithmWorldVideoMode) => runConfigAction(() => { setWorldVideoModeState(value); setFrameIdx(0); setPlaying(false); }),
+    worldCompareEnabled,
+    setWorldVideoMode: (value: AlgorithmWorldVideoMode) => runConfigAction(() => { setWorldVideoModeState(value); if (value === "long") setWorldCompareEnabledState(true); setFrameIdx(0); setPlaying(false); }),
+    setWorldCompareEnabled: (value: boolean) => runConfigAction(() => { setWorldCompareEnabledState(value); setFrameIdx(0); setPlaying(false); }),
     worldProblemType,
     setWorldProblemType: (value: AlgorithmWorldProblemType) => runConfigAction(() => { setWorldProblemTypeState(value); setFrameIdx(0); setPlaying(false); }),
+    worldMazeId,
+    setWorldMazeId: (value: AlgorithmWorldMazeId) => runConfigAction(() => { setWorldMazeIdState(value); setFrameIdx(0); setPlaying(false); }),
     worldPrimaryAlgorithm,
     setWorldPrimaryAlgorithm: (value: AlgorithmWorldAlgorithmId) => runConfigAction(() => { setWorldPrimaryAlgorithmState(value); setFrameIdx(0); setPlaying(false); }),
     worldSecondaryAlgorithm,
@@ -424,7 +438,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     startLabel, setStartLabel: (value: string) => runConfigAction(() => setStartLabel(value)),
     endLabel, setEndLabel: (value: string) => runConfigAction(() => setEndLabel(value)),
     algo, isGraph, graphLabels, frames, canvasRef, randomSizeMax,
-    current, isSearch, isCustom, codeForPanel, newArray, onMusicUpload, requestExport,
+    current, isSearch, isCustom, codeForPanel, newArray, onMusicUpload, requestExport, exportLocked: options.exportLocked ?? false,
   };
 }
 

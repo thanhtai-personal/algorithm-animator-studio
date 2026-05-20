@@ -55,7 +55,7 @@ Source of truth: `src/lib/algorithms/index.ts`.
 | Route | Mode | Notes |
 | --- | --- | --- |
 | `/` | Algorithm Shorts | Classic and kinetic short animation setup. |
-| `/algorithm-world` | Algorithm World | Dedicated maze/pathfinding setup. Short mode runs 1 algorithm; Long 16:9 mode runs 2 algorithms side by side. Supports escape-route and fastest-route problem types. |
+| `/maze-pathfinding` | Maze Pathfinding / Tìm đường ra mê cung | Dedicated maze setup. Short 9:16 can run 1 algorithm or compare 2 algorithms stacked top/bottom. Long 16:9 compares 2 algorithms side by side. Supports escape-route and fastest-route problem types. |
 | `/long-content` | Algorithm Long 16:9 | Long-form YouTube explainer setup. |
 
 ## Custom
@@ -152,13 +152,15 @@ No remaining sorting TODO items in this list.
 | `divide_conquer` | Divide and Conquer | Candidate |
 | `greedy_activity` | Greedy Activity Selection | Candidate |
 
-### Algorithm World build catalog
+### Maze Pathfinding build catalog
 
-| ID | Algorithm | Runtime | Best fit |
-| --- | --- | --- | --- |
-| `dfs` | DFS | `O(V + E)` | Find any exit route |
-| `bfs` | BFS | `O(V + E)` | Shortest path on unweighted mazes |
-| `dijkstra` | Dijkstra | `O(E log V)` | Fastest path when movement costs vary |
-| `astar` | A* Pathfinding | `O(E log V)` | Fastest path with heuristic guidance |
+This module was renamed from the temporary **Algorithm World** label to **Maze Pathfinding / Tìm đường ra mê cung**. The broader Algorithm World concept should be rebuilt later as a separate mode.
 
-Algorithm World tasks currently distinguish between `escape` (find a valid path to the exit) and `fastest` (find the quickest/shortest route to the exit).
+| ID | Algorithm | Runtime | Best fit | Recommended maze |
+| --- | --- | --- | --- | --- |
+| `dfs` | DFS | `O(V + E)` | Find any exit route | `dfs_tunnels` |
+| `bfs` | BFS | `O(V + E)` | Shortest path on unweighted mazes | `bfs_rooms` |
+| `dijkstra` | Dijkstra | `O(E log V)` | Fastest path when movement costs vary | `dijkstra_weighted` |
+| `astar` | A* Pathfinding | `O(E log V)` | Fastest path with heuristic guidance | `astar_labyrinth` |
+
+Maze Pathfinding tasks distinguish between `escape` (find a valid path to the exit) and `fastest` (find the quickest/shortest route to the exit). Short 9:16 can render either one algorithm or two algorithms stacked top/bottom. Long 16:9 is intended for side-by-side comparison.

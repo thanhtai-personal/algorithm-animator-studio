@@ -1,12 +1,12 @@
 import type React from "react";
-import { Activity, Flag, GitCompare, Map, RotateCcw, Route, Sparkles, Zap } from "lucide-react";
+import { Activity, Flag, GitCompare, Lock, Map, RotateCcw, Route, Sparkles, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { WORLD_ALGORITHMS } from "@/lib/algorithmWorld";
-import type { AlgorithmWorldAlgorithmId, AlgorithmWorldProblemType, AlgorithmWorldVideoMode } from "@/lib/algorithms";
+import { MAZE_PRESETS, WORLD_ALGORITHMS, localize, recommendedMazeForAlgorithm } from "@/lib/algorithmWorld";
+import type { AlgorithmWorldAlgorithmId, AlgorithmWorldMazeId, AlgorithmWorldProblemType, AlgorithmWorldVideoMode } from "@/lib/algorithms";
 import type { AlgorithmStudio } from "@/pages/studio/useAlgorithmStudio";
 
 type Props = { studio: AlgorithmStudio };
@@ -16,6 +16,7 @@ export function WorldSetupPanel({ studio: s }: Props) {
   const world = s.current?.world ?? s.current?.worldCompare?.left;
   const phase = String(world?.phase ?? vars.phase ?? "setup");
   const isLong = s.worldVideoMode === "long";
+  const t = (vi: string, en: string) => s.lang === "vi" ? vi : en;
 
   return (
     <div className="space-y-4">
@@ -23,50 +24,65 @@ export function WorldSetupPanel({ studio: s }: Props) {
         <div className="flex items-start gap-3">
           <div className="rounded-xl bg-cyan-400/15 p-2 text-cyan-200"><Map className="h-5 w-5" /></div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">Algorithm World</p>
-            <h2 className="mt-1 text-lg font-bold">Maze Pathfinding Lab</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">{t("Tìm đường ra mê cung", "Maze Pathfinding")}</p>
+            <h2 className="mt-1 text-lg font-bold">{t("Phòng lab mê cung", "Maze Lab")}</h2>
             <p className="mt-1 text-xs text-muted-foreground">
-              {s.lang === "vi"
-                ? "World mode mô phỏng thuật toán tìm đường từ lối vào đến lối ra, có vật cản realtime."
-                : "World mode simulates pathfinding from entrance to exit with real-time obstacles."}
+              {t(
+                "Module này chỉ tập trung vào bài toán tìm đường từ lối vào đến lối ra. Algorithm World lớn hơn sẽ tách riêng sau.",
+                "This module focuses only on entrance-to-exit maze pathfinding. The broader Algorithm World will be rebuilt later.",
+              )}
             </p>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <Metric label="Open" value={vars.open ?? 0} tone="cyan" />
-          <Metric label="Visited" value={vars.visited ?? 0} tone="violet" />
-          <Metric label="Replans" value={vars.replan ?? 0} tone="rose" />
+          <Metric label={t("Mở", "Open")} value={vars.open ?? 0} tone="cyan" />
+          <Metric label={t("Đã thăm", "Visited")} value={vars.visited ?? 0} tone="violet" />
+          <Metric label={t("Tính lại", "Replans")} value={vars.replan ?? 0} tone="rose" />
         </div>
         <Button variant="outline" className="w-full" onClick={() => { s.setPlaying(false); s.setFrameIdx(0); }}>
-          <RotateCcw className="mr-2 h-4 w-4" /> Reset timeline
+          <RotateCcw className="mr-2 h-4 w-4" /> {t("Reset timeline", "Reset timeline")}
         </Button>
       </Card>
 
       <Card className="space-y-3 p-4">
-        <div className="flex items-center gap-2"><Zap className="h-4 w-4 text-yellow-300" /><Label>{s.lang === "vi" ? "Mode video" : "Video mode"}</Label></div>
+        <div className="flex items-center gap-2"><Zap className="h-4 w-4 text-yellow-300" /><Label>{t("Khung hình video", "Video layout")}</Label></div>
         <div className="grid grid-cols-2 gap-2">
-          <ModeButton active={!isLong} icon={<Route className="h-4 w-4" />} title="Short" desc="1 algorithm" onClick={() => s.setWorldVideoMode("short")} />
-          <ModeButton active={isLong} icon={<GitCompare className="h-4 w-4" />} title="Long 16:9" desc="2 algorithms" onClick={() => s.setWorldVideoMode("long")} />
+          <ModeButton active={!isLong} icon={<Route className="h-4 w-4" />} title="Short 9:16" desc={t("1 hoặc 2 thuật toán", "1 or 2 algorithms")} onClick={() => s.setWorldVideoMode("short")} />
+          <ModeButton active={isLong} icon={<GitCompare className="h-4 w-4" />} title="Long 16:9" desc={t("So sánh ngang", "Side-by-side compare")} onClick={() => s.setWorldVideoMode("long")} />
         </div>
-        <p className="text-xs text-muted-foreground">
-          {isLong
-            ? "Long mode renders two algorithms side by side on one 16:9 screen for comparison."
-            : "Short mode renders one algorithm as a vertical Shorts/Reels visualization."}
-        </p>
-      </Card>
-
-      <Card className="space-y-3 p-4">
-        <div className="flex items-center gap-2"><Flag className="h-4 w-4 text-emerald-300" /><Label>{s.lang === "vi" ? "Kiểu bài toán" : "Problem type"}</Label></div>
-        <div className="grid grid-cols-2 gap-2">
-          <ModeButton active={s.worldProblemType === "escape"} title="Find exit" desc="có đường ra" onClick={() => s.setWorldProblemType("escape")} />
-          <ModeButton active={s.worldProblemType === "fastest"} title="Fastest path" desc="đường ngắn/nhanh" onClick={() => s.setWorldProblemType("fastest")} />
+        <div className="flex items-center justify-between rounded-lg border border-border/60 bg-background/60 px-3 py-2">
+          <div>
+            <Label>{t("So sánh 2 thuật toán", "Compare 2 algorithms")}</Label>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {isLong
+                ? t("Long 16:9 hiển thị trái/phải.", "Long 16:9 renders left/right.")
+                : t("Short 9:16 hiển thị một thuật toán trên, một thuật toán dưới.", "Short 9:16 renders one algorithm on top and one below.")}
+            </p>
+          </div>
+          <Switch checked={s.worldCompareEnabled} onCheckedChange={s.setWorldCompareEnabled} />
         </div>
       </Card>
 
       <Card className="space-y-3 p-4">
-        <div className="flex items-center gap-2"><Activity className="h-4 w-4 text-emerald-300" /><Label>{s.lang === "vi" ? "Thuật toán build được" : "Buildable algorithms"}</Label></div>
-        <AlgorithmSelect label={isLong ? "Left" : "Algorithm"} value={s.worldPrimaryAlgorithm} onChange={s.setWorldPrimaryAlgorithm} problemType={s.worldProblemType} />
-        {isLong ? <AlgorithmSelect label="Right" value={s.worldSecondaryAlgorithm} onChange={s.setWorldSecondaryAlgorithm} problemType={s.worldProblemType} /> : null}
+        <div className="flex items-center gap-2"><Flag className="h-4 w-4 text-emerald-300" /><Label>{t("Kiểu bài toán", "Problem type")}</Label></div>
+        <div className="grid grid-cols-2 gap-2">
+          <ModeButton active={s.worldProblemType === "escape"} title={t("Tìm đường ra", "Find exit")} desc={t("chỉ cần thoát", "any valid route")} onClick={() => s.setWorldProblemType("escape")} />
+          <ModeButton active={s.worldProblemType === "fastest"} title={t("Đường nhanh nhất", "Fastest path")} desc={t("ngắn/rẻ nhất", "shortest/cheapest")} onClick={() => s.setWorldProblemType("fastest")} />
+        </div>
+      </Card>
+
+      <Card className="space-y-3 p-4">
+        <div className="flex items-center gap-2"><Map className="h-4 w-4 text-cyan-300" /><Label>{t("Mê cung", "Maze preset")}</Label></div>
+        <MazeSelect value={s.worldMazeId} onChange={s.setWorldMazeId} lang={s.lang} />
+        <Button variant="secondary" className="w-full" onClick={() => s.setWorldMazeId(recommendedMazeForAlgorithm(s.worldPrimaryAlgorithm))}>
+          {t("Dùng mê cung hợp thuật toán chính", "Use maze recommended for primary algorithm")}
+        </Button>
+      </Card>
+
+      <Card className="space-y-3 p-4">
+        <div className="flex items-center gap-2"><Activity className="h-4 w-4 text-emerald-300" /><Label>{t("Thuật toán có thể build", "Buildable algorithms")}</Label></div>
+        <AlgorithmSelect label={s.worldCompareEnabled ? t("Thuật toán trên/trái", "Top/left algorithm") : t("Thuật toán", "Algorithm")} value={s.worldPrimaryAlgorithm} onChange={s.setWorldPrimaryAlgorithm} problemType={s.worldProblemType} lang={s.lang} />
+        {s.worldCompareEnabled ? <AlgorithmSelect label={isLong ? t("Thuật toán phải", "Right algorithm") : t("Thuật toán dưới", "Bottom algorithm")} value={s.worldSecondaryAlgorithm} onChange={s.setWorldSecondaryAlgorithm} problemType={s.worldProblemType} lang={s.lang} /> : null}
         <div className="space-y-2 pt-1">
           {WORLD_ALGORITHMS.map((item) => (
             <div key={item.id} className="rounded-lg border border-border/50 bg-background/60 p-2 text-xs">
@@ -74,25 +90,26 @@ export function WorldSetupPanel({ studio: s }: Props) {
                 <span className="font-semibold text-foreground">{item.name}</span>
                 <span className="font-mono text-yellow-300">{item.runtime}</span>
               </div>
-              <p className="mt-1 text-muted-foreground">{item.note}</p>
+              <p className="mt-1 text-muted-foreground">{localize(item.note, s.lang)}</p>
             </div>
           ))}
         </div>
       </Card>
 
       <Card className="space-y-3 p-4">
-        <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-yellow-300" /><Label>{s.lang === "vi" ? "Nhịp dựng video" : "Video beat"}</Label></div>
+        <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-yellow-300" /><Label>{t("Nhịp dựng video", "Video beat")}</Label></div>
         <div className="space-y-2 text-xs text-muted-foreground">
-          <Beat active={phase === "setup"} text="1. Load maze entrance and exit" />
-          <Beat active={phase === "search"} text="2. Expand frontier/open set" />
-          <Beat active={phase === "obstacle"} text="3. Real-time wall breaks old route" />
-          <Beat active={phase === "replan"} text="4. Recalculate from current position" />
-          <Beat active={phase === "done"} text="5. Show final entrance → exit path" />
+          <Beat active={phase === "setup"} text={t("1. Nạp lối vào và lối ra", "1. Load entrance and exit")} />
+          <Beat active={phase === "search"} text={t("2. Mở rộng frontier/open set", "2. Expand frontier/open set")} />
+          <Beat active={phase === "obstacle"} text={t("3. Tường realtime phá đường cũ", "3. Real-time wall breaks old route")} />
+          <Beat active={phase === "replan"} text={t("4. Tính lại từ vị trí hiện tại", "4. Recalculate from current position")} />
+          <Beat active={phase === "done"} text={t("5. Hiện đường từ lối vào đến lối ra", "5. Show entrance-to-exit path")} />
         </div>
       </Card>
 
       <Card className="space-y-3 p-4">
         <div className="flex items-center justify-between"><Label>{s.tr("showCodeInVideo")}</Label><Switch checked={s.showCode} onCheckedChange={s.setShowCode} /></div>
+        {s.exportLocked ? <div className="flex items-center gap-2 rounded-lg border border-yellow-400/40 bg-yellow-400/10 px-3 py-2 text-xs text-yellow-100"><Lock className="h-3.5 w-3.5" />{t("Cần đăng nhập để xuất video.", "Login is required to export video.")}</div> : null}
         <pre className="max-h-52 overflow-auto rounded-lg border border-border/50 bg-slate-950/60 p-3 text-[11px] text-slate-200">{s.codeForPanel}</pre>
       </Card>
     </div>
@@ -103,8 +120,10 @@ function AlgorithmSelect(props: {
   label: string;
   value: AlgorithmWorldAlgorithmId;
   problemType: AlgorithmWorldProblemType;
+  lang: "en" | "vi";
   onChange: (value: AlgorithmWorldAlgorithmId) => void;
 }) {
+  const t = (vi: string, en: string) => props.lang === "vi" ? vi : en;
   return (
     <div>
       <Label className="text-xs">{props.label}</Label>
@@ -113,11 +132,24 @@ function AlgorithmSelect(props: {
         <SelectContent>
           {WORLD_ALGORITHMS.map((item) => {
             const recommended = item.taskFit.includes(props.problemType);
-            return <SelectItem key={item.id} value={item.id}>{item.name} · {item.runtime}{recommended ? "" : " · not ideal"}</SelectItem>;
+            return <SelectItem key={item.id} value={item.id}>{item.name} · {item.runtime}{recommended ? "" : ` · ${t("không tối ưu", "not ideal")}`}</SelectItem>;
           })}
         </SelectContent>
       </Select>
     </div>
+  );
+}
+
+function MazeSelect(props: { value: AlgorithmWorldMazeId; lang: "en" | "vi"; onChange: (value: AlgorithmWorldMazeId) => void }) {
+  return (
+    <Select value={props.value} onValueChange={(value) => props.onChange(value as AlgorithmWorldMazeId)}>
+      <SelectTrigger><SelectValue /></SelectTrigger>
+      <SelectContent>
+        {MAZE_PRESETS.map((maze) => (
+          <SelectItem key={maze.id} value={maze.id}>{localize(maze.name, props.lang)} · {maze.recommendedFor.map((id) => id.toUpperCase()).join("/")}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 

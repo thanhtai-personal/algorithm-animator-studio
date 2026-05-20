@@ -3,9 +3,12 @@ export type AlgorithmWorldCell = { x: number; y: number };
 export type AlgorithmWorldAlgorithmId = "dfs" | "bfs" | "dijkstra" | "astar";
 export type AlgorithmWorldProblemType = "escape" | "fastest";
 export type AlgorithmWorldVideoMode = "short" | "long";
+export type AlgorithmWorldMazeId = "dfs_tunnels" | "bfs_rooms" | "dijkstra_weighted" | "astar_labyrinth";
 export type AlgorithmWorldScenarioOptions = {
   videoMode?: AlgorithmWorldVideoMode;
+  compareEnabled?: boolean;
   problemType?: AlgorithmWorldProblemType;
+  mazeId?: AlgorithmWorldMazeId;
   primaryAlgorithm?: AlgorithmWorldAlgorithmId;
   secondaryAlgorithm?: AlgorithmWorldAlgorithmId;
 };
@@ -32,6 +35,7 @@ export type AlgorithmWorldState = {
   algorithmName?: string;
   runtimeLabel?: string;
   problemType?: AlgorithmWorldProblemType;
+  mazeId?: AlgorithmWorldMazeId;
   visitedCount?: number;
   pathLength?: number;
 };

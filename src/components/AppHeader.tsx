@@ -7,40 +7,44 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AUTH_STATE_EVENT, AuthProfile, getCurrentProfile, signOut } from "@/lib/auth";
 import { type Lang, readSystemLang, subscribeSystemLang, writeSystemLang } from "@/lib/i18n";
 
-const PAGE_META: Record<string, { title: string; subtitle: string }> = {
+const getPageMeta = (lang: Lang): Record<string, { title: string; subtitle: string }> => ({
   "/": {
     title: "AlgoShorts Studio",
-    subtitle: "Create short algorithm animations for Shorts, Reels and TikTok.",
+    subtitle: lang === "vi" ? "Tạo video thuật toán ngắn cho Shorts, Reels và TikTok." : "Create short algorithm animations for Shorts, Reels and TikTok.",
+  },
+  "/maze-pathfinding": {
+    title: lang === "vi" ? "Tìm đường ra mê cung" : "Maze Pathfinding",
+    subtitle: lang === "vi" ? "Tạo video tìm lối ra, so sánh DFS, BFS, Dijkstra và A*." : "Create maze escape videos comparing DFS, BFS, Dijkstra and A*.",
   },
   "/algorithm-world": {
-    title: "Algorithm World",
-    subtitle: "Build cinematic algorithm worlds such as A* through dynamic mazes.",
+    title: lang === "vi" ? "Tìm đường ra mê cung" : "Maze Pathfinding",
+    subtitle: lang === "vi" ? "Tên Algorithm World sẽ dùng cho module lớn hơn sau này." : "Algorithm World is reserved for a broader module later.",
   },
   "/long-content": {
-    title: "Long Content Studio",
-    subtitle: "Create 16:9 YouTube explainers with animation, script, voice and music.",
+    title: lang === "vi" ? "Algorithm Long 16:9" : "Long Content Studio",
+    subtitle: lang === "vi" ? "Tạo video YouTube 16:9 có animation, script, voice và nhạc." : "Create 16:9 YouTube explainers with animation, script, voice and music.",
   },
   "/story-video": {
-    title: "Story Video Studio",
-    subtitle: "Create reading-story videos from URLs, text, voice-over and background media.",
+    title: lang === "vi" ? "Kênh đọc truyện" : "Story Video Studio",
+    subtitle: lang === "vi" ? "Tạo video đọc truyện từ URL, văn bản, giọng đọc và nền." : "Create reading-story videos from URLs, text, voice-over and background media.",
   },
   "/youtube": {
-    title: "YouTube Publishing",
-    subtitle: "Login with OAuth from server .env, then upload exported videos.",
+    title: lang === "vi" ? "Đăng YouTube" : "YouTube Publishing",
+    subtitle: lang === "vi" ? "Đăng nhập OAuth qua server .env rồi upload video đã xuất." : "Login with OAuth from server .env, then upload exported videos.",
   },
   "/settings": {
-    title: "Settings",
-    subtitle: "Configure local Piper runtime paths and health check.",
+    title: lang === "vi" ? "Cài đặt" : "Settings",
+    subtitle: lang === "vi" ? "Cấu hình local Piper runtime path và kiểm tra trạng thái." : "Configure local Piper runtime paths and health check.",
   },
   "/youtube-publishing": {
-    title: "YouTube Publishing",
-    subtitle: "Login with OAuth from server .env, then upload exported videos.",
+    title: lang === "vi" ? "Đăng YouTube" : "YouTube Publishing",
+    subtitle: lang === "vi" ? "Đăng nhập OAuth qua server .env rồi upload video đã xuất." : "Login with OAuth from server .env, then upload exported videos.",
   },
   "/social-publishing": {
-    title: "YouTube Publishing",
-    subtitle: "Login with OAuth from server .env, then upload exported videos.",
+    title: lang === "vi" ? "Đăng YouTube" : "YouTube Publishing",
+    subtitle: lang === "vi" ? "Đăng nhập OAuth qua server .env rồi upload video đã xuất." : "Login with OAuth from server .env, then upload exported videos.",
   },
-};
+});
 
 export function AppHeader() {
   const navigate = useNavigate();
@@ -49,13 +53,16 @@ export function AppHeader() {
   const [profile, setProfile] = useState<AuthProfile | null>(null);
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
   const [mounted, setMounted] = useState(false);
-  const meta = useMemo(() => PAGE_META[location.pathname] ?? PAGE_META["/"], [location.pathname]);
+  const meta = useMemo(() => {
+    const pageMeta = getPageMeta(lang);
+    return pageMeta[location.pathname] ?? pageMeta["/"];
+  }, [lang, location.pathname]);
   const contentMode = location.pathname === "/story-video"
     ? "story-video"
     : location.pathname === "/long-content"
       ? "algorithm-long"
-      : location.pathname === "/algorithm-world"
-        ? "algorithm-world"
+      : (location.pathname === "/maze-pathfinding" || location.pathname === "/algorithm-world")
+        ? "maze-pathfinding"
         : "algorithm-shorts";
   const isAuthenticated = profile !== null;
   const authLabel = lang === "vi" ? (isAuthenticated ? "Đăng xuất" : "Đăng nhập") : (isAuthenticated ? "Logout" : "Login");
@@ -111,7 +118,7 @@ export function AppHeader() {
   function changeContentMode(value: string) {
     if (value === "story-video") navigate("/story-video");
     else if (value === "algorithm-long") navigate("/long-content");
-    else if (value === "algorithm-world") navigate("/algorithm-world");
+    else if (value === "maze-pathfinding") navigate("/maze-pathfinding");
     else navigate("/");
   }
 
@@ -130,12 +137,12 @@ export function AppHeader() {
 
         <nav className="flex items-center gap-2 overflow-x-auto pb-1 xl:pb-0">
           <Select value={contentMode} onValueChange={changeContentMode}>
-            <SelectTrigger className="h-10 w-[210px] shrink-0"><SelectValue placeholder="Chọn studio" /></SelectTrigger>
+            <SelectTrigger className="h-10 w-[230px] shrink-0"><SelectValue placeholder={lang === "vi" ? "Chọn studio" : "Choose studio"} /></SelectTrigger>
             <SelectContent>
               <SelectItem value="algorithm-shorts">Algorithm Shorts</SelectItem>
-              <SelectItem value="algorithm-world">Algorithm World</SelectItem>
+              <SelectItem value="maze-pathfinding">{lang === "vi" ? "Tìm đường ra mê cung" : "Maze Pathfinding"}</SelectItem>
               <SelectItem value="algorithm-long">Algorithm Long 16:9</SelectItem>
-              <SelectItem value="story-video">Kênh đọc truyện</SelectItem>
+              <SelectItem value="story-video">{lang === "vi" ? "Kênh đọc truyện" : "Story video"}</SelectItem>
             </SelectContent>
           </Select>
           <Button
@@ -147,7 +154,7 @@ export function AppHeader() {
             <span className="hidden sm:inline">YouTube</span>
           </Button>
           <Button
-            aria-label="Settings"
+            aria-label={lang === "vi" ? "Cài đặt" : "Settings"}
             className="h-10 shrink-0"
             size="icon"
             variant={location.pathname === "/settings" ? "default" : "outline"}
@@ -162,7 +169,7 @@ export function AppHeader() {
               <SelectItem value="vi">Tiếng Việt</SelectItem>
             </SelectContent>
           </Select>
-          <Button aria-label="Đổi dark/light theme" className="h-10 shrink-0" size="icon" variant="outline" onClick={toggleTheme}>
+          <Button aria-label={lang === "vi" ? "Đổi giao diện sáng/tối" : "Toggle light/dark theme"} className="h-10 shrink-0" size="icon" variant="outline" onClick={toggleTheme}>
             {mounted && resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
           {isAuthenticated ? (

@@ -1,21 +1,23 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AuthProfile, getCurrentProfile, isSuperAdminProfile } from "@/lib/auth";
+import { AuthProfile, getCurrentProfile } from "@/lib/auth";
+import { readSystemLang } from "@/lib/i18n";
 import { CenterPanel } from "./studio/CenterPanel";
 import { RightPanel } from "./studio/RightPanel";
 import { useAlgorithmStudio } from "./studio/useAlgorithmStudio";
 import { WorldSetupPanel } from "./algorithm-world/WorldSetupPanel";
 
-const AlgorithmWorld = () => {
+const MazePathfinding = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<AuthProfile | null>(null);
-  const canConfigure = isSuperAdminProfile(profile);
+  const initialLang = readSystemLang("en");
+  const isAuthenticated = profile !== null;
 
   useEffect(() => {
     let cancelled = false;
     getCurrentProfile()
       .then((nextProfile) => {
-        if (!cancelled) setProfile(isSuperAdminProfile(nextProfile) ? nextProfile : null);
+        if (!cancelled) setProfile(nextProfile);
       })
       .catch(() => {
         if (!cancelled) setProfile(null);
@@ -26,21 +28,25 @@ const AlgorithmWorld = () => {
     };
   }, []);
 
-  function requireConfigAccess() {
-    if (canConfigure) return true;
-    navigate("/auth", { replace: false, state: { from: "/algorithm-world" } });
+  function requireExportAccess() {
+    if (isAuthenticated) return true;
+    navigate("/auth", { replace: false, state: { from: "/maze-pathfinding" } });
     return false;
   }
 
   const studio = useAlgorithmStudio({
-    requireConfigAccess,
+    requireConfigAccess: () => true,
+    requireExportAccess,
+    exportLocked: !isAuthenticated,
     initialAlgorithmId: "astar",
-    initialTitle: "A* Pathfinding Visualized",
-    initialSubtitle: "Entrance → Exit through realtime obstacles",
+    initialTitle: initialLang === "vi" ? "Tìm đường ra mê cung" : "Maze Pathfinding Visualized",
+    initialSubtitle: initialLang === "vi" ? "Từ lối vào đến lối ra qua mê cung động" : "Entrance to exit through dynamic mazes",
     initialPlatformId: "shorts",
     initialShowCode: false,
     initialWorldVideoMode: "short",
+    initialWorldCompareEnabled: false,
     initialWorldProblemType: "fastest",
+    initialWorldMazeId: "astar_labyrinth",
     initialWorldPrimaryAlgorithm: "astar",
     initialWorldSecondaryAlgorithm: "dijkstra",
   });
@@ -56,4 +62,4 @@ const AlgorithmWorld = () => {
   );
 };
 
-export default AlgorithmWorld;
+export default MazePathfinding;

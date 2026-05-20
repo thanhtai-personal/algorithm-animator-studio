@@ -27,7 +27,14 @@ export function drawAlgorithmWorldComparison(
   theme: Theme,
   lang: Lang = "en",
 ) {
-  const gap = Math.max(18, Math.round(w * 0.018));
+  const isPortrait = h > w * 0.95;
+  const gap = Math.max(18, Math.round((isPortrait ? h : w) * 0.018));
+  if (isPortrait) {
+    const panelH = (h - gap) / 2;
+    drawWorldPanel(ctx, compare.left, { x: padding, y: top, w, h: panelH, theme, lang, label: compare.left.algorithmName });
+    drawWorldPanel(ctx, compare.right, { x: padding, y: top + panelH + gap, w, h: panelH, theme, lang, label: compare.right.algorithmName });
+    return;
+  }
   const panelW = (w - gap) / 2;
   drawWorldPanel(ctx, compare.left, { x: padding, y: top, w: panelW, h, theme, lang, label: compare.left.algorithmName });
   drawWorldPanel(ctx, compare.right, { x: padding + panelW + gap, y: top, w: panelW, h, theme, lang, label: compare.right.algorithmName });
@@ -59,8 +66,8 @@ function drawWorldPanel(ctx: CanvasRenderingContext2D, world: AlgorithmWorldStat
   drawWalls(ctx, world.dynamicWalls, cell, gridX, gridY, true);
   drawCells(ctx, world.pulseCells ?? [], cell, gridX, gridY, "rgba(251,113,133,0.62)", "#fecdd3");
   drawPath(ctx, world.path, cell, gridX, gridY, "#a3e635", 16, false);
-  drawEndpoint(ctx, world.start, cell, gridX, gridY, "#22d3ee", "IN");
-  drawEndpoint(ctx, world.goal, cell, gridX, gridY, "#f43f5e", "OUT");
+  drawEndpoint(ctx, world.start, cell, gridX, gridY, "#22d3ee", label(lang, "VÀO", "IN"));
+  drawEndpoint(ctx, world.goal, cell, gridX, gridY, "#f43f5e", label(lang, "RA", "OUT"));
   if (world.current) drawCurrent(ctx, world.current, cell, gridX, gridY, theme.highlight);
   drawHud(ctx, world, x + 14, y + h - footerH + 12, w - 28, footerH - 24, theme, lang);
 }
@@ -201,10 +208,10 @@ function drawHud(ctx: CanvasRenderingContext2D, world: AlgorithmWorldState, x: n
   ctx.textAlign = "left";
   ctx.font = "700 13px ui-sans-serif, system-ui";
   ctx.fillStyle = "#a5f3fc";
-  wrap(ctx, world.status, w - 28).slice(0, 2).forEach((line, index) => ctx.fillText(line, x + 14, y + 12 + index * 17));
+  wrap(ctx, localizedStatus(world, lang), w - 28).slice(0, 2).forEach((line, index) => ctx.fillText(line, x + 14, y + 12 + index * 17));
 
   const rows = [
-    [label(lang, "Pha", "Phase"), world.phase],
+    [label(lang, "Pha", "Phase"), phaseLabel(world.phase, lang)],
     [label(lang, "Runtime", "Runtime"), world.runtimeLabel ?? "—"],
     [label(lang, "Visited", "Visited"), String(world.visitedCount ?? world.closedSet.length)],
     [label(lang, "Độ dài path", "Path length"), String((world.pathLength ?? world.path.length) || "—")],
@@ -239,4 +246,25 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, maxW: number) {
 
 function label(lang: Lang, vi: string, en: string) {
   return lang === "vi" ? vi : en;
+}
+
+function localizedStatus(world: AlgorithmWorldState, lang: Lang) {
+  const algo = world.algorithmName ?? "Algorithm";
+  if (world.phase === "setup") return label(lang, `${algo} bắt đầu ở lối vào và tìm đường ra.`, `${algo} starts at the maze entrance and looks for the exit.`);
+  if (world.phase === "obstacle") return label(lang, "Tường realtime xuất hiện, đường cũ bị phá nên thuật toán phải tính lại.", "Real-time walls appear, breaking the old route and forcing a recalculation.");
+  if (world.phase === "replan") return label(lang, `${algo} đang tính lại sau khi mê cung thay đổi.`, `${algo} replans after the maze changed.`);
+  if (world.phase === "done") return label(lang, `${algo} đã tìm được đường hoàn chỉnh từ lối vào đến lối ra.`, `${algo} found a complete entrance-to-exit path.`);
+  return label(lang, `${algo} mở rộng các ô có thể đi trong mê cung.`, `${algo} expands reachable cells in the maze.`);
+}
+
+function phaseLabel(phase: string, lang: Lang) {
+  const map: Record<string, { vi: string; en: string }> = {
+    setup: { vi: "chuẩn bị", en: "setup" },
+    search: { vi: "tìm đường", en: "search" },
+    path: { vi: "đường đi", en: "path" },
+    obstacle: { vi: "vật cản", en: "obstacle" },
+    replan: { vi: "tính lại", en: "replan" },
+    done: { vi: "xong", en: "done" },
+  };
+  return map[phase]?.[lang] ?? phase;
 }

@@ -38,6 +38,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<Index />} />
+            <Route path="/maze-pathfinding" element={<AlgorithmWorld />} />
             <Route path="/algorithm-world" element={<AlgorithmWorld />} />
             <Route path="/long-content" element={<LongContent />} />
             <Route path="/story-video" element={<StoryVideoStudio />} />

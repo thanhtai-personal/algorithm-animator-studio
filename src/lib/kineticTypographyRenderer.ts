@@ -3,6 +3,7 @@ import type { Lang } from "./i18n";
 import type { LongContentScene } from "./longContentTimeline";
 import type { LongVideoType } from "./longVideoTypes";
 import type { Theme } from "./renderer";
+import { withTextShadow } from "./canvasText";
 import { drawKineticTextCard } from "./kineticTextEffects";
 import { roundRect } from "./renderers/shapes";
 
@@ -37,7 +38,7 @@ export function renderKineticTypography(ctx: CanvasRenderingContext2D, params: P
   const local = timing.progress * cards.length - beat;
   const card = cards[beat];
   const accent = card.accent ?? "#4ade80";
-  drawKineticBackground(ctx, params.backgroundImage, card.invert ? accent : "#050505");
+  drawKineticBackground(ctx, params.backgroundImage, "#050505");
   drawBeatGrid(ctx, params.timelineProgress, accent, card.invert);
   drawKineticIllustration(ctx, params, card, local, accent);
   drawKineticTextCard(ctx, card, local, accent);
@@ -240,10 +241,10 @@ function drawBubbleMiniBars(ctx: CanvasRenderingContext2D, values: number[], mod
     ctx.scale(pulse, pulse);
     roundRect(ctx, -cell / 2, -h, cell, h, 18);
     ctx.fill();
-    ctx.fillStyle = invert ? "#050505" : "#ffffff";
+    ctx.fillStyle = "#ffffff";
     ctx.font = "900 28px ui-sans-serif, system-ui, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(String(value), 0, 42);
+    withTextShadow(ctx, 28, () => ctx.fillText(String(value), 0, 42));
     ctx.restore();
   });
   if (mode === "swap") drawSwapTrack(ctx, x, y, cell, gap, pair, swapT);
@@ -263,11 +264,11 @@ function drawBubbleMotionCue(ctx: CanvasRenderingContext2D, mode: BubbleMode, ac
   const left = 420 + pair * (cell + 18) + cell / 2;
   const right = left + cell + 18;
   ctx.strokeStyle = mode === "swap" || mode === "worst" ? "#fb7185" : accent;
-  ctx.fillStyle = invert ? "#050505" : "#ffffff";
+  ctx.fillStyle = "#ffffff";
   ctx.lineWidth = 8;
   ctx.font = "950 54px ui-sans-serif, system-ui, sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText(getBubbleCueLabel(mode, lang), 1320, 804);
+  withTextShadow(ctx, 54, () => ctx.fillText(getBubbleCueLabel(mode, lang), 1320, 804));
   if (mode === "swap") {
     const shift = easeInOutCubic(clamp01((local - 0.12) / 0.76));
     ctx.beginPath(); ctx.moveTo(left, 710); ctx.bezierCurveTo(left + 50, 668, right - 50, 668, right, 710); ctx.stroke();
@@ -343,10 +344,10 @@ function drawKineticAlgorithmFlash(ctx: CanvasRenderingContext2D, params: Params
 }
 
 function drawKineticFooter(ctx: CanvasRenderingContext2D, params: Params, accent: string, invert?: boolean) {
-  ctx.fillStyle = invert ? "rgba(5,5,5,0.65)" : "rgba(255,255,255,0.65)";
+  ctx.fillStyle = "rgba(255,255,255,0.78)";
   ctx.font = "700 26px ui-sans-serif, system-ui, sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText(`${params.algoName} · ${params.lang === "vi" ? "chữ theo nhịp" : "beat text"}`, 74, 78);
+  withTextShadow(ctx, 26, () => ctx.fillText(`${params.algoName} · ${params.lang === "vi" ? "chữ theo nhịp" : "beat text"}`, 74, 78));
   drawProgress(ctx, 74, H - 78, W - 148, 12, params.timelineProgress, accent);
 }
 

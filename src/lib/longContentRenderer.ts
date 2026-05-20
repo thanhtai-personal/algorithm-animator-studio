@@ -1,5 +1,6 @@
 import { COMPLEXITY, Frame } from "./algorithms";
 import type { AnimalColumnSettings } from "./animalColumns";
+import { withTextShadow } from "./canvasText";
 import { drawFocusPointer } from "./focusPointerRenderer";
 import type { Lang } from "./i18n";
 import { LongContentScene } from "./longContentTimeline";
@@ -127,10 +128,10 @@ function drawBrand(ctx: CanvasRenderingContext2D, channelName: string, lang: Lan
   ctx.textAlign = "left";
   ctx.fillStyle = "rgba(255,255,255,0.78)";
   ctx.font = "700 28px ui-sans-serif, system-ui, sans-serif";
-  ctx.fillText(channelName, 72, 68);
+  withTextShadow(ctx, 28, () => ctx.fillText(channelName, 72, 68));
   ctx.fillStyle = "rgba(255,255,255,0.34)";
   ctx.font = "500 22px ui-sans-serif, system-ui, sans-serif";
-  ctx.fillText(label(lang, "Animation thuật toán dài · YouTube 16:9", "Long-form algorithm animation · 16:9 YouTube"), 72, 102);
+  withTextShadow(ctx, 22, () => ctx.fillText(label(lang, "Animation thuật toán dài · YouTube 16:9", "Long-form algorithm animation · 16:9 YouTube"), 72, 102));
 }
 
 function drawScriptPanel(ctx: CanvasRenderingContext2D, params: RenderLongContentParams, panel: PanelRect) {
@@ -151,7 +152,7 @@ function drawScriptPanel(ctx: CanvasRenderingContext2D, params: RenderLongConten
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = theme.highlight;
   ctx.font = "800 28px ui-sans-serif, system-ui, sans-serif";
-  ctx.fillText((scene.kindLabel || scene.kind).toUpperCase(), contentX, panel.y + 58);
+  withTextShadow(ctx, 28, () => ctx.fillText((scene.kindLabel || scene.kind).toUpperCase(), contentX, panel.y + 58));
 
   let cursorY = panel.y + 130;
   ctx.fillStyle = "#ffffff";
@@ -187,7 +188,7 @@ function drawScriptPanel(ctx: CanvasRenderingContext2D, params: RenderLongConten
     ctx.fill();
 
     ctx.fillStyle = "rgba(255,255,255,0.9)";
-    lines.forEach((line, lineIndex) => ctx.fillText(line, bulletTextX, cursorY + lineIndex * lineHeight));
+    lines.forEach((line, lineIndex) => withTextShadow(ctx, 25, () => ctx.fillText(line, bulletTextX, cursorY + lineIndex * lineHeight)));
     cursorY += blockHeight + 28;
   }
 }
@@ -320,7 +321,7 @@ function drawFittedText(ctx: CanvasRenderingContext2D, text: string, options: Fi
 
   ctx.font = `${options.weight} ${size}px ui-sans-serif, system-ui, sans-serif`;
   const lineHeight = Math.round(size * options.lineHeightRatio);
-  wrapped.lines.forEach((line, index) => ctx.fillText(line, options.x, options.y + index * lineHeight));
+  wrapped.lines.forEach((line, index) => withTextShadow(ctx, size, () => ctx.fillText(line, options.x, options.y + index * lineHeight)));
   return options.y + Math.max(1, wrapped.lines.length) * lineHeight;
 }
 
@@ -334,7 +335,7 @@ function drawWrappedText(
   maxLines = 3,
 ) {
   const lines = getWrappedLines(ctx, text, maxWidth, maxLines).lines;
-  lines.forEach((line, index) => ctx.fillText(line, x, y + index * lineHeight));
+  lines.forEach((line, index) => withTextShadow(ctx, lineHeight * 0.75, () => ctx.fillText(line, x, y + index * lineHeight)));
   return y + Math.max(1, lines.length) * lineHeight;
 }
 

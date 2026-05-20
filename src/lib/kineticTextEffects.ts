@@ -1,3 +1,5 @@
+import { applyTextShadow, clearTextShadow, withTextShadow } from "./canvasText";
+
 type KineticTextCard = {
   top?: string;
   main: string;
@@ -30,14 +32,13 @@ function drawStampText(ctx: CanvasRenderingContext2D, card: KineticTextCard, loc
 function drawSlideText(ctx: CanvasRenderingContext2D, card: KineticTextCard, local: number, accent: string) {
   const enter = easeOutCubic(clamp01(local / 0.28));
   const exit = local > 0.78 ? easeOutCubic((local - 0.78) / 0.22) : 0;
-  const textColor = card.invert ? "#050505" : "#ffffff";
   ctx.save();
   ctx.textAlign = "center";
-  ctx.fillStyle = textColor;
+  ctx.fillStyle = "#ffffff";
   if (card.top) drawFitted(ctx, card.top, W / 2 - (1 - enter) * 520, 238 - exit * 70, 48, 760, 900);
   drawFitted(ctx, card.main, W / 2 + (1 - enter) * 650, 410 - exit * 90, 168, 1420, 950);
   if (card.bottom) {
-    ctx.fillStyle = card.invert ? "rgba(5,5,5,0.72)" : accent;
+    ctx.fillStyle = accent;
     drawFitted(ctx, card.bottom, W / 2 - (1 - enter) * 520, 515 - exit * 80, 60, 1280, 900);
   }
   ctx.restore();
@@ -52,17 +53,19 @@ function drawSplitText(ctx: CanvasRenderingContext2D, card: KineticTextCard, loc
   let x = W / 2 - totalWidth / 2;
   ctx.save();
   ctx.textAlign = "left";
-  ctx.fillStyle = card.invert ? "#050505" : "#ffffff";
+  ctx.fillStyle = "#ffffff";
   if (card.top) drawFitted(ctx, card.top, W / 2, 240, 48, 760, 900);
   ctx.font = `950 ${baseSize}px ui-sans-serif, system-ui, sans-serif`;
+  applyTextShadow(ctx, baseSize);
   chars.forEach((char, index) => {
     const side = index % 2 === 0 ? -1 : 1;
     const y = 414 + side * (1 - enter) * 180 - exit * 100;
     ctx.fillText(char, x + side * (1 - enter) * 260, y);
     x += ctx.measureText(char).width;
   });
+  clearTextShadow(ctx);
   if (card.bottom) {
-    ctx.fillStyle = card.invert ? "rgba(5,5,5,0.72)" : accent;
+    ctx.fillStyle = accent;
     drawFitted(ctx, card.bottom, W / 2, 520 + (1 - enter) * 70, 60, 1280, 900);
   }
   ctx.restore();
@@ -76,9 +79,10 @@ function drawWaveText(ctx: CanvasRenderingContext2D, card: KineticTextCard, loca
   let x = W / 2 - totalWidth / 2;
   ctx.save();
   ctx.textAlign = "left";
-  ctx.fillStyle = card.invert ? "#050505" : "#ffffff";
+  ctx.fillStyle = "#ffffff";
   if (card.top) drawFitted(ctx, card.top, W / 2, 238, 48, 760, 900);
   ctx.font = `950 ${baseSize}px ui-sans-serif, system-ui, sans-serif`;
+  applyTextShadow(ctx, baseSize);
   chars.forEach((char, index) => {
     const delay = index / Math.max(1, chars.length - 1);
     const charIn = easeOutBack(clamp01((local - delay * 0.22) / 0.24));
@@ -86,8 +90,9 @@ function drawWaveText(ctx: CanvasRenderingContext2D, card: KineticTextCard, loca
     ctx.fillText(char, x, 412 + wave * enter + (1 - charIn) * 120);
     x += ctx.measureText(char).width;
   });
+  clearTextShadow(ctx);
   if (card.bottom) {
-    ctx.fillStyle = card.invert ? "rgba(5,5,5,0.72)" : accent;
+    ctx.fillStyle = accent;
     drawFitted(ctx, card.bottom, W / 2, 520, 60, 1280, 900);
   }
   ctx.restore();
@@ -98,11 +103,11 @@ function drawStackText(ctx: CanvasRenderingContext2D, card: KineticTextCard, loc
   const exit = local > 0.78 ? easeOutCubic((local - 0.78) / 0.22) : 0;
   ctx.save();
   ctx.textAlign = "center";
-  ctx.fillStyle = card.invert ? "#050505" : "#ffffff";
+  ctx.fillStyle = "#ffffff";
   if (card.top) drawFitted(ctx, card.top, W / 2, 230 + (1 - enter) * 80, 48, 780, 900);
   drawFitted(ctx, card.main, W / 2, 396 + (1 - enter) * 120 - exit * 96, 158, 1380, 950);
   if (card.bottom) {
-    ctx.fillStyle = card.invert ? "rgba(5,5,5,0.72)" : accent;
+    ctx.fillStyle = accent;
     drawFitted(ctx, card.bottom, W / 2, 516 + (1 - enter) * 150, 60, 1280, 900);
   }
   ctx.restore();
@@ -114,11 +119,11 @@ function drawTextBlock(ctx: CanvasRenderingContext2D, card: KineticTextCard, opt
   ctx.rotate(opts.rotate);
   ctx.scale(opts.scale, opts.scale);
   ctx.textAlign = "center";
-  ctx.fillStyle = card.invert ? "#050505" : "#ffffff";
+  ctx.fillStyle = "#ffffff";
   if (card.top) drawFitted(ctx, card.top, 0, -140, 48, 760, 900);
   drawFitted(ctx, card.main, 0, 20, 174, 1280, 950);
   if (card.bottom) {
-    ctx.fillStyle = card.invert ? "rgba(5,5,5,0.7)" : opts.accent;
+    ctx.fillStyle = opts.accent;
     drawFitted(ctx, card.bottom, 0, 108, 62, 1180, 900);
   }
   ctx.restore();
@@ -136,7 +141,7 @@ function pickTextEffect(card: KineticTextCard) {
 function drawFitted(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, maxWidth: number, weight: number) {
   const fitted = fitFontSize(ctx, text, size, maxWidth, Math.max(28, size * 0.48), weight);
   ctx.font = `${weight} ${fitted}px ui-sans-serif, system-ui, sans-serif`;
-  ctx.fillText(text, x, y);
+  withTextShadow(ctx, fitted, () => ctx.fillText(text, x, y));
 }
 
 function fitFontSize(ctx: CanvasRenderingContext2D, text: string, initial: number, maxWidth: number, min: number, weight: number) {

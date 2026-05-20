@@ -1,0 +1,34 @@
+import { buildApiUrl, parseApiResponse } from "./runtimeApi";
+import { buildRuntimeSettingsHeaders } from "./runtimeSettings";
+
+export type GeneratedAssetKind = "audio" | "video";
+
+export type GeneratedAsset = {
+  kind: "audio" | "video" | "music";
+  fileName: string;
+  relativePath: string;
+  url: string;
+  sizeBytes: number;
+  createdAtMs: number;
+};
+
+export async function getGeneratedAssets() {
+  return parseApiResponse<{ audio: GeneratedAsset[]; video: GeneratedAsset[]; music: GeneratedAsset[] }>(
+    await fetch(buildApiUrl("/api/resources"), { headers: buildRuntimeSettingsHeaders() }),
+  );
+}
+
+export async function deleteGeneratedAsset(kind: GeneratedAssetKind, relativePath: string) {
+  return parseApiResponse<{ ok: boolean; deleted: number; relativePath: string }>(await fetch(buildApiUrl(`/api/resources/${kind}`), {
+    method: "DELETE",
+    headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ relativePath }),
+  }));
+}
+
+export async function deleteGeneratedAssets(kind: GeneratedAssetKind) {
+  return parseApiResponse<{ ok: boolean; deleted: number; kind: GeneratedAssetKind }>(await fetch(buildApiUrl(`/api/resources/${kind}/all`), {
+    method: "DELETE",
+    headers: buildRuntimeSettingsHeaders(),
+  }));
+}

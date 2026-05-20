@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AlgorithmWorld from "./pages/AlgorithmWorld.tsx";
 import Auth from "./pages/Auth.tsx";
+import GeneratedAssets from "./pages/GeneratedAssets.tsx";
 import Index from "./pages/Index.tsx";
 import LongContent from "./pages/LongContent.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/algorithm-world" element={<AlgorithmWorld />} />
             <Route path="/long-content" element={<LongContent />} />
             <Route path="/story-video" element={<StoryVideoStudio />} />
+            <Route path="/assets" element={<GeneratedAssets />} />
             <Route path="/social-publishing" element={<YoutubePublishing />} />
             <Route path="/youtube-publishing" element={<YoutubePublishing />} />
             <Route path="/youtube" element={<YoutubePublishing />} />

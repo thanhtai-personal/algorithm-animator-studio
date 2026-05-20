@@ -1,4 +1,4 @@
-import { LogIn, LogOut, Moon, Settings, Sparkles, Sun, Youtube } from "lucide-react";
+import { Files, LogIn, LogOut, Moon, Settings, Sparkles, Sun, Youtube } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -27,6 +27,9 @@ const getPageMeta = (lang: Lang): Record<string, { subtitle: string }> => ({
   },
   "/youtube": {
     subtitle: lang === "vi" ? "Đăng nhập OAuth qua server .env rồi upload video đã xuất." : "Login with OAuth from server .env, then upload exported videos.",
+  },
+  "/assets": {
+    subtitle: lang === "vi" ? "Quản lý file voice và video đã tạo trên server." : "Manage generated voice and video files on the server.",
   },
   "/settings": {
     subtitle: lang === "vi" ? "Cấu hình local Piper runtime path và kiểm tra trạng thái." : "Configure local Piper runtime paths and health check.",
@@ -145,6 +148,15 @@ export function AppHeader() {
           >
             <Youtube className="h-4 w-4" />
             <span className="hidden sm:inline">YouTube</span>
+          </Button>
+          <Button
+            aria-label={lang === "vi" ? "Quản lý file" : "Manage files"}
+            className="h-10 shrink-0"
+            variant={location.pathname === "/assets" ? "default" : "outline"}
+            onClick={() => navigate("/assets")}
+          >
+            <Files className="h-4 w-4" />
+            <span className="hidden sm:inline">{lang === "vi" ? "File" : "Files"}</span>
           </Button>
           <Button
             aria-label={lang === "vi" ? "Cài đặt" : "Settings"}

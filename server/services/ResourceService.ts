@@ -73,6 +73,39 @@ export function resolveGeneratedResource(
   };
 }
 
+export function deleteGeneratedResource(
+  params: { kind: GeneratedResourceKind; relativePath: string },
+  envOverrides: RuntimeEnvValues = {}
+) {
+  if (params.kind === "music") {
+    throw new Error("Không hỗ trợ xóa nhạc nền từ màn hình quản lý này.");
+  }
+
+  const resolved = resolveGeneratedResource(params, envOverrides);
+  if (!fs.existsSync(resolved.absolutePath)) {
+    return { ok: true, deleted: 0, relativePath: resolved.relativePath };
+  }
+
+  fs.rmSync(resolved.absolutePath, { force: true });
+  removeEmptyParents(path.dirname(resolved.absolutePath), path.resolve(getResourceRootPath(params.kind, readEnvValues(envOverrides).SERVER_DATA_DIR)));
+  return { ok: true, deleted: 1, relativePath: resolved.relativePath };
+}
+
+export function deleteGeneratedResourcesByKind(kind: GeneratedResourceKind, envOverrides: RuntimeEnvValues = {}) {
+  if (kind === "music") {
+    throw new Error("Không hỗ trợ xóa nhạc nền từ màn hình quản lý này.");
+  }
+
+  const env = readEnvValues(envOverrides);
+  const rootPath = path.resolve(getResourceRootPath(kind, env.SERVER_DATA_DIR));
+  const extensions = getResourceExtensions(kind);
+  if (!fs.existsSync(rootPath)) return { ok: true, deleted: 0, kind };
+
+  const deleted = deleteFilesByExtension(rootPath, rootPath, extensions);
+  removeEmptyParents(rootPath, rootPath);
+  return { ok: true, deleted, kind };
+}
+
 function listGeneratedResources(params: {
   directory: string;
   extensions: Set<string>;
@@ -129,4 +162,29 @@ function getResourceRootPath(kind: GeneratedResourceKind, serverDataDir?: string
 
 function getResourceExtensions(kind: GeneratedResourceKind) {
   return kind === "video" ? VIDEO_EXTENSIONS : AUDIO_EXTENSIONS;
+}
+
+function deleteFilesByExtension(rootPath: string, currentDirectory: string, extensions: Set<string>) {
+  let deleted = 0;
+  for (const entry of fs.readdirSync(currentDirectory, { withFileTypes: true })) {
+    const entryPath = path.join(currentDirectory, entry.name);
+    if (entry.isDirectory()) {
+      deleted += deleteFilesByExtension(rootPath, entryPath, extensions);
+      removeEmptyParents(entryPath, rootPath);
+    } else if (entry.isFile() && extensions.has(path.extname(entry.name).toLowerCase())) {
+      fs.rmSync(entryPath, { force: true });
+      deleted += 1;
+    }
+  }
+  return deleted;
+}
+
+function removeEmptyParents(startDirectory: string, rootPath: string) {
+  let current = path.resolve(startDirectory);
+  const root = path.resolve(rootPath);
+  while (current.startsWith(root) && current !== root && fs.existsSync(current)) {
+    if (fs.readdirSync(current).length > 0) break;
+    fs.rmdirSync(current);
+    current = path.dirname(current);
+  }
 }

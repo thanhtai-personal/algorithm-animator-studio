@@ -1,3 +1,26 @@
+
+export type AlgorithmWorldCell = { x: number; y: number };
+export type AlgorithmWorldPhase = "setup" | "search" | "path" | "obstacle" | "replan" | "done";
+export type AlgorithmWorldState = {
+  cols: number;
+  rows: number;
+  start: AlgorithmWorldCell;
+  goal: AlgorithmWorldCell;
+  walls: AlgorithmWorldCell[];
+  dynamicWalls: AlgorithmWorldCell[];
+  openSet: AlgorithmWorldCell[];
+  closedSet: AlgorithmWorldCell[];
+  current: AlgorithmWorldCell | null;
+  path: AlgorithmWorldCell[];
+  previousPath: AlgorithmWorldCell[];
+  shatteredPath?: AlgorithmWorldCell[];
+  pulseCells?: AlgorithmWorldCell[];
+  scores?: { g: number; h: number; f: number };
+  phase: AlgorithmWorldPhase;
+  status: string;
+  replanCount: number;
+};
+
 export type GraphNode = { id: number; x: number; y: number; label?: string };
 export type GraphEdge = { a: number; b: number; w?: number };
 export type GraphState = {
@@ -81,6 +104,7 @@ export type Frame = {
   line: number;
   vars: Record<string, number | string>;
   graph?: GraphState;
+  world?: AlgorithmWorldState;
   target?: number;
   found?: number | null;
   label?: string;
@@ -104,6 +128,7 @@ export type AlgoDef = {
     target?: number;
     customCode?: string;
     graph?: GraphState;
+    world?: AlgorithmWorldState;
     start?: number;
     end?: number;
   }) => Frame[];

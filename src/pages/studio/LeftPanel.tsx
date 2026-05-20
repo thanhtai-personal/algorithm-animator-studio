@@ -73,6 +73,11 @@ export function LeftPanel({ studio }: Props) {
               {s.lang === "vi" ? "Kinetic short hiện tối ưu trước cho Bubble Sort." : "Kinetic short is currently optimized for Bubble Sort first."}
             </p>
           ) : null}
+          {s.shortVideoType === "algorithm-world" && s.algo.id !== "astar" ? (
+            <p className="mt-2 text-xs text-amber-300">
+              {s.lang === "vi" ? "Algorithm World hiện tối ưu trước cho A* Pathfinding." : "Algorithm World is optimized for A* Pathfinding first."}
+            </p>
+          ) : null}
         </div>
         {!s.isGraph && (
           <div>
@@ -99,9 +104,7 @@ export function LeftPanel({ studio }: Props) {
             <Input className="mt-2" placeholder="42" value={s.target} onChange={(e) => s.setTarget(e.target.value)} />
           </div>
         )}
-        {s.isGraph && (
-          <GraphInputs studio={s} />
-        )}
+        {s.isGraph && (s.algo.id === "astar" ? <WorldInputs studio={s} /> : <GraphInputs studio={s} />)}
         {!s.isGraph && (
           <>
             <div>
@@ -140,6 +143,24 @@ export function LeftPanel({ studio }: Props) {
             : "—"}
         </div>
       </Card>
+    </div>
+  );
+}
+
+function WorldInputs({ studio: s }: Props) {
+  return (
+    <div className="rounded-lg border border-cyan-400/25 bg-cyan-400/10 p-3 text-xs text-cyan-100 space-y-2">
+      <div className="font-semibold text-cyan-200">
+        {s.lang === "vi" ? "Preset: Shifting Labyrinth" : "Preset: Shifting Labyrinth"}
+      </div>
+      <p>
+        {s.lang === "vi"
+          ? "A* sẽ tự chạy trong maze động: open set, closed set, f = g + h, tường realtime và replan."
+          : "A* runs in a dynamic maze with open set, closed set, f = g + h, real-time walls and replanning."}
+      </p>
+      <p className="text-cyan-200/80">
+        {s.lang === "vi" ? "Nên chọn kiểu video Algorithm World để xuất short cinematic." : "Use Algorithm World video type for the cinematic short."}
+      </p>
     </div>
   );
 }

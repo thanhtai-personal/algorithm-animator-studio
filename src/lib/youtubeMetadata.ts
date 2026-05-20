@@ -46,6 +46,7 @@ const EXTRA_TAGS: Record<string, string[]> = {
   bfs: ["breadth first search", "graph traversal", "queue"],
   dfs: ["depth first search", "graph traversal", "stack recursion"],
   dijkstra: ["dijkstra algorithm", "shortest path", "weighted graph"],
+  astar: ["a star algorithm", "astar", "pathfinding", "maze solver", "heuristic search", "game ai"],
   custom: ["custom algorithm", "algorithm animation", "code visualization"],
 };
 

@@ -48,6 +48,13 @@ Source of truth: `src/lib/algorithms/index.ts`.
 | `bfs` | BFS |
 | `dfs` | DFS |
 | `dijkstra` | Dijkstra |
+| `astar` | A* Pathfinding |
+
+## Visual Modes
+
+| ID | Mode | Notes |
+| --- | --- | --- |
+| `algorithm-world` | Algorithm World | Cinematic world/maze renderer; first preset supports A* Shifting Labyrinth with realtime obstacles. |
 
 ## Custom
 
@@ -77,7 +84,6 @@ No remaining sorting TODO items in this list.
 
 | ID | Algorithm | Priority |
 | --- | --- | --- |
-| `astar` | A* Search | First wave |
 | `bellman_ford` | Bellman-Ford | Later |
 | `floyd_warshall` | Floyd-Warshall | Later |
 | `prim` | Prim's Algorithm | First wave |

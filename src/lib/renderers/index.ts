@@ -2,6 +2,7 @@ import { Frame } from "../algorithms";
 import type { AnimalColumnSettings } from "../animalColumns";
 import type { Lang } from "../i18n";
 import { drawAnimalColumns } from "./animalColumnRenderer";
+import { drawAlgorithmWorld } from "./algorithmWorldRenderer";
 import { drawBars } from "./barRenderer";
 import { drawCodePanel } from "./codePanelRenderer";
 import { drawCountingSort } from "./countingSortRenderer";
@@ -60,7 +61,9 @@ export function renderFrame(
     return;
   }
 
-  if (frame.graph) {
+  if (frame.world) {
+    drawAlgorithmWorld(ctx, frame, padding, chartTop, chartW, chartH, theme, lang);
+  } else if (frame.graph) {
     drawGraph(ctx, frame, padding, chartTop, chartW, chartH, theme, lang);
   } else if (frame.counting) {
     drawCountingSort(ctx, frame, padding, chartTop, chartW, chartH, theme, {

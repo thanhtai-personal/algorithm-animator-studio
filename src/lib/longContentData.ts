@@ -276,6 +276,14 @@ export const LONG_CONTENT_GUIDES: Record<string, LongContentGuide> = {
     watch: t(["Nhãn dist cho thấy chi phí tốt nhất đang biết.", "Cạnh active là cạnh đang được relax."], ["Distance labels show the best known cost.", "The active edge is the edge currently being relaxed." ]),
     takeaway: t("Rất quan trọng trong bản đồ, routing và bài toán tối ưu đường đi với trọng số không âm.", "Very important for maps, routing, and non-negative weighted shortest paths."),
   },
+  astar: {
+    hook: t("A* tìm đường bằng cách cân bằng chi phí đã đi và khoảng cách ước lượng tới đích.", "A* finds paths by balancing the cost so far with the estimated distance to the goal."),
+    useCase: t("Rất hợp cho game AI, robot, bản đồ, maze và mọi bài toán cần tìm đường tối ưu có heuristic.", "Great for game AI, robotics, maps, mazes, and pathfinding problems that can use a heuristic."),
+    mentalModel: t("Mỗi ô được chấm điểm f = g + h: g là đường đã đi, h là khoảng cách còn lại. Ô có f thấp nhất được xét trước.", "Each cell gets f = g + h: g is the path cost so far, h is the estimated distance left. The lowest f cell is explored first."),
+    steps: t(["Đưa điểm bắt đầu vào open set.", "Chọn ô có f-score thấp nhất.", "Mở rộng hàng xóm hợp lệ và cập nhật parent nếu tìm được đường tốt hơn.", "Khi vật cản mới phá đường cũ, chạy replan từ vị trí hiện tại."], ["Put the start cell in the open set.", "Choose the cell with the lowest f-score.", "Expand valid neighbors and update the parent when a better route appears.", "When new obstacles break the old path, replan from the current position."]),
+    watch: t(["Open set là vùng A* còn cân nhắc.", "Closed set là các ô đã xử lý.", "Đường cũ có thể bị phá khi tường realtime xuất hiện.", "f = g + h cho thấy vì sao A* thường đi có hướng hơn BFS."], ["The open set contains cells A* is still considering.", "The closed set contains cells already processed.", "The old path can break when real-time walls appear.", "f = g + h shows why A* is usually more directed than BFS."]),
+    takeaway: t("A* mạnh vì không chỉ tìm đường ngắn; nó tìm đường có định hướng và có thể lập lại kế hoạch khi thế giới thay đổi.", "A* is powerful because it does not just find a short path; it searches with direction and can replan when the world changes."),
+  },
   custom: {
     hook: t("Custom Algorithm dùng chính code của bạn để tạo animation.", "Custom Algorithm uses your own code to create animation frames."),
     useCase: t("Phù hợp khi muốn biến một ý tưởng hoặc biến thể thuật toán thành video riêng.", "Useful when you want to turn your own algorithm idea into a video."),

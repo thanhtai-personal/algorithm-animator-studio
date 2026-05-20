@@ -1,4 +1,5 @@
 import { customAlgo } from "./custom";
+import { astar } from "./graph/astar";
 import { bfs } from "./graph/bfs";
 import { dfs } from "./graph/dfs";
 import { dijkstra } from "./graph/dijkstra";
@@ -37,6 +38,9 @@ export { COMPLEXITY } from "./complexity";
 export { makeSampleGraph, parseGraph } from "./graph/utils";
 export type {
   AlgoCategory,
+  AlgorithmWorldCell,
+  AlgorithmWorldPhase,
+  AlgorithmWorldState,
   AlgoDef,
   BucketState,
   Complexity,
@@ -77,6 +81,7 @@ export const ALGORITHMS: Record<string, AlgoDef> = {
   bfs,
   dfs,
   dijkstra,
+  astar,
   tree_sort: treeSort,
   cycle: cycleSort,
   pigeonhole: pigeonholeSort,
@@ -100,6 +105,6 @@ export const ALGO_GROUPS: { label: { en: string; vi: string }; ids: string[] }[]
     ],
   },
   { label: { en: "Searching", vi: "Tìm kiếm" }, ids: ["linear", "binary"] },
-  { label: { en: "Graph", vi: "Đồ thị" }, ids: ["bfs", "dfs", "dijkstra"] },
+  { label: { en: "Graph", vi: "Đồ thị" }, ids: ["bfs", "dfs", "dijkstra", "astar"] },
   { label: { en: "Custom", vi: "Custom" }, ids: ["custom"] },
 ];

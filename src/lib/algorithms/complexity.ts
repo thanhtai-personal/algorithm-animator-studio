@@ -33,5 +33,6 @@ export const COMPLEXITY: Record<string, Complexity> = {
   bfs: { time: "O(V + E)", space: "O(V)" },
   dfs: { time: "O(V + E)", space: "O(V)" },
   dijkstra: { time: "O((V+E) log V)", space: "O(V)" },
+  astar: { time: "O(E log V)", best: "O(path)", worst: "O(E log V)", space: "O(V)" },
   custom: { time: "—", space: "—" },
 };

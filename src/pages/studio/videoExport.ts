@@ -73,6 +73,7 @@ export async function exportAlgorithmVideo(params: ExportVideoParams) {
     complexity: params.complexity,
     algorithmId: params.algorithmId,
     animalColumns: params.animalColumns,
+    lang: params.lang,
   };
 
   renderShortFrame(ctx, params, 0, null, 1, renderOpts);

@@ -53,5 +53,6 @@ export function renderStudioPreview(params: Params) {
     transitionProgress: params.transitionProgress,
     algorithmId: params.algorithmId,
     animalColumns: params.animalColumns,
+    lang: params.lang,
   }, params.width, params.height);
 }

@@ -13,6 +13,8 @@ import { AuthProfile, getCurrentProfile, isSuperAdminProfile } from "@/lib/auth"
 import { LONG_VIDEO_TYPES, type LongVideoType } from "@/lib/longVideoTypes";
 import { THEMES } from "@/lib/renderer";
 import { EXPORT_FORMATS, ExportFormat } from "./studio/exportFormats";
+import { BackgroundImagePanel } from "./long-content/BackgroundImagePanel";
+import { KineticSfxPanel } from "./long-content/KineticSfxPanel";
 import { MusicPanel } from "./long-content/MusicPanel";
 import { ScriptPanel } from "./long-content/ScriptPanel";
 import { LongContentStudio, useLongContentStudio } from "./long-content/useLongContentStudio";
@@ -51,6 +53,7 @@ export default function LongContent() {
         <LeftControls studio={studio} onExport={requestExport} />
         <div className="space-y-4">
           <PreviewPanel studio={studio} />
+          <BackgroundImagePanel studio={studio} />
           <MusicPanel studio={studio} />
           <ScriptPanel studio={studio} />
         </div>
@@ -89,6 +92,7 @@ function LeftControls({ studio: s, onExport }: { studio: LongContentStudio; onEx
         </div>
 
         <VideoTypeSelect studio={s} />
+        <KineticSfxPanel studio={s} />
 
         <div className="grid grid-cols-2 gap-3">
           <NumberSlider label="Intro" value={s.introSeconds} min={3} max={10} suffix="s" onChange={s.setIntroSeconds} />

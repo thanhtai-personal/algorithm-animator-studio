@@ -3,6 +3,7 @@ import type { Lang } from "./i18n";
 import type { LongContentScene } from "./longContentTimeline";
 import type { LongVideoType } from "./longVideoTypes";
 import type { Theme } from "./renderer";
+import { drawKineticTextCard } from "./kineticTextEffects";
 import { roundRect } from "./renderers/shapes";
 
 const W = 1920;
@@ -21,6 +22,7 @@ type Params = {
   theme: Theme;
   showCode: boolean;
   frameLabel: string;
+  backgroundImage?: HTMLImageElement | null;
   frameTransitionProgress?: number;
   longVideoType: LongVideoType;
 };
@@ -30,17 +32,48 @@ type BubbleMode = "compare" | "swap" | "pass" | "biggest" | "lock" | "best" | "w
 
 export function renderKineticTypography(ctx: CanvasRenderingContext2D, params: Params) {
   const cards = getKineticCards(params);
-  const beatCount = Math.max(8, cards.length);
-  const beat = Math.min(beatCount - 1, Math.floor(params.sceneProgress * beatCount));
-  const local = params.sceneProgress * beatCount - beat;
-  const card = cards[beat % cards.length];
+  const timing = getKineticBeatTiming(params, cards.length);
+  const beat = Math.min(cards.length - 1, Math.floor(timing.progress * cards.length));
+  const local = timing.progress * cards.length - beat;
+  const card = cards[beat];
   const accent = card.accent ?? "#4ade80";
-  ctx.fillStyle = card.invert ? accent : "#050505";
-  ctx.fillRect(0, 0, W, H);
+  drawKineticBackground(ctx, params.backgroundImage, card.invert ? accent : "#050505");
   drawBeatGrid(ctx, params.timelineProgress, accent, card.invert);
   drawKineticIllustration(ctx, params, card, local, accent);
-  drawKineticCard(ctx, card, local, accent);
+  drawKineticTextCard(ctx, card, local, accent);
   drawKineticFooter(ctx, params, accent, card.invert);
+}
+
+function drawKineticBackground(ctx: CanvasRenderingContext2D, image: HTMLImageElement | null | undefined, fallback: string) {
+  ctx.fillStyle = fallback;
+  ctx.fillRect(0, 0, W, H);
+  if (!image?.complete || image.naturalWidth <= 0) return;
+  const scale = Math.max(W / image.naturalWidth, H / image.naturalHeight);
+  const sw = W / scale, sh = H / scale;
+  ctx.drawImage(image, (image.naturalWidth - sw) / 2, (image.naturalHeight - sh) / 2, sw, sh, 0, 0, W, H);
+  ctx.fillStyle = "rgba(0,0,0,0.68)";
+  ctx.fillRect(0, 0, W, H);
+}
+
+export function getKineticTypographySlideKey(params: { algoId: string; sceneId: string; sceneProgress: number; lang: Lang; sceneText?: string }) {
+  const cardCount = params.algoId === "bubble"
+    ? getBubbleKineticCards(params.sceneId, params.lang).length
+    : Math.max(1, wordsFromText(params.sceneText ?? "").slice(0, 12).length);
+  const timing = getKineticBeatTiming({ algoId: params.algoId, scene: { id: params.sceneId } as LongContentScene, sceneProgress: params.sceneProgress } as Params, cardCount);
+  return `${params.sceneId}:${Math.min(cardCount - 1, Math.floor(timing.progress * cardCount))}`;
+}
+
+function getKineticBeatTiming(params: Params, cardCount: number) {
+  const minCount = Math.max(1, cardCount);
+  if (params.algoId === "bubble" && params.scene.id === "step-by-step") {
+    const speed = 1.35;
+    const progress = Math.min(0.999, params.sceneProgress * speed);
+    if (params.sceneProgress >= 1 / speed) return { progress: 0.999 };
+    return { progress };
+  }
+  const virtualCount = Math.max(8, minCount);
+  const beat = Math.floor(params.sceneProgress * virtualCount);
+  return { progress: ((beat % minCount) + (params.sceneProgress * virtualCount - beat)) / minCount };
 }
 
 function getKineticCards(params: Params): KineticCard[] {
@@ -91,10 +124,10 @@ function getBubbleKineticCards(sceneId: string, lang: Lang): KineticCard[] {
       { main: vi ? "8 ĐÃ Ở CUỐI" : "8 REACHES THE END", bottom: vi ? "phần tử lớn nhất được khóa" : "largest value is locked", accent: "#facc15", values: [1, 4, 2, 5, 8], pair: 3 },
     ],
     animation: [
-      { main: vi ? "MÀU CYAN" : "CYAN", bottom: vi ? "cặp đang so sánh" : "current pair" },
-      { main: vi ? "MÀU ĐỎ" : "RED", bottom: vi ? "hai cột đang swap" : "values are swapping", accent: "#fb7185" },
-      { main: vi ? "MÀU XANH" : "GREEN", bottom: vi ? "đuôi đã sắp xếp" : "sorted tail", accent: "#4ade80", invert: true },
-      { main: vi ? "ĐẾM CHI PHÍ" : "COUNT THE COST", bottom: vi ? "compare + swap" : "compare + swap", accent: "#38bdf8" },
+      { top: vi ? "PASS 1" : "PASS 1", main: "5 > 1", bottom: vi ? "đổi để số nhỏ đi trước" : "swap so the smaller value comes first", accent: "#fb7185", values: [5, 1, 4, 2, 8], pair: 0 },
+      { top: vi ? "TIẾP TỤC" : "KEEP SCANNING", main: "5 > 4", bottom: vi ? "5 trượt sang phải" : "5 slides to the right", accent: "#fb7185", values: [1, 5, 4, 2, 8], pair: 1 },
+      { top: vi ? "GẦN CUỐI PASS" : "NEAR PASS END", main: "5 < 8", bottom: vi ? "đúng thứ tự, không swap" : "already ordered, no swap", accent: "#4ade80", values: [1, 4, 2, 5, 8], pair: 3 },
+      { top: vi ? "KẾT QUẢ PASS" : "PASS RESULT", main: vi ? "8 ĐƯỢC KHÓA" : "8 IS LOCKED", bottom: vi ? "pass sau bỏ qua phần cuối" : "later passes skip the tail", accent: "#4ade80", invert: true, values: [1, 4, 2, 5, 8], pair: 3 },
     ],
     "early-stop": [
       { main: vi ? "MỘT PASS" : "ONE PASS", bottom: vi ? "không có swap nào" : "with zero swaps" },
@@ -126,32 +159,6 @@ function getBubbleKineticCards(sceneId: string, lang: Lang): KineticCard[] {
     ],
   };
   return byScene[sceneId] ?? shared;
-}
-
-function drawKineticCard(ctx: CanvasRenderingContext2D, card: KineticCard, local: number, accent: string) {
-  const inEase = easeOutBack(clamp01(local / 0.22));
-  const outEase = local > 0.74 ? easeOutCubic((local - 0.74) / 0.26) : 0;
-  const scale = (0.62 + 0.42 * inEase) * (1 - 0.18 * outEase);
-  const y = 390 + (1 - inEase) * 95 - outEase * 92;
-  const x = W / 2 + (1 - inEase) * (card.rotate && card.rotate < 0 ? -180 : 180);
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(((card.rotate ?? 0) * Math.PI) / 180 * inEase);
-  ctx.scale(scale, scale);
-  ctx.textAlign = "center";
-  ctx.fillStyle = card.invert ? "#050505" : "#ffffff";
-  if (card.top) {
-    ctx.font = "900 48px ui-sans-serif, system-ui, sans-serif";
-    ctx.fillText(card.top, 0, -140);
-  }
-  ctx.font = "950 174px ui-sans-serif, system-ui, sans-serif";
-  ctx.fillText(card.main, 0, 20);
-  if (card.bottom) {
-    ctx.fillStyle = card.invert ? "rgba(5,5,5,0.7)" : accent;
-    ctx.font = "900 62px ui-sans-serif, system-ui, sans-serif";
-    ctx.fillText(card.bottom, 0, 108);
-  }
-  ctx.restore();
 }
 
 function drawBeatGrid(ctx: CanvasRenderingContext2D, timelineProgress: number, accent: string, invert?: boolean) {
@@ -192,6 +199,7 @@ function getBubbleMode(card: KineticCard): BubbleMode {
   if (text.includes("best") || text.includes("o(n)") || text.includes("zero swaps")) return "best";
   if (text.includes("worst") || text.includes("reversed") || text.includes("đảo ngược") || text.includes("n(n")) return "worst";
   if (text.includes("space") || text.includes("o(1)") || text.includes("in-place")) return "space";
+  if (text.includes("no swap") || text.includes("không swap") || text.includes("giữ nguyên") || text.includes("keep order")) return "compare";
   if (text.includes("swap") || text.includes(">") || text.includes("đổi chỗ")) return "swap";
   if (text.includes("largest") || text.includes("lớn nhất") || text.includes("8 reaches") || text.includes("8 đã")) return "biggest";
   if (text.includes("lock") || text.includes("khóa") || text.includes("stop") || text.includes("tail") || text.includes("đuôi")) return "lock";

@@ -89,6 +89,7 @@ export function drawLongContentFrameAtTime(params: {
   showCode: boolean;
   animalColumns: AnimalColumnSettings;
   longVideoType: LongVideoType;
+  backgroundImage?: HTMLImageElement | null;
 }) {
   const ctx = params.canvas?.getContext("2d");
   if (!params.canvas || !ctx || !params.baseFrames.length) return;
@@ -122,6 +123,7 @@ export function drawLongContentFrameAtTime(params: {
     lang: params.lang,
     theme: params.theme,
     showCode: params.showCode,
+    backgroundImage: params.backgroundImage,
     animalColumns: params.animalColumns,
     longVideoType: params.longVideoType,
     frameTransitionProgress: frameState.transitionProgress,

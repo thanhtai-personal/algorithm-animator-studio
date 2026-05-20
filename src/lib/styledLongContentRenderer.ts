@@ -23,6 +23,7 @@ type Params = {
   theme: Theme;
   showCode: boolean;
   frameLabel: string;
+  backgroundImage?: HTMLImageElement | null;
   frameTransitionProgress?: number;
   longVideoType: LongVideoType;
 };
@@ -35,6 +36,7 @@ export function renderStyledLongContentFrame(ctx: CanvasRenderingContext2D, para
 
 function renderAnimatedExplainer(ctx: CanvasRenderingContext2D, params: Params) {
   drawSoftBackground(ctx, "#f8fafc", "#dcfce7");
+  drawOptionalBackgroundImage(ctx, params.backgroundImage, "rgba(248,250,252,0.74)");
   const characterX = 250 + easeOutCubic(params.sceneProgress) * 110;
   drawPresenter(ctx, characterX, 690, params.sceneProgress);
   drawSpeechBubble(ctx, params);
@@ -45,6 +47,7 @@ function renderAnimatedExplainer(ctx: CanvasRenderingContext2D, params: Params) 
 
 function renderUiKineticExplainer(ctx: CanvasRenderingContext2D, params: Params) {
   drawSoftBackground(ctx, "#07111f", "#13283d");
+  drawOptionalBackgroundImage(ctx, params.backgroundImage, "rgba(7,17,31,0.72)");
   drawBrowserChrome(ctx, 150, 120, 1620, 820);
   drawSidebar(ctx, params);
   drawDashboardHeader(ctx, params);
@@ -58,6 +61,19 @@ function drawSoftBackground(ctx: CanvasRenderingContext2D, from: string, to: str
   bg.addColorStop(1, to);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
+}
+
+function drawOptionalBackgroundImage(ctx: CanvasRenderingContext2D, image: HTMLImageElement | null | undefined, overlay: string) {
+  if (!image?.complete || image.naturalWidth <= 0) return;
+  drawCoverImage(ctx, image, 0, 0, W, H);
+  ctx.fillStyle = overlay;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function drawCoverImage(ctx: CanvasRenderingContext2D, image: HTMLImageElement, x: number, y: number, w: number, h: number) {
+  const scale = Math.max(w / image.naturalWidth, h / image.naturalHeight);
+  const sw = w / scale, sh = h / scale;
+  ctx.drawImage(image, (image.naturalWidth - sw) / 2, (image.naturalHeight - sh) / 2, sw, sh, x, y, w, h);
 }
 
 function drawPresenter(ctx: CanvasRenderingContext2D, x: number, y: number, progress: number) {

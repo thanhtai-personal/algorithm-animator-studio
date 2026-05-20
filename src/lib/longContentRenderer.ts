@@ -27,6 +27,7 @@ type RenderLongContentParams = {
   showCode: boolean;
   animalColumns: AnimalColumnSettings;
   frameLabel: string;
+  backgroundImage?: HTMLImageElement | null;
   frameTransitionProgress?: number;
   channelName?: string;
   longVideoType?: LongVideoType;
@@ -40,7 +41,7 @@ export function renderLongContentFrame(ctx: CanvasRenderingContext2D, params: Re
 
   const { theme, scene, sceneProgress, timelineProgress } = params;
   const layout = getSceneLayout(params.scene.animation, params.previousSceneWasAnimation, sceneProgress, params.sceneElapsedSec);
-  drawBackground(ctx, theme);
+  drawBackground(ctx, theme, params.backgroundImage);
   drawBrand(ctx, params.channelName ?? "Code Visual Lab", params.lang);
   drawScriptPanel(ctx, params, layout.textPanel);
   drawAnimationPanel(ctx, params, layout.chartReveal);
@@ -90,7 +91,13 @@ function getChartReveal(
   return 0;
 }
 
-function drawBackground(ctx: CanvasRenderingContext2D, theme: Theme) {
+function drawBackground(ctx: CanvasRenderingContext2D, theme: Theme, image?: HTMLImageElement | null) {
+  if (image?.complete && image.naturalWidth > 0) {
+    drawCoverImage(ctx, image, 0, 0, W, H);
+    ctx.fillStyle = "rgba(2,6,23,0.58)";
+    ctx.fillRect(0, 0, W, H);
+    return;
+  }
   const grad = ctx.createLinearGradient(0, 0, W, H);
   grad.addColorStop(0, shade(theme.bg, 4));
   grad.addColorStop(0.48, theme.bg);
@@ -108,6 +115,12 @@ function drawBackground(ctx: CanvasRenderingContext2D, theme: Theme) {
   ctx.arc(W * 0.15, H * 0.95, 340, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
+}
+
+function drawCoverImage(ctx: CanvasRenderingContext2D, image: HTMLImageElement, x: number, y: number, w: number, h: number) {
+  const scale = Math.max(w / image.naturalWidth, h / image.naturalHeight);
+  const sw = w / scale, sh = h / scale;
+  ctx.drawImage(image, (image.naturalWidth - sw) / 2, (image.naturalHeight - sh) / 2, sw, sh, x, y, w, h);
 }
 
 function drawBrand(ctx: CanvasRenderingContext2D, channelName: string, lang: Lang) {

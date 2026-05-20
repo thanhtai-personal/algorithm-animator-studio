@@ -18,7 +18,9 @@ import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm } from "..
 import { applyScriptOverrides, buildSceneFrames, cancelNarration, clampFrameIndex, drawLongContentFrameAtTime, getLoadedVoiceDuration, ScriptSceneField, ScriptSceneOverride, speakNarration } from "./studioHelpers";
 import { buildGeneratedVoiceScriptKey, type GeneratedVoiceProvider, useRestoreGeneratedVoiceCache, writeCachedGeneratedVoice } from "./voiceCache";
 import { fitSceneDurationsToNarration } from "./voiceTiming";
+import { useKineticSlideSfx } from "./useKineticSlideSfx";
 import { useLongContentMusic } from "./useLongContentMusic";
+import { useVideoBackgroundImages } from "./useVideoBackgroundImages";
 const LONG_W = 1920, LONG_H = 1080, DEFAULT_GRAPH = "A-B:4, A-C:2, B-D:5, C-D:8, C-E:10, D-E:2, D-F:6, E-G:3, F-G:1";
 export type VoiceProvider = "browser" | "piper" | "elevenlabs";
 export function useLongContentStudio() {
@@ -74,6 +76,7 @@ export function useLongContentStudio() {
     [editedScenes, lang, narrationRate, voiceDurationSec, voiceSegmentDurationsSec],
   );
   const totalDuration = useMemo(() => getTotalDuration(scenes), [scenes]);
+  const backgrounds = useVideoBackgroundImages(totalDuration);
   const narrationSegments = useMemo(() => buildLongVideoVoiceSegments(editedScenes, longVideoType, algo.name, lang), [algo.name, editedScenes, lang, longVideoType]);
   const narrationScript = useMemo(() => narrationSegments.join(" "), [narrationSegments]);
   const baseFrames = useMemo(() => {
@@ -92,6 +95,7 @@ export function useLongContentStudio() {
     if (!timelineState.scene.animation) return 0;
     return clampFrameIndex(timelineState.progress, frames.length);
   }, [elapsedSec, frames.length, timelineState, totalDuration]);
+  const kineticSfx = useKineticSlideSfx({ algoId, lang, scenes, elapsedSec, playing, exporting, longVideoType });
   useEffect(() => { preloadAnimalSprites(); void loadVoiceRuntime(); }, []);
   useEffect(() => subscribeSystemLang(setLang), []);
   useEffect(() => { audioEngine.setMusicVolume(musicVol / 100); }, [musicVol]);
@@ -132,6 +136,7 @@ export function useLongContentStudio() {
   useEffect(() => {
     if (!playing) {
       lastSpokenSceneId.current = null;
+      kineticSfx.resetKineticSlideSfx();
       cancelNarration();
       audioEngine.stopVoice(false);
       if (!exporting) audioEngine.stopMusic();
@@ -276,6 +281,7 @@ export function useLongContentStudio() {
       theme,
       showCode,
       longVideoType,
+      backgroundImage: backgrounds.getBackgroundImageAt(timeSec),
       animalColumns: { mode: columnVisualMode, spriteScale: animalSpriteScale, jumpIntensity: animalJumpIntensity, highlightJump: animalHighlightJump },
     });
   }
@@ -323,9 +329,11 @@ export function useLongContentStudio() {
       if (shouldPlayVoice) await audioEngine.playVoice(0);
       const totalFrames = Math.max(1, Math.ceil(totalDuration * fps));
       let lastProgress = -1;
+      kineticSfx.resetKineticSlideSfx();
       for (let i = 0; i <= totalFrames; i++) {
         const time = Math.min(totalDuration, i / fps);
         drawFrame(time, exportCanvas);
+        if (longVideoType === "kinetic-typography") kineticSfx.playKineticSlideSfxAt(time);
         track.requestFrame();
         const progress = Math.round((i / totalFrames) * 100);
         if (progress !== lastProgress) {
@@ -382,19 +390,12 @@ export function useLongContentStudio() {
     });
   }
   return {
-    canvasRef, lang, algoId, setAlgoId, algo, themeName, setThemeName, longVideoType, setLongVideoType, showCode, setShowCode,
-    columnVisualMode, setColumnVisualMode, animalSpriteScale, setAnimalSpriteScale,
-    animalJumpIntensity, setAnimalJumpIntensity, animalHighlightJump, setAnimalHighlightJump,
-    fps, setFps, animationSeconds, setAnimationSeconds, introSeconds, setIntroSeconds,
-    exportFormat, setExportFormat, elapsedSec, setElapsedSec, playing, setPlaying,
-    exporting, exportProgress, scenes, totalDuration, timelineState, frameIdx, frames,
-    narrationEnabled, setNarrationEnabled, narrationRate, setNarrationRate, narrationVol, setNarrationVol,
-    music, musicVol, setMusicVol, onMusicUpload,
-    voiceProvider, setVoiceProvider, voiceUrl, voiceFileName, voiceDurationSec, voiceLoading, generateVoiceOver,
-    voiceHealth, piperRuntime, piperInstalling, installSelectedPiperModel, refreshPiperRuntime,
-    piperModels, piperModelKey, setPiperModelKey, elevenConfig, elevenModelId, setElevenModelId,
-    elevenVoiceId, setElevenVoiceId, narrationScript, updateScriptScene, resetScriptScene, resetAllScriptScenes: () => setScriptOverrides({}),
-    W: LONG_W, H: LONG_H, exportVideo,
+    canvasRef, lang, algoId, setAlgoId, algo, themeName, setThemeName, longVideoType, setLongVideoType, showCode, setShowCode, columnVisualMode, setColumnVisualMode, animalSpriteScale, setAnimalSpriteScale,
+    animalJumpIntensity, setAnimalJumpIntensity, animalHighlightJump, setAnimalHighlightJump, fps, setFps, animationSeconds, setAnimationSeconds, introSeconds, setIntroSeconds, exportFormat, setExportFormat,
+    elapsedSec, setElapsedSec, playing, setPlaying, exporting, exportProgress, scenes, totalDuration, timelineState, frameIdx, frames, narrationEnabled, setNarrationEnabled, narrationRate, setNarrationRate,
+    narrationVol, setNarrationVol, music, musicVol, setMusicVol, ...backgrounds, ...kineticSfx, onMusicUpload, voiceProvider, setVoiceProvider, voiceUrl, voiceFileName, voiceDurationSec, voiceLoading,
+    generateVoiceOver, voiceHealth, piperRuntime, piperInstalling, installSelectedPiperModel, refreshPiperRuntime, piperModels, piperModelKey, setPiperModelKey, elevenConfig, elevenModelId, setElevenModelId,
+    elevenVoiceId, setElevenVoiceId, narrationScript, updateScriptScene, resetScriptScene, resetAllScriptScenes: () => setScriptOverrides({}), W: LONG_W, H: LONG_H, exportVideo,
   };
 }
 export type LongContentStudio = ReturnType<typeof useLongContentStudio>;

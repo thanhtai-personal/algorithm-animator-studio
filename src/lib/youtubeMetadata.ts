@@ -75,7 +75,7 @@ export function buildYoutubeMetadata(algoId: string, lang: Lang, variant: "short
       ["Quan sát trong video:", ...guide.watch.map((item) => `- ${item}`)].join("\n"),
       complexity ? `Độ phức tạp: best ${complexity.best ?? complexity.time}, average ${complexity.time}, worst ${complexity.worst ?? complexity.time}, space ${complexity.space}.` : "",
       `Kết luận: ${guide.takeaway}`,
-      "Video được tạo bằng Kata Algorithm Animator Studio.",
+      "Tạo video thuật toán bằng tool: https://algorithm-animator-studio.vercel.app/",
     ]
     : [
       variant === "short" ? `Watch the full long-form ${algo.name} explanation on the channel for step-by-step reasoning, complexity and a detailed walkthrough.` : "",
@@ -90,7 +90,7 @@ export function buildYoutubeMetadata(algoId: string, lang: Lang, variant: "short
       ["What to watch:", ...guide.watch.map((item) => `- ${item}`)].join("\n"),
       complexity ? `Complexity: best ${complexity.best ?? complexity.time}, average ${complexity.time}, worst ${complexity.worst ?? complexity.time}, space ${complexity.space}.` : "",
       `Takeaway: ${guide.takeaway}`,
-      "Generated with Kata Algorithm Animator Studio.",
+      "Create algorithm videos with this tool: https://algorithm-animator-studio.vercel.app/",
     ];
 
   return {
@@ -129,7 +129,7 @@ function getVideoTypeCopy(type: LongVideoType, lang: Lang) {
   const vi = lang === "vi";
   if (type === "kinetic-typography") return {
     name: vi ? "Kinetic Typography" : "Kinetic Typography",
-    titleSuffix: vi ? "Kinetic Typography" : "Kinetic Typography",
+    titleSuffix: vi ? "key words" : "key words",
     description: vi
       ? "Video dùng text chuyển động nhanh theo nhạc, kết hợp minh họa compare, swap, sorted tail và độ phức tạp."
       : "The video uses fast beat-synced text with short compare, swap, sorted-tail and complexity illustrations.",

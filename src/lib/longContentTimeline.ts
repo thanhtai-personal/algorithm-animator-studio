@@ -1,5 +1,6 @@
 import { AlgoDef, Complexity } from "./algorithms";
 import { buildInsertionSortScenes } from "./insertionLongContentTimeline";
+import { buildOddEvenSortScenes } from "./oddEvenLongContentTimeline";
 import type { Lang } from "./i18n";
 import { getLongContentGuide, pickGuideText } from "./longContentData";
 
@@ -43,6 +44,9 @@ export function buildLongContentScenes(params: {
   }
   if (algo.id === "insertion") {
     return buildInsertionSortScenes({ algo, complexity, animationSeconds, introSeconds, lang });
+  }
+  if (algo.id === "odd_even") {
+    return buildOddEvenSortScenes({ algo, complexity, animationSeconds, introSeconds, lang });
   }
 
   const guide = pickGuideText(getLongContentGuide(algo.id), lang);

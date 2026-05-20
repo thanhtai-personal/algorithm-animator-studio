@@ -5,6 +5,7 @@ import type { ColumnVisualMode } from "@/lib/animalColumns";
 import { preloadAnimalSprites } from "@/lib/animalColumns";
 import { audioEngine } from "@/lib/audio";
 import { isProceduralMusicPreset } from "@/lib/backgroundMusic";
+import { buildVideoExportFileName } from "@/lib/exportFileName";
 import { type Lang, readSystemLang, subscribeSystemLang } from "@/lib/i18n";
 import { buildLongContentScenes, getSceneAtTime, getTotalDuration } from "@/lib/longContentTimeline";
 import type { LongVideoType } from "@/lib/longVideoTypes";
@@ -305,12 +306,9 @@ export function useLongContentStudio() {
     if (!mimeType) {
       return toast.error(`${format.label}: trình duyệt chưa hỗ trợ xuất định dạng này.`);
     }
-    setExporting(true);
-    setExportProgress(0);
-    setPlaying(false);
+    setExporting(true); setExportProgress(0); setPlaying(false);
     const exportCanvas = document.createElement("canvas");
-    exportCanvas.width = LONG_W;
-    exportCanvas.height = LONG_H;
+    exportCanvas.width = LONG_W; exportCanvas.height = LONG_H;
     drawFrame(0, exportCanvas);
 
     const videoStream = exportCanvas.captureStream(0) as MediaStream;
@@ -353,10 +351,11 @@ export function useLongContentStudio() {
       setExporting(false);
       drawFrame(elapsedSec);
     }
-    const fileName = `${algo.id}-${longVideoType}-${lang}-long-16x9-${Date.now()}.${format.id}`;
+    const youtubeMetadata = buildYoutubeMetadata(algo.id, lang, "long", longVideoType);
+    const fileName = buildVideoExportFileName({ youtubeTitle: youtubeMetadata.title, fallbackTitle: `${algo.name} ${longVideoType}`, lang, extension: format.id });
     const file = new File([blob], fileName, { type: mimeType });
     const url = URL.createObjectURL(file);
-    setLastExportedVideo(file, url, { youtubeDescriptionAppend: music.selectedLicenseText, youtubeMetadata: buildYoutubeMetadata(algo.id, lang, "long", longVideoType) });
+    setLastExportedVideo(file, url, { youtubeDescriptionAppend: music.selectedLicenseText, youtubeMetadata });
     const link = document.createElement("a");
     link.href = url;
     link.download = fileName;

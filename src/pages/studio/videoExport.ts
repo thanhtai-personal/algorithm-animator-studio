@@ -4,6 +4,7 @@ import { BackgroundMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusi
 import { AnimalColumnSettings } from "@/lib/animalColumns";
 import { renderFrame, Theme } from "@/lib/renderer";
 import { getAssetSfxOption } from "@/lib/selectSounds";
+import { buildVideoExportFileName } from "@/lib/exportFileName";
 import { renderShortKineticTypography } from "@/lib/shortKineticTypographyRenderer";
 import type { ShortVideoType } from "@/lib/shortVideoTypes";
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
@@ -124,7 +125,12 @@ export async function exportAlgorithmVideo(params: ExportVideoParams) {
 
   const blob = await done;
   const url = URL.createObjectURL(blob);
-  const fileName = `${params.algorithmId}-${params.platformId}-${Date.now()}.${format.id}`;
+  const fileName = buildVideoExportFileName({
+    youtubeTitle: params.youtubeMetadata?.title,
+    fallbackTitle: `${params.algoName} ${params.platformId}`,
+    lang: params.lang,
+    extension: format.id,
+  });
   const file = new File([blob], fileName, { type: mimeType });
   setLastExportedVideo(file, url, { youtubeMetadata: params.youtubeMetadata, youtubeDescriptionAppend: params.youtubeDescriptionAppend });
 

@@ -36,6 +36,14 @@ export const LONG_CONTENT_GUIDES: Record<string, LongContentGuide> = {
     watch: sharedSortWatch,
     takeaway: t("Dễ hiểu nhất cho người mới, nhưng O(n²) nên chậm khi dữ liệu lớn.", "Very beginner-friendly, but O(n²) makes it slow for large data."),
   },
+  odd_even: {
+    hook: t("Odd-Even Sort chia Bubble Sort thành hai nhịp: cặp lẻ rồi cặp chẵn.", "Odd-Even Sort splits Bubble Sort into two rhythms: odd pairs, then even pairs."),
+    useCase: t("Hợp để dạy compare-swap theo phase, sorting network và ý tưởng xử lý song song.", "Useful for teaching phased compare-swap, sorting networks, and parallel processing ideas."),
+    mentalModel: t("Pha lẻ xét 1-2, 3-4...; pha chẵn xét 0-1, 2-3...; lặp lại đến khi không còn đổi chỗ.", "The odd phase checks 1-2, 3-4...; the even phase checks 0-1, 2-3...; repeat until no swaps remain."),
+    steps: t(["Đặt sorted = true ở đầu mỗi vòng.", "Chạy pha lẻ trên các cặp bắt đầu tại chỉ số lẻ.", "Chạy pha chẵn trên các cặp bắt đầu tại chỉ số chẵn.", "Nếu có đổi chỗ, đặt sorted = false và chạy vòng tiếp theo."], ["Set sorted = true at the start of each round.", "Run the odd phase on pairs starting at odd indexes.", "Run the even phase on pairs starting at even indexes.", "If any swap happens, set sorted = false and run another round."]),
+    watch: t(["Nhãn pha cho biết đang xét nhóm cặp lẻ hay nhóm cặp chẵn.", "Các cặp trong cùng pha không chồng lên nhau.", "Khi cả pha lẻ và pha chẵn đều không đổi chỗ, mảng đã được sắp xếp."], ["The phase badge shows whether the odd or even phase is active.", "Pairs inside one phase do not overlap.", "When both phases make no swaps, the array is sorted."]),
+    takeaway: t("Tuần tự vẫn O(n²), nhưng cấu trúc phase rất hợp để minh họa parallel compare-swap.", "Sequential time is still O(n²), but the phase structure is great for illustrating parallel compare-swap."),
+  },
   selection: {
     hook: t("Selection Sort chọn đúng người nhỏ nhất cho từng vị trí.", "Selection Sort chooses the smallest candidate for each position."),
     useCase: t("Phù hợp để giải thích khái niệm tìm min và cố định dần vùng đã sắp xếp.", "Great for explaining how to find a minimum and grow a sorted prefix."),

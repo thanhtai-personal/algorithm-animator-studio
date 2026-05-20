@@ -199,8 +199,8 @@ function drawCocktailLens(ctx: CanvasRenderingContext2D, frame: Frame, x: number
 function drawOddEvenLens(ctx: CanvasRenderingContext2D, frame: Frame, x: number, y: number, w: number, h: number, theme: Theme, lang: Lang) {
   const phase = String(frame.vars.phase ?? "odd");
   const activeParity = phase === "even" ? 0 : 1;
-  const activeColor = phase === "even" ? theme.swap : theme.highlight;
-  const inactiveColor = phase === "even" ? "rgba(250,204,21,0.25)" : "rgba(244,114,182,0.22)";
+  const activeColor = theme.highlight;
+  const inactiveColor = phase === "even" ? "rgba(251,191,36,0.22)" : "rgba(250,204,21,0.18)";
   const stripY = y + h * 0.38;
   const stripH = h * 0.32;
 
@@ -245,8 +245,8 @@ function drawOddEvenPairBands(ctx: CanvasRenderingContext2D, x: number, y: numbe
 
 function drawPhaseBadge(ctx: CanvasRenderingContext2D, x: number, y: number, phase: string, color: string, lang: Lang) {
   const text = phase === "even"
-    ? label(lang, "EVEN", "EVEN")
-    : label(lang, "ODD", "ODD");
+    ? label(lang, "CHẴN", "EVEN")
+    : label(lang, "LẺ", "ODD");
   ctx.save();
   ctx.fillStyle = "rgba(15,23,42,0.9)";
   ctx.strokeStyle = color;

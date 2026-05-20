@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSepa
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { SHORT_VIDEO_TYPES, type ShortVideoType } from "@/lib/shortVideoTypes";
 import { AlgorithmStudio } from "./useAlgorithmStudio";
 
 type Props = { studio: AlgorithmStudio };
@@ -58,6 +59,20 @@ export function LeftPanel({ studio }: Props) {
               </span>
             </div>
           )}
+        </div>
+        <div>
+          <Label>{s.lang === "vi" ? "Kiểu video" : "Video type"}</Label>
+          <Select value={s.shortVideoType} onValueChange={(v) => s.setShortVideoType(v as ShortVideoType)}>
+            <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {SHORT_VIDEO_TYPES.map((type) => <SelectItem key={type.id} value={type.id}>{type.label[s.lang]}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {s.shortVideoType === "kinetic-typography" && s.algo.id !== "bubble" ? (
+            <p className="mt-2 text-xs text-amber-300">
+              {s.lang === "vi" ? "Kinetic short hiện tối ưu trước cho Bubble Sort." : "Kinetic short is currently optimized for Bubble Sort first."}
+            </p>
+          ) : null}
         </div>
         {!s.isGraph && (
           <div>

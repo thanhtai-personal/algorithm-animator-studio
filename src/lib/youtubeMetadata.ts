@@ -55,11 +55,12 @@ export function buildYoutubeMetadata(algoId: string, lang: Lang, variant: "short
   const complexity = COMPLEXITY[algo.id];
   const isVi = lang === "vi";
   const style = getVideoTypeCopy(videoType, lang);
-  const title = variant === "long"
+  const baseTitle = variant === "long"
     ? (videoType === "classic"
       ? (isVi ? `${algo.name} giải thích đầy đủ bằng animation` : `${algo.name} Explained with Full Animation`)
       : (isVi ? `${algo.name} ${style.titleSuffix} | giải thích bằng animation` : `${algo.name} ${style.titleSuffix} | Animated Explanation`))
     : (isVi ? `${algo.name} trực quan trong 60 giây` : `${algo.name} Visualized in 60 Seconds`);
+  const title = appendTitleHashtags(baseTitle, buildTitleHashtags(algo.name, variant, videoType));
 
   const sections = isVi
     ? [
@@ -123,6 +124,43 @@ function uniqueTags(tags: string[]) {
     seen.add(key);
     return true;
   });
+}
+
+function buildTitleHashtags(algoName: string, variant: "short" | "long", videoType: LongVideoType) {
+  const algorithmHash = toHashtag(algoName);
+  const styleHash = videoType === "kinetic-typography"
+    ? "#kinetictypography"
+    : videoType === "animated-explainer"
+      ? "#animatedexplainer"
+      : videoType === "ui-kinetic-explainer"
+        ? "#uikinetic"
+        : "#algorithm";
+  return uniqueTags([
+    algorithmHash,
+    variant === "short" ? "#shorts" : styleHash,
+    variant === "short" ? "#algorithm" : "#programming",
+  ]);
+}
+
+function appendTitleHashtags(title: string, hashtags: string[]) {
+  const suffix = hashtags.filter(Boolean).join(" ");
+  if (!suffix) return title;
+  const maxTitleLength = 100;
+  const available = maxTitleLength - suffix.length - 1;
+  const safeTitle = title.length > available ? `${title.slice(0, Math.max(20, available - 3)).trim()}...` : title;
+  return `${safeTitle} ${suffix}`;
+}
+
+function toHashtag(value: string) {
+  const compact = value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .map((part) => part.toLowerCase())
+    .join("");
+  return compact ? `#${compact}` : "#algorithm";
 }
 
 function getVideoTypeCopy(type: LongVideoType, lang: Lang) {

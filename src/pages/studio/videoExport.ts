@@ -4,6 +4,8 @@ import { BackgroundMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusi
 import { AnimalColumnSettings } from "@/lib/animalColumns";
 import { renderFrame, Theme } from "@/lib/renderer";
 import { getAssetSfxOption } from "@/lib/selectSounds";
+import { renderShortKineticTypography } from "@/lib/shortKineticTypographyRenderer";
+import type { ShortVideoType } from "@/lib/shortVideoTypes";
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
 import type { YoutubeAlgorithmMetadata } from "@/lib/youtubeMetadata";
 import { getExportFormat, ExportFormat } from "./exportFormats";
@@ -24,6 +26,9 @@ type ExportVideoParams = {
   showCode: boolean;
   complexity?: { time: string; best?: string; worst?: string; space: string };
   algorithmId: string;
+  algoName: string;
+  lang: "en" | "vi";
+  shortVideoType: ShortVideoType;
   platformId: string;
   exportFormat: ExportFormat;
   animalColumns: AnimalColumnSettings;
@@ -65,7 +70,7 @@ export async function exportAlgorithmVideo(params: ExportVideoParams) {
     animalColumns: params.animalColumns,
   };
 
-  renderFrame(ctx, params.frames[0], { ...renderOpts, previousFrame: null, transitionProgress: 1 }, params.width, params.height);
+  renderShortFrame(ctx, params, 0, null, 1, renderOpts);
   const videoStream = canvas.captureStream(0) as MediaStream;
   const track = videoStream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack | undefined;
   if (!track) return false;
@@ -98,11 +103,7 @@ export async function exportAlgorithmVideo(params: ExportVideoParams) {
         : frameHoldCount(params.algorithmId, params.fps);
 
       for (let step = 1; step <= transitionFrames; step++) {
-        renderFrame(ctx, params.frames[i], {
-          ...renderOpts,
-          previousFrame,
-          transitionProgress: step / transitionFrames,
-        }, params.width, params.height);
+        renderShortFrame(ctx, params, i, previousFrame, step / transitionFrames, renderOpts);
         track.requestFrame();
         await waitFrame(params.fps);
       }
@@ -110,7 +111,7 @@ export async function exportAlgorithmVideo(params: ExportVideoParams) {
     }
 
     const lastFrame = params.frames[params.frames.length - 1];
-    renderFrame(ctx, lastFrame, { ...renderOpts, previousFrame: null, transitionProgress: 1 }, params.width, params.height);
+    renderShortFrame(ctx, params, params.frames.length - 1, null, 1, renderOpts);
     for (let i = 0; i < params.fps * 3; i++) {
       track.requestFrame();
       await waitFrame(params.fps);
@@ -132,6 +133,33 @@ export async function exportAlgorithmVideo(params: ExportVideoParams) {
   a.download = fileName;
   a.click();
   return true;
+}
+
+function renderShortFrame(
+  ctx: CanvasRenderingContext2D,
+  params: ExportVideoParams,
+  frameIndex: number,
+  previousFrame: Frame | null,
+  transitionProgress: number,
+  renderOpts: Parameters<typeof renderFrame>[2],
+) {
+  const frame = params.frames[frameIndex];
+  if (params.shortVideoType === "kinetic-typography") {
+    renderShortKineticTypography(ctx, {
+      frame,
+      previousFrame,
+      frameIndex,
+      frameCount: params.frames.length,
+      transitionProgress,
+      algorithmId: params.algorithmId,
+      algoName: params.algoName,
+      lang: params.lang,
+      title: params.title,
+      subtitle: params.subtitle,
+    }, params.width, params.height);
+    return;
+  }
+  renderFrame(ctx, frame, { ...renderOpts, previousFrame, transitionProgress }, params.width, params.height);
 }
 
 function waitFrame(fps: number) {

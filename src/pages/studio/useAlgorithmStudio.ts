@@ -6,11 +6,13 @@ import { audioEngine, SfxKind } from "@/lib/audio";
 import { BackgroundMusicId, getAssetMusicOption, isAssetMusicId, isLibraryMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
 import { Lang, PLATFORMS, readSystemLang, subscribeSystemLang, t, writeSystemLang } from "@/lib/i18n";
 import { getMusicLibraryTracks, type MusicLibraryTrack } from "@/lib/musicLibrary";
-import { renderFrame, THEMES, Theme } from "@/lib/renderer";
+import { THEMES, Theme } from "@/lib/renderer";
+import type { ShortVideoType } from "@/lib/shortVideoTypes";
 import { buildYoutubeMetadata } from "@/lib/youtubeMetadata";
 import { ExportFormat } from "./exportFormats";
 import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm, maxDemoSizeForAlgorithm, normalizeAnimalArray, parseInputArray, shouldUseAlgorithmDemo } from "./demoArrays";
 import { exportAlgorithmVideo, preloadExportSfx } from "./videoExport";
+import { renderStudioPreview } from "./renderStudioPreview";
 
 const SWAP_TRANSITION_MULTIPLIER = 1.8;
 const TREE_SORT_FRAME_MULTIPLIER = 2.4;
@@ -40,6 +42,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const [title, setTitle] = useState(ALGORITHMS[DEFAULT_ALGORITHM_ID].name);
   const [subtitle, setSubtitle] = useState("");
   const [showCode, setShowCode] = useState(true);
+  const [shortVideoType, setShortVideoType] = useState<ShortVideoType>("classic");
   const [columnVisualMode, setColumnVisualMode] = useState<ColumnVisualMode>("bar");
   const [animalSpriteScale, setAnimalSpriteScale] = useState(1);
   const [animalJumpIntensity, setAnimalJumpIntensity] = useState(1);
@@ -188,19 +191,8 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     if (!c || !ctx || !f) return;
     const code = algoId === "custom" ? customCode : algo.code;
     const previousFrame = frameIdx > 0 ? frames[frameIdx - 1] : null;
-    renderFrame(ctx, f, {
-      title,
-      subtitle,
-      theme,
-      code,
-      showCode,
-      complexity: COMPLEXITY[algoId],
-      previousFrame,
-      transitionProgress,
-      algorithmId: algoId,
-      animalColumns,
-    }, W, H);
-  }, [frames, frameIdx, transitionProgress, title, subtitle, theme, algo.code, showCode, algoId, customCode, animalColumns, W, H]);
+    renderStudioPreview({ ctx, frame: f, previousFrame, frameIndex: frameIdx, frameCount: frames.length, transitionProgress, width: W, height: H, shortVideoType, algorithmId: algoId, algoName: algo.name, lang, title, subtitle, theme, code, showCode, animalColumns });
+  }, [frames, frameIdx, transitionProgress, title, subtitle, theme, algo.code, showCode, algoId, customCode, animalColumns, W, H, shortVideoType, algo.name, lang]);
 
   const playEvent = (f: Frame | null | undefined) => {
     if (!f) return;
@@ -315,6 +307,9 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
         showCode,
         complexity: COMPLEXITY[algoId],
         algorithmId: algo.id,
+        algoName: algo.name,
+        lang,
+        shortVideoType,
         platformId: platform.id,
         exportFormat,
         animalColumns,
@@ -358,6 +353,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     theme, setTheme: (value: Theme) => runConfigAction(() => setTheme(value)),
     title, setTitle: (value: string) => runConfigAction(() => setTitle(value)),
     subtitle, setSubtitle: (value: string) => runConfigAction(() => setSubtitle(value)),
+    shortVideoType, setShortVideoType: (value: ShortVideoType) => runConfigAction(() => setShortVideoType(value)),
     showCode, setShowCode: (value: boolean) => runConfigAction(() => setShowCode(value)),
     columnVisualMode, setColumnVisualMode: setColumnVisualModeWithDefaults,
     animalSpriteScale, setAnimalSpriteScale: (value: number) => runConfigAction(() => setAnimalSpriteScale(value)),

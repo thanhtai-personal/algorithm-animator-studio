@@ -5,6 +5,7 @@ import type { LongVideoType } from "./longVideoTypes";
 import type { Theme } from "./renderer";
 import { withTextShadow } from "./canvasText";
 import { drawKineticTextCard } from "./kineticTextEffects";
+import { drawOddEvenKineticIllustration, getOddEvenKineticCards } from "./oddEvenKineticTypography";
 import { roundRect } from "./renderers/shapes";
 
 const W = 1920;
@@ -28,7 +29,7 @@ type Params = {
   longVideoType: LongVideoType;
 };
 
-type KineticCard = { top?: string; main: string; bottom?: string; accent?: string; invert?: boolean; rotate?: number; values?: number[]; pair?: number };
+export type KineticCard = { top?: string; main: string; bottom?: string; accent?: string; invert?: boolean; rotate?: number; values?: number[]; pair?: number };
 type BubbleMode = "compare" | "swap" | "pass" | "biggest" | "lock" | "best" | "worst" | "space";
 
 export function renderKineticTypography(ctx: CanvasRenderingContext2D, params: Params) {
@@ -59,6 +60,8 @@ function drawKineticBackground(ctx: CanvasRenderingContext2D, image: HTMLImageEl
 export function getKineticTypographySlideKey(params: { algoId: string; sceneId: string; sceneProgress: number; lang: Lang; sceneText?: string }) {
   const cardCount = params.algoId === "bubble"
     ? getBubbleKineticCards(params.sceneId, params.lang).length
+    : params.algoId === "odd_even"
+      ? getOddEvenKineticCards(params.sceneId, params.lang).length
     : Math.max(1, wordsFromText(params.sceneText ?? "").slice(0, 12).length);
   const timing = getKineticBeatTiming({ algoId: params.algoId, scene: { id: params.sceneId } as LongContentScene, sceneProgress: params.sceneProgress } as Params, cardCount);
   return `${params.sceneId}:${Math.min(cardCount - 1, Math.floor(timing.progress * cardCount))}`;
@@ -79,6 +82,7 @@ function getKineticBeatTiming(params: Params, cardCount: number) {
 
 function getKineticCards(params: Params): KineticCard[] {
   if (params.algoId === "bubble") return getBubbleKineticCards(params.scene.id, params.lang);
+  if (params.algoId === "odd_even") return getOddEvenKineticCards(params.scene.id, params.lang);
   const base = [params.algoName, params.scene.kindLabel, ...params.scene.bullets].join(" ");
   return wordsFromText(base).map((word, index) => ({ main: word, accent: index % 3 === 0 ? "#4ade80" : "#38bdf8" })).slice(0, 12);
 }
@@ -176,6 +180,7 @@ function drawBeatGrid(ctx: CanvasRenderingContext2D, timelineProgress: number, a
 
 function drawKineticIllustration(ctx: CanvasRenderingContext2D, params: Params, card: KineticCard, local: number, accent: string) {
   if (params.algoId === "bubble") return drawBubbleKineticIllustration(ctx, params, card, local, accent);
+  if (params.algoId === "odd_even") return drawOddEvenKineticIllustration(ctx, params.frame, card, local, accent, params.lang);
   if (params.frame) drawKineticAlgorithmFlash(ctx, params, accent, card.invert);
 }
 

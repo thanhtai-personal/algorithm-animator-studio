@@ -12,6 +12,8 @@ import type { YoutubeAlgorithmMetadata } from "@/lib/youtubeMetadata";
 import { getExportFormat, ExportFormat } from "./exportFormats";
 
 const SWAP_EXPORT_SECONDS = 0.35;
+const KINETIC_ODD_EVEN_SWAP_SECONDS = 0.62;
+const KINETIC_ODD_EVEN_HOLD_SECONDS = 0.28;
 const TREE_SORT_EXPORT_SECONDS = 0.12;
 const PIGEONHOLE_EXPORT_SECONDS = 0.16;
 
@@ -99,9 +101,7 @@ export async function exportAlgorithmVideo(params: ExportVideoParams) {
     for (let i = 0; i < params.frames.length; i++) {
       params.playEvent(params.frames[i]);
       const previousFrame = i > 0 ? params.frames[i - 1] : null;
-      const transitionFrames = shouldAnimateSwap(params.frames[i], previousFrame)
-        ? Math.max(6, Math.round(params.fps * SWAP_EXPORT_SECONDS))
-        : frameHoldCount(params.algorithmId, params.fps);
+      const transitionFrames = getTransitionFrameCount(params, params.frames[i], previousFrame);
 
       for (let step = 1; step <= transitionFrames; step++) {
         renderShortFrame(ctx, params, i, previousFrame, step / transitionFrames, renderOpts);
@@ -172,7 +172,16 @@ function waitFrame(fps: number) {
   return new Promise((resolve) => window.setTimeout(resolve, 1000 / fps));
 }
 
-function frameHoldCount(algorithmId: string, fps: number) {
+function getTransitionFrameCount(params: ExportVideoParams, frame: Frame, previousFrame: Frame | null) {
+  if (shouldAnimateSwap(frame, previousFrame)) {
+    const seconds = params.shortVideoType === "kinetic-typography" && params.algorithmId === "odd_even" ? KINETIC_ODD_EVEN_SWAP_SECONDS : SWAP_EXPORT_SECONDS;
+    return Math.max(6, Math.round(params.fps * seconds));
+  }
+  return frameHoldCount(params.algorithmId, params.fps, params.shortVideoType);
+}
+
+function frameHoldCount(algorithmId: string, fps: number, shortVideoType: ShortVideoType) {
+  if (shortVideoType === "kinetic-typography" && algorithmId === "odd_even") return Math.max(5, Math.round(fps * KINETIC_ODD_EVEN_HOLD_SECONDS));
   if (algorithmId === "tree_sort") return Math.max(2, Math.round(fps * TREE_SORT_EXPORT_SECONDS));
   if (algorithmId === "pigeonhole") return Math.max(3, Math.round(fps * PIGEONHOLE_EXPORT_SECONDS));
   return 1;

@@ -14,12 +14,30 @@ function buildMotionVoiceSegment(scene: LongContentScene, type: LongVideoType, a
 }
 
 function kineticVoice(scene: LongContentScene, algoName: string, lang: Lang) {
+  if (algoName.toLowerCase().includes("odd-even")) return oddEvenKineticVoice(scene, algoName, lang);
   if (lang === "vi") {
     const phrase = pickKineticPhrase(scene);
     return `${algoName}. ${phrase}. Nhịp nhanh. Nhìn từ khóa, theo chuyển động.`;
   }
   const phrase = pickKineticPhrase(scene);
   return `${algoName}. ${phrase}. Fast beat. Follow the keywords, follow the motion.`;
+}
+
+function oddEvenKineticVoice(scene: LongContentScene, algoName: string, lang: Lang) {
+  const vi = lang === "vi";
+  const title = scene.id;
+  const phrase = title === "phase-walkthrough"
+    ? (vi ? "Pha lẻ. Năm lớn hơn bốn, đổi. Ba lớn hơn hai, đổi. Pha chẵn. Nhóm cặp dịch sang trái." : "Odd phase. Five greater than four, swap. Three greater than two, swap. Even phase. Pair group shifts left.")
+    : title === "odd-even-complexity"
+      ? (vi ? "Best case O n. Average O n bình phương. Worst case O n bình phương. Space O một." : "Best case O n. Average O n squared. Worst case O n squared. Space O one.")
+      : title === "odd-even-animation"
+        ? (vi ? "Theo dõi cờ sorted. Có đổi chỗ thì false. Một vòng sạch thì dừng." : "Track the sorted flag. A swap makes it false. A clean round stops.")
+        : title === "odd-even-recap"
+          ? (vi ? "Bốn từ khóa. Lẻ. Chẵn. Swap. Dừng." : "Four keywords. Odd. Even. Swap. Stop.")
+          : title === "odd-even-mental-model"
+            ? (vi ? "Các cặp trong cùng pha không chồng nhau. Đây là ý tưởng sorting network." : "Pairs in one phase do not overlap. This is the sorting-network idea.")
+            : (vi ? "Hai nhịp để sửa các cặp kề nhau." : "Two beats to repair adjacent pairs.");
+  return `${algoName}. ${phrase}`;
 }
 
 function explainerVoice(scene: LongContentScene, algoName: string, lang: Lang) {

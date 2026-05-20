@@ -21,11 +21,17 @@ type BubbleBeat = {
   main: string;
   sub: string;
   accent: string;
-  mode: "intro" | "compare" | "swap" | "keep" | "lock" | "done";
+  mode: "intro" | "compare" | "swap" | "keep" | "lock" | "done" | "phase" | "stop";
 };
 
 export function renderShortKineticTypography(ctx: CanvasRenderingContext2D, params: Params, w: number, h: number) {
   drawBackground(ctx, w, h, params.frameIndex / Math.max(1, params.frameCount - 1));
+  if (params.algorithmId === "odd_even") {
+    const beat = getOddEvenBeat(params);
+    drawTopMeta(ctx, params, w); drawBeatText(ctx, beat, params.transitionProgress, w, h);
+    drawOddEvenBars(ctx, params, beat, w, h); drawFooter(ctx, params, beat.accent, w, h);
+    return;
+  }
   if (params.algorithmId !== "bubble") return drawFallback(ctx, params, w, h);
   const beat = getBubbleBeat(params);
   drawTopMeta(ctx, params, w);
@@ -78,6 +84,58 @@ function getBubbleBeat(params: Params): BubbleBeat {
     sub: vi ? "Sau mỗi lượt quét, đuôi được khóa" : "After each scan, the tail locks",
     accent: "#facc15",
     mode: "lock",
+  };
+}
+
+function getOddEvenBeat(params: Params): BubbleBeat {
+  const vi = params.lang === "vi";
+  const frame = params.frame;
+  const phase = String(frame.vars.phase ?? "");
+  const pair = frame.swap.length >= 2 ? frame.swap : frame.highlight;
+  const a = pair[0] ?? Number(frame.vars.i ?? 0);
+  const b = pair[1] ?? Math.min(a + 1, frame.arr.length - 1);
+  const previous = params.previousFrame?.arr.length === frame.arr.length ? params.previousFrame : null;
+  const left = previous?.arr[a] ?? frame.arr[a];
+  const right = previous?.arr[b] ?? frame.arr[b];
+  const phaseName = phase === "even" ? (vi ? "PHA CHẴN" : "EVEN PHASE") : (vi ? "PHA LẺ" : "ODD PHASE");
+
+  if (params.frameIndex === 0) return {
+    kicker: "ODD-EVEN SORT",
+    main: vi ? "LẺ / CHẴN" : "ODD / EVEN",
+    sub: vi ? "Hai nhóm cặp thay phiên nhau" : "Two pair groups take turns",
+    accent: "#38bdf8",
+    mode: "intro",
+  };
+  if (params.frameIndex >= params.frameCount - 2 || frame.sorted.length === frame.arr.length) return {
+    kicker: vi ? "KẾT QUẢ" : "RESULT",
+    main: vi ? "SORTED" : "SORTED",
+    sub: vi ? "Một vòng sạch thì dừng" : "A clean round stops",
+    accent: "#4ade80",
+    mode: "done",
+  };
+  if (frame.event === "swap") return {
+    kicker: phaseName,
+    main: `${left} > ${right}`,
+    sub: vi ? `Đổi chỗ cặp ${a}-${b}` : `Swap pair ${a}-${b}`,
+    accent: "#fb7185",
+    mode: "swap",
+  };
+  if (frame.event === "compare") {
+    const wrong = left > right;
+    return {
+      kicker: phaseName,
+      main: `${left} ${wrong ? ">" : "<="} ${right}`,
+      sub: wrong ? (vi ? "Sai thứ tự, swap sắp tới" : "Wrong order, swap next") : (vi ? "Đúng thứ tự, bỏ qua" : "Correct order, skip"),
+      accent: wrong ? "#fb7185" : "#4ade80",
+      mode: wrong ? "compare" : "keep",
+    };
+  }
+  return {
+    kicker: vi ? "CỜ SORTED" : "SORTED FLAG",
+    main: frame.vars.sorted === "false" ? "false" : "true",
+    sub: vi ? "false nghĩa là còn vòng tiếp theo" : "false means another round",
+    accent: frame.vars.sorted === "false" ? "#fb7185" : "#4ade80",
+    mode: frame.vars.sorted === "false" ? "phase" : "stop",
   };
 }
 
@@ -157,6 +215,77 @@ function drawBubbleBars(ctx: CanvasRenderingContext2D, params: Params, beat: Bub
     withTextShadow(ctx, 25, () => ctx.fillText(String(value), x + cell / 2, baseY + 38));
   });
   if (pair.length >= 2) drawColumnEnergyCue(ctx, pair, cell, gap, baseY, beat, params.transitionProgress, params.lang);
+  ctx.restore();
+}
+
+function drawOddEvenBars(ctx: CanvasRenderingContext2D, params: Params, beat: BubbleBeat, w: number, h: number) {
+  const values = params.previousFrame?.arr.length === params.frame.arr.length ? params.previousFrame.arr : params.frame.arr;
+  const max = Math.max(...values, 1);
+  const chartW = w - 86;
+  const gap = Math.max(8, Math.min(16, chartW / Math.max(1, values.length) * 0.14));
+  const cell = (chartW - gap * (values.length - 1)) / values.length;
+  const baseY = h * 0.76;
+  const chartH = h * 0.27;
+  const pair = params.frame.swap.length >= 2 ? params.frame.swap : params.frame.highlight;
+  const phase = String(params.frame.vars.phase ?? "odd");
+  const phaseParity = phase === "even" ? 0 : 1;
+  const swapT = beat.mode === "swap" ? easeInOutCubic(params.transitionProgress) : 0;
+
+  ctx.save();
+  ctx.globalAlpha = 0.96;
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  roundRect(ctx, 32, baseY - chartH - 36, w - 64, chartH + 96, 34);
+  ctx.fill();
+  if (beat.mode !== "swap") drawOddEvenPhaseRails(ctx, values.length, phaseParity, cell, gap, baseY, beat.accent, params.transitionProgress);
+  values.forEach((value, index) => {
+    const active = pair.includes(index);
+    const phaseActive = index % 2 === phaseParity && index < values.length - 1;
+    const sorted = params.frame.sorted.includes(index);
+    const barH = 34 + (value / max) * chartH;
+    const direction = index === pair[0] ? 1 : index === pair[1] ? -1 : 0;
+    const offset = direction * (cell + gap) * swapT;
+    const lift = active && beat.mode === "swap" ? -32 * Math.sin(swapT * Math.PI) : 0;
+    const x = 43 + index * (cell + gap) + offset;
+    ctx.fillStyle = sorted ? "#4ade80" : active ? beat.accent : phaseActive ? "rgba(250,204,21,0.22)" : "rgba(255,255,255,0.22)";
+    roundRect(ctx, x, baseY - barH + lift, cell, barH, Math.min(18, cell / 2));
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "900 25px ui-sans-serif, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    withTextShadow(ctx, 25, () => ctx.fillText(String(value), x + cell / 2, baseY + 38));
+  });
+  if (pair.length >= 2) drawColumnEnergyCue(ctx, pair, cell, gap, baseY, beat, params.transitionProgress, params.lang);
+  else drawOddEvenStopCue(ctx, baseY, w, beat, params.lang);
+  ctx.restore();
+}
+
+function drawOddEvenPhaseRails(ctx: CanvasRenderingContext2D, length: number, parity: number, cell: number, gap: number, baseY: number, accent: string, progress: number) {
+  ctx.save();
+  ctx.strokeStyle = `${accent}88`;
+  ctx.lineWidth = 3;
+  ctx.setLineDash([15, 12]);
+  ctx.lineDashOffset = -progress * 70;
+  for (let i = parity; i < length - 1; i += 2) {
+    const left = 43 + i * (cell + gap) + cell / 2;
+    const right = left + cell + gap;
+    ctx.beginPath();
+    ctx.moveTo(left, baseY - 238);
+    ctx.bezierCurveTo(left + 28, baseY - 268, right - 28, baseY - 268, right, baseY - 238);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawOddEvenStopCue(ctx: CanvasRenderingContext2D, baseY: number, w: number, beat: BubbleBeat, lang: Lang) {
+  ctx.save();
+  ctx.strokeStyle = beat.accent;
+  ctx.lineWidth = 6;
+  roundRect(ctx, 60, baseY - 252, w - 120, 298, 28);
+  ctx.stroke();
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "900 30px ui-sans-serif, system-ui, sans-serif";
+  withTextShadow(ctx, 30, () => ctx.fillText(lang === "vi" ? "KHÔNG CÒN SWAP" : "NO MORE SWAPS", w / 2, baseY - 270));
   ctx.restore();
 }
 

@@ -1,5 +1,14 @@
 
 export type AlgorithmWorldCell = { x: number; y: number };
+export type AlgorithmWorldAlgorithmId = "dfs" | "bfs" | "dijkstra" | "astar";
+export type AlgorithmWorldProblemType = "escape" | "fastest";
+export type AlgorithmWorldVideoMode = "short" | "long";
+export type AlgorithmWorldScenarioOptions = {
+  videoMode?: AlgorithmWorldVideoMode;
+  problemType?: AlgorithmWorldProblemType;
+  primaryAlgorithm?: AlgorithmWorldAlgorithmId;
+  secondaryAlgorithm?: AlgorithmWorldAlgorithmId;
+};
 export type AlgorithmWorldPhase = "setup" | "search" | "path" | "obstacle" | "replan" | "done";
 export type AlgorithmWorldState = {
   cols: number;
@@ -19,6 +28,17 @@ export type AlgorithmWorldState = {
   phase: AlgorithmWorldPhase;
   status: string;
   replanCount: number;
+  algorithmId?: AlgorithmWorldAlgorithmId;
+  algorithmName?: string;
+  runtimeLabel?: string;
+  problemType?: AlgorithmWorldProblemType;
+  visitedCount?: number;
+  pathLength?: number;
+};
+export type AlgorithmWorldCompareState = {
+  problemType: AlgorithmWorldProblemType;
+  left: AlgorithmWorldState;
+  right: AlgorithmWorldState;
 };
 
 export type GraphNode = { id: number; x: number; y: number; label?: string };
@@ -105,6 +125,7 @@ export type Frame = {
   vars: Record<string, number | string>;
   graph?: GraphState;
   world?: AlgorithmWorldState;
+  worldCompare?: AlgorithmWorldCompareState;
   target?: number;
   found?: number | null;
   label?: string;
@@ -129,6 +150,7 @@ export type AlgoDef = {
     customCode?: string;
     graph?: GraphState;
     world?: AlgorithmWorldState;
+    worldScenario?: AlgorithmWorldScenarioOptions;
     start?: number;
     end?: number;
   }) => Frame[];

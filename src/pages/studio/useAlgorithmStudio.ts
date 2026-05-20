@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ALGORITHMS, COMPLEXITY, DEFAULT_ALGORITHM_ID, Frame, parseGraph } from "@/lib/algorithms";
+import {
+  ALGORITHMS,
+  COMPLEXITY,
+  DEFAULT_ALGORITHM_ID,
+  Frame,
+  parseGraph,
+  type AlgorithmWorldAlgorithmId,
+  type AlgorithmWorldProblemType,
+  type AlgorithmWorldVideoMode,
+} from "@/lib/algorithms";
 import { ColumnVisualMode, preloadAnimalSprites } from "@/lib/animalColumns";
 import { audioEngine, SfxKind } from "@/lib/audio";
 import { BackgroundMusicId, getAssetMusicOption, isAssetMusicId, isLibraryMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
@@ -27,6 +36,11 @@ type UseAlgorithmStudioOptions = {
   initialTitle?: string;
   initialSubtitle?: string;
   initialPlatformId?: (typeof PLATFORMS)[number]["id"];
+  initialShowCode?: boolean;
+  initialWorldVideoMode?: AlgorithmWorldVideoMode;
+  initialWorldProblemType?: AlgorithmWorldProblemType;
+  initialWorldPrimaryAlgorithm?: AlgorithmWorldAlgorithmId;
+  initialWorldSecondaryAlgorithm?: AlgorithmWorldAlgorithmId;
 };
 
 export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
@@ -50,8 +64,12 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const [theme, setTheme] = useState<Theme>(THEMES.neon);
   const [title, setTitle] = useState(options.initialTitle ?? ALGORITHMS[initialAlgoId].name);
   const [subtitle, setSubtitle] = useState(options.initialSubtitle ?? "");
-  const [showCode, setShowCode] = useState(true);
+  const [showCode, setShowCode] = useState(options.initialShowCode ?? true);
   const [shortVideoType, setShortVideoType] = useState<ShortVideoType>("classic");
+  const [worldVideoMode, setWorldVideoModeState] = useState<AlgorithmWorldVideoMode>(options.initialWorldVideoMode ?? "short");
+  const [worldProblemType, setWorldProblemTypeState] = useState<AlgorithmWorldProblemType>(options.initialWorldProblemType ?? "fastest");
+  const [worldPrimaryAlgorithm, setWorldPrimaryAlgorithmState] = useState<AlgorithmWorldAlgorithmId>(options.initialWorldPrimaryAlgorithm ?? "astar");
+  const [worldSecondaryAlgorithm, setWorldSecondaryAlgorithmState] = useState<AlgorithmWorldAlgorithmId>(options.initialWorldSecondaryAlgorithm ?? "dijkstra");
   const [columnVisualMode, setColumnVisualMode] = useState<ColumnVisualMode>("bar");
   const [animalSpriteScale, setAnimalSpriteScale] = useState(1);
   const [animalJumpIntensity, setAnimalJumpIntensity] = useState(1);
@@ -100,10 +118,16 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
       target: Number.isNaN(targetNum as number) ? undefined : targetNum,
       customCode,
       graph: parsedGraph ?? undefined,
+      worldScenario: {
+        videoMode: worldVideoMode,
+        problemType: worldProblemType,
+        primaryAlgorithm: worldPrimaryAlgorithm,
+        secondaryAlgorithm: worldSecondaryAlgorithm,
+      },
       start: startId >= 0 ? startId : undefined,
       end: endId >= 0 ? endId : undefined,
     });
-  }, [algo, arr, target, customCode, parsedGraph, startId, endId]);
+  }, [algo, arr, target, customCode, parsedGraph, startId, endId, worldVideoMode, worldProblemType, worldPrimaryAlgorithm, worldSecondaryAlgorithm]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const current = frames[Math.min(frameIdx, frames.length - 1)];
@@ -122,6 +146,10 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     setTitle(options.initialTitle && algo.id === initialAlgoId ? options.initialTitle : algo.name);
   }, [algo, initialAlgoId, options.initialTitle]);
   useEffect(() => { preloadAnimalSprites(); }, []);
+  useEffect(() => {
+    if (algoId !== "astar") return;
+    setPlatformId(worldVideoMode === "long" ? "landscape" : "shorts");
+  }, [algoId, worldVideoMode]);
   useEffect(() => {
     if (!shouldUseAlgorithmDemo(algoId, arr)) return;
     const nextSize = demoSizeForAlgorithm(algoId, size);
@@ -366,6 +394,14 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     title, setTitle: (value: string) => runConfigAction(() => setTitle(value)),
     subtitle, setSubtitle: (value: string) => runConfigAction(() => setSubtitle(value)),
     shortVideoType, setShortVideoType: (value: ShortVideoType) => runConfigAction(() => setShortVideoType(value)),
+    worldVideoMode,
+    setWorldVideoMode: (value: AlgorithmWorldVideoMode) => runConfigAction(() => { setWorldVideoModeState(value); setFrameIdx(0); setPlaying(false); }),
+    worldProblemType,
+    setWorldProblemType: (value: AlgorithmWorldProblemType) => runConfigAction(() => { setWorldProblemTypeState(value); setFrameIdx(0); setPlaying(false); }),
+    worldPrimaryAlgorithm,
+    setWorldPrimaryAlgorithm: (value: AlgorithmWorldAlgorithmId) => runConfigAction(() => { setWorldPrimaryAlgorithmState(value); setFrameIdx(0); setPlaying(false); }),
+    worldSecondaryAlgorithm,
+    setWorldSecondaryAlgorithm: (value: AlgorithmWorldAlgorithmId) => runConfigAction(() => { setWorldSecondaryAlgorithmState(value); setFrameIdx(0); setPlaying(false); }),
     showCode, setShowCode: (value: boolean) => runConfigAction(() => setShowCode(value)),
     columnVisualMode, setColumnVisualMode: setColumnVisualModeWithDefaults,
     animalSpriteScale, setAnimalSpriteScale: (value: number) => runConfigAction(() => setAnimalSpriteScale(value)),

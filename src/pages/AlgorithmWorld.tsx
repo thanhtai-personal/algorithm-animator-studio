@@ -36,8 +36,13 @@ const AlgorithmWorld = () => {
     requireConfigAccess,
     initialAlgorithmId: "astar",
     initialTitle: "A* Pathfinding Visualized",
-    initialSubtitle: "Shifting maze + real-time obstacles",
+    initialSubtitle: "Entrance → Exit through realtime obstacles",
     initialPlatformId: "shorts",
+    initialShowCode: false,
+    initialWorldVideoMode: "short",
+    initialWorldProblemType: "fastest",
+    initialWorldPrimaryAlgorithm: "astar",
+    initialWorldSecondaryAlgorithm: "dijkstra",
   });
 
   return (

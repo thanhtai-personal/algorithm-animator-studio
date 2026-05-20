@@ -38,9 +38,14 @@ export { COMPLEXITY } from "./complexity";
 export { makeSampleGraph, parseGraph } from "./graph/utils";
 export type {
   AlgoCategory,
+  AlgorithmWorldAlgorithmId,
   AlgorithmWorldCell,
+  AlgorithmWorldCompareState,
   AlgorithmWorldPhase,
+  AlgorithmWorldProblemType,
+  AlgorithmWorldScenarioOptions,
   AlgorithmWorldState,
+  AlgorithmWorldVideoMode,
   AlgoDef,
   BucketState,
   Complexity,

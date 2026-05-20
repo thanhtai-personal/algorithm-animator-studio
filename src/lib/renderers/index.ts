@@ -2,7 +2,7 @@ import { Frame } from "../algorithms";
 import type { AnimalColumnSettings } from "../animalColumns";
 import type { Lang } from "../i18n";
 import { drawAnimalColumns } from "./animalColumnRenderer";
-import { drawAlgorithmWorld } from "./algorithmWorldRenderer";
+import { drawAlgorithmWorld, drawAlgorithmWorldComparison } from "./algorithmWorldRenderer";
 import { drawBars } from "./barRenderer";
 import { drawCodePanel } from "./codePanelRenderer";
 import { drawCountingSort } from "./countingSortRenderer";
@@ -54,14 +54,16 @@ export function renderFrame(
 
   drawHeader(ctx, title, subtitle, width, height, headerH, isPortrait, theme);
   const lang = opts.lang ?? "en";
-  if (complexity) drawComplexityBadges(ctx, complexity, width, height, padding, lang);
+  if (complexity && !frame?.world && !frame?.worldCompare) drawComplexityBadges(ctx, complexity, width, height, padding, lang);
 
   if (!frame) {
     drawEmptyState(ctx, padding, chartTop, chartW, chartH, theme, lang);
     return;
   }
 
-  if (frame.world) {
+  if (frame.worldCompare) {
+    drawAlgorithmWorldComparison(ctx, frame.worldCompare, padding, chartTop, chartW, chartH, theme, lang);
+  } else if (frame.world) {
     drawAlgorithmWorld(ctx, frame, padding, chartTop, chartW, chartH, theme, lang);
   } else if (frame.graph) {
     drawGraph(ctx, frame, padding, chartTop, chartW, chartH, theme, lang);

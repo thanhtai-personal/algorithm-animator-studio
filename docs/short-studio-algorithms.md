@@ -55,7 +55,7 @@ Source of truth: `src/lib/algorithms/index.ts`.
 | Route | Mode | Notes |
 | --- | --- | --- |
 | `/` | Algorithm Shorts | Classic and kinetic short animation setup. |
-| `/algorithm-world` | Algorithm World | Dedicated cinematic world/maze setup; first preset supports A* Shifting Labyrinth with realtime obstacles. |
+| `/algorithm-world` | Algorithm World | Dedicated maze/pathfinding setup. Short mode runs 1 algorithm; Long 16:9 mode runs 2 algorithms side by side. Supports escape-route and fastest-route problem types. |
 | `/long-content` | Algorithm Long 16:9 | Long-form YouTube explainer setup. |
 
 ## Custom
@@ -151,3 +151,14 @@ No remaining sorting TODO items in this list.
 | `recursion_tree` | Recursion Tree | Candidate |
 | `divide_conquer` | Divide and Conquer | Candidate |
 | `greedy_activity` | Greedy Activity Selection | Candidate |
+
+### Algorithm World build catalog
+
+| ID | Algorithm | Runtime | Best fit |
+| --- | --- | --- | --- |
+| `dfs` | DFS | `O(V + E)` | Find any exit route |
+| `bfs` | BFS | `O(V + E)` | Shortest path on unweighted mazes |
+| `dijkstra` | Dijkstra | `O(E log V)` | Fastest path when movement costs vary |
+| `astar` | A* Pathfinding | `O(E log V)` | Fastest path with heuristic guidance |
+
+Algorithm World tasks currently distinguish between `escape` (find a valid path to the exit) and `fastest` (find the quickest/shortest route to the exit).

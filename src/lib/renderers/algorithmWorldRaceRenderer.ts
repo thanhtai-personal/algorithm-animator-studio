@@ -1,4 +1,6 @@
-import type { AlgorithmWorldCell } from "../algorithms";
+import type { AlgorithmWorldCell, AlgorithmWorldState } from "../algorithms";
+import type { Lang } from "../i18n";
+import type { Theme } from "./theme";
 import { roundRect } from "./shapes";
 
 export function drawRaceTrackBase(ctx: CanvasRenderingContext2D, cols: number, rows: number, cell: number, x: number, y: number) {
@@ -56,5 +58,32 @@ export function drawRaceWalls(ctx: CanvasRenderingContext2D, cells: AlgorithmWor
     ctx.fillStyle = dynamic ? "rgba(254,215,170,0.42)" : "rgba(255,255,255,0.36)";
     ctx.fillRect(px + 3, py + 3, cell - 8, Math.max(2, lift * 0.36));
   });
+  ctx.restore();
+}
+
+export function drawRaceWinner(ctx: CanvasRenderingContext2D, world: AlgorithmWorldState, cx: number, cy: number, w: number, theme: Theme, lang: Lang) {
+  const age = world.raceWinAge ?? 0;
+  const pop = age < 10 ? 0.72 + age * 0.04 : 1 + Math.sin(age * 0.45) * 0.035;
+  const alpha = Math.min(1, 0.28 + age * 0.12);
+  const boxW = Math.min(w * 0.92, 720) * pop;
+  const boxH = 112 * pop;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = "rgba(2,6,23,0.9)";
+  ctx.strokeStyle = age < 10 ? "#fde047" : `${theme.highlight}cc`;
+  ctx.lineWidth = Math.max(3, 4 * pop);
+  ctx.shadowColor = "#fde047";
+  ctx.shadowBlur = 26 + Math.sin(age * 0.5) * 10;
+  roundRect(ctx, cx - boxW / 2, cy - boxH / 2, boxW, boxH, 22);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#fde047";
+  ctx.font = `900 ${Math.round(50 * pop)}px ui-sans-serif, system-ui`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(`${world.algorithmName ?? "Algorithm"} WINNER`, cx, cy - 14 * pop);
+  ctx.fillStyle = "#fff";
+  ctx.font = `900 ${Math.round(22 * pop)}px ui-sans-serif, system-ui`;
+  ctx.fillText(lang === "vi" ? "Xe thắng đã dừng tại cửa ra" : "Winning car stopped at the exit", cx, cy + 30 * pop);
   ctx.restore();
 }

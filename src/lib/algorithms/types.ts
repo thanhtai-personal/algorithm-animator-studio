@@ -51,6 +51,7 @@ export type AlgorithmWorldState = {
   raceFinishTime?: number;
   raceFinished?: boolean;
   raceWinner?: boolean;
+  raceWinAge?: number;
   vehicleColor?: string;
   vehicleId?: string;
   vehicleName?: string;

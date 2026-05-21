@@ -214,14 +214,17 @@ function drawWorld(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, worl
 }
 
 function drawWinnerOverlay(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, world: AlgorithmWorldState, cx: number, cy: number, w: number, lang: Lang) {
-  const boxW = Math.min(w * 0.76, 520);
-  const boxH = 76;
-  g.fillStyle(0x020617, 0.88);
-  g.fillRoundedRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH, 18);
-  g.lineStyle(2, COLORS.yellow, 0.92);
-  g.strokeRoundedRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH, 18);
-  scene.text(`${world.algorithmName ?? "Algorithm"} WINNER`, cx, cy - 8, 32, COLORS.yellow, "center", 900);
-  scene.text(lang === "vi" ? "Xe thắng đã dừng tại cửa ra" : "Winning car stopped at the exit", cx, cy + 22, 17, COLORS.text, "center", 900);
+  const age = world.raceWinAge ?? 0;
+  const pop = age < 10 ? 0.72 + age * 0.04 : 1 + Math.sin(age * 0.45) * 0.035;
+  const alpha = Math.min(0.96, 0.3 + age * 0.12);
+  const boxW = Math.min(w * 0.92, 720) * pop;
+  const boxH = 112 * pop;
+  g.fillStyle(0x020617, alpha);
+  g.fillRoundedRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH, 22);
+  g.lineStyle(Math.max(3, 4 * pop), COLORS.yellow, 0.92);
+  g.strokeRoundedRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH, 22);
+  scene.text(`${world.algorithmName ?? "Algorithm"} WINNER`, cx, cy - 14 * pop, Math.round(50 * pop), COLORS.yellow, "center", 900);
+  scene.text(lang === "vi" ? "Xe thắng đã dừng tại cửa ra" : "Winning car stopped at the exit", cx, cy + 30 * pop, Math.round(22 * pop), COLORS.text, "center", 900);
 }
 
 function drawGrid(g: Phaser.GameObjects.Graphics, cols: number, rows: number, cell: number, x: number, y: number) {

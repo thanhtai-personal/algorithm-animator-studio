@@ -1,7 +1,7 @@
 import type { AlgorithmWorldCell, AlgorithmWorldCompareState, AlgorithmWorldState, Frame } from "../algorithms";
 import type { Lang } from "../i18n";
 import { cellKey } from "../algorithmWorld";
-import { drawRaceTrackBase, drawRaceWalls } from "./algorithmWorldRaceRenderer";
+import { drawRaceTrackBase, drawRaceWalls, drawRaceWinner } from "./algorithmWorldRaceRenderer";
 import { roundRect } from "./shapes";
 import type { Theme } from "./theme";
 
@@ -111,30 +111,6 @@ function drawPanelLabel(ctx: CanvasRenderingContext2D, label: string, runtime: s
   ctx.font = "800 18px ui-monospace, monospace";
   ctx.fillStyle = "#fde047";
   ctx.fillText(runtime, x + w - 28, y + 22);
-  ctx.restore();
-}
-
-function drawRaceWinner(ctx: CanvasRenderingContext2D, world: AlgorithmWorldState, cx: number, cy: number, w: number, theme: Theme, lang: Lang) {
-  ctx.save();
-  const text = label(lang, `${world.algorithmName} WINNER`, `${world.algorithmName} WINNER`);
-  const boxW = Math.min(w * 0.76, 520);
-  const boxH = 76;
-  ctx.fillStyle = "rgba(2,6,23,0.86)";
-  ctx.strokeStyle = `${theme.highlight}88`;
-  ctx.lineWidth = 2;
-  ctx.shadowColor = "#fde047";
-  ctx.shadowBlur = 22;
-  roundRect(ctx, cx - boxW / 2, cy - boxH / 2, boxW, boxH, 18);
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = "#fde047";
-  ctx.font = "900 32px ui-sans-serif, system-ui";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(text, cx, cy - 8);
-  ctx.fillStyle = "#fff";
-  ctx.font = "900 17px ui-sans-serif, system-ui";
-  ctx.fillText(label(lang, "Xe thắng đã dừng tại cửa ra", "Winning car stopped at the exit"), cx, cy + 20);
   ctx.restore();
 }
 

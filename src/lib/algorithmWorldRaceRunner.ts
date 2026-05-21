@@ -157,6 +157,7 @@ function raceWorldFor(
     raceFinishTime: plan.finishTick,
     raceFinished: finished,
     raceWinner: finished && isWinner,
+    raceWinAge: finished && isWinner ? tick - finishTick : undefined,
     vehicleColor: plan.vehicleColor,
     vehicleId: plan.vehicleId,
     vehicleName: plan.vehicleName,

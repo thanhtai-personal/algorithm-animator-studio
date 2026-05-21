@@ -2,6 +2,7 @@ import type { Frame } from "./algorithms";
 import { withTextShadow } from "./canvasText";
 import type { Lang } from "./i18n";
 import { roundRect } from "./renderers/shapes";
+import { renderShortKineticBitonic } from "./shortKineticBitonicRenderer";
 import { renderShortKineticPancake } from "./shortKineticPancakeRenderer";
 
 export type ShortKineticParams = {
@@ -29,6 +30,7 @@ type BubbleBeat = {
 export function renderShortKineticTypography(ctx: CanvasRenderingContext2D, params: Params, w: number, h: number) {
   drawBackground(ctx, w, h, params.frameIndex / Math.max(1, params.frameCount - 1));
   if (params.algorithmId === "pancake") return renderShortKineticPancake(ctx, params, w, h);
+  if (params.algorithmId === "bitonic") return renderShortKineticBitonic(ctx, params, w, h);
   if (params.algorithmId === "odd_even") {
     const beat = getOddEvenBeat(params);
     drawTopMeta(ctx, params, w); drawBeatText(ctx, beat, params.transitionProgress, w, h);
@@ -218,7 +220,6 @@ function drawBubbleBars(ctx: CanvasRenderingContext2D, params: Params, beat: Bub
   if (pair.length >= 2) drawColumnEnergyCue(ctx, pair, cell, gap, baseY, beat, params.transitionProgress, params.lang);
   ctx.restore();
 }
-
 function drawOddEvenBars(ctx: CanvasRenderingContext2D, params: Params, beat: BubbleBeat, w: number, h: number) {
   const values = params.previousFrame?.arr.length === params.frame.arr.length ? params.previousFrame.arr : params.frame.arr;
   const max = Math.max(...values, 1);
@@ -259,7 +260,6 @@ function drawOddEvenBars(ctx: CanvasRenderingContext2D, params: Params, beat: Bu
   else drawOddEvenStopCue(ctx, baseY, w, beat, params.lang);
   ctx.restore();
 }
-
 function drawOddEvenPhaseRails(ctx: CanvasRenderingContext2D, length: number, parity: number, cell: number, gap: number, baseY: number, accent: string, progress: number) {
   ctx.save();
   ctx.strokeStyle = `${accent}88`;

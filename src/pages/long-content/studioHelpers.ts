@@ -7,6 +7,7 @@ import { getSceneAtTime, getTotalDuration } from "@/lib/longContentTimeline";
 import type { LongVideoType } from "@/lib/longVideoTypes";
 import { renderLongContentFrame } from "@/lib/longContentRenderer";
 import type { Theme } from "@/lib/renderer";
+import { getBitonicCuePosition } from "./bitonicCuePosition";
 import { getOddEvenCuePosition } from "./oddEvenCuePosition";
 import { getPancakeCuePosition } from "./pancakeCuePosition";
 
@@ -162,6 +163,7 @@ function getLectureFramePosition(progress: number, frames: Frame[], scene?: Long
   if (algoId === "insertion") return getInsertionCuePosition(progress, frames, scene);
   if (algoId === "odd_even") return getOddEvenCuePosition(progress, frames, scene);
   if (algoId === "pancake") return getPancakeCuePosition(progress, frames, scene);
+  if (algoId === "bitonic") return getBitonicCuePosition(progress, frames, scene);
   if (algoId !== "bubble") return clamp01(progress) * (frames.length - 1);
   if (scene.id === "step-by-step") return getBubbleStepByStepCuePosition(progress, frames);
   if (scene.id === "animation") return getBubblePassWeightedPosition(progress, frames, [0.42, 0.28, 0.18, 0.12]);

@@ -11,6 +11,14 @@ Create algorithm lessons as a guided presentation, not as a silent animation. Th
 
 Use this skill together with the repo's ReactJS skill when editing the implementation.
 
+## Long vs Short Video Intent
+
+- Long videos are lecture slides first. They should explain what problem the algorithm is meant to solve, why the algorithm exists, what makes it different from nearby algorithms, what practical trade-offs it has, when it should be used, when it should be avoided, and the full complexity profile: best case, average case, worst case, space, and stability when relevant.
+- Long videos should not spend most of their time walking through one input. A concrete input is allowed only as supporting evidence for a concept, mechanism, or trade-off. The lecture should remain centered on the algorithm's purpose, mental model, differences, use cases, avoid cases, and complexity.
+- Short videos should focus on one concrete input and one concrete walkthrough. The viewer should see the algorithm make actual decisions on that input: compare, choose, swap, shift, merge, flip, lock, stop, or update state.
+- For shorts, keep context minimal and prioritize visible operation sync. Show the input, highlight the current operation, explain the decision in compact text, and reach a clear result.
+- If both long and short variants exist for the same algorithm, do not duplicate the same content structure. Long teaches why and when; short demonstrates how on a specific example.
+
 ## Presentation Rules
 
 - Keep the voice active whenever an algorithm visual is moving. If the chart runs, the narration must explain what is being compared, why a swap/update happens, what changes after the operation, or what invariant has become true.

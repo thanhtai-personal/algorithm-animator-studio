@@ -4,6 +4,7 @@ import type { LongContentScene } from "./longContentTimeline";
 import type { LongVideoType } from "./longVideoTypes";
 import type { Theme } from "./renderer";
 import { withTextShadow } from "./canvasText";
+import { drawBitonicKineticIllustration, getBitonicKineticCards } from "./bitonicKineticTypography";
 import { drawKineticTextCard } from "./kineticTextEffects";
 import { drawOddEvenKineticIllustration, getOddEvenKineticCards } from "./oddEvenKineticTypography";
 import { drawPancakeKineticIllustration, getPancakeKineticCards } from "./pancakeKineticTypography";
@@ -66,7 +67,7 @@ export function getKineticTypographySlideKey(params: { algoId: string; sceneId: 
       ? getOddEvenKineticCards(params.sceneId, params.lang).length
       : params.algoId === "pancake"
         ? getPancakeKineticCards(params.sceneId, params.lang).length
-        : Math.max(1, wordsFromText(params.sceneText ?? "").slice(0, 12).length);
+        : params.algoId === "bitonic" ? getBitonicKineticCards(params.sceneId, params.lang).length : Math.max(1, wordsFromText(params.sceneText ?? "").slice(0, 12).length);
   const timing = getKineticBeatTiming({ algoId: params.algoId, scene: { id: params.sceneId } as LongContentScene, sceneProgress: params.sceneProgress } as Params, cardCount);
   return `${params.sceneId}:${Math.min(cardCount - 1, Math.floor(timing.progress * cardCount))}`;
 }
@@ -89,6 +90,7 @@ function getKineticCards(params: Params): KineticCard[] {
   if (params.algoId === "bubble") return getBubbleKineticCards(params.scene.id, params.lang);
   if (params.algoId === "odd_even") return getOddEvenKineticCards(params.scene.id, params.lang);
   if (params.algoId === "pancake") return getPancakeKineticCards(params.scene.id, params.lang);
+  if (params.algoId === "bitonic") return getBitonicKineticCards(params.scene.id, params.lang);
   const base = [params.algoName, params.scene.kindLabel, ...params.scene.bullets].join(" ");
   return wordsFromText(base).map((word, index) => ({ main: word, accent: index % 3 === 0 ? "#4ade80" : "#38bdf8" })).slice(0, 12);
 }
@@ -188,6 +190,7 @@ function drawKineticIllustration(ctx: CanvasRenderingContext2D, params: Params, 
   if (params.algoId === "bubble") return drawBubbleKineticIllustration(ctx, params, card, local, accent);
   if (params.algoId === "odd_even") return drawOddEvenKineticIllustration(ctx, params.frame, card, local, accent, params.lang);
   if (params.algoId === "pancake") return drawPancakeKineticIllustration(ctx, params.frame, card, local, accent, params.lang);
+  if (params.algoId === "bitonic") return drawBitonicKineticIllustration(ctx, params.frame, card, local, accent, params.lang);
   if (params.frame) drawKineticAlgorithmFlash(ctx, params, accent, card.invert);
 }
 

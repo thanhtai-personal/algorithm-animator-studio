@@ -1,4 +1,5 @@
 import { AlgoDef, Complexity } from "./algorithms";
+import { buildBitonicSortScenes } from "./bitonicLongContentTimeline";
 import { buildInsertionSortScenes } from "./insertionLongContentTimeline";
 import { buildOddEvenSortScenes } from "./oddEvenLongContentTimeline";
 import { buildPancakeSortScenes } from "./pancakeLongContentTimeline";
@@ -51,6 +52,9 @@ export function buildLongContentScenes(params: {
   }
   if (algo.id === "pancake") {
     return buildPancakeSortScenes({ algo, complexity, animationSeconds, introSeconds, lang });
+  }
+  if (algo.id === "bitonic") {
+    return buildBitonicSortScenes({ algo, complexity, animationSeconds, introSeconds, lang });
   }
 
   const guide = pickGuideText(getLongContentGuide(algo.id), lang);

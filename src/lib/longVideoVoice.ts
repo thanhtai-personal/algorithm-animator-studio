@@ -16,12 +16,29 @@ function buildMotionVoiceSegment(scene: LongContentScene, type: LongVideoType, a
 function kineticVoice(scene: LongContentScene, algoName: string, lang: Lang) {
   if (algoName.toLowerCase().includes("odd-even")) return oddEvenKineticVoice(scene, algoName, lang);
   if (algoName.toLowerCase().includes("pancake")) return pancakeKineticVoice(scene, algoName, lang);
+  if (algoName.toLowerCase().includes("bitonic")) return bitonicKineticVoice(scene, algoName, lang);
   if (lang === "vi") {
     const phrase = pickKineticPhrase(scene);
     return `${algoName}. ${phrase}. Nhịp nhanh. Nhìn từ khóa, theo chuyển động.`;
   }
   const phrase = pickKineticPhrase(scene);
   return `${algoName}. ${phrase}. Fast beat. Follow the keywords, follow the motion.`;
+}
+
+function bitonicKineticVoice(scene: LongContentScene, algoName: string, lang: Lang) {
+  const vi = lang === "vi";
+  const phrase = scene.id === "mental-model"
+    ? (vi ? "Dãy bitonic có một nửa tăng và một nửa giảm. Merge dùng gap giảm dần." : "A bitonic sequence rises on one side and falls on the other. Merge uses shrinking gaps.")
+    : scene.id === "steps"
+      ? (vi ? "Chia hướng. So sánh theo ASC hoặc DESC. Nếu sai hướng thì swap. Sau đó giảm gap." : "Split directions. Compare by ASC or DESC. Swap when the direction is wrong. Then shrink the gap.")
+      : scene.id === "animation"
+        ? (vi ? "Theo dõi network: gap bốn so sánh cặp xa, gap hai thu khoảng cách, gap một sửa cặp cuối." : "Watch the network: gap four compares distant pairs, gap two shrinks distance, gap one fixes the final neighbors.")
+        : scene.id === "complexity"
+          ? (vi ? "Best, average và worst đều O n log bình phương n. Space O log n." : "Best, average, and worst are all O n log squared n. Space O log n.")
+          : scene.id === "recap"
+            ? (vi ? "Bốn từ khóa: bitonic, hướng, gap, swap." : "Four keywords: bitonic, direction, gap, swap.")
+            : (vi ? "Bitonic Sort là sorting network: lịch compare-swap rất đều." : "Bitonic Sort is a sorting network with a regular compare-swap schedule.");
+  return `${algoName}. ${phrase}`;
 }
 
 function oddEvenKineticVoice(scene: LongContentScene, algoName: string, lang: Lang) {

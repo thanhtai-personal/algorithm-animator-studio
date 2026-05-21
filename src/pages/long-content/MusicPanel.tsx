@@ -10,12 +10,16 @@ export function MusicPanel({ studio: s, compact = false }: { studio: LongContent
   const selected = s.music.selectedIds;
   return (
     <Card className="space-y-4 border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.34),0_0_28px_rgba(234,179,8,0.06)]">
-      <div className={`flex flex-col gap-3 ${compact ? "" : "lg:flex-row lg:items-end lg:justify-between"}`}>
-        <div>
+      <div className="space-y-3">
+        <div className="min-w-0">
           <h2 className="font-semibold">Nhạc nền</h2>
           <p className="text-xs text-muted-foreground">Chọn một track để loop, hoặc chọn nhiều track để phát theo thứ tự.</p>
         </div>
-        <div className={`grid gap-2 ${compact ? "" : "sm:grid-cols-[minmax(220px,360px)_220px]"}`}>
+        <div className="space-y-3 rounded-lg border border-border/70 bg-background/40 p-3 shadow-[0_10px_24px_rgba(15,23,42,0.24)]">
+          <Label>Âm lượng nhạc <span className="float-right font-mono text-xs text-emerald-300">{s.musicVol}%</span></Label>
+          <Slider value={[s.musicVol]} min={0} max={100} onValueChange={([value]) => s.setMusicVol(value)} />
+        </div>
+        <div className={`grid gap-2 ${compact ? "" : "sm:grid-cols-[minmax(0,1fr)_220px]"}`}>
           <Input value={s.music.search} onChange={(event) => s.music.setSearch(event.target.value)} placeholder="Tìm nhạc theo tên..." />
           <label className="flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground">
             <Upload className="h-3.5 w-3.5" /> Upload .mp3/.wav
@@ -27,7 +31,7 @@ export function MusicPanel({ studio: s, compact = false }: { studio: LongContent
         </div>
       </div>
 
-      <div className={`grid gap-3 ${compact ? "" : "lg:grid-cols-[minmax(0,1fr)_220px] lg:items-start"}`}>
+      <div className="space-y-3">
         <div className="max-h-[340px] overflow-y-auto pr-1" onScroll={(event) => {
           const el = event.currentTarget;
           if (s.music.canLoadMore && el.scrollTop + el.clientHeight >= el.scrollHeight - 48) s.music.loadMore();
@@ -40,13 +44,8 @@ export function MusicPanel({ studio: s, compact = false }: { studio: LongContent
           </div>
           {s.music.canLoadMore ? <button type="button" className="mt-3 w-full rounded-md border border-border py-2 text-xs text-muted-foreground hover:bg-accent" onClick={s.music.loadMore}>Tải thêm nhạc</button> : null}
         </div>
-
-        <div className="space-y-3 rounded-lg border border-border/70 bg-background/40 p-3 shadow-[0_10px_24px_rgba(15,23,42,0.24)]">
-          <Label>Âm lượng nhạc <span className="float-right font-mono text-xs text-emerald-300">{s.musicVol}%</span></Label>
-          <Slider value={[s.musicVol]} min={0} max={100} onValueChange={([value]) => s.setMusicVol(value)} />
-          {selected.length > 1 ? <p className="text-xs text-muted-foreground">Playlist: {s.music.selectedTracks.map((track, index) => `${index + 1}. ${track.title}`).join(" · ")}</p> : null}
-          {s.music.selectedLicenseText ? <p className="text-xs text-yellow-200">License sẽ tự thêm vào mô tả YouTube.</p> : null}
-        </div>
+        {selected.length > 1 ? <p className="text-xs text-muted-foreground">Playlist: {s.music.selectedTracks.map((track, index) => `${index + 1}. ${track.title}`).join(" · ")}</p> : null}
+        {s.music.selectedLicenseText ? <p className="text-xs text-yellow-200">License sẽ tự thêm vào mô tả YouTube.</p> : null}
       </div>
     </Card>
   );

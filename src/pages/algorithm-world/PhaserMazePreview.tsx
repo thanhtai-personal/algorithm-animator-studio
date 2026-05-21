@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import Phaser from "phaser";
-import type { AlgorithmWorldCell, AlgorithmWorldCompareState, AlgorithmWorldState, Frame } from "@/lib/algorithms";
+import type { AlgorithmWorldCell, AlgorithmWorldCompareState, AlgorithmWorldState, AlgorithmWorldTournamentMatch, AlgorithmWorldTournamentState, Frame } from "@/lib/algorithms";
 import type { Lang } from "@/lib/i18n";
 import type { Theme } from "@/lib/renderer";
 import { cellKey } from "@/lib/algorithmWorld";
@@ -158,8 +158,11 @@ function drawBackground(g: Phaser.GameObjects.Graphics, w: number, h: number, ac
   const accentColor = Phaser.Display.Color.HexStringToColor(accent || "#22d3ee").color;
   g.fillGradientStyle(0x020617, 0x020617, 0x07111f, 0x030712, 1);
   g.fillRect(0, 0, w, h);
-  g.lineStyle(2, accentColor, 0.18);
-  for (let x = -h; x < w + h; x += 58) g.lineBetween(x, 0, x + h, h);
+  g.fillStyle(accentColor, 0.16);
+  const step = Math.max(42, Math.min(72, w / 12));
+  for (let yy = 28; yy < h - 20; yy += step) {
+    for (let xx = 28; xx < w - 20; xx += step) g.fillCircle(xx, yy, 1.5);
+  }
   g.fillStyle(accentColor, 0.08);
   g.fillCircle(w * 0.22, h * 0.18, Math.min(w, h) * 0.18);
   g.fillStyle(COLORS.danger, 0.07);
@@ -170,8 +173,66 @@ function drawCompare(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, co
   const gap = 18;
   const top = 92;
   const panelH = (h - top - 34 - gap) / 2;
+  if (compare.raceIntro?.stage === "randomizing") {
+    drawRaceIntro(scene, g, compare, 26, top, w - 52, h - top - 34, pulse, lang);
+    return;
+  }
   drawWorld(scene, g, compare.left, 26, top, w - 52, panelH, pulse, lang, false);
   drawWorld(scene, g, compare.right, 26, top + panelH + gap, w - 52, panelH, pulse, lang, false);
+  drawRaceIntro(scene, g, compare, 26, top, w - 52, h - top - 34, pulse, lang);
+}
+
+
+function drawRaceIntro(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, compare: AlgorithmWorldCompareState, x: number, y: number, w: number, h: number, pulse: number, lang: Lang) {
+  const intro = compare.raceIntro;
+  if (!intro || intro.stage === "race") return;
+  const cx = x + w / 2;
+  const cy = y + h * 0.48;
+  g.fillStyle(COLORS.bg, intro.stage === "winner" || intro.stage === "randomizing" ? 0.82 : 0.58);
+  g.fillRoundedRect(x, y, w, h, 22);
+  drawParticleField(g, x, y, w, h, COLORS.open, intro.tick, pulse);
+
+  if (intro.stage === "randomizing") {
+    scene.text(lang === "vi" ? "🎲 RANDOM SÂN ĐẤU" : "🎲 RANDOM ARENA", cx, y + h * 0.2, 54, COLORS.yellow, "center", 900);
+    const names = lang === "vi" ? intro.candidatesVi ?? [] : intro.candidatesEn ?? [];
+    const name = names.length ? names[(intro.pickedIndex ?? intro.tick) % names.length] : "Random Arena";
+    g.fillStyle(COLORS.panel, 0.92);
+    g.fillRoundedRect(cx - Math.min(560, w * 0.76) / 2, cy - 42, Math.min(560, w * 0.76), 84, 22);
+    g.lineStyle(3, COLORS.yellow, 0.9);
+    g.strokeRoundedRect(cx - Math.min(560, w * 0.76) / 2, cy - 42, Math.min(560, w * 0.76), 84, 22);
+    scene.text(name, cx, cy, 34, COLORS.text, "center", 900);
+    scene.text(`${intro.leftName} VS ${intro.rightName}`, cx, y + h * 0.82, 28, COLORS.text, "center", 900);
+    return;
+  }
+
+  if (intro.stage === "assembling") {
+    scene.text(lang === "vi" ? "ĐANG RÁP SÂN ĐẤU" : "ASSEMBLING ARENA", cx, cy - 58, 30, COLORS.open, "center", 900);
+    scene.text(lang === "vi" ? intro.mazeNameVi : intro.mazeNameEn, cx, cy - 6, 48, COLORS.text, "center", 900);
+    const barW = Math.min(540, w * 0.62);
+    g.fillStyle(COLORS.muted, 0.22);
+    g.fillRoundedRect(cx - barW / 2, cy + 52, barW, 14, 7);
+    g.fillStyle(COLORS.open, 0.94);
+    g.fillRoundedRect(cx - barW / 2, cy + 52, barW * (intro.assemblyProgress ?? 0), 14, 7);
+    return;
+  }
+
+  if (intro.stage === "bracket" && intro.tournament) {
+    drawTournamentBracket(scene, g, intro.tournament, x, y, w, h, intro.tick, intro.duration, lang);
+    return;
+  }
+
+  if (intro.stage === "winner") {
+    const title = intro.tie ? (lang === "vi" ? "HÒA" : "TIE") : intro.winnerName ?? "WINNER";
+    scene.text(lang === "vi" ? "🏁 CHIẾN THẮNG" : "🏁 WINNER", cx, cy - 64, 42, COLORS.yellow, "center", 900);
+    scene.text(title, cx, cy, 60, COLORS.text, "center", 900);
+    scene.text(lang === "vi" ? "Xe thắng được đưa lên giữa video" : "Winner spotlight in the center", cx, cy + 62, 24, COLORS.open, "center", 900);
+    return;
+  }
+
+  scene.text(lang === "vi" ? `${intro.leftName} VS ${intro.rightName} tại ${intro.mazeNameVi}` : `${intro.leftName} VS ${intro.rightName} at ${intro.mazeNameEn}`, cx, cy - 104, 25, COLORS.open, "center", 900);
+  scene.text(intro.leftName, cx, cy - 44, 52, COLORS.text, "center", 900);
+  scene.text("VS", cx, cy + 12, 56, COLORS.yellow, "center", 900);
+  scene.text(intro.rightName, cx, cy + 76, 52, COLORS.text, "center", 900);
 }
 
 function drawWorld(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, world: AlgorithmWorldState, x: number, y: number, w: number, h: number, pulse: number, lang: Lang, large: boolean) {
@@ -211,6 +272,106 @@ function drawWorld(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, worl
   if (world.current) drawRunner(g, world, cell, gridX, gridY, algorithmColor(world), pulse);
   if (raceMode && world.raceWinner) drawWinnerOverlay(scene, g, world, gridX + gridW / 2, gridY + gridH / 2, gridW, lang);
   drawHud(scene, g, world, x + 10, y + h - hudH - 8, w - 20, hudH, lang, large);
+}
+
+function drawTournamentBracket(
+  scene: MazePreviewScene,
+  g: Phaser.GameObjects.Graphics,
+  tournament: AlgorithmWorldTournamentState,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  tick: number,
+  duration: number,
+  lang: Lang,
+) {
+  const progress = Math.min(1, (tick + 1) / Math.max(1, duration));
+  const cx = x + w / 2;
+  const top = y + h * 0.1;
+  const bracketX = x + w * 0.055;
+  const bracketY = y + h * 0.22;
+  const bracketW = w * 0.89;
+  const bracketH = h * 0.64;
+  scene.text(lang === "vi" ? tournament.titleVi : tournament.titleEn, cx, top, Math.min(46, w * 0.05), COLORS.yellow, "center", 900);
+  scene.text(lang === "vi" ? "Đội thắng tiến vào vòng trong" : "Winner advances to the next round", cx, top + 42, 23, COLORS.open, "center", 900);
+  drawBracketConnectors(g, tournament, bracketX, bracketY, bracketW, bracketH, progress);
+  tournament.rounds.forEach((round, roundIndex) => {
+    const colW = Math.min(270, bracketW * 0.28);
+    const colX = bracketX + roundIndex * (bracketW / 2);
+    const roundLabel = [lang === "vi" ? "Tứ kết" : "Quarterfinals", lang === "vi" ? "Bán kết" : "Semifinals", lang === "vi" ? "Chung kết" : "Final"][roundIndex];
+    scene.text(roundLabel, colX + colW / 2, bracketY - 28, 20, COLORS.muted, "center", 900);
+    round.forEach((match, matchIndex) => {
+      const pos = bracketMatchPosition(roundIndex, matchIndex, bracketX, bracketY, bracketW, bracketH, colW);
+      drawBracketMatch(scene, g, match, pos.x, pos.y, colW, pos.h, progress, lang);
+    });
+  });
+  if (tournament.winnerName) {
+    const bannerW = Math.min(690, w * 0.82);
+    const bannerY = y + h * 0.91;
+    g.fillStyle(COLORS.bg, 0.94);
+    g.fillRoundedRect(cx - bannerW / 2, bannerY - 38, bannerW, 76, 20);
+    g.lineStyle(3, COLORS.yellow, 0.92);
+    g.strokeRoundedRect(cx - bannerW / 2, bannerY - 38, bannerW, 76, 20);
+    scene.text(`${tournament.winnerName} ➜ ${lang === "vi" ? "VÒNG TRONG" : "NEXT ROUND"}`, cx, bannerY, 28, COLORS.text, "center", 900);
+  }
+}
+
+function drawBracketConnectors(g: Phaser.GameObjects.Graphics, tournament: AlgorithmWorldTournamentState, x: number, y: number, w: number, h: number, progress: number) {
+  g.lineStyle(3, COLORS.open, 0.24 + progress * 0.35);
+  for (let round = 0; round < 2; round++) {
+    for (let i = 0; i < tournament.rounds[round].length; i += 2) {
+      const colW = Math.min(270, w * 0.28);
+      const a = bracketMatchPosition(round, i, x, y, w, h, colW);
+      const b = bracketMatchPosition(round, i + 1, x, y, w, h, colW);
+      const to = bracketMatchPosition(round + 1, i / 2, x, y, w, h, colW);
+      const midX = a.x + a.w + (to.x - a.x - a.w) * 0.46;
+      g.lineBetween(a.x + a.w, a.y + a.h / 2, midX, a.y + a.h / 2);
+      g.lineBetween(b.x + b.w, b.y + b.h / 2, midX, b.y + b.h / 2);
+      g.lineBetween(midX, a.y + a.h / 2, midX, b.y + b.h / 2);
+      g.lineBetween(midX, to.y + to.h / 2, to.x, to.y + to.h / 2);
+    }
+  }
+}
+
+function bracketMatchPosition(round: number, match: number, x: number, y: number, w: number, h: number, colW: number) {
+  const counts = [4, 2, 1];
+  const count = counts[round] ?? 1;
+  const colX = x + round * (w / 2);
+  const matchH = Math.min(84, h / (count * 1.25));
+  const gap = count === 1 ? 0 : (h - count * matchH) / (count - 1);
+  return { x: colX, y: y + match * (matchH + gap), w: colW, h: matchH };
+}
+
+function drawBracketMatch(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, match: AlgorithmWorldTournamentMatch, x: number, y: number, w: number, h: number, progress: number, lang: Lang) {
+  const alpha = match.pending && !match.active ? 0.62 : 0.95;
+  g.fillStyle(COLORS.bg, alpha);
+  g.fillRoundedRect(x, y, w, h, 16);
+  g.lineStyle(match.active ? 4 : 2, match.active ? COLORS.yellow : match.winner ? COLORS.open : COLORS.muted, match.active ? 0.96 : 0.46 + progress * 0.2);
+  g.strokeRoundedRect(x, y, w, h, 16);
+  drawTeamRow(scene, g, match.left?.name ?? "—", match.winner?.name === match.left?.name, x + 10, y + 10, w - 20, h / 2 - 12, lang);
+  drawTeamRow(scene, g, match.right?.name ?? "—", match.winner?.name === match.right?.name, x + 10, y + h / 2 + 2, w - 20, h / 2 - 12, lang);
+  if (match.winner) scene.text("➜", x + w - 14, y + h / 2, 22, COLORS.yellow, "right", 900);
+}
+
+function drawTeamRow(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, name: string, winner: boolean, x: number, y: number, w: number, h: number, lang: Lang) {
+  if (winner) {
+    g.fillStyle(COLORS.yellow, 0.18);
+    g.fillRoundedRect(x, y, w, h, 10);
+  }
+  scene.text(winner ? `🏁 ${name}` : name, x + 9, y + h / 2, winner ? 17 : 15, winner ? COLORS.yellow : COLORS.text, "left", 900);
+  if (winner) scene.text(lang === "vi" ? "ĐI TIẾP" : "ADV", x + w - 8, y + h / 2, 11, COLORS.open, "right", 800);
+}
+
+function drawParticleField(g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number, color: number, tick: number, pulse: number) {
+  g.fillStyle(color, 0.14 + pulse * 0.07);
+  const step = Math.max(42, Math.min(72, w / 12));
+  for (let yy = y + 28; yy < y + h - 20; yy += step) {
+    for (let xx = x + 28; xx < x + w - 20; xx += step) {
+      const wave = Math.sin((xx + yy + tick * 12) * 0.018);
+      g.fillCircle(xx + wave * 5, yy, 1.4 + Math.max(0, wave) * 1.5);
+    }
+  }
 }
 
 function drawWinnerOverlay(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, world: AlgorithmWorldState, cx: number, cy: number, w: number, lang: Lang) {

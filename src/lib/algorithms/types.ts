@@ -4,7 +4,8 @@ export type AlgorithmWorldAlgorithmId = "dfs" | "bfs" | "dijkstra" | "astar" | "
 export type AlgorithmWorldProblemType = "escape" | "fastest";
 export type AlgorithmWorldVideoMode = "short" | "long";
 export type AlgorithmWorldPresentationMode = "explainer" | "vehicle_race";
-export type AlgorithmWorldMazeId = "dfs_tunnels" | "bfs_rooms" | "dijkstra_weighted" | "astar_labyrinth" | "greedy_trap" | "two_fronts" | "wall_runner";
+export type AlgorithmWorldTournamentRound = 0 | 1 | 2;
+export type AlgorithmWorldMazeId = "random" | "dfs_tunnels" | "bfs_rooms" | "dijkstra_weighted" | "astar_labyrinth" | "greedy_trap" | "two_fronts" | "wall_runner";
 export type AlgorithmWorldScenarioOptions = {
   videoMode?: AlgorithmWorldVideoMode;
   compareEnabled?: boolean;
@@ -17,8 +18,52 @@ export type AlgorithmWorldScenarioOptions = {
   secondaryVehicleColor?: string;
   primaryVehicleId?: string;
   secondaryVehicleId?: string;
+  tournamentEnabled?: boolean;
+  tournamentRound?: AlgorithmWorldTournamentRound;
+  tournamentMatch?: number;
 };
 export type AlgorithmWorldPhase = "setup" | "search" | "path" | "obstacle" | "replan" | "done";
+export type AlgorithmWorldRaceIntroStage = "randomizing" | "assembling" | "versus" | "race" | "winner" | "bracket";
+export type AlgorithmWorldTournamentTeam = {
+  id?: AlgorithmWorldAlgorithmId;
+  name: string;
+};
+export type AlgorithmWorldTournamentMatch = {
+  id: string;
+  round: AlgorithmWorldTournamentRound;
+  match: number;
+  left?: AlgorithmWorldTournamentTeam;
+  right?: AlgorithmWorldTournamentTeam;
+  winner?: AlgorithmWorldTournamentTeam;
+  active?: boolean;
+  pending?: boolean;
+};
+export type AlgorithmWorldTournamentState = {
+  titleEn: string;
+  titleVi: string;
+  round: AlgorithmWorldTournamentRound;
+  match: number;
+  rounds: AlgorithmWorldTournamentMatch[][];
+  winnerName?: string;
+};
+export type AlgorithmWorldRaceIntroState = {
+  stage: AlgorithmWorldRaceIntroStage;
+  tick: number;
+  duration: number;
+  mazeId: AlgorithmWorldMazeId;
+  mazeNameEn: string;
+  mazeNameVi: string;
+  leftName: string;
+  rightName: string;
+  requestedRandom?: boolean;
+  candidatesEn?: string[];
+  candidatesVi?: string[];
+  pickedIndex?: number;
+  assemblyProgress?: number;
+  winnerName?: string;
+  tie?: boolean;
+  tournament?: AlgorithmWorldTournamentState;
+};
 export type AlgorithmWorldState = {
   cols: number;
   rows: number;
@@ -56,11 +101,13 @@ export type AlgorithmWorldState = {
   vehicleId?: string;
   vehicleName?: string;
   vehicleShape?: string;
+  raceIntroStage?: AlgorithmWorldRaceIntroStage;
 };
 export type AlgorithmWorldCompareState = {
   problemType: AlgorithmWorldProblemType;
   left: AlgorithmWorldState;
   right: AlgorithmWorldState;
+  raceIntro?: AlgorithmWorldRaceIntroState;
 };
 
 export type GraphNode = { id: number; x: number; y: number; label?: string };

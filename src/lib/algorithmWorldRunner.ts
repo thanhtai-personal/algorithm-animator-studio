@@ -5,6 +5,7 @@ import type {
   AlgorithmWorldPresentationMode,
   AlgorithmWorldProblemType,
   AlgorithmWorldScenarioOptions,
+  AlgorithmWorldTournamentRound,
   Frame,
 } from "./algorithms/types";
 import {
@@ -17,30 +18,42 @@ import {
   manhattan,
   neighbors,
   sameCell,
+  resolveMazeId,
   worldAlgorithmName,
 } from "./algorithmWorld";
+import { resolveTournamentMatch, tournamentSeed } from "./algorithmWorldTournament";
 import { pushWorldFrame } from "./algorithmWorldFrameBuilder";
 import { createRaceCompareFrames } from "./algorithmWorldRaceRunner";
 import { runBidirectionalBfs, runTremaux, runWallFollower } from "./algorithmWorldSearchStrategies";
 
 type ScoreMap = Record<string, number>;
 export type SearchResult = { frames: Frame[]; path: AlgorithmWorldCell[]; visitedCount: number; reached: boolean };
-type BuildArgs = Required<Pick<AlgorithmWorldScenarioOptions, "videoMode" | "compareEnabled" | "presentationMode" | "problemType" | "mazeId" | "primaryAlgorithm" | "secondaryAlgorithm" | "primaryVehicleColor" | "secondaryVehicleColor" | "primaryVehicleId" | "secondaryVehicleId">>;
+type BuildArgs = Required<Pick<AlgorithmWorldScenarioOptions, "videoMode" | "compareEnabled" | "presentationMode" | "problemType" | "mazeId" | "primaryAlgorithm" | "secondaryAlgorithm" | "primaryVehicleColor" | "secondaryVehicleColor" | "primaryVehicleId" | "secondaryVehicleId">> & { randomMazeRequested: boolean; tournamentEnabled: boolean; tournamentRound: AlgorithmWorldTournamentRound; tournamentMatch: number };
 export type AlgorithmWorldBuildArgs = BuildArgs;
 
 export function createAlgorithmWorldFrames(opts: AlgorithmWorldScenarioOptions = {}) {
+  const tournamentEnabled = opts.tournamentEnabled ?? false;
+  const tournamentRound = (opts.tournamentRound ?? 0) as AlgorithmWorldTournamentRound;
+  const tournamentMatch = opts.tournamentMatch ?? 0;
+  const tournament = tournamentEnabled ? resolveTournamentMatch(tournamentRound, tournamentMatch) : null;
+  const requestedMazeId = tournamentEnabled ? "random" : opts.mazeId ?? "astar_labyrinth";
+  const mazeSeed = tournamentEnabled ? tournamentSeed(tournamentRound, tournamentMatch) : Date.now() + Math.random() * 10_000;
   const args: BuildArgs = {
     videoMode: opts.videoMode ?? "short",
     compareEnabled: opts.compareEnabled ?? opts.videoMode === "long",
     presentationMode: opts.presentationMode ?? "explainer",
     problemType: opts.problemType ?? "fastest",
-    mazeId: opts.mazeId ?? "astar_labyrinth",
-    primaryAlgorithm: opts.primaryAlgorithm ?? "astar",
-    secondaryAlgorithm: opts.secondaryAlgorithm ?? "dijkstra",
+    mazeId: resolveMazeId(requestedMazeId, mazeSeed),
+    randomMazeRequested: requestedMazeId === "random" || tournamentEnabled,
+    primaryAlgorithm: tournament?.left ?? opts.primaryAlgorithm ?? "astar",
+    secondaryAlgorithm: tournament?.right ?? opts.secondaryAlgorithm ?? "dijkstra",
     primaryVehicleColor: opts.primaryVehicleColor ?? "#34d399",
     secondaryVehicleColor: opts.secondaryVehicleColor ?? "#facc15",
     primaryVehicleId: opts.primaryVehicleId ?? "bolt",
     secondaryVehicleId: opts.secondaryVehicleId ?? "comet",
+    tournamentEnabled,
+    tournamentRound,
+    tournamentMatch,
   };
   const compareEnabled = args.compareEnabled || args.presentationMode === "vehicle_race";
   if (args.presentationMode === "vehicle_race") return createRaceCompareFrames(args);

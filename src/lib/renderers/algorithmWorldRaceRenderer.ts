@@ -1,7 +1,8 @@
-import type { AlgorithmWorldCell, AlgorithmWorldState } from "../algorithms";
+import type { AlgorithmWorldCell, AlgorithmWorldCompareState, AlgorithmWorldState } from "../algorithms";
 import type { Lang } from "../i18n";
 import type { Theme } from "./theme";
 import { roundRect } from "./shapes";
+import { drawTournamentBracket } from "./algorithmWorldTournamentRenderer";
 
 export function drawRaceTrackBase(ctx: CanvasRenderingContext2D, cols: number, rows: number, cell: number, x: number, y: number) {
   ctx.save();
@@ -133,4 +134,188 @@ export function drawRaceWinner(ctx: CanvasRenderingContext2D, world: AlgorithmWo
   ctx.font = `900 ${Math.round(22 * pop)}px ui-sans-serif, system-ui`;
   ctx.fillText(lang === "vi" ? "Xe thắng đã dừng tại cửa ra" : "Winning car stopped at the exit", cx, cy + 30 * pop);
   ctx.restore();
+}
+
+
+export function drawRaceIntroOverlay(
+  ctx: CanvasRenderingContext2D,
+  compare: AlgorithmWorldCompareState,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  theme: Theme,
+  lang: Lang,
+) {
+  const intro = compare.raceIntro;
+  if (!intro || intro.stage === "race") return;
+  if (intro.stage === "randomizing") {
+    drawRandomArenaRoll(ctx, compare, x, y, w, h, theme, lang);
+    return;
+  }
+  const cx = x + w / 2;
+  const cy = y + h * 0.46;
+  const progress = Math.min(1, Math.max(0, (intro.tick + 1) / Math.max(1, intro.duration)));
+  ctx.save();
+  ctx.fillStyle = intro.stage === "winner" ? "rgba(2,6,23,0.72)" : "rgba(2,6,23,0.5)";
+  ctx.fillRect(x, y, w, h);
+  drawCinematicParticles(ctx, x, y, w, h, theme.highlight, intro.tick);
+
+  if (intro.stage === "assembling") {
+    drawGlassCard(ctx, cx, cy, Math.min(780, w * 0.86), 190, theme.highlight, 0.95);
+    drawCenteredText(ctx, label(lang, "ĐANG RÁP SÂN ĐẤU", "ASSEMBLING ARENA"), cx, cy - 54, 30, "#a5f3fc", 900);
+    drawCenteredText(ctx, localizedMazeName(intro, lang), cx, cy - 6, 50, "#fff", 1000);
+    drawProgressBar(ctx, cx - Math.min(560, w * 0.62) / 2, cy + 54, Math.min(560, w * 0.62), 14, intro.assemblyProgress ?? progress, theme.highlight);
+    ctx.restore();
+    return;
+  }
+
+  if (intro.stage === "bracket" && intro.tournament) {
+    drawTournamentBracket(ctx, intro.tournament, x, y, w, h, theme, lang, intro.tick, intro.duration);
+    ctx.restore();
+    return;
+  }
+
+  if (intro.stage === "winner") {
+    const pop = progress < 0.28 ? 0.75 + progress * 0.9 : 1 + Math.sin(intro.tick * 0.36) * 0.025;
+    drawGlassCard(ctx, cx, cy, Math.min(820, w * 0.9) * pop, 250 * pop, "#fde047", 0.97);
+    const winner = intro.tie ? label(lang, "HÒA", "TIE") : intro.winnerName ?? "WINNER";
+    drawCenteredText(ctx, label(lang, "🏁 CHIẾN THẮNG", "🏁 WINNER"), cx, cy - 70 * pop, 34 * pop, "#fde047", 1000);
+    drawCenteredText(ctx, winner, cx, cy - 8 * pop, 60 * pop, "#fff", 1000);
+    drawCenteredText(ctx, label(lang, "Xe thắng được đưa lên giữa video", "Winner spotlight in the center"), cx, cy + 62 * pop, 22 * pop, "#a5f3fc", 900);
+    ctx.restore();
+    return;
+  }
+
+  const enter = easeOutBack(progress);
+  drawGlassCard(ctx, cx, cy, Math.min(840, w * 0.9), 290, theme.highlight, 0.96);
+  drawCenteredText(ctx, localizedMazeLine(intro, lang), cx, cy - 102, 28, "#a5f3fc", 900);
+  drawCenteredText(ctx, intro.leftName, cx, cy - 46 * enter, 54 * enter, "#fff", 1000);
+  drawCenteredText(ctx, "VS", cx, cy + 10, 52 + Math.sin(intro.tick * 0.5) * 4, "#fde047", 1000);
+  drawCenteredText(ctx, intro.rightName, cx, cy + 70 * enter, 54 * enter, "#fff", 1000);
+  drawCenteredText(ctx, label(lang, "Sẵn sàng xuất phát", "Ready to race"), cx, cy + 124, 22, "#a5f3fc", 900);
+  ctx.restore();
+}
+
+export function shouldDrawRaceIntroOnly(compare: AlgorithmWorldCompareState) {
+  return compare.raceIntro?.stage === "randomizing";
+}
+
+function drawRandomArenaRoll(ctx: CanvasRenderingContext2D, compare: AlgorithmWorldCompareState, x: number, y: number, w: number, h: number, theme: Theme, lang: Lang) {
+  const intro = compare.raceIntro!;
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  ctx.save();
+  ctx.fillStyle = "rgba(2,6,23,0.94)";
+  ctx.fillRect(x, y, w, h);
+  drawCinematicParticles(ctx, x, y, w, h, theme.highlight, intro.tick);
+  drawCenteredText(ctx, label(lang, "🎲 RANDOM SÂN ĐẤU", "🎲 RANDOM ARENA"), cx, y + h * 0.19, Math.min(58, w * 0.055), "#fde047", 1000);
+  drawCenteredText(ctx, label(lang, "Đang chọn mê cung cho trận đua", "Picking the maze for this race"), cx, y + h * 0.27, 24, "#a5f3fc", 900);
+  const names = lang === "vi" ? intro.candidatesVi ?? [] : intro.candidatesEn ?? [];
+  const active = names.length ? (intro.pickedIndex ?? intro.tick) % names.length : 0;
+  const itemW = Math.min(560, w * 0.76);
+  names.slice(0, 7).forEach((name, index) => {
+    const relative = index - active;
+    const wrapped = ((relative + names.length + 3) % names.length) - 3;
+    if (Math.abs(wrapped) > 2) return;
+    const yy = cy + wrapped * 56;
+    const scale = wrapped === 0 ? 1.08 : 0.88;
+    const alpha = wrapped === 0 ? 1 : 0.45;
+    drawGlassCard(ctx, cx, yy, itemW * scale, 42, wrapped === 0 ? "#fde047" : theme.highlight, alpha);
+    drawCenteredText(ctx, name, cx, yy + 1, wrapped === 0 ? 25 : 20, wrapped === 0 ? "#fff" : "#cbd5e1", 900);
+  });
+  drawCenteredText(ctx, `${intro.leftName}  VS  ${intro.rightName}`, cx, y + h * 0.82, 28, "#fff", 1000);
+  ctx.restore();
+}
+
+function drawCinematicParticles(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, tick: number) {
+  ctx.save();
+  ctx.globalAlpha = 0.26;
+  ctx.fillStyle = color;
+  const step = Math.max(42, Math.min(72, w / 12));
+  for (let yy = y + 28; yy < y + h - 20; yy += step) {
+    for (let xx = x + 28; xx < x + w - 20; xx += step) {
+      const wave = Math.sin((xx + yy + tick * 12) * 0.018);
+      const r = 1.2 + Math.max(0, wave) * 1.8;
+      ctx.beginPath();
+      ctx.arc(xx + wave * 5, yy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+function drawGlassCard(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number, stroke: string, alpha: number) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = "rgba(2,6,23,0.9)";
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 3;
+  ctx.shadowColor = stroke;
+  ctx.shadowBlur = 28;
+  roundRect(ctx, cx - w / 2, cy - h / 2, w, h, 26);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawSpeedLines(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, tick: number) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.globalAlpha = 0.16;
+  ctx.lineWidth = 2;
+  for (let i = -10; i < 18; i++) {
+    const xx = x + ((i * 86 + tick * 18) % (w + 220)) - 120;
+    ctx.beginPath();
+    ctx.moveTo(xx, y + h);
+    ctx.lineTo(xx + h * 0.48, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawProgressBar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, progress: number, color: string) {
+  ctx.save();
+  roundRect(ctx, x, y, w, h, h / 2);
+  ctx.fillStyle = "rgba(148,163,184,0.22)";
+  ctx.fill();
+  roundRect(ctx, x, y, w * Math.min(1, Math.max(0, progress)), h, h / 2);
+  ctx.fillStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 16;
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawCenteredText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, color: string, weight: number) {
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = color;
+  ctx.font = `${Math.round(size)}px ui-sans-serif, system-ui`;
+  ctx.lineWidth = Math.max(4, size * 0.08);
+  ctx.strokeStyle = "rgba(2,6,23,0.82)";
+  ctx.strokeText(text, x, y);
+  ctx.font = `${weight} ${Math.round(size)}px ui-sans-serif, system-ui`;
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
+function localizedMazeName(intro: AlgorithmWorldCompareState["raceIntro"], lang: Lang) {
+  if (!intro) return "";
+  return lang === "vi" ? intro.mazeNameVi : intro.mazeNameEn;
+}
+
+function localizedMazeLine(intro: NonNullable<AlgorithmWorldCompareState["raceIntro"]>, lang: Lang) {
+  return lang === "vi" ? `${intro.leftName} VS ${intro.rightName} tại ${intro.mazeNameVi}` : `${intro.leftName} VS ${intro.rightName} at ${intro.mazeNameEn}`;
+}
+
+function label(lang: Lang, vi: string, en: string) {
+  return lang === "vi" ? vi : en;
+}
+
+function easeOutBack(value: number) {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(value - 1, 3) + c1 * Math.pow(value - 1, 2);
 }

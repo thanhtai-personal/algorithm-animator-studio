@@ -3,6 +3,8 @@ import type {
   AlgorithmWorldCell,
   AlgorithmWorldMazeId,
   AlgorithmWorldProblemType,
+  AlgorithmWorldRaceIntroStage,
+  AlgorithmWorldState,
   Frame,
 } from "./algorithms/types";
 import {
@@ -15,10 +17,13 @@ import {
   makeDynamicObstacleSets,
   makeMazeWalls,
   manhattan,
+  mazeNamePair,
+  randomMazeCandidates,
   sameCell,
   worldAlgorithmName,
   worldAlgorithmRuntime,
 } from "./algorithmWorld";
+import { buildTournamentState } from "./algorithmWorldTournament";
 import { getWorldVehicle } from "./algorithmWorldVehicles";
 import { runSearch, type AlgorithmWorldBuildArgs } from "./algorithmWorldRunner";
 
@@ -35,7 +40,28 @@ type RacePlan = {
   vehicleShape: string;
 };
 
+type IntroFrameOpts = {
+  stage: AlgorithmWorldRaceIntroStage;
+  tick: number;
+  duration: number;
+  event: Frame["event"];
+  walls: AlgorithmWorldCell[];
+  dynamicWalls: AlgorithmWorldCell[];
+  leftWinner?: boolean;
+  rightWinner?: boolean;
+  winnerName?: string;
+  tie?: boolean;
+  winnerAlgorithm?: AlgorithmWorldAlgorithmId;
+  assemblyProgress?: number;
+  pickedIndex?: number;
+};
+
 const RACE_APPROACH_TICKS = 3;
+const RANDOM_TICKS = 38;
+const ASSEMBLE_TICKS = 30;
+const VS_TICKS = 42;
+const WINNER_TICKS = 52;
+const BRACKET_TICKS = 70;
 
 export function createRaceCompareFrames(args: AlgorithmWorldBuildArgs) {
   const baseWalls = makeMazeWalls(args.mazeId);
@@ -46,23 +72,69 @@ export function createRaceCompareFrames(args: AlgorithmWorldBuildArgs) {
   const maxTick = Math.max(left.finishTick, right.finishTick) + RACE_APPROACH_TICKS + 12;
   const frames: Frame[] = [];
 
+  if (args.randomMazeRequested) {
+    for (let tick = 0; tick < RANDOM_TICKS; tick++) {
+      frames.push(createIntroFrame(args, left, right, { stage: "randomizing", tick, duration: RANDOM_TICKS, event: tick % 6 === 0 ? "compare" : null, walls: [], dynamicWalls: [], pickedIndex: tick }));
+    }
+    const orderedWalls = assemblyOrder(baseWalls);
+    for (let tick = 0; tick < ASSEMBLE_TICKS; tick++) {
+      const progress = easeOutCubic((tick + 1) / ASSEMBLE_TICKS);
+      frames.push(createIntroFrame(args, left, right, {
+        stage: "assembling",
+        tick,
+        duration: ASSEMBLE_TICKS,
+        event: tick % 5 === 0 ? "swap" : null,
+        walls: orderedWalls.slice(0, Math.ceil(orderedWalls.length * progress)),
+        dynamicWalls,
+        assemblyProgress: progress,
+      }));
+    }
+  }
+
+  for (let tick = 0; tick < VS_TICKS; tick++) {
+    frames.push(createIntroFrame(args, left, right, { stage: "versus", tick, duration: VS_TICKS, event: tick === 10 ? "found" : null, walls: baseWalls, dynamicWalls }));
+  }
+
   for (let tick = 0; tick <= maxTick; tick++) {
     const leftWorld = raceWorldFor(left, args.problemType, args.mazeId, baseWalls, dynamicWalls, tick, left.finishTick + RACE_APPROACH_TICKS === winnerTick);
     const rightWorld = raceWorldFor(right, args.problemType, args.mazeId, baseWalls, dynamicWalls, tick, right.finishTick + RACE_APPROACH_TICKS === winnerTick);
-    frames.push({
-      arr: [], highlight: [], swap: [], sorted: [], pivot: null,
-      line: tick,
-      event: tick === winnerTick ? "found" : tick < 8 ? null : "visit",
-      vars: {
-        task: args.problemType === "escape" ? "Find a path to the exit" : "Find the fastest path to the exit",
-        layout: args.videoMode,
-        presentation: args.presentationMode,
-        compareLeft: worldAlgorithmName(args.primaryAlgorithm),
-        compareRight: worldAlgorithmName(args.secondaryAlgorithm),
-        winner: leftWorld.raceWinner ? leftWorld.algorithmName : rightWorld.raceWinner ? rightWorld.algorithmName : "—",
-      },
-      worldCompare: { problemType: args.problemType, left: leftWorld, right: rightWorld },
-    });
+    frames.push(createRaceFrame(args, leftWorld, rightWorld, tick, tick === winnerTick ? "found" : tick < 8 ? null : "visit", "race"));
+  }
+
+  const isTie = left.finishTick === right.finishTick;
+  const leftWins = left.finishTick <= right.finishTick;
+  const winnerAlgorithm = leftWins ? left.algorithm : right.algorithm;
+  const tie = args.tournamentEnabled ? false : isTie;
+  for (let tick = 0; tick < WINNER_TICKS; tick++) {
+    frames.push(createIntroFrame(args, left, right, {
+      stage: "winner",
+      tick,
+      duration: WINNER_TICKS,
+      event: tick === 0 ? "found" : null,
+      walls: baseWalls,
+      dynamicWalls,
+      leftWinner: tie || leftWins,
+      rightWinner: tie || !leftWins,
+      winnerName: tie ? undefined : worldAlgorithmName(winnerAlgorithm),
+      winnerAlgorithm,
+      tie,
+    }));
+  }
+  if (args.tournamentEnabled) {
+    for (let tick = 0; tick < BRACKET_TICKS; tick++) {
+      frames.push(createIntroFrame(args, left, right, {
+        stage: "bracket",
+        tick,
+        duration: BRACKET_TICKS,
+        event: tick === 0 ? "found" : null,
+        walls: baseWalls,
+        dynamicWalls,
+        leftWinner: leftWins,
+        rightWinner: !leftWins,
+        winnerName: worldAlgorithmName(winnerAlgorithm),
+        winnerAlgorithm,
+      }));
+    }
   }
   return frames;
 }
@@ -105,6 +177,61 @@ function createRacePlan(
   };
 }
 
+function createIntroFrame(args: AlgorithmWorldBuildArgs, left: RacePlan, right: RacePlan, opts: IntroFrameOpts): Frame {
+  const leftWorld = raceWorldFor(left, args.problemType, args.mazeId, opts.walls, opts.dynamicWalls, (opts.stage === "winner" || opts.stage === "bracket") ? left.finishTick + RACE_APPROACH_TICKS : 0, Boolean(opts.leftWinner));
+  const rightWorld = raceWorldFor(right, args.problemType, args.mazeId, opts.walls, opts.dynamicWalls, (opts.stage === "winner" || opts.stage === "bracket") ? right.finishTick + RACE_APPROACH_TICKS : 0, Boolean(opts.rightWinner));
+  leftWorld.raceIntroStage = opts.stage;
+  rightWorld.raceIntroStage = opts.stage;
+  return createRaceFrame(args, leftWorld, rightWorld, opts.tick, opts.event, opts.stage, opts);
+}
+
+function createRaceFrame(args: AlgorithmWorldBuildArgs, leftWorld: AlgorithmWorldState, rightWorld: AlgorithmWorldState, tick: number, event: Frame["event"], stage: AlgorithmWorldRaceIntroStage, opts?: Partial<IntroFrameOpts>): Frame {
+  const maze = mazeNamePair(args.mazeId);
+  const candidates = randomMazeCandidates();
+  return {
+    arr: [], highlight: [], swap: [], sorted: [], pivot: null,
+    line: tick,
+    event,
+    vars: {
+      task: args.problemType === "escape" ? "Find a path to the exit" : "Find the fastest path to the exit",
+      layout: args.videoMode,
+      presentation: args.presentationMode,
+      compareLeft: worldAlgorithmName(args.primaryAlgorithm),
+      compareRight: worldAlgorithmName(args.secondaryAlgorithm),
+      maze: maze.en,
+      raceStage: stage,
+      winner: leftWorld.raceWinner ? leftWorld.algorithmName : rightWorld.raceWinner ? rightWorld.algorithmName : opts?.tie ? "TIE" : "—",
+    },
+    worldCompare: {
+      problemType: args.problemType,
+      left: leftWorld,
+      right: rightWorld,
+      raceIntro: {
+        stage,
+        tick,
+        duration: opts?.duration ?? 1,
+        mazeId: args.mazeId,
+        mazeNameEn: maze.en,
+        mazeNameVi: maze.vi,
+        leftName: worldAlgorithmName(args.primaryAlgorithm),
+        rightName: worldAlgorithmName(args.secondaryAlgorithm),
+        requestedRandom: args.randomMazeRequested,
+        candidatesEn: candidates.map((item) => item.en),
+        candidatesVi: candidates.map((item) => item.vi),
+        pickedIndex: opts?.pickedIndex,
+        assemblyProgress: opts?.assemblyProgress,
+        winnerName: opts?.winnerName,
+        tie: opts?.tie,
+        tournament: args.tournamentEnabled ? buildTournamentState({
+          round: args.tournamentRound,
+          match: args.tournamentMatch,
+          winner: opts?.winnerAlgorithm,
+        }) : undefined,
+      },
+    },
+  };
+}
+
 function raceWorldFor(
   plan: RacePlan,
   problemType: AlgorithmWorldProblemType,
@@ -113,7 +240,7 @@ function raceWorldFor(
   dynamicWalls: AlgorithmWorldCell[],
   tick: number,
   isWinner: boolean,
-) {
+): AlgorithmWorldState {
   const raceTick = Math.max(0, tick - RACE_APPROACH_TICKS);
   const finishTick = plan.finishTick + RACE_APPROACH_TICKS;
   const finished = tick >= finishTick && plan.reached;
@@ -163,6 +290,15 @@ function raceWorldFor(
     vehicleName: plan.vehicleName,
     vehicleShape: plan.vehicleShape,
   };
+}
+
+function assemblyOrder(walls: AlgorithmWorldCell[]) {
+  const center = { x: WORLD_COLS / 2, y: WORLD_ROWS / 2 };
+  return [...walls].sort((a, b) => Math.abs(a.x - center.x) + Math.abs(a.y - center.y) - (Math.abs(b.x - center.x) + Math.abs(b.y - center.y)));
+}
+
+function easeOutCubic(value: number) {
+  return 1 - Math.pow(1 - value, 3);
 }
 
 function sanitizeAdjacentPath(path: AlgorithmWorldCell[], baseWalls: AlgorithmWorldCell[], dynamicWalls: AlgorithmWorldCell[]) {

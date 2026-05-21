@@ -11,7 +11,7 @@ export const WORLD_ROWS = 15;
 export const WORLD_START: AlgorithmWorldCell = { x: 0, y: 7 };
 export const WORLD_GOAL: AlgorithmWorldCell = { x: WORLD_COLS - 1, y: 7 };
 
-type Localized = { en: string; vi: string };
+export type Localized = { en: string; vi: string };
 
 type MazeRoute = AlgorithmWorldCell[];
 
@@ -277,6 +277,31 @@ export const MAZE_PRESETS: MazePreset[] = [
     dynamicObstacles: [],
   },
 ];
+
+
+export function isRandomMazeId(id: AlgorithmWorldMazeId | undefined) {
+  return id === "random";
+}
+
+export function resolveMazeId(id: AlgorithmWorldMazeId | undefined, seed = Date.now()) {
+  if (id && id !== "random") return getMazePreset(id).id;
+  const index = Math.abs(Math.floor(seed)) % MAZE_PRESETS.length;
+  return MAZE_PRESETS[index].id;
+}
+
+export function mazeName(id: AlgorithmWorldMazeId | undefined, lang: Lang) {
+  if (id === "random") return lang === "vi" ? "Sân đấu ngẫu nhiên" : "Random Arena";
+  return localize(getMazePreset(id).name, lang);
+}
+
+export function mazeNamePair(id: AlgorithmWorldMazeId | undefined) {
+  const preset = getMazePreset(id);
+  return { en: preset.name.en, vi: preset.name.vi };
+}
+
+export function randomMazeCandidates() {
+  return MAZE_PRESETS.map((maze) => maze.name);
+}
 
 export const cellKey = (cell: AlgorithmWorldCell) => `${cell.x},${cell.y}`;
 export const sameCell = (a: AlgorithmWorldCell, b: AlgorithmWorldCell) => a.x === b.x && a.y === b.y;

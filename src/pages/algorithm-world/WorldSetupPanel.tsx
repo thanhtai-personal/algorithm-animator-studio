@@ -1,5 +1,5 @@
 import type React from "react";
-import { Activity, Car, EyeOff, Flag, GitCompare, Lock, Map, RotateCcw, Route, Sparkles, Zap } from "lucide-react";
+import { Activity, Car, Dice5, EyeOff, Flag, GitCompare, Lock, Map, RotateCcw, Route, Sparkles, Trophy, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MAZE_PRESETS, WORLD_ALGORITHMS, localize, recommendedMazeForAlgorithm } from "@/lib/algorithmWorld";
-import type { AlgorithmWorldAlgorithmId, AlgorithmWorldMazeId, AlgorithmWorldProblemType } from "@/lib/algorithms";
+import type { AlgorithmWorldAlgorithmId, AlgorithmWorldMazeId, AlgorithmWorldProblemType, AlgorithmWorldTournamentRound } from "@/lib/algorithms";
 import { WORLD_VEHICLES, type AlgorithmWorldVehiclePreset } from "@/lib/algorithmWorldVehicles";
+import { resolveTournamentMatch, tournamentMatchOptions, tournamentRoundLabel } from "@/lib/algorithmWorldTournament";
 import type { AlgorithmStudio } from "@/pages/studio/useAlgorithmStudio";
 
 type Props = { studio: AlgorithmStudio };
@@ -18,7 +19,7 @@ type PanelProps = { s: AlgorithmStudio; t: TFn };
 export function WorldSetupPanel({ studio: s }: Props) {
   const vars = s.current?.vars ?? {};
   const world = s.current?.world ?? s.current?.worldCompare?.left;
-  const phase = String(world?.phase ?? vars.phase ?? "setup");
+  const phase = String(world?.raceIntroStage ?? world?.phase ?? vars.phase ?? "setup");
   const isLong = s.worldVideoMode === "long";
   const isRace = s.worldPresentationMode === "vehicle_race";
   const compareEnabled = s.worldCompareEnabled || isRace;
@@ -48,10 +49,11 @@ export function WorldSetupPanel({ studio: s }: Props) {
       </Card>
 
       <Tabs defaultValue="setup" className="space-y-4">
-        <TabsList className="grid grid-cols-4">
+        <TabsList className="grid grid-cols-5">
           <TabsTrigger value="setup">{t("Setup", "Setup")}</TabsTrigger>
           <TabsTrigger value="maze">{t("Mê cung", "Maze")}</TabsTrigger>
           <TabsTrigger value="algo">{t("Thuật toán", "Algorithms")}</TabsTrigger>
+          <TabsTrigger value="tournament">{t("Giải đấu", "Tournament")}</TabsTrigger>
           <TabsTrigger value="frames">{t("Frame", "Frames")}</TabsTrigger>
         </TabsList>
 
@@ -59,6 +61,7 @@ export function WorldSetupPanel({ studio: s }: Props) {
           <VideoLayoutCard s={s} isLong={isLong} isRace={isRace} compareEnabled={compareEnabled} t={t} />
           <ProblemTypeCard s={s} t={t} />
           <PresentationCard s={s} isRace={isRace} t={t} />
+          <TournamentCard s={s} t={t} compact />
         </TabsContent>
 
         <TabsContent value="maze" className="space-y-4">
@@ -67,6 +70,10 @@ export function WorldSetupPanel({ studio: s }: Props) {
 
         <TabsContent value="algo" className="space-y-4">
           <AlgorithmsCard s={s} isLong={isLong} compareEnabled={compareEnabled} t={t} />
+        </TabsContent>
+
+        <TabsContent value="tournament" className="space-y-4">
+          <TournamentCard s={s} t={t} />
         </TabsContent>
 
         <TabsContent value="frames" className="space-y-4">
@@ -139,11 +146,17 @@ function ProblemTypeCard({ s, t }: PanelProps) {
 
 function MazeCard({ s, t }: PanelProps) {
   const current = MAZE_PRESETS.find((maze) => maze.id === s.worldMazeId);
+  const randomSelected = s.worldMazeId === "random";
   return (
     <Card className="space-y-3 p-4">
       <div className="flex items-center gap-2"><Map className="h-4 w-4 text-cyan-300" /><Label>{t("Mê cung", "Maze preset")}</Label></div>
       <MazeSelect value={s.worldMazeId} onChange={s.setWorldMazeId} lang={s.lang} />
-      {current ? <p className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">{localize(current.note, s.lang)}</p> : null}
+      {randomSelected ? (
+        <p className="flex gap-2 rounded-lg border border-yellow-300/30 bg-yellow-400/10 p-3 text-xs text-yellow-50">
+          <Dice5 className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{t("Khi xuất/play, studio sẽ random sân đấu, hiện animation quay chọn, ráp map, rồi mới chiếu intro VS.", "When playing/exporting, the studio rolls a random arena, assembles the map, then shows the VS intro.")}</span>
+        </p>
+      ) : current ? <p className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">{localize(current.note, s.lang)}</p> : null}
       <Button variant="secondary" className="w-full" onClick={() => s.setWorldMazeId(recommendedMazeForAlgorithm(s.worldPrimaryAlgorithm))}>
         {t("Dùng mê cung hợp thuật toán chính", "Use maze recommended for primary algorithm")}
       </Button>
@@ -159,6 +172,7 @@ function AlgorithmsCard({ s, isLong, compareEnabled, t }: PanelProps & {
   return (
     <Card className="space-y-3 p-4">
       <div className="flex items-center gap-2"><Activity className="h-4 w-4 text-emerald-300" /><Label>{t("Thuật toán có thể build", "Buildable algorithms")}</Label></div>
+      {s.worldTournamentEnabled ? <div className="rounded-lg border border-yellow-300/30 bg-yellow-400/10 p-3 text-xs text-yellow-50">{t("Giải đấu đang bật: cặp thuật toán được lấy tự động từ bracket.", "Tournament is on: the algorithm pair is picked automatically from the bracket.")}</div> : null}
       <AlgorithmSelect label={compareEnabled ? t("Thuật toán trên/trái", "Top/left algorithm") : t("Thuật toán", "Algorithm")} value={s.worldPrimaryAlgorithm} onChange={s.setWorldPrimaryAlgorithm} problemType={s.worldProblemType} lang={s.lang} />
       {compareEnabled ? <AlgorithmSelect label={isLong ? t("Thuật toán phải", "Right algorithm") : t("Thuật toán dưới", "Bottom algorithm")} value={s.worldSecondaryAlgorithm} onChange={s.setWorldSecondaryAlgorithm} problemType={s.worldProblemType} lang={s.lang} /> : null}
       {isRace ? (
@@ -180,6 +194,61 @@ function AlgorithmsCard({ s, isLong, compareEnabled, t }: PanelProps & {
       </div>
     </Card>
   );
+}
+
+function TournamentCard({ s, t, compact = false }: PanelProps & { compact?: boolean }) {
+  const round = s.worldTournamentRound as AlgorithmWorldTournamentRound;
+  const match = resolveTournamentMatch(round, s.worldTournamentMatch);
+  const options = tournamentMatchOptions(round, s.lang);
+  return (
+    <Card className="space-y-3 border-yellow-300/25 bg-yellow-400/5 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2"><Trophy className="h-4 w-4 text-yellow-300" /><Label>{t("Giải đấu loại trực tiếp", "Knockout tournament")}</Label></div>
+        <Switch checked={s.worldTournamentEnabled} onCheckedChange={s.setWorldTournamentEnabled} />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {t("Bật để tạo mỗi video là 1 trận. Studio tự random sân đấu, lấy cặp thuật toán theo bracket, cuối trận hiện cây giải đấu với đội thắng đi tiếp.", "Enable this to make each video one match. The studio rolls a random arena, picks the bracket pair, and ends with a tree bracket showing the winner advancing.")}
+      </p>
+      {s.worldTournamentEnabled ? (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">{t("Vòng đấu", "Round")}</Label>
+              <Select value={String(round)} onValueChange={(value) => s.setWorldTournamentRound(Number(value) as AlgorithmWorldTournamentRound)}>
+                <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {[0, 1, 2].map((item) => <SelectItem key={item} value={String(item)}>{tournamentRoundLabel(item as AlgorithmWorldTournamentRound, s.lang)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">{t("Trận", "Match")}</Label>
+              <Select value={String(s.worldTournamentMatch)} onValueChange={(value) => s.setWorldTournamentMatch(Number(value))}>
+                <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {options.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="rounded-lg border border-yellow-300/30 bg-slate-950/40 p-3 text-xs">
+            <div className="font-semibold text-yellow-100">{worldMatchTitle(match.left, match.right)}</div>
+            <div className="mt-1 text-muted-foreground">{t("Map: random theo trận · Intro random → ráp map → VS → đua → winner → cây giải đấu", "Map: match-random · random roll → map assembly → VS → race → winner → bracket tree")}</div>
+          </div>
+        </div>
+      ) : compact ? null : (
+        <div className="rounded-lg border border-border/60 bg-background/60 p-3 text-xs text-muted-foreground">
+          {t("Tắt giải đấu thì bạn tự chọn 2 thuật toán và mê cung ở các tab còn lại.", "When tournament is off, pick the two algorithms and maze manually in the other tabs.")}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function worldMatchTitle(left: AlgorithmWorldAlgorithmId, right: AlgorithmWorldAlgorithmId) {
+  const a = WORLD_ALGORITHMS.find((item) => item.id === left)?.name ?? left.toUpperCase();
+  const b = WORLD_ALGORITHMS.find((item) => item.id === right)?.name ?? right.toUpperCase();
+  return `${a} VS ${b}`;
 }
 
 function VehicleGarage(props: { title: string; selectedId: string; onSelect: (value: string) => void }) {
@@ -229,11 +298,12 @@ function BeatCard({ phase, t }: { phase: string; t: (vi: string, en: string) => 
     <Card className="space-y-3 p-4">
       <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-yellow-300" /><Label>{t("Danh sách frame", "Frame list")}</Label></div>
       <div className="space-y-2 text-xs text-muted-foreground">
-        <Beat active={phase === "setup"} text={t("1. Nạp lối vào và lối ra", "1. Load entrance and exit")} />
-        <Beat active={phase === "search"} text={t("2. Mở rộng frontier/open set", "2. Expand frontier/open set")} />
-        <Beat active={phase === "obstacle"} text={t("3. Tường realtime phá đường cũ", "3. Real-time wall breaks old route")} />
-        <Beat active={phase === "replan"} text={t("4. Tính lại từ vị trí hiện tại", "4. Recalculate from current position")} />
-        <Beat active={phase === "done"} text={t("5. Hiện đường từ lối vào đến lối ra", "5. Show entrance-to-exit path")} />
+        <Beat active={phase === "randomizing"} text={t("1. Random sân đấu", "1. Random arena roll")} />
+        <Beat active={phase === "assembling"} text={t("2. Ráp sân đấu vào map", "2. Assemble arena map")} />
+        <Beat active={phase === "versus"} text={t("3. Chiếu intro VS", "3. Show VS intro")} />
+        <Beat active={phase === "search" || phase === "setup"} text={t("4. Hai xe bắt đầu đua", "4. Cars start racing")} />
+        <Beat active={phase === "winner" || phase === "done"} text={t("5. Đẩy WINNER lên giữa video", "5. Push WINNER to center")} />
+        <Beat active={phase === "bracket"} text={t("6. Hiện cây giải đấu và đội đi tiếp", "6. Show bracket tree and advancing team")} />
       </div>
     </Card>
   );
@@ -280,10 +350,12 @@ function AlgorithmSelect(props: {
 }
 
 function MazeSelect(props: { value: AlgorithmWorldMazeId; lang: "en" | "vi"; onChange: (value: AlgorithmWorldMazeId) => void }) {
+  const t = (vi: string, en: string) => props.lang === "vi" ? vi : en;
   return (
     <Select value={props.value} onValueChange={(value) => props.onChange(value as AlgorithmWorldMazeId)}>
       <SelectTrigger><SelectValue /></SelectTrigger>
       <SelectContent>
+        <SelectItem value="random">🎲 {t("Ngẫu nhiên sân đấu", "Random arena")}</SelectItem>
         {MAZE_PRESETS.map((maze) => (
           <SelectItem key={maze.id} value={maze.id}>{localize(maze.name, props.lang)} · {maze.recommendedFor.map((id) => id.toUpperCase()).join("/")}</SelectItem>
         ))}

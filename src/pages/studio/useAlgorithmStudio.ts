@@ -10,6 +10,7 @@ import {
   type AlgorithmWorldMazeId,
   type AlgorithmWorldPresentationMode,
   type AlgorithmWorldProblemType,
+  type AlgorithmWorldTournamentRound,
   type AlgorithmWorldVideoMode,
 } from "@/lib/algorithms";
 import { ColumnVisualMode, preloadAnimalSprites } from "@/lib/animalColumns";
@@ -25,6 +26,7 @@ import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm, maxDemoSi
 import { exportAlgorithmVideo, preloadExportSfx } from "./videoExport";
 import { renderStudioPreview } from "./renderStudioPreview";
 import { getWorldVehicle } from "@/lib/algorithmWorldVehicles";
+import { normalizeTournamentMatch, normalizeTournamentRound } from "@/lib/algorithmWorldTournament";
 
 const SWAP_TRANSITION_MULTIPLIER = 1.8;
 const KINETIC_ODD_EVEN_FRAME_MULTIPLIER = 8;
@@ -49,6 +51,9 @@ type UseAlgorithmStudioOptions = {
   initialWorldMazeId?: AlgorithmWorldMazeId;
   initialWorldPrimaryAlgorithm?: AlgorithmWorldAlgorithmId;
   initialWorldSecondaryAlgorithm?: AlgorithmWorldAlgorithmId;
+  initialWorldTournamentEnabled?: boolean;
+  initialWorldTournamentRound?: AlgorithmWorldTournamentRound;
+  initialWorldTournamentMatch?: number;
 };
 
 export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
@@ -81,6 +86,9 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const [worldMazeId, setWorldMazeIdState] = useState<AlgorithmWorldMazeId>(options.initialWorldMazeId ?? "astar_labyrinth");
   const [worldPrimaryAlgorithm, setWorldPrimaryAlgorithmState] = useState<AlgorithmWorldAlgorithmId>(options.initialWorldPrimaryAlgorithm ?? "astar");
   const [worldSecondaryAlgorithm, setWorldSecondaryAlgorithmState] = useState<AlgorithmWorldAlgorithmId>(options.initialWorldSecondaryAlgorithm ?? "dijkstra");
+  const [worldTournamentEnabled, setWorldTournamentEnabledState] = useState(options.initialWorldTournamentEnabled ?? false);
+  const [worldTournamentRound, setWorldTournamentRoundState] = useState<AlgorithmWorldTournamentRound>(options.initialWorldTournamentRound ?? 0);
+  const [worldTournamentMatch, setWorldTournamentMatchState] = useState(options.initialWorldTournamentMatch ?? 0);
   const [worldPrimaryVehicleId, setWorldPrimaryVehicleIdState] = useState("bolt");
   const [worldSecondaryVehicleId, setWorldSecondaryVehicleIdState] = useState("comet");
   const [worldPrimaryVehicleColor, setWorldPrimaryVehicleColorState] = useState("#34d399");
@@ -145,11 +153,14 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
         secondaryVehicleColor: worldSecondaryVehicleColor,
         primaryVehicleId: worldPrimaryVehicleId,
         secondaryVehicleId: worldSecondaryVehicleId,
+        tournamentEnabled: worldTournamentEnabled,
+        tournamentRound: worldTournamentRound,
+        tournamentMatch: worldTournamentMatch,
       },
       start: startId >= 0 ? startId : undefined,
       end: endId >= 0 ? endId : undefined,
     });
-  }, [algo, arr, target, customCode, parsedGraph, startId, endId, worldVideoMode, worldCompareEnabled, worldPresentationMode, worldProblemType, worldMazeId, worldPrimaryAlgorithm, worldSecondaryAlgorithm, worldPrimaryVehicleColor, worldSecondaryVehicleColor, worldPrimaryVehicleId, worldSecondaryVehicleId]);
+  }, [algo, arr, target, customCode, parsedGraph, startId, endId, worldVideoMode, worldCompareEnabled, worldPresentationMode, worldProblemType, worldMazeId, worldPrimaryAlgorithm, worldSecondaryAlgorithm, worldPrimaryVehicleColor, worldSecondaryVehicleColor, worldPrimaryVehicleId, worldSecondaryVehicleId, worldTournamentEnabled, worldTournamentRound, worldTournamentMatch]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const current = frames[Math.min(frameIdx, frames.length - 1)];
@@ -435,6 +446,12 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     setWorldPrimaryAlgorithm: (value: AlgorithmWorldAlgorithmId) => runConfigAction(() => { setWorldPrimaryAlgorithmState(value); setFrameIdx(0); setPlaying(false); }),
     worldSecondaryAlgorithm,
     setWorldSecondaryAlgorithm: (value: AlgorithmWorldAlgorithmId) => runConfigAction(() => { setWorldSecondaryAlgorithmState(value); setFrameIdx(0); setPlaying(false); }),
+    worldTournamentEnabled,
+    setWorldTournamentEnabled: (value: boolean) => runConfigAction(() => { setWorldTournamentEnabledState(value); if (value) { setWorldPresentationModeState("vehicle_race"); setWorldCompareEnabledState(true); setShowCode(false); setWorldMazeIdState("random"); } setFrameIdx(0); setPlaying(false); }),
+    worldTournamentRound,
+    setWorldTournamentRound: (value: AlgorithmWorldTournamentRound) => runConfigAction(() => { const round = normalizeTournamentRound(value); setWorldTournamentRoundState(round); setWorldTournamentMatchState((m) => normalizeTournamentMatch(round, m)); setFrameIdx(0); setPlaying(false); }),
+    worldTournamentMatch,
+    setWorldTournamentMatch: (value: number) => runConfigAction(() => { setWorldTournamentMatchState(normalizeTournamentMatch(worldTournamentRound, value)); setFrameIdx(0); setPlaying(false); }),
     worldPrimaryVehicleColor,
     setWorldPrimaryVehicleColor: (value: string) => runConfigAction(() => { setWorldPrimaryVehicleColorState(value); setFrameIdx(0); setPlaying(false); }),
     worldSecondaryVehicleColor,

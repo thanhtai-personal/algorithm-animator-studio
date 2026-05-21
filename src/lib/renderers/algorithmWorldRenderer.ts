@@ -1,7 +1,7 @@
 import type { AlgorithmWorldCell, AlgorithmWorldCompareState, AlgorithmWorldState, Frame } from "../algorithms";
 import type { Lang } from "../i18n";
 import { cellKey } from "../algorithmWorld";
-import { drawRaceTrackBase, drawRaceWalls, drawRaceWinner } from "./algorithmWorldRaceRenderer";
+import { drawRaceIntroOverlay, drawRaceTrackBase, drawRaceWalls, drawRaceWinner, shouldDrawRaceIntroOnly } from "./algorithmWorldRaceRenderer";
 import { drawVehicle, vehicleColorForWorld } from "./algorithmWorldVehicleRenderer";
 import { roundRect } from "./shapes";
 import type { Theme } from "./theme";
@@ -33,15 +33,21 @@ export function drawAlgorithmWorldComparison(
   const raceMode = compare.left.presentationMode === "vehicle_race";
   const gap = raceMode ? Math.max(12, Math.round(h * 0.012)) : Math.max(18, Math.round((isPortrait ? h : w) * 0.018));
   const x0 = raceMode ? Math.max(8, padding * 0.35) : padding, w0 = raceMode ? w + (padding - x0) * 2 : w, top0 = raceMode ? top - 20 : top, h0 = raceMode ? h + 20 : h;
+  if (shouldDrawRaceIntroOnly(compare)) {
+    drawRaceIntroOverlay(ctx, compare, x0, top0, w0, h0, theme, lang);
+    return;
+  }
   if (isPortrait) {
     const panelH = (h0 - gap) / 2;
     drawWorldPanel(ctx, compare.left, { x: x0, y: top0, w: w0, h: panelH, theme, lang, label: compare.left.algorithmName });
     drawWorldPanel(ctx, compare.right, { x: x0, y: top0 + panelH + gap, w: w0, h: panelH, theme, lang, label: compare.right.algorithmName });
+    drawRaceIntroOverlay(ctx, compare, x0, top0, w0, h0, theme, lang);
     return;
   }
   const panelW = (w0 - gap) / 2;
   drawWorldPanel(ctx, compare.left, { x: x0, y: top0, w: panelW, h: h0, theme, lang, label: compare.left.algorithmName });
   drawWorldPanel(ctx, compare.right, { x: x0 + panelW + gap, y: top0, w: panelW, h: h0, theme, lang, label: compare.right.algorithmName });
+  drawRaceIntroOverlay(ctx, compare, x0, top0, w0, h0, theme, lang);
 }
 
 type PanelOpts = { x: number; y: number; w: number; h: number; theme: Theme; lang: Lang; label?: string };

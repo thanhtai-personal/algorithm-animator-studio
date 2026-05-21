@@ -4,6 +4,7 @@ import type { AlgorithmWorldCell, AlgorithmWorldCompareState, AlgorithmWorldStat
 import type { Lang } from "@/lib/i18n";
 import type { Theme } from "@/lib/renderer";
 import { cellKey } from "@/lib/algorithmWorld";
+import { drawRaceTrackBase, drawRaceWalls } from "./PhaserMazeRaceStyle";
 
 type Props = {
   frame: Frame | null | undefined;
@@ -125,8 +126,8 @@ class MazePreviewScene extends Phaser.Scene {
     const h = this.scale.height;
     const pulse = 0.5 + Math.sin(this.time.now / 240) * 0.5;
     drawBackground(g, w, h, this.preview.theme.highlight);
-    this.text(this.preview.title, w / 2, 60, 46, COLORS.text, "center", 900);
-    this.text(this.preview.subtitle, w / 2, 104, 22, COLORS.yellow, "center", 800);
+    this.text(this.preview.title, w / 2, 42, 42, COLORS.text, "center", 900);
+    this.text(this.preview.subtitle, w / 2, 76, 21, COLORS.yellow, "center", 800);
     const frame = this.preview.frame;
     if (frame?.worldCompare) {
       drawCompare(this, g, frame.worldCompare, w, h, pulse, this.preview.lang);
@@ -166,51 +167,61 @@ function drawBackground(g: Phaser.GameObjects.Graphics, w: number, h: number, ac
 }
 
 function drawCompare(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, compare: AlgorithmWorldCompareState, w: number, h: number, pulse: number, lang: Lang) {
-  const gap = 28;
-  const top = 132;
-  const panelH = (h - top - 88 - gap) / 2;
-  const winner = [compare.left, compare.right].find((world) => world.raceWinner);
-  if (winner) {
-    const text = lang === "vi" ? `${winner.algorithmName} WIN - thuật toán nhanh hơn` : `${winner.algorithmName} WINS - faster algorithm`;
-    scene.text(text, w / 2, top - 26, 24, COLORS.yellow, "center", 900);
-  }
-  drawWorld(scene, g, compare.left, 96, top, w - 192, panelH, pulse, lang, false);
-  drawWorld(scene, g, compare.right, 96, top + panelH + gap, w - 192, panelH, pulse, lang, false);
+  const gap = 18;
+  const top = 92;
+  const panelH = (h - top - 34 - gap) / 2;
+  drawWorld(scene, g, compare.left, 26, top, w - 52, panelH, pulse, lang, false);
+  drawWorld(scene, g, compare.right, 26, top + panelH + gap, w - 52, panelH, pulse, lang, false);
 }
 
 function drawWorld(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, world: AlgorithmWorldState, x: number, y: number, w: number, h: number, pulse: number, lang: Lang, large: boolean) {
   g.fillStyle(COLORS.panel, 0.9);
-  g.fillRoundedRect(x, y, w, h, 24);
+  g.fillRoundedRect(x, y, w, h, 16);
   g.lineStyle(2, COLORS.open, 0.28 + pulse * 0.18);
-  g.strokeRoundedRect(x, y, w, h, 24);
-  const labelH = large ? 58 : 52;
-  scene.text(world.algorithmName ?? "A*", x + 22, y + labelH / 2, large ? 34 : 28, COLORS.text, "left", 900);
-  scene.text(world.runtimeLabel ?? "", x + w - 22, y + labelH / 2, large ? 24 : 20, COLORS.yellow, "right", 800);
+  g.strokeRoundedRect(x, y, w, h, 16);
+  const labelH = large ? 58 : 42;
+  scene.text(world.algorithmName ?? "A*", x + 16, y + labelH / 2, large ? 34 : 30, COLORS.text, "left", 900);
+  scene.text(world.runtimeLabel ?? "", x + w - 16, y + labelH / 2, large ? 24 : 20, COLORS.yellow, "right", 800);
 
-  const hudH = large ? 152 : 126;
-  const mazeY = y + labelH + 14;
-  const mazeH = h - labelH - hudH - 30;
-  const cell = Math.floor(Math.min((w - 42) / world.cols, mazeH / world.rows));
+  const hudH = large ? 152 : 108;
+  const mazeY = y + labelH + 8;
+  const mazeH = h - labelH - hudH - 18;
+  const cell = Math.floor(Math.min((w - 22) / world.cols, mazeH / world.rows));
   const gridW = cell * world.cols;
   const gridH = cell * world.rows;
   const gridX = x + (w - gridW) / 2;
   const gridY = mazeY + Math.max(0, (mazeH - gridH) / 2);
   const raceMode = world.presentationMode === "vehicle_race";
   const visible = null;
-  drawGrid(g, world.cols, world.rows, cell, gridX, gridY);
+  raceMode ? drawRaceTrackBase(g, world.cols, world.rows, cell, gridX, gridY) : drawGrid(g, world.cols, world.rows, cell, gridX, gridY);
+  if (raceMode) {
+    scene.text(formatRaceTime(world.raceTime ?? world.stepCount ?? 0), gridX + gridW - 4, gridY - Math.max(40, cell * 1.25), large ? 44 : 34, world.raceWinner ? COLORS.yellow : COLORS.text, "right", 900);
+  }
   if (visible) drawFog(g, world, visible, cell, gridX, gridY);
   drawCellSet(g, world.closedSet, cell, gridX, gridY, COLORS.closed, 0.36);
   drawCellSet(g, world.openSet, cell, gridX, gridY, COLORS.open, 0.28 + pulse * 0.18);
   if (!raceMode) drawPath(g, world.previousPath, cell, gridX, gridY, COLORS.oldPath, 0.42, true);
   drawPath(g, world.shatteredPath ?? [], cell, gridX, gridY, COLORS.danger, 0.88, true);
-  drawWalls(g, filterVisible(world.walls, visible), cell, gridX, gridY, false);
-  drawWalls(g, filterVisible(world.dynamicWalls, visible), cell, gridX, gridY, true);
+  raceMode ? drawRaceWalls(g, filterVisible(world.walls, visible), cell, gridX, gridY, false) : drawWalls(g, filterVisible(world.walls, visible), cell, gridX, gridY, false);
+  raceMode ? drawRaceWalls(g, filterVisible(world.dynamicWalls, visible), cell, gridX, gridY, true) : drawWalls(g, filterVisible(world.dynamicWalls, visible), cell, gridX, gridY, true);
   drawCellSet(g, world.pulseCells ?? [], cell, gridX, gridY, COLORS.danger, 0.55 + pulse * 0.3);
   drawPath(g, world.path, cell, gridX, gridY, raceMode ? algorithmColor(world) : COLORS.path, 0.95, false);
   drawPortal(scene, g, world.start, cell, gridX, gridY, COLORS.start, lang === "vi" ? "VÀO" : "IN");
   drawPortal(scene, g, world.goal, cell, gridX, gridY, COLORS.goal, lang === "vi" ? "RA" : "OUT");
   if (world.current) drawRunner(g, world, cell, gridX, gridY, algorithmColor(world), pulse);
-  drawHud(scene, g, world, x + 18, y + h - hudH - 14, w - 36, hudH, lang, large);
+  if (raceMode && world.raceWinner) drawWinnerOverlay(scene, g, world, gridX + gridW / 2, gridY + gridH / 2, gridW, lang);
+  drawHud(scene, g, world, x + 10, y + h - hudH - 8, w - 20, hudH, lang, large);
+}
+
+function drawWinnerOverlay(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, world: AlgorithmWorldState, cx: number, cy: number, w: number, lang: Lang) {
+  const boxW = Math.min(w * 0.76, 520);
+  const boxH = 76;
+  g.fillStyle(0x020617, 0.88);
+  g.fillRoundedRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH, 18);
+  g.lineStyle(2, COLORS.yellow, 0.92);
+  g.strokeRoundedRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH, 18);
+  scene.text(`${world.algorithmName ?? "Algorithm"} WINNER`, cx, cy - 8, 32, COLORS.yellow, "center", 900);
+  scene.text(lang === "vi" ? "Xe thắng đã dừng tại cửa ra" : "Winning car stopped at the exit", cx, cy + 22, 17, COLORS.text, "center", 900);
 }
 
 function drawGrid(g: Phaser.GameObjects.Graphics, cols: number, rows: number, cell: number, x: number, y: number) {
@@ -291,12 +302,12 @@ function drawHud(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, world:
   g.strokeRoundedRect(x, y, w, h, 16);
   const raceMode = world.presentationMode === "vehicle_race";
   const status = localizedStatus(world, lang);
-  scene.text(status, x + 14, y + 22, large ? 22 : 18, world.raceWinner ? COLORS.yellow : COLORS.open, "left", 800);
+  scene.text(status, x + 14, y + 20, large ? 22 : 20, world.raceWinner ? COLORS.yellow : COLORS.open, "left", 800);
   if (raceMode) {
     const timer = formatRaceTime(world.raceTime ?? world.stepCount ?? 0);
     const state = world.raceFinished ? (world.raceWinner ? "WIN" : "DONE") : "RUN";
-    scene.text(timer, x + w - 14, y + 22, large ? 36 : 28, world.raceWinner ? COLORS.yellow : COLORS.text, "right", 900);
-    scene.text(state, x + w - 14, y + (large ? 64 : 56), large ? 18 : 15, world.raceWinner ? COLORS.yellow : COLORS.muted, "right", 900);
+    scene.text(timer, x + w - 14, y + 20, large ? 36 : 30, world.raceWinner ? COLORS.yellow : COLORS.text, "right", 900);
+    scene.text(state, x + w - 14, y + (large ? 64 : 56), large ? 18 : 16, world.raceWinner ? COLORS.yellow : COLORS.muted, "right", 900);
   }
   const stats = [
     [lang === "vi" ? "Thuật toán" : "Algorithm", world.algorithmName ?? "-"],
@@ -305,11 +316,11 @@ function drawHud(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, world:
     [lang === "vi" ? "Độ dài" : "Path", String((world.pathLength ?? world.path.length) || "-")],
     [raceMode ? (lang === "vi" ? "Kết quả" : "Result") : "f = g + h", raceMode ? raceResult(world, lang) : String(world.scores?.f ?? "-")],
   ];
-  const startY = y + (large ? 84 : 70);
+  const startY = y + (large ? 84 : 66);
   stats.forEach(([key, value], index) => {
     const sx = x + 14 + index * (w / stats.length);
-    scene.text(key, sx, startY, large ? 16 : 14, COLORS.muted, "left", 700);
-    scene.text(value, sx, startY + (large ? 28 : 24), large ? 23 : 18, key === "f = g + h" || world.raceWinner && index === stats.length - 1 ? COLORS.yellow : COLORS.text, "left", 900);
+    scene.text(key, sx, startY, large ? 16 : 15, COLORS.muted, "left", 700);
+    scene.text(value, sx, startY + (large ? 28 : 24), large ? 23 : 20, key === "f = g + h" || world.raceWinner && index === stats.length - 1 ? COLORS.yellow : COLORS.text, "left", 900);
   });
 }
 
@@ -355,15 +366,4 @@ function raceResult(world: AlgorithmWorldState, lang: Lang) {
   if (world.raceWinner) return "WIN";
   if (world.raceFinished) return lang === "vi" ? "Về đích" : "Done";
   return lang === "vi" ? "Đang chạy" : "Running";
-}
-
-function phaseLabel(phase: string, lang: Lang) {
-  const labels: Record<string, { vi: string; en: string }> = {
-    setup: { vi: "chuẩn bị", en: "setup" },
-    search: { vi: "tìm", en: "search" },
-    obstacle: { vi: "tường mới", en: "obstacle" },
-    replan: { vi: "tính lại", en: "replan" },
-    done: { vi: "xong", en: "done" },
-  };
-  return labels[phase]?.[lang] ?? phase;
 }

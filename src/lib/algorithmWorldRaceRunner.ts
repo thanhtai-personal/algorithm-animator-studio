@@ -115,11 +115,11 @@ function raceWorldFor(
   isWinner: boolean,
 ) {
   const raceTick = Math.max(0, tick - RACE_APPROACH_TICKS);
-  const moveIndex = Math.max(0, Math.min(plan.path.length - 1, raceTick - plan.searchDelay));
-  const current = tick < RACE_APPROACH_TICKS ? { x: -1, y: WORLD_START.y } : raceTick < plan.searchDelay ? WORLD_START : plan.path[moveIndex];
-  const visiblePath = plan.path.slice(0, moveIndex + 1);
   const finishTick = plan.finishTick + RACE_APPROACH_TICKS;
   const finished = tick >= finishTick && plan.reached;
+  const moveIndex = Math.max(0, Math.min(plan.path.length - 1, raceTick - plan.searchDelay));
+  const current = finished ? WORLD_GOAL : tick < RACE_APPROACH_TICKS ? { x: -1, y: WORLD_START.y } : raceTick < plan.searchDelay ? WORLD_START : plan.path[moveIndex];
+  const visiblePath = finished ? plan.path : plan.path.slice(0, moveIndex + 1);
   const raceTime = Math.min(raceTick, plan.finishTick);
   const status = finished
     ? `${worldAlgorithmName(plan.algorithm)} reached the exit. Timer stopped.`
@@ -181,8 +181,14 @@ function buildDriveRoute(frames: Frame[], finalPath: AlgorithmWorldCell[], baseW
     .map((frame) => frame.world?.current)
     .filter((cell): cell is AlgorithmWorldCell => Boolean(cell) && !blocked.has(cellKey(cell)));
   const route: AlgorithmWorldCell[] = [WORLD_START];
-  for (const target of targets) appendConnector(route, target, blocked);
-  for (const target of sanitizeAdjacentPath(finalPath, baseWalls, dynamicWalls)) appendConnector(route, target, blocked);
+  for (const target of targets) {
+    appendConnector(route, target, blocked);
+    if (sameCell(route[route.length - 1], WORLD_GOAL)) return route;
+  }
+  for (const target of sanitizeAdjacentPath(finalPath, baseWalls, dynamicWalls)) {
+    appendConnector(route, target, blocked);
+    if (sameCell(route[route.length - 1], WORLD_GOAL)) return route;
+  }
   return route;
 }
 

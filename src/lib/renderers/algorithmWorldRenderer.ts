@@ -1,6 +1,7 @@
 import type { AlgorithmWorldCell, AlgorithmWorldCompareState, AlgorithmWorldState, Frame } from "../algorithms";
 import type { Lang } from "../i18n";
 import { cellKey } from "../algorithmWorld";
+import { drawRaceTrackBase, drawRaceWalls } from "./algorithmWorldRaceRenderer";
 import { roundRect } from "./shapes";
 import type { Theme } from "./theme";
 
@@ -28,18 +29,18 @@ export function drawAlgorithmWorldComparison(
   lang: Lang = "en",
 ) {
   const isPortrait = h > w * 0.95;
-  const gap = Math.max(18, Math.round((isPortrait ? h : w) * 0.018));
-  const winner = [compare.left, compare.right].find((world) => world.raceWinner);
-  if (winner) drawRaceWinner(ctx, winner, padding, top - 42, w, theme, lang);
+  const raceMode = compare.left.presentationMode === "vehicle_race";
+  const gap = raceMode ? Math.max(12, Math.round(h * 0.012)) : Math.max(18, Math.round((isPortrait ? h : w) * 0.018));
+  const x0 = raceMode ? Math.max(8, padding * 0.35) : padding, w0 = raceMode ? w + (padding - x0) * 2 : w, top0 = raceMode ? top - 20 : top, h0 = raceMode ? h + 20 : h;
   if (isPortrait) {
-    const panelH = (h - gap) / 2;
-    drawWorldPanel(ctx, compare.left, { x: padding, y: top, w, h: panelH, theme, lang, label: compare.left.algorithmName });
-    drawWorldPanel(ctx, compare.right, { x: padding, y: top + panelH + gap, w, h: panelH, theme, lang, label: compare.right.algorithmName });
+    const panelH = (h0 - gap) / 2;
+    drawWorldPanel(ctx, compare.left, { x: x0, y: top0, w: w0, h: panelH, theme, lang, label: compare.left.algorithmName });
+    drawWorldPanel(ctx, compare.right, { x: x0, y: top0 + panelH + gap, w: w0, h: panelH, theme, lang, label: compare.right.algorithmName });
     return;
   }
-  const panelW = (w - gap) / 2;
-  drawWorldPanel(ctx, compare.left, { x: padding, y: top, w: panelW, h, theme, lang, label: compare.left.algorithmName });
-  drawWorldPanel(ctx, compare.right, { x: padding + panelW + gap, y: top, w: panelW, h, theme, lang, label: compare.right.algorithmName });
+  const panelW = (w0 - gap) / 2;
+  drawWorldPanel(ctx, compare.left, { x: x0, y: top0, w: panelW, h: h0, theme, lang, label: compare.left.algorithmName });
+  drawWorldPanel(ctx, compare.right, { x: x0 + panelW + gap, y: top0, w: panelW, h: h0, theme, lang, label: compare.right.algorithmName });
 }
 
 type PanelOpts = { x: number; y: number; w: number; h: number; theme: Theme; lang: Lang; label?: string };
@@ -47,36 +48,38 @@ type PanelOpts = { x: number; y: number; w: number; h: number; theme: Theme; lan
 function drawWorldPanel(ctx: CanvasRenderingContext2D, world: AlgorithmWorldState, opts: PanelOpts) {
   const { x, y, w, h, theme, lang } = opts;
   const isPortrait = h > w * 0.95;
-  const footerH = Math.min(190, Math.max(120, h * (isPortrait ? 0.16 : 0.22)));
-  const labelH = opts.label ? 48 : 0;
-  const mazeTop = y + labelH + 12;
-  const mazeAreaH = h - footerH - labelH - 26;
-  const cell = Math.floor(Math.min((w - 28) / world.cols, mazeAreaH / world.rows));
+  const raceMode = world.presentationMode === "vehicle_race";
+  const footerH = raceMode ? Math.min(156, Math.max(96, h * (isPortrait ? 0.13 : 0.18))) : Math.min(190, Math.max(120, h * (isPortrait ? 0.16 : 0.22)));
+  const labelH = opts.label ? raceMode ? 40 : 48 : 0;
+  const mazeTop = y + labelH + (raceMode ? 7 : 12);
+  const mazeAreaH = h - footerH - labelH - (raceMode ? 14 : 26);
+  const cell = Math.floor(Math.min((w - (raceMode ? 12 : 28)) / world.cols, mazeAreaH / world.rows));
   const gridW = cell * world.cols;
   const gridH = cell * world.rows;
   const gridX = x + (w - gridW) / 2;
   const gridY = mazeTop + Math.max(4, (mazeAreaH - gridH) / 2);
 
-  const raceMode = world.presentationMode === "vehicle_race";
   const visible: Set<string> | null = null;
   const visibleWalls = visible ? world.walls.filter((item) => visible.has(cellKey(item))) : world.walls;
   const visibleDynamicWalls = visible ? world.dynamicWalls.filter((item) => visible.has(cellKey(item))) : world.dynamicWalls;
 
   drawSceneCard(ctx, x, y, w, h, theme);
   if (opts.label) drawPanelLabel(ctx, opts.label, world.runtimeLabel ?? "", x, y + 14, w, theme);
-  drawMazeBase(ctx, world.cols, world.rows, cell, gridX, gridY);
+  raceMode ? drawRaceTrackBase(ctx, world.cols, world.rows, cell, gridX, gridY) : drawMazeBase(ctx, world.cols, world.rows, cell, gridX, gridY);
+  if (raceMode) drawRaceTimer(ctx, world, gridX + gridW - 4, gridY - Math.max(44, cell * 1.35), true);
   drawCells(ctx, world.closedSet, cell, gridX, gridY, "rgba(99,102,241,0.42)", "rgba(129,140,248,0.8)");
   drawCells(ctx, world.openSet, cell, gridX, gridY, "rgba(34,211,238,0.34)", "rgba(103,232,249,0.8)");
   if (!raceMode) drawPath(ctx, world.previousPath, cell, gridX, gridY, "rgba(148,163,184,0.32)", 0, true);
   drawPath(ctx, world.shatteredPath ?? [], cell, gridX, gridY, "rgba(248,113,113,0.9)", 8, true);
-  drawWalls(ctx, visibleWalls, cell, gridX, gridY, false);
-  drawWalls(ctx, visibleDynamicWalls, cell, gridX, gridY, true);
+  raceMode ? drawRaceWalls(ctx, visibleWalls, cell, gridX, gridY, false) : drawWalls(ctx, visibleWalls, cell, gridX, gridY, false);
+  raceMode ? drawRaceWalls(ctx, visibleDynamicWalls, cell, gridX, gridY, true) : drawWalls(ctx, visibleDynamicWalls, cell, gridX, gridY, true);
   drawCells(ctx, world.pulseCells ?? [], cell, gridX, gridY, "rgba(251,113,133,0.62)", "#fecdd3");
   drawPath(ctx, world.path, cell, gridX, gridY, raceMode ? vehicleColorForWorld(world, theme) : "#a3e635", 16, false);
   drawEndpoint(ctx, world.start, cell, gridX, gridY, "#22d3ee", label(lang, "VÀO", "IN"));
   drawEndpoint(ctx, world.goal, cell, gridX, gridY, "#f43f5e", label(lang, "RA", "OUT"));
   if (world.current) raceMode ? drawVehicle(ctx, world, cell, gridX, gridY, theme) : drawCurrent(ctx, world.current, cell, gridX, gridY, theme.highlight);
-  drawHud(ctx, world, x + 14, y + h - footerH + 12, w - 28, footerH - 24, theme, lang);
+  if (raceMode && world.raceWinner) drawRaceWinner(ctx, world, gridX + gridW / 2, gridY + gridH / 2, gridW, theme, lang);
+  drawHud(ctx, world, x + (raceMode ? 8 : 14), y + h - footerH + (raceMode ? 6 : 12), w - (raceMode ? 16 : 28), footerH - (raceMode ? 12 : 24), theme, lang);
 }
 
 function drawSceneCard(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, theme: Theme) {
@@ -111,19 +114,27 @@ function drawPanelLabel(ctx: CanvasRenderingContext2D, label: string, runtime: s
   ctx.restore();
 }
 
-function drawRaceWinner(ctx: CanvasRenderingContext2D, world: AlgorithmWorldState, x: number, y: number, w: number, theme: Theme, lang: Lang) {
+function drawRaceWinner(ctx: CanvasRenderingContext2D, world: AlgorithmWorldState, cx: number, cy: number, w: number, theme: Theme, lang: Lang) {
   ctx.save();
-  const text = label(lang, `${world.algorithmName} WIN - thuật toán nhanh hơn`, `${world.algorithmName} WINS - faster algorithm`);
-  ctx.fillStyle = "rgba(2,6,23,0.82)";
+  const text = label(lang, `${world.algorithmName} WINNER`, `${world.algorithmName} WINNER`);
+  const boxW = Math.min(w * 0.76, 520);
+  const boxH = 76;
+  ctx.fillStyle = "rgba(2,6,23,0.86)";
   ctx.strokeStyle = `${theme.highlight}88`;
-  roundRect(ctx, x + w * 0.18, y, w * 0.64, 44, 14);
+  ctx.lineWidth = 2;
+  ctx.shadowColor = "#fde047";
+  ctx.shadowBlur = 22;
+  roundRect(ctx, cx - boxW / 2, cy - boxH / 2, boxW, boxH, 18);
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = "#fde047";
-  ctx.font = "900 24px ui-sans-serif, system-ui";
+  ctx.font = "900 32px ui-sans-serif, system-ui";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(text, x + w / 2, y + 22);
+  ctx.fillText(text, cx, cy - 8);
+  ctx.fillStyle = "#fff";
+  ctx.font = "900 17px ui-sans-serif, system-ui";
+  ctx.fillText(label(lang, "Xe thắng đã dừng tại cửa ra", "Winning car stopped at the exit"), cx, cy + 20);
   ctx.restore();
 }
 
@@ -139,20 +150,6 @@ function drawMazeBase(ctx: CanvasRenderingContext2D, cols: number, rows: number,
   }
   for (let row = 0; row <= rows; row++) {
     ctx.beginPath(); ctx.moveTo(x, y + row * cell); ctx.lineTo(x + cols * cell, y + row * cell); ctx.stroke();
-  }
-  ctx.restore();
-}
-
-function drawFogOfWar(ctx: CanvasRenderingContext2D, world: AlgorithmWorldState, visible: Set<string>, cell: number, x: number, y: number) {
-  ctx.save();
-  for (let row = 0; row < world.rows; row++) {
-    for (let col = 0; col < world.cols; col++) {
-      if (visible.has(`${col},${row}`)) continue;
-      ctx.fillStyle = "rgba(2,6,23,0.82)";
-      ctx.fillRect(x + col * cell + 1, y + row * cell + 1, cell - 2, cell - 2);
-      ctx.strokeStyle = "rgba(15,23,42,0.9)";
-      ctx.strokeRect(x + col * cell + 1, y + row * cell + 1, cell - 2, cell - 2);
-    }
   }
   ctx.restore();
 }

@@ -76,8 +76,8 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const [shortVideoType, setShortVideoType] = useState<ShortVideoType>("classic");
   const [worldVideoMode, setWorldVideoModeState] = useState<AlgorithmWorldVideoMode>(options.initialWorldVideoMode ?? "short");
   const [worldCompareEnabled, setWorldCompareEnabledState] = useState(options.initialWorldCompareEnabled ?? (options.initialWorldVideoMode === "long"));
-  const [worldPresentationMode, setWorldPresentationModeState] = useState<AlgorithmWorldPresentationMode>(options.initialWorldPresentationMode ?? "explainer");
-  const [worldProblemType, setWorldProblemTypeState] = useState<AlgorithmWorldProblemType>(options.initialWorldProblemType ?? "fastest");
+  const [worldPresentationMode, setWorldPresentationModeState] = useState<AlgorithmWorldPresentationMode>(options.initialWorldPresentationMode ?? "vehicle_race");
+  const [worldProblemType, setWorldProblemTypeState] = useState<AlgorithmWorldProblemType>(options.initialWorldProblemType ?? "escape");
   const [worldMazeId, setWorldMazeIdState] = useState<AlgorithmWorldMazeId>(options.initialWorldMazeId ?? "astar_labyrinth");
   const [worldPrimaryAlgorithm, setWorldPrimaryAlgorithmState] = useState<AlgorithmWorldAlgorithmId>(options.initialWorldPrimaryAlgorithm ?? "astar");
   const [worldSecondaryAlgorithm, setWorldSecondaryAlgorithmState] = useState<AlgorithmWorldAlgorithmId>(options.initialWorldSecondaryAlgorithm ?? "dijkstra");

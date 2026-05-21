@@ -7,56 +7,103 @@ export function drawRaceTrackBase(ctx: CanvasRenderingContext2D, cols: number, r
   ctx.save();
   const w = cell * cols;
   const h = cell * rows;
-  const lip = Math.max(10, cell * 0.34);
-  ctx.fillStyle = "rgba(0,0,0,0.38)";
-  roundRect(ctx, x - lip + 8, y - lip + 12, w + lip * 2, h + lip * 2, 12);
+  const lip = Math.max(12, cell * 0.42);
+  ctx.fillStyle = "rgba(0,0,0,0.42)";
+  roundRect(ctx, x - lip + 10, y - lip + 14, w + lip * 2, h + lip * 2, 16);
   ctx.fill();
-  ctx.fillStyle = "#111827";
-  roundRect(ctx, x - lip, y - lip, w + lip * 2, h + lip * 2, 12);
+
+  const curb = ctx.createLinearGradient(x - lip, y - lip, x + w + lip, y + h + lip);
+  curb.addColorStop(0, "#7f1d1d");
+  curb.addColorStop(0.5, "#ef4444");
+  curb.addColorStop(1, "#111827");
+  ctx.fillStyle = curb;
+  roundRect(ctx, x - lip, y - lip, w + lip * 2, h + lip * 2, 16);
   ctx.fill();
-  ctx.strokeStyle = "#ef4444";
-  ctx.lineWidth = Math.max(2, cell * 0.1);
-  ctx.stroke();
-  ctx.fillStyle = "#171717";
-  roundRect(ctx, x - 2, y - 2, w + 4, h + 4, 6);
+
+  const road = ctx.createLinearGradient(x, y, x, y + h);
+  road.addColorStop(0, "#2b3442");
+  road.addColorStop(0.45, "#171717");
+  road.addColorStop(1, "#111827");
+  ctx.fillStyle = road;
+  roundRect(ctx, x - 2, y - 2, w + 4, h + 4, 8);
   ctx.fill();
-  ctx.strokeStyle = "rgba(239,68,68,0.72)";
-  ctx.lineWidth = Math.max(1.5, cell * 0.06);
-  ctx.strokeRect(x - 4, y - 4, w + 8, h + 8);
-  ctx.strokeStyle = "rgba(255,255,255,0.05)";
-  ctx.lineWidth = 1;
-  for (let col = 0; col <= cols; col++) {
-    ctx.beginPath();
-    ctx.moveTo(x + col * cell, y);
-    ctx.lineTo(x + col * cell, y + h);
-    ctx.stroke();
-  }
-  for (let row = 0; row <= rows; row++) {
-    ctx.beginPath();
-    ctx.moveTo(x, y + row * cell);
-    ctx.lineTo(x + w, y + row * cell);
-    ctx.stroke();
+
+  drawAsphaltTexture(ctx, cols, rows, cell, x, y);
+  drawLaneGrid(ctx, cols, rows, cell, x, y);
+  drawCheckeredGate(ctx, rows, cell, x - lip * 0.45, y, true);
+  drawCheckeredGate(ctx, rows, cell, x + w + lip * 0.12, y, false);
+  ctx.restore();
+}
+
+function drawAsphaltTexture(ctx: CanvasRenderingContext2D, cols: number, rows: number, cell: number, x: number, y: number) {
+  ctx.save();
+  ctx.globalAlpha = 0.12;
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const tint = (col * 17 + row * 29) % 3;
+      ctx.fillStyle = tint === 0 ? "#ffffff" : tint === 1 ? "#64748b" : "#000000";
+      ctx.fillRect(x + col * cell + cell * 0.18, y + row * cell + cell * 0.22, Math.max(1, cell * 0.08), Math.max(1, cell * 0.08));
+    }
   }
   ctx.restore();
 }
 
+function drawLaneGrid(ctx: CanvasRenderingContext2D, cols: number, rows: number, cell: number, x: number, y: number) {
+  const w = cols * cell;
+  const h = rows * cell;
+  ctx.strokeStyle = "rgba(255,255,255,0.06)";
+  ctx.lineWidth = 1;
+  for (let col = 0; col <= cols; col++) {
+    ctx.beginPath(); ctx.moveTo(x + col * cell, y); ctx.lineTo(x + col * cell, y + h); ctx.stroke();
+  }
+  for (let row = 0; row <= rows; row++) {
+    ctx.beginPath(); ctx.moveTo(x, y + row * cell); ctx.lineTo(x + w, y + row * cell); ctx.stroke();
+  }
+  ctx.strokeStyle = "rgba(253,224,71,0.28)";
+  ctx.setLineDash([cell * 0.45, cell * 0.35]);
+  ctx.lineWidth = Math.max(1.2, cell * 0.04);
+  for (let row = 2; row < rows; row += 4) {
+    ctx.beginPath(); ctx.moveTo(x, y + row * cell); ctx.lineTo(x + w, y + row * cell); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+}
+
+function drawCheckeredGate(ctx: CanvasRenderingContext2D, rows: number, cell: number, x: number, y: number, start: boolean) {
+  const gateW = Math.max(8, cell * 0.34);
+  for (let row = 0; row < rows; row++) {
+    ctx.fillStyle = row % 2 === 0 ? "#f8fafc" : "#020617";
+    ctx.fillRect(x, y + row * cell, gateW, cell / 2);
+    ctx.fillStyle = row % 2 === 0 ? "#020617" : "#f8fafc";
+    ctx.fillRect(x, y + row * cell + cell / 2, gateW, cell / 2);
+  }
+  ctx.fillStyle = start ? "#22d3ee" : "#fb7185";
+  ctx.globalAlpha = 0.5;
+  ctx.fillRect(x - 2, y - 3, gateW + 4, 3);
+  ctx.fillRect(x - 2, y + rows * cell, gateW + 4, 3);
+  ctx.globalAlpha = 1;
+}
+
 export function drawRaceWalls(ctx: CanvasRenderingContext2D, cells: AlgorithmWorldCell[], cell: number, x: number, y: number, dynamic: boolean) {
   ctx.save();
-  const lift = Math.max(5, cell * 0.22);
+  const lift = Math.max(5, cell * 0.24);
   cells.forEach((c) => {
     const px = x + c.x * cell + 1;
     const py = y + c.y * cell + 1;
-    ctx.fillStyle = dynamic ? "#7f1d1d" : "#374151";
-    roundRect(ctx, px + 3, py + lift + 3, cell - 2, cell - lift, Math.max(2, cell * 0.1));
+    ctx.fillStyle = dynamic ? "#7c2d12" : "#1f2937";
+    roundRect(ctx, px + 4, py + lift + 4, cell - 2, cell - lift, Math.max(3, cell * 0.12));
     ctx.fill();
-    ctx.fillStyle = dynamic ? "#f97316" : "#e5e7eb";
-    roundRect(ctx, px, py, cell - 2, cell - lift, Math.max(2, cell * 0.1));
+    const grad = ctx.createLinearGradient(px, py, px, py + cell);
+    grad.addColorStop(0, dynamic ? "#fdba74" : "#f8fafc");
+    grad.addColorStop(0.5, dynamic ? "#f97316" : "#cbd5e1");
+    grad.addColorStop(1, dynamic ? "#c2410c" : "#94a3b8");
+    ctx.fillStyle = grad;
+    roundRect(ctx, px, py, cell - 2, cell - lift, Math.max(3, cell * 0.12));
     ctx.fill();
-    ctx.strokeStyle = dynamic ? "#fb923c" : "#ef4444";
+    ctx.strokeStyle = dynamic ? "#fed7aa" : "#ef4444";
     ctx.lineWidth = Math.max(1.2, cell * 0.05);
     ctx.stroke();
-    ctx.fillStyle = dynamic ? "rgba(254,215,170,0.42)" : "rgba(255,255,255,0.36)";
-    ctx.fillRect(px + 3, py + 3, cell - 8, Math.max(2, lift * 0.36));
+    ctx.fillStyle = dynamic ? "rgba(124,45,18,0.28)" : "rgba(239,68,68,0.18)";
+    ctx.fillRect(px + 3, py + cell * 0.32, cell - 8, Math.max(2, cell * 0.08));
   });
   ctx.restore();
 }

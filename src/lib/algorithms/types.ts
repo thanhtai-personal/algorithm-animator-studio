@@ -1,10 +1,10 @@
 
 export type AlgorithmWorldCell = { x: number; y: number };
-export type AlgorithmWorldAlgorithmId = "dfs" | "bfs" | "dijkstra" | "astar";
+export type AlgorithmWorldAlgorithmId = "dfs" | "bfs" | "dijkstra" | "astar" | "greedy" | "weighted_astar" | "beam" | "bidirectional_bfs" | "wall_follower" | "tremaux";
 export type AlgorithmWorldProblemType = "escape" | "fastest";
 export type AlgorithmWorldVideoMode = "short" | "long";
 export type AlgorithmWorldPresentationMode = "explainer" | "vehicle_race";
-export type AlgorithmWorldMazeId = "dfs_tunnels" | "bfs_rooms" | "dijkstra_weighted" | "astar_labyrinth";
+export type AlgorithmWorldMazeId = "dfs_tunnels" | "bfs_rooms" | "dijkstra_weighted" | "astar_labyrinth" | "greedy_trap" | "two_fronts" | "wall_runner";
 export type AlgorithmWorldScenarioOptions = {
   videoMode?: AlgorithmWorldVideoMode;
   compareEnabled?: boolean;

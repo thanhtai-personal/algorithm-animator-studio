@@ -21,6 +21,7 @@ import {
 } from "./algorithmWorld";
 import { pushWorldFrame } from "./algorithmWorldFrameBuilder";
 import { createRaceCompareFrames } from "./algorithmWorldRaceRunner";
+import { runBidirectionalBfs, runTremaux, runWallFollower } from "./algorithmWorldSearchStrategies";
 
 type ScoreMap = Record<string, number>;
 export type SearchResult = { frames: Frame[]; path: AlgorithmWorldCell[]; visitedCount: number; reached: boolean };
@@ -177,7 +178,7 @@ function createSingleFrames(algorithm: AlgorithmWorldAlgorithmId, problemType: A
   return frames;
 }
 
-export function runSearch(params: {
+export type SearchParams = {
   algorithm: AlgorithmWorldAlgorithmId;
   problemType: AlgorithmWorldProblemType;
   start: AlgorithmWorldCell;
@@ -189,7 +190,12 @@ export function runSearch(params: {
   replanCount: number;
   mazeId: AlgorithmWorldMazeId;
   presentationMode: AlgorithmWorldPresentationMode;
-}): SearchResult {
+};
+
+export function runSearch(params: SearchParams): SearchResult {
+  if (params.algorithm === "bidirectional_bfs") return runBidirectionalBfs(params);
+  if (params.algorithm === "wall_follower") return runWallFollower(params);
+  if (params.algorithm === "tremaux") return runTremaux(params);
   const blocked = cellListToKeys([...params.baseWalls, ...params.dynamicWalls]);
   const frontier: AlgorithmWorldCell[] = [params.start];
   const frontierKeys = new Set([cellKey(params.start)]);
@@ -266,6 +272,7 @@ export function runSearch(params: {
         event: "compare",
       });
     }
+    trimBeamFrontier(frontier, params.algorithm, fScore);
   }
   return { frames, path: lastPath, visitedCount: closed.length, reached: false };
 }
@@ -282,8 +289,16 @@ function sortFrontier(frontier: AlgorithmWorldCell[], algorithm: AlgorithmWorldA
   frontier.sort((a, b) => (scores[cellKey(a)] ?? Infinity) - (scores[cellKey(b)] ?? Infinity));
 }
 
+function trimBeamFrontier(frontier: AlgorithmWorldCell[], algorithm: AlgorithmWorldAlgorithmId, fScore: ScoreMap) {
+  if (algorithm !== "beam") return;
+  frontier.sort((a, b) => (fScore[cellKey(a)] ?? Infinity) - (fScore[cellKey(b)] ?? Infinity));
+  frontier.splice(4);
+}
+
 function score(algorithm: AlgorithmWorldAlgorithmId, g: number, h: number) {
-  if (algorithm === "astar") return g + h;
+  if (algorithm === "greedy") return h;
+  if (algorithm === "weighted_astar") return g + h * 1.8;
+  if (algorithm === "astar" || algorithm === "beam") return g + h;
   if (algorithm === "dijkstra") return g;
   return g;
 }
@@ -295,6 +310,9 @@ function cellCost(cell: AlgorithmWorldCell, problemType: AlgorithmWorldProblemTy
 
 function statusText(algorithm: AlgorithmWorldAlgorithmId, reached: boolean, replanCount: number) {
   if (reached) return `${worldAlgorithmName(algorithm)} found a complete path from entrance to exit.`;
+  if (algorithm === "greedy") return `${worldAlgorithmName(algorithm)} chases the closest-looking cell toward the exit.`;
+  if (algorithm === "weighted_astar") return `${worldAlgorithmName(algorithm)} pushes harder toward the exit than classic A*.`;
+  if (algorithm === "beam") return `${worldAlgorithmName(algorithm)} keeps only a few best-looking frontier cells.`;
   return replanCount
     ? `${worldAlgorithmName(algorithm)} replans after the maze changed.`
     : `${worldAlgorithmName(algorithm)} expands the maze from the entrance.`;

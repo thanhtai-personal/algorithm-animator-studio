@@ -78,6 +78,72 @@ export const WORLD_ALGORITHMS: Array<{
       vi: "Giống Dijkstra nhưng được heuristic dẫn hướng về lối ra.",
     },
   },
+  {
+    id: "greedy",
+    name: "Greedy Best-First",
+    runtime: "O(E log V)",
+    taskFit: ["escape"],
+    recommendedMazeId: "greedy_trap",
+    note: {
+      en: "Runs toward the cell that looks closest to the exit, so it is fast but easy to bait.",
+      vi: "Luôn lao về ô trông gần cửa ra nhất, rất nhanh nhưng dễ bị bẫy đường cụt.",
+    },
+  },
+  {
+    id: "weighted_astar",
+    name: "Weighted A*",
+    runtime: "O(E log V)",
+    taskFit: ["escape", "fastest"],
+    recommendedMazeId: "astar_labyrinth",
+    note: {
+      en: "A* with a stronger heuristic: quicker decisions, sometimes a less perfect route.",
+      vi: "A* tăng trọng số heuristic: quyết nhanh hơn, đôi khi đường đi kém tối ưu hơn.",
+    },
+  },
+  {
+    id: "beam",
+    name: "Beam Search",
+    runtime: "O(b · width · d)",
+    taskFit: ["escape"],
+    recommendedMazeId: "greedy_trap",
+    note: {
+      en: "Keeps only a few promising roads, great for dramatic races but not guaranteed optimal.",
+      vi: "Chỉ giữ vài hướng có vẻ tốt, rất hợp video đua xe nhưng không đảm bảo tối ưu.",
+    },
+  },
+  {
+    id: "bidirectional_bfs",
+    name: "Bidirectional BFS",
+    runtime: "O(b^(d/2))",
+    taskFit: ["escape", "fastest"],
+    recommendedMazeId: "two_fronts",
+    note: {
+      en: "Starts from both entrance and exit, then connects when the search waves meet.",
+      vi: "Tìm từ cả lối vào lẫn lối ra, nối đường khi hai làn sóng gặp nhau.",
+    },
+  },
+  {
+    id: "wall_follower",
+    name: "Right-Hand Wall Follower",
+    runtime: "O(steps)",
+    taskFit: ["escape"],
+    recommendedMazeId: "wall_runner",
+    note: {
+      en: "A simple maze rule for cars: keep one wall on the right and keep driving.",
+      vi: "Luật mê cung dễ hiểu cho xe: luôn bám tường bên phải rồi tiếp tục chạy.",
+    },
+  },
+  {
+    id: "tremaux",
+    name: "Trémaux",
+    runtime: "O(E)",
+    taskFit: ["escape"],
+    recommendedMazeId: "dfs_tunnels",
+    note: {
+      en: "Marks visited passages and backtracks, making maze solving easy to explain visually.",
+      vi: "Đánh dấu lối đã đi và quay lui, rất dễ kể thành câu chuyện tìm đường trong mê cung.",
+    },
+  },
 ];
 
 export const MAZE_PRESETS: MazePreset[] = [
@@ -141,7 +207,7 @@ export const MAZE_PRESETS: MazePreset[] = [
       en: "A dense shifting maze highlights A* balancing g + h.",
       vi: "Mê cung dày và biến động làm nổi bật cách A* cân bằng g + h.",
     },
-    recommendedFor: ["astar"],
+    recommendedFor: ["astar", "weighted_astar"],
     problemFit: ["escape", "fastest"],
     routes: [
       [WORLD_START, { x: 4, y: 7 }, { x: 4, y: 2 }, { x: 10, y: 2 }, { x: 10, y: 6 }, { x: 15, y: 6 }, { x: 15, y: 12 }, { x: 21, y: 12 }, { x: 21, y: 7 }, WORLD_GOAL],
@@ -155,6 +221,60 @@ export const MAZE_PRESETS: MazePreset[] = [
       [{ x: 15, y: 7 }, { x: 15, y: 8 }, { x: 15, y: 9 }],
       [{ x: 21, y: 8 }, { x: 21, y: 9 }, { x: 21, y: 10 }],
     ],
+  },
+  {
+    id: "greedy_trap",
+    name: { en: "Greedy Trap", vi: "Bẫy tham lam" },
+    note: {
+      en: "A shortcut seems close to the exit but ends in a trap, perfect for Greedy vs A* races.",
+      vi: "Một lối tắt trông rất gần cửa ra nhưng là bẫy cụt, hợp cho Greedy đấu A*.",
+    },
+    recommendedFor: ["greedy", "beam"],
+    problemFit: ["escape", "fastest"],
+    routes: [
+      [WORLD_START, { x: 2, y: 7 }, { x: 2, y: 3 }, { x: 8, y: 3 }, { x: 8, y: 11 }, { x: 14, y: 11 }, { x: 14, y: 5 }, { x: 20, y: 5 }, { x: 20, y: 7 }, WORLD_GOAL],
+      [{ x: 10, y: 7 }, { x: 18, y: 7 }, { x: 18, y: 2 }, { x: 22, y: 2 }],
+      [{ x: 4, y: 7 }, { x: 7, y: 7 }, { x: 7, y: 13 }, { x: 11, y: 13 }],
+      [{ x: 14, y: 8 }, { x: 21, y: 8 }, { x: 21, y: 11 }, { x: 23, y: 11 }],
+    ],
+    extraOpen: roomCells([{ x: 11, y: 6 }, { x: 17, y: 8 }]),
+    dynamicObstacles: [],
+  },
+  {
+    id: "two_fronts",
+    name: { en: "Two-Front Arena", vi: "Đấu trường hai đầu" },
+    note: {
+      en: "Symmetric rooms make bidirectional BFS easy to see because both waves meet near the center.",
+      vi: "Các phòng đối xứng giúp thấy rõ Bidirectional BFS lan từ hai đầu và gặp ở giữa.",
+    },
+    recommendedFor: ["bidirectional_bfs", "bfs"],
+    problemFit: ["escape", "fastest"],
+    routes: [
+      [WORLD_START, { x: 5, y: 7 }, { x: 5, y: 3 }, { x: 12, y: 3 }, { x: 12, y: 7 }, { x: 19, y: 7 }, WORLD_GOAL],
+      [{ x: 5, y: 7 }, { x: 5, y: 11 }, { x: 12, y: 11 }, { x: 12, y: 7 }],
+      [{ x: 12, y: 3 }, { x: 19, y: 3 }, { x: 19, y: 7 }],
+      [{ x: 12, y: 11 }, { x: 19, y: 11 }, { x: 19, y: 7 }],
+    ],
+    extraOpen: roomCells([{ x: 7, y: 5 }, { x: 17, y: 9 }]),
+    dynamicObstacles: [],
+  },
+  {
+    id: "wall_runner",
+    name: { en: "Wall Runner Loop", vi: "Vòng bám tường" },
+    note: {
+      en: "A looped corridor gives wall-following and Trémaux a readable racing route.",
+      vi: "Hành lang vòng giúp Wall Follower và Trémaux có đường chạy dễ nhìn.",
+    },
+    recommendedFor: ["wall_follower", "tremaux"],
+    problemFit: ["escape"],
+    routes: [
+      [WORLD_START, { x: 3, y: 7 }, { x: 3, y: 2 }, { x: 21, y: 2 }, { x: 21, y: 12 }, { x: 3, y: 12 }, { x: 3, y: 7 }, { x: 10, y: 7 }, { x: 10, y: 4 }, { x: 16, y: 4 }, { x: 16, y: 7 }, WORLD_GOAL],
+      [{ x: 10, y: 7 }, { x: 10, y: 10 }, { x: 16, y: 10 }, { x: 16, y: 7 }],
+      [{ x: 6, y: 4 }, { x: 6, y: 10 }],
+      [{ x: 19, y: 4 }, { x: 19, y: 10 }],
+    ],
+    extraOpen: [],
+    dynamicObstacles: [],
   },
 ];
 

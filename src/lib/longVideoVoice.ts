@@ -27,18 +27,47 @@ function kineticVoice(scene: LongContentScene, algoName: string, lang: Lang) {
 
 function bitonicKineticVoice(scene: LongContentScene, algoName: string, lang: Lang) {
   const vi = lang === "vi";
-  const phrase = scene.id === "mental-model"
-    ? (vi ? "Dãy bitonic có một nửa tăng và một nửa giảm. Merge dùng gap giảm dần." : "A bitonic sequence rises on one side and falls on the other. Merge uses shrinking gaps.")
-    : scene.id === "steps"
-      ? (vi ? "Chia hướng. So sánh theo ASC hoặc DESC. Nếu sai hướng thì swap. Sau đó giảm gap." : "Split directions. Compare by ASC or DESC. Swap when the direction is wrong. Then shrink the gap.")
-      : scene.id === "animation"
-        ? (vi ? "Theo dõi network: gap bốn so sánh cặp xa, gap hai thu khoảng cách, gap một sửa cặp cuối." : "Watch the network: gap four compares distant pairs, gap two shrinks distance, gap one fixes the final neighbors.")
-        : scene.id === "complexity"
-          ? (vi ? "Best, average và worst đều O n log bình phương n. Space O log n." : "Best, average, and worst are all O n log squared n. Space O log n.")
-          : scene.id === "recap"
-            ? (vi ? "Bốn từ khóa: bitonic, hướng, gap, swap." : "Four keywords: bitonic, direction, gap, swap.")
-            : (vi ? "Bitonic Sort là sorting network: lịch compare-swap rất đều." : "Bitonic Sort is a sorting network with a regular compare-swap schedule.");
+  const sceneId = normalizeBitonicVoiceSceneId(scene.id);
+  let phrase = vi ? "Bitonic Sort là sorting network: lịch compare-swap rất đều." : "Bitonic Sort is a sorting network with a regular compare-swap schedule.";
+  if (sceneId === "intro") {
+    phrase = vi
+      ? "Đây là sorting network. Trước hết tạo dãy bitonic: một nửa tăng, một nửa giảm. Sau đó merge về một hướng bằng gap giảm dần."
+      : "This is a sorting network. First build a bitonic sequence: one side rises, one side falls. Then merge into one direction with shrinking gaps.";
+  } else if (sceneId === "problem") {
+    phrase = vi
+      ? "Điểm mạnh là lịch compare-swap đều và dễ chia tầng, nên phù hợp để nói về song song hóa."
+      : "Its strength is a regular compare-swap schedule that is easy to layer, so it fits parallel thinking.";
+  } else if (sceneId === "mental-model") {
+    phrase = vi
+      ? "Dãy bitonic có một nửa tăng và một nửa giảm. Merge dùng gap giảm dần."
+      : "A bitonic sequence rises on one side and falls on the other. Merge uses shrinking gaps.";
+  } else if (sceneId === "steps") {
+    phrase = vi
+      ? "Chia hướng. So sánh theo ASC hoặc DESC. Nếu sai hướng thì swap. Sau đó giảm gap."
+      : "Split directions. Compare by ASC or DESC. Swap when the direction is wrong. Then shrink the gap.";
+  } else if (sceneId === "animation") {
+    phrase = vi
+      ? "Theo dõi network: gap bốn so sánh cặp xa, gap hai thu khoảng cách, gap một sửa cặp cuối."
+      : "Watch the network: gap four compares distant pairs, gap two shrinks distance, gap one fixes the final neighbors.";
+  } else if (sceneId === "complexity") {
+    phrase = vi
+      ? "Best, average và worst đều O n log bình phương n. Space O log n."
+      : "Best, average, and worst are all O n log squared n. Space O log n.";
+  } else if (sceneId === "recap") {
+    phrase = vi ? "Bốn từ khóa: bitonic, hướng, gap, swap." : "Four keywords: bitonic, direction, gap, swap.";
+  }
   return `${algoName}. ${phrase}`;
+}
+
+function normalizeBitonicVoiceSceneId(sceneId: string) {
+  if (sceneId === "bitonic-intro") return "intro";
+  if (sceneId === "bitonic-problem") return "problem";
+  if (sceneId === "bitonic-mental-model" || sceneId === "bitonic-power-of-two") return "mental-model";
+  if (sceneId === "bitonic-step-by-step") return "steps";
+  if (sceneId === "bitonic-animation") return "animation";
+  if (sceneId === "bitonic-complexity" || sceneId === "bitonic-avoid-cases") return "complexity";
+  if (sceneId === "bitonic-recap") return "recap";
+  return sceneId;
 }
 
 function oddEvenKineticVoice(scene: LongContentScene, algoName: string, lang: Lang) {

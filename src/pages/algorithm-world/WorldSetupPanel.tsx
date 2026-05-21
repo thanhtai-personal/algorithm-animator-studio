@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MAZE_PRESETS, WORLD_ALGORITHMS, localize, recommendedMazeForAlgorithm } from "@/lib/algorithmWorld";
 import type { AlgorithmWorldAlgorithmId, AlgorithmWorldMazeId, AlgorithmWorldProblemType } from "@/lib/algorithms";
+import { WORLD_VEHICLES, type AlgorithmWorldVehiclePreset } from "@/lib/algorithmWorldVehicles";
 import type { AlgorithmStudio } from "@/pages/studio/useAlgorithmStudio";
 
 type Props = { studio: AlgorithmStudio };
@@ -117,7 +118,7 @@ function PresentationCard({ s, isRace, t }: PanelProps & { isRace: boolean }) {
       {isRace ? (
         <div className="flex gap-2 rounded-lg border border-orange-300/40 bg-orange-400/10 p-3 text-xs text-orange-50">
           <EyeOff className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>{t("Trong mode đua xe, mỗi xe chỉ thấy vùng đã dò được. Toàn map bị phủ sương để tránh cảm giác thuật toán biết trước mê cung.", "In car race mode, each car only sees discovered cells. The full map is fogged so the algorithm does not look like it knows the whole maze in advance.")}</p>
+          <p>{t("Trong mode đua xe, cả hai map hiện đầy đủ từ đầu và giống nhau. Xe chỉ được chạy sang ô lân cận không bị tường chắn.", "In car race mode, both full maps are visible from the start and identical. Cars may only move to adjacent unblocked cells.")}</p>
         </div>
       ) : null}
     </Card>
@@ -154,11 +155,18 @@ function AlgorithmsCard({ s, isLong, compareEnabled, t }: PanelProps & {
   isLong: boolean;
   compareEnabled: boolean;
 }) {
+  const isRace = s.worldPresentationMode === "vehicle_race";
   return (
     <Card className="space-y-3 p-4">
       <div className="flex items-center gap-2"><Activity className="h-4 w-4 text-emerald-300" /><Label>{t("Thuật toán có thể build", "Buildable algorithms")}</Label></div>
       <AlgorithmSelect label={compareEnabled ? t("Thuật toán trên/trái", "Top/left algorithm") : t("Thuật toán", "Algorithm")} value={s.worldPrimaryAlgorithm} onChange={s.setWorldPrimaryAlgorithm} problemType={s.worldProblemType} lang={s.lang} />
       {compareEnabled ? <AlgorithmSelect label={isLong ? t("Thuật toán phải", "Right algorithm") : t("Thuật toán dưới", "Bottom algorithm")} value={s.worldSecondaryAlgorithm} onChange={s.setWorldSecondaryAlgorithm} problemType={s.worldProblemType} lang={s.lang} /> : null}
+      {isRace ? (
+        <div className="space-y-3 rounded-lg border border-orange-300/30 bg-orange-400/10 p-3">
+          <VehicleGarage title={t("1. Chọn xe cho thuật toán trên/trái", "1. Pick the top/left algorithm car")} selectedId={s.worldPrimaryVehicleId} onSelect={s.setWorldPrimaryVehicleId} />
+          <VehicleGarage title={isLong ? t("2. Chọn xe cho thuật toán phải", "2. Pick the right algorithm car") : t("2. Chọn xe cho thuật toán dưới", "2. Pick the bottom algorithm car")} selectedId={s.worldSecondaryVehicleId} onSelect={s.setWorldSecondaryVehicleId} />
+        </div>
+      ) : null}
       <div className="space-y-2 pt-1">
         {WORLD_ALGORITHMS.map((item) => (
           <div key={item.id} className="rounded-lg border border-border/50 bg-background/60 p-2 text-xs">
@@ -171,6 +179,48 @@ function AlgorithmsCard({ s, isLong, compareEnabled, t }: PanelProps & {
         ))}
       </div>
     </Card>
+  );
+}
+
+function VehicleGarage(props: { title: string; selectedId: string; onSelect: (value: string) => void }) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs">{props.title}</Label>
+      <div className="grid grid-cols-2 gap-2">
+        {WORLD_VEHICLES.map((vehicle) => (
+          <VehicleOption key={vehicle.id} vehicle={vehicle} active={props.selectedId === vehicle.id} onClick={() => props.onSelect(vehicle.id)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function VehicleOption(props: { vehicle: AlgorithmWorldVehiclePreset; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={props.onClick}
+      className={`flex items-center gap-2 rounded-lg border p-2 text-left text-xs transition ${props.active ? "border-emerald-300 bg-emerald-400/15 text-emerald-50" : "border-border/60 bg-background/60 text-muted-foreground hover:bg-muted/40"}`}
+    >
+      <MiniVehicle vehicle={props.vehicle} />
+      <span className="min-w-0">
+        <span className="block truncate font-semibold">{props.vehicle.name}</span>
+        <span className="block font-mono text-[10px] opacity-80">{props.vehicle.color}</span>
+      </span>
+    </button>
+  );
+}
+
+function MiniVehicle({ vehicle }: { vehicle: AlgorithmWorldVehiclePreset }) {
+  const truck = vehicle.shape === "truck";
+  const formula = vehicle.shape === "formula";
+  return (
+    <span className="relative block h-9 w-14 shrink-0">
+      <span className="absolute left-1 top-3 h-4 rounded-sm" style={{ width: truck ? 42 : formula ? 34 : 38, backgroundColor: vehicle.color, boxShadow: `0 0 12px ${vehicle.color}` }} />
+      <span className="absolute top-2 h-3 rounded-sm bg-white/70" style={{ left: formula ? 18 : 22, width: truck ? 10 : 12 }} />
+      <span className="absolute bottom-1 left-2 h-2 w-2 rounded-full bg-slate-950 ring-1 ring-white/70" />
+      <span className="absolute bottom-1 right-2 h-2 w-2 rounded-full bg-slate-950 ring-1 ring-white/70" />
+    </span>
   );
 }
 

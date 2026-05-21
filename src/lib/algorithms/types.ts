@@ -13,6 +13,10 @@ export type AlgorithmWorldScenarioOptions = {
   mazeId?: AlgorithmWorldMazeId;
   primaryAlgorithm?: AlgorithmWorldAlgorithmId;
   secondaryAlgorithm?: AlgorithmWorldAlgorithmId;
+  primaryVehicleColor?: string;
+  secondaryVehicleColor?: string;
+  primaryVehicleId?: string;
+  secondaryVehicleId?: string;
 };
 export type AlgorithmWorldPhase = "setup" | "search" | "path" | "obstacle" | "replan" | "done";
 export type AlgorithmWorldState = {
@@ -43,6 +47,14 @@ export type AlgorithmWorldState = {
   pathLength?: number;
   stepCount?: number;
   presentationMode?: AlgorithmWorldPresentationMode;
+  raceTime?: number;
+  raceFinishTime?: number;
+  raceFinished?: boolean;
+  raceWinner?: boolean;
+  vehicleColor?: string;
+  vehicleId?: string;
+  vehicleName?: string;
+  vehicleShape?: string;
 };
 export type AlgorithmWorldCompareState = {
   problemType: AlgorithmWorldProblemType;

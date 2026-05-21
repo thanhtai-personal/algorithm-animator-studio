@@ -8,6 +8,7 @@ type BitonicMode = "split" | "asc" | "desc" | "compare" | "swap" | "merge" | "co
 
 export function getBitonicKineticCards(sceneId: string, lang: Lang): KineticCard[] {
   const vi = lang === "vi";
+  const normalizedSceneId = normalizeBitonicSceneId(sceneId);
   const network: KineticCard[] = [
     { top: vi ? "BƯỚC 1" : "STEP 1", main: vi ? "CHIA HAI HƯỚNG" : "SPLIT DIRECTIONS", bottom: vi ? "trái tăng, phải giảm" : "left asc, right desc", accent: "#38bdf8", values: [10, 30, 11, 20, 4, 33, 2, 1], pair: 0 },
     { top: "ASC", main: vi ? "NHỎ TRƯỚC" : "SMALL FIRST", bottom: vi ? "nếu trái > phải thì swap" : "swap if left > right", accent: "#4ade80", values: [10, 30, 11, 20, 4, 33, 2, 1], pair: 0 },
@@ -24,9 +25,14 @@ export function getBitonicKineticCards(sceneId: string, lang: Lang): KineticCard
   ];
   const byScene: Record<string, KineticCard[]> = {
     intro: [
-      { main: "BITONIC SORT", bottom: vi ? "sorting network theo gap và hướng" : "sorting network by gap and direction", accent: "#38bdf8" },
-      { main: vi ? "KHÔNG QUÉT KỀ NHAU" : "NOT ADJACENT SCAN", bottom: vi ? "so sánh các cặp cách xa" : "compare distant pairs", accent: "#facc15" },
-      { main: vi ? "CỐ ĐỊNH CẤU TRÚC" : "FIXED STRUCTURE", bottom: vi ? "hợp cho tư duy song song" : "good for parallel thinking", accent: "#4ade80", invert: true },
+      { main: "BITONIC SORT", bottom: vi ? "sắp xếp bằng sorting network" : "sorting by a sorting network", accent: "#38bdf8" },
+      { main: vi ? "DÃY BITONIC" : "BITONIC SEQUENCE", bottom: vi ? "tăng rồi giảm, hoặc ngược lại" : "rises then falls, or reverse", accent: "#facc15", values: [1, 4, 8, 9, 10, 7, 5, 2], pair: 0 },
+      { main: vi ? "MERGE VỀ 1 HƯỚNG" : "MERGE ONE WAY", bottom: vi ? "gap lớn rồi nhỏ dần" : "large gaps, then smaller gaps", accent: "#4ade80", invert: true, values: [10, 11, 20, 30, 33, 4, 2, 1], pair: 0 },
+    ],
+    problem: [
+      { main: vi ? "VÌ SAO CẦN?" : "WHY USE IT?", bottom: vi ? "lịch compare-swap dự đoán trước" : "predictable compare-swap schedule", accent: "#38bdf8" },
+      { main: vi ? "CHIA THEO TẦNG" : "LAYERED WORK", bottom: vi ? "nhiều cặp độc lập cùng lúc" : "many independent pairs at once", accent: "#facc15", values: [10, 30, 11, 20, 4, 33, 2, 1], pair: 0 },
+      { main: vi ? "HỢP SONG SONG" : "PARALLEL-FRIENDLY", bottom: vi ? "GPU, SIMD, mạch so sánh" : "GPU, SIMD, comparator circuits", accent: "#4ade80", invert: true },
     ],
     "mental-model": [
       { main: vi ? "DÃY BITONIC" : "BITONIC SEQUENCE", bottom: vi ? "một nửa đi lên, một nửa đi xuống" : "one side rises, one side falls", accent: "#38bdf8", values: [1, 4, 8, 9, 10, 7, 5, 2], pair: 0 },
@@ -49,7 +55,21 @@ export function getBitonicKineticCards(sceneId: string, lang: Lang): KineticCard
       ...complexity,
     ],
   };
-  return byScene[sceneId] ?? network;
+  return byScene[normalizedSceneId] ?? network;
+}
+
+function normalizeBitonicSceneId(sceneId: string) {
+  if (sceneId === "bitonic-intro") return "intro";
+  if (sceneId === "bitonic-problem") return "problem";
+  if (sceneId === "bitonic-mental-model") return "mental-model";
+  if (sceneId === "bitonic-step-by-step") return "steps";
+  if (sceneId === "bitonic-animation") return "animation";
+  if (sceneId === "bitonic-complexity") return "complexity";
+  if (sceneId === "bitonic-recap") return "recap";
+  if (sceneId === "bitonic-use-cases") return "problem";
+  if (sceneId === "bitonic-avoid-cases") return "complexity";
+  if (sceneId === "bitonic-power-of-two") return "mental-model";
+  return sceneId;
 }
 
 export function drawBitonicKineticIllustration(ctx: CanvasRenderingContext2D, frame: Frame | null | undefined, card: KineticCard, local: number, accent: string, lang: Lang) {

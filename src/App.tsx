@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PublicWebBanner } from "./components/PublicWebBanner";
 import { Analytics } from "@vercel/analytics/react";
@@ -7,17 +8,17 @@ import { AppHeader } from "@/components/AppHeader";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import AlgorithmWorld from "./pages/AlgorithmWorld.tsx";
-import Auth from "./pages/Auth.tsx";
-import GeneratedAssets from "./pages/GeneratedAssets.tsx";
-import Index from "./pages/Index.tsx";
-import LongContent from "./pages/LongContent.tsx";
-import NotFound from "./pages/NotFound.tsx";
-import Settings from "./pages/Settings.tsx";
-import StoryVideoStudio from "./pages/StoryVideoStudio.tsx";
-import YoutubePublishing from "./pages/YoutubePublishing.tsx";
 
 const queryClient = new QueryClient();
+const AlgorithmWorld = lazy(() => import("./pages/AlgorithmWorld.tsx"));
+const Auth = lazy(() => import("./pages/Auth.tsx"));
+const GeneratedAssets = lazy(() => import("./pages/GeneratedAssets.tsx"));
+const Index = lazy(() => import("./pages/Index.tsx"));
+const LongContent = lazy(() => import("./pages/LongContent.tsx"));
+const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+const Settings = lazy(() => import("./pages/Settings.tsx"));
+const StoryVideoStudio = lazy(() => import("./pages/StoryVideoStudio.tsx"));
+const YoutubePublishing = lazy(() => import("./pages/YoutubePublishing.tsx"));
 
 const AnalyticsTracker = () => {
   const location = useLocation();
@@ -25,6 +26,12 @@ const AnalyticsTracker = () => {
 
   return <Analytics mode="production" route={location.pathname} path={path} />;
 };
+
+const RouteFallback = () => (
+  <main className="grid min-h-[60vh] place-items-center px-4 text-sm font-medium text-muted-foreground">
+    Loading...
+  </main>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -36,20 +43,22 @@ const App = () => (
           <AnalyticsTracker />
           <PublicWebBanner />
           <AppHeader />
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<Index />} />
-            <Route path="/maze-pathfinding" element={<AlgorithmWorld />} />
-            <Route path="/algorithm-world" element={<AlgorithmWorld />} />
-            <Route path="/long-content" element={<LongContent />} />
-            <Route path="/story-video" element={<StoryVideoStudio />} />
-            <Route path="/assets" element={<GeneratedAssets />} />
-            <Route path="/social-publishing" element={<YoutubePublishing />} />
-            <Route path="/youtube-publishing" element={<YoutubePublishing />} />
-            <Route path="/youtube" element={<YoutubePublishing />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/" element={<Index />} />
+              <Route path="/maze-pathfinding" element={<AlgorithmWorld />} />
+              <Route path="/algorithm-world" element={<AlgorithmWorld />} />
+              <Route path="/long-content" element={<LongContent />} />
+              <Route path="/story-video" element={<StoryVideoStudio />} />
+              <Route path="/assets" element={<GeneratedAssets />} />
+              <Route path="/social-publishing" element={<YoutubePublishing />} />
+              <Route path="/youtube-publishing" element={<YoutubePublishing />} />
+              <Route path="/youtube" element={<YoutubePublishing />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>

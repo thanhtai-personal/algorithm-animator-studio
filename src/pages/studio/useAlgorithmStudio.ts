@@ -24,6 +24,7 @@ import { ExportFormat } from "./exportFormats";
 import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm, maxDemoSizeForAlgorithm, normalizeAnimalArray, parseInputArray, shouldUseAlgorithmDemo } from "./demoArrays";
 import { exportAlgorithmVideo, preloadExportSfx } from "./videoExport";
 import { renderStudioPreview } from "./renderStudioPreview";
+import { getWorldVehicle } from "@/lib/algorithmWorldVehicles";
 
 const SWAP_TRANSITION_MULTIPLIER = 1.8;
 const KINETIC_ODD_EVEN_FRAME_MULTIPLIER = 8;
@@ -80,6 +81,10 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const [worldMazeId, setWorldMazeIdState] = useState<AlgorithmWorldMazeId>(options.initialWorldMazeId ?? "astar_labyrinth");
   const [worldPrimaryAlgorithm, setWorldPrimaryAlgorithmState] = useState<AlgorithmWorldAlgorithmId>(options.initialWorldPrimaryAlgorithm ?? "astar");
   const [worldSecondaryAlgorithm, setWorldSecondaryAlgorithmState] = useState<AlgorithmWorldAlgorithmId>(options.initialWorldSecondaryAlgorithm ?? "dijkstra");
+  const [worldPrimaryVehicleId, setWorldPrimaryVehicleIdState] = useState("bolt");
+  const [worldSecondaryVehicleId, setWorldSecondaryVehicleIdState] = useState("comet");
+  const [worldPrimaryVehicleColor, setWorldPrimaryVehicleColorState] = useState("#34d399");
+  const [worldSecondaryVehicleColor, setWorldSecondaryVehicleColorState] = useState("#facc15");
   const [columnVisualMode, setColumnVisualMode] = useState<ColumnVisualMode>("bar");
   const [animalSpriteScale, setAnimalSpriteScale] = useState(1);
   const [animalJumpIntensity, setAnimalJumpIntensity] = useState(1);
@@ -136,11 +141,15 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
         mazeId: worldMazeId,
         primaryAlgorithm: worldPrimaryAlgorithm,
         secondaryAlgorithm: worldSecondaryAlgorithm,
+        primaryVehicleColor: worldPrimaryVehicleColor,
+        secondaryVehicleColor: worldSecondaryVehicleColor,
+        primaryVehicleId: worldPrimaryVehicleId,
+        secondaryVehicleId: worldSecondaryVehicleId,
       },
       start: startId >= 0 ? startId : undefined,
       end: endId >= 0 ? endId : undefined,
     });
-  }, [algo, arr, target, customCode, parsedGraph, startId, endId, worldVideoMode, worldCompareEnabled, worldPresentationMode, worldProblemType, worldMazeId, worldPrimaryAlgorithm, worldSecondaryAlgorithm]);
+  }, [algo, arr, target, customCode, parsedGraph, startId, endId, worldVideoMode, worldCompareEnabled, worldPresentationMode, worldProblemType, worldMazeId, worldPrimaryAlgorithm, worldSecondaryAlgorithm, worldPrimaryVehicleColor, worldSecondaryVehicleColor, worldPrimaryVehicleId, worldSecondaryVehicleId]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const current = frames[Math.min(frameIdx, frames.length - 1)];
@@ -254,6 +263,10 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     const idx = f.swap[0] ?? f.highlight[0];
     if (idx != null && f.arr[idx] != null) {
       pitch = f.arr[idx] / Math.max(...f.arr, 1);
+    }
+    if (f.worldCompare?.left.presentationMode === "vehicle_race" && ev === "visit") {
+      audioEngine.playSfx("engine", 0.45 + (f.line % 5) * 0.08);
+      return;
     }
     if (ev === "compare") audioEngine.playSfx(sfxCompare, pitch);
     else if (ev === "swap" || ev === "found" || ev === "visit") audioEngine.playSfx(sfxSwap, pitch);
@@ -422,6 +435,14 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     setWorldPrimaryAlgorithm: (value: AlgorithmWorldAlgorithmId) => runConfigAction(() => { setWorldPrimaryAlgorithmState(value); setFrameIdx(0); setPlaying(false); }),
     worldSecondaryAlgorithm,
     setWorldSecondaryAlgorithm: (value: AlgorithmWorldAlgorithmId) => runConfigAction(() => { setWorldSecondaryAlgorithmState(value); setFrameIdx(0); setPlaying(false); }),
+    worldPrimaryVehicleColor,
+    setWorldPrimaryVehicleColor: (value: string) => runConfigAction(() => { setWorldPrimaryVehicleColorState(value); setFrameIdx(0); setPlaying(false); }),
+    worldSecondaryVehicleColor,
+    setWorldSecondaryVehicleColor: (value: string) => runConfigAction(() => { setWorldSecondaryVehicleColorState(value); setFrameIdx(0); setPlaying(false); }),
+    worldPrimaryVehicleId,
+    setWorldPrimaryVehicleId: (value: string) => runConfigAction(() => { const vehicle = getWorldVehicle(value); setWorldPrimaryVehicleIdState(vehicle.id); setWorldPrimaryVehicleColorState(vehicle.color); setFrameIdx(0); setPlaying(false); }),
+    worldSecondaryVehicleId,
+    setWorldSecondaryVehicleId: (value: string) => runConfigAction(() => { const vehicle = getWorldVehicle(value); setWorldSecondaryVehicleIdState(vehicle.id); setWorldSecondaryVehicleColorState(vehicle.color); setFrameIdx(0); setPlaying(false); }),
     showCode, setShowCode: (value: boolean) => runConfigAction(() => { if ((worldCompareEnabled || worldPresentationMode === "vehicle_race") && value) return; setShowCode(value); }),
     columnVisualMode, setColumnVisualMode: setColumnVisualModeWithDefaults,
     animalSpriteScale, setAnimalSpriteScale: (value: number) => runConfigAction(() => setAnimalSpriteScale(value)),

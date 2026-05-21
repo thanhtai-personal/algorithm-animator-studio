@@ -1,6 +1,6 @@
 export type ProceduralSfxKind =
   | "off" | "pop" | "click" | "beep" | "marimba" | "piano" | "key" | "retro" | "blip"
-  | "swap-snap" | "swap-whoosh" | "swap-tick" | "swap-punch" | "swap-spark";
+  | "swap-snap" | "swap-whoosh" | "swap-tick" | "swap-punch" | "swap-spark" | "engine";
 export type AssetSfxId = `asset-sfx:${string}`;
 export type SfxKind = ProceduralSfxKind | AssetSfxId;
 export type MusicPreset = "off" | "lofi" | "ambient" | "chill" | "upbeat" | "custom";
@@ -366,6 +366,11 @@ export class AudioEngine {
       case "swap-spark": {
         oneShot("triangle", 880, 1320, 0.08, 0.14);
         oneShot("sine", 1760, 2340, 0.09, 0.1, 0.04);
+        break;
+      }
+      case "engine": {
+        oneShot("sawtooth", 70 + p * 45, 95 + p * 55, 0.13, 0.12);
+        oneShot("square", 42 + p * 28, 38 + p * 22, 0.11, 0.08, 0.02);
         break;
       }
     }

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Download, Lock, Pause, Play, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,19 +7,33 @@ import { Slider } from "@/components/ui/slider";
 import { audioEngine } from "@/lib/audio";
 import { AlgorithmStudio } from "./useAlgorithmStudio";
 
+const PhaserMazePreview = lazy(() => import("../algorithm-world/PhaserMazePreview").then((module) => ({ default: module.PhaserMazePreview })));
+const PHASER_FALLBACK_HEIGHT = "min(70vh, 1920px)";
+
 type Props = { studio: AlgorithmStudio };
 
 export function CenterPanel({ studio: s }: Props) {
+  const showPhaserMaze = Boolean(s.current?.world || s.current?.worldCompare);
+
   return (
     <div className="flex flex-col items-center gap-4">
       <Card className="p-3 bg-card/50">
-        <canvas
-          ref={s.canvasRef}
-          width={s.W}
-          height={s.H}
-          className="rounded-lg w-auto"
-          style={{ maxHeight: "70vh", aspectRatio: `${s.W}/${s.H}` }}
-        />
+        {showPhaserMaze ? (
+          <>
+            <Suspense fallback={<div className="grid place-items-center rounded-lg bg-slate-950 text-sm text-cyan-200" style={{ height: PHASER_FALLBACK_HEIGHT, aspectRatio: `${s.W}/${s.H}` }}>Loading Phaser scene...</div>}>
+              <PhaserMazePreview frame={s.current} width={s.W} height={s.H} title={s.title} subtitle={s.subtitle} theme={s.theme} lang={s.lang} />
+            </Suspense>
+            <canvas ref={s.canvasRef} width={s.W} height={s.H} className="hidden" />
+          </>
+        ) : (
+          <canvas
+            ref={s.canvasRef}
+            width={s.W}
+            height={s.H}
+            className="rounded-lg w-auto"
+            style={{ maxHeight: "70vh", aspectRatio: `${s.W}/${s.H}` }}
+          />
+        )}
       </Card>
       <Card className="w-full max-w-2xl p-4 space-y-3">
         <div className="flex gap-2">

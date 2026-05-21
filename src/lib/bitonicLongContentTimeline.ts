@@ -30,15 +30,15 @@ export function buildBitonicSortScenes(params: {
     {
       id: "bitonic-intro",
       kind: "intro",
-      title: vi ? "Bitonic Sort giải quyết bài toán gì?" : "What problem does Bitonic Sort solve?",
-      subtitle: vi ? "Nó sinh ra để mô tả sort bằng một mạng compare-swap đều đặn, dễ chia tầng và dễ song song hóa." : "It exists to express sorting as a regular compare-swap network that can be layered and parallelized.",
+      title: vi ? "Bitonic Sort là gì?" : "What is Bitonic Sort?",
+      subtitle: vi ? "Đây là thuật toán sắp xếp theo sorting network: tạo dãy bitonic, rồi merge về một hướng bằng compare-swap theo gap giảm dần." : "It is a sorting-network algorithm: build a bitonic sequence, then merge it into one direction with shrinking-gap compare-swaps.",
       bullets: vi
-        ? ["Không tối ưu cho sort CPU thông thường.", "Mạnh ở cấu trúc cố định: tầng, hướng, gap.", "Hữu ích khi muốn hiểu sorting network, phần cứng hoặc xử lý song song."]
-        : ["Not a default CPU sorting choice.", "Strong because of fixed structure: layers, direction, gap.", "Useful for sorting networks, hardware, and parallel processing."],
+        ? ["Bitonic sequence: tăng rồi giảm, hoặc giảm rồi tăng.", "Sorting network: lịch so sánh gần như cố định.", "Từ khóa chính: hướng ASC/DESC, gap, compare-swap."]
+        : ["Bitonic sequence: rises then falls, or falls then rises.", "Sorting network: a mostly fixed comparison schedule.", "Core keywords: ASC/DESC direction, gap, compare-swap."],
       narration: vi
-        ? `Vào thẳng ${algo.name}. Câu hỏi đầu tiên không phải là nó swap ra sao, mà là vì sao thuật toán này tồn tại. Bitonic Sort sinh ra từ tư duy sorting network: ta muốn một lịch compare-swap đều đặn, chia được thành nhiều tầng, và có thể chạy nhiều cặp độc lập cùng lúc. Vì vậy nó không phải lựa chọn mặc định để sort mảng lớn trên CPU thông thường, nhưng rất đáng học khi muốn hiểu sort theo mạng, phần cứng hoặc xử lý song song.`
-        : `Let us go straight into ${algo.name}. The first question is not how it swaps, but why this algorithm exists. Bitonic Sort comes from sorting-network thinking: we want a regular compare-swap schedule, split into layers, where independent pairs can run at the same time. So it is not the default choice for large CPU arrays, but it is very useful for understanding network sorting, hardware, and parallel processing.`,
-      durationSec: Math.max(7, introSeconds),
+        ? `${algo.name} là một thuật toán sắp xếp dựa trên sorting network. Ý tưởng không bắt đầu từ việc quét từng cặp kề nhau, mà bắt đầu từ một dãy bitonic: một nửa đi lên rồi một nửa đi xuống, hoặc ngược lại. Khi đã có dạng đó, thuật toán dùng các tầng compare-swap có gap giảm dần để kéo toàn bộ dãy về cùng một hướng. Vì lịch so sánh rất đều, Bitonic Sort đặc biệt hữu ích khi học về network, phần cứng, GPU, SIMD hoặc xử lý song song.`
+        : `${algo.name} is a sorting algorithm based on a sorting network. The idea does not start with scanning adjacent pairs. It starts with a bitonic sequence: one side rises and the other side falls, or the reverse. Once the data has that shape, the algorithm uses compare-swap layers with shrinking gaps to pull the whole sequence into one direction. Because the comparison schedule is very regular, Bitonic Sort is especially useful for learning networks, hardware, GPUs, SIMD, and parallel processing.`,
+      durationSec: Math.max(10, introSeconds),
       dataSet: input,
     },
     {

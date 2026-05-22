@@ -21,7 +21,7 @@ export function CenterPanel({ studio: s }: Props) {
         {showPhaserMaze ? (
           <>
             <Suspense fallback={<div className="grid place-items-center rounded-lg bg-slate-950 text-sm text-cyan-200" style={{ height: PHASER_FALLBACK_HEIGHT, aspectRatio: `${s.W}/${s.H}` }}>Loading Phaser scene...</div>}>
-              <PhaserMazePreview frame={s.current} width={s.W} height={s.H} title={s.title} subtitle={s.subtitle} theme={s.theme} lang={s.lang} />
+              <PhaserMazePreview key={`${s.W}x${s.H}`} frame={s.current} width={s.W} height={s.H} title={s.title} subtitle={s.subtitle} theme={s.theme} lang={s.lang} />
             </Suspense>
             <canvas ref={s.canvasRef} width={s.W} height={s.H} className="hidden" />
           </>

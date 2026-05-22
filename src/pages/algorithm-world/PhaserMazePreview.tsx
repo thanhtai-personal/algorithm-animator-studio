@@ -178,14 +178,30 @@ function drawBackground(g: Phaser.GameObjects.Graphics, w: number, h: number, ac
 function drawCompare(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, compare: AlgorithmWorldCompareState, w: number, h: number, pulse: number, lang: Lang) {
   const gap = 18;
   const top = 92;
-  const panelH = (h - top - 34 - gap) / 2;
-  if (compare.raceIntro?.stage === "randomizing") {
-    drawRaceIntro(scene, g, compare, 26, top, w - 52, h - top - 34, pulse, lang);
+  const contentX = 26;
+  const contentY = top;
+  const contentW = w - 52;
+  const contentH = h - top - 34;
+  const isPortrait = h > w * 0.95;
+  if (shouldHideMapForIntro(compare)) {
+    drawRaceIntro(scene, g, compare, contentX, contentY, contentW, contentH, pulse, lang);
     return;
   }
-  drawWorld(scene, g, compare.left, 26, top, w - 52, panelH, pulse, lang, false);
-  drawWorld(scene, g, compare.right, 26, top + panelH + gap, w - 52, panelH, pulse, lang, false);
-  drawRaceIntro(scene, g, compare, 26, top, w - 52, h - top - 34, pulse, lang);
+  if (isPortrait) {
+    const panelH = (contentH - gap) / 2;
+    drawWorld(scene, g, compare.left, contentX, contentY, contentW, panelH, pulse, lang, false);
+    drawWorld(scene, g, compare.right, contentX, contentY + panelH + gap, contentW, panelH, pulse, lang, false);
+  } else {
+    const panelW = (contentW - gap) / 2;
+    drawWorld(scene, g, compare.left, contentX, contentY, panelW, contentH, pulse, lang, false);
+    drawWorld(scene, g, compare.right, contentX + panelW + gap, contentY, panelW, contentH, pulse, lang, false);
+  }
+  drawRaceIntro(scene, g, compare, contentX, contentY, contentW, contentH, pulse, lang);
+}
+
+function shouldHideMapForIntro(compare: AlgorithmWorldCompareState) {
+  const stage = compare.raceIntro?.stage;
+  return stage === "bracket" || stage === "randomizing" || stage === "assembling" || stage === "versus";
 }
 
 
@@ -242,10 +258,48 @@ function drawRaceIntro(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, 
     return;
   }
 
-  scene.text(lang === "vi" ? `${intro.leftName} VS ${intro.rightName} tại ${intro.mazeNameVi}` : `${intro.leftName} VS ${intro.rightName} at ${intro.mazeNameEn}`, cx, cy - 104, 25, COLORS.open, "center", 900);
-  scene.text(intro.leftName, cx, cy - 44, 52, COLORS.text, "center", 900);
-  scene.text("VS", cx, cy + 12, 56, COLORS.yellow, "center", 900);
-  scene.text(intro.rightName, cx, cy + 76, 52, COLORS.text, "center", 900);
+  if (intro.stage === "countdown") {
+    const progress = Math.min(1, (intro.tick + 1) / Math.max(1, intro.duration));
+    const count = 3 - Math.min(2, Math.floor(progress * 3));
+    scene.text(String(count), cx, cy, Math.min(190, w * 0.18) * (1 + pulse * 0.08), COLORS.yellow, "center", 900);
+    scene.text(lang === "vi" ? "Chuẩn bị xuất phát" : "Ready to launch", cx, cy + Math.min(130, h * 0.17), 28, COLORS.open, "center", 900, w * 0.76);
+    return;
+  }
+
+  drawVersusIntro(scene, g, intro.leftName, intro.rightName, x, y, w, h, Math.min(1, (intro.tick + 1) / Math.max(1, intro.duration)), intro.tick);
+}
+
+function drawVersusIntro(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, left: string, right: string, x: number, y: number, w: number, h: number, progress: number, tick: number) {
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  const enter = easeOutBack(Math.min(1, progress / 0.42));
+  const settle = easeOutCubic(Math.min(1, Math.max(0, (progress - 0.7) / 0.3)));
+  const leftX = lerp(lerp(x - w * 0.22, x + w * 0.28, enter), x + w * 0.22, settle);
+  const rightX = lerp(lerp(x + w * 1.22, x + w * 0.72, enter), x + w * 0.78, settle);
+  const nameY = lerp(cy, y + 44, settle);
+  const vsPop = 1 + Math.max(0, Math.sin(Math.min(1, Math.max(0, (progress - 0.38) / 0.28)) * Math.PI)) * 0.45;
+  drawPhaserSpeedLines(g, x, y, w, h, tick);
+  g.lineStyle(Math.max(5, w * 0.006), COLORS.yellow, 0.95);
+  g.lineBetween(x + w * 0.1, y + h * 0.84, x + w * 0.9, y + h * 0.16);
+  drawTeamPlate(scene, g, left, leftX, nameY - h * 0.11 * (1 - settle), Math.min(460, w * 0.36), COLORS.open);
+  drawTeamPlate(scene, g, right, rightX, nameY + h * 0.11 * (1 - settle), Math.min(460, w * 0.36), COLORS.goal);
+  scene.text("VS", cx, cy, Math.min(126, w * 0.12) * vsPop, COLORS.yellow, "center", 900, w * 0.35);
+}
+
+function drawTeamPlate(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, text: string, cx: number, cy: number, w: number, color: number) {
+  g.fillStyle(COLORS.bg, 0.88);
+  g.fillRoundedRect(cx - w / 2, cy - 32, w, 64, 18);
+  g.lineStyle(3, color, 0.95);
+  g.strokeRoundedRect(cx - w / 2, cy - 32, w, 64, 18);
+  scene.text(text, cx, cy, 32, COLORS.text, "center", 900, w * 0.86);
+}
+
+function drawPhaserSpeedLines(g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number, tick: number) {
+  g.lineStyle(2, COLORS.open, 0.18);
+  for (let i = -10; i < 18; i++) {
+    const xx = x + ((i * 86 + tick * 18) % (w + 220)) - 120;
+    g.lineBetween(xx, y + h, xx + h * 0.48, y);
+  }
 }
 
 function drawWorld(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, world: AlgorithmWorldState, x: number, y: number, w: number, h: number, pulse: number, lang: Lang, large: boolean) {
@@ -283,7 +337,7 @@ function drawWorld(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, worl
   drawPortal(scene, g, world.start, cell, gridX, gridY, COLORS.start, lang === "vi" ? "VÀO" : "IN");
   drawPortal(scene, g, world.goal, cell, gridX, gridY, COLORS.goal, lang === "vi" ? "RA" : "OUT");
   if (world.current) drawRunner(g, world, cell, gridX, gridY, algorithmColor(world), pulse);
-  if (raceMode && world.raceWinner) drawWinnerOverlay(scene, g, world, gridX + gridW / 2, gridY + gridH / 2, gridW, lang);
+  if (raceMode && world.raceWinner) drawWinnerOverlay(scene, g, world, gridX + gridW / 2, gridY + gridH / 2, gridW, gridH, lang);
   drawHud(scene, g, world, x + 10, y + h - hudH - 8, w - 20, hudH, lang, large);
 }
 
@@ -301,17 +355,21 @@ function drawTournamentBracket(
 ) {
   const progress = Math.min(1, (tick + 1) / Math.max(1, duration));
   const cx = x + w / 2;
-  const top = y + h * 0.1;
-  const bracketX = x + w * 0.055;
-  const bracketY = y + h * 0.22;
-  const bracketW = w * 0.89;
-  const bracketH = h * 0.64;
-  scene.text(lang === "vi" ? tournament.titleVi : tournament.titleEn, cx, top, Math.min(46, w * 0.05), COLORS.yellow, "center", 900);
-  scene.text(lang === "vi" ? "Đội thắng tiến vào vòng trong" : "Winner advances to the next round", cx, top + 42, 23, COLORS.open, "center", 900);
+  const isLandscape = w > h * 1.2;
+  const trophyY = y + (isLandscape ? Math.max(36, h * 0.075) : h * 0.065);
+  const titleY = trophyY + (isLandscape ? 40 : 44);
+  const subtitleY = titleY + (isLandscape ? 30 : 38);
+  const bracketX = x + w * 0.045;
+  const bracketY = y + (isLandscape ? h * 0.3 : h * 0.24);
+  const bracketW = w * 0.91;
+  const bracketH = h * (isLandscape ? 0.56 : 0.58);
+  scene.text("🏆", cx, trophyY, 38, COLORS.yellow, "center", 900);
+  scene.text(lang === "vi" ? tournament.titleVi : tournament.titleEn, cx, titleY, Math.min(isLandscape ? 36 : 42, w * 0.048), COLORS.yellow, "center", 900);
+  scene.text(lang === "vi" ? "Đội thắng tiến vào vòng trong" : "Winner advances to the next round", cx, subtitleY, isLandscape ? 18 : 21, COLORS.open, "center", 900);
   drawBracketConnectors(g, tournament, bracketX, bracketY, bracketW, bracketH, progress);
   tournament.rounds.forEach((round, roundIndex) => {
-    const colW = Math.min(270, bracketW * 0.28);
-    const colX = bracketX + roundIndex * (bracketW / 2);
+    const colW = bracketColumnWidth(bracketW);
+    const colX = bracketColumnX(roundIndex, bracketX, bracketW, colW);
     const roundLabel = [lang === "vi" ? "Tứ kết" : "Quarterfinals", lang === "vi" ? "Bán kết" : "Semifinals", lang === "vi" ? "Chung kết" : "Final"][roundIndex];
     scene.text(roundLabel, colX + colW / 2, bracketY - 28, 20, COLORS.muted, "center", 900);
     round.forEach((match, matchIndex) => {
@@ -319,6 +377,7 @@ function drawTournamentBracket(
       drawBracketMatch(scene, g, match, pos.x, pos.y, colW, pos.h, progress, lang);
     });
   });
+  drawAdvancingWinner(scene, g, tournament, bracketX, bracketY, bracketW, bracketH, progress, lang);
   if (tournament.winnerName) {
     const bannerW = Math.min(690, w * 0.82);
     const bannerY = y + h * 0.91;
@@ -334,7 +393,7 @@ function drawBracketConnectors(g: Phaser.GameObjects.Graphics, tournament: Algor
   g.lineStyle(3, COLORS.open, 0.24 + progress * 0.35);
   for (let round = 0; round < 2; round++) {
     for (let i = 0; i < tournament.rounds[round].length; i += 2) {
-      const colW = Math.min(270, w * 0.28);
+      const colW = bracketColumnWidth(w);
       const a = bracketMatchPosition(round, i, x, y, w, h, colW);
       const b = bracketMatchPosition(round, i + 1, x, y, w, h, colW);
       const to = bracketMatchPosition(round + 1, i / 2, x, y, w, h, colW);
@@ -348,12 +407,29 @@ function drawBracketConnectors(g: Phaser.GameObjects.Graphics, tournament: Algor
 }
 
 function bracketMatchPosition(round: number, match: number, x: number, y: number, w: number, h: number, colW: number) {
-  const counts = [4, 2, 1];
-  const count = counts[round] ?? 1;
-  const colX = x + round * (w / 2);
-  const matchH = Math.min(84, h / (count * 1.25));
-  const gap = count === 1 ? 0 : (h - count * matchH) / (count - 1);
-  return { x: colX, y: y + match * (matchH + gap), w: colW, h: matchH };
+  const colX = bracketColumnX(round, x, w, colW);
+  const matchH = bracketMatchHeight(h);
+  if (round <= 0) {
+    const count = 4;
+    const gap = (h - count * matchH) / (count - 1);
+    return { x: colX, y: y + match * (matchH + gap), w: colW, h: matchH };
+  }
+  const fromA = bracketMatchPosition(round - 1, match * 2, x, y, w, h, colW);
+  const fromB = bracketMatchPosition(round - 1, match * 2 + 1, x, y, w, h, colW);
+  const centerY = (fromA.y + fromA.h / 2 + fromB.y + fromB.h / 2) / 2;
+  return { x: colX, y: centerY - matchH / 2, w: colW, h: matchH };
+}
+
+function bracketMatchHeight(h: number) {
+  return Math.min(72, h / (4 * 1.34));
+}
+
+function bracketColumnWidth(w: number) {
+  return Math.min(220, Math.max(112, w * 0.25));
+}
+
+function bracketColumnX(round: number, x: number, w: number, colW: number) {
+  return x + round * ((w - colW) / 2);
 }
 
 function drawBracketMatch(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, match: AlgorithmWorldTournamentMatch, x: number, y: number, w: number, h: number, progress: number, lang: Lang) {
@@ -362,18 +438,62 @@ function drawBracketMatch(scene: MazePreviewScene, g: Phaser.GameObjects.Graphic
   g.fillRoundedRect(x, y, w, h, 16);
   g.lineStyle(match.active ? 4 : 2, match.active ? COLORS.yellow : match.winner ? COLORS.open : COLORS.muted, match.active ? 0.96 : 0.46 + progress * 0.2);
   g.strokeRoundedRect(x, y, w, h, 16);
-  drawTeamRow(scene, g, match.left?.name ?? "—", match.winner?.name === match.left?.name, x + 10, y + 10, w - 20, h / 2 - 12, lang);
-  drawTeamRow(scene, g, match.right?.name ?? "—", match.winner?.name === match.right?.name, x + 10, y + h / 2 + 2, w - 20, h / 2 - 12, lang);
+  drawTeamRow(scene, g, match.left?.name, match.winner?.name === match.left?.name, x + 10, y + 10, w - 20, h / 2 - 12, lang);
+  drawTeamRow(scene, g, match.right?.name, match.winner?.name === match.right?.name, x + 10, y + h / 2 + 2, w - 20, h / 2 - 12, lang);
   if (match.winner) scene.text("➜", x + w - 14, y + h / 2, 22, COLORS.yellow, "right", 900);
 }
 
-function drawTeamRow(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, name: string, winner: boolean, x: number, y: number, w: number, h: number, lang: Lang) {
+function drawTeamRow(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, name: string | undefined, winner: boolean, x: number, y: number, w: number, h: number, lang: Lang) {
+  if (!name) {
+    g.lineStyle(1, COLORS.muted, 0.3);
+    g.strokeRoundedRect(x, y, w, h, 9);
+    return;
+  }
   if (winner) {
     g.fillStyle(COLORS.yellow, 0.18);
     g.fillRoundedRect(x, y, w, h, 10);
   }
-  scene.text(winner ? `🏁 ${name}` : name, x + 9, y + h / 2, winner ? 17 : 15, winner ? COLORS.yellow : COLORS.text, "left", 900);
+  scene.text(winner ? `🏁 ${name}` : name, x + 9, y + h / 2, winner ? 16 : 14, winner ? COLORS.yellow : COLORS.text, "left", 900, w - 18);
   if (winner) scene.text(lang === "vi" ? "ĐI TIẾP" : "ADV", x + w - 8, y + h / 2, 11, COLORS.open, "right", 800);
+}
+
+function drawAdvancingWinner(
+  scene: MazePreviewScene,
+  g: Phaser.GameObjects.Graphics,
+  tournament: AlgorithmWorldTournamentState,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  progress: number,
+  lang: Lang,
+) {
+  if (!tournament.winnerName || tournament.round >= 2) return;
+  const active = tournament.rounds[tournament.round]?.[tournament.match];
+  if (!active?.winner) return;
+  const colW = bracketColumnWidth(w);
+  const fromMatch = bracketMatchPosition(tournament.round, tournament.match, x, y, w, h, colW);
+  const toMatch = bracketMatchPosition((tournament.round + 1) as 0 | 1 | 2, Math.floor(tournament.match / 2), x, y, w, h, colW);
+  const fromSlot = active.winner.name === active.right?.name ? 1 : 0;
+  const toSlot = tournament.match % 2;
+  const rowH = fromMatch.h / 2 - 12;
+  const from = rowCenter(fromMatch.x + 10, fromMatch.y + (fromSlot ? fromMatch.h / 2 + 2 : 10), fromMatch.w - 20, rowH);
+  const to = rowCenter(toMatch.x + 10, toMatch.y + (toSlot ? toMatch.h / 2 + 2 : 10), toMatch.w - 20, rowH);
+  const move = easeInOut(Math.min(1, Math.max(0, (progress - 0.18) / 0.72)));
+  drawFlyingTeam(scene, g, active.winner.name, lerp(from.x, to.x, move), lerp(from.y, to.y, move), fromMatch.w - 20, rowH, move, lang);
+}
+
+function rowCenter(x: number, y: number, w: number, h: number) {
+  return { x: x + w / 2, y: y + h / 2 };
+}
+
+function drawFlyingTeam(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, name: string, cx: number, cy: number, w: number, h: number, progress: number, lang: Lang) {
+  g.fillStyle(COLORS.yellow, 0.2 + progress * 0.08);
+  g.fillRoundedRect(cx - w / 2, cy - h / 2, w, h, 10);
+  g.lineStyle(2.4, COLORS.yellow, 0.88 + progress * 0.12);
+  g.strokeRoundedRect(cx - w / 2, cy - h / 2, w, h, 10);
+  scene.text(`🏁 ${name}`, cx - w / 2 + 9, cy, 15, COLORS.yellow, "left", 900, w - 18);
+  scene.text(lang === "vi" ? "CHỜ ĐẤU" : "WAITING", cx + w / 2 - 8, cy, 10, COLORS.open, "right", 800);
 }
 
 function drawParticleField(g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number, color: number, tick: number, pulse: number) {
@@ -387,12 +507,13 @@ function drawParticleField(g: Phaser.GameObjects.Graphics, x: number, y: number,
   }
 }
 
-function drawWinnerOverlay(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, world: AlgorithmWorldState, cx: number, cy: number, w: number, lang: Lang) {
+function drawWinnerOverlay(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, world: AlgorithmWorldState, cx: number, cy: number, w: number, h: number, lang: Lang) {
   const age = world.raceWinAge ?? 0;
   const pop = age < 10 ? 0.72 + age * 0.04 : 1 + Math.sin(age * 0.45) * 0.035;
+  const base = Math.min(1, Math.max(0.56, h / 210));
   const alpha = Math.min(0.96, 0.3 + age * 0.12);
-  const boxW = Math.min(w * 0.92, 720) * pop;
-  const boxH = 150 * pop;
+  const boxW = Math.min(w * 0.9, 720) * pop;
+  const boxH = Math.min(h * 0.74, 150 * base) * pop;
   g.fillStyle(COLORS.yellow, 0.16);
   g.fillCircle(cx, cy, boxW * 0.66);
   g.fillStyle(0x020617, alpha);
@@ -400,10 +521,10 @@ function drawWinnerOverlay(scene: MazePreviewScene, g: Phaser.GameObjects.Graphi
   g.lineStyle(Math.max(3, 4 * pop), COLORS.yellow, 0.92);
   g.strokeRoundedRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH, 22);
   g.fillStyle(COLORS.yellow, 1);
-  g.fillRoundedRect(cx - boxW * 0.28, cy - boxH / 2 - 18 * pop, boxW * 0.56, 34 * pop, 17 * pop);
-  scene.text("WINNER", cx, cy - boxH / 2 - pop, Math.round(16 * pop), COLORS.bg, "center", 900);
-  scene.text(world.algorithmName ?? "Algorithm", cx, cy - 8 * pop, Math.round(52 * pop), COLORS.yellow, "center", 900, boxW * 0.86);
-  scene.text(lang === "vi" ? "Xe thắng đã dừng tại cửa ra" : "Winning car stopped at the exit", cx, cy + 42 * pop, Math.round(22 * pop), COLORS.text, "center", 900, boxW * 0.86);
+  g.fillRoundedRect(cx - boxW * 0.28, cy - boxH / 2 - 14 * base * pop, boxW * 0.56, 28 * base * pop, 14 * base * pop);
+  scene.text("WINNER", cx, cy - boxH / 2 - pop, Math.round(14 * base * pop), COLORS.bg, "center", 900);
+  scene.text(world.algorithmName ?? "Algorithm", cx, cy - 6 * base * pop, Math.round(46 * base * pop), COLORS.yellow, "center", 900, boxW * 0.86);
+  scene.text(lang === "vi" ? "Xe thắng đã dừng tại cửa ra" : "Winning car stopped at the exit", cx, cy + 34 * base * pop, Math.round(18 * base * pop), COLORS.text, "center", 900, boxW * 0.86);
 }
 
 function drawGrid(g: Phaser.GameObjects.Graphics, cols: number, rows: number, cell: number, x: number, y: number) {
@@ -484,25 +605,32 @@ function drawHud(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, world:
   g.strokeRoundedRect(x, y, w, h, 16);
   const raceMode = world.presentationMode === "vehicle_race";
   const status = localizedStatus(world, lang);
-  scene.text(status, x + 14, y + 20, large ? 22 : 20, world.raceWinner ? COLORS.yellow : COLORS.open, "left", 800);
+  const statusWidth = raceMode ? Math.max(90, w - 174) : w - 28;
+  scene.text(status, x + 14, y + 18, raceMode ? 15 : large ? 22 : 20, world.raceWinner ? COLORS.yellow : COLORS.open, "left", 800, statusWidth);
   if (raceMode) {
     const timer = formatRaceTime(world.raceTime ?? world.stepCount ?? 0);
     const state = world.raceFinished ? (world.raceWinner ? "WIN" : "DONE") : "RUN";
-    scene.text(timer, x + w - 14, y + 20, large ? 36 : 30, world.raceWinner ? COLORS.yellow : COLORS.text, "right", 900);
-    scene.text(state, x + w - 14, y + (large ? 64 : 56), large ? 18 : 16, world.raceWinner ? COLORS.yellow : COLORS.muted, "right", 900);
+    scene.text(timer, x + w - 14, y + 16, large ? 30 : 26, world.raceWinner ? COLORS.yellow : COLORS.text, "right", 900, 150);
+    scene.text(state, x + w - 14, y + (large ? 50 : 46), large ? 15 : 14, world.raceWinner ? COLORS.yellow : COLORS.muted, "right", 900, 150);
   }
-  const stats = [
+  const stats = raceMode ? [
+    [lang === "vi" ? "Thuật toán" : "Algorithm", world.algorithmName ?? "-"],
+    [lang === "vi" ? "Đã xét" : "Visited", String(world.visitedCount ?? world.closedSet.length)],
+    [lang === "vi" ? "Độ dài" : "Path", String((world.pathLength ?? world.path.length) || "-")],
+    [lang === "vi" ? "Kết quả" : "Result", raceResult(world, lang)],
+  ] : [
     [lang === "vi" ? "Thuật toán" : "Algorithm", world.algorithmName ?? "-"],
     [lang === "vi" ? "Đồng hồ" : "Timer", formatRaceTime(world.raceTime ?? world.stepCount ?? 0)],
     [lang === "vi" ? "Đã xét" : "Visited", String(world.visitedCount ?? world.closedSet.length)],
     [lang === "vi" ? "Độ dài" : "Path", String((world.pathLength ?? world.path.length) || "-")],
-    [raceMode ? (lang === "vi" ? "Kết quả" : "Result") : "f = g + h", raceMode ? raceResult(world, lang) : String(world.scores?.f ?? "-")],
+    ["f = g + h", String(world.scores?.f ?? "-")],
   ];
-  const startY = y + (large ? 84 : 66);
+  const startY = raceMode ? y + 54 : y + (large ? 84 : 66);
   stats.forEach(([key, value], index) => {
-    const sx = x + 14 + index * (w / stats.length);
-    scene.text(key, sx, startY, large ? 16 : 15, COLORS.muted, "left", 700);
-    scene.text(value, sx, startY + (large ? 28 : 24), large ? 23 : 20, key === "f = g + h" || world.raceWinner && index === stats.length - 1 ? COLORS.yellow : COLORS.text, "left", 900);
+    const colW = w / stats.length;
+    const sx = x + 14 + index * colW;
+    scene.text(key, sx, startY, raceMode ? 12 : large ? 16 : 15, COLORS.muted, "left", 700, colW - 20);
+    scene.text(value, sx, startY + (raceMode ? 16 : large ? 28 : 24), raceMode ? 15 : large ? 23 : 20, key === "f = g + h" || world.raceWinner && index === stats.length - 1 ? COLORS.yellow : COLORS.text, "left", 900, colW - 20);
   });
 }
 
@@ -548,4 +676,22 @@ function raceResult(world: AlgorithmWorldState, lang: Lang) {
   if (world.raceWinner) return "WIN";
   if (world.raceFinished) return lang === "vi" ? "Về đích" : "Done";
   return lang === "vi" ? "Đang chạy" : "Running";
+}
+
+function easeOutBack(value: number) {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(value - 1, 3) + c1 * Math.pow(value - 1, 2);
+}
+
+function easeOutCubic(value: number) {
+  return 1 - Math.pow(1 - value, 3);
+}
+
+function easeInOut(value: number) {
+  return value < 0.5 ? 2 * value * value : 1 - Math.pow(-2 * value + 2, 2) / 2;
+}
+
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t;
 }

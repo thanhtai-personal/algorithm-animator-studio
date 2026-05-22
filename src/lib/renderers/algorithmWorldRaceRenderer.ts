@@ -109,12 +109,13 @@ export function drawRaceWalls(ctx: CanvasRenderingContext2D, cells: AlgorithmWor
   ctx.restore();
 }
 
-export function drawRaceWinner(ctx: CanvasRenderingContext2D, world: AlgorithmWorldState, cx: number, cy: number, w: number, theme: Theme, lang: Lang) {
+export function drawRaceWinner(ctx: CanvasRenderingContext2D, world: AlgorithmWorldState, cx: number, cy: number, w: number, h: number, theme: Theme, lang: Lang) {
   const age = world.raceWinAge ?? 0;
   const pop = age < 10 ? 0.72 + age * 0.04 : 1 + Math.sin(age * 0.45) * 0.035;
+  const base = Math.min(1, Math.max(0.56, h / 210));
   const alpha = Math.min(1, 0.28 + age * 0.12);
-  const boxW = Math.min(w * 0.92, 720) * pop;
-  const boxH = 150 * pop;
+  const boxW = Math.min(w * 0.9, 720) * pop;
+  const boxH = Math.min(h * 0.74, 150 * base) * pop;
   ctx.save();
   ctx.globalAlpha = alpha;
   const glow = ctx.createRadialGradient(cx, cy, 20, cx, cy, boxW * 0.64);
@@ -131,22 +132,22 @@ export function drawRaceWinner(ctx: CanvasRenderingContext2D, world: AlgorithmWo
   ctx.fill();
   ctx.stroke();
   ctx.shadowBlur = 0;
-  roundRect(ctx, cx - boxW * 0.28, cy - boxH / 2 - 18 * pop, boxW * 0.56, 34 * pop, 17 * pop);
+  roundRect(ctx, cx - boxW * 0.28, cy - boxH / 2 - 14 * base * pop, boxW * 0.56, 28 * base * pop, 14 * base * pop);
   ctx.fillStyle = "#fde047";
   ctx.fill();
   ctx.fillStyle = "#020617";
-  ctx.font = `1000 ${Math.round(16 * pop)}px ui-sans-serif, system-ui`;
+  ctx.font = `1000 ${Math.round(14 * base * pop)}px ui-sans-serif, system-ui`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText("WINNER", cx, cy - boxH / 2 - pop);
   ctx.fillStyle = "#fde047";
-  ctx.font = `1000 ${Math.round(52 * pop)}px ui-sans-serif, system-ui`;
+  ctx.font = `1000 ${Math.round(46 * base * pop)}px ui-sans-serif, system-ui`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  fitFillText(ctx, world.algorithmName ?? "Algorithm", cx, cy - 8 * pop, boxW * 0.86);
+  fitFillText(ctx, world.algorithmName ?? "Algorithm", cx, cy - 6 * base * pop, boxW * 0.86);
   ctx.fillStyle = "#fff";
-  ctx.font = `900 ${Math.round(22 * pop)}px ui-sans-serif, system-ui`;
-  fitFillText(ctx, lang === "vi" ? "Xe thắng đã dừng tại cửa ra" : "Winning car stopped at the exit", cx, cy + 42 * pop, boxW * 0.86);
+  ctx.font = `900 ${Math.round(18 * base * pop)}px ui-sans-serif, system-ui`;
+  fitFillText(ctx, lang === "vi" ? "Xe thắng đã dừng tại cửa ra" : "Winning car stopped at the exit", cx, cy + 34 * base * pop, boxW * 0.86);
   ctx.restore();
 }
 
@@ -201,18 +202,22 @@ export function drawRaceIntroOverlay(
     return;
   }
 
-  const enter = easeOutBack(progress);
-  drawGlassCard(ctx, cx, cy, Math.min(840, w * 0.9), 290, theme.highlight, 0.96);
-  drawCenteredText(ctx, localizedMazeLine(intro, lang), cx, cy - 102, 28, "#a5f3fc", 900);
-  drawCenteredText(ctx, intro.leftName, cx, cy - 46 * enter, 54 * enter, "#fff", 1000);
-  drawCenteredText(ctx, "VS", cx, cy + 10, 52 + Math.sin(intro.tick * 0.5) * 4, "#fde047", 1000);
-  drawCenteredText(ctx, intro.rightName, cx, cy + 70 * enter, 54 * enter, "#fff", 1000);
-  drawCenteredText(ctx, label(lang, "Sẵn sàng xuất phát", "Ready to race"), cx, cy + 124, 22, "#a5f3fc", 900);
+  if (intro.stage === "countdown") {
+    const count = 3 - Math.min(2, Math.floor(progress * 3));
+    const pulse = 1 + Math.sin(intro.tick * 0.55) * 0.08;
+    drawCenteredText(ctx, String(count), cx, cy, Math.min(190, w * 0.18) * pulse, "#fde047", 1000);
+    drawCenteredText(ctx, label(lang, "Chuẩn bị xuất phát", "Ready to launch"), cx, cy + Math.min(130, h * 0.17), 28, "#a5f3fc", 900, w * 0.76);
+    ctx.restore();
+    return;
+  }
+
+  drawVersusIntro(ctx, intro.leftName, intro.rightName, x, y, w, h, progress, intro.tick, theme.highlight);
   ctx.restore();
 }
 
 export function shouldDrawRaceIntroOnly(compare: AlgorithmWorldCompareState) {
-  return compare.raceIntro?.stage === "randomizing";
+  const stage = compare.raceIntro?.stage;
+  return stage === "bracket" || stage === "randomizing" || stage === "assembling" || stage === "versus";
 }
 
 function drawRandomArenaRoll(ctx: CanvasRenderingContext2D, compare: AlgorithmWorldCompareState, x: number, y: number, w: number, h: number, theme: Theme, lang: Lang) {
@@ -288,6 +293,44 @@ function drawSpeedLines(ctx: CanvasRenderingContext2D, x: number, y: number, w: 
   ctx.restore();
 }
 
+function drawVersusIntro(ctx: CanvasRenderingContext2D, left: string, right: string, x: number, y: number, w: number, h: number, progress: number, tick: number, color: string) {
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  const enter = easeOutBack(Math.min(1, progress / 0.42));
+  const settle = easeOutCubic(Math.min(1, Math.max(0, (progress - 0.7) / 0.3)));
+  const leftX = lerp(lerp(x - w * 0.22, x + w * 0.28, enter), x + w * 0.22, settle);
+  const rightX = lerp(lerp(x + w * 1.22, x + w * 0.72, enter), x + w * 0.78, settle);
+  const nameY = lerp(cy, y + 44, settle);
+  const vsPop = 1 + Math.max(0, Math.sin(Math.min(1, Math.max(0, (progress - 0.38) / 0.28)) * Math.PI)) * 0.45;
+  drawSpeedLines(ctx, x, y, w, h, color, tick);
+  ctx.save();
+  ctx.strokeStyle = "#fde047";
+  ctx.lineWidth = Math.max(5, w * 0.006);
+  ctx.shadowColor = "#fde047";
+  ctx.shadowBlur = 22;
+  ctx.beginPath();
+  ctx.moveTo(x + w * 0.1, y + h * 0.84);
+  ctx.lineTo(x + w * 0.9, y + h * 0.16);
+  ctx.stroke();
+  ctx.restore();
+  drawTeamPlate(ctx, left, leftX, nameY - h * 0.11 * (1 - settle), Math.min(460, w * 0.36), "#22d3ee");
+  drawTeamPlate(ctx, right, rightX, nameY + h * 0.11 * (1 - settle), Math.min(460, w * 0.36), "#fb7185");
+  drawCenteredText(ctx, "VS", cx, cy, Math.min(126, w * 0.12) * vsPop, "#fde047", 1000, w * 0.35);
+}
+
+function drawTeamPlate(ctx: CanvasRenderingContext2D, text: string, cx: number, cy: number, w: number, color: string) {
+  ctx.save();
+  ctx.fillStyle = "rgba(2,6,23,0.88)";
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 18;
+  roundRect(ctx, cx - w / 2, cy - 32, w, 64, 18);
+  ctx.fill(); ctx.stroke();
+  ctx.restore();
+  drawCenteredText(ctx, text, cx, cy, 32, "#fff", 1000, w * 0.86);
+}
+
 function drawProgressBar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, progress: number, color: string) {
   ctx.save();
   roundRect(ctx, x, y, w, h, h / 2);
@@ -350,3 +393,9 @@ function easeOutBack(value: number) {
   const c3 = c1 + 1;
   return 1 + c3 * Math.pow(value - 1, 3) + c1 * Math.pow(value - 1, 2);
 }
+
+function easeOutCubic(value: number) {
+  return 1 - Math.pow(1 - value, 3);
+}
+
+function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }

@@ -85,7 +85,7 @@ function drawWorldPanel(ctx: CanvasRenderingContext2D, world: AlgorithmWorldStat
   drawEndpoint(ctx, world.start, cell, gridX, gridY, "#22d3ee", label(lang, "VÀO", "IN"));
   drawEndpoint(ctx, world.goal, cell, gridX, gridY, "#f43f5e", label(lang, "RA", "OUT"));
   if (world.current) raceMode ? drawVehicle(ctx, world, cell, gridX, gridY, theme) : drawCurrent(ctx, world.current, cell, gridX, gridY, theme.highlight);
-  if (raceMode && world.raceWinner) drawRaceWinner(ctx, world, gridX + gridW / 2, gridY + gridH / 2, gridW, theme, lang);
+  if (raceMode && world.raceWinner) drawRaceWinner(ctx, world, gridX + gridW / 2, gridY + gridH / 2, gridW, gridH, theme, lang);
   drawHud(ctx, world, x + (raceMode ? 8 : 14), y + h - footerH + (raceMode ? 6 : 12), w - (raceMode ? 16 : 28), footerH - (raceMode ? 12 : 24), theme, lang);
 }
 
@@ -221,18 +221,20 @@ function drawHud(ctx: CanvasRenderingContext2D, world: AlgorithmWorldState, x: n
   ctx.strokeStyle = `${theme.highlight}77`;
   roundRect(ctx, x, y, w, h, 16);
   ctx.fill(); ctx.stroke();
+  roundRect(ctx, x + 4, y + 4, w - 8, h - 8, 12);
+  ctx.clip();
   ctx.textBaseline = "top";
   ctx.textAlign = "left";
-  ctx.font = "800 18px ui-sans-serif, system-ui";
-  ctx.fillStyle = world.raceWinner ? "#fde047" : "#a5f3fc";
-  wrap(ctx, localizedStatus(world, lang), w - 28).slice(0, 2).forEach((line, index) => ctx.fillText(line, x + 14, y + 12 + index * 17));
-
   const raceMode = world.presentationMode === "vehicle_race";
+  ctx.font = raceMode ? "800 14px ui-sans-serif, system-ui" : "800 18px ui-sans-serif, system-ui";
+  ctx.fillStyle = world.raceWinner ? "#fde047" : "#a5f3fc";
+  const statusWidth = raceMode ? Math.max(90, w - 174) : w - 28;
+  wrap(ctx, localizedStatus(world, lang), statusWidth).slice(0, raceMode ? 1 : 2).forEach((line, index) => ctx.fillText(line, x + 14, y + 12 + index * 17, statusWidth));
+
   if (raceMode) drawRaceTimer(ctx, world, x + w - 14, y + 12);
   const rows = raceMode
     ? [
       [label(lang, "Thuật toán", "Algorithm"), world.algorithmName ?? "—"],
-      [label(lang, "Đồng hồ", "Timer"), formatRaceTime(world.raceTime ?? world.stepCount ?? 0)],
       [label(lang, "Đã xét", "Visited"), String(world.visitedCount ?? world.closedSet.length)],
       [label(lang, "Độ dài", "Path"), String((world.pathLength ?? world.path.length) || "—")],
       [label(lang, "Kết quả", "Result"), world.raceWinner ? "WIN" : world.raceFinished ? label(lang, "Về đích", "Done") : label(lang, "Đang chạy", "Running")],
@@ -245,16 +247,16 @@ function drawHud(ctx: CanvasRenderingContext2D, world: AlgorithmWorldState, x: n
       [label(lang, "Độ dài path", "Path length"), String((world.pathLength ?? world.path.length) || "—")],
       ["f = g + h", String(world.scores?.f ?? "—")],
     ];
-  const startY = y + Math.min(52, h * 0.42);
+  const startY = raceMode ? y + Math.min(50, h * 0.48) : y + Math.min(52, h * 0.42);
   const colW = w / rows.length;
   rows.forEach(([k, v], i) => {
     const xx = x + i * colW + 10;
     ctx.fillStyle = "rgba(148,163,184,0.9)";
-    ctx.font = "700 14px ui-sans-serif, system-ui";
-    ctx.fillText(k, xx, startY);
+    ctx.font = raceMode ? "700 11px ui-sans-serif, system-ui" : "700 14px ui-sans-serif, system-ui";
+    ctx.fillText(k, xx, startY, colW - 18);
     ctx.fillStyle = k === "f = g + h" || world.raceWinner && i === rows.length - 1 ? "#fde047" : "#fff";
-    ctx.font = "900 18px ui-monospace, monospace";
-    ctx.fillText(v, xx, startY + 16);
+    ctx.font = raceMode ? "900 13px ui-monospace, monospace" : "900 18px ui-monospace, monospace";
+    ctx.fillText(v, xx, startY + (raceMode ? 13 : 16), colW - 18);
   });
   ctx.restore();
 }

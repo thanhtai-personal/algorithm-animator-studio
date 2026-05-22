@@ -129,12 +129,13 @@ function buildMatch(
   const resolved = resolveTournamentMatch(round, match);
   const active = round === activeRound && match === activeMatch;
   const winner = active ? currentWinner : round < activeRound ? team(predictTournamentWinner(resolved.left, resolved.right, round, match)) : undefined;
+  const known = round <= activeRound;
   return {
     id: `r${round}m${match}`,
     round,
     match,
-    left: team(resolved.left),
-    right: team(resolved.right),
+    left: known ? team(resolved.left) : undefined,
+    right: known ? team(resolved.right) : undefined,
     winner,
     active,
     pending: !winner && round >= activeRound,

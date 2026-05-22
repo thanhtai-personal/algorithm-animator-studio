@@ -23,7 +23,7 @@ export type AlgorithmWorldScenarioOptions = {
   tournamentMatch?: number;
 };
 export type AlgorithmWorldPhase = "setup" | "search" | "path" | "obstacle" | "replan" | "done";
-export type AlgorithmWorldRaceIntroStage = "randomizing" | "assembling" | "versus" | "race" | "winner" | "bracket";
+export type AlgorithmWorldRaceIntroStage = "randomizing" | "assembling" | "versus" | "countdown" | "race" | "winner" | "bracket";
 export type AlgorithmWorldTournamentTeam = {
   id?: AlgorithmWorldAlgorithmId;
   name: string;

@@ -18,18 +18,22 @@ export function drawTournamentBracket(
   const progress = Math.min(1, (tick + 1) / Math.max(1, duration));
   const title = lang === "vi" ? tournament.titleVi : tournament.titleEn;
   const cx = x + w / 2;
-  const top = y + h * 0.1;
-  const bracketX = x + w * 0.055;
-  const bracketY = y + h * 0.22;
-  const bracketW = w * 0.89;
-  const bracketH = h * 0.64;
+  const isLandscape = w > h * 1.2;
+  const trophyY = y + (isLandscape ? Math.max(36, h * 0.075) : h * 0.065);
+  const titleY = trophyY + (isLandscape ? 40 : 44);
+  const subtitleY = titleY + (isLandscape ? 30 : 38);
+  const bracketX = x + w * 0.045;
+  const bracketY = y + (isLandscape ? h * 0.3 : h * 0.24);
+  const bracketW = w * 0.91;
+  const bracketH = h * (isLandscape ? 0.56 : 0.58);
   ctx.save();
-  drawCenteredText(ctx, title, cx, top, Math.min(46, w * 0.05), "#fde047", 1000);
-  drawCenteredText(ctx, label(lang, "Đội thắng tiến vào vòng trong", "Winner advances to the next round"), cx, top + 42, 23, "#a5f3fc", 900);
+  drawTrophy(ctx, cx, trophyY);
+  drawCenteredText(ctx, title, cx, titleY, Math.min(isLandscape ? 36 : 42, w * 0.048), "#fde047", 1000);
+  drawCenteredText(ctx, label(lang, "Đội thắng tiến vào vòng trong", "Winner advances to the next round"), cx, subtitleY, isLandscape ? 18 : 21, "#a5f3fc", 900);
   drawBracketConnectors(ctx, tournament, bracketX, bracketY, bracketW, bracketH, theme.highlight, progress);
   tournament.rounds.forEach((round, roundIndex) => {
-    const colX = bracketX + roundIndex * (bracketW / 2);
-    const colW = Math.min(270, bracketW * 0.28);
+    const colW = bracketColumnWidth(bracketW);
+    const colX = bracketColumnX(roundIndex, bracketX, bracketW, colW);
     const roundLabel = [label(lang, "Tứ kết", "Quarterfinals"), label(lang, "Bán kết", "Semifinals"), label(lang, "Chung kết", "Final")][roundIndex];
     drawCenteredText(ctx, roundLabel, colX + colW / 2, bracketY - 28, 20, "#cbd5e1", 900);
     round.forEach((match, matchIndex) => {
@@ -37,6 +41,7 @@ export function drawTournamentBracket(
       drawBracketMatch(ctx, match, pos.x, pos.y, colW, pos.h, theme.highlight, lang, progress);
     });
   });
+  drawAdvancingWinner(ctx, tournament, bracketX, bracketY, bracketW, bracketH, progress, lang);
   if (tournament.winnerName) {
     const bannerY = y + h * 0.91;
     drawGlassCard(ctx, cx, bannerY, Math.min(690, w * 0.82), 76, "#fde047", 0.94);
@@ -62,9 +67,10 @@ function drawBracketConnectors(
   for (let round = 0; round < 2; round++) {
     const count = tournament.rounds[round].length;
     for (let i = 0; i < count; i += 2) {
-      const fromA = bracketMatchPosition(round, i, x, y, w, h, Math.min(270, w * 0.28));
-      const fromB = bracketMatchPosition(round, i + 1, x, y, w, h, Math.min(270, w * 0.28));
-      const to = bracketMatchPosition(round + 1, i / 2, x, y, w, h, Math.min(270, w * 0.28));
+      const colW = bracketColumnWidth(w);
+      const fromA = bracketMatchPosition(round, i, x, y, w, h, colW);
+      const fromB = bracketMatchPosition(round, i + 1, x, y, w, h, colW);
+      const to = bracketMatchPosition(round + 1, i / 2, x, y, w, h, colW);
       const midX = fromA.x + fromA.w + (to.x - fromA.x - fromA.w) * 0.46;
       ctx.beginPath();
       ctx.moveTo(fromA.x + fromA.w, fromA.y + fromA.h / 2);
@@ -80,12 +86,29 @@ function drawBracketConnectors(
 }
 
 function bracketMatchPosition(round: number, match: number, x: number, y: number, w: number, h: number, colW: number) {
-  const counts = [4, 2, 1];
-  const count = counts[round] ?? 1;
-  const colX = x + round * (w / 2);
-  const matchH = Math.min(84, h / (count * 1.25));
-  const gap = count === 1 ? 0 : (h - count * matchH) / (count - 1);
-  return { x: colX, y: y + match * (matchH + gap), w: colW, h: matchH };
+  const colX = bracketColumnX(round, x, w, colW);
+  const matchH = bracketMatchHeight(h);
+  if (round <= 0) {
+    const count = 4;
+    const gap = (h - count * matchH) / (count - 1);
+    return { x: colX, y: y + match * (matchH + gap), w: colW, h: matchH };
+  }
+  const fromA = bracketMatchPosition(round - 1, match * 2, x, y, w, h, colW);
+  const fromB = bracketMatchPosition(round - 1, match * 2 + 1, x, y, w, h, colW);
+  const centerY = (fromA.y + fromA.h / 2 + fromB.y + fromB.h / 2) / 2;
+  return { x: colX, y: centerY - matchH / 2, w: colW, h: matchH };
+}
+
+function bracketMatchHeight(h: number) {
+  return Math.min(72, h / (4 * 1.34));
+}
+
+function bracketColumnWidth(w: number) {
+  return Math.min(220, Math.max(112, w * 0.25));
+}
+
+function bracketColumnX(round: number, x: number, w: number, colW: number) {
+  return x + round * ((w - colW) / 2);
 }
 
 function drawBracketMatch(
@@ -109,8 +132,8 @@ function drawBracketMatch(
   roundRect(ctx, x, y, w, h, 16);
   ctx.fill();
   ctx.stroke();
-  drawTeamRow(ctx, match.left?.name ?? "—", match.winner?.name === match.left?.name, x + 10, y + 10, w - 20, h / 2 - 12, lang);
-  drawTeamRow(ctx, match.right?.name ?? "—", match.winner?.name === match.right?.name, x + 10, y + h / 2 + 2, w - 20, h / 2 - 12, lang);
+  drawTeamRow(ctx, match.left?.name, match.winner?.name === match.left?.name, x + 10, y + 10, w - 20, h / 2 - 12, lang);
+  drawTeamRow(ctx, match.right?.name, match.winner?.name === match.right?.name, x + 10, y + h / 2 + 2, w - 20, h / 2 - 12, lang);
   if (match.winner) {
     ctx.fillStyle = "#fde047";
     ctx.font = "900 15px ui-sans-serif, system-ui";
@@ -121,8 +144,16 @@ function drawBracketMatch(
   ctx.restore();
 }
 
-function drawTeamRow(ctx: CanvasRenderingContext2D, name: string, winner: boolean, x: number, y: number, w: number, h: number, lang: Lang) {
+function drawTeamRow(ctx: CanvasRenderingContext2D, name: string | undefined, winner: boolean, x: number, y: number, w: number, h: number, lang: Lang) {
   ctx.save();
+  if (!name) {
+    ctx.strokeStyle = "rgba(148,163,184,0.3)";
+    ctx.setLineDash([5, 5]);
+    roundRect(ctx, x, y, w, h, 9);
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
   if (winner) {
     ctx.fillStyle = "rgba(250,204,21,0.18)";
     roundRect(ctx, x, y, w, h, 10);
@@ -139,6 +170,79 @@ function drawTeamRow(ctx: CanvasRenderingContext2D, name: string, winner: boolea
     ctx.textAlign = "right";
     ctx.fillText(lang === "vi" ? "ĐI TIẾP" : "ADV", x + w - 8, y + h / 2);
   }
+  ctx.restore();
+}
+
+function drawAdvancingWinner(
+  ctx: CanvasRenderingContext2D,
+  tournament: AlgorithmWorldTournamentState,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  progress: number,
+  lang: Lang,
+) {
+  if (!tournament.winnerName || tournament.round >= 2) return;
+  const active = tournament.rounds[tournament.round]?.[tournament.match];
+  if (!active?.winner) return;
+  const colW = bracketColumnWidth(w);
+  const fromMatch = bracketMatchPosition(tournament.round, tournament.match, x, y, w, h, colW);
+  const toMatch = bracketMatchPosition((tournament.round + 1) as 0 | 1 | 2, Math.floor(tournament.match / 2), x, y, w, h, colW);
+  const fromSlot = active.winner.name === active.right?.name ? 1 : 0;
+  const toSlot = tournament.match % 2;
+  const rowH = fromMatch.h / 2 - 12;
+  const from = rowCenter(fromMatch.x + 10, fromMatch.y + (fromSlot ? fromMatch.h / 2 + 2 : 10), fromMatch.w - 20, rowH);
+  const to = rowCenter(toMatch.x + 10, toMatch.y + (toSlot ? toMatch.h / 2 + 2 : 10), toMatch.w - 20, rowH);
+  const move = easeInOut(Math.min(1, Math.max(0, (progress - 0.18) / 0.72)));
+  const cx = lerp(from.x, to.x, move);
+  const cy = lerp(from.y, to.y, move);
+  drawFlyingTeam(ctx, active.winner.name, cx, cy, fromMatch.w - 20, rowH, move, lang);
+}
+
+function rowCenter(x: number, y: number, w: number, h: number) {
+  return { x: x + w / 2, y: y + h / 2 };
+}
+
+function drawFlyingTeam(ctx: CanvasRenderingContext2D, name: string, cx: number, cy: number, w: number, h: number, progress: number, lang: Lang) {
+  ctx.save();
+  ctx.globalAlpha = 0.72 + progress * 0.28;
+  ctx.fillStyle = "rgba(250,204,21,0.2)";
+  ctx.strokeStyle = "#fde047";
+  ctx.lineWidth = 2.4;
+  ctx.shadowColor = "#fde047";
+  ctx.shadowBlur = 18;
+  roundRect(ctx, cx - w / 2, cy - h / 2, w, h, 10);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#fde047";
+  ctx.font = "900 16px ui-sans-serif, system-ui";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(`🏁 ${name}`, cx - w / 2 + 9, cy, w - 18);
+  ctx.fillStyle = "#a5f3fc";
+  ctx.font = "800 10px ui-sans-serif, system-ui";
+  ctx.textAlign = "right";
+  ctx.fillText(lang === "vi" ? "CHỜ ĐẤU" : "WAITING", cx + w / 2 - 8, cy);
+  ctx.restore();
+}
+
+function easeInOut(value: number) {
+  return value < 0.5 ? 2 * value * value : 1 - Math.pow(-2 * value + 2, 2) / 2;
+}
+
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t;
+}
+
+function drawTrophy(ctx: CanvasRenderingContext2D, cx: number, cy: number) {
+  ctx.save();
+  ctx.fillStyle = "#fde047";
+  ctx.shadowColor = "#fde047";
+  ctx.shadowBlur = 18;
+  ctx.font = "900 38px ui-sans-serif, system-ui";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("🏆", cx, cy);
   ctx.restore();
 }
 

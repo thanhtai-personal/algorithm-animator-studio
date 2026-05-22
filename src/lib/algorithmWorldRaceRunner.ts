@@ -59,9 +59,11 @@ type IntroFrameOpts = {
 const RACE_APPROACH_TICKS = 3;
 const RANDOM_TICKS = 38;
 const ASSEMBLE_TICKS = 30;
-const VS_TICKS = 42;
+const VS_TICKS = 64;
+const COUNTDOWN_TICKS = 42;
 const WINNER_TICKS = 52;
 const BRACKET_TICKS = 70;
+const OPENING_BRACKET_TICKS = 62;
 
 export function createRaceCompareFrames(args: AlgorithmWorldBuildArgs) {
   const baseWalls = makeMazeWalls(args.mazeId);
@@ -71,6 +73,19 @@ export function createRaceCompareFrames(args: AlgorithmWorldBuildArgs) {
   const winnerTick = Math.min(left.finishTick, right.finishTick) + RACE_APPROACH_TICKS;
   const maxTick = Math.max(left.finishTick, right.finishTick) + RACE_APPROACH_TICKS + 12;
   const frames: Frame[] = [];
+
+  if (args.tournamentEnabled) {
+    for (let tick = 0; tick < OPENING_BRACKET_TICKS; tick++) {
+      frames.push(createIntroFrame(args, left, right, {
+        stage: "bracket",
+        tick,
+        duration: OPENING_BRACKET_TICKS,
+        event: tick === 0 ? "compare" : null,
+        walls: baseWalls,
+        dynamicWalls,
+      }));
+    }
+  }
 
   if (args.randomMazeRequested) {
     for (let tick = 0; tick < RANDOM_TICKS; tick++) {
@@ -93,6 +108,10 @@ export function createRaceCompareFrames(args: AlgorithmWorldBuildArgs) {
 
   for (let tick = 0; tick < VS_TICKS; tick++) {
     frames.push(createIntroFrame(args, left, right, { stage: "versus", tick, duration: VS_TICKS, event: tick === 10 ? "found" : null, walls: baseWalls, dynamicWalls }));
+  }
+
+  for (let tick = 0; tick < COUNTDOWN_TICKS; tick++) {
+    frames.push(createIntroFrame(args, left, right, { stage: "countdown", tick, duration: COUNTDOWN_TICKS, event: tick % 14 === 0 ? "compare" : null, walls: baseWalls, dynamicWalls }));
   }
 
   for (let tick = 0; tick <= maxTick; tick++) {

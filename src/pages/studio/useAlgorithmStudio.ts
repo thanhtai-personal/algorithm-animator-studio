@@ -434,7 +434,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     shortVideoType, setShortVideoType: (value: ShortVideoType) => runConfigAction(() => setShortVideoType(value)),
     worldVideoMode,
     worldCompareEnabled,
-    setWorldVideoMode: (value: AlgorithmWorldVideoMode) => runConfigAction(() => { setWorldVideoModeState(value); if (value === "long") { setWorldCompareEnabledState(true); setShowCode(false); } setFrameIdx(0); setPlaying(false); }),
+    setWorldVideoMode: (value: AlgorithmWorldVideoMode) => runConfigAction(() => { setWorldVideoModeState(value); setPlatformId(value === "long" ? "landscape" : "shorts"); if (value === "long") { setWorldCompareEnabledState(true); setShowCode(false); } setFrameIdx(0); setPlaying(false); }),
     setWorldCompareEnabled: (value: boolean) => runConfigAction(() => { setWorldCompareEnabledState(value); if (value) setShowCode(false); setFrameIdx(0); setPlaying(false); }),
     worldPresentationMode,
     setWorldPresentationMode: (value: AlgorithmWorldPresentationMode) => runConfigAction(() => { setWorldPresentationModeState(value); if (value === "vehicle_race") { setWorldCompareEnabledState(true); setShowCode(false); } setFrameIdx(0); setPlaying(false); }),

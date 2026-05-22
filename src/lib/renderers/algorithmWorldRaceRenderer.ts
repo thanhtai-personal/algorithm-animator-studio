@@ -298,9 +298,13 @@ function drawVersusIntro(ctx: CanvasRenderingContext2D, left: string, right: str
   const cy = y + h / 2;
   const enter = easeOutBack(Math.min(1, progress / 0.42));
   const settle = easeOutCubic(Math.min(1, Math.max(0, (progress - 0.7) / 0.3)));
-  const leftX = lerp(lerp(x - w * 0.22, x + w * 0.28, enter), x + w * 0.22, settle);
-  const rightX = lerp(lerp(x + w * 1.22, x + w * 0.72, enter), x + w * 0.78, settle);
-  const nameY = lerp(cy, y + 44, settle);
+  const isPortrait = h > w * 0.95;
+  const leftTarget = isPortrait ? { x: x + w * 0.5, y: y + h * 0.14 } : { x: x + w * 0.22, y: y + 44 };
+  const rightTarget = isPortrait ? { x: x + w * 0.5, y: y + h * 0.86 } : { x: x + w * 0.78, y: y + 44 };
+  const leftX = lerp(lerp(x - w * 0.22, x + w * 0.28, enter), leftTarget.x, settle);
+  const rightX = lerp(lerp(x + w * 1.22, x + w * 0.72, enter), rightTarget.x, settle);
+  const leftY = lerp(cy - h * 0.11, leftTarget.y, settle);
+  const rightY = lerp(cy + h * 0.11, rightTarget.y, settle);
   const vsPop = 1 + Math.max(0, Math.sin(Math.min(1, Math.max(0, (progress - 0.38) / 0.28)) * Math.PI)) * 0.45;
   drawSpeedLines(ctx, x, y, w, h, color, tick);
   ctx.save();
@@ -313,8 +317,8 @@ function drawVersusIntro(ctx: CanvasRenderingContext2D, left: string, right: str
   ctx.lineTo(x + w * 0.9, y + h * 0.16);
   ctx.stroke();
   ctx.restore();
-  drawTeamPlate(ctx, left, leftX, nameY - h * 0.11 * (1 - settle), Math.min(460, w * 0.36), "#22d3ee");
-  drawTeamPlate(ctx, right, rightX, nameY + h * 0.11 * (1 - settle), Math.min(460, w * 0.36), "#fb7185");
+  drawTeamPlate(ctx, left, leftX, leftY, Math.min(460, w * 0.36), "#22d3ee");
+  drawTeamPlate(ctx, right, rightX, rightY, Math.min(460, w * 0.36), "#fb7185");
   drawCenteredText(ctx, "VS", cx, cy, Math.min(126, w * 0.12) * vsPop, "#fde047", 1000, w * 0.35);
 }
 

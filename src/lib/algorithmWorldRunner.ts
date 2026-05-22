@@ -5,6 +5,7 @@ import type {
   AlgorithmWorldPresentationMode,
   AlgorithmWorldProblemType,
   AlgorithmWorldScenarioOptions,
+  AlgorithmWorldTournamentResults,
   AlgorithmWorldTournamentRound,
   Frame,
 } from "./algorithms/types";
@@ -28,14 +29,15 @@ import { runBidirectionalBfs, runTremaux, runWallFollower } from "./algorithmWor
 
 type ScoreMap = Record<string, number>;
 export type SearchResult = { frames: Frame[]; path: AlgorithmWorldCell[]; visitedCount: number; reached: boolean };
-type BuildArgs = Required<Pick<AlgorithmWorldScenarioOptions, "videoMode" | "compareEnabled" | "presentationMode" | "problemType" | "mazeId" | "primaryAlgorithm" | "secondaryAlgorithm" | "primaryVehicleColor" | "secondaryVehicleColor" | "primaryVehicleId" | "secondaryVehicleId">> & { randomMazeRequested: boolean; tournamentEnabled: boolean; tournamentRound: AlgorithmWorldTournamentRound; tournamentMatch: number };
+type BuildArgs = Required<Pick<AlgorithmWorldScenarioOptions, "videoMode" | "compareEnabled" | "presentationMode" | "problemType" | "mazeId" | "primaryAlgorithm" | "secondaryAlgorithm" | "primaryVehicleColor" | "secondaryVehicleColor" | "primaryVehicleId" | "secondaryVehicleId">> & { randomMazeRequested: boolean; tournamentEnabled: boolean; tournamentRound: AlgorithmWorldTournamentRound; tournamentMatch: number; tournamentResults: AlgorithmWorldTournamentResults };
 export type AlgorithmWorldBuildArgs = BuildArgs;
 
 export function createAlgorithmWorldFrames(opts: AlgorithmWorldScenarioOptions = {}) {
   const tournamentEnabled = opts.tournamentEnabled ?? false;
   const tournamentRound = (opts.tournamentRound ?? 0) as AlgorithmWorldTournamentRound;
   const tournamentMatch = opts.tournamentMatch ?? 0;
-  const tournament = tournamentEnabled ? resolveTournamentMatch(tournamentRound, tournamentMatch) : null;
+  const tournamentResults = opts.tournamentResults ?? {};
+  const tournament = tournamentEnabled ? resolveTournamentMatch(tournamentRound, tournamentMatch, tournamentResults) : null;
   const requestedMazeId = tournamentEnabled ? "random" : opts.mazeId ?? "astar_labyrinth";
   const mazeSeed = tournamentEnabled ? tournamentSeed(tournamentRound, tournamentMatch) : Date.now() + Math.random() * 10_000;
   const args: BuildArgs = {
@@ -54,6 +56,7 @@ export function createAlgorithmWorldFrames(opts: AlgorithmWorldScenarioOptions =
     tournamentEnabled,
     tournamentRound,
     tournamentMatch,
+    tournamentResults,
   };
   const compareEnabled = args.compareEnabled || args.presentationMode === "vehicle_race";
   if (args.presentationMode === "vehicle_race") return createRaceCompareFrames(args);

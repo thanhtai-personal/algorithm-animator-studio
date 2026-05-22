@@ -55,11 +55,15 @@ const MazePathfinding = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-[340px_1fr_360px]">
-        <WorldSetupPanel studio={studio} />
-        <CenterPanel studio={studio} />
-        <div className="space-y-4">
+    <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
+      <div className="grid min-w-0 grid-cols-1 gap-4 p-4 xl:grid-cols-[320px_minmax(0,1fr)] 2xl:grid-cols-[340px_minmax(0,1fr)_360px]">
+        <div className="min-w-0">
+          <WorldSetupPanel studio={studio} />
+        </div>
+        <div className="min-w-0">
+          <CenterPanel studio={studio} />
+        </div>
+        <div className="min-w-0 space-y-4 xl:col-start-2 2xl:col-start-auto">
           <Card className="p-4">
             <ShortMusicPanel studio={studio} standalone />
           </Card>

@@ -5,6 +5,7 @@ export type AlgorithmWorldProblemType = "escape" | "fastest";
 export type AlgorithmWorldVideoMode = "short" | "long";
 export type AlgorithmWorldPresentationMode = "explainer" | "vehicle_race";
 export type AlgorithmWorldTournamentRound = 0 | 1 | 2;
+export type AlgorithmWorldTournamentResults = Record<string, AlgorithmWorldAlgorithmId>;
 export type AlgorithmWorldMazeId = "random" | "dfs_tunnels" | "bfs_rooms" | "dijkstra_weighted" | "astar_labyrinth" | "greedy_trap" | "two_fronts" | "wall_runner";
 export type AlgorithmWorldScenarioOptions = {
   videoMode?: AlgorithmWorldVideoMode;
@@ -21,6 +22,7 @@ export type AlgorithmWorldScenarioOptions = {
   tournamentEnabled?: boolean;
   tournamentRound?: AlgorithmWorldTournamentRound;
   tournamentMatch?: number;
+  tournamentResults?: AlgorithmWorldTournamentResults;
 };
 export type AlgorithmWorldPhase = "setup" | "search" | "path" | "obstacle" | "replan" | "done";
 export type AlgorithmWorldRaceIntroStage = "randomizing" | "assembling" | "versus" | "countdown" | "race" | "winner" | "bracket";
@@ -61,6 +63,7 @@ export type AlgorithmWorldRaceIntroState = {
   pickedIndex?: number;
   assemblyProgress?: number;
   winnerName?: string;
+  winnerAlgorithm?: AlgorithmWorldAlgorithmId;
   tie?: boolean;
   tournament?: AlgorithmWorldTournamentState;
 };

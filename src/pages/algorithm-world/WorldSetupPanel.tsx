@@ -199,8 +199,9 @@ function AlgorithmsCard({ s, isLong, compareEnabled, t }: PanelProps & {
 
 function TournamentCard({ s, t, compact = false }: PanelProps & { compact?: boolean }) {
   const round = s.worldTournamentRound as AlgorithmWorldTournamentRound;
-  const match = resolveTournamentMatch(round, s.worldTournamentMatch);
-  const options = tournamentMatchOptions(round, s.lang);
+  const match = resolveTournamentMatch(round, s.worldTournamentMatch, s.worldTournamentResults);
+  const options = tournamentMatchOptions(round, s.lang, s.worldTournamentResults);
+  const savedResults = Object.keys(s.worldTournamentResults).length;
   return (
     <Card className="space-y-3 border-yellow-300/25 bg-yellow-400/5 p-4">
       <div className="flex items-center justify-between gap-3">
@@ -235,6 +236,12 @@ function TournamentCard({ s, t, compact = false }: PanelProps & { compact?: bool
           <div className="rounded-lg border border-yellow-300/30 bg-slate-950/40 p-3 text-xs">
             <div className="font-semibold text-yellow-100">{worldMatchTitle(match.left, match.right)}</div>
             <div className="mt-1 text-muted-foreground">{t("Map: random theo trận · Intro random → ráp map → VS → đua → winner → cây giải đấu", "Map: match-random · random roll → map assembly → VS → race → winner → bracket tree")}</div>
+          </div>
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-background/60 p-3 text-xs">
+            <span className="text-muted-foreground">{t(`Đã lưu ${savedResults} kết quả`, `${savedResults} saved results`)}</span>
+            <Button variant="outline" size="sm" onClick={s.resetWorldTournamentResults}>
+              <RotateCcw className="mr-2 h-3.5 w-3.5" /> {t("Reset giải đấu", "Reset tournament")}
+            </Button>
           </div>
         </div>
       ) : compact ? null : (

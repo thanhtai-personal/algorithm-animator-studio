@@ -10,6 +10,7 @@ import {
   type AlgorithmWorldMazeId,
   type AlgorithmWorldPresentationMode,
   type AlgorithmWorldProblemType,
+  type AlgorithmWorldTournamentResults,
   type AlgorithmWorldTournamentRound,
   type AlgorithmWorldVideoMode,
 } from "@/lib/algorithms";
@@ -25,8 +26,9 @@ import { ExportFormat } from "./exportFormats";
 import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm, maxDemoSizeForAlgorithm, normalizeAnimalArray, parseInputArray, shouldUseAlgorithmDemo } from "./demoArrays";
 import { exportAlgorithmVideo, preloadExportSfx } from "./videoExport";
 import { renderStudioPreview } from "./renderStudioPreview";
+import { worldAlgorithmName } from "@/lib/algorithmWorld";
 import { getWorldVehicle } from "@/lib/algorithmWorldVehicles";
-import { normalizeTournamentMatch, normalizeTournamentRound } from "@/lib/algorithmWorldTournament";
+import { normalizeTournamentMatch, normalizeTournamentRound, resolveTournamentMatch, tournamentMatchLabel, tournamentResultKey } from "@/lib/algorithmWorldTournament";
 
 const SWAP_TRANSITION_MULTIPLIER = 1.8;
 const KINETIC_ODD_EVEN_FRAME_MULTIPLIER = 8;
@@ -34,6 +36,8 @@ const KINETIC_PANCAKE_FRAME_MULTIPLIER = 9;
 const TREE_SORT_FRAME_MULTIPLIER = 2.4;
 const PIGEONHOLE_FRAME_MULTIPLIER = 2.1;
 const DEFAULT_ANIMAL_ARRAY_SIZE = 14;
+const WORLD_TOURNAMENT_RESULTS_KEY = "algoshorts.mazeTournamentResults.v1";
+const WORLD_TOURNAMENT_SETTINGS_KEY = "algoshorts.mazeTournamentSettings.v1";
 
 type UseAlgorithmStudioOptions = {
   requireConfigAccess?: () => boolean;
@@ -86,9 +90,11 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const [worldMazeId, setWorldMazeIdState] = useState<AlgorithmWorldMazeId>(options.initialWorldMazeId ?? "astar_labyrinth");
   const [worldPrimaryAlgorithm, setWorldPrimaryAlgorithmState] = useState<AlgorithmWorldAlgorithmId>(options.initialWorldPrimaryAlgorithm ?? "astar");
   const [worldSecondaryAlgorithm, setWorldSecondaryAlgorithmState] = useState<AlgorithmWorldAlgorithmId>(options.initialWorldSecondaryAlgorithm ?? "dijkstra");
-  const [worldTournamentEnabled, setWorldTournamentEnabledState] = useState(options.initialWorldTournamentEnabled ?? false);
-  const [worldTournamentRound, setWorldTournamentRoundState] = useState<AlgorithmWorldTournamentRound>(options.initialWorldTournamentRound ?? 0);
-  const [worldTournamentMatch, setWorldTournamentMatchState] = useState(options.initialWorldTournamentMatch ?? 0);
+  const initialTournamentSettings = useMemo(() => readTournamentSettings(), []);
+  const [worldTournamentEnabled, setWorldTournamentEnabledState] = useState(options.initialWorldTournamentEnabled ?? initialTournamentSettings.enabled);
+  const [worldTournamentRound, setWorldTournamentRoundState] = useState<AlgorithmWorldTournamentRound>(options.initialWorldTournamentRound ?? initialTournamentSettings.round);
+  const [worldTournamentMatch, setWorldTournamentMatchState] = useState(options.initialWorldTournamentMatch ?? initialTournamentSettings.match);
+  const [worldTournamentResults, setWorldTournamentResultsState] = useState<AlgorithmWorldTournamentResults>(() => readTournamentResults());
   const [worldPrimaryVehicleId, setWorldPrimaryVehicleIdState] = useState("bolt");
   const [worldSecondaryVehicleId, setWorldSecondaryVehicleIdState] = useState("comet");
   const [worldPrimaryVehicleColor, setWorldPrimaryVehicleColorState] = useState("#34d399");
@@ -156,11 +162,12 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
         tournamentEnabled: worldTournamentEnabled,
         tournamentRound: worldTournamentRound,
         tournamentMatch: worldTournamentMatch,
+        tournamentResults: worldTournamentResults,
       },
       start: startId >= 0 ? startId : undefined,
       end: endId >= 0 ? endId : undefined,
     });
-  }, [algo, arr, target, customCode, parsedGraph, startId, endId, worldVideoMode, worldCompareEnabled, worldPresentationMode, worldProblemType, worldMazeId, worldPrimaryAlgorithm, worldSecondaryAlgorithm, worldPrimaryVehicleColor, worldSecondaryVehicleColor, worldPrimaryVehicleId, worldSecondaryVehicleId, worldTournamentEnabled, worldTournamentRound, worldTournamentMatch]);
+  }, [algo, arr, target, customCode, parsedGraph, startId, endId, worldVideoMode, worldCompareEnabled, worldPresentationMode, worldProblemType, worldMazeId, worldPrimaryAlgorithm, worldSecondaryAlgorithm, worldPrimaryVehicleColor, worldSecondaryVehicleColor, worldPrimaryVehicleId, worldSecondaryVehicleId, worldTournamentEnabled, worldTournamentRound, worldTournamentMatch, worldTournamentResults]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const current = frames[Math.min(frameIdx, frames.length - 1)];
@@ -267,6 +274,33 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     renderStudioPreview({ ctx, frame: f, previousFrame, frameIndex: frameIdx, frameCount: frames.length, transitionProgress, width: W, height: H, shortVideoType, algorithmId: algoId, algoName: algo.name, lang, title, subtitle, theme, code, showCode, animalColumns });
   }, [frames, frameIdx, transitionProgress, title, subtitle, theme, algo.code, showCode, algoId, customCode, animalColumns, W, H, shortVideoType, algo.name, lang]);
 
+  useEffect(() => {
+    const intro = current?.worldCompare?.raceIntro;
+    if (!worldTournamentEnabled || intro?.stage !== "bracket" || !intro.winnerAlgorithm) return;
+    if (intro.tick < Math.max(0, intro.duration - 2)) return;
+    persistTournamentResult(worldTournamentRound, worldTournamentMatch, intro.winnerAlgorithm);
+  }, [current, worldTournamentEnabled, worldTournamentRound, worldTournamentMatch]);
+
+  function persistTournamentResult(round: AlgorithmWorldTournamentRound, match: number, winner: AlgorithmWorldAlgorithmId) {
+    const key = tournamentResultKey(round, normalizeTournamentMatch(round, match));
+    setWorldTournamentResultsState((prev) => {
+      if (prev[key] === winner) return prev;
+      const next = { ...prev, [key]: winner };
+      writeTournamentResults(next);
+      return next;
+    });
+  }
+
+  function resetWorldTournamentResults() {
+    setWorldTournamentResultsState({});
+    writeTournamentResults({});
+    setWorldTournamentRoundState(0);
+    setWorldTournamentMatchState(0);
+    writeTournamentSettings({ enabled: worldTournamentEnabled, round: 0, match: 0 });
+    setFrameIdx(0);
+    setPlaying(false);
+  }
+
   const playEvent = (f: Frame | null | undefined) => {
     if (!f) return;
     const ev = f.event;
@@ -371,6 +405,10 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
 
     const code = algoId === "custom" ? customCode : algo.code;
     const musicLicenseText = libraryMusicTracks.find((track) => track.id === musicPreset)?.licenseText;
+    const youtubeMetadata = buildYoutubeMetadata(algo.id, lang, "short");
+    const tournamentExportTitle = worldTournamentEnabled
+      ? buildTournamentExportTitle(lang, worldTournamentRound, worldTournamentMatch, worldTournamentResults)
+      : undefined;
     try {
       const exported = await exportAlgorithmVideo({
         frames,
@@ -391,7 +429,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
         exportFormat,
         animalColumns,
         musicPreset,
-        youtubeMetadata: buildYoutubeMetadata(algo.id, lang, "short"),
+        youtubeMetadata: tournamentExportTitle ? { ...youtubeMetadata, title: tournamentExportTitle } : youtubeMetadata,
         youtubeDescriptionAppend: musicLicenseText,
         sfxCompare,
         sfxSwap,
@@ -399,7 +437,11 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
         onUnsupportedFormat: (label) => toast.error(`${label}: ${tr("unsupportedExport")}`),
         playEvent,
       });
-      if (exported) toast.success(tr("exportDone"));
+      if (exported) {
+        const winner = findTournamentWinner(frames);
+        if (worldTournamentEnabled && winner) persistTournamentResult(worldTournamentRound, worldTournamentMatch, winner);
+        toast.success(tr("exportDone"));
+      }
     } finally {
       setExporting(false);
     }
@@ -447,11 +489,13 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     worldSecondaryAlgorithm,
     setWorldSecondaryAlgorithm: (value: AlgorithmWorldAlgorithmId) => runConfigAction(() => { setWorldSecondaryAlgorithmState(value); setFrameIdx(0); setPlaying(false); }),
     worldTournamentEnabled,
-    setWorldTournamentEnabled: (value: boolean) => runConfigAction(() => { setWorldTournamentEnabledState(value); if (value) { setWorldPresentationModeState("vehicle_race"); setWorldCompareEnabledState(true); setShowCode(false); setWorldMazeIdState("random"); } setFrameIdx(0); setPlaying(false); }),
+    setWorldTournamentEnabled: (value: boolean) => runConfigAction(() => { setWorldTournamentEnabledState(value); writeTournamentSettings({ enabled: value, round: worldTournamentRound, match: worldTournamentMatch }); if (value) { setWorldPresentationModeState("vehicle_race"); setWorldCompareEnabledState(true); setShowCode(false); setWorldMazeIdState("random"); } setFrameIdx(0); setPlaying(false); }),
     worldTournamentRound,
-    setWorldTournamentRound: (value: AlgorithmWorldTournamentRound) => runConfigAction(() => { const round = normalizeTournamentRound(value); setWorldTournamentRoundState(round); setWorldTournamentMatchState((m) => normalizeTournamentMatch(round, m)); setFrameIdx(0); setPlaying(false); }),
+    setWorldTournamentRound: (value: AlgorithmWorldTournamentRound) => runConfigAction(() => { const round = normalizeTournamentRound(value); setWorldTournamentRoundState(round); setWorldTournamentMatchState((m) => { const match = normalizeTournamentMatch(round, m); writeTournamentSettings({ enabled: worldTournamentEnabled, round, match }); return match; }); setFrameIdx(0); setPlaying(false); }),
     worldTournamentMatch,
-    setWorldTournamentMatch: (value: number) => runConfigAction(() => { setWorldTournamentMatchState(normalizeTournamentMatch(worldTournamentRound, value)); setFrameIdx(0); setPlaying(false); }),
+    setWorldTournamentMatch: (value: number) => runConfigAction(() => { const match = normalizeTournamentMatch(worldTournamentRound, value); setWorldTournamentMatchState(match); writeTournamentSettings({ enabled: worldTournamentEnabled, round: worldTournamentRound, match }); setFrameIdx(0); setPlaying(false); }),
+    worldTournamentResults,
+    resetWorldTournamentResults: () => runConfigAction(resetWorldTournamentResults),
     worldPrimaryVehicleColor,
     setWorldPrimaryVehicleColor: (value: string) => runConfigAction(() => { setWorldPrimaryVehicleColorState(value); setFrameIdx(0); setPlaying(false); }),
     worldSecondaryVehicleColor,
@@ -485,6 +529,93 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     current, isSearch, isCustom, codeForPanel, newArray, onMusicUpload, requestExport, exportLocked: options.exportLocked ?? false,
   };
 }
+
+function readTournamentResults(): AlgorithmWorldTournamentResults {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(WORLD_TOURNAMENT_RESULTS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const validIds = new Set(Object.keys(WORLD_ALGORITHMS_FOR_STORAGE));
+    return Object.fromEntries(
+      Object.entries(parsed).filter(([, value]) => typeof value === "string" && validIds.has(value)),
+    ) as AlgorithmWorldTournamentResults;
+  } catch {
+    return {};
+  }
+}
+
+function writeTournamentResults(results: AlgorithmWorldTournamentResults) {
+  if (typeof window === "undefined") return;
+  if (Object.keys(results).length === 0) {
+    window.localStorage.removeItem(WORLD_TOURNAMENT_RESULTS_KEY);
+    return;
+  }
+  window.localStorage.setItem(WORLD_TOURNAMENT_RESULTS_KEY, JSON.stringify(results));
+}
+
+type StoredTournamentSettings = {
+  enabled: boolean;
+  round: AlgorithmWorldTournamentRound;
+  match: number;
+};
+
+function readTournamentSettings(): StoredTournamentSettings {
+  if (typeof window === "undefined") return { enabled: false, round: 0, match: 0 };
+  try {
+    const raw = window.localStorage.getItem(WORLD_TOURNAMENT_SETTINGS_KEY);
+    if (!raw) return { enabled: false, round: 0, match: 0 };
+    const parsed = JSON.parse(raw) as Partial<StoredTournamentSettings>;
+    const round = normalizeTournamentRound(Number(parsed.round ?? 0));
+    return {
+      enabled: Boolean(parsed.enabled),
+      round,
+      match: normalizeTournamentMatch(round, Number(parsed.match ?? 0)),
+    };
+  } catch {
+    return { enabled: false, round: 0, match: 0 };
+  }
+}
+
+function writeTournamentSettings(settings: StoredTournamentSettings) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(WORLD_TOURNAMENT_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function findTournamentWinner(frames: Frame[]): AlgorithmWorldAlgorithmId | undefined {
+  for (let index = frames.length - 1; index >= 0; index--) {
+    const intro = frames[index]?.worldCompare?.raceIntro;
+    if (intro?.stage === "bracket" && intro.winnerAlgorithm) return intro.winnerAlgorithm;
+  }
+  return undefined;
+}
+
+function buildTournamentExportTitle(
+  lang: Lang,
+  round: AlgorithmWorldTournamentRound,
+  match: number,
+  results: AlgorithmWorldTournamentResults,
+) {
+  const safeRound = normalizeTournamentRound(round);
+  const safeMatch = normalizeTournamentMatch(safeRound, match);
+  const resolved = resolveTournamentMatch(safeRound, safeMatch, results);
+  const matchLabel = tournamentMatchLabel(safeRound, safeMatch, lang);
+  const prefix = lang === "vi" ? "Giải đấu thuật toán mê cung" : "Maze Algorithm Knockout";
+  return `${prefix} - ${matchLabel} - ${worldAlgorithmName(resolved.left)} vs ${worldAlgorithmName(resolved.right)}`;
+}
+
+const WORLD_ALGORITHMS_FOR_STORAGE: Record<AlgorithmWorldAlgorithmId, true> = {
+  dfs: true,
+  bfs: true,
+  dijkstra: true,
+  astar: true,
+  greedy: true,
+  weighted_astar: true,
+  beam: true,
+  bidirectional_bfs: true,
+  wall_follower: true,
+  tremaux: true,
+};
 
 export type AlgorithmStudio = ReturnType<typeof useAlgorithmStudio>;
 

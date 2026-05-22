@@ -81,8 +81,8 @@ export function PhaserMazePreview({ frame, width, height, title, subtitle, theme
   return (
     <div
       ref={hostRef}
-      className="overflow-hidden rounded-lg bg-slate-950 shadow-[0_0_35px_rgba(34,211,238,0.14)]"
-      style={{ height: PREVIEW_MAX_HEIGHT, aspectRatio: `${width}/${height}` }}
+      className="w-full overflow-hidden rounded-lg bg-slate-950 shadow-[0_0_35px_rgba(34,211,238,0.14)]"
+      style={{ aspectRatio: `${width}/${height}`, maxHeight: PREVIEW_MAX_HEIGHT }}
     />
   );
 }
@@ -274,15 +274,19 @@ function drawVersusIntro(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics
   const cy = y + h / 2;
   const enter = easeOutBack(Math.min(1, progress / 0.42));
   const settle = easeOutCubic(Math.min(1, Math.max(0, (progress - 0.7) / 0.3)));
-  const leftX = lerp(lerp(x - w * 0.22, x + w * 0.28, enter), x + w * 0.22, settle);
-  const rightX = lerp(lerp(x + w * 1.22, x + w * 0.72, enter), x + w * 0.78, settle);
-  const nameY = lerp(cy, y + 44, settle);
+  const isPortrait = h > w * 0.95;
+  const leftTarget = isPortrait ? { x: x + w * 0.5, y: y + h * 0.14 } : { x: x + w * 0.22, y: y + 44 };
+  const rightTarget = isPortrait ? { x: x + w * 0.5, y: y + h * 0.86 } : { x: x + w * 0.78, y: y + 44 };
+  const leftX = lerp(lerp(x - w * 0.22, x + w * 0.28, enter), leftTarget.x, settle);
+  const rightX = lerp(lerp(x + w * 1.22, x + w * 0.72, enter), rightTarget.x, settle);
+  const leftY = lerp(cy - h * 0.11, leftTarget.y, settle);
+  const rightY = lerp(cy + h * 0.11, rightTarget.y, settle);
   const vsPop = 1 + Math.max(0, Math.sin(Math.min(1, Math.max(0, (progress - 0.38) / 0.28)) * Math.PI)) * 0.45;
   drawPhaserSpeedLines(g, x, y, w, h, tick);
   g.lineStyle(Math.max(5, w * 0.006), COLORS.yellow, 0.95);
   g.lineBetween(x + w * 0.1, y + h * 0.84, x + w * 0.9, y + h * 0.16);
-  drawTeamPlate(scene, g, left, leftX, nameY - h * 0.11 * (1 - settle), Math.min(460, w * 0.36), COLORS.open);
-  drawTeamPlate(scene, g, right, rightX, nameY + h * 0.11 * (1 - settle), Math.min(460, w * 0.36), COLORS.goal);
+  drawTeamPlate(scene, g, left, leftX, leftY, Math.min(460, w * 0.36), COLORS.open);
+  drawTeamPlate(scene, g, right, rightX, rightY, Math.min(460, w * 0.36), COLORS.goal);
   scene.text("VS", cx, cy, Math.min(126, w * 0.12) * vsPop, COLORS.yellow, "center", 900, w * 0.35);
 }
 
@@ -308,8 +312,12 @@ function drawWorld(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, worl
   g.lineStyle(2, COLORS.open, 0.28 + pulse * 0.18);
   g.strokeRoundedRect(x, y, w, h, 16);
   const labelH = large ? 58 : 42;
-  scene.text(world.algorithmName ?? "A*", x + 16, y + labelH / 2, large ? 34 : 30, COLORS.text, "left", 900);
-  scene.text(world.runtimeLabel ?? "", x + w - 16, y + labelH / 2, large ? 24 : 20, COLORS.yellow, "right", 800);
+  const raceMode = world.presentationMode === "vehicle_race";
+  const winnerMode = raceMode && world.raceWinner;
+  if (!winnerMode) {
+    scene.text(world.algorithmName ?? "A*", x + 16, y + labelH / 2, large ? 34 : 30, COLORS.text, "left", 900);
+    scene.text(world.runtimeLabel ?? "", x + w - 16, y + labelH / 2, large ? 24 : 20, COLORS.yellow, "right", 800);
+  }
 
   const hudH = large ? 152 : 108;
   const mazeY = y + labelH + 8;
@@ -319,10 +327,9 @@ function drawWorld(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, worl
   const gridH = cell * world.rows;
   const gridX = x + (w - gridW) / 2;
   const gridY = mazeY + Math.max(0, (mazeH - gridH) / 2);
-  const raceMode = world.presentationMode === "vehicle_race";
   const visible = null;
   raceMode ? drawRaceTrackBase(g, world.cols, world.rows, cell, gridX, gridY) : drawGrid(g, world.cols, world.rows, cell, gridX, gridY);
-  if (raceMode) {
+  if (raceMode && !winnerMode) {
     scene.text(formatRaceTime(world.raceTime ?? world.stepCount ?? 0), gridX + gridW - 4, gridY - Math.max(40, cell * 1.25), large ? 44 : 34, world.raceWinner ? COLORS.yellow : COLORS.text, "right", 900);
   }
   if (visible) drawFog(g, world, visible, cell, gridX, gridY);
@@ -334,11 +341,18 @@ function drawWorld(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, worl
   raceMode ? drawRaceWalls(g, filterVisible(world.dynamicWalls, visible), cell, gridX, gridY, true) : drawWalls(g, filterVisible(world.dynamicWalls, visible), cell, gridX, gridY, true);
   drawCellSet(g, world.pulseCells ?? [], cell, gridX, gridY, COLORS.danger, 0.55 + pulse * 0.3);
   drawPath(g, world.path, cell, gridX, gridY, raceMode ? algorithmColor(world) : COLORS.path, 0.95, false);
-  drawPortal(scene, g, world.start, cell, gridX, gridY, COLORS.start, lang === "vi" ? "VÀO" : "IN");
-  drawPortal(scene, g, world.goal, cell, gridX, gridY, COLORS.goal, lang === "vi" ? "RA" : "OUT");
+  if (!winnerMode) {
+    drawPortal(scene, g, world.start, cell, gridX, gridY, COLORS.start, lang === "vi" ? "VÀO" : "IN");
+    drawPortal(scene, g, world.goal, cell, gridX, gridY, COLORS.goal, lang === "vi" ? "RA" : "OUT");
+  }
   if (world.current) drawRunner(g, world, cell, gridX, gridY, algorithmColor(world), pulse);
-  if (raceMode && world.raceWinner) drawWinnerOverlay(scene, g, world, gridX + gridW / 2, gridY + gridH / 2, gridW, gridH, lang);
-  drawHud(scene, g, world, x + 10, y + h - hudH - 8, w - 20, hudH, lang, large);
+  if (winnerMode) {
+    g.fillStyle(COLORS.bg, 0.82);
+    g.fillRoundedRect(x + 8, y + 8, w - 16, h - 16, 20);
+    drawWinnerOverlay(scene, g, world, x + w / 2, y + h / 2, w * 0.86, h * 0.52, lang);
+  } else {
+    drawHud(scene, g, world, x + 10, y + h - hudH - 8, w - 20, hudH, lang, large);
+  }
 }
 
 function drawTournamentBracket(

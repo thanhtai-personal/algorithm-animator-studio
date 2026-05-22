@@ -85,8 +85,15 @@ function drawWorldPanel(ctx: CanvasRenderingContext2D, world: AlgorithmWorldStat
   drawEndpoint(ctx, world.start, cell, gridX, gridY, "#22d3ee", label(lang, "VÀO", "IN"));
   drawEndpoint(ctx, world.goal, cell, gridX, gridY, "#f43f5e", label(lang, "RA", "OUT"));
   if (world.current) raceMode ? drawVehicle(ctx, world, cell, gridX, gridY, theme) : drawCurrent(ctx, world.current, cell, gridX, gridY, theme.highlight);
-  if (raceMode && world.raceWinner) drawRaceWinner(ctx, world, gridX + gridW / 2, gridY + gridH / 2, gridW, gridH, theme, lang);
   drawHud(ctx, world, x + (raceMode ? 8 : 14), y + h - footerH + (raceMode ? 6 : 12), w - (raceMode ? 16 : 28), footerH - (raceMode ? 12 : 24), theme, lang);
+  if (raceMode && world.raceWinner) {
+    ctx.save();
+    ctx.fillStyle = "rgba(2,6,23,0.78)";
+    roundRect(ctx, x + 8, y + 8, w - 16, h - 16, 20);
+    ctx.fill();
+    ctx.restore();
+    drawRaceWinner(ctx, world, x + w / 2, y + h / 2, w * 0.86, h * 0.52, theme, lang);
+  }
 }
 
 function drawSceneCard(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, theme: Theme) {

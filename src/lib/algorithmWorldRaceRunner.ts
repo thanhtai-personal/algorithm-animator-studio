@@ -54,6 +54,7 @@ type IntroFrameOpts = {
   winnerAlgorithm?: AlgorithmWorldAlgorithmId;
   assemblyProgress?: number;
   pickedIndex?: number;
+  snapshotTick?: number;
 };
 
 const RACE_APPROACH_TICKS = 3;
@@ -71,7 +72,6 @@ export function createRaceCompareFrames(args: AlgorithmWorldBuildArgs) {
   const left = createRacePlan(args.primaryAlgorithm, args.problemType, args.mazeId, baseWalls, dynamicWalls, args.primaryVehicleId);
   const right = createRacePlan(args.secondaryAlgorithm, args.problemType, args.mazeId, baseWalls, dynamicWalls, args.secondaryVehicleId);
   const winnerTick = Math.min(left.finishTick, right.finishTick) + RACE_APPROACH_TICKS;
-  const maxTick = Math.max(left.finishTick, right.finishTick) + RACE_APPROACH_TICKS + 12;
   const frames: Frame[] = [];
 
   if (args.tournamentEnabled) {
@@ -114,7 +114,7 @@ export function createRaceCompareFrames(args: AlgorithmWorldBuildArgs) {
     frames.push(createIntroFrame(args, left, right, { stage: "countdown", tick, duration: COUNTDOWN_TICKS, event: tick % 14 === 0 ? "compare" : null, walls: baseWalls, dynamicWalls }));
   }
 
-  for (let tick = 0; tick <= maxTick; tick++) {
+  for (let tick = 0; tick <= winnerTick; tick++) {
     const leftWorld = raceWorldFor(left, args.problemType, args.mazeId, baseWalls, dynamicWalls, tick, left.finishTick + RACE_APPROACH_TICKS === winnerTick);
     const rightWorld = raceWorldFor(right, args.problemType, args.mazeId, baseWalls, dynamicWalls, tick, right.finishTick + RACE_APPROACH_TICKS === winnerTick);
     frames.push(createRaceFrame(args, leftWorld, rightWorld, tick, tick === winnerTick ? "found" : tick < 8 ? null : "visit", "race"));
@@ -137,6 +137,7 @@ export function createRaceCompareFrames(args: AlgorithmWorldBuildArgs) {
       winnerName: tie ? undefined : worldAlgorithmName(winnerAlgorithm),
       winnerAlgorithm,
       tie,
+      snapshotTick: winnerTick,
     }));
   }
   if (args.tournamentEnabled) {
@@ -152,6 +153,7 @@ export function createRaceCompareFrames(args: AlgorithmWorldBuildArgs) {
         rightWinner: !leftWins,
         winnerName: worldAlgorithmName(winnerAlgorithm),
         winnerAlgorithm,
+        snapshotTick: winnerTick,
       }));
     }
   }
@@ -197,8 +199,11 @@ function createRacePlan(
 }
 
 function createIntroFrame(args: AlgorithmWorldBuildArgs, left: RacePlan, right: RacePlan, opts: IntroFrameOpts): Frame {
-  const leftWorld = raceWorldFor(left, args.problemType, args.mazeId, opts.walls, opts.dynamicWalls, (opts.stage === "winner" || opts.stage === "bracket") ? left.finishTick + RACE_APPROACH_TICKS : 0, Boolean(opts.leftWinner));
-  const rightWorld = raceWorldFor(right, args.problemType, args.mazeId, opts.walls, opts.dynamicWalls, (opts.stage === "winner" || opts.stage === "bracket") ? right.finishTick + RACE_APPROACH_TICKS : 0, Boolean(opts.rightWinner));
+  const settledTick = opts.snapshotTick ?? 0;
+  const leftTick = opts.stage === "winner" || opts.stage === "bracket" ? settledTick : 0;
+  const rightTick = opts.stage === "winner" || opts.stage === "bracket" ? settledTick : 0;
+  const leftWorld = raceWorldFor(left, args.problemType, args.mazeId, opts.walls, opts.dynamicWalls, leftTick, Boolean(opts.leftWinner));
+  const rightWorld = raceWorldFor(right, args.problemType, args.mazeId, opts.walls, opts.dynamicWalls, rightTick, Boolean(opts.rightWinner));
   leftWorld.raceIntroStage = opts.stage;
   rightWorld.raceIntroStage = opts.stage;
   return createRaceFrame(args, leftWorld, rightWorld, opts.tick, opts.event, opts.stage, opts);
@@ -240,11 +245,13 @@ function createRaceFrame(args: AlgorithmWorldBuildArgs, leftWorld: AlgorithmWorl
         pickedIndex: opts?.pickedIndex,
         assemblyProgress: opts?.assemblyProgress,
         winnerName: opts?.winnerName,
+        winnerAlgorithm: opts?.winnerAlgorithm,
         tie: opts?.tie,
         tournament: args.tournamentEnabled ? buildTournamentState({
           round: args.tournamentRound,
           match: args.tournamentMatch,
           winner: opts?.winnerAlgorithm,
+          results: args.tournamentResults,
         }) : undefined,
       },
     },

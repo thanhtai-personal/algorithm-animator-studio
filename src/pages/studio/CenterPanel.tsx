@@ -16,11 +16,11 @@ export function CenterPanel({ studio: s }: Props) {
   const showPhaserMaze = Boolean(s.current?.world || s.current?.worldCompare);
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <Card className="p-3 bg-card/50">
+    <div className="flex min-w-0 flex-col items-center gap-4">
+      <Card className="w-full min-w-0 overflow-hidden bg-card/50 p-3">
         {showPhaserMaze ? (
           <>
-            <Suspense fallback={<div className="grid place-items-center rounded-lg bg-slate-950 text-sm text-cyan-200" style={{ height: PHASER_FALLBACK_HEIGHT, aspectRatio: `${s.W}/${s.H}` }}>Loading Phaser scene...</div>}>
+            <Suspense fallback={<div className="grid w-full place-items-center rounded-lg bg-slate-950 text-sm text-cyan-200" style={{ maxHeight: PHASER_FALLBACK_HEIGHT, aspectRatio: `${s.W}/${s.H}` }}>Loading Phaser scene...</div>}>
               <PhaserMazePreview key={`${s.W}x${s.H}`} frame={s.current} width={s.W} height={s.H} title={s.title} subtitle={s.subtitle} theme={s.theme} lang={s.lang} />
             </Suspense>
             <canvas ref={s.canvasRef} width={s.W} height={s.H} className="hidden" />
@@ -30,13 +30,13 @@ export function CenterPanel({ studio: s }: Props) {
             ref={s.canvasRef}
             width={s.W}
             height={s.H}
-            className="rounded-lg w-auto"
+            className="h-auto max-w-full rounded-lg"
             style={{ maxHeight: "70vh", aspectRatio: `${s.W}/${s.H}` }}
           />
         )}
       </Card>
-      <Card className="w-full max-w-2xl p-4 space-y-3">
-        <div className="flex gap-2">
+      <Card className="w-full max-w-2xl space-y-3 p-4">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Button className="flex-1" onClick={() => { audioEngine.resume(); s.setPlaying((p) => !p); }} disabled={s.exporting}>
             {s.playing ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
             {s.playing ? s.tr("pause") : s.tr("play")}

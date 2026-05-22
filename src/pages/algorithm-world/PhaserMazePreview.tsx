@@ -260,8 +260,9 @@ function drawRaceIntro(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, 
 
   if (intro.stage === "countdown") {
     const progress = Math.min(1, (intro.tick + 1) / Math.max(1, intro.duration));
-    const count = 3 - Math.min(2, Math.floor(progress * 3));
-    scene.text(String(count), cx, cy, Math.min(190, w * 0.18) * (1 + pulse * 0.08), COLORS.yellow, "center", 900);
+    const countdownStep = Math.min(3, Math.floor(progress * 4));
+    const text = countdownStep < 3 ? String(3 - countdownStep) : "START";
+    scene.text(text, cx, cy, Math.min(text === "START" ? 132 : 190, w * (text === "START" ? 0.13 : 0.18)) * (1 + pulse * 0.08), COLORS.yellow, "center", 900, w * 0.72);
     scene.text(lang === "vi" ? "Chuẩn bị xuất phát" : "Ready to launch", cx, cy + Math.min(130, h * 0.17), 28, COLORS.open, "center", 900, w * 0.76);
     return;
   }

@@ -203,9 +203,10 @@ export function drawRaceIntroOverlay(
   }
 
   if (intro.stage === "countdown") {
-    const count = 3 - Math.min(2, Math.floor(progress * 3));
+    const countdownStep = Math.min(3, Math.floor(progress * 4));
+    const text = countdownStep < 3 ? String(3 - countdownStep) : "START";
     const pulse = 1 + Math.sin(intro.tick * 0.55) * 0.08;
-    drawCenteredText(ctx, String(count), cx, cy, Math.min(190, w * 0.18) * pulse, "#fde047", 1000);
+    drawCenteredText(ctx, text, cx, cy, Math.min(text === "START" ? 132 : 190, w * (text === "START" ? 0.13 : 0.18)) * pulse, "#fde047", 1000, w * 0.72);
     drawCenteredText(ctx, label(lang, "Chuẩn bị xuất phát", "Ready to launch"), cx, cy + Math.min(130, h * 0.17), 28, "#a5f3fc", 900, w * 0.76);
     ctx.restore();
     return;

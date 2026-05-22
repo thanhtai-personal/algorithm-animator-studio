@@ -122,6 +122,9 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const [sfxVol, setSfxVol] = useState(60);
   const [musicVol, setMusicVol] = useState(30);
   const [musicPreset, setMusicPreset] = useState<BackgroundMusicId>("off");
+  const [worldTournamentStartMusic, setWorldTournamentStartMusic] = useState<BackgroundMusicId>(initialTournamentSettings.startMusic);
+  const [worldTournamentRaceMusic, setWorldTournamentRaceMusic] = useState<BackgroundMusicId>(initialTournamentSettings.raceMusic);
+  const [worldTournamentResultMusic, setWorldTournamentResultMusic] = useState<BackgroundMusicId>(initialTournamentSettings.resultMusic);
   const [musicSearch, setMusicSearch] = useState("");
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
   const [libraryMusicTracks, setLibraryMusicTracks] = useState<MusicLibraryTrack[]>([]);
@@ -171,6 +174,14 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const current = frames[Math.min(frameIdx, frames.length - 1)];
+  const activeMusicPreset = useMemo(() => {
+    if (!worldTournamentEnabled) return musicPreset;
+    return tournamentMusicForFrame(current, {
+      start: worldTournamentStartMusic,
+      race: worldTournamentRaceMusic,
+      result: worldTournamentResultMusic,
+    });
+  }, [current, musicPreset, worldTournamentEnabled, worldTournamentStartMusic, worldTournamentRaceMusic, worldTournamentResultMusic]);
   const isSearch = algo.category === "search";
   const isCustom = algoId === "custom";
   const randomSizeMax = maxDemoSizeForAlgorithm(algoId);
@@ -224,8 +235,8 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   }, [sfxSwap]);
   useEffect(() => {
     let cancelled = false;
-    if (isAssetMusicId(musicPreset)) {
-      const option = getAssetMusicOption(musicPreset);
+    if (isAssetMusicId(activeMusicPreset)) {
+      const option = getAssetMusicOption(activeMusicPreset);
       if (!option) return;
       void option.loadUrl().then((url) => {
         if (cancelled) return;
@@ -235,14 +246,14 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
           audioEngine.startMusic();
         }
       });
-    } else if (isLibraryMusicId(musicPreset)) {
-      const track = libraryMusicTracks.find((item) => item.id === musicPreset);
+    } else if (isLibraryMusicId(activeMusicPreset)) {
+      const track = libraryMusicTracks.find((item) => item.id === activeMusicPreset);
       audioEngine.setMusicSource(track?.audioUrl ?? null);
       if (track && playing) {
         audioEngine.setMusicPreset("custom");
         audioEngine.startMusic();
       }
-    } else if (musicPreset === "custom") {
+    } else if (activeMusicPreset === "custom") {
       audioEngine.setMusicSource(musicUrl);
       if (playing) {
         audioEngine.setMusicPreset("custom");
@@ -252,16 +263,16 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
       audioEngine.setMusicSource(null);
     }
     return () => { cancelled = true; };
-  }, [musicPreset, musicUrl, playing, libraryMusicTracks]);
+  }, [activeMusicPreset, musicUrl, playing, libraryMusicTracks]);
   useEffect(() => {
     if (!playing) {
       audioEngine.stopMusic();
       return;
     }
     audioEngine.resume();
-    audioEngine.setMusicPreset(isProceduralMusicPreset(musicPreset) ? musicPreset : "custom");
+    audioEngine.setMusicPreset(isProceduralMusicPreset(activeMusicPreset) ? activeMusicPreset : "custom");
     audioEngine.startMusic();
-  }, [musicPreset, playing]);
+  }, [activeMusicPreset, playing]);
   useEffect(() => { if (!playing) setTransitionProgress(1); }, [playing, frameIdx]);
 
   useEffect(() => {
@@ -296,7 +307,14 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     writeTournamentResults({});
     setWorldTournamentRoundState(0);
     setWorldTournamentMatchState(0);
-    writeTournamentSettings({ enabled: worldTournamentEnabled, round: 0, match: 0 });
+    writeTournamentSettings({
+      enabled: worldTournamentEnabled,
+      round: 0,
+      match: 0,
+      startMusic: worldTournamentStartMusic,
+      raceMusic: worldTournamentRaceMusic,
+      resultMusic: worldTournamentResultMusic,
+    });
     setFrameIdx(0);
     setPlaying(false);
   }
@@ -404,7 +422,12 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     setPlaying(false);
 
     const code = algoId === "custom" ? customCode : algo.code;
-    const musicLicenseText = libraryMusicTracks.find((track) => track.id === musicPreset)?.licenseText;
+    const musicLicenseText = tournamentMusicLicenseText(
+      worldTournamentEnabled
+        ? [worldTournamentStartMusic, worldTournamentRaceMusic, worldTournamentResultMusic]
+        : [musicPreset],
+      libraryMusicTracks,
+    );
     const youtubeMetadata = buildYoutubeMetadata(algo.id, lang, "short");
     const tournamentExportTitle = worldTournamentEnabled
       ? buildTournamentExportTitle(lang, worldTournamentRound, worldTournamentMatch, worldTournamentResults)
@@ -429,6 +452,14 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
         exportFormat,
         animalColumns,
         musicPreset,
+        resolveMusicPreset: worldTournamentEnabled
+          ? (frame) => tournamentMusicForFrame(frame, {
+            start: worldTournamentStartMusic,
+            race: worldTournamentRaceMusic,
+            result: worldTournamentResultMusic,
+          })
+          : undefined,
+        resolveMusicUrl,
         youtubeMetadata: tournamentExportTitle ? { ...youtubeMetadata, title: tournamentExportTitle } : youtubeMetadata,
         youtubeDescriptionAppend: musicLicenseText,
         sfxCompare,
@@ -489,11 +520,11 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     worldSecondaryAlgorithm,
     setWorldSecondaryAlgorithm: (value: AlgorithmWorldAlgorithmId) => runConfigAction(() => { setWorldSecondaryAlgorithmState(value); setFrameIdx(0); setPlaying(false); }),
     worldTournamentEnabled,
-    setWorldTournamentEnabled: (value: boolean) => runConfigAction(() => { setWorldTournamentEnabledState(value); writeTournamentSettings({ enabled: value, round: worldTournamentRound, match: worldTournamentMatch }); if (value) { setWorldPresentationModeState("vehicle_race"); setWorldCompareEnabledState(true); setShowCode(false); setWorldMazeIdState("random"); } setFrameIdx(0); setPlaying(false); }),
+    setWorldTournamentEnabled: (value: boolean) => runConfigAction(() => { setWorldTournamentEnabledState(value); writeCurrentTournamentSettings({ enabled: value }); if (value) { setWorldPresentationModeState("vehicle_race"); setWorldCompareEnabledState(true); setShowCode(false); setWorldMazeIdState("random"); } setFrameIdx(0); setPlaying(false); }),
     worldTournamentRound,
-    setWorldTournamentRound: (value: AlgorithmWorldTournamentRound) => runConfigAction(() => { const round = normalizeTournamentRound(value); setWorldTournamentRoundState(round); setWorldTournamentMatchState((m) => { const match = normalizeTournamentMatch(round, m); writeTournamentSettings({ enabled: worldTournamentEnabled, round, match }); return match; }); setFrameIdx(0); setPlaying(false); }),
+    setWorldTournamentRound: (value: AlgorithmWorldTournamentRound) => runConfigAction(() => { const round = normalizeTournamentRound(value); setWorldTournamentRoundState(round); setWorldTournamentMatchState((m) => { const match = normalizeTournamentMatch(round, m); writeCurrentTournamentSettings({ round, match }); return match; }); setFrameIdx(0); setPlaying(false); }),
     worldTournamentMatch,
-    setWorldTournamentMatch: (value: number) => runConfigAction(() => { const match = normalizeTournamentMatch(worldTournamentRound, value); setWorldTournamentMatchState(match); writeTournamentSettings({ enabled: worldTournamentEnabled, round: worldTournamentRound, match }); setFrameIdx(0); setPlaying(false); }),
+    setWorldTournamentMatch: (value: number) => runConfigAction(() => { const match = normalizeTournamentMatch(worldTournamentRound, value); setWorldTournamentMatchState(match); writeCurrentTournamentSettings({ match }); setFrameIdx(0); setPlaying(false); }),
     worldTournamentResults,
     resetWorldTournamentResults: () => runConfigAction(resetWorldTournamentResults),
     worldPrimaryVehicleColor,
@@ -519,6 +550,9 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     sfxVol, setSfxVol: (value: number) => runConfigAction(() => setSfxVol(value)),
     musicVol, setMusicVol: (value: number) => runConfigAction(() => setMusicVol(value)),
     musicPreset, setMusicPreset: (value: BackgroundMusicId) => runConfigAction(() => setMusicPreset(value)),
+    worldTournamentStartMusic, setWorldTournamentStartMusic: (value: BackgroundMusicId) => runConfigAction(() => { setWorldTournamentStartMusic(value); writeCurrentTournamentSettings({ startMusic: value }); }),
+    worldTournamentRaceMusic, setWorldTournamentRaceMusic: (value: BackgroundMusicId) => runConfigAction(() => { setWorldTournamentRaceMusic(value); writeCurrentTournamentSettings({ raceMusic: value }); }),
+    worldTournamentResultMusic, setWorldTournamentResultMusic: (value: BackgroundMusicId) => runConfigAction(() => { setWorldTournamentResultMusic(value); writeCurrentTournamentSettings({ resultMusic: value }); }),
     musicSearch, setMusicSearch: (value: string) => runConfigAction(() => setMusicSearch(value)),
     libraryMusicTracks,
     customCode, setCustomCode: (value: string) => runConfigAction(() => setCustomCode(value)),
@@ -528,6 +562,25 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     algo, isGraph, graphLabels, frames, canvasRef, randomSizeMax,
     current, isSearch, isCustom, codeForPanel, newArray, onMusicUpload, requestExport, exportLocked: options.exportLocked ?? false,
   };
+
+  async function resolveMusicUrl(preset: BackgroundMusicId) {
+    if (isAssetMusicId(preset)) return getAssetMusicOption(preset)?.loadUrl();
+    if (isLibraryMusicId(preset)) return libraryMusicTracks.find((track) => track.id === preset)?.audioUrl ?? null;
+    if (preset === "custom") return musicUrl;
+    return null;
+  }
+
+  function writeCurrentTournamentSettings(overrides: Partial<StoredTournamentSettings>) {
+    writeTournamentSettings({
+      enabled: worldTournamentEnabled,
+      round: worldTournamentRound,
+      match: worldTournamentMatch,
+      startMusic: worldTournamentStartMusic,
+      raceMusic: worldTournamentRaceMusic,
+      resultMusic: worldTournamentResultMusic,
+      ...overrides,
+    });
+  }
 }
 
 function readTournamentResults(): AlgorithmWorldTournamentResults {
@@ -558,28 +611,41 @@ type StoredTournamentSettings = {
   enabled: boolean;
   round: AlgorithmWorldTournamentRound;
   match: number;
+  startMusic: BackgroundMusicId;
+  raceMusic: BackgroundMusicId;
+  resultMusic: BackgroundMusicId;
 };
 
 function readTournamentSettings(): StoredTournamentSettings {
-  if (typeof window === "undefined") return { enabled: false, round: 0, match: 0 };
+  const fallback: StoredTournamentSettings = { enabled: false, round: 0, match: 0, startMusic: "off", raceMusic: "off", resultMusic: "off" };
+  if (typeof window === "undefined") return fallback;
   try {
     const raw = window.localStorage.getItem(WORLD_TOURNAMENT_SETTINGS_KEY);
-    if (!raw) return { enabled: false, round: 0, match: 0 };
+    if (!raw) return fallback;
     const parsed = JSON.parse(raw) as Partial<StoredTournamentSettings>;
     const round = normalizeTournamentRound(Number(parsed.round ?? 0));
     return {
       enabled: Boolean(parsed.enabled),
       round,
       match: normalizeTournamentMatch(round, Number(parsed.match ?? 0)),
+      startMusic: normalizeBackgroundMusicId(parsed.startMusic),
+      raceMusic: normalizeBackgroundMusicId(parsed.raceMusic),
+      resultMusic: normalizeBackgroundMusicId(parsed.resultMusic),
     };
   } catch {
-    return { enabled: false, round: 0, match: 0 };
+    return fallback;
   }
 }
 
 function writeTournamentSettings(settings: StoredTournamentSettings) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(WORLD_TOURNAMENT_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function normalizeBackgroundMusicId(value: unknown): BackgroundMusicId {
+  if (value === "off" || value === "lofi" || value === "ambient" || value === "chill" || value === "upbeat" || value === "custom") return value;
+  if (typeof value === "string" && (value.startsWith("asset:") || value.startsWith("library:"))) return value as BackgroundMusicId;
+  return "off";
 }
 
 function findTournamentWinner(frames: Frame[]): AlgorithmWorldAlgorithmId | undefined {
@@ -602,6 +668,24 @@ function buildTournamentExportTitle(
   const matchLabel = tournamentMatchLabel(safeRound, safeMatch, lang);
   const prefix = lang === "vi" ? "Giải đấu thuật toán mê cung" : "Maze Algorithm Knockout";
   return `${prefix} - ${matchLabel} - ${worldAlgorithmName(resolved.left)} vs ${worldAlgorithmName(resolved.right)}`;
+}
+
+function tournamentMusicForFrame(
+  frame: Frame | null | undefined,
+  music: { start: BackgroundMusicId; race: BackgroundMusicId; result: BackgroundMusicId },
+) {
+  const intro = frame?.worldCompare?.raceIntro;
+  const stage = intro?.stage ?? frame?.world?.raceIntroStage;
+  if (stage === "winner" || intro?.winnerAlgorithm) return music.result;
+  if (stage === "race") return music.race;
+  return music.start;
+}
+
+function tournamentMusicLicenseText(presets: BackgroundMusicId[], tracks: MusicLibraryTrack[]) {
+  const text = presets
+    .map((preset) => tracks.find((track) => track.id === preset)?.licenseText)
+    .filter((license): license is string => Boolean(license));
+  return Array.from(new Set(text)).join("\n");
 }
 
 const WORLD_ALGORITHMS_FOR_STORAGE: Record<AlgorithmWorldAlgorithmId, true> = {

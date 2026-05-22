@@ -11,6 +11,7 @@ import type { AlgorithmWorldAlgorithmId, AlgorithmWorldMazeId, AlgorithmWorldPro
 import { WORLD_VEHICLES, type AlgorithmWorldVehiclePreset } from "@/lib/algorithmWorldVehicles";
 import { resolveTournamentMatch, tournamentMatchOptions, tournamentRoundLabel } from "@/lib/algorithmWorldTournament";
 import type { AlgorithmStudio } from "@/pages/studio/useAlgorithmStudio";
+import { TournamentMusicControls } from "./TournamentMusicControls";
 
 type Props = { studio: AlgorithmStudio };
 type TFn = (vi: string, en: string) => string;
@@ -86,11 +87,7 @@ export function WorldSetupPanel({ studio: s }: Props) {
   );
 }
 
-function VideoLayoutCard({ s, isLong, isRace, compareEnabled, t }: PanelProps & {
-  isLong: boolean;
-  isRace: boolean;
-  compareEnabled: boolean;
-}) {
+function VideoLayoutCard({ s, isLong, isRace, compareEnabled, t }: PanelProps & { isLong: boolean; isRace: boolean; compareEnabled: boolean }) {
   return (
     <Card className="space-y-3 p-4">
       <div className="flex items-center gap-2"><Zap className="h-4 w-4 text-yellow-300" /><Label>{t("Khung hình video", "Video layout")}</Label></div>
@@ -237,6 +234,7 @@ function TournamentCard({ s, t, compact = false }: PanelProps & { compact?: bool
             <div className="font-semibold text-yellow-100">{worldMatchTitle(match.left, match.right)}</div>
             <div className="mt-1 text-muted-foreground">{t("Map: random theo trận · Intro random → ráp map → VS → đua → winner → cây giải đấu", "Map: match-random · random roll → map assembly → VS → race → winner → bracket tree")}</div>
           </div>
+          <TournamentMusicControls studio={s} t={t} />
           <div className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-background/60 p-3 text-xs">
             <span className="text-muted-foreground">{t(`Đã lưu ${savedResults} kết quả`, `${savedResults} saved results`)}</span>
             <Button variant="outline" size="sm" onClick={s.resetWorldTournamentResults}>

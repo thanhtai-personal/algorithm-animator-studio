@@ -40,6 +40,8 @@ type ExportVideoParams = {
   exportFormat: ExportFormat;
   animalColumns: AnimalColumnSettings;
   musicPreset: BackgroundMusicId;
+  resolveMusicPreset?: (frame: Frame) => BackgroundMusicId;
+  resolveMusicUrl?: (preset: BackgroundMusicId) => Promise<string | null | undefined>;
   youtubeMetadata?: YoutubeAlgorithmMetadata;
   youtubeDescriptionAppend?: string;
   sfxCompare: SfxKind;
@@ -93,17 +95,16 @@ export async function exportAlgorithmVideo(params: ExportVideoParams) {
     recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
   });
 
-  if (isProceduralMusicPreset(params.musicPreset)) audioEngine.setMusicPreset(params.musicPreset);
-  else {
-    audioEngine.setMusicPreset("custom");
-    audioEngine.startMusic();
-  }
+  let activeMusicPreset: BackgroundMusicId | null = null;
+  await applyExportMusic(params, params.resolveMusicPreset?.(params.frames[0]) ?? params.musicPreset);
 
   recorder.start();
   track.requestFrame();
 
   try {
     for (let i = 0; i < params.frames.length; i++) {
+      const nextMusicPreset = params.resolveMusicPreset?.(params.frames[i]) ?? params.musicPreset;
+      if (nextMusicPreset !== activeMusicPreset) await applyExportMusic(params, nextMusicPreset);
       params.playEvent(params.frames[i]);
       const previousFrame = i > 0 ? params.frames[i - 1] : null;
       const transitionFrames = getTransitionFrameCount(params, params.frames[i], previousFrame);
@@ -144,6 +145,18 @@ export async function exportAlgorithmVideo(params: ExportVideoParams) {
   a.download = fileName;
   a.click();
   return true;
+
+  async function applyExportMusic(exportParams: ExportVideoParams, preset: BackgroundMusicId) {
+    activeMusicPreset = preset;
+    if (isProceduralMusicPreset(preset)) {
+      audioEngine.setMusicPreset(preset);
+      return;
+    }
+    const url = await exportParams.resolveMusicUrl?.(preset);
+    audioEngine.setMusicSource(url ?? null);
+    audioEngine.setMusicPreset("custom");
+    audioEngine.startMusic();
+  }
 }
 
 function renderShortFrame(

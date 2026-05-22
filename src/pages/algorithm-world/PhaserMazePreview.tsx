@@ -136,7 +136,7 @@ class MazePreviewScene extends Phaser.Scene {
     }
   }
 
-  text(value: string, x: number, y: number, size: number, color: number, align: "left" | "center" | "right" = "left", weight = 700) {
+  text(value: string, x: number, y: number, size: number, color: number, align: "left" | "center" | "right" = "left", weight = 700, maxWidth?: number) {
     const item = this.add.text(x, y, value, {
       fontFamily: "Inter, ui-sans-serif, system-ui",
       fontSize: `${size}px`,
@@ -144,10 +144,16 @@ class MazePreviewScene extends Phaser.Scene {
       color: toHex(color),
       align,
     }).setOrigin(align === "center" ? 0.5 : align === "right" ? 1 : 0, 0.5);
+    fitTextToWidth(item, size, maxWidth);
     item.setShadow(0, 2, "rgba(0,0,0,0.55)", 8);
     this.labels.push(item);
     return item;
   }
+}
+
+function fitTextToWidth(item: Phaser.GameObjects.Text, initialSize: number, maxWidth?: number) {
+  if (!maxWidth || item.width <= maxWidth) return;
+  item.setFontSize(Math.max(14, Math.floor(initialSize * maxWidth / item.width)));
 }
 
 function toHex(color: number) {
@@ -223,9 +229,16 @@ function drawRaceIntro(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, 
 
   if (intro.stage === "winner") {
     const title = intro.tie ? (lang === "vi" ? "HÒA" : "TIE") : intro.winnerName ?? "WINNER";
-    scene.text(lang === "vi" ? "🏁 CHIẾN THẮNG" : "🏁 WINNER", cx, cy - 64, 42, COLORS.yellow, "center", 900);
-    scene.text(title, cx, cy, 60, COLORS.text, "center", 900);
-    scene.text(lang === "vi" ? "Xe thắng được đưa lên giữa video" : "Winner spotlight in the center", cx, cy + 62, 24, COLORS.open, "center", 900);
+    g.fillStyle(COLORS.panel, 0.96);
+    g.fillRoundedRect(cx - Math.min(760, w * 0.88) / 2, cy - 120, Math.min(760, w * 0.88), 240, 24);
+    g.lineStyle(4, COLORS.yellow, 0.95);
+    g.strokeRoundedRect(cx - Math.min(760, w * 0.88) / 2, cy - 120, Math.min(760, w * 0.88), 240, 24);
+    g.fillStyle(COLORS.yellow, 1);
+    g.fillRoundedRect(cx - 132, cy - 128, 264, 36, 18);
+    scene.text("WINNER", cx, cy - 110, 18, COLORS.bg, "center", 900);
+    scene.text(lang === "vi" ? "🏁 CHIẾN THẮNG" : "🏁 WINNER", cx, cy - 58, 38, COLORS.yellow, "center", 900, w * 0.76);
+    scene.text(title, cx, cy + 8, 62, COLORS.text, "center", 900, w * 0.72);
+    scene.text(lang === "vi" ? "Xe thắng được đưa lên giữa video" : "Winner spotlight in the center", cx, cy + 76, 24, COLORS.open, "center", 900, w * 0.76);
     return;
   }
 
@@ -379,13 +392,18 @@ function drawWinnerOverlay(scene: MazePreviewScene, g: Phaser.GameObjects.Graphi
   const pop = age < 10 ? 0.72 + age * 0.04 : 1 + Math.sin(age * 0.45) * 0.035;
   const alpha = Math.min(0.96, 0.3 + age * 0.12);
   const boxW = Math.min(w * 0.92, 720) * pop;
-  const boxH = 112 * pop;
+  const boxH = 150 * pop;
+  g.fillStyle(COLORS.yellow, 0.16);
+  g.fillCircle(cx, cy, boxW * 0.66);
   g.fillStyle(0x020617, alpha);
   g.fillRoundedRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH, 22);
   g.lineStyle(Math.max(3, 4 * pop), COLORS.yellow, 0.92);
   g.strokeRoundedRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH, 22);
-  scene.text(`${world.algorithmName ?? "Algorithm"} WINNER`, cx, cy - 14 * pop, Math.round(50 * pop), COLORS.yellow, "center", 900);
-  scene.text(lang === "vi" ? "Xe thắng đã dừng tại cửa ra" : "Winning car stopped at the exit", cx, cy + 30 * pop, Math.round(22 * pop), COLORS.text, "center", 900);
+  g.fillStyle(COLORS.yellow, 1);
+  g.fillRoundedRect(cx - boxW * 0.28, cy - boxH / 2 - 18 * pop, boxW * 0.56, 34 * pop, 17 * pop);
+  scene.text("WINNER", cx, cy - boxH / 2 - pop, Math.round(16 * pop), COLORS.bg, "center", 900);
+  scene.text(world.algorithmName ?? "Algorithm", cx, cy - 8 * pop, Math.round(52 * pop), COLORS.yellow, "center", 900, boxW * 0.86);
+  scene.text(lang === "vi" ? "Xe thắng đã dừng tại cửa ra" : "Winning car stopped at the exit", cx, cy + 42 * pop, Math.round(22 * pop), COLORS.text, "center", 900, boxW * 0.86);
 }
 
 function drawGrid(g: Phaser.GameObjects.Graphics, cols: number, rows: number, cell: number, x: number, y: number) {

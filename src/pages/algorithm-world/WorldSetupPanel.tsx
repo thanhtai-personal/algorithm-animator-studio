@@ -15,6 +15,7 @@ import type { AlgorithmStudio } from "@/pages/studio/useAlgorithmStudio";
 type Props = { studio: AlgorithmStudio };
 type TFn = (vi: string, en: string) => string;
 type PanelProps = { s: AlgorithmStudio; t: TFn };
+const SETUP_TAB_CLASS = "min-w-[92px] flex-1 px-2 text-xs";
 
 export function WorldSetupPanel({ studio: s }: Props) {
   const vars = s.current?.vars ?? {};
@@ -49,12 +50,12 @@ export function WorldSetupPanel({ studio: s }: Props) {
       </Card>
 
       <Tabs defaultValue="setup" className="space-y-4">
-        <TabsList className="grid grid-cols-5">
-          <TabsTrigger value="setup">{t("Setup", "Setup")}</TabsTrigger>
-          <TabsTrigger value="maze">{t("Mê cung", "Maze")}</TabsTrigger>
-          <TabsTrigger value="algo">{t("Thuật toán", "Algorithms")}</TabsTrigger>
-          <TabsTrigger value="tournament">{t("Giải đấu", "Tournament")}</TabsTrigger>
-          <TabsTrigger value="frames">{t("Frame", "Frames")}</TabsTrigger>
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
+          <TabsTrigger value="setup" className={SETUP_TAB_CLASS}>{t("Setup", "Setup")}</TabsTrigger>
+          <TabsTrigger value="maze" className={SETUP_TAB_CLASS}>{t("Mê cung", "Maze")}</TabsTrigger>
+          <TabsTrigger value="algo" className={SETUP_TAB_CLASS}>{t("Thuật toán", "Algorithms")}</TabsTrigger>
+          <TabsTrigger value="tournament" className={SETUP_TAB_CLASS}>{t("Giải đấu", "Tournament")}</TabsTrigger>
+          <TabsTrigger value="frames" className={SETUP_TAB_CLASS}>{t("Frame", "Frames")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="setup" className="space-y-4">

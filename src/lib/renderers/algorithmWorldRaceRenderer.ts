@@ -114,25 +114,39 @@ export function drawRaceWinner(ctx: CanvasRenderingContext2D, world: AlgorithmWo
   const pop = age < 10 ? 0.72 + age * 0.04 : 1 + Math.sin(age * 0.45) * 0.035;
   const alpha = Math.min(1, 0.28 + age * 0.12);
   const boxW = Math.min(w * 0.92, 720) * pop;
-  const boxH = 112 * pop;
+  const boxH = 150 * pop;
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.fillStyle = "rgba(2,6,23,0.9)";
-  ctx.strokeStyle = age < 10 ? "#fde047" : `${theme.highlight}cc`;
+  const glow = ctx.createRadialGradient(cx, cy, 20, cx, cy, boxW * 0.64);
+  glow.addColorStop(0, "rgba(253,224,71,0.22)");
+  glow.addColorStop(1, "rgba(253,224,71,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(cx - boxW * 0.75, cy - boxH, boxW * 1.5, boxH * 2);
+  ctx.fillStyle = "rgba(2,6,23,0.96)";
+  ctx.strokeStyle = age < 10 ? "#fde047" : `${theme.highlight}dd`;
   ctx.lineWidth = Math.max(3, 4 * pop);
   ctx.shadowColor = "#fde047";
-  ctx.shadowBlur = 26 + Math.sin(age * 0.5) * 10;
+  ctx.shadowBlur = 34 + Math.sin(age * 0.5) * 10;
   roundRect(ctx, cx - boxW / 2, cy - boxH / 2, boxW, boxH, 22);
   ctx.fill();
   ctx.stroke();
+  ctx.shadowBlur = 0;
+  roundRect(ctx, cx - boxW * 0.28, cy - boxH / 2 - 18 * pop, boxW * 0.56, 34 * pop, 17 * pop);
   ctx.fillStyle = "#fde047";
-  ctx.font = `900 ${Math.round(50 * pop)}px ui-sans-serif, system-ui`;
+  ctx.fill();
+  ctx.fillStyle = "#020617";
+  ctx.font = `1000 ${Math.round(16 * pop)}px ui-sans-serif, system-ui`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(`${world.algorithmName ?? "Algorithm"} WINNER`, cx, cy - 14 * pop);
+  ctx.fillText("WINNER", cx, cy - boxH / 2 - pop);
+  ctx.fillStyle = "#fde047";
+  ctx.font = `1000 ${Math.round(52 * pop)}px ui-sans-serif, system-ui`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  fitFillText(ctx, world.algorithmName ?? "Algorithm", cx, cy - 8 * pop, boxW * 0.86);
   ctx.fillStyle = "#fff";
   ctx.font = `900 ${Math.round(22 * pop)}px ui-sans-serif, system-ui`;
-  ctx.fillText(lang === "vi" ? "Xe thắng đã dừng tại cửa ra" : "Winning car stopped at the exit", cx, cy + 30 * pop);
+  fitFillText(ctx, lang === "vi" ? "Xe thắng đã dừng tại cửa ra" : "Winning car stopped at the exit", cx, cy + 42 * pop, boxW * 0.86);
   ctx.restore();
 }
 
@@ -180,9 +194,9 @@ export function drawRaceIntroOverlay(
     const pop = progress < 0.28 ? 0.75 + progress * 0.9 : 1 + Math.sin(intro.tick * 0.36) * 0.025;
     drawGlassCard(ctx, cx, cy, Math.min(820, w * 0.9) * pop, 250 * pop, "#fde047", 0.97);
     const winner = intro.tie ? label(lang, "HÒA", "TIE") : intro.winnerName ?? "WINNER";
-    drawCenteredText(ctx, label(lang, "🏁 CHIẾN THẮNG", "🏁 WINNER"), cx, cy - 70 * pop, 34 * pop, "#fde047", 1000);
-    drawCenteredText(ctx, winner, cx, cy - 8 * pop, 60 * pop, "#fff", 1000);
-    drawCenteredText(ctx, label(lang, "Xe thắng được đưa lên giữa video", "Winner spotlight in the center"), cx, cy + 62 * pop, 22 * pop, "#a5f3fc", 900);
+    drawCenteredText(ctx, label(lang, "🏁 CHIẾN THẮNG", "🏁 WINNER"), cx, cy - 70 * pop, 34 * pop, "#fde047", 1000, w * 0.78);
+    drawCenteredText(ctx, winner, cx, cy - 8 * pop, 60 * pop, "#fff", 1000, w * 0.72);
+    drawCenteredText(ctx, label(lang, "Xe thắng được đưa lên giữa video", "Winner spotlight in the center"), cx, cy + 62 * pop, 22 * pop, "#a5f3fc", 900, w * 0.78);
     ctx.restore();
     return;
   }
@@ -287,17 +301,34 @@ function drawProgressBar(ctx: CanvasRenderingContext2D, x: number, y: number, w:
   ctx.restore();
 }
 
-function drawCenteredText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, color: string, weight: number) {
+function drawCenteredText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, color: string, weight: number, maxWidth?: number) {
   ctx.save();
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = color;
-  ctx.font = `${Math.round(size)}px ui-sans-serif, system-ui`;
+  let fittedSize = size;
+  ctx.font = `${Math.round(fittedSize)}px ui-sans-serif, system-ui`;
+  while (maxWidth && fittedSize > 14 && ctx.measureText(text).width > maxWidth) {
+    fittedSize -= 2;
+    ctx.font = `${Math.round(fittedSize)}px ui-sans-serif, system-ui`;
+  }
   ctx.lineWidth = Math.max(4, size * 0.08);
   ctx.strokeStyle = "rgba(2,6,23,0.82)";
   ctx.strokeText(text, x, y);
-  ctx.font = `${weight} ${Math.round(size)}px ui-sans-serif, system-ui`;
+  ctx.font = `${weight} ${Math.round(fittedSize)}px ui-sans-serif, system-ui`;
   ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
+function fitFillText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth?: number) {
+  if (!maxWidth || ctx.measureText(text).width <= maxWidth) {
+    ctx.fillText(text, x, y);
+    return;
+  }
+  const scale = maxWidth / ctx.measureText(text).width;
+  ctx.save();
+  ctx.scale(scale, 1);
+  ctx.fillText(text, x / scale, y);
   ctx.restore();
 }
 

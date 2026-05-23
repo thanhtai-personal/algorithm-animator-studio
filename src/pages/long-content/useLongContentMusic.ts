@@ -28,28 +28,28 @@ export function useLongContentMusic(lang: Lang, customUrl: string | null) {
         if (!cancelled) setLibraryTracks(tracks.map((track) => ({
           id: track.id,
           title: track.title,
-          subtitle: track.licenseText ? "Thư viện ngoài · có License" : "Thư viện ngoài",
+          subtitle: track.licenseText ? (lang === "vi" ? "Thư viện ngoài · có License" : "External library · License") : (lang === "vi" ? "Thư viện ngoài" : "External library"),
           licenseText: track.licenseText,
           loadUrl: () => Promise.resolve(track.audioUrl),
         })));
       })
       .catch((error) => toast.error(error instanceof Error ? error.message : "Không đọc được thư viện nhạc nền."));
     return () => { cancelled = true; };
-  }, []);
+  }, [lang]);
 
   const tracks = useMemo<MusicCardTrack[]>(() => [
     ...MUSIC_PRESETS.filter((item) => item.id !== "custom").map((item) => ({
       id: item.id,
       title: item.label[lang],
-      subtitle: item.id === "off" ? "Không dùng nhạc nền" : "Preset tạo sẵn",
+      subtitle: item.id === "off" ? (lang === "vi" ? "Không dùng nhạc nền" : "No background music") : (lang === "vi" ? "Preset tạo sẵn" : "Procedural preset"),
     })),
     ...ASSET_MUSIC_OPTIONS.map((track) => ({
       id: track.id,
       title: track.label[lang],
-      subtitle: "Track có sẵn",
+      subtitle: lang === "vi" ? "Track có sẵn" : "Bundled track",
       loadUrl: track.loadUrl,
     })),
-    ...(customUrl ? [{ id: "custom" as BackgroundMusicId, title: "Nhạc đã upload", subtitle: "Custom upload", loadUrl: () => Promise.resolve(customUrl) }] : []),
+    ...(customUrl ? [{ id: "custom" as BackgroundMusicId, title: lang === "vi" ? "Nhạc đã upload" : "Uploaded music", subtitle: "Custom upload", loadUrl: () => Promise.resolve(customUrl) }] : []),
     ...libraryTracks,
   ], [customUrl, lang, libraryTracks]);
 

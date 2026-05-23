@@ -20,12 +20,22 @@ export const TOURNAMENT_ENTRANTS: AlgorithmWorldAlgorithmId[] = [
   "bidirectional_bfs",
 ];
 
+export const TOURNAMENT_POOL: AlgorithmWorldAlgorithmId[] = [
+  ...TOURNAMENT_ENTRANTS,
+  "wall_follower",
+  "tremaux",
+  "fringe",
+  "theta_star",
+];
+
 const ROUND_MATCHES = [4, 2, 1] as const;
 const STRENGTH: Record<AlgorithmWorldAlgorithmId, number> = {
   astar: 95,
+  theta_star: 92,
   dijkstra: 90,
   bidirectional_bfs: 88,
   weighted_astar: 86,
+  fringe: 84,
   bfs: 82,
   greedy: 76,
   beam: 72,
@@ -55,8 +65,8 @@ export function normalizeTournamentMatch(round: AlgorithmWorldTournamentRound, v
   return Math.min(Math.max(0, value), maxTournamentMatches(round) - 1);
 }
 
-export function tournamentSeed(round: AlgorithmWorldTournamentRound, match: number) {
-  return 311 + round * 997 + match * 173;
+export function tournamentSeed(round: AlgorithmWorldTournamentRound, match: number, entrants: AlgorithmWorldAlgorithmId[] = []) {
+  return 311 + round * 997 + match * 173 + hash(normalizeTournamentEntrants(entrants).join("|")) % 997;
 }
 
 export function tournamentRoundLabel(round: AlgorithmWorldTournamentRound, lang: Lang) {
@@ -74,9 +84,9 @@ export function tournamentResultKey(round: AlgorithmWorldTournamentRound, match:
   return `r${round}m${match}`;
 }
 
-export function tournamentMatchOptions(round: AlgorithmWorldTournamentRound, lang: Lang, results: AlgorithmWorldTournamentResults = {}) {
+export function tournamentMatchOptions(round: AlgorithmWorldTournamentRound, lang: Lang, results: AlgorithmWorldTournamentResults = {}, entrants?: AlgorithmWorldAlgorithmId[]) {
   return Array.from({ length: maxTournamentMatches(round) }, (_, match) => {
-    const resolved = resolveTournamentMatch(round, match, results);
+    const resolved = resolveTournamentMatch(round, match, results, entrants);
     return {
       value: String(match),
       label: `${tournamentMatchLabel(round, match, lang)} · ${worldAlgorithmName(resolved.left)} VS ${worldAlgorithmName(resolved.right)}`,
@@ -84,16 +94,17 @@ export function tournamentMatchOptions(round: AlgorithmWorldTournamentRound, lan
   });
 }
 
-export function resolveTournamentMatch(round: AlgorithmWorldTournamentRound, match: number, results: AlgorithmWorldTournamentResults = {}): ResolvedMatch {
+export function resolveTournamentMatch(round: AlgorithmWorldTournamentRound, match: number, results: AlgorithmWorldTournamentResults = {}, entrants?: AlgorithmWorldAlgorithmId[]): ResolvedMatch {
   const safeRound = normalizeTournamentRound(round);
   const safeMatch = normalizeTournamentMatch(safeRound, match);
+  const roster = normalizeTournamentEntrants(entrants);
   if (safeRound === 0) {
-    const left = TOURNAMENT_ENTRANTS[safeMatch * 2];
-    const right = TOURNAMENT_ENTRANTS[safeMatch * 2 + 1];
+    const left = roster[safeMatch * 2];
+    const right = roster[safeMatch * 2 + 1];
     return { round: safeRound, match: safeMatch, left, right };
   }
-  const leftPrev = resolveTournamentMatch((safeRound - 1) as AlgorithmWorldTournamentRound, safeMatch * 2, results);
-  const rightPrev = resolveTournamentMatch((safeRound - 1) as AlgorithmWorldTournamentRound, safeMatch * 2 + 1, results);
+  const leftPrev = resolveTournamentMatch((safeRound - 1) as AlgorithmWorldTournamentRound, safeMatch * 2, results, roster);
+  const rightPrev = resolveTournamentMatch((safeRound - 1) as AlgorithmWorldTournamentRound, safeMatch * 2 + 1, results, roster);
   return {
     round: safeRound,
     match: safeMatch,
@@ -107,14 +118,16 @@ export function buildTournamentState(args: {
   match: number;
   winner?: AlgorithmWorldAlgorithmId;
   results?: AlgorithmWorldTournamentResults;
+  entrants?: AlgorithmWorldAlgorithmId[];
 }): AlgorithmWorldTournamentState {
   const round = normalizeTournamentRound(args.round);
   const match = normalizeTournamentMatch(round, args.match);
   const currentWinner = args.winner ? team(args.winner) : undefined;
   const results = args.results ?? {};
+  const entrants = normalizeTournamentEntrants(args.entrants);
   const rounds: AlgorithmWorldTournamentMatch[][] = [0, 1, 2].map((r) => {
     const rr = r as AlgorithmWorldTournamentRound;
-    return Array.from({ length: maxTournamentMatches(rr) }, (_, m) => buildMatch(rr, m, round, match, results, currentWinner));
+    return Array.from({ length: maxTournamentMatches(rr) }, (_, m) => buildMatch(rr, m, round, match, results, currentWinner, entrants));
   });
   return {
     titleEn: "Maze Algorithm Knockout",
@@ -126,6 +139,42 @@ export function buildTournamentState(args: {
   };
 }
 
+export function visibleTournamentResults(
+  activeRound: AlgorithmWorldTournamentRound,
+  activeMatch: number,
+  results: AlgorithmWorldTournamentResults = {},
+) {
+  const round = normalizeTournamentRound(activeRound);
+  const match = normalizeTournamentMatch(round, activeMatch);
+  return Object.fromEntries(
+    Object.entries(results).filter(([key]) => {
+      const parsed = parseTournamentResultKey(key);
+      if (!parsed) return false;
+      if (parsed.round < round) return true;
+      return parsed.round === round && parsed.match < match;
+    }),
+  ) as AlgorithmWorldTournamentResults;
+}
+
+export function normalizeTournamentEntrants(entrants?: AlgorithmWorldAlgorithmId[]) {
+  const valid = new Set<AlgorithmWorldAlgorithmId>();
+  const normalized = (entrants ?? []).filter((id) => {
+    if (!TOURNAMENT_POOL.includes(id) || valid.has(id)) return false;
+    valid.add(id);
+    return true;
+  });
+  return normalized.length === TOURNAMENT_ENTRANTS.length ? normalized : TOURNAMENT_ENTRANTS;
+}
+
+export function nextTournamentEntrants(current: AlgorithmWorldAlgorithmId[], results: AlgorithmWorldTournamentResults = {}) {
+  const previous = normalizeTournamentEntrants(current);
+  const finalists = tournamentFinalists(previous, results);
+  const previousSet = new Set(previous);
+  const newTeams = shuffle(TOURNAMENT_POOL.filter((id) => !previousSet.has(id)), hash(JSON.stringify(results) + previous.join("|"))).slice(0, 4);
+  const available = shuffle(TOURNAMENT_POOL.filter((id) => !finalists.includes(id) && !newTeams.includes(id)), hash(previous.join("-"))).slice(0, 2);
+  return pairStrongTeams(shuffle([...finalists, ...newTeams, ...available], Date.now()));
+}
+
 function buildMatch(
   round: AlgorithmWorldTournamentRound,
   match: number,
@@ -133,12 +182,13 @@ function buildMatch(
   activeMatch: number,
   results: AlgorithmWorldTournamentResults,
   currentWinner?: AlgorithmWorldTournamentTeam,
+  entrants: AlgorithmWorldAlgorithmId[] = TOURNAMENT_ENTRANTS,
 ): AlgorithmWorldTournamentMatch {
   const active = round === activeRound && match === activeMatch;
   const storedWinner = results[tournamentResultKey(round, match)];
   const winner = active && currentWinner ? currentWinner : storedWinner ? team(storedWinner) : undefined;
-  const leftId = matchParticipant(round, match, 0, results);
-  const rightId = matchParticipant(round, match, 1, results);
+  const leftId = matchParticipant(round, match, 0, results, entrants);
+  const rightId = matchParticipant(round, match, 1, results, entrants);
   return {
     id: `r${round}m${match}`,
     round,
@@ -156,8 +206,9 @@ function matchParticipant(
   match: number,
   slot: 0 | 1,
   results: AlgorithmWorldTournamentResults,
+  entrants: AlgorithmWorldAlgorithmId[] = TOURNAMENT_ENTRANTS,
 ): AlgorithmWorldAlgorithmId | undefined {
-  if (round === 0) return TOURNAMENT_ENTRANTS[match * 2 + slot];
+  if (round === 0) return entrants[match * 2 + slot];
   const previousRound = (round - 1) as AlgorithmWorldTournamentRound;
   return results[tournamentResultKey(previousRound, match * 2 + slot)];
 }
@@ -178,8 +229,40 @@ function team(id: AlgorithmWorldAlgorithmId): AlgorithmWorldTournamentTeam {
   return { id, name: worldAlgorithmName(id) };
 }
 
+function tournamentFinalists(entrants: AlgorithmWorldAlgorithmId[], results: AlgorithmWorldTournamentResults) {
+  const semiA = results[tournamentResultKey(1, 0)];
+  const semiB = results[tournamentResultKey(1, 1)];
+  if (semiA && semiB) return [semiA, semiB];
+  const final = resolveTournamentMatch(2, 0, results, entrants);
+  return [final.left, final.right];
+}
+
+function pairStrongTeams(entrants: AlgorithmWorldAlgorithmId[]) {
+  const ordered = [...entrants].sort((a, b) => (STRENGTH[b] ?? 0) - (STRENGTH[a] ?? 0));
+  return [ordered[0], ordered[4], ordered[1], ordered[5], ordered[2], ordered[6], ordered[3], ordered[7]];
+}
+
+function shuffle<T>(items: T[], seed: number) {
+  const next = [...items];
+  let state = seed || 1;
+  for (let i = next.length - 1; i > 0; i--) {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    const j = state % (i + 1);
+    [next[i], next[j]] = [next[j], next[i]];
+  }
+  return next;
+}
+
 function hash(value: string) {
   let total = 0;
   for (let i = 0; i < value.length; i++) total = (total * 31 + value.charCodeAt(i)) >>> 0;
   return total;
+}
+
+function parseTournamentResultKey(key: string) {
+  const match = /^r([0-2])m(\d+)$/.exec(key);
+  if (!match) return null;
+  const round = normalizeTournamentRound(Number(match[1]));
+  const resultMatch = normalizeTournamentMatch(round, Number(match[2]));
+  return { round, match: resultMatch };
 }

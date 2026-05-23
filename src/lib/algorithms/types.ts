@@ -1,6 +1,6 @@
 
 export type AlgorithmWorldCell = { x: number; y: number };
-export type AlgorithmWorldAlgorithmId = "dfs" | "bfs" | "dijkstra" | "astar" | "greedy" | "weighted_astar" | "beam" | "bidirectional_bfs" | "wall_follower" | "tremaux";
+export type AlgorithmWorldAlgorithmId = "dfs" | "bfs" | "dijkstra" | "astar" | "greedy" | "weighted_astar" | "beam" | "bidirectional_bfs" | "wall_follower" | "tremaux" | "fringe" | "theta_star";
 export type AlgorithmWorldProblemType = "escape" | "fastest";
 export type AlgorithmWorldVideoMode = "short" | "long";
 export type AlgorithmWorldPresentationMode = "explainer" | "vehicle_race";
@@ -23,6 +23,7 @@ export type AlgorithmWorldScenarioOptions = {
   tournamentRound?: AlgorithmWorldTournamentRound;
   tournamentMatch?: number;
   tournamentResults?: AlgorithmWorldTournamentResults;
+  tournamentEntrants?: AlgorithmWorldAlgorithmId[];
 };
 export type AlgorithmWorldPhase = "setup" | "search" | "path" | "obstacle" | "replan" | "done";
 export type AlgorithmWorldRaceIntroStage = "randomizing" | "assembling" | "versus" | "countdown" | "race" | "winner" | "bracket";

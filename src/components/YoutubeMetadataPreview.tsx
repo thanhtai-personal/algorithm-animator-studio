@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { appendYoutubeDescriptionCredit, buildYoutubeMetadata } from "@/lib/youtubeMetadata";
+import { appendYoutubeDescriptionCredit, buildYoutubeMetadata, type YoutubeAlgorithmMetadata } from "@/lib/youtubeMetadata";
 import type { Lang } from "@/lib/i18n";
 import type { LongVideoType } from "@/lib/longVideoTypes";
 
@@ -13,10 +13,11 @@ type Props = {
   variant: "short" | "long";
   longVideoType?: LongVideoType;
   musicLicenseText?: string;
+  metadata?: YoutubeAlgorithmMetadata;
 };
 
-export function YoutubeMetadataPreview({ algoId, lang, variant, longVideoType = "classic", musicLicenseText }: Props) {
-  const metadata = buildYoutubeMetadata(algoId, lang, variant, longVideoType);
+export function YoutubeMetadataPreview({ algoId, lang, variant, longVideoType = "classic", musicLicenseText, metadata: providedMetadata }: Props) {
+  const metadata = providedMetadata ?? buildYoutubeMetadata(algoId, lang, variant, longVideoType);
   const description = appendYoutubeDescriptionCredit(metadata.description, musicLicenseText, lang);
 
   return (

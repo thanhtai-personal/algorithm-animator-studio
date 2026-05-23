@@ -1,4 +1,7 @@
 import { ALGORITHMS, COMPLEXITY } from "./algorithms";
+import type { AlgorithmWorldAlgorithmId, AlgorithmWorldTournamentResults, AlgorithmWorldTournamentRound } from "./algorithms/types";
+import { worldAlgorithmName } from "./algorithmWorld";
+import { resolveTournamentMatch, tournamentMatchLabel } from "./algorithmWorldTournament";
 import { getLongContentGuide, pickGuideText } from "./longContentData";
 import type { LongVideoType } from "./longVideoTypes";
 import type { Lang } from "./i18n";
@@ -107,6 +110,96 @@ export function buildYoutubeMetadata(algoId: string, lang: Lang, variant: "short
     ]).join(", "),
     lang,
     videoType,
+  };
+}
+
+export function buildMazeTournamentYoutubeMetadata(params: {
+  lang: Lang;
+  round: AlgorithmWorldTournamentRound;
+  match: number;
+  results: AlgorithmWorldTournamentResults;
+  entrants: AlgorithmWorldAlgorithmId[];
+  variant: "short" | "long";
+  playlistUrl?: string;
+}): YoutubeAlgorithmMetadata {
+  const isVi = params.lang === "vi";
+  const resolved = resolveTournamentMatch(params.round, params.match, params.results, params.entrants);
+  const left = worldAlgorithmName(resolved.left);
+  const right = worldAlgorithmName(resolved.right);
+  const matchLabel = tournamentMatchLabel(resolved.round, resolved.match, params.lang);
+  const isShort = params.variant === "short";
+  const titleBase = isVi
+    ? `${isShort ? "Shorts recap" : "Full match"}: ${matchLabel} - ${left} vs ${right}`
+    : `${isShort ? "Shorts Recap" : "Full Match"}: ${matchLabel} - ${left} vs ${right}`;
+  const hashtags = uniqueTags([
+    "#mazealgorithm",
+    isShort ? "#shorts" : "#fullmatch",
+    "#pathfinding",
+  ]);
+  const playlistLine = isVi
+    ? `Playlist đầy đủ: ${params.playlistUrl?.trim() || "[dán link playlist Maze Algorithm Knockout tại đây]"}`
+    : `Full playlist: ${params.playlistUrl?.trim() || "[paste the Maze Algorithm Knockout playlist link here]"}`;
+  const description = isVi
+    ? isShort ? [
+      `${left} vs ${right} trong ${matchLabel} - bản Shorts recap của Maze Algorithm Knockout.`,
+      "Bản full match đã được đăng trước đó 1 ngày trong playlist. Shorts này dùng để recap nhanh và kéo bạn về video dài.",
+      "Muốn xem trước các match tiếp theo trước khi có Shorts recap? Mở playlist và xem các video Full Match mới nhất.",
+      playlistLine,
+      "Chủ đề: maze solver, pathfinding, graph search, algorithm race, coding visualization.",
+      hashtags.join(" "),
+      "Tạo video thuật toán bằng tool: https://algorithm-animator-studio.vercel.app/",
+    ] : [
+      `${left} đối đầu ${right} trong ${matchLabel} của Maze Algorithm Knockout.`,
+      "Đây là bản Full Match trong playlist, đăng trước Shorts recap 1 ngày. Nếu muốn xem trước các trận sau, hãy theo dõi playlist vì full match luôn ra trước shorts.",
+      "Xem toàn bộ diễn biến: random maze, ráp map, VS screen, countdown, race, winner reveal và bracket update.",
+      playlistLine,
+      "Video tập trung vào tốc độ tìm đường, khả năng xử lý vật cản và chiến thuật chọn frontier của từng thuật toán.",
+      "Chủ đề: maze solver, pathfinding, graph search, algorithm race, coding visualization.",
+      hashtags.join(" "),
+      "Tạo video thuật toán bằng tool: https://algorithm-animator-studio.vercel.app/",
+    ]
+    : isShort ? [
+      `${left} vs ${right} in ${matchLabel} - a Shorts recap from the Maze Algorithm Knockout.`,
+      "The full match was posted 1 day earlier in the playlist. This Short is a quick recap that points viewers back to the long video.",
+      "Want to see upcoming matches before their Shorts recaps? Open the playlist and watch the newest Full Match uploads.",
+      playlistLine,
+      "Topics: maze solver, pathfinding, graph search, algorithm race, coding visualization.",
+      hashtags.join(" "),
+      "Create algorithm videos with this tool: https://algorithm-animator-studio.vercel.app/",
+    ] : [
+      `${left} faces ${right} in ${matchLabel} of the Maze Algorithm Knockout.`,
+      "This is the Full Match in the playlist, published 1 day before the Shorts recap. To watch future matches early, follow the playlist because full matches come first.",
+      "Watch the complete flow: random maze roll, map assembly, VS screen, countdown, race, winner reveal and bracket update.",
+      playlistLine,
+      "The match highlights pathfinding speed, obstacle handling and frontier selection strategy for each algorithm.",
+      "Topics: maze solver, pathfinding, graph search, algorithm race, coding visualization.",
+      hashtags.join(" "),
+      "Create algorithm videos with this tool: https://algorithm-animator-studio.vercel.app/",
+    ];
+  return {
+    title: appendTitleHashtags(titleBase, hashtags),
+    description: description.join("\n\n"),
+    tags: uniqueTags([
+      "maze algorithm",
+      "maze solver",
+      "pathfinding",
+      "pathfinding algorithm",
+      "algorithm race",
+      "algorithm tournament",
+      "knockout tournament",
+      "graph search",
+      "maze pathfinding",
+      "coding visualization",
+      left,
+      right,
+      resolved.left.replace(/_/g, " "),
+      resolved.right.replace(/_/g, " "),
+      ...(isShort
+        ? ["youtube shorts", "shorts", "shorts recap", "watch full video", "full match", "playlist"]
+        : ["long video", "full match", "algorithm match", "maze race", "watch early", "playlist"]),
+      ...BASE_TAGS,
+    ]).join(", "),
+    lang: params.lang,
   };
 }
 

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Upload } from "lucide-react";
 import { audioEngine } from "@/lib/audio";
 import { ASSET_MUSIC_OPTIONS, BackgroundMusicId, getAssetMusicOption, isAssetMusicId, isLibraryMusicId, isProceduralMusicPreset } from "@/lib/backgroundMusic";
@@ -9,49 +10,63 @@ import { Slider } from "@/components/ui/slider";
 import type { AlgorithmStudio } from "./useAlgorithmStudio";
 
 type Track = { id: BackgroundMusicId; title: string; subtitle: string; hasLicense?: boolean };
+const PAGE_SIZE = 12;
 
 export function ShortMusicPanel({ studio: s, standalone = false }: { studio: AlgorithmStudio; standalone?: boolean }) {
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const vi = s.lang === "vi";
   const tracks: Track[] = [
     ...MUSIC_PRESETS.filter((item) => item.id !== "custom").map((item) => ({
       id: item.id as BackgroundMusicId,
       title: item.label[s.lang],
-      subtitle: item.id === "off" ? (s.lang === "vi" ? "Không dùng nhạc nền" : "No background music") : (s.lang === "vi" ? "Preset tạo sẵn" : "Procedural preset"),
+      subtitle: item.id === "off" ? (vi ? "Không dùng nhạc nền" : "No background music") : (vi ? "Preset tạo sẵn" : "Procedural preset"),
     })),
-    ...ASSET_MUSIC_OPTIONS.map((track) => ({ id: track.id, title: track.label[s.lang], subtitle: s.lang === "vi" ? "Track có sẵn" : "Bundled track" })),
+    ...ASSET_MUSIC_OPTIONS.map((track) => ({ id: track.id, title: track.label[s.lang], subtitle: vi ? "Track có sẵn" : "Bundled track" })),
     ...s.libraryMusicTracks.map((track) => ({ id: track.id, title: track.title, subtitle: track.licenseText ? "MUSIC_LIBRARY_DIR · License" : "MUSIC_LIBRARY_DIR", hasLicense: Boolean(track.licenseText) })),
   ];
   const filtered = tracks.filter((track) => `${track.title} ${track.subtitle}`.toLowerCase().includes(s.musicSearch.trim().toLowerCase()));
+  const visible = filtered.slice(0, visibleCount);
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [s.musicSearch]);
   return (
     <div className={standalone ? "space-y-4" : "space-y-4 border-t border-border/40 pt-3"}>
-      <div className="flex flex-col gap-2">
-        <Label className="text-sm">🎵 {s.tr("bgMusicPreset")}</Label>
-        <Input value={s.musicSearch} onChange={(event) => s.setMusicSearch(event.target.value)} placeholder={s.lang === "vi" ? "Tìm nhạc theo tên..." : "Search music..."} />
+      <div className="space-y-3">
+        <div className="min-w-0">
+          <h2 className="font-semibold">{vi ? "Nhạc nền" : "Background music"}</h2>
+          <p className="text-xs text-muted-foreground">{vi ? "Chọn một track để loop cho video ngắn." : "Choose one track to loop for the short video."}</p>
+        </div>
+        <div className="space-y-3 rounded-lg border border-border/70 bg-background/40 p-3">
+          <Label>{vi ? "Âm lượng nhạc" : "Music volume"} <span className="float-right font-mono text-xs text-emerald-300">{s.musicVol}%</span></Label>
+          <Slider value={[s.musicVol]} min={0} max={100} onValueChange={([value]) => s.setMusicVol(value)} />
+        </div>
+        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_220px]">
+          <Input value={s.musicSearch} onChange={(event) => s.setMusicSearch(event.target.value)} placeholder={vi ? "Tìm nhạc theo tên..." : "Search music by name..."} />
         <label className="flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground">
-          <Upload className="h-3.5 w-3.5" /> {s.tr("uploadMusic")}
+          <Upload className="h-3.5 w-3.5" /> Upload .mp3/.wav
           <input type="file" accept="audio/*" className="hidden" onChange={(event) => {
             const file = event.target.files?.[0];
             if (file) { s.onMusicUpload(file); s.setMusicPreset("custom"); }
           }} />
         </label>
-      </div>
-      <div className="max-h-[320px] overflow-y-auto pr-1">
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-          {filtered.map((track) => <MusicCard key={track.id} track={track} active={s.musicPreset === track.id} onClick={() => s.setMusicPreset(track.id)} />)}
         </div>
       </div>
-      <div className="space-y-3 rounded-lg border border-border/70 bg-background/40 p-3">
-        <Label>Vol <span className="float-right font-mono text-xs text-emerald-300">{s.musicVol}%</span></Label>
-        <Slider value={[s.musicVol]} min={0} max={100} onValueChange={([value]) => s.setMusicVol(value)} />
-        <div className="flex justify-end">
+      <div className="max-h-[340px] overflow-y-auto pr-1" onScroll={(event) => {
+        const el = event.currentTarget;
+        if (visibleCount < filtered.length && el.scrollTop + el.clientHeight >= el.scrollHeight - 48) setVisibleCount((count) => count + PAGE_SIZE);
+      }}>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
+          {visible.map((track) => <MusicCard key={track.id} track={track} active={s.musicPreset === track.id} onClick={() => s.setMusicPreset(track.id)} lang={s.lang} />)}
+        </div>
+        {visibleCount < filtered.length ? <button type="button" className="mt-3 w-full rounded-md border border-border py-2 text-xs text-muted-foreground hover:bg-accent" onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}>{vi ? "Tải thêm nhạc" : "Load more music"}</button> : null}
+      </div>
+      <div className="flex justify-end">
           <Button size="sm" variant="outline" onClick={() => testMusic(s)}>{s.tr("test")} 4s</Button>
-        </div>
-        <p className="text-xs text-muted-foreground">{s.tr("audioInVideo")}</p>
       </div>
+      <p className="text-xs text-muted-foreground">{s.tr("audioInVideo")}</p>
     </div>
   );
 }
 
-function MusicCard(props: { track: Track; active: boolean; onClick: () => void }) {
+function MusicCard(props: { track: Track; active: boolean; onClick: () => void; lang: "en" | "vi" }) {
   const exclusive = isProceduralMusicPreset(props.track.id) && props.track.id !== "off";
   const cls = props.active
     ? exclusive ? "border-yellow-400/60 bg-slate-800/70 text-slate-100" : "border-yellow-400/70 bg-yellow-400/10 text-yellow-50"
@@ -62,7 +77,7 @@ function MusicCard(props: { track: Track; active: boolean; onClick: () => void }
         <span className="line-clamp-2 text-sm font-semibold">{props.track.title}</span>
         {props.active ? <span className="rounded-full bg-yellow-400 px-2 py-0.5 text-xs font-bold text-slate-950">1</span> : null}
       </div>
-      <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{props.track.subtitle}{props.track.hasLicense ? " · License" : ""}</p>
+      <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{exclusive ? `${props.track.subtitle} · ${props.lang === "vi" ? "không ghép track khác" : "no mix"}` : props.track.subtitle}{props.track.hasLicense ? " · License" : ""}</p>
     </button>
   );
 }

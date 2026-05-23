@@ -23,7 +23,7 @@ import {
   worldAlgorithmName,
   worldAlgorithmRuntime,
 } from "./algorithmWorld";
-import { buildTournamentState } from "./algorithmWorldTournament";
+import { buildTournamentState, visibleTournamentResults } from "./algorithmWorldTournament";
 import { getWorldVehicle } from "./algorithmWorldVehicles";
 import { runSearch, type AlgorithmWorldBuildArgs } from "./algorithmWorldRunner";
 
@@ -65,7 +65,6 @@ const COUNTDOWN_TICKS = 56;
 const WINNER_TICKS = 52;
 const BRACKET_TICKS = 70;
 const OPENING_BRACKET_TICKS = 62;
-
 export function createRaceCompareFrames(args: AlgorithmWorldBuildArgs) {
   const baseWalls = makeMazeWalls(args.mazeId);
   const dynamicWalls = makeDynamicObstacleSets(args.mazeId).flat();
@@ -159,7 +158,6 @@ export function createRaceCompareFrames(args: AlgorithmWorldBuildArgs) {
   }
   return frames;
 }
-
 function createRacePlan(
   algorithm: AlgorithmWorldAlgorithmId,
   problemType: AlgorithmWorldProblemType,
@@ -251,7 +249,8 @@ function createRaceFrame(args: AlgorithmWorldBuildArgs, leftWorld: AlgorithmWorl
           round: args.tournamentRound,
           match: args.tournamentMatch,
           winner: opts?.winnerAlgorithm,
-          results: args.tournamentResults,
+          results: visibleTournamentResults(args.tournamentRound, args.tournamentMatch, args.tournamentResults),
+          entrants: args.tournamentEntrants,
         }) : undefined,
       },
     },
@@ -282,8 +281,7 @@ function raceWorldFor(
       ? `${worldAlgorithmName(plan.algorithm)} scans the visible maze before moving.`
       : `${worldAlgorithmName(plan.algorithm)} drives one valid neighbor cell at a time.`;
 
-  return {
-    cols: WORLD_COLS,
+  return { cols: WORLD_COLS,
     rows: WORLD_ROWS,
     start: WORLD_START,
     goal: WORLD_GOAL,

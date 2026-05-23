@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { YoutubeMetadataPreview } from "@/components/YoutubeMetadataPreview";
 import { THEMES } from "@/lib/renderer";
 import { AssetSfxOption, getAssetSfxOption, SELECT_ASSET_SFX_OPTIONS, SWAP_ASSET_SFX_OPTIONS } from "@/lib/selectSounds";
+import { buildMazeTournamentYoutubeMetadata } from "@/lib/youtubeMetadata";
 import { EXPORT_FORMATS, ExportFormat } from "./exportFormats";
 import { ShortMusicPanel } from "./ShortMusicPanel";
 import { AlgorithmStudio } from "./useAlgorithmStudio";
@@ -112,6 +113,17 @@ function AppearanceTab({ studio: s }: Props) {
 }
 
 function ExportTab({ studio: s }: Props) {
+  const tournamentMetadata = s.worldTournamentEnabled
+    ? buildMazeTournamentYoutubeMetadata({
+      lang: s.lang,
+      round: s.worldTournamentRound,
+      match: s.worldTournamentMatch,
+      results: s.worldTournamentResults,
+      entrants: s.worldTournamentEntrants,
+      variant: s.worldVideoMode === "long" ? "long" : "short",
+      playlistUrl: s.worldTournamentPlaylistUrl,
+    })
+    : undefined;
   return (
     <TabsContent value="motion" className="space-y-3 pt-4">
       <div>
@@ -145,11 +157,23 @@ function ExportTab({ studio: s }: Props) {
       <YoutubeMetadataPreview
         algoId={s.algo.id}
         lang={s.lang}
-        variant="short"
-        musicLicenseText={s.libraryMusicTracks.find((track) => track.id === s.musicPreset)?.licenseText}
+        variant={s.worldVideoMode === "long" ? "long" : "short"}
+        metadata={tournamentMetadata}
+        musicLicenseText={youtubeMusicLicenseText(s)}
       />
     </TabsContent>
   );
+}
+
+function youtubeMusicLicenseText(s: AlgorithmStudio) {
+  const ids = s.worldTournamentEnabled
+    ? [s.worldTournamentStartMusic, s.worldTournamentRaceMusic, s.worldTournamentResultMusic]
+    : [s.musicPreset];
+  return s.libraryMusicTracks
+    .filter((track) => ids.includes(track.id) && track.licenseText)
+    .map((track) => track.licenseText)
+    .filter((license, index, licenses) => licenses.indexOf(license) === index)
+    .join("\n");
 }
 
 function AudioTab({ studio: s, showMusicPanel = true }: RightPanelProps) {

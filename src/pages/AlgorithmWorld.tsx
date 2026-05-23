@@ -62,11 +62,11 @@ const MazePathfinding = () => {
         </div>
         <div className="min-w-0">
           <CenterPanel studio={studio} />
-        </div>
-        <div className="min-w-0 space-y-4 xl:col-start-2 2xl:col-start-auto">
-          <Card className="p-4">
+          <Card className="mt-4 p-4">
             <ShortMusicPanel studio={studio} standalone />
           </Card>
+        </div>
+        <div className="min-w-0 space-y-4 xl:col-start-2 2xl:col-start-auto">
           <RightPanel studio={studio} showMusicPanel={false} />
         </div>
       </div>

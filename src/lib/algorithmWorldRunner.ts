@@ -29,7 +29,7 @@ import { runBidirectionalBfs, runTremaux, runWallFollower } from "./algorithmWor
 
 type ScoreMap = Record<string, number>;
 export type SearchResult = { frames: Frame[]; path: AlgorithmWorldCell[]; visitedCount: number; reached: boolean };
-type BuildArgs = Required<Pick<AlgorithmWorldScenarioOptions, "videoMode" | "compareEnabled" | "presentationMode" | "problemType" | "mazeId" | "primaryAlgorithm" | "secondaryAlgorithm" | "primaryVehicleColor" | "secondaryVehicleColor" | "primaryVehicleId" | "secondaryVehicleId">> & { randomMazeRequested: boolean; tournamentEnabled: boolean; tournamentRound: AlgorithmWorldTournamentRound; tournamentMatch: number; tournamentResults: AlgorithmWorldTournamentResults };
+type BuildArgs = Required<Pick<AlgorithmWorldScenarioOptions, "videoMode" | "compareEnabled" | "presentationMode" | "problemType" | "mazeId" | "primaryAlgorithm" | "secondaryAlgorithm" | "primaryVehicleColor" | "secondaryVehicleColor" | "primaryVehicleId" | "secondaryVehicleId">> & { randomMazeRequested: boolean; tournamentEnabled: boolean; tournamentRound: AlgorithmWorldTournamentRound; tournamentMatch: number; tournamentResults: AlgorithmWorldTournamentResults; tournamentEntrants: AlgorithmWorldAlgorithmId[] };
 export type AlgorithmWorldBuildArgs = BuildArgs;
 
 export function createAlgorithmWorldFrames(opts: AlgorithmWorldScenarioOptions = {}) {
@@ -37,9 +37,10 @@ export function createAlgorithmWorldFrames(opts: AlgorithmWorldScenarioOptions =
   const tournamentRound = (opts.tournamentRound ?? 0) as AlgorithmWorldTournamentRound;
   const tournamentMatch = opts.tournamentMatch ?? 0;
   const tournamentResults = opts.tournamentResults ?? {};
-  const tournament = tournamentEnabled ? resolveTournamentMatch(tournamentRound, tournamentMatch, tournamentResults) : null;
+  const tournamentEntrants = opts.tournamentEntrants ?? [];
+  const tournament = tournamentEnabled ? resolveTournamentMatch(tournamentRound, tournamentMatch, tournamentResults, tournamentEntrants) : null;
   const requestedMazeId = tournamentEnabled ? "random" : opts.mazeId ?? "astar_labyrinth";
-  const mazeSeed = tournamentEnabled ? tournamentSeed(tournamentRound, tournamentMatch) : Date.now() + Math.random() * 10_000;
+  const mazeSeed = tournamentEnabled ? tournamentSeed(tournamentRound, tournamentMatch, tournamentEntrants) : Date.now() + Math.random() * 10_000;
   const args: BuildArgs = {
     videoMode: opts.videoMode ?? "short",
     compareEnabled: opts.compareEnabled ?? opts.videoMode === "long",
@@ -57,6 +58,7 @@ export function createAlgorithmWorldFrames(opts: AlgorithmWorldScenarioOptions =
     tournamentRound,
     tournamentMatch,
     tournamentResults,
+    tournamentEntrants,
   };
   const compareEnabled = args.compareEnabled || args.presentationMode === "vehicle_race";
   if (args.presentationMode === "vehicle_race") return createRaceCompareFrames(args);
@@ -313,6 +315,8 @@ function trimBeamFrontier(frontier: AlgorithmWorldCell[], algorithm: AlgorithmWo
 
 function score(algorithm: AlgorithmWorldAlgorithmId, g: number, h: number) {
   if (algorithm === "greedy") return h;
+  if (algorithm === "fringe") return g + h * 0.92;
+  if (algorithm === "theta_star") return g * 0.85 + h;
   if (algorithm === "weighted_astar") return g + h * 1.8;
   if (algorithm === "astar" || algorithm === "beam") return g + h;
   if (algorithm === "dijkstra") return g;
@@ -329,6 +333,8 @@ function statusText(algorithm: AlgorithmWorldAlgorithmId, reached: boolean, repl
   if (algorithm === "greedy") return `${worldAlgorithmName(algorithm)} chases the closest-looking cell toward the exit.`;
   if (algorithm === "weighted_astar") return `${worldAlgorithmName(algorithm)} pushes harder toward the exit than classic A*.`;
   if (algorithm === "beam") return `${worldAlgorithmName(algorithm)} keeps only a few best-looking frontier cells.`;
+  if (algorithm === "fringe") return `${worldAlgorithmName(algorithm)} batches promising frontier cells before raising its search threshold.`;
+  if (algorithm === "theta_star") return `${worldAlgorithmName(algorithm)} favors direct sight lines while still using A*-style guidance.`;
   return replanCount
     ? `${worldAlgorithmName(algorithm)} replans after the maze changed.`
     : `${worldAlgorithmName(algorithm)} expands the maze from the entrance.`;

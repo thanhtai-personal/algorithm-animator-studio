@@ -30,7 +30,7 @@ export function CenterPanel({ studio: s }: Props) {
             ref={s.canvasRef}
             width={s.W}
             height={s.H}
-            className="h-auto max-w-full rounded-lg"
+            className="mx-auto block h-auto max-w-full rounded-lg"
             style={{ maxHeight: "70vh", aspectRatio: `${s.W}/${s.H}` }}
           />
         )}

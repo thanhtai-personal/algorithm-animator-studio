@@ -2,6 +2,7 @@ import type React from "react";
 import { Activity, Car, Dice5, EyeOff, Flag, GitCompare, Lock, Map, RotateCcw, Route, Sparkles, Trophy, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -196,9 +197,10 @@ function AlgorithmsCard({ s, isLong, compareEnabled, t }: PanelProps & {
 
 function TournamentCard({ s, t, compact = false }: PanelProps & { compact?: boolean }) {
   const round = s.worldTournamentRound as AlgorithmWorldTournamentRound;
-  const match = resolveTournamentMatch(round, s.worldTournamentMatch, s.worldTournamentResults);
-  const options = tournamentMatchOptions(round, s.lang, s.worldTournamentResults);
+  const match = resolveTournamentMatch(round, s.worldTournamentMatch, s.worldTournamentResults, s.worldTournamentEntrants);
+  const options = tournamentMatchOptions(round, s.lang, s.worldTournamentResults, s.worldTournamentEntrants);
   const savedResults = Object.keys(s.worldTournamentResults).length;
+  const entrantNames = s.worldTournamentEntrants.map((id) => WORLD_ALGORITHMS.find((item) => item.id === id)?.name ?? id.toUpperCase()).join(" · ");
   return (
     <Card className="space-y-3 border-yellow-300/25 bg-yellow-400/5 p-4">
       <div className="flex items-center justify-between gap-3">
@@ -233,6 +235,11 @@ function TournamentCard({ s, t, compact = false }: PanelProps & { compact?: bool
           <div className="rounded-lg border border-yellow-300/30 bg-slate-950/40 p-3 text-xs">
             <div className="font-semibold text-yellow-100">{worldMatchTitle(match.left, match.right)}</div>
             <div className="mt-1 text-muted-foreground">{t("Map: random theo trận · Intro random → ráp map → VS → đua → winner → cây giải đấu", "Map: match-random · random roll → map assembly → VS → race → winner → bracket tree")}</div>
+            <div className="mt-2 text-[11px] text-muted-foreground">{entrantNames}</div>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs">{t("Link playlist YouTube", "YouTube playlist link")}</Label>
+            <Input value={s.worldTournamentPlaylistUrl} onChange={(event) => s.setWorldTournamentPlaylistUrl(event.target.value)} placeholder="https://www.youtube.com/playlist?list=..." />
           </div>
           <TournamentMusicControls studio={s} t={t} />
           <div className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-background/60 p-3 text-xs">
@@ -331,13 +338,7 @@ function CodeCard({ s, compareEnabled, t }: PanelProps & { compareEnabled: boole
   );
 }
 
-function AlgorithmSelect(props: {
-  label: string;
-  value: AlgorithmWorldAlgorithmId;
-  problemType: AlgorithmWorldProblemType;
-  lang: "en" | "vi";
-  onChange: (value: AlgorithmWorldAlgorithmId) => void;
-}) {
+function AlgorithmSelect(props: { label: string; value: AlgorithmWorldAlgorithmId; problemType: AlgorithmWorldProblemType; lang: "en" | "vi"; onChange: (value: AlgorithmWorldAlgorithmId) => void }) {
   const t = (vi: string, en: string) => props.lang === "vi" ? vi : en;
   return (
     <div>

@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthProfile, getCurrentProfile, isSuperAdminProfile } from "@/lib/auth";
+import { Card } from "@/components/ui/card";
 import { CenterPanel } from "./studio/CenterPanel";
 import { LeftPanel } from "./studio/LeftPanel";
 import { RightPanel } from "./studio/RightPanel";
+import { ShortMusicPanel } from "./studio/ShortMusicPanel";
 import { useAlgorithmStudio } from "./studio/useAlgorithmStudio";
 
 const Index = () => {
@@ -39,8 +41,13 @@ const Index = () => {
     <div className="min-h-screen bg-background text-foreground">
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr_360px] gap-4 p-4">
         <LeftPanel studio={studio} />
-        <CenterPanel studio={studio} />
-        <RightPanel studio={studio} />
+        <div className="min-w-0">
+          <CenterPanel studio={studio} />
+          <Card className="mt-4 p-4">
+            <ShortMusicPanel studio={studio} standalone />
+          </Card>
+        </div>
+        <RightPanel studio={studio} showMusicPanel={false} />
       </div>
     </div>
   );

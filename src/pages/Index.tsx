@@ -37,6 +37,7 @@ const Index = () => {
   const studio = useAlgorithmStudio({
     requireConfigAccess,
     initialWorldTournamentEnabled: false,
+    enableWorldTournamentIntegration: false,
   });
 
 

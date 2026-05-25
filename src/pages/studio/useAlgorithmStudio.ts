@@ -56,6 +56,7 @@ type UseAlgorithmStudioOptions = {
   initialWorldPrimaryAlgorithm?: AlgorithmWorldAlgorithmId;
   initialWorldSecondaryAlgorithm?: AlgorithmWorldAlgorithmId;
   initialWorldTournamentEnabled?: boolean;
+  enableWorldTournamentIntegration?: boolean;
   initialWorldTournamentRound?: AlgorithmWorldTournamentRound;
   initialWorldTournamentMatch?: number;
 };
@@ -92,6 +93,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const [worldSecondaryAlgorithm, setWorldSecondaryAlgorithmState] = useState<AlgorithmWorldAlgorithmId>(options.initialWorldSecondaryAlgorithm ?? "dijkstra");
   const initialTournamentSettings = useMemo(() => readTournamentSettings(), []);
   const [worldTournamentEnabled, setWorldTournamentEnabledState] = useState(options.initialWorldTournamentEnabled ?? initialTournamentSettings.enabled);
+  const worldTournamentActive = options.enableWorldTournamentIntegration !== false && worldTournamentEnabled;
   const [worldTournamentRound, setWorldTournamentRoundState] = useState<AlgorithmWorldTournamentRound>(options.initialWorldTournamentRound ?? initialTournamentSettings.round);
   const [worldTournamentMatch, setWorldTournamentMatchState] = useState(options.initialWorldTournamentMatch ?? initialTournamentSettings.match);
   const [worldTournamentEntrants, setWorldTournamentEntrants] = useState<AlgorithmWorldAlgorithmId[]>(initialTournamentSettings.entrants);
@@ -167,32 +169,32 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
       secondaryVehicleColor: worldSecondaryVehicleColor,
       primaryVehicleId: worldPrimaryVehicleId,
       secondaryVehicleId: worldSecondaryVehicleId,
-      tournamentEnabled: worldTournamentEnabled,
+      tournamentEnabled: worldTournamentActive,
       tournamentRound: worldTournamentRound,
       tournamentMatch: worldTournamentMatch,
       tournamentResults: worldTournamentResults,
       tournamentEntrants: worldTournamentEntrants,
     };
-    if (worldTournamentEnabled && worldVideoMode === "long") {
+    if (worldTournamentActive && worldVideoMode === "long") {
       return buildWorldTournamentTimeline({ run: algo.run, arr, runOptions, worldScenario });
     }
     return {
       frames: algo.run(arr, { ...runOptions, worldScenario }),
       results: {},
     };
-  }, [algo, arr, target, customCode, parsedGraph, startId, endId, worldVideoMode, worldCompareEnabled, worldPresentationMode, worldProblemType, worldMazeId, worldPrimaryAlgorithm, worldSecondaryAlgorithm, worldPrimaryVehicleColor, worldSecondaryVehicleColor, worldPrimaryVehicleId, worldSecondaryVehicleId, worldTournamentEnabled, worldTournamentRound, worldTournamentMatch, worldTournamentResults, worldTournamentEntrants]);
+  }, [algo, arr, target, customCode, parsedGraph, startId, endId, worldVideoMode, worldCompareEnabled, worldPresentationMode, worldProblemType, worldMazeId, worldPrimaryAlgorithm, worldSecondaryAlgorithm, worldPrimaryVehicleColor, worldSecondaryVehicleColor, worldPrimaryVehicleId, worldSecondaryVehicleId, worldTournamentActive, worldTournamentRound, worldTournamentMatch, worldTournamentResults, worldTournamentEntrants]);
   const frames: Frame[] = generatedTimeline.frames;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const current = frames[Math.min(frameIdx, frames.length - 1)];
   const activeMusicPreset = useMemo(() => {
-    if (!worldTournamentEnabled) return musicPreset;
+    if (!worldTournamentActive) return musicPreset;
     return tournamentMusicForFrame(current, {
       start: worldTournamentStartMusic,
       race: worldTournamentRaceMusic,
       result: worldTournamentResultMusic,
     });
-  }, [current, musicPreset, worldTournamentEnabled, worldTournamentStartMusic, worldTournamentRaceMusic, worldTournamentResultMusic]);
+  }, [current, musicPreset, worldTournamentActive, worldTournamentStartMusic, worldTournamentRaceMusic, worldTournamentResultMusic]);
   const isSearch = algo.category === "search";
   const isCustom = algoId === "custom";
   const randomSizeMax = maxDemoSizeForAlgorithm(algoId);
@@ -438,18 +440,18 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
 
     const code = algoId === "custom" ? customCode : algo.code;
     const musicLicenseText = tournamentMusicLicenseText(
-      worldTournamentEnabled
+      worldTournamentActive
         ? [worldTournamentStartMusic, worldTournamentRaceMusic, worldTournamentResultMusic]
         : [musicPreset],
       libraryMusicTracks,
     );
-    const youtubeMetadata = worldTournamentEnabled && worldVideoMode === "long"
+    const youtubeMetadata = worldTournamentActive && worldVideoMode === "long"
       ? buildMazeTournamentSeriesYoutubeMetadata({
         lang,
         entrants: worldTournamentEntrants,
         playlistUrl: worldTournamentPlaylistUrl,
       })
-      : worldTournamentEnabled
+      : worldTournamentActive
       ? buildMazeTournamentYoutubeMetadata({
         lang,
         round: worldTournamentRound,
@@ -480,7 +482,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
         exportFormat,
         animalColumns,
         musicPreset,
-        resolveMusicPreset: worldTournamentEnabled
+        resolveMusicPreset: worldTournamentActive
           ? (frame) => tournamentMusicForFrame(frame, {
             start: worldTournamentStartMusic,
             race: worldTournamentRaceMusic,
@@ -497,7 +499,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
         playEvent,
       });
       if (exported) {
-        if (worldTournamentEnabled && worldVideoMode === "long" && Object.keys(generatedTimeline.results).length) {
+        if (worldTournamentActive && worldVideoMode === "long" && Object.keys(generatedTimeline.results).length) {
           setWorldTournamentResultsState((prev) => {
             const next = { ...prev, ...generatedTimeline.results };
             writeTournamentResults(next);
@@ -505,7 +507,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
           });
         } else {
           const winner = findTournamentWinner(frames);
-          if (worldTournamentEnabled && winner) persistTournamentResult(worldTournamentRound, worldTournamentMatch, winner);
+          if (worldTournamentActive && winner) persistTournamentResult(worldTournamentRound, worldTournamentMatch, winner);
         }
         toast.success(tr("exportDone"));
       }
@@ -555,7 +557,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     setWorldPrimaryAlgorithm: (value: AlgorithmWorldAlgorithmId) => runConfigAction(() => { setWorldPrimaryAlgorithmState(value); setFrameIdx(0); setPlaying(false); }),
     worldSecondaryAlgorithm,
     setWorldSecondaryAlgorithm: (value: AlgorithmWorldAlgorithmId) => runConfigAction(() => { setWorldSecondaryAlgorithmState(value); setFrameIdx(0); setPlaying(false); }),
-    worldTournamentEnabled,
+    worldTournamentEnabled: worldTournamentActive,
     setWorldTournamentEnabled: (value: boolean) => runConfigAction(() => { setWorldTournamentEnabledState(value); writeCurrentTournamentSettings({ enabled: value }); if (value) { setWorldPresentationModeState("vehicle_race"); setWorldCompareEnabledState(true); setShowCode(false); setWorldMazeIdState("random"); } setFrameIdx(0); setPlaying(false); }),
     worldTournamentRound,
     setWorldTournamentRound: (value: AlgorithmWorldTournamentRound) => runConfigAction(() => { const round = normalizeTournamentRound(value); setWorldTournamentRoundState(round); setWorldTournamentMatchState((m) => { const match = normalizeTournamentMatch(round, m); writeCurrentTournamentSettings({ round, match }); return match; }); setFrameIdx(0); setPlaying(false); }),

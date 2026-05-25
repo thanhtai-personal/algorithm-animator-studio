@@ -3,6 +3,7 @@ import { withTextShadow } from "./canvasText";
 import type { Lang } from "./i18n";
 import { roundRect } from "./renderers/shapes";
 import { renderShortKineticBitonic } from "./shortKineticBitonicRenderer";
+import { renderShortKineticGraph } from "./shortKineticGraphRenderer";
 import { renderShortKineticPancake } from "./shortKineticPancakeRenderer";
 
 export type ShortKineticParams = {
@@ -31,6 +32,7 @@ export function renderShortKineticTypography(ctx: CanvasRenderingContext2D, para
   drawBackground(ctx, w, h, params.frameIndex / Math.max(1, params.frameCount - 1));
   if (params.algorithmId === "pancake") return renderShortKineticPancake(ctx, params, w, h);
   if (params.algorithmId === "bitonic") return renderShortKineticBitonic(ctx, params, w, h);
+  if (params.frame.graph && ["bfs", "dfs", "dijkstra"].includes(params.algorithmId)) return renderShortKineticGraph(ctx, params, w, h);
   if (params.algorithmId === "odd_even") {
     const beat = getOddEvenBeat(params);
     drawTopMeta(ctx, params, w); drawBeatText(ctx, beat, params.transitionProgress, w, h);
@@ -368,11 +370,9 @@ function drawFooter(ctx: CanvasRenderingContext2D, params: Params, accent: strin
 
 function drawFallback(ctx: CanvasRenderingContext2D, params: Params, w: number, h: number) {
   ctx.textAlign = "center";
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "950 72px ui-sans-serif, system-ui, sans-serif";
+  ctx.fillStyle = "#ffffff"; ctx.font = "950 72px ui-sans-serif, system-ui, sans-serif";
   drawFittedCenter(ctx, params.algoName, w / 2, h * 0.34, 72, w - 90, 950);
-  ctx.fillStyle = "#4ade80";
-  drawFittedCenter(ctx, params.lang === "vi" ? "Chữ chuyển động" : "Kinetic Typography", w / 2, h * 0.43, 48, w - 90, 900);
+  ctx.fillStyle = "#4ade80"; drawFittedCenter(ctx, params.lang === "vi" ? "Chữ chuyển động" : "Kinetic Typography", w / 2, h * 0.43, 48, w - 90, 900);
 }
 
 function drawFittedCenter(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, maxWidth: number, weight: number) {

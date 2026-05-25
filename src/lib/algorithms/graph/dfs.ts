@@ -1,5 +1,5 @@
 import type { AlgoDef, Frame } from "../types";
-import { adjacency, makeSampleGraph } from "./utils";
+import { adjacency, createAdjacencyMatrixIntroFrames, makeSampleGraph } from "./utils";
 
 export const dfs: AlgoDef = {
   id: "dfs",
@@ -15,7 +15,7 @@ export const dfs: AlgoDef = {
     const g = opts?.graph ?? makeSampleGraph();
     const adj = adjacency(g);
     const start = opts?.start ?? 0, end = opts?.end ?? g.nodes.length - 1;
-    const f: Frame[] = [];
+    const f: Frame[] = createAdjacencyMatrixIntroFrames({ graph: g, start, end, label: "DFS" });
     const visited: number[] = [];
     const parent: Record<number, number> = {};
     const v: Record<string, number | string> = { start, end };

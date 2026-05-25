@@ -68,7 +68,7 @@ export function LeftPanel({ studio }: Props) {
               {SHORT_VIDEO_TYPES.map((type) => <SelectItem key={type.id} value={type.id}>{type.label[s.lang]}</SelectItem>)}
             </SelectContent>
           </Select>
-          {s.shortVideoType === "kinetic-typography" && !["bubble", "odd_even", "pancake", "bitonic"].includes(s.algo.id) ? (
+          {s.shortVideoType === "kinetic-typography" && !["bubble", "odd_even", "pancake", "bitonic", "bfs", "dfs", "dijkstra"].includes(s.algo.id) ? (
             <p className="mt-2 text-xs text-amber-300">
               {s.lang === "vi" ? "Kinetic short hiện chưa có thiết kế riêng cho thuật toán này." : "Kinetic short does not have a dedicated design for this algorithm yet."}
             </p>

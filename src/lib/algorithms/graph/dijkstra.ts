@@ -1,5 +1,5 @@
 import type { AlgoDef, Frame } from "../types";
-import { adjacency, makeSampleGraph } from "./utils";
+import { adjacency, createAdjacencyMatrixIntroFrames, makeSampleGraph } from "./utils";
 
 export const dijkstra: AlgoDef = {
   id: "dijkstra",
@@ -18,7 +18,7 @@ while (pq.size) {
     const g = opts?.graph ?? makeSampleGraph();
     const adj = adjacency(g, true);
     const start = opts?.start ?? 0, end = opts?.end ?? g.nodes.length - 1;
-    const f: Frame[] = [];
+    const f: Frame[] = createAdjacencyMatrixIntroFrames({ graph: g, start, end, weighted: true, label: "Dijkstra" });
     const dist: Record<number, number | string> = {};
     const parent: Record<number, number> = {};
     g.nodes.forEach((n) => (dist[n.id] = Infinity));

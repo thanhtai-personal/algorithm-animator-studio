@@ -18,6 +18,7 @@ const KINETIC_PANCAKE_FLIP_SECONDS = 0.78;
 const KINETIC_PANCAKE_HOLD_SECONDS = 0.32;
 const KINETIC_BITONIC_SWAP_SECONDS = 0.58;
 const KINETIC_BITONIC_HOLD_SECONDS = 0.24;
+const KINETIC_GRAPH_HOLD_SECONDS = 0.42;
 const TREE_SORT_EXPORT_SECONDS = 0.12;
 const PIGEONHOLE_EXPORT_SECONDS = 0.16;
 
@@ -202,6 +203,7 @@ function frameHoldCount(algorithmId: string, fps: number, shortVideoType: ShortV
   if (shortVideoType === "kinetic-typography" && algorithmId === "odd_even") return Math.max(5, Math.round(fps * KINETIC_ODD_EVEN_HOLD_SECONDS));
   if (shortVideoType === "kinetic-typography" && algorithmId === "pancake") return Math.max(6, Math.round(fps * KINETIC_PANCAKE_HOLD_SECONDS));
   if (shortVideoType === "kinetic-typography" && algorithmId === "bitonic") return Math.max(5, Math.round(fps * KINETIC_BITONIC_HOLD_SECONDS));
+  if (shortVideoType === "kinetic-typography" && ["bfs", "dfs", "dijkstra"].includes(algorithmId)) return Math.max(8, Math.round(fps * KINETIC_GRAPH_HOLD_SECONDS));
   if (algorithmId === "tree_sort") return Math.max(2, Math.round(fps * TREE_SORT_EXPORT_SECONDS));
   if (algorithmId === "pigeonhole") return Math.max(3, Math.round(fps * PIGEONHOLE_EXPORT_SECONDS));
   return 1;

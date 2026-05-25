@@ -86,14 +86,15 @@ function testMusic(s: AlgorithmStudio) {
   audioEngine.resume();
   if (isProceduralMusicPreset(s.musicPreset)) {
     audioEngine.setMusicPreset(s.musicPreset);
-    setTimeout(() => { audioEngine.stopMusic(); audioEngine.setMusicPreset("off"); }, 4000);
+    setTimeout(() => { audioEngine.stopMusic(); }, 4000);
     return;
   }
-  const start = (url?: string) => {
-    if (url) audioEngine.setMusicSource(url);
+  const start = (url?: string | null) => {
+    audioEngine.setMusicSource(url ?? null);
+    if (!url) return;
     audioEngine.setMusicPreset("custom");
     audioEngine.startMusic();
-    setTimeout(() => { audioEngine.stopMusic(); audioEngine.setMusicPreset("off"); }, 4000);
+    setTimeout(() => { audioEngine.stopMusic(); }, 4000);
   };
   if (isAssetMusicId(s.musicPreset)) return void getAssetMusicOption(s.musicPreset)?.loadUrl().then(start);
   if (isLibraryMusicId(s.musicPreset)) return start(s.libraryMusicTracks.find((track) => track.id === s.musicPreset)?.audioUrl);

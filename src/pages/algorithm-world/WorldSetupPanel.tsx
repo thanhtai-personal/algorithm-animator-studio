@@ -207,9 +207,7 @@ function TournamentCard({ s, t, compact = false }: PanelProps & { compact?: bool
         <div className="flex items-center gap-2"><Trophy className="h-4 w-4 text-yellow-300" /><Label>{t("Giải đấu loại trực tiếp", "Knockout tournament")}</Label></div>
         <Switch checked={s.worldTournamentEnabled} onCheckedChange={s.setWorldTournamentEnabled} />
       </div>
-      <p className="text-xs text-muted-foreground">
-        {t("Bật để tạo mỗi video là 1 trận. Studio tự random sân đấu, lấy cặp thuật toán theo bracket, cuối trận hiện cây giải đấu với đội thắng đi tiếp.", "Enable this to make each video one match. The studio rolls a random arena, picks the bracket pair, and ends with a tree bracket showing the winner advancing.")}
-      </p>
+      <p className="text-xs text-muted-foreground">{t("Shorts xuất từng trận riêng. Long 16:9 xuất toàn bộ giải: tứ kết trước, bán kết sau, rồi chung kết.", "Shorts export one match at a time. Long 16:9 exports the whole tournament: quarterfinals first, semifinals next, then the final.")}</p>
       {s.worldTournamentEnabled ? (
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
@@ -234,7 +232,7 @@ function TournamentCard({ s, t, compact = false }: PanelProps & { compact?: bool
           </div>
           <div className="rounded-lg border border-yellow-300/30 bg-slate-950/40 p-3 text-xs">
             <div className="font-semibold text-yellow-100">{worldMatchTitle(match.left, match.right)}</div>
-            <div className="mt-1 text-muted-foreground">{t("Map: random theo trận · Intro random → ráp map → VS → đua → winner → cây giải đấu", "Map: match-random · random roll → map assembly → VS → race → winner → bracket tree")}</div>
+            <div className="mt-1 text-muted-foreground">{s.worldVideoMode === "long" ? t("Long video sẽ tự ghép 7 trận theo thứ tự vòng ngoài vào vòng trong.", "Long video stitches all 7 matches from outer rounds to inner rounds.") : t("Map: random theo trận · Intro random → ráp map → VS → đua → winner → cây giải đấu", "Map: match-random · random roll → map assembly → VS → race → winner → bracket tree")}</div>
             <div className="mt-2 text-[11px] text-muted-foreground">{entrantNames}</div>
           </div>
           <div className="space-y-2">

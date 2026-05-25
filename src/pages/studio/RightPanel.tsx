@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { YoutubeMetadataPreview } from "@/components/YoutubeMetadataPreview";
 import { THEMES } from "@/lib/renderer";
 import { AssetSfxOption, getAssetSfxOption, SELECT_ASSET_SFX_OPTIONS, SWAP_ASSET_SFX_OPTIONS } from "@/lib/selectSounds";
-import { buildMazeTournamentYoutubeMetadata } from "@/lib/youtubeMetadata";
+import { buildMazeTournamentSeriesYoutubeMetadata, buildMazeTournamentYoutubeMetadata } from "@/lib/youtubeMetadata";
 import { EXPORT_FORMATS, ExportFormat } from "./exportFormats";
 import { ShortMusicPanel } from "./ShortMusicPanel";
 import { AlgorithmStudio } from "./useAlgorithmStudio";
@@ -113,7 +113,13 @@ function AppearanceTab({ studio: s }: Props) {
 }
 
 function ExportTab({ studio: s }: Props) {
-  const tournamentMetadata = s.worldTournamentEnabled
+  const tournamentMetadata = s.worldTournamentEnabled && s.worldVideoMode === "long"
+    ? buildMazeTournamentSeriesYoutubeMetadata({
+      lang: s.lang,
+      entrants: s.worldTournamentEntrants,
+      playlistUrl: s.worldTournamentPlaylistUrl,
+    })
+    : s.worldTournamentEnabled
     ? buildMazeTournamentYoutubeMetadata({
       lang: s.lang,
       round: s.worldTournamentRound,

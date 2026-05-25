@@ -21,11 +21,12 @@ import { Lang, PLATFORMS, readSystemLang, subscribeSystemLang, t, writeSystemLan
 import { getMusicLibraryTracks, type MusicLibraryTrack } from "@/lib/musicLibrary";
 import { THEMES, Theme } from "@/lib/renderer";
 import type { ShortVideoType } from "@/lib/shortVideoTypes";
-import { buildMazeTournamentYoutubeMetadata, buildYoutubeMetadata } from "@/lib/youtubeMetadata";
+import { buildMazeTournamentSeriesYoutubeMetadata, buildMazeTournamentYoutubeMetadata, buildYoutubeMetadata } from "@/lib/youtubeMetadata";
 import { ExportFormat } from "./exportFormats";
 import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm, maxDemoSizeForAlgorithm, normalizeAnimalArray, parseInputArray, shouldUseAlgorithmDemo } from "./demoArrays";
 import { exportAlgorithmVideo, preloadExportSfx } from "./videoExport";
 import { renderStudioPreview } from "./renderStudioPreview";
+import { buildWorldTournamentTimeline, findTournamentWinner } from "./tournamentTimeline";
 import { getWorldVehicle } from "@/lib/algorithmWorldVehicles";
 import { nextTournamentEntrants, normalizeTournamentEntrants, normalizeTournamentMatch, normalizeTournamentRound, tournamentResultKey } from "@/lib/algorithmWorldTournament";
 
@@ -145,34 +146,42 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const startId = graphLabels.indexOf(startLabel);
   const endId = graphLabels.indexOf(endLabel);
 
-  const frames: Frame[] = useMemo(() => {
+  const generatedTimeline = useMemo(() => {
     const targetNum = target.trim() ? parseInt(target, 10) : undefined;
-    return algo.run(arr, {
+    const runOptions = {
       target: Number.isNaN(targetNum as number) ? undefined : targetNum,
       customCode,
       graph: parsedGraph ?? undefined,
-      worldScenario: {
-        videoMode: worldVideoMode,
-        compareEnabled: worldCompareEnabled || worldPresentationMode === "vehicle_race",
-        presentationMode: worldPresentationMode,
-        problemType: worldProblemType,
-        mazeId: worldMazeId,
-        primaryAlgorithm: worldPrimaryAlgorithm,
-        secondaryAlgorithm: worldSecondaryAlgorithm,
-        primaryVehicleColor: worldPrimaryVehicleColor,
-        secondaryVehicleColor: worldSecondaryVehicleColor,
-        primaryVehicleId: worldPrimaryVehicleId,
-        secondaryVehicleId: worldSecondaryVehicleId,
-        tournamentEnabled: worldTournamentEnabled,
-        tournamentRound: worldTournamentRound,
-        tournamentMatch: worldTournamentMatch,
-        tournamentResults: worldTournamentResults,
-        tournamentEntrants: worldTournamentEntrants,
-      },
       start: startId >= 0 ? startId : undefined,
       end: endId >= 0 ? endId : undefined,
-    });
+    };
+    const worldScenario = {
+      videoMode: worldVideoMode,
+      compareEnabled: worldCompareEnabled || worldPresentationMode === "vehicle_race",
+      presentationMode: worldPresentationMode,
+      problemType: worldProblemType,
+      mazeId: worldMazeId,
+      primaryAlgorithm: worldPrimaryAlgorithm,
+      secondaryAlgorithm: worldSecondaryAlgorithm,
+      primaryVehicleColor: worldPrimaryVehicleColor,
+      secondaryVehicleColor: worldSecondaryVehicleColor,
+      primaryVehicleId: worldPrimaryVehicleId,
+      secondaryVehicleId: worldSecondaryVehicleId,
+      tournamentEnabled: worldTournamentEnabled,
+      tournamentRound: worldTournamentRound,
+      tournamentMatch: worldTournamentMatch,
+      tournamentResults: worldTournamentResults,
+      tournamentEntrants: worldTournamentEntrants,
+    };
+    if (worldTournamentEnabled && worldVideoMode === "long") {
+      return buildWorldTournamentTimeline({ run: algo.run, arr, runOptions, worldScenario });
+    }
+    return {
+      frames: algo.run(arr, { ...runOptions, worldScenario }),
+      results: {},
+    };
   }, [algo, arr, target, customCode, parsedGraph, startId, endId, worldVideoMode, worldCompareEnabled, worldPresentationMode, worldProblemType, worldMazeId, worldPrimaryAlgorithm, worldSecondaryAlgorithm, worldPrimaryVehicleColor, worldSecondaryVehicleColor, worldPrimaryVehicleId, worldSecondaryVehicleId, worldTournamentEnabled, worldTournamentRound, worldTournamentMatch, worldTournamentResults, worldTournamentEntrants]);
+  const frames: Frame[] = generatedTimeline.frames;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const current = frames[Math.min(frameIdx, frames.length - 1)];
@@ -434,7 +443,13 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
         : [musicPreset],
       libraryMusicTracks,
     );
-    const youtubeMetadata = worldTournamentEnabled
+    const youtubeMetadata = worldTournamentEnabled && worldVideoMode === "long"
+      ? buildMazeTournamentSeriesYoutubeMetadata({
+        lang,
+        entrants: worldTournamentEntrants,
+        playlistUrl: worldTournamentPlaylistUrl,
+      })
+      : worldTournamentEnabled
       ? buildMazeTournamentYoutubeMetadata({
         lang,
         round: worldTournamentRound,
@@ -482,8 +497,16 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
         playEvent,
       });
       if (exported) {
-        const winner = findTournamentWinner(frames);
-        if (worldTournamentEnabled && winner) persistTournamentResult(worldTournamentRound, worldTournamentMatch, winner);
+        if (worldTournamentEnabled && worldVideoMode === "long" && Object.keys(generatedTimeline.results).length) {
+          setWorldTournamentResultsState((prev) => {
+            const next = { ...prev, ...generatedTimeline.results };
+            writeTournamentResults(next);
+            return next;
+          });
+        } else {
+          const winner = findTournamentWinner(frames);
+          if (worldTournamentEnabled && winner) persistTournamentResult(worldTournamentRound, worldTournamentMatch, winner);
+        }
         toast.success(tr("exportDone"));
       }
     } finally {
@@ -668,14 +691,6 @@ function normalizeBackgroundMusicId(value: unknown): BackgroundMusicId {
   if (value === "off" || value === "lofi" || value === "ambient" || value === "chill" || value === "upbeat" || value === "custom") return value;
   if (typeof value === "string" && (value.startsWith("asset:") || value.startsWith("library:"))) return value as BackgroundMusicId;
   return "off";
-}
-
-function findTournamentWinner(frames: Frame[]): AlgorithmWorldAlgorithmId | undefined {
-  for (let index = frames.length - 1; index >= 0; index--) {
-    const intro = frames[index]?.worldCompare?.raceIntro;
-    if (intro?.stage === "bracket" && intro.winnerAlgorithm) return intro.winnerAlgorithm;
-  }
-  return undefined;
 }
 
 function tournamentMusicForFrame(

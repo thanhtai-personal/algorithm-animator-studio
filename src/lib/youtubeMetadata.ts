@@ -203,6 +203,62 @@ export function buildMazeTournamentYoutubeMetadata(params: {
   };
 }
 
+export function buildMazeTournamentSeriesYoutubeMetadata(params: {
+  lang: Lang;
+  entrants: AlgorithmWorldAlgorithmId[];
+  playlistUrl?: string;
+}): YoutubeAlgorithmMetadata {
+  const isVi = params.lang === "vi";
+  const entrants = params.entrants.map(worldAlgorithmName);
+  const titleBase = isVi
+    ? "Full Tournament: Maze Algorithm Knockout"
+    : "Full Tournament: Maze Algorithm Knockout";
+  const hashtags = uniqueTags(["#mazealgorithm", "#fulltournament", "#pathfinding"]);
+  const playlistLine = isVi
+    ? `Playlist đầy đủ: ${params.playlistUrl?.trim() || "[dán link playlist Maze Algorithm Knockout tại đây]"}`
+    : `Full playlist: ${params.playlistUrl?.trim() || "[paste the Maze Algorithm Knockout playlist link here]"}`;
+  const description = isVi ? [
+    "Toàn bộ Maze Algorithm Knockout trong một long video: tứ kết trước, bán kết sau, rồi chung kết.",
+    "Mỗi trận gồm random maze, ráp map, VS screen, countdown, race, winner reveal và bracket update.",
+    `Đội tham gia: ${entrants.join(", ")}.`,
+    playlistLine,
+    "Chủ đề: maze solver, pathfinding, graph search, algorithm race, coding visualization.",
+    hashtags.join(" "),
+    "Tạo video thuật toán bằng tool: https://algorithm-animator-studio.vercel.app/",
+  ] : [
+    "The complete Maze Algorithm Knockout in one long video: quarterfinals first, semifinals next, then the final.",
+    "Each match includes the random maze roll, map assembly, VS screen, countdown, race, winner reveal, and bracket update.",
+    `Entrants: ${entrants.join(", ")}.`,
+    playlistLine,
+    "Topics: maze solver, pathfinding, graph search, algorithm race, coding visualization.",
+    hashtags.join(" "),
+    "Create algorithm videos with this tool: https://algorithm-animator-studio.vercel.app/",
+  ];
+  return {
+    title: appendTitleHashtags(titleBase, hashtags),
+    description: description.join("\n\n"),
+    tags: uniqueTags([
+      "maze algorithm",
+      "maze solver",
+      "pathfinding",
+      "pathfinding algorithm",
+      "algorithm race",
+      "algorithm tournament",
+      "knockout tournament",
+      "full tournament",
+      "graph search",
+      "maze pathfinding",
+      "coding visualization",
+      ...entrants,
+      ...params.entrants.map((id) => id.replace(/_/g, " ")),
+      "long video",
+      "playlist",
+      ...BASE_TAGS,
+    ]).join(", "),
+    lang: params.lang,
+  };
+}
+
 export function appendYoutubeDescriptionCredit(description: string, licenseText?: string, lang: Lang = "en") {
   const license = licenseText?.trim();
   if (!license || description.includes(license)) return description;

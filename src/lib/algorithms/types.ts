@@ -24,6 +24,7 @@ export type AlgorithmWorldScenarioOptions = {
   tournamentMatch?: number;
   tournamentResults?: AlgorithmWorldTournamentResults;
   tournamentEntrants?: AlgorithmWorldAlgorithmId[];
+  randomSeed?: number;
 };
 export type AlgorithmWorldPhase = "setup" | "search" | "path" | "obstacle" | "replan" | "done";
 export type AlgorithmWorldRaceIntroStage = "randomizing" | "assembling" | "versus" | "countdown" | "race" | "winner" | "bracket";

@@ -15,6 +15,9 @@ type Props = { studio: AlgorithmStudio };
 
 export function LeftPanel({ studio }: Props) {
   const s = studio;
+  const algorithmGroups = s.mazePathfindingEnabled
+    ? ALGO_GROUPS
+    : ALGO_GROUPS.map((group) => ({ ...group, ids: group.ids.filter((id) => id !== "astar") })).filter((group) => group.ids.length);
 
   return (
     <div className="space-y-4">
@@ -24,7 +27,7 @@ export function LeftPanel({ studio }: Props) {
           <Select value={s.algoId} onValueChange={s.setAlgoId}>
             <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {ALGO_GROUPS.map((grp, gi) => (
+              {algorithmGroups.map((grp, gi) => (
                 <div key={grp.label.en}>
                   {gi > 0 && <SelectSeparator />}
                   <SelectGroup>

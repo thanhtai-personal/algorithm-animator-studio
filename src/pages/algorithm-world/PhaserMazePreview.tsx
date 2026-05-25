@@ -494,21 +494,74 @@ function drawAdvancingWinner(
   const rowH = fromMatch.h / 2 - 12;
   const from = rowCenter(fromMatch.x + 10, fromMatch.y + (fromSlot ? fromMatch.h / 2 + 2 : 10), fromMatch.w - 20, rowH);
   const to = rowCenter(toMatch.x + 10, toMatch.y + (toSlot ? toMatch.h / 2 + 2 : 10), toMatch.w - 20, rowH);
-  const move = easeInOut(Math.min(1, Math.max(0, (progress - 0.18) / 0.72)));
-  drawFlyingTeam(scene, g, active.winner.name, lerp(from.x, to.x, move), lerp(from.y, to.y, move), fromMatch.w - 20, rowH, move, lang);
+  const midX = fromMatch.x + fromMatch.w + (toMatch.x - fromMatch.x - fromMatch.w) * 0.46;
+  const path = [
+    { x: fromMatch.x + fromMatch.w, y: from.y },
+    { x: midX, y: from.y },
+    { x: midX, y: toMatch.y + toMatch.h / 2 },
+    { x: toMatch.x, y: toMatch.y + toMatch.h / 2 },
+    to,
+  ];
+  const run = easeInOut(Math.min(1, Math.max(0, (progress - 0.16) / 0.66)));
+  drawRunningAdvancePath(g, path, run);
+  if (run > 0.86) drawDestinationTeam(scene, g, active.winner.name, to.x, to.y, fromMatch.w - 20, rowH, (run - 0.86) / 0.14, lang);
 }
 
 function rowCenter(x: number, y: number, w: number, h: number) {
   return { x: x + w / 2, y: y + h / 2 };
 }
 
-function drawFlyingTeam(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, name: string, cx: number, cy: number, w: number, h: number, progress: number, lang: Lang) {
-  g.fillStyle(COLORS.yellow, 0.2 + progress * 0.08);
+function drawRunningAdvancePath(g: Phaser.GameObjects.Graphics, points: Array<{ x: number; y: number }>, progress: number) {
+  g.lineStyle(10, COLORS.yellow, progress >= 1 ? 0.3 : 0.2);
+  strokePolyline(g, points);
+  g.lineStyle(4.8, COLORS.yellow, 0.92);
+  const partial = partialPolyline(points, progress);
+  strokePolyline(g, partial);
+  if (progress < 1) {
+    const head = partial[partial.length - 1];
+    g.fillStyle(0xfff7ad, 0.96);
+    g.fillCircle(head.x, head.y, 7 + Math.sin(progress * Math.PI * 8) * 2);
+  }
+}
+
+function drawDestinationTeam(scene: MazePreviewScene, g: Phaser.GameObjects.Graphics, name: string, cx: number, cy: number, w: number, h: number, progress: number, lang: Lang) {
+  const alpha = Math.min(1, Math.max(0, progress));
+  g.fillStyle(COLORS.yellow, 0.22 * alpha);
   g.fillRoundedRect(cx - w / 2, cy - h / 2, w, h, 10);
-  g.lineStyle(2.4, COLORS.yellow, 0.88 + progress * 0.12);
+  g.lineStyle(2.6, COLORS.yellow, 0.8 + alpha * 0.2);
   g.strokeRoundedRect(cx - w / 2, cy - h / 2, w, h, 10);
   scene.text(`🏁 ${name}`, cx - w / 2 + 9, cy, 15, COLORS.yellow, "left", 900, w - 18);
   scene.text(lang === "vi" ? "CHỜ ĐẤU" : "WAITING", cx + w / 2 - 8, cy, 10, COLORS.open, "right", 800);
+}
+
+function strokePolyline(g: Phaser.GameObjects.Graphics, points: Array<{ x: number; y: number }>) {
+  for (let i = 1; i < points.length; i++) g.lineBetween(points[i - 1].x, points[i - 1].y, points[i].x, points[i].y);
+}
+
+function partialPolyline(points: Array<{ x: number; y: number }>, progress: number) {
+  if (progress >= 1) return points;
+  const target = polylineLength(points) * Math.max(0, progress);
+  const next = [points[0]];
+  let travelled = 0;
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1];
+    const current = points[i];
+    const segment = Math.hypot(current.x - prev.x, current.y - prev.y);
+    if (travelled + segment >= target) {
+      const t = segment ? (target - travelled) / segment : 0;
+      next.push({ x: lerp(prev.x, current.x, t), y: lerp(prev.y, current.y, t) });
+      return next;
+    }
+    next.push(current);
+    travelled += segment;
+  }
+  return next;
+}
+
+function polylineLength(points: Array<{ x: number; y: number }>) {
+  let total = 0;
+  for (let i = 1; i < points.length; i++) total += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+  return total;
 }
 
 function drawParticleField(g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number, color: number, tick: number, pulse: number) {

@@ -172,8 +172,8 @@ function ExportTab({ studio: s }: Props) {
 }
 
 function youtubeMusicLicenseText(s: AlgorithmStudio) {
-  const ids = s.worldTournamentEnabled
-    ? [s.worldTournamentStartMusic, s.worldTournamentRaceMusic, s.worldTournamentResultMusic]
+  const ids = s.worldSceneMusicEnabled
+    ? [s.musicPreset, s.worldTournamentStartMusic, s.worldTournamentRaceMusic, s.worldTournamentResultMusic]
     : [s.musicPreset];
   return s.libraryMusicTracks
     .filter((track) => ids.includes(track.id) && track.licenseText)

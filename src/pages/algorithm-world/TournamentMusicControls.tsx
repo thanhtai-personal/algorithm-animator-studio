@@ -1,5 +1,4 @@
 import { Music2 } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ASSET_MUSIC_OPTIONS, type BackgroundMusicId } from "@/lib/backgroundMusic";
@@ -37,10 +36,10 @@ export function TournamentMusicControls({ studio: s, t }: Props) {
   ];
 
   return (
-    <Card className="space-y-3 border-cyan-300/20 bg-cyan-400/5 p-3">
+    <div className="space-y-3 rounded-lg border border-cyan-300/20 bg-cyan-400/5 p-3">
       <div className="flex items-center gap-2">
         <Music2 className="h-4 w-4 text-cyan-200" />
-        <Label>{t("Nhạc theo cảnh giải đấu", "Tournament scene music")}</Label>
+        <Label>{t("Nhạc theo cảnh", "Scene music")}</Label>
       </div>
       <TournamentMusicSelect
         label={t("Start music", "Start music")}
@@ -61,9 +60,9 @@ export function TournamentMusicControls({ studio: s, t }: Props) {
         onChange={s.setWorldTournamentResultMusic}
       />
       <p className="text-xs text-muted-foreground">
-        {t("Mặc định đều tắt. Nếu chọn Upload, dùng file đã upload ở tab Âm thanh.", "All default to off. Custom uses the uploaded file from the Audio tab.")}
+        {t("Nếu một cảnh để Off, studio dùng Background music bên dưới preview. Upload dùng file đã upload ở tab Âm thanh.", "When a scene is Off, the studio uses the Background music below the preview. Custom uses the uploaded file from the Audio tab.")}
       </p>
-    </Card>
+    </div>
   );
 }
 

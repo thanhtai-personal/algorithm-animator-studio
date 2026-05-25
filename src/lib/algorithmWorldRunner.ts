@@ -40,7 +40,7 @@ export function createAlgorithmWorldFrames(opts: AlgorithmWorldScenarioOptions =
   const tournamentEntrants = opts.tournamentEntrants ?? [];
   const tournament = tournamentEnabled ? resolveTournamentMatch(tournamentRound, tournamentMatch, tournamentResults, tournamentEntrants) : null;
   const requestedMazeId = tournamentEnabled ? "random" : opts.mazeId ?? "astar_labyrinth";
-  const mazeSeed = tournamentEnabled ? tournamentSeed(tournamentRound, tournamentMatch, tournamentEntrants) : Date.now() + Math.random() * 10_000;
+  const mazeSeed = tournamentEnabled ? tournamentSeed(tournamentRound, tournamentMatch, tournamentEntrants) : opts.randomSeed ?? Date.now();
   const args: BuildArgs = {
     videoMode: opts.videoMode ?? "short",
     compareEnabled: opts.compareEnabled ?? opts.videoMode === "long",

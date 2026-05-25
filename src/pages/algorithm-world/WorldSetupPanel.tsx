@@ -239,7 +239,6 @@ function TournamentCard({ s, t, compact = false }: PanelProps & { compact?: bool
             <Label className="text-xs">{t("Link playlist YouTube", "YouTube playlist link")}</Label>
             <Input value={s.worldTournamentPlaylistUrl} onChange={(event) => s.setWorldTournamentPlaylistUrl(event.target.value)} placeholder="https://www.youtube.com/playlist?list=..." />
           </div>
-          <TournamentMusicControls studio={s} t={t} />
           <div className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-background/60 p-3 text-xs">
             <span className="text-muted-foreground">{t(`Đã lưu ${savedResults} kết quả`, `${savedResults} saved results`)}</span>
             <Button variant="outline" size="sm" onClick={s.resetWorldTournamentResults}>
@@ -252,6 +251,7 @@ function TournamentCard({ s, t, compact = false }: PanelProps & { compact?: bool
           {t("Tắt giải đấu thì bạn tự chọn 2 thuật toán và mê cung ở các tab còn lại.", "When tournament is off, pick the two algorithms and maze manually in the other tabs.")}
         </div>
       )}
+      <TournamentMusicControls studio={s} t={t} />
     </Card>
   );
 }

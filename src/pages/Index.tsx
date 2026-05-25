@@ -36,8 +36,10 @@ const Index = () => {
 
   const studio = useAlgorithmStudio({
     requireConfigAccess,
+    initialAlgorithmId: "bubble",
     initialWorldTournamentEnabled: false,
     enableWorldTournamentIntegration: false,
+    enableMazePathfinding: false,
   });
 
 

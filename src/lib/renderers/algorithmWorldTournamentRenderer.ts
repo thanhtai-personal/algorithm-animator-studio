@@ -194,24 +194,56 @@ function drawAdvancingWinner(
   const rowH = fromMatch.h / 2 - 12;
   const from = rowCenter(fromMatch.x + 10, fromMatch.y + (fromSlot ? fromMatch.h / 2 + 2 : 10), fromMatch.w - 20, rowH);
   const to = rowCenter(toMatch.x + 10, toMatch.y + (toSlot ? toMatch.h / 2 + 2 : 10), toMatch.w - 20, rowH);
-  const move = easeInOut(Math.min(1, Math.max(0, (progress - 0.18) / 0.72)));
-  const cx = lerp(from.x, to.x, move);
-  const cy = lerp(from.y, to.y, move);
-  drawFlyingTeam(ctx, active.winner.name, cx, cy, fromMatch.w - 20, rowH, move, lang);
+  const midX = fromMatch.x + fromMatch.w + (toMatch.x - fromMatch.x - fromMatch.w) * 0.46;
+  const path = [
+    { x: fromMatch.x + fromMatch.w, y: from.y },
+    { x: midX, y: from.y },
+    { x: midX, y: toMatch.y + toMatch.h / 2 },
+    { x: toMatch.x, y: toMatch.y + toMatch.h / 2 },
+    to,
+  ];
+  const run = easeInOut(Math.min(1, Math.max(0, (progress - 0.16) / 0.66)));
+  drawRunningAdvancePath(ctx, path, run);
+  if (run > 0.86) drawDestinationTeam(ctx, active.winner.name, to.x, to.y, fromMatch.w - 20, rowH, (run - 0.86) / 0.14, lang);
 }
 
 function rowCenter(x: number, y: number, w: number, h: number) {
   return { x: x + w / 2, y: y + h / 2 };
 }
 
-function drawFlyingTeam(ctx: CanvasRenderingContext2D, name: string, cx: number, cy: number, w: number, h: number, progress: number, lang: Lang) {
+function drawRunningAdvancePath(ctx: CanvasRenderingContext2D, points: Array<{ x: number; y: number }>, progress: number) {
   ctx.save();
-  ctx.globalAlpha = 0.72 + progress * 0.28;
-  ctx.fillStyle = "rgba(250,204,21,0.2)";
-  ctx.strokeStyle = "#fde047";
-  ctx.lineWidth = 2.4;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = "rgba(250,204,21,0.22)";
+  ctx.lineWidth = 10;
   ctx.shadowColor = "#fde047";
-  ctx.shadowBlur = 18;
+  ctx.shadowBlur = progress >= 1 ? 26 : 14;
+  strokePolyline(ctx, points);
+  const partial = partialPolyline(points, progress);
+  ctx.strokeStyle = "#fde047";
+  ctx.lineWidth = 4.8;
+  strokePolyline(ctx, partial);
+  if (progress < 1) {
+    const head = partial[partial.length - 1];
+    ctx.fillStyle = "#fff7ad";
+    ctx.shadowBlur = 24;
+    ctx.beginPath();
+    ctx.arc(head.x, head.y, 7 + Math.sin(progress * Math.PI * 8) * 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawDestinationTeam(ctx: CanvasRenderingContext2D, name: string, cx: number, cy: number, w: number, h: number, progress: number, lang: Lang) {
+  const alpha = Math.min(1, Math.max(0, progress));
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = "rgba(250,204,21,0.22)";
+  ctx.strokeStyle = "#fde047";
+  ctx.lineWidth = 2.6;
+  ctx.shadowColor = "#fde047";
+  ctx.shadowBlur = 18 + alpha * 12;
   roundRect(ctx, cx - w / 2, cy - h / 2, w, h, 10);
   ctx.fill(); ctx.stroke();
   ctx.fillStyle = "#fde047";
@@ -224,6 +256,40 @@ function drawFlyingTeam(ctx: CanvasRenderingContext2D, name: string, cx: number,
   ctx.textAlign = "right";
   ctx.fillText(lang === "vi" ? "CHỜ ĐẤU" : "WAITING", cx + w / 2 - 8, cy);
   ctx.restore();
+}
+
+function strokePolyline(ctx: CanvasRenderingContext2D, points: Array<{ x: number; y: number }>) {
+  if (points.length < 2) return;
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+  ctx.stroke();
+}
+
+function partialPolyline(points: Array<{ x: number; y: number }>, progress: number) {
+  if (progress >= 1) return points;
+  const target = polylineLength(points) * Math.max(0, progress);
+  const next = [points[0]];
+  let travelled = 0;
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1];
+    const current = points[i];
+    const segment = Math.hypot(current.x - prev.x, current.y - prev.y);
+    if (travelled + segment >= target) {
+      const t = segment ? (target - travelled) / segment : 0;
+      next.push({ x: lerp(prev.x, current.x, t), y: lerp(prev.y, current.y, t) });
+      return next;
+    }
+    next.push(current);
+    travelled += segment;
+  }
+  return next;
+}
+
+function polylineLength(points: Array<{ x: number; y: number }>) {
+  let total = 0;
+  for (let i = 1; i < points.length; i++) total += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+  return total;
 }
 
 function easeInOut(value: number) {

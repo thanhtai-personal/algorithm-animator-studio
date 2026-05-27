@@ -25,6 +25,9 @@ const getPageMeta = (lang: Lang): Record<string, { subtitle: string }> => ({
   "/story-video": {
     subtitle: lang === "vi" ? "Tạo video đọc truyện từ URL, văn bản, giọng đọc và nền." : "Create reading-story videos from URLs, text, voice-over and background media.",
   },
+  "/mu-news": {
+    subtitle: lang === "vi" ? "Tổng hợp tin Manchester United, viết kịch bản, đọc Piper và tạo video nháp." : "Collect Manchester United news, script it, voice it and draft videos.",
+  },
   "/youtube": {
     subtitle: lang === "vi" ? "Đăng nhập OAuth qua server .env rồi upload video đã xuất." : "Login with OAuth from server .env, then upload exported videos.",
   },
@@ -55,7 +58,9 @@ export function AppHeader() {
   }, [lang, location.pathname]);
   const contentMode = location.pathname === "/story-video"
     ? "story-video"
-    : location.pathname === "/long-content"
+    : location.pathname === "/mu-news"
+      ? "mu-news"
+      : location.pathname === "/long-content"
       ? "algorithm-long"
       : (location.pathname === "/maze-pathfinding" || location.pathname === "/algorithm-world")
         ? "maze-pathfinding"
@@ -114,6 +119,7 @@ export function AppHeader() {
   function changeContentMode(value: string) {
     if (value === "story-video") navigate("/story-video");
     else if (value === "algorithm-long") navigate("/long-content");
+    else if (value === "mu-news") navigate("/mu-news");
     else if (value === "maze-pathfinding") navigate("/maze-pathfinding");
     else navigate("/");
   }
@@ -139,6 +145,7 @@ export function AppHeader() {
               <SelectItem value="maze-pathfinding">{lang === "vi" ? "Tìm đường ra mê cung" : "Maze Pathfinding"}</SelectItem>
               <SelectItem value="algorithm-long">Algorithm Long 16:9</SelectItem>
               <SelectItem value="story-video">{lang === "vi" ? "Kênh đọc truyện" : "Story video"}</SelectItem>
+              <SelectItem value="mu-news">{lang === "vi" ? "Kênh tin tức MU" : "MU News channel"}</SelectItem>
             </SelectContent>
           </Select>
           <Button

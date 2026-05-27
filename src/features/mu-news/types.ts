@@ -1,4 +1,7 @@
 import type { VideoAspectRatio, VideoBackgroundType, VideoFitMode } from "@/features/story-video/types";
+import type { VoiceGenerateResult } from "@/lib/voiceApi";
+
+export type MuNewsStepId = "sources" | "preview" | "script" | "voice" | "video";
 
 export type MuNewsSource = {
   id: string;
@@ -40,7 +43,17 @@ export type MuNewsScriptResponse = {
   warning?: string;
 };
 
+export type MuNewsVoiceSegment = {
+  id: string;
+  title: string;
+  text: string;
+  fileName: string;
+  selected: boolean;
+  result?: VoiceGenerateResult | null;
+};
+
 export type MuNewsDraft = {
+  activeStep: MuNewsStepId;
   sourcesText: string;
   query: string;
   selectedIds: string[];
@@ -48,6 +61,7 @@ export type MuNewsDraft = {
   angle: string;
   durationMinutes: number;
   voiceStyle: string;
+  scriptLanguage: string;
   script: string;
   fileName: string;
   videoFileName: string;
@@ -57,4 +71,10 @@ export type MuNewsDraft = {
   aspectRatio: VideoAspectRatio;
   backgroundType: VideoBackgroundType;
   fitMode: VideoFitMode;
+  voiceSegments: MuNewsVoiceSegment[];
+  backgroundMusicRelativePath: string;
+  backgroundMusicVolume: number;
+  backgroundMusicLoop: boolean;
+  backgroundMusicFadeIn: number;
+  backgroundMusicFadeOut: number;
 };

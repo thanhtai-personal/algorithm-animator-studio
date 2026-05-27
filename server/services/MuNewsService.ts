@@ -147,6 +147,7 @@ function buildSystemPrompt() {
     "Chỉ dựa trên nguồn người dùng cung cấp; không bịa thêm số liệu, phát biểu hoặc tin chính thức.",
     "Không dịch nguyên văn bài báo; hãy tổng hợp lại bằng lời mới, có góc nhìn fan MU Việt.",
     "Tin chưa chính thức phải gọi là tin đồn/tin đáng theo dõi, không được nói là chốt hoặc chính thức.",
+    "Viết theo đúng ngôn ngữ scriptLanguage trong input, mặc định là Tiếng Việt.",
     "Trả về JSON với các field: title, script, description, hashtags, shorts, sourceNotes.",
   ].join("\n");
 }
@@ -157,6 +158,7 @@ function buildScriptInput(body: MuNewsScriptBody) {
     angle: body.angle || "Bản tin MU hôm nay: tin thật, tin đồn và góc nhìn fan Việt.",
     durationMinutes: clampNumber(body.durationMinutes, 6, 2, 12),
     voiceStyle: body.voiceStyle || "Gần gũi, tỉnh táo, không giật tít sai sự thật.",
+    scriptLanguage: body.scriptLanguage || "Tiếng Việt",
     items: body.items.map((item) => ({
       title: item.title,
       sourceName: item.sourceName,

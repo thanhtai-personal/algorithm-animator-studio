@@ -1,6 +1,6 @@
 import { buildApiUrl, parseApiResponse } from "@/lib/runtimeApi";
 import { buildRuntimeSettingsHeaders } from "@/lib/runtimeSettings";
-import type { GenerateVideoResponse, VideoAspectRatio, VideoBackgroundType, VideoFitMode } from "@/features/story-video/types";
+import type { GenerateVideoResponse, VideoAspectRatio, VideoFitMode } from "@/features/story-video/types";
 import type { MuNewsFetchResponse, MuNewsItem, MuNewsScriptResponse, MuNewsSource } from "./types";
 
 export async function getMuNewsSources() {
@@ -23,6 +23,7 @@ export async function generateMuNewsScript(payload: {
   angle: string;
   durationMinutes: number;
   voiceStyle: string;
+  scriptLanguage: string;
 }) {
   return parseApiResponse<MuNewsScriptResponse>(await fetch(buildApiUrl("/api/mu-news/script"), {
     method: "POST",
@@ -31,23 +32,35 @@ export async function generateMuNewsScript(payload: {
   }));
 }
 
-export async function generateVideoFromMuAudio(payload: {
-  audioRelativePath: string;
-  backgroundFile: File;
+export async function generateMuNewsTimelineVideo(payload: {
+  audioRelativePaths: string[];
+  uploadedAudioFiles: File[];
+  backgrounds: { file: File; durationSeconds: number }[];
   videoFileName: string;
   aspectRatio: VideoAspectRatio;
-  backgroundType: VideoBackgroundType;
   fitMode: VideoFitMode;
+  backgroundMusicRelativePath?: string;
+  backgroundMusicVolume: number;
+  backgroundMusicLoop: boolean;
+  backgroundMusicFadeIn: number;
+  backgroundMusicFadeOut: number;
 }) {
   const formData = new FormData();
-  formData.append("image", payload.backgroundFile);
-  formData.append("audioRelativePath", payload.audioRelativePath);
+  formData.append("audioRelativePaths", JSON.stringify(payload.audioRelativePaths));
+  formData.append("backgroundDurations", JSON.stringify(payload.backgrounds.map((item) => item.durationSeconds)));
   formData.append("videoFileName", payload.videoFileName);
   formData.append("aspectRatio", payload.aspectRatio);
-  formData.append("backgroundType", payload.backgroundType);
   formData.append("fitMode", payload.fitMode);
+  formData.append("backgroundMusicRelativePath", payload.backgroundMusicRelativePath || "");
+  formData.append("backgroundMusicVolume", String(payload.backgroundMusicVolume));
+  formData.append("backgroundMusicLoop", String(payload.backgroundMusicLoop));
+  formData.append("backgroundMusicFadeIn", String(payload.backgroundMusicFadeIn));
+  formData.append("backgroundMusicFadeOut", String(payload.backgroundMusicFadeOut));
 
-  return parseApiResponse<GenerateVideoResponse>(await fetch(buildApiUrl("/api/video/generate-from-audio"), {
+  payload.backgrounds.forEach((item) => formData.append("backgrounds", item.file));
+  payload.uploadedAudioFiles.forEach((file) => formData.append("audio", file));
+
+  return parseApiResponse<GenerateVideoResponse>(await fetch(buildApiUrl("/api/mu-news/render-video"), {
     method: "POST",
     headers: buildRuntimeSettingsHeaders(),
     body: formData,

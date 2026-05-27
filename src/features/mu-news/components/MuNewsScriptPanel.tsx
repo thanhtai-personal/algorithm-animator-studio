@@ -1,4 +1,4 @@
-import { Bot, Copy, FileText } from "lucide-react";
+import { ArrowRight, Bot, Copy, FileText, Mic2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,19 +19,24 @@ export function MuNewsScriptPanel({ studio }: { studio: ReturnType<typeof useMuN
           <div className="min-w-0">
             <CardTitle className="flex items-start gap-2 text-base leading-7 sm:text-lg">
               <Bot className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
-              <span>AI viết kịch bản</span>
+              <span>Step 3 — Lên kịch bản theo ngôn ngữ hệ thống</span>
             </CardTitle>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              Nếu có OPENAI_API_KEY trên server, tool gọi AI. Nếu chưa có, tool tự dựng bản nháp local để bạn vẫn duyệt được.
+              AI viết script theo tin đã chọn. Bạn duyệt/sửa tại đây, sau đó tách thành nhiều đoạn voice cho Step 4.
             </p>
           </div>
-          <Button className="w-full shrink-0 sm:w-auto" onClick={studio.createScript} disabled={!studio.canGenerateScript}>
-            <FileText className="mr-2 h-4 w-4" /> {studio.loading.script ? "Đang viết..." : "Tạo kịch bản"}
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Button className="w-full sm:w-auto" variant="outline" onClick={studio.createScript} disabled={!studio.canGenerateScript}>
+              <FileText className="mr-2 h-4 w-4" /> {studio.loading.script ? "Đang viết..." : "Viết lại"}
+            </Button>
+            <Button className="w-full sm:w-auto" onClick={studio.rebuildVoiceSegments} disabled={!studio.script.trim()}>
+              <Mic2 className="mr-2 h-4 w-4" /> Tách voice
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="grid min-w-0 gap-4 p-4 pt-0 sm:p-6 sm:pt-0">
-        <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_130px]">
+        <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_130px_180px]">
           <div className="grid min-w-0 gap-2">
             <Label>Tên kênh / series</Label>
             <Input className="min-w-0" value={studio.channelName} onChange={(event) => studio.setChannelName(event.target.value)} />
@@ -40,7 +45,12 @@ export function MuNewsScriptPanel({ studio }: { studio: ReturnType<typeof useMuN
             <Label>Độ dài phút</Label>
             <Input type="number" min={2} max={12} value={studio.durationMinutes} onChange={(event) => studio.setDurationMinutes(Number(event.target.value) || 6)} />
           </div>
+          <div className="grid min-w-0 gap-2">
+            <Label>Ngôn ngữ script</Label>
+            <Input value={studio.scriptLanguage} onChange={(event) => studio.setScriptLanguage(event.target.value)} placeholder="Tiếng Việt" />
+          </div>
         </div>
+
         <div className="grid min-w-0 gap-3 lg:grid-cols-2">
           <div className="grid min-w-0 gap-2">
             <Label>Góc biên tập</Label>
@@ -54,10 +64,9 @@ export function MuNewsScriptPanel({ studio }: { studio: ReturnType<typeof useMuN
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <Badge variant={studio.scriptResult?.engine === "openai" ? "default" : "secondary"}>
-              Engine: {studio.scriptResult?.engine || "chưa tạo"}
-            </Badge>
+            <Badge variant={studio.scriptResult?.engine === "openai" ? "default" : "secondary"}>Engine: {studio.scriptResult?.engine || "chưa tạo"}</Badge>
             <Badge variant="outline">{studio.script.trim().length.toLocaleString("vi-VN")} ký tự</Badge>
+            <Badge variant="outline">{studio.voiceSegments.length} đoạn voice</Badge>
           </div>
           <Button className="w-full sm:ml-auto sm:w-auto" size="sm" variant="outline" onClick={copyScript} disabled={!studio.script.trim()}>
             <Copy className="mr-2 h-4 w-4" /> Copy script
@@ -65,10 +74,10 @@ export function MuNewsScriptPanel({ studio }: { studio: ReturnType<typeof useMuN
         </div>
 
         <Textarea
-          className="min-h-[280px] min-w-0 resize-y font-serif text-sm leading-7 sm:min-h-[360px] sm:text-base xl:min-h-[420px]"
+          className="min-h-[360px] min-w-0 resize-y font-serif text-sm leading-7 sm:text-base xl:min-h-[52vh]"
           value={studio.script}
           onChange={(event) => studio.setScript(event.target.value)}
-          placeholder="Kịch bản bản tin MU sẽ xuất hiện tại đây. Bạn có thể sửa trước khi tạo voice Piper."
+          placeholder="Kịch bản bản tin MU sẽ xuất hiện tại đây. Bạn có thể sửa trước khi tách voice."
         />
 
         {studio.scriptResult ? (
@@ -81,16 +90,14 @@ export function MuNewsScriptPanel({ studio }: { studio: ReturnType<typeof useMuN
               <p className="font-medium">Hashtag</p>
               <p className="break-words text-muted-foreground">{studio.scriptResult.hashtags.join(" ")}</p>
             </div>
-            {studio.scriptResult.shorts.length ? (
-              <div className="min-w-0">
-                <p className="font-medium">Shorts gợi ý</p>
-                <ul className="mt-1 list-disc space-y-1 pl-5 text-muted-foreground">
-                  {studio.scriptResult.shorts.map((short) => <li className="break-words" key={short.title}>{short.title}</li>)}
-                </ul>
-              </div>
-            ) : null}
           </div>
         ) : null}
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <Button className="w-full sm:w-auto" onClick={studio.rebuildVoiceSegments} disabled={!studio.script.trim()}>
+            Tách đoạn voice và sang Step 4 <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

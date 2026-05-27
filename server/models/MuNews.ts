@@ -29,6 +29,7 @@ export type MuNewsScriptBody = {
   angle?: string;
   durationMinutes?: number;
   voiceStyle?: string;
+  scriptLanguage?: string;
 };
 
 export type MuNewsScriptResponse = {

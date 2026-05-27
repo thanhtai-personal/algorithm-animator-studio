@@ -1,34 +1,23 @@
-# Kênh tin tức MU Studio
+# MU News Studio
 
-Màn hình mới nằm tại route `/mu-news`, dùng để tạo bản tin Manchester United bán tự động.
+Màn hình `/mu-news` là workflow 5 bước để tạo bản tin Manchester United bán tự động:
 
-## Workflow
+1. **Nguồn tin tức**: cấu hình RSS/Google News RSS theo mẫu `Tên nguồn | URL | điểm tin cậy`.
+2. **Preview tin tức**: tải tin, xem nguồn/độ tin cậy, chọn tin đưa vào video.
+3. **Kịch bản**: AI viết kịch bản theo ngôn ngữ hệ thống, có thể sửa trước khi đọc.
+4. **Voice**: tách kịch bản thành nhiều đoạn và tạo nhiều file voice Piper riêng lẻ.
+5. **Video**: chọn nhiều ảnh nền, đặt thời lượng từng ảnh, chọn các file voice, upload thêm voice nếu cần, chọn nhạc nền từ thư viện và render video timeline.
 
-1. Vào dropdown studio trên header và chọn **Kênh tin tức MU**.
-2. Kiểm tra danh sách nguồn RSS theo format:
-
-   ```txt
-   Tên nguồn | RSS URL | điểm tin cậy 1-10
-   ```
-
-3. Bấm **Load tin hôm nay** để lấy tin.
-4. Tick những tin muốn đưa vào video.
-5. Bấm **Tạo kịch bản**.
-6. Duyệt/sửa kịch bản.
-7. Bấm **Tạo voice Piper**.
-8. Chọn ảnh/GIF/video nền rồi bấm **Render video nháp**.
-
-## AI scripting
-
-Backend mới có endpoint:
+## API chính
 
 - `GET /api/mu-news/sources`
 - `POST /api/mu-news/fetch`
 - `POST /api/mu-news/script`
+- `POST /api/mu-news/render-video`
 
-Nếu server có `OPENAI_API_KEY`, endpoint `/api/mu-news/script` sẽ gọi AI để viết kịch bản. Nếu chưa có key hoặc AI lỗi, tool tự tạo bản nháp local để bạn vẫn có thể duyệt và tạo voice.
+## AI script
 
-Thêm vào `.env`:
+Nếu server có `OPENAI_API_KEY`, tool gọi OpenAI để viết kịch bản. Nếu chưa có API key, service dùng fallback local để vẫn tạo được bản nháp.
 
 ```env
 OPENAI_API_KEY=
@@ -36,6 +25,14 @@ OPENAI_CHAT_MODEL=gpt-4o-mini
 OPENAI_BASE_URL=https://api.openai.com/v1
 ```
 
-## Lưu ý nội dung
+## Video timeline
 
-Không nên dịch nguyên văn bài báo. Kịch bản nên giữ nguồn, chấm độ tin cậy và thêm góc nhìn fan Việt để tránh thành nội dung đọc báo hàng loạt.
+Endpoint render mới nhận:
+
+- `backgrounds[]`: nhiều ảnh nền.
+- `backgroundDurations`: JSON array số giây cho từng ảnh.
+- `audioRelativePaths`: JSON array các voice đã tạo trong thư mục generated.
+- `audio[]`: file voice upload thêm.
+- `backgroundMusicRelativePath`: nhạc nền trong `server/data/background-music`.
+
+Timeline nhiều nền hiện ưu tiên ảnh tĩnh để tránh lỗi bản quyền/hiệu năng. Video/GIF nền đơn vẫn có thể tiếp tục dùng endpoint video cũ của source nếu cần mở rộng sau.

@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import type { GenerateVideoResponse, VideoAspectRatio, VideoBackgroundType, VideoFitMode } from "@/features/story-video/types";
-import { generatePiperVoice, getPiperModels, type PiperModel, type VoiceGenerateResult } from "@/lib/voiceApi";
-import { fetchMuNews, generateMuNewsScript, generateVideoFromMuAudio, getMuNewsSources } from "./muNewsApi";
+import { getMusicLibraryTracks, type MusicLibraryTrack } from "@/lib/musicLibrary";
+import { generatePiperVoice, getPiperModels, type PiperModel } from "@/lib/voiceApi";
+import { fetchMuNews, generateMuNewsScript, generateMuNewsTimelineVideo, getMuNewsSources } from "./muNewsApi";
 import { createDefaultFileName, parseSourcesText, sourcesToText } from "./muNewsUtils";
-import type { MuNewsDraft, MuNewsFetchResponse, MuNewsItem, MuNewsScriptResponse } from "./types";
+import type { MuNewsDraft, MuNewsFetchResponse, MuNewsItem, MuNewsScriptResponse, MuNewsStepId, MuNewsVoiceSegment } from "./types";
 
-const DRAFT_KEY = "kata.mu-news-studio.v1";
+const DRAFT_KEY = "kata.mu-news-studio.v2";
 
 const DEFAULT_DRAFT: MuNewsDraft = {
+  activeStep: "sources",
   sourcesText: "",
   query: "Manchester United OR Man Utd OR MUFC",
   selectedIds: [],
@@ -15,6 +17,7 @@ const DEFAULT_DRAFT: MuNewsDraft = {
   angle: "Tin thật, tin đồn và góc nhìn fan MU Việt. Không giật tít sai sự thật.",
   durationMinutes: 6,
   voiceStyle: "Nam tính, gần gũi, tỉnh táo, nói như một fan MU hiểu bóng đá.",
+  scriptLanguage: "Tiếng Việt",
   script: "",
   fileName: createDefaultFileName("mu-news-audio"),
   videoFileName: createDefaultFileName("mu-news-video"),
@@ -24,6 +27,27 @@ const DEFAULT_DRAFT: MuNewsDraft = {
   aspectRatio: "16:9",
   backgroundType: "image",
   fitMode: "cover",
+  voiceSegments: [],
+  backgroundMusicRelativePath: "",
+  backgroundMusicVolume: 0.12,
+  backgroundMusicLoop: true,
+  backgroundMusicFadeIn: 1.5,
+  backgroundMusicFadeOut: 2,
+};
+
+type BackgroundDraft = {
+  id: string;
+  file: File;
+  previewUrl: string;
+  durationSeconds: number;
+};
+
+type UploadedVoiceDraft = {
+  id: string;
+  file: File;
+  previewUrl: string;
+  title: string;
+  selected: boolean;
 };
 
 function readDraft(): MuNewsDraft {
@@ -37,6 +61,7 @@ function readDraft(): MuNewsDraft {
 
 export function useMuNewsStudio() {
   const draft = useMemo(readDraft, []);
+  const [activeStep, setActiveStep] = useState<MuNewsStepId>(draft.activeStep);
   const [sourcesText, setSourcesText] = useState(draft.sourcesText);
   const [query, setQuery] = useState(draft.query);
   const [selectedIds, setSelectedIds] = useState<string[]>(draft.selectedIds || []);
@@ -44,6 +69,7 @@ export function useMuNewsStudio() {
   const [angle, setAngle] = useState(draft.angle);
   const [durationMinutes, setDurationMinutes] = useState(draft.durationMinutes);
   const [voiceStyle, setVoiceStyle] = useState(draft.voiceStyle);
+  const [scriptLanguage, setScriptLanguage] = useState(draft.scriptLanguage);
   const [script, setScript] = useState(draft.script);
   const [fileName, setFileName] = useState(draft.fileName);
   const [videoFileName, setVideoFileName] = useState(draft.videoFileName);
@@ -53,13 +79,19 @@ export function useMuNewsStudio() {
   const [aspectRatio, setAspectRatio] = useState<VideoAspectRatio>(draft.aspectRatio);
   const [backgroundType, setBackgroundType] = useState<VideoBackgroundType>(draft.backgroundType);
   const [fitMode, setFitMode] = useState<VideoFitMode>(draft.fitMode);
+  const [voiceSegments, setVoiceSegments] = useState<MuNewsVoiceSegment[]>(draft.voiceSegments || []);
+  const [backgroundMusicRelativePath, setBackgroundMusicRelativePath] = useState(draft.backgroundMusicRelativePath);
+  const [backgroundMusicVolume, setBackgroundMusicVolume] = useState(draft.backgroundMusicVolume);
+  const [backgroundMusicLoop, setBackgroundMusicLoop] = useState(draft.backgroundMusicLoop);
+  const [backgroundMusicFadeIn, setBackgroundMusicFadeIn] = useState(draft.backgroundMusicFadeIn);
+  const [backgroundMusicFadeOut, setBackgroundMusicFadeOut] = useState(draft.backgroundMusicFadeOut);
   const [piperModels, setPiperModels] = useState<PiperModel[]>([]);
+  const [musicTracks, setMusicTracks] = useState<MusicLibraryTrack[]>([]);
   const [newsResult, setNewsResult] = useState<MuNewsFetchResponse | null>(null);
   const [scriptResult, setScriptResult] = useState<MuNewsScriptResponse | null>(null);
-  const [audioResult, setAudioResult] = useState<VoiceGenerateResult | null>(null);
   const [videoResult, setVideoResult] = useState<GenerateVideoResponse | null>(null);
-  const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
-  const [backgroundPreviewUrl, setBackgroundPreviewUrl] = useState("");
+  const [backgrounds, setBackgrounds] = useState<BackgroundDraft[]>([]);
+  const [uploadedVoices, setUploadedVoices] = useState<UploadedVoiceDraft[]>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState({ boot: true, news: false, script: false, audio: false, video: false });
 
@@ -68,51 +100,40 @@ export function useMuNewsStudio() {
     () => (newsResult?.items || []).filter((item) => selectedIds.includes(item.id)),
     [newsResult, selectedIds]
   );
+  const generatedVoiceCount = voiceSegments.filter((item) => item.result?.relativePath).length;
+  const selectedGeneratedVoices = voiceSegments.filter((item) => item.selected && item.result?.relativePath);
+  const selectedUploadedVoices = uploadedVoices.filter((item) => item.selected);
+  const selectedVoiceFileCount = selectedGeneratedVoices.length + selectedUploadedVoices.length;
   const canFetchNews = sources.length > 0 && !loading.news;
   const canGenerateScript = selectedItems.length > 0 && !loading.script;
-  const canGenerateAudio = script.trim().length > 0 && !loading.audio;
-  const canGenerateVideo = Boolean(audioResult?.relativePath && backgroundFile) && !loading.video;
+  const canGenerateAudio = voiceSegments.some((item) => item.text.trim()) && !loading.audio;
+  const canGenerateVideo = selectedVoiceFileCount > 0 && backgrounds.length > 0 && !loading.video;
+  const audioResult = [...voiceSegments].reverse().find((item) => item.result)?.result || null;
 
   useEffect(() => { void boot(); }, []);
 
-  useEffect(() => {
-    const payload: MuNewsDraft = {
-      sourcesText,
-      query,
-      selectedIds,
-      channelName,
-      angle,
-      durationMinutes,
-      voiceStyle,
-      script,
-      fileName,
-      videoFileName,
-      piperModelKey,
-      sentenceSilence,
-      speechRate,
-      aspectRatio,
-      backgroundType,
-      fitMode,
-    };
-    try { window.localStorage.setItem(DRAFT_KEY, JSON.stringify(payload)); } catch { /* ignore */ }
-  }, [sourcesText, query, selectedIds, channelName, angle, durationMinutes, voiceStyle, script, fileName, videoFileName, piperModelKey, sentenceSilence, speechRate, aspectRatio, backgroundType, fitMode]);
 
   useEffect(() => {
-    if (!backgroundFile) {
-      setBackgroundPreviewUrl("");
-      return;
-    }
-    const objectUrl = URL.createObjectURL(backgroundFile);
-    setBackgroundPreviewUrl(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [backgroundFile]);
+    const payload: MuNewsDraft = {
+      activeStep, sourcesText, query, selectedIds, channelName, angle, durationMinutes, voiceStyle,
+      scriptLanguage, script, fileName, videoFileName, piperModelKey, sentenceSilence, speechRate,
+      aspectRatio, backgroundType, fitMode, voiceSegments, backgroundMusicRelativePath,
+      backgroundMusicVolume, backgroundMusicLoop, backgroundMusicFadeIn, backgroundMusicFadeOut,
+    };
+    try { window.localStorage.setItem(DRAFT_KEY, JSON.stringify(payload)); } catch { /* ignore */ }
+  }, [activeStep, sourcesText, query, selectedIds, channelName, angle, durationMinutes, voiceStyle, scriptLanguage, script, fileName, videoFileName, piperModelKey, sentenceSilence, speechRate, aspectRatio, backgroundType, fitMode, voiceSegments, backgroundMusicRelativePath, backgroundMusicVolume, backgroundMusicLoop, backgroundMusicFadeIn, backgroundMusicFadeOut]);
 
   async function boot() {
     setLoading((value) => ({ ...value, boot: true }));
     try {
-      const [sourceData, models] = await Promise.all([getMuNewsSources(), getPiperModels().catch(() => [])]);
+      const [sourceData, models, tracks] = await Promise.all([
+        getMuNewsSources(),
+        getPiperModels().catch(() => []),
+        getMusicLibraryTracks().catch(() => []),
+      ]);
       if (!sourcesText.trim()) setSourcesText(sourcesToText(sourceData.sources));
       setPiperModels(models);
+      setMusicTracks(tracks);
       if (models.length && !models.some((model) => model.key === piperModelKey)) {
         setPiperModelKey(models.find((model) => model.lang === "vi")?.key || models[0].key);
       }
@@ -128,9 +149,10 @@ export function useMuNewsStudio() {
     setLoading((value) => ({ ...value, news: true }));
     setMessage("");
     try {
-      const result = await fetchMuNews({ sources, query, maxItems: 18 });
+      const result = await fetchMuNews({ sources, query, maxItems: 24 });
       setNewsResult(result);
       setSelectedIds(result.items.slice(0, 6).map((item) => item.id));
+      setActiveStep("preview");
       if (!result.items.length) setMessage("Chưa tìm thấy tin phù hợp. Thử đổi RSS hoặc từ khóa lọc.");
       else if (result.warnings?.length) setMessage(result.warnings.join("\n"));
     } catch (error) {
@@ -145,9 +167,11 @@ export function useMuNewsStudio() {
     setLoading((value) => ({ ...value, script: true }));
     setMessage("");
     try {
-      const result = await generateMuNewsScript({ items: selectedItems, channelName, angle, durationMinutes, voiceStyle });
+      const result = await generateMuNewsScript({ items: selectedItems, channelName, angle, durationMinutes, voiceStyle, scriptLanguage });
       setScriptResult(result);
       setScript(result.script);
+      setVoiceSegments(splitScriptIntoVoiceSegments(result.script, fileName));
+      setActiveStep("script");
       if (result.warning) setMessage(result.warning);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Không tạo được kịch bản.");
@@ -156,19 +180,25 @@ export function useMuNewsStudio() {
     }
   }
 
-  async function createAudio() {
-    if (!canGenerateAudio) return;
+  function rebuildVoiceSegments() {
+    setVoiceSegments(splitScriptIntoVoiceSegments(script, fileName));
+    setActiveStep("voice");
+  }
+
+  async function createAudioSegment(segmentId: string) {
+    const segment = voiceSegments.find((item) => item.id === segmentId);
+    if (!segment?.text.trim()) return;
     setLoading((value) => ({ ...value, audio: true }));
     setMessage("");
     try {
       const result = await generatePiperVoice({
-        text: script,
+        text: segment.text,
         modelKey: piperModelKey,
         sentenceSilence,
         speechRate,
-        fileName,
+        fileName: segment.fileName,
       });
-      setAudioResult(result);
+      setVoiceSegments((items) => items.map((item) => item.id === segmentId ? { ...item, selected: true, result } : item));
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Không tạo được voice Piper.");
     } finally {
@@ -176,18 +206,33 @@ export function useMuNewsStudio() {
     }
   }
 
+  async function createAllAudioSegments() {
+    if (!canGenerateAudio) return;
+    for (const segment of voiceSegments) {
+      if (!segment.result?.relativePath && segment.text.trim()) {
+        await createAudioSegment(segment.id);
+      }
+    }
+    setActiveStep("video");
+  }
+
   async function createVideo() {
-    if (!canGenerateVideo || !audioResult?.relativePath || !backgroundFile) return;
+    if (!canGenerateVideo) return;
     setLoading((value) => ({ ...value, video: true }));
     setMessage("");
     try {
-      const result = await generateVideoFromMuAudio({
-        audioRelativePath: audioResult.relativePath,
-        backgroundFile,
+      const result = await generateMuNewsTimelineVideo({
+        audioRelativePaths: selectedGeneratedVoices.map((item) => item.result!.relativePath),
+        uploadedAudioFiles: selectedUploadedVoices.map((item) => item.file),
+        backgrounds: backgrounds.map((item) => ({ file: item.file, durationSeconds: item.durationSeconds })),
         videoFileName,
         aspectRatio,
-        backgroundType,
         fitMode,
+        backgroundMusicRelativePath,
+        backgroundMusicVolume,
+        backgroundMusicLoop,
+        backgroundMusicFadeIn,
+        backgroundMusicFadeOut,
       });
       setVideoResult(result);
     } catch (error) {
@@ -205,30 +250,120 @@ export function useMuNewsStudio() {
     setSelectedIds((newsResult?.items || []).slice(0, count).map((item) => item.id));
   }
 
+  function updateVoiceSegment(id: string, patch: Partial<MuNewsVoiceSegment>) {
+    setVoiceSegments((items) => items.map((item) => item.id === id ? { ...item, ...patch } : item));
+  }
+
+  function addBackgroundFiles(fileList: FileList | File[]) {
+    const nextFiles = Array.from(fileList).filter((file) => file.type.startsWith("image/"));
+    if (!nextFiles.length) return;
+    setBackgrounds((items) => [
+      ...items,
+      ...nextFiles.map((file, index) => ({
+        id: createId("bg"),
+        file,
+        previewUrl: URL.createObjectURL(file),
+        durationSeconds: index === 0 && !items.length ? 8 : 6,
+      })),
+    ]);
+  }
+
+  function updateBackground(id: string, durationSeconds: number) {
+    setBackgrounds((items) => items.map((item) => item.id === id ? { ...item, durationSeconds: clamp(durationSeconds, 1, 120) } : item));
+  }
+
+  function removeBackground(id: string) {
+    setBackgrounds((items) => {
+      const removed = items.find((item) => item.id === id);
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      return items.filter((item) => item.id !== id);
+    });
+  }
+
+  function addUploadedVoiceFiles(fileList: FileList | File[]) {
+    const nextFiles = Array.from(fileList).filter((file) => file.type.startsWith("audio/") || /\.(wav|mp3|m4a|aac|ogg|opus)$/i.test(file.name));
+    setUploadedVoices((items) => [
+      ...items,
+      ...nextFiles.map((file) => ({ id: createId("voice-file"), file, previewUrl: URL.createObjectURL(file), title: file.name, selected: true })),
+    ]);
+  }
+
+  function updateUploadedVoice(id: string, selected: boolean) {
+    setUploadedVoices((items) => items.map((item) => item.id === id ? { ...item, selected } : item));
+  }
+
+  function removeUploadedVoice(id: string) {
+    setUploadedVoices((items) => {
+      const removed = items.find((item) => item.id === id);
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      return items.filter((item) => item.id !== id);
+    });
+  }
+
   function resetDraft() {
-    const next = { ...DEFAULT_DRAFT, sourcesText };
+    setActiveStep("sources");
     setSelectedIds([]);
-    setChannelName(next.channelName);
-    setAngle(next.angle);
-    setDurationMinutes(next.durationMinutes);
-    setVoiceStyle(next.voiceStyle);
+    setChannelName(DEFAULT_DRAFT.channelName);
+    setAngle(DEFAULT_DRAFT.angle);
+    setDurationMinutes(DEFAULT_DRAFT.durationMinutes);
+    setVoiceStyle(DEFAULT_DRAFT.voiceStyle);
+    setScriptLanguage(DEFAULT_DRAFT.scriptLanguage);
     setScript("");
     setFileName(createDefaultFileName("mu-news-audio"));
     setVideoFileName(createDefaultFileName("mu-news-video"));
+    setVoiceSegments([]);
     setScriptResult(null);
-    setAudioResult(null);
     setVideoResult(null);
     setMessage("");
   }
 
   return {
-    sourcesText, setSourcesText, sources, query, setQuery, selectedIds, selectedItems, channelName, setChannelName,
-    angle, setAngle, durationMinutes, setDurationMinutes, voiceStyle, setVoiceStyle, script, setScript,
-    fileName, setFileName, videoFileName, setVideoFileName, piperModelKey, setPiperModelKey,
-    sentenceSilence, setSentenceSilence, speechRate, setSpeechRate, aspectRatio, setAspectRatio,
-    backgroundType, setBackgroundType, fitMode, setFitMode, piperModels, newsResult, scriptResult,
-    audioResult, videoResult, backgroundFile, setBackgroundFile, backgroundPreviewUrl, message, loading,
-    canFetchNews, canGenerateScript, canGenerateAudio, canGenerateVideo, loadNews, createScript, createAudio,
-    createVideo, toggleItem, selectTopNews, resetDraft,
+    activeStep, setActiveStep, sourcesText, setSourcesText, sources, query, setQuery, selectedIds, selectedItems,
+    channelName, setChannelName, angle, setAngle, durationMinutes, setDurationMinutes, voiceStyle, setVoiceStyle,
+    scriptLanguage, setScriptLanguage, script, setScript, fileName, setFileName, videoFileName, setVideoFileName,
+    piperModelKey, setPiperModelKey, sentenceSilence, setSentenceSilence, speechRate, setSpeechRate,
+    aspectRatio, setAspectRatio, backgroundType, setBackgroundType, fitMode, setFitMode, piperModels, musicTracks,
+    newsResult, scriptResult, audioResult, videoResult, voiceSegments, backgrounds, uploadedVoices,
+    backgroundMusicRelativePath, setBackgroundMusicRelativePath, backgroundMusicVolume, setBackgroundMusicVolume,
+    backgroundMusicLoop, setBackgroundMusicLoop, backgroundMusicFadeIn, setBackgroundMusicFadeIn,
+    backgroundMusicFadeOut, setBackgroundMusicFadeOut, message, loading, generatedVoiceCount, selectedVoiceFileCount,
+    canFetchNews, canGenerateScript, canGenerateAudio, canGenerateVideo, loadNews, createScript, rebuildVoiceSegments,
+    createAudioSegment, createAllAudioSegments, createVideo, toggleItem, selectTopNews, updateVoiceSegment,
+    addBackgroundFiles, updateBackground, removeBackground, addUploadedVoiceFiles, updateUploadedVoice,
+    removeUploadedVoice, resetDraft,
   };
+}
+
+function splitScriptIntoVoiceSegments(text: string, filePrefix: string): MuNewsVoiceSegment[] {
+  const blocks = text.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean);
+  const segments: string[] = [];
+  let current = "";
+
+  for (const block of blocks.length ? blocks : [text]) {
+    if ((current + "\n\n" + block).trim().length > 900 && current.trim()) {
+      segments.push(current.trim());
+      current = block;
+    } else {
+      current = [current, block].filter(Boolean).join("\n\n");
+    }
+  }
+  if (current.trim()) segments.push(current.trim());
+
+  return segments.map((segment, index) => ({
+    id: createId(`voice-${index + 1}`),
+    title: `Voice đoạn ${index + 1}`,
+    text: segment,
+    fileName: `${filePrefix || createDefaultFileName("mu-news-audio")}-${String(index + 1).padStart(2, "0")}`,
+    selected: true,
+    result: null,
+  }));
+}
+
+function createId(prefix: string) {
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function clamp(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, value));
 }

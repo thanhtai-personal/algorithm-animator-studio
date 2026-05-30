@@ -3,6 +3,7 @@ export type MuNewsSource = {
   name: string;
   url: string;
   trustScore: number;
+  contentSelector?: string;
   sourceType?: "rss" | "news-search" | "official" | "manual";
 };
 

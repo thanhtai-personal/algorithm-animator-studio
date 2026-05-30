@@ -11,6 +11,7 @@ export const DEFAULT_MU_NEWS_SOURCES: MuNewsSource[] = [
     name: "Google News — Manchester United 24h",
     url: "https://news.google.com/rss/search?q=%22Manchester%20United%22%20OR%20%22Man%20United%22%20OR%20MUFC%20when%3A1d&hl=en-GB&gl=GB&ceid=GB%3Aen",
     trustScore: 6,
+    contentSelector: "",
     sourceType: "news-search",
   },
   {
@@ -18,6 +19,7 @@ export const DEFAULT_MU_NEWS_SOURCES: MuNewsSource[] = [
     name: "Google News — MU Transfer",
     url: "https://news.google.com/rss/search?q=%22Manchester%20United%22%20transfer%20when%3A7d&hl=en-GB&gl=GB&ceid=GB%3Aen",
     trustScore: 6,
+    contentSelector: "",
     sourceType: "news-search",
   },
   {
@@ -25,6 +27,7 @@ export const DEFAULT_MU_NEWS_SOURCES: MuNewsSource[] = [
     name: "BBC Sport Football RSS",
     url: "https://feeds.bbci.co.uk/sport/football/rss.xml",
     trustScore: 9,
+    contentSelector: "article, main",
     sourceType: "rss",
   },
 ];
@@ -85,13 +88,15 @@ async function fetchText(url: string) {
   }
 }
 
-function parseFeedItems(xml: string, source: MuNewsSource): MuNewsItem[] {
+async function parseFeedItems(xml: string, source: MuNewsSource): Promise<MuNewsItem[]> {
   const blocks = collectBlocks(xml, "item").length ? collectBlocks(xml, "item") : collectBlocks(xml, "entry");
 
-  return blocks.map((block) => {
-    const title = decodeEntities(stripTags(readTag(block, "title"))).trim();
+  const items = await Promise.all(blocks.map(async (block) => {
+    const title = cleanHtmlText(readTag(block, "title"));
     const link = normalizeLink(readTag(block, "link") || readAtomLink(block), source.url);
-    const summary = decodeEntities(stripTags(readTag(block, "description") || readTag(block, "summary") || readTag(block, "content"))).trim();
+    const feedSummary = cleanHtmlText(readTag(block, "description") || readTag(block, "summary") || readTag(block, "content"));
+    const articleSummary = source.contentSelector ? await extractArticleSummary(link, source.contentSelector) : "";
+    const summary = articleSummary || removeDuplicateLead(feedSummary, title);
     const publishedAt = parseDate(readTag(block, "pubDate") || readTag(block, "published") || readTag(block, "updated"));
     const id = crypto.createHash("sha1").update(`${source.id}:${title}:${link}`).digest("hex").slice(0, 16);
 
@@ -105,7 +110,21 @@ function parseFeedItems(xml: string, source: MuNewsSource): MuNewsItem[] {
       publishedAt,
       trustScore: clampNumber(source.trustScore, 6, 1, 10),
     };
-  }).filter((item) => item.title && item.link);
+  }));
+
+  return items.filter((item) => item.title && item.link);
+}
+
+async function extractArticleSummary(url: string, selector: string) {
+  if (!url || !selector.trim()) return "";
+
+  try {
+    const html = await fetchText(url);
+    const selectedHtml = selectHtml(html, selector);
+    return normalizeSpace(cleanHtmlText(removeNoise(selectedHtml))).slice(0, 900);
+  } catch {
+    return "";
+  }
 }
 
 async function tryGenerateWithOpenAi(body: MuNewsScriptBody): Promise<MuNewsScriptResponse | null> {
@@ -255,6 +274,7 @@ function normalizeSources(sources: MuNewsSource[]) {
     name: source.name || `Nguồn ${index + 1}`,
     url: source.url,
     trustScore: clampNumber(source.trustScore, 6, 1, 10),
+    contentSelector: String(source.contentSelector || "").trim().slice(0, 160),
     sourceType: source.sourceType || "rss",
   })).filter((source) => /^https?:\/\//i.test(source.url));
 }
@@ -280,6 +300,54 @@ function parseDate(value: string) {
   return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
 }
 
+function cleanHtmlText(value: string) {
+  return normalizeSpace(stripTags(decodeEntities(value)));
+}
+
+function removeDuplicateLead(summary: string, title: string) {
+  const normalizedTitle = normalizeSpace(title);
+  const normalizedSummary = normalizeSpace(summary);
+  if (!normalizedTitle || !normalizedSummary) return normalizedSummary;
+
+  const withoutTitle = normalizedSummary.toLowerCase().startsWith(normalizedTitle.toLowerCase())
+    ? normalizedSummary.slice(normalizedTitle.length).trim()
+    : normalizedSummary;
+
+  return withoutTitle.replace(/^[-–—:|,\s]+/, "").trim() || normalizedSummary;
+}
+
+function selectHtml(html: string, selector: string): string {
+  const trimmed = selector.trim();
+  if (!trimmed || trimmed === "body" || trimmed === "html") return html;
+
+  return trimmed
+    .split(",")
+    .map((part) => part.trim())
+    .map((part) => selectBySimpleSelector(html, part))
+    .filter(Boolean)
+    .join("\n");
+}
+
+function selectBySimpleSelector(html: string, selector: string): string {
+  if (selector.startsWith("#")) {
+    const id = escapeRegex(selector.slice(1));
+    return html.match(new RegExp(`<([a-z0-9-]+)\\b[^>]*id=["'][^"']*${id}[^"']*["'][^>]*>[\\s\\S]*?<\\/\\1>`, "i"))?.[0] || "";
+  }
+
+  if (selector.startsWith(".")) {
+    const className = escapeRegex(selector.slice(1));
+    return Array.from(html.matchAll(new RegExp(`<([a-z0-9-]+)\\b[^>]*class=["'][^"']*${className}[^"']*["'][^>]*>[\\s\\S]*?<\\/\\1>`, "gi"))).map((match) => match[0]).join("\n");
+  }
+
+  const tag = selector.replace(/[^a-z0-9-]/gi, "");
+  if (!tag) return "";
+  return Array.from(html.matchAll(new RegExp(`<${tag}\\b[^>]*>[\\s\\S]*?<\\/${tag}>`, "gi"))).map((match) => match[0]).join("\n");
+}
+
+function removeNoise(html: string) {
+  return html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ");
+}
+
 function stripTags(html: string) {
   return html.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g, " ");
 }
@@ -295,4 +363,8 @@ function normalizeSpace(value: string) {
 function clampNumber(value: unknown, fallback: number, min: number, max: number) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+}
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

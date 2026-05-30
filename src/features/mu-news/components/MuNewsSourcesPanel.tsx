@@ -1,13 +1,29 @@
-import { ArrowRight, RefreshCcw, ShieldCheck } from "lucide-react";
+import { ArrowRight, Plus, RefreshCcw, ShieldCheck, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import type { useMuNewsStudio } from "../useMuNewsStudio";
 
 export function MuNewsSourcesPanel({ studio }: { studio: ReturnType<typeof useMuNewsStudio> }) {
+  const sourceRows = sourcesTextToRows(studio.sourcesText);
+
+  function updateSourceRow(index: number, patch: Partial<SourceRow>) {
+    const rows = [...sourceRows];
+    rows[index] = { ...rows[index], ...patch };
+    studio.setSourcesText(rowsToSourcesText(rows));
+  }
+
+  function addSourceRow() {
+    studio.setSourcesText(rowsToSourcesText([...sourceRows, { name: "", url: "", trustScore: "6", contentSelector: "" }]));
+  }
+
+  function removeSourceRow(index: number) {
+    const rows = sourceRows.filter((_, rowIndex) => rowIndex !== index);
+    studio.setSourcesText(rowsToSourcesText(rows));
+  }
+
   return (
     <Card className="min-w-0 overflow-hidden border-border/70 shadow-[0_16px_40px_rgba(15,23,42,0.22)]">
       <CardHeader className="space-y-3 p-4 sm:p-6">
@@ -45,15 +61,72 @@ export function MuNewsSourcesPanel({ studio }: { studio: ReturnType<typeof useMu
             </div>
           </div>
 
-          <div className="grid min-w-0 gap-2">
-            <Label>Danh sách nguồn tin</Label>
-            <Textarea
-              className="min-h-[340px] min-w-0 resize-y font-mono text-xs leading-5 lg:min-h-[440px]"
-              value={studio.sourcesText}
-              onChange={(event) => studio.setSourcesText(event.target.value)}
-            />
+          <div className="grid min-w-0 gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <Label>Danh sách nguồn tin</Label>
+              <Button type="button" size="sm" variant="outline" onClick={addSourceRow}>
+                <Plus className="mr-2 h-4 w-4" /> Thêm nguồn
+              </Button>
+            </div>
+            <div className="grid min-w-0 gap-2 rounded-xl border border-border bg-background/60 p-3">
+              <div className="hidden grid-cols-[minmax(120px,0.7fr)_minmax(220px,1.2fr)_minmax(130px,0.7fr)_80px_40px] gap-2 px-1 text-xs font-medium text-muted-foreground md:grid">
+                <span>Tên nguồn</span>
+                <span>RSS URL</span>
+                <span>Content selector</span>
+                <span>Trust</span>
+                <span />
+              </div>
+              {sourceRows.map((source, index) => (
+                <div key={index} className="grid min-w-0 gap-2 rounded-lg border border-border bg-muted/10 p-2 md:grid-cols-[minmax(120px,0.7fr)_minmax(220px,1.2fr)_minmax(130px,0.7fr)_80px_40px] md:border-0 md:bg-transparent md:p-0">
+                  <div className="grid min-w-0 gap-1 md:block">
+                    <Label className="text-xs text-muted-foreground md:hidden">Tên nguồn</Label>
+                    <Input
+                      value={source.name}
+                      onChange={(event) => updateSourceRow(index, { name: event.target.value })}
+                      placeholder="BBC Sport"
+                    />
+                  </div>
+                  <div className="grid min-w-0 gap-1 md:block">
+                    <Label className="text-xs text-muted-foreground md:hidden">RSS URL</Label>
+                    <Input
+                      value={source.url}
+                      onChange={(event) => updateSourceRow(index, { url: event.target.value })}
+                      placeholder="https://example.com/rss.xml"
+                    />
+                  </div>
+                  <div className="grid min-w-0 gap-1 md:block">
+                    <Label className="text-xs text-muted-foreground md:hidden">Content selector</Label>
+                    <Input
+                      value={source.contentSelector}
+                      onChange={(event) => updateSourceRow(index, { contentSelector: event.target.value })}
+                      placeholder="article, main, .content"
+                    />
+                  </div>
+                  <div className="grid min-w-0 gap-1 md:block">
+                    <Label className="text-xs text-muted-foreground md:hidden">Trust</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={source.trustScore}
+                      onChange={(event) => updateSourceRow(index, { trustScore: event.target.value })}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="outline"
+                    className="h-10 w-full md:w-10"
+                    onClick={() => removeSourceRow(index)}
+                    aria-label="Xóa nguồn tin"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
             <p className="text-xs leading-5 text-muted-foreground">
-              Có thể thêm RSS của BBC, Sky, The Athletic, trang chủ MU hoặc Google News search RSS. Điểm tin cậy dùng để AI xếp độ ưu tiên khi viết kịch bản.
+              Content selector có thể để trống. Chỉ nhập khi RSS không có mô tả sạch và cần lấy nội dung từ trang bài viết.
             </p>
           </div>
         </div>
@@ -67,4 +140,37 @@ export function MuNewsSourcesPanel({ studio }: { studio: ReturnType<typeof useMu
       </CardContent>
     </Card>
   );
+}
+
+type SourceRow = {
+  name: string;
+  url: string;
+  trustScore: string;
+  contentSelector: string;
+};
+
+function sourcesTextToRows(text: string): SourceRow[] {
+  const rows = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [name = "", url = "", trustScore = "6", contentSelector = ""] = line.split("|").map((part) => part.trim());
+      return { name, url, trustScore, contentSelector };
+    });
+
+  return rows.length ? rows : [{ name: "", url: "", trustScore: "6", contentSelector: "" }];
+}
+
+function rowsToSourcesText(rows: SourceRow[]) {
+  return rows
+    .map((row) => ({
+      name: row.name.trim(),
+      url: row.url.trim(),
+      trustScore: String(Number(row.trustScore) || 6),
+      contentSelector: row.contentSelector.trim(),
+    }))
+    .filter((row) => row.name || row.url)
+    .map((row) => [row.name, row.url, row.trustScore, row.contentSelector].filter((part, index) => index < 3 || part).join(" | "))
+    .join("\n");
 }

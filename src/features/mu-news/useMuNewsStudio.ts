@@ -3,7 +3,7 @@ import type { GenerateVideoResponse, VideoAspectRatio, VideoBackgroundType, Vide
 import { getMusicLibraryTracks, type MusicLibraryTrack } from "@/lib/musicLibrary";
 import { generatePiperVoice, getPiperModels, type PiperModel } from "@/lib/voiceApi";
 import { fetchMuNews, generateMuNewsScript, generateMuNewsTimelineVideo, getMuNewsSources } from "./muNewsApi";
-import { createDefaultFileName, parseSourcesText, sourcesToText } from "./muNewsUtils";
+import { applyDefaultSourceSelectors, createDefaultFileName, parseSourcesText, sourcesToText } from "./muNewsUtils";
 import type { MuNewsDraft, MuNewsFetchResponse, MuNewsItem, MuNewsScriptResponse, MuNewsStepId, MuNewsVoiceSegment } from "./types";
 
 const DRAFT_KEY = "kata.mu-news-studio.v2";
@@ -132,6 +132,7 @@ export function useMuNewsStudio() {
         getMusicLibraryTracks().catch(() => []),
       ]);
       if (!sourcesText.trim()) setSourcesText(sourcesToText(sourceData.sources));
+      else setSourcesText(applyDefaultSourceSelectors(sourcesText, sourceData.sources));
       setPiperModels(models);
       setMusicTracks(tracks);
       if (models.length && !models.some((model) => model.key === piperModelKey)) {

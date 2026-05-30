@@ -24,6 +24,19 @@ export type MuNewsFetchBody = {
   maxItems?: number;
 };
 
+export type MuNewsFetchResponse = {
+  ok: boolean;
+  query: string;
+  sources: MuNewsSource[];
+  count: number;
+  items: MuNewsItem[];
+  warnings?: string[];
+  dateWindow?: {
+    from: string;
+    to: string;
+  };
+};
+
 export type MuNewsScriptBody = {
   items: MuNewsItem[];
   channelName?: string;
@@ -31,6 +44,21 @@ export type MuNewsScriptBody = {
   durationMinutes?: number;
   voiceStyle?: string;
   scriptLanguage?: string;
+};
+
+export type MuNewsValidateItemBody = {
+  item?: MuNewsItem;
+};
+
+export type MuNewsValidateItemResponse = {
+  ok: boolean;
+  valid: boolean;
+  itemId: string;
+  message: string;
+  sourcePublishedAt: string;
+  detailPublishedAt?: string;
+  resolvedUrl?: string;
+  articleContent?: string;
 };
 
 export type MuNewsScriptResponse = {

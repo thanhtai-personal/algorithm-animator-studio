@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import type { GenerateVideoResponse, VideoAspectRatio, VideoBackgroundType, VideoFitMode } from "@/features/story-video/types";
 import { getMusicLibraryTracks, type MusicLibraryTrack } from "@/lib/musicLibrary";
 import { generatePiperVoice, getPiperModels, type PiperModel } from "@/lib/voiceApi";
-import { fetchMuNews, generateMuNewsScript, generateMuNewsTimelineVideo, getMuNewsSources } from "./muNewsApi";
-import { applyDefaultSourceSelectors, createDefaultFileName, parseSourcesText, sourcesToText } from "./muNewsUtils";
-import type { MuNewsDraft, MuNewsFetchResponse, MuNewsItem, MuNewsScriptResponse, MuNewsStepId, MuNewsVoiceSegment } from "./types";
+import { fetchMuNews, generateMuNewsTimelineVideo, getMuNewsSources } from "./muNewsApi";
+import { buildMuNewsScriptPrompt } from "./muNewsPrompt";
+import { applyDefaultSources, createDefaultFileName, parseSourcesText, sourcesToText } from "./muNewsUtils";
+import type { MuNewsDraft, MuNewsFetchResponse, MuNewsItem, MuNewsStepId, MuNewsVoiceSegment } from "./types";
+import { useMuNewsValidation } from "./useMuNewsValidation";
 
 const DRAFT_KEY = "kata.mu-news-studio.v2";
 
@@ -88,7 +90,6 @@ export function useMuNewsStudio() {
   const [piperModels, setPiperModels] = useState<PiperModel[]>([]);
   const [musicTracks, setMusicTracks] = useState<MusicLibraryTrack[]>([]);
   const [newsResult, setNewsResult] = useState<MuNewsFetchResponse | null>(null);
-  const [scriptResult, setScriptResult] = useState<MuNewsScriptResponse | null>(null);
   const [videoResult, setVideoResult] = useState<GenerateVideoResponse | null>(null);
   const [backgrounds, setBackgrounds] = useState<BackgroundDraft[]>([]);
   const [uploadedVoices, setUploadedVoices] = useState<UploadedVoiceDraft[]>([]);
@@ -105,7 +106,20 @@ export function useMuNewsStudio() {
   const selectedUploadedVoices = uploadedVoices.filter((item) => item.selected);
   const selectedVoiceFileCount = selectedGeneratedVoices.length + selectedUploadedVoices.length;
   const canFetchNews = sources.length > 0 && !loading.news;
-  const canGenerateScript = selectedItems.length > 0 && !loading.script;
+  const newsValidation = useMuNewsValidation({ selectedItems, setSelectedIds, setActiveStep, setMessage });
+  const canGenerateScript = newsValidation.selectedNewsValidated && !loading.script;
+  const scriptPrompt = useMemo(
+    () => buildMuNewsScriptPrompt({
+      items: selectedItems,
+      channelName,
+      angle,
+      durationMinutes,
+      voiceStyle,
+      scriptLanguage,
+      validationById: newsValidation.newsValidationById,
+    }),
+    [selectedItems, channelName, angle, durationMinutes, voiceStyle, scriptLanguage, newsValidation.newsValidationById]
+  );
   const canGenerateAudio = voiceSegments.some((item) => item.text.trim()) && !loading.audio;
   const canGenerateVideo = selectedVoiceFileCount > 0 && backgrounds.length > 0 && !loading.video;
   const audioResult = [...voiceSegments].reverse().find((item) => item.result)?.result || null;
@@ -132,7 +146,7 @@ export function useMuNewsStudio() {
         getMusicLibraryTracks().catch(() => []),
       ]);
       if (!sourcesText.trim()) setSourcesText(sourcesToText(sourceData.sources));
-      else setSourcesText(applyDefaultSourceSelectors(sourcesText, sourceData.sources));
+      else setSourcesText(applyDefaultSources(sourcesText, sourceData.sources));
       setPiperModels(models);
       setMusicTracks(tracks);
       if (models.length && !models.some((model) => model.key === piperModelKey)) {
@@ -152,7 +166,8 @@ export function useMuNewsStudio() {
     try {
       const result = await fetchMuNews({ sources, query, maxItems: 24 });
       setNewsResult(result);
-      setSelectedIds(result.items.slice(0, 6).map((item) => item.id));
+      setSelectedIds([]);
+      newsValidation.resetNewsValidation();
       setActiveStep("preview");
       if (!result.items.length) setMessage("Chưa tìm thấy tin phù hợp. Thử đổi RSS hoặc từ khóa lọc.");
       else if (result.warnings?.length) setMessage(result.warnings.join("\n"));
@@ -163,22 +178,10 @@ export function useMuNewsStudio() {
     }
   }
 
-  async function createScript() {
+  function createScript() {
     if (!canGenerateScript) return;
-    setLoading((value) => ({ ...value, script: true }));
     setMessage("");
-    try {
-      const result = await generateMuNewsScript({ items: selectedItems, channelName, angle, durationMinutes, voiceStyle, scriptLanguage });
-      setScriptResult(result);
-      setScript(result.script);
-      setVoiceSegments(splitScriptIntoVoiceSegments(result.script, fileName));
-      setActiveStep("script");
-      if (result.warning) setMessage(result.warning);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Không tạo được kịch bản.");
-    } finally {
-      setLoading((value) => ({ ...value, script: false }));
-    }
+    setActiveStep("script");
   }
 
   function rebuildVoiceSegments() {
@@ -244,11 +247,18 @@ export function useMuNewsStudio() {
   }
 
   function toggleItem(item: MuNewsItem, checked: boolean) {
+    newsValidation.clearNewsValidationForItem(item.id);
     setSelectedIds((ids) => checked ? Array.from(new Set([...ids, item.id])) : ids.filter((id) => id !== item.id));
   }
 
-  function selectTopNews(count = 6) {
-    setSelectedIds((newsResult?.items || []).slice(0, count).map((item) => item.id));
+  function clearSelectedNews() {
+    setSelectedIds([]);
+    newsValidation.resetNewsValidation();
+  }
+
+  function selectAllNews() {
+    setSelectedIds((newsResult?.items || []).map((item) => item.id));
+    newsValidation.resetNewsValidation();
   }
 
   function updateVoiceSegment(id: string, patch: Partial<MuNewsVoiceSegment>) {
@@ -304,6 +314,7 @@ export function useMuNewsStudio() {
   function resetDraft() {
     setActiveStep("sources");
     setSelectedIds([]);
+    newsValidation.resetNewsValidation();
     setChannelName(DEFAULT_DRAFT.channelName);
     setAngle(DEFAULT_DRAFT.angle);
     setDurationMinutes(DEFAULT_DRAFT.durationMinutes);
@@ -313,7 +324,6 @@ export function useMuNewsStudio() {
     setFileName(createDefaultFileName("mu-news-audio"));
     setVideoFileName(createDefaultFileName("mu-news-video"));
     setVoiceSegments([]);
-    setScriptResult(null);
     setVideoResult(null);
     setMessage("");
   }
@@ -324,14 +334,14 @@ export function useMuNewsStudio() {
     scriptLanguage, setScriptLanguage, script, setScript, fileName, setFileName, videoFileName, setVideoFileName,
     piperModelKey, setPiperModelKey, sentenceSilence, setSentenceSilence, speechRate, setSpeechRate,
     aspectRatio, setAspectRatio, backgroundType, setBackgroundType, fitMode, setFitMode, piperModels, musicTracks,
-    newsResult, scriptResult, audioResult, videoResult, voiceSegments, backgrounds, uploadedVoices,
+    newsResult, audioResult, videoResult, voiceSegments, backgrounds, uploadedVoices, scriptPrompt,
     backgroundMusicRelativePath, setBackgroundMusicRelativePath, backgroundMusicVolume, setBackgroundMusicVolume,
     backgroundMusicLoop, setBackgroundMusicLoop, backgroundMusicFadeIn, setBackgroundMusicFadeIn,
     backgroundMusicFadeOut, setBackgroundMusicFadeOut, message, loading, generatedVoiceCount, selectedVoiceFileCount,
     canFetchNews, canGenerateScript, canGenerateAudio, canGenerateVideo, loadNews, createScript, rebuildVoiceSegments,
-    createAudioSegment, createAllAudioSegments, createVideo, toggleItem, selectTopNews, updateVoiceSegment,
+    createAudioSegment, createAllAudioSegments, createVideo, toggleItem, selectAllNews, clearSelectedNews, updateVoiceSegment,
     addBackgroundFiles, updateBackground, removeBackground, addUploadedVoiceFiles, updateUploadedVoice,
-    removeUploadedVoice, resetDraft,
+    removeUploadedVoice, resetDraft, ...newsValidation,
   };
 }
 

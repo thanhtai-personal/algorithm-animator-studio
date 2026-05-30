@@ -1,7 +1,7 @@
 import { buildApiUrl, parseApiResponse } from "@/lib/runtimeApi";
 import { buildRuntimeSettingsHeaders } from "@/lib/runtimeSettings";
 import type { GenerateVideoResponse, VideoAspectRatio, VideoFitMode } from "@/features/story-video/types";
-import type { MuNewsFetchResponse, MuNewsItem, MuNewsScriptResponse, MuNewsSource } from "./types";
+import type { MuNewsFetchResponse, MuNewsItem, MuNewsScriptResponse, MuNewsSource, MuNewsValidateItemResponse } from "./types";
 
 export async function getMuNewsSources() {
   return parseApiResponse<{ sources: MuNewsSource[] }>(await fetch(buildApiUrl("/api/mu-news/sources"), {
@@ -26,6 +26,14 @@ export async function generateMuNewsScript(payload: {
   scriptLanguage: string;
 }) {
   return parseApiResponse<MuNewsScriptResponse>(await fetch(buildApiUrl("/api/mu-news/script"), {
+    method: "POST",
+    headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(payload),
+  }));
+}
+
+export async function validateMuNewsItem(payload: { item: MuNewsItem }) {
+  return parseApiResponse<MuNewsValidateItemResponse>(await fetch(buildApiUrl("/api/mu-news/validate-item"), {
     method: "POST",
     headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),

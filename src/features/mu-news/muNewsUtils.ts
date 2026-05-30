@@ -1,20 +1,52 @@
 import type { MuNewsSource } from "./types";
 
+const REMOVED_SOURCE_URLS = new Set([
+  "https://www.transfermarkt.co.uk/rss/news",
+]);
+
+const SOURCE_URL_ALIASES = new Map([
+  [
+    "https://www.manutd.com/en/feeds/newsrssfeed",
+    "https://news.google.com/rss/search?q=%28%22Manchester%20United%22%20OR%20%22Man%20Utd%22%20OR%20MUFC%29%20site%3Amanutd.com%20when%3A7d&hl=en-GB&gl=GB&ceid=GB%3Aen",
+  ],
+]);
+
+const REMOVED_SOURCE_HOSTS = new Set(["news.google.com"]);
+
 export function sourcesToText(sources: MuNewsSource[]) {
-  return sources.map((source) => [source.name, source.url, source.trustScore, source.contentSelector || ""].join(" | ").replace(/\s+\|\s+$/, "")).join("\n");
+  return sources.map((source) => `${source.name} | ${source.url} | ${source.trustScore}`).join("\n");
 }
 
-export function applyDefaultSourceSelectors(text: string, defaults: MuNewsSource[]) {
-  const selectorByUrl = new Map(defaults.filter((source) => source.contentSelector).map((source) => [source.url, source.contentSelector || ""]));
+export function applyDefaultSources(text: string, defaults: MuNewsSource[]) {
+  const existingUrls = new Set<string>();
 
-  return text
+  const rows = text
     .split(/\r?\n/)
     .map((line) => {
       const parts = line.split("|").map((part) => part.trim());
-      const selector = parts[3] || selectorByUrl.get(parts[1]) || "";
-      return [parts[0] || "", parts[1] || "", parts[2] || "6", selector].filter((part, index) => index < 3 || part).join(" | ");
+      const migratedUrl = SOURCE_URL_ALIASES.get(parts[1]) || parts[1] || "";
+      if (!migratedUrl || shouldRemoveSourceUrl(migratedUrl)) return "";
+      if (migratedUrl) existingUrls.add(migratedUrl);
+      return [migrateSourceName(parts[0] || "", migratedUrl), migratedUrl, parts[2] || "6"].join(" | ");
     })
-    .join("\n");
+    .filter(Boolean);
+
+  const missingDefaults = defaults.filter((source) => source.url && !existingUrls.has(source.url));
+  return [...rows, sourcesToText(missingDefaults)].filter(Boolean).join("\n");
+}
+
+function migrateSourceName(name: string, url: string) {
+  if (url.includes("site%3Amanutd.com")) return "Google News — Manchester United Official";
+  return name;
+}
+
+function shouldRemoveSourceUrl(url: string) {
+  if (REMOVED_SOURCE_URLS.has(url)) return true;
+  try {
+    return REMOVED_SOURCE_HOSTS.has(new URL(url).hostname);
+  } catch {
+    return false;
+  }
 }
 
 export function parseSourcesText(text: string): MuNewsSource[] {
@@ -23,13 +55,12 @@ export function parseSourcesText(text: string): MuNewsSource[] {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line, index) => {
-      const [name = `Nguồn ${index + 1}`, url = "", trustScore = "6", contentSelector = ""] = line.split("|").map((part) => part.trim());
+      const [name = `Nguồn ${index + 1}`, url = "", trustScore = "6"] = line.split("|").map((part) => part.trim());
       return {
         id: slugify(`${name}-${index + 1}`),
         name,
         url,
         trustScore: Number(trustScore) || 6,
-        contentSelector,
         sourceType: url.includes("news.google.com") ? "news-search" : "rss",
       } as MuNewsSource;
     })

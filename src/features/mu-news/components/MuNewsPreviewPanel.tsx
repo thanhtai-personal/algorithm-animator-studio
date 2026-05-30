@@ -1,4 +1,4 @@
-import { ArrowRight, CheckSquare, ExternalLink, FileText, Newspaper, RefreshCcw } from "lucide-react";
+import { ArrowRight, CheckSquare, ExternalLink, Filter, Newspaper, RefreshCcw, Square } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,8 +29,8 @@ export function MuNewsPreviewPanel({ studio }: { studio: MuNewsStudio }) {
             <Button className="w-full sm:w-auto" variant="outline" onClick={studio.loadNews} disabled={!studio.canFetchNews}>
               <RefreshCcw className="mr-2 h-4 w-4" /> {studio.loading.news ? "Đang tải..." : "Load lại"}
             </Button>
-            <Button className="w-full sm:w-auto" onClick={studio.createScript} disabled={!studio.canGenerateScript}>
-              <FileText className="mr-2 h-4 w-4" /> {studio.loading.script ? "Đang viết..." : "Viết kịch bản"}
+            <Button className="w-full sm:w-auto" onClick={() => studio.setActiveStep("filter")} disabled={!studio.selectedItems.length}>
+              <Filter className="mr-2 h-4 w-4" /> Sang lọc tin
             </Button>
           </div>
         </div>
@@ -38,9 +38,14 @@ export function MuNewsPreviewPanel({ studio }: { studio: MuNewsStudio }) {
       <CardContent className="grid min-w-0 gap-4 p-4 pt-0 sm:p-6 sm:pt-0">
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <Badge variant="secondary">{items.length.toLocaleString("vi-VN")} tin tải được</Badge>
-          <Badge variant="outline">{studio.selectedItems.length.toLocaleString("vi-VN")} tin đang chọn</Badge>
-          <Button className="w-full sm:ml-auto sm:w-auto" size="sm" variant="outline" onClick={() => studio.selectTopNews(6)} disabled={!items.length}>
-            <CheckSquare className="mr-2 h-4 w-4" /> Chọn top 6
+          <Badge variant={studio.selectedItems.length ? "default" : "outline"}>{studio.selectedItems.length.toLocaleString("vi-VN")} tin đang chọn</Badge>
+          {studio.newsResult?.dateWindow ? <Badge variant="outline">Từ {formatWindowDate(studio.newsResult.dateWindow.from)} đến hiện tại</Badge> : null}
+          <span className="text-sm text-muted-foreground">Tick vào ô bên trái mỗi tin để đưa vào kịch bản.</span>
+          <Button className="w-full sm:ml-auto sm:w-auto" size="sm" variant="outline" onClick={studio.selectAllNews} disabled={!items.length || studio.selectedItems.length === items.length}>
+            <CheckSquare className="mr-2 h-4 w-4" /> Chọn tất cả
+          </Button>
+          <Button className="w-full sm:w-auto" size="sm" variant="outline" onClick={studio.clearSelectedNews} disabled={!studio.selectedItems.length}>
+            <Square className="mr-2 h-4 w-4" /> Bỏ chọn
           </Button>
         </div>
 
@@ -68,8 +73,8 @@ export function MuNewsPreviewPanel({ studio }: { studio: MuNewsStudio }) {
         </ScrollArea>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <Button className="w-full sm:w-auto" onClick={studio.createScript} disabled={!studio.canGenerateScript}>
-            Tạo kịch bản từ tin đã chọn <ArrowRight className="ml-2 h-4 w-4" />
+          <Button className="w-full sm:w-auto" onClick={() => studio.setActiveStep("filter")} disabled={!studio.selectedItems.length}>
+            Lọc tin đã chọn <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
       </CardContent>
@@ -77,12 +82,24 @@ export function MuNewsPreviewPanel({ studio }: { studio: MuNewsStudio }) {
   );
 }
 
+function formatWindowDate(value: string) {
+  try {
+    return new Date(value).toLocaleDateString("vi-VN");
+  } catch {
+    return value;
+  }
+}
+
 function NewsItemRow(props: { item: MuNewsItem; selected: boolean; onSelectedChange: (checked: boolean) => void }) {
   const dateLabel = props.item.publishedAt ? new Date(props.item.publishedAt).toLocaleString("vi-VN") : "không rõ ngày";
 
   return (
-    <article className="grid min-w-0 gap-3 rounded-xl border border-border bg-background/70 p-3 sm:grid-cols-[auto_minmax(0,1fr)] sm:p-4">
-      <Checkbox className="mt-1" checked={props.selected} onCheckedChange={(checked) => props.onSelectedChange(checked === true)} />
+    <article className={`grid min-w-0 gap-3 rounded-xl border p-3 transition sm:grid-cols-[auto_minmax(0,1fr)] sm:p-4 ${props.selected ? "border-red-500/60 bg-red-500/10" : "border-border bg-background/70"}`}>
+      <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted/50 sm:flex-col sm:items-center sm:justify-center">
+        <Checkbox className="h-5 w-5" checked={props.selected} onCheckedChange={(checked) => props.onSelectedChange(checked === true)} />
+        <span className="sm:hidden">{props.selected ? "Đã chọn" : "Chọn tin"}</span>
+        <span className="hidden text-xs text-muted-foreground sm:inline">{props.selected ? "Đã chọn" : "Chọn"}</span>
+      </label>
       <div className="min-w-0 space-y-2">
         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <h3 className="min-w-0 break-words text-sm font-semibold leading-6 sm:text-base">{props.item.title}</h3>

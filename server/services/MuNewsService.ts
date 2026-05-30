@@ -1,44 +1,25 @@
 import crypto from "node:crypto";
+import { DEFAULT_MU_NEWS_SOURCES } from "../config/muNewsSources";
 import type { MuNewsItem, MuNewsScriptBody, MuNewsScriptResponse, MuNewsSource } from "../models/MuNews";
+import { createMuNewsDateWindow, isPublishedInWindow, validateNewsItemLink } from "./MuNewsValidationService";
 
 const MAX_FEED_BYTES = 2 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 18_000;
 const DEFAULT_QUERY = "Manchester United OR Man Utd OR MUFC";
 
-export const DEFAULT_MU_NEWS_SOURCES: MuNewsSource[] = [
-  {
-    id: "google-mu-24h",
-    name: "Google News — Manchester United 24h",
-    url: "https://news.google.com/rss/search?q=%22Manchester%20United%22%20OR%20%22Man%20United%22%20OR%20MUFC%20when%3A1d&hl=en-GB&gl=GB&ceid=GB%3Aen",
-    trustScore: 6,
-    contentSelector: "",
-    sourceType: "news-search",
-  },
-  {
-    id: "google-mu-transfer",
-    name: "Google News — MU Transfer",
-    url: "https://news.google.com/rss/search?q=%22Manchester%20United%22%20transfer%20when%3A7d&hl=en-GB&gl=GB&ceid=GB%3Aen",
-    trustScore: 6,
-    contentSelector: "",
-    sourceType: "news-search",
-  },
-  {
-    id: "bbc-football",
-    name: "BBC Sport Football RSS",
-    url: "https://feeds.bbci.co.uk/sport/football/rss.xml",
-    trustScore: 9,
-    contentSelector: "article, main",
-    sourceType: "rss",
-  },
-];
-
 export async function fetchMuNewsItems(params: { sources?: MuNewsSource[]; query?: string; maxItems?: number }) {
   const sources = normalizeSources(params.sources?.length ? params.sources : DEFAULT_MU_NEWS_SOURCES);
   const query = String(params.query || DEFAULT_QUERY).trim();
   const maxItems = clampNumber(params.maxItems, 12, 3, 40);
+  const dateWindow = createMuNewsDateWindow();
   const fetched = await Promise.allSettled(sources.map((source) => fetchSourceItems(source)));
   const items = fetched.flatMap((result) => (result.status === "fulfilled" ? result.value : []));
-  const filtered = filterAndSortItems(dedupeItems(items), query).slice(0, maxItems);
+  const dateFiltered = items.filter((item) => isPublishedInWindow(item.publishedAt, dateWindow));
+  const queryFiltered = filterAndSortItems(dedupeItems(dateFiltered), query);
+  const validationResults = await Promise.allSettled(queryFiltered.map(validateNewsItemLink));
+  const validItems = queryFiltered.filter((_, index) => validationResults[index]?.status === "fulfilled" && (validationResults[index] as PromiseFulfilledResult<boolean>).value);
+  const filtered = validItems.slice(0, maxItems);
+  const invalidCount = queryFiltered.length - validItems.length;
 
   return {
     ok: filtered.length > 0,
@@ -46,9 +27,14 @@ export async function fetchMuNewsItems(params: { sources?: MuNewsSource[]; query
     sources,
     count: filtered.length,
     items: filtered,
+    dateWindow: {
+      from: new Date(dateWindow.fromMs).toISOString(),
+      to: new Date(dateWindow.toMs).toISOString(),
+    },
     warnings: fetched
       .map((result, index) => result.status === "rejected" ? `${sources[index]?.name}: ${result.reason?.message || "Không tải được nguồn."}` : "")
-      .filter(Boolean),
+      .filter(Boolean)
+      .concat(invalidCount ? [`Đã bỏ ${invalidCount} tin không truy cập được hoặc bị chặn.`] : []),
   };
 }
 
@@ -353,7 +339,16 @@ function stripTags(html: string) {
 }
 
 function decodeEntities(text: string) {
-  return text.replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
+  return text
+    .replace(/&amp;/gi, "&")
+    .replace(/&nbsp;?/gi, " ")
+    .replace(/&#160;|&#x[aA]0;/g, " ")
+    .replace(/\u00a0/g, " ")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
 }
 
 function normalizeSpace(value: string) {

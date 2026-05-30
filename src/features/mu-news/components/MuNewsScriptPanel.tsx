@@ -1,4 +1,4 @@
-import { ArrowRight, Bot, Copy, FileText, Mic2 } from "lucide-react";
+import { ArrowRight, Bot, ClipboardPaste, Copy, Mic2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import type { useMuNewsStudio } from "../useMuNewsStudio";
 
 export function MuNewsScriptPanel({ studio }: { studio: ReturnType<typeof useMuNewsStudio> }) {
+  async function copyPrompt() {
+    await navigator.clipboard?.writeText(studio.scriptPrompt || "");
+  }
+
   async function copyScript() {
     await navigator.clipboard?.writeText(studio.script || "");
   }
@@ -19,15 +23,15 @@ export function MuNewsScriptPanel({ studio }: { studio: ReturnType<typeof useMuN
           <div className="min-w-0">
             <CardTitle className="flex items-start gap-2 text-base leading-7 sm:text-lg">
               <Bot className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
-              <span>Step 3 — Lên kịch bản theo ngôn ngữ hệ thống</span>
+              <span>Step 4 — Tạo prompt và paste kịch bản</span>
             </CardTitle>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              AI viết script theo tin đã chọn. Bạn duyệt/sửa tại đây, sau đó tách thành nhiều đoạn voice cho Step 4.
+              Copy prompt sang ChatGPT hoặc AI bên ngoài để tạo kịch bản, sau đó paste kết quả lại đây để tách voice.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            <Button className="w-full sm:w-auto" variant="outline" onClick={studio.createScript} disabled={!studio.canGenerateScript}>
-              <FileText className="mr-2 h-4 w-4" /> {studio.loading.script ? "Đang viết..." : "Viết lại"}
+            <Button className="w-full sm:w-auto" variant="outline" onClick={copyPrompt} disabled={!studio.scriptPrompt.trim()}>
+              <Copy className="mr-2 h-4 w-4" /> Copy prompt
             </Button>
             <Button className="w-full sm:w-auto" onClick={studio.rebuildVoiceSegments} disabled={!studio.script.trim()}>
               <Mic2 className="mr-2 h-4 w-4" /> Tách voice
@@ -64,8 +68,8 @@ export function MuNewsScriptPanel({ studio }: { studio: ReturnType<typeof useMuN
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <Badge variant={studio.scriptResult?.engine === "openai" ? "default" : "secondary"}>Engine: {studio.scriptResult?.engine || "chưa tạo"}</Badge>
-            <Badge variant="outline">{studio.script.trim().length.toLocaleString("vi-VN")} ký tự</Badge>
+            <Badge variant="secondary">Prompt: {studio.scriptPrompt.trim().length.toLocaleString("vi-VN")} ký tự</Badge>
+            <Badge variant="outline">Kịch bản paste: {studio.script.trim().length.toLocaleString("vi-VN")} ký tự</Badge>
             <Badge variant="outline">{studio.voiceSegments.length} đoạn voice</Badge>
           </div>
           <Button className="w-full sm:ml-auto sm:w-auto" size="sm" variant="outline" onClick={copyScript} disabled={!studio.script.trim()}>
@@ -73,29 +77,36 @@ export function MuNewsScriptPanel({ studio }: { studio: ReturnType<typeof useMuN
           </Button>
         </div>
 
-        <Textarea
-          className="min-h-[360px] min-w-0 resize-y font-serif text-sm leading-7 sm:text-base xl:min-h-[52vh]"
-          value={studio.script}
-          onChange={(event) => studio.setScript(event.target.value)}
-          placeholder="Kịch bản bản tin MU sẽ xuất hiện tại đây. Bạn có thể sửa trước khi tách voice."
-        />
-
-        {studio.scriptResult ? (
-          <div className="grid min-w-0 gap-3 rounded-xl border border-border bg-muted/20 p-3 text-sm leading-6 sm:p-4">
-            <div className="min-w-0">
-              <p className="font-medium">Tiêu đề gợi ý</p>
-              <p className="break-words text-muted-foreground">{studio.scriptResult.title}</p>
-            </div>
-            <div className="min-w-0">
-              <p className="font-medium">Hashtag</p>
-              <p className="break-words text-muted-foreground">{studio.scriptResult.hashtags.join(" ")}</p>
-            </div>
+        <div className="grid min-w-0 gap-2">
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <Label>Prompt copy sang ChatGPT</Label>
+            <Button className="w-full sm:w-auto" size="sm" variant="outline" onClick={copyPrompt} disabled={!studio.scriptPrompt.trim()}>
+              <Copy className="mr-2 h-4 w-4" /> Copy prompt
+            </Button>
           </div>
-        ) : null}
+          <Textarea
+            className="min-h-[280px] min-w-0 resize-y font-mono text-xs leading-6 sm:text-sm"
+            value={studio.scriptPrompt}
+            readOnly
+          />
+        </div>
+
+        <div className="grid min-w-0 gap-2">
+          <Label className="flex items-center gap-2">
+            <ClipboardPaste className="h-4 w-4 text-red-400" />
+            Paste kịch bản AI trả về
+          </Label>
+          <Textarea
+            className="min-h-[360px] min-w-0 resize-y font-serif text-sm leading-7 sm:text-base xl:min-h-[52vh]"
+            value={studio.script}
+            onChange={(event) => studio.setScript(event.target.value)}
+            placeholder="Paste kịch bản hoàn chỉnh từ ChatGPT vào đây, chỉnh sửa nếu cần, rồi bấm Tách voice."
+          />
+        </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
           <Button className="w-full sm:w-auto" onClick={studio.rebuildVoiceSegments} disabled={!studio.script.trim()}>
-            Tách đoạn voice và sang Step 4 <ArrowRight className="ml-2 h-4 w-4" />
+            Tách đoạn voice và sang Step 5 <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
       </CardContent>

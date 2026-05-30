@@ -1,9 +1,10 @@
-import { AlertCircle, CheckCircle2, FileText, Mic2, Newspaper, RefreshCcw, Rss, ShieldAlert, Video } from "lucide-react";
+import { AlertCircle, CheckCircle2, FileText, Filter, Mic2, Newspaper, RefreshCcw, Rss, ShieldAlert, Video } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MuNewsFilterPanel } from "@/features/mu-news/components/MuNewsFilterPanel";
 import { MuNewsPreviewPanel } from "@/features/mu-news/components/MuNewsPreviewPanel";
 import { MuNewsScriptPanel } from "@/features/mu-news/components/MuNewsScriptPanel";
 import { MuNewsSourcesPanel } from "@/features/mu-news/components/MuNewsSourcesPanel";
@@ -15,9 +16,10 @@ import { useMuNewsStudio } from "@/features/mu-news/useMuNewsStudio";
 const STEPS: { id: MuNewsStepId; label: string; shortLabel: string; icon: typeof Rss }[] = [
   { id: "sources", label: "1. Nguồn tin", shortLabel: "Nguồn", icon: Rss },
   { id: "preview", label: "2. Preview tin", shortLabel: "Tin", icon: Newspaper },
-  { id: "script", label: "3. Kịch bản", shortLabel: "Script", icon: FileText },
-  { id: "voice", label: "4. Voice", shortLabel: "Voice", icon: Mic2 },
-  { id: "video", label: "5. Video", shortLabel: "Video", icon: Video },
+  { id: "filter", label: "3. Lọc tin", shortLabel: "Lọc", icon: Filter },
+  { id: "script", label: "4. Kịch bản", shortLabel: "Script", icon: FileText },
+  { id: "voice", label: "5. Voice", shortLabel: "Voice", icon: Mic2 },
+  { id: "video", label: "6. Video", shortLabel: "Video", icon: Video },
 ];
 
 export default function MuNewsStudio() {
@@ -34,7 +36,7 @@ export default function MuNewsStudio() {
                 <span>Kênh tin tức MU</span>
               </CardTitle>
               <p className="text-sm leading-6 text-muted-foreground">
-                Studio 5 step: nguồn tin → preview → kịch bản → voice nhiều đoạn → video timeline.
+                Studio 6 step: nguồn tin → preview → lọc tin → kịch bản → voice nhiều đoạn → video timeline.
               </p>
             </CardHeader>
             <CardContent className="grid gap-2 p-4 pt-0 text-sm sm:p-5 sm:pt-0">
@@ -88,7 +90,7 @@ export default function MuNewsStudio() {
         <section className="min-w-0">
           <Tabs value={studio.activeStep} onValueChange={(value) => studio.setActiveStep(value as MuNewsStepId)} className="min-w-0">
             <div className="sticky top-0 z-20 -mx-3 mb-3 border-b border-border bg-background/95 px-3 py-2 backdrop-blur sm:-mx-4 sm:px-4 lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0">
-              <TabsList className="grid h-auto w-full grid-cols-5 gap-1 overflow-x-auto rounded-xl p-1">
+              <TabsList className="grid h-auto w-full grid-cols-6 gap-1 overflow-x-auto rounded-xl p-1">
                 {STEPS.map((step) => (
                   <TabsTrigger key={step.id} value={step.id} className="min-w-0 flex-col gap-1 px-2 py-2 text-xs sm:flex-row sm:text-sm">
                     <step.icon className="h-4 w-4 shrink-0" />
@@ -102,6 +104,7 @@ export default function MuNewsStudio() {
 
             <TabsContent value="sources" className="mt-0"><MuNewsSourcesPanel studio={studio} /></TabsContent>
             <TabsContent value="preview" className="mt-0"><MuNewsPreviewPanel studio={studio} /></TabsContent>
+            <TabsContent value="filter" className="mt-0"><MuNewsFilterPanel studio={studio} /></TabsContent>
             <TabsContent value="script" className="mt-0"><MuNewsScriptPanel studio={studio} /></TabsContent>
             <TabsContent value="voice" className="mt-0"><MuNewsVoicePanel studio={studio} /></TabsContent>
             <TabsContent value="video" className="mt-0"><MuNewsVideoPanel studio={studio} /></TabsContent>
@@ -124,6 +127,7 @@ function StatusLine(props: { label: string; value: string }) {
 function getStepDone(studio: ReturnType<typeof useMuNewsStudio>, step: MuNewsStepId) {
   if (step === "sources") return studio.sources.length > 0;
   if (step === "preview") return studio.selectedItems.length > 0;
+  if (step === "filter") return studio.selectedNewsValidated;
   if (step === "script") return studio.script.trim().length > 0;
   if (step === "voice") return studio.generatedVoiceCount > 0;
   return Boolean(studio.videoResult?.video.videoUrl);

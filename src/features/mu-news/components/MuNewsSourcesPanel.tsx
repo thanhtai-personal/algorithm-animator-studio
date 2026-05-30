@@ -16,7 +16,7 @@ export function MuNewsSourcesPanel({ studio }: { studio: ReturnType<typeof useMu
   }
 
   function addSourceRow() {
-    studio.setSourcesText(rowsToSourcesText([...sourceRows, { name: "", url: "", trustScore: "6", contentSelector: "" }]));
+    studio.setSourcesText(rowsToSourcesText([...sourceRows, { name: "", url: "", trustScore: "6" }]));
   }
 
   function removeSourceRow(index: number) {
@@ -69,15 +69,14 @@ export function MuNewsSourcesPanel({ studio }: { studio: ReturnType<typeof useMu
               </Button>
             </div>
             <div className="grid min-w-0 gap-2 rounded-xl border border-border bg-background/60 p-3">
-              <div className="hidden grid-cols-[minmax(120px,0.7fr)_minmax(220px,1.2fr)_minmax(130px,0.7fr)_80px_40px] gap-2 px-1 text-xs font-medium text-muted-foreground md:grid">
+              <div className="hidden grid-cols-[minmax(140px,0.8fr)_minmax(240px,1.5fr)_90px_40px] gap-2 px-1 text-xs font-medium text-muted-foreground md:grid">
                 <span>Tên nguồn</span>
                 <span>RSS URL</span>
-                <span>Content selector</span>
                 <span>Trust</span>
                 <span />
               </div>
               {sourceRows.map((source, index) => (
-                <div key={index} className="grid min-w-0 gap-2 rounded-lg border border-border bg-muted/10 p-2 md:grid-cols-[minmax(120px,0.7fr)_minmax(220px,1.2fr)_minmax(130px,0.7fr)_80px_40px] md:border-0 md:bg-transparent md:p-0">
+                <div key={index} className="grid min-w-0 gap-2 rounded-lg border border-border bg-muted/10 p-2 md:grid-cols-[minmax(140px,0.8fr)_minmax(240px,1.5fr)_90px_40px] md:border-0 md:bg-transparent md:p-0">
                   <div className="grid min-w-0 gap-1 md:block">
                     <Label className="text-xs text-muted-foreground md:hidden">Tên nguồn</Label>
                     <Input
@@ -92,14 +91,6 @@ export function MuNewsSourcesPanel({ studio }: { studio: ReturnType<typeof useMu
                       value={source.url}
                       onChange={(event) => updateSourceRow(index, { url: event.target.value })}
                       placeholder="https://example.com/rss.xml"
-                    />
-                  </div>
-                  <div className="grid min-w-0 gap-1 md:block">
-                    <Label className="text-xs text-muted-foreground md:hidden">Content selector</Label>
-                    <Input
-                      value={source.contentSelector}
-                      onChange={(event) => updateSourceRow(index, { contentSelector: event.target.value })}
-                      placeholder="article, main, .content"
                     />
                   </div>
                   <div className="grid min-w-0 gap-1 md:block">
@@ -126,7 +117,7 @@ export function MuNewsSourcesPanel({ studio }: { studio: ReturnType<typeof useMu
               ))}
             </div>
             <p className="text-xs leading-5 text-muted-foreground">
-              Content selector có thể để trống. Chỉ nhập khi RSS không có mô tả sạch và cần lấy nội dung từ trang bài viết.
+              Có thể thêm RSS của BBC, Sky, The Athletic, trang chủ MU hoặc Google News search RSS. Điểm tin cậy dùng để AI xếp độ ưu tiên khi viết kịch bản.
             </p>
           </div>
         </div>
@@ -146,7 +137,6 @@ type SourceRow = {
   name: string;
   url: string;
   trustScore: string;
-  contentSelector: string;
 };
 
 function sourcesTextToRows(text: string): SourceRow[] {
@@ -155,11 +145,11 @@ function sourcesTextToRows(text: string): SourceRow[] {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      const [name = "", url = "", trustScore = "6", contentSelector = ""] = line.split("|").map((part) => part.trim());
-      return { name, url, trustScore, contentSelector };
+      const [name = "", url = "", trustScore = "6"] = line.split("|").map((part) => part.trim());
+      return { name, url, trustScore };
     });
 
-  return rows.length ? rows : [{ name: "", url: "", trustScore: "6", contentSelector: "" }];
+  return rows.length ? rows : [{ name: "", url: "", trustScore: "6" }];
 }
 
 function rowsToSourcesText(rows: SourceRow[]) {
@@ -168,9 +158,8 @@ function rowsToSourcesText(rows: SourceRow[]) {
       name: row.name.trim(),
       url: row.url.trim(),
       trustScore: String(Number(row.trustScore) || 6),
-      contentSelector: row.contentSelector.trim(),
     }))
     .filter((row) => row.name || row.url)
-    .map((row) => [row.name, row.url, row.trustScore, row.contentSelector].filter((part, index) => index < 3 || part).join(" | "))
+    .map((row) => `${row.name} | ${row.url} | ${row.trustScore}`)
     .join("\n");
 }

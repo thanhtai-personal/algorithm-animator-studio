@@ -1,7 +1,7 @@
 import type { VideoAspectRatio, VideoBackgroundType, VideoFitMode } from "@/features/story-video/types";
 import type { VoiceGenerateResult } from "@/lib/voiceApi";
 
-export type MuNewsStepId = "sources" | "preview" | "script" | "voice" | "video";
+export type MuNewsStepId = "sources" | "preview" | "filter" | "script" | "voice" | "video";
 
 export type MuNewsSource = {
   id: string;
@@ -30,6 +30,10 @@ export type MuNewsFetchResponse = {
   count: number;
   items: MuNewsItem[];
   warnings?: string[];
+  dateWindow?: {
+    from: string;
+    to: string;
+  };
 };
 
 export type MuNewsScriptResponse = {
@@ -42,6 +46,28 @@ export type MuNewsScriptResponse = {
   shorts: { title: string; script: string }[];
   sourceNotes: string[];
   warning?: string;
+};
+
+export type MuNewsItemValidationStatus = "idle" | "loading" | "valid" | "invalid" | "error";
+
+export type MuNewsItemValidation = {
+  status: MuNewsItemValidationStatus;
+  message?: string;
+  detailPublishedAt?: string;
+  resolvedUrl?: string;
+  articleContent?: string;
+  checkedAt?: string;
+};
+
+export type MuNewsValidateItemResponse = {
+  ok: boolean;
+  valid: boolean;
+  itemId: string;
+  message: string;
+  sourcePublishedAt: string;
+  detailPublishedAt?: string;
+  resolvedUrl?: string;
+  articleContent?: string;
 };
 
 export type MuNewsVoiceSegment = {

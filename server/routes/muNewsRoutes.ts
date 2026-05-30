@@ -3,8 +3,10 @@ import os from "node:os";
 import path from "node:path";
 import { Router, type Request, type Response } from "express";
 import multer from "multer";
-import type { MuNewsFetchBody, MuNewsScriptBody } from "../models/MuNews";
-import { DEFAULT_MU_NEWS_SOURCES, fetchMuNewsItems, generateMuNewsScript } from "../services/MuNewsService";
+import { DEFAULT_MU_NEWS_SOURCES } from "../config/muNewsSources";
+import type { MuNewsFetchBody, MuNewsScriptBody, MuNewsValidateItemBody } from "../models/MuNews";
+import { fetchMuNewsItems, generateMuNewsScript } from "../services/MuNewsService";
+import { validateMuNewsItemDetail } from "../services/MuNewsValidationService";
 import { resolveGeneratedResource } from "../services/ResourceService";
 import { generateSlideshowVideoFromAudioTimeline, normalizeVideoAspectRatio, normalizeVideoFitMode } from "../services/VideoService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
@@ -32,6 +34,15 @@ export function createMuNewsRouter() {
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Không tải được tin MU.", detail: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  router.post("/mu-news/validate-item", async (req: Request<unknown, unknown, MuNewsValidateItemBody>, res: Response) => {
+    try {
+      const result = await validateMuNewsItemDetail(req.body?.item);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Không kiểm tra được tin MU.", detail: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 

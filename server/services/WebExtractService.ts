@@ -171,11 +171,13 @@ function normalizeText(text: string) {
 
 function decodeEntities(text: string) {
   return text
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
+    .replace(/&amp;/gi, "&")
+    .replace(/&nbsp;?/gi, " ")
+    .replace(/&#160;|&#x[aA]0;/g, " ")
+    .replace(/\u00a0/g, " ")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
     .replace(/&#39;/g, "'")
     .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
 }

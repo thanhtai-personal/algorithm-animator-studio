@@ -18,6 +18,8 @@ const LongContent = lazy(() => import("./pages/LongContent.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const MuNewsStudio = lazy(() => import("./pages/MuNewsStudio.tsx"));
 const Settings = lazy(() => import("./pages/Settings.tsx"));
+const StoryAuthorStudio = lazy(() => import("./pages/StoryAuthorStudio.tsx"));
+const StoryReviewStudio = lazy(() => import("./pages/StoryReviewStudio.tsx"));
 const StoryVideoStudio = lazy(() => import("./pages/StoryVideoStudio.tsx"));
 const YoutubePublishing = lazy(() => import("./pages/YoutubePublishing.tsx"));
 
@@ -52,6 +54,8 @@ const App = () => (
               <Route path="/algorithm-world" element={<AlgorithmWorld />} />
               <Route path="/long-content" element={<LongContent />} />
               <Route path="/mu-news" element={<MuNewsStudio />} />
+              <Route path="/story-author" element={<StoryAuthorStudio />} />
+              <Route path="/story-review" element={<StoryReviewStudio />} />
               <Route path="/story-video" element={<StoryVideoStudio />} />
               <Route path="/assets" element={<GeneratedAssets />} />
               <Route path="/social-publishing" element={<YoutubePublishing />} />

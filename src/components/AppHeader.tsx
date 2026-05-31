@@ -25,6 +25,12 @@ const getPageMeta = (lang: Lang): Record<string, { subtitle: string }> => ({
   "/story-video": {
     subtitle: lang === "vi" ? "Tạo video đọc truyện từ URL, văn bản, giọng đọc và nền." : "Create reading-story videos from URLs, text, voice-over and background media.",
   },
+  "/story-author": {
+    subtitle: lang === "vi" ? "Lưu trữ truyện đang sáng tác, outline, nhân vật và nội dung chương." : "Store drafted stories, outlines, characters and chapters.",
+  },
+  "/story-review": {
+    subtitle: lang === "vi" ? "Tạo prompt review truyện, phân cảnh Veo3 và ghép video từ clip/ảnh." : "Create story review prompts, Veo3 scenes and videos from clips/images.",
+  },
   "/mu-news": {
     subtitle: lang === "vi" ? "Tổng hợp tin Manchester United, viết kịch bản, đọc Piper và tạo video nháp." : "Collect Manchester United news, script it, voice it and draft videos.",
   },
@@ -56,7 +62,11 @@ export function AppHeader() {
     const pageMeta = getPageMeta(lang);
     return pageMeta[location.pathname] ?? pageMeta["/"];
   }, [lang, location.pathname]);
-  const contentMode = location.pathname === "/story-video"
+  const contentMode = location.pathname === "/story-author"
+    ? "story-author"
+    : location.pathname === "/story-review"
+    ? "story-review"
+    : location.pathname === "/story-video"
     ? "story-video"
     : location.pathname === "/mu-news"
       ? "mu-news"
@@ -117,7 +127,9 @@ export function AppHeader() {
   }
 
   function changeContentMode(value: string) {
-    if (value === "story-video") navigate("/story-video");
+    if (value === "story-author") navigate("/story-author");
+    else if (value === "story-review") navigate("/story-review");
+    else if (value === "story-video") navigate("/story-video");
     else if (value === "algorithm-long") navigate("/long-content");
     else if (value === "mu-news") navigate("/mu-news");
     else if (value === "maze-pathfinding") navigate("/maze-pathfinding");
@@ -144,6 +156,8 @@ export function AppHeader() {
               <SelectItem value="algorithm-shorts">Algorithm Shorts</SelectItem>
               <SelectItem value="maze-pathfinding">{lang === "vi" ? "Tìm đường ra mê cung" : "Maze Pathfinding"}</SelectItem>
               <SelectItem value="algorithm-long">Algorithm Long 16:9</SelectItem>
+              <SelectItem value="story-author">{lang === "vi" ? "Sáng tác truyện" : "Story author"}</SelectItem>
+              <SelectItem value="story-review">{lang === "vi" ? "Review truyện" : "Story review"}</SelectItem>
               <SelectItem value="story-video">{lang === "vi" ? "Kênh đọc truyện" : "Story video"}</SelectItem>
               <SelectItem value="mu-news">{lang === "vi" ? "Kênh tin tức MU" : "MU News channel"}</SelectItem>
             </SelectContent>

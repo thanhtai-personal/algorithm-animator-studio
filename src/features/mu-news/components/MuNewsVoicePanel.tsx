@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
+import type { StoryVoiceProvider } from "@/features/story-video/types";
 import type { MuNewsVoiceSegment } from "../types";
 import type { useMuNewsStudio } from "../useMuNewsStudio";
 
@@ -37,9 +38,19 @@ export function MuNewsVoicePanel({ studio }: { studio: MuNewsStudio }) {
         </div>
       </CardHeader>
       <CardContent className="grid min-w-0 gap-4 p-4 pt-0 sm:p-6 sm:pt-0">
-        <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_150px_150px]">
+        <div className="grid min-w-0 gap-3 lg:grid-cols-[180px_minmax(0,1fr)_150px_150px]">
           <div className="grid min-w-0 gap-2">
-            <Label>Piper model</Label>
+            <Label>Nguồn giọng</Label>
+            <Select value={studio.provider} onValueChange={(value) => studio.setProvider(value as StoryVoiceProvider)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="piper">Piper local</SelectItem>
+                <SelectItem value="elevenlabs">ElevenLabs PRO</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {studio.provider === "piper" ? <div className="grid min-w-0 gap-2">
+            <Label>Piper model mặc định</Label>
             <Select value={studio.piperModelKey} onValueChange={studio.setPiperModelKey}>
               <SelectTrigger><SelectValue placeholder="Chọn model" /></SelectTrigger>
               <SelectContent>
@@ -48,7 +59,7 @@ export function MuNewsVoicePanel({ studio }: { studio: MuNewsStudio }) {
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </div> : <ElevenLabsFields studio={studio} />}
           <SliderField label="Nghỉ giữa câu" value={studio.sentenceSilence} min={0} max={2} step={0.05} suffix="s" onChange={studio.setSentenceSilence} />
           <SliderField label="Tốc độ đọc" value={studio.speechRate} min={0.55} max={1.35} step={0.01} suffix="x" onChange={studio.setSpeechRate} />
         </div>
@@ -111,14 +122,14 @@ function VoiceSegmentCard({ segment, studio }: { segment: MuNewsVoiceSegment; st
         <div className="grid min-w-0 flex-1 gap-3">
           <div className="grid min-w-0 gap-3 md:grid-cols-[minmax(0,1fr)_minmax(180px,0.55fr)] xl:grid-cols-[minmax(0,1fr)_minmax(220px,0.65fr)_minmax(180px,0.5fr)]">
             <Input value={segment.title} onChange={(event) => studio.updateVoiceSegment(segment.id, { title: event.target.value })} />
-            <Select value={segment.modelKey || studio.piperModelKey} onValueChange={(modelKey) => studio.updateVoiceSegment(segment.id, { modelKey })}>
+            {studio.provider === "piper" ? <Select value={segment.modelKey || studio.piperModelKey} onValueChange={(modelKey) => studio.updateVoiceSegment(segment.id, { modelKey })}>
               <SelectTrigger><SelectValue placeholder="Chọn model voice" /></SelectTrigger>
               <SelectContent>
                 {selectableModels.map((model) => (
                   <SelectItem key={model.key} value={model.key}>{model.label}{model.available ? "" : " · thiếu file"}</SelectItem>
                 ))}
               </SelectContent>
-            </Select>
+            </Select> : <div className="rounded-md border border-border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">Dùng ElevenLabs đã chọn</div>}
             <Input value={segment.fileName} onChange={(event) => studio.updateVoiceSegment(segment.id, { fileName: event.target.value })} />
           </div>
           <Textarea className="min-h-36 min-w-0 resize-y text-sm leading-6" value={segment.text} onChange={(event) => studio.updateVoiceSegment(segment.id, { text: event.target.value })} />
@@ -130,6 +141,27 @@ function VoiceSegmentCard({ segment, studio }: { segment: MuNewsVoiceSegment; st
         </Button>
       </div>
     </article>
+  );
+}
+
+function ElevenLabsFields({ studio }: { studio: MuNewsStudio }) {
+  return (
+    <div className="grid min-w-0 gap-2 md:grid-cols-2 lg:col-span-1">
+      <div className="grid min-w-0 gap-2">
+        <Label>ElevenLabs model</Label>
+        <Select value={studio.elevenModelId} onValueChange={studio.setElevenModelId}>
+          <SelectTrigger><SelectValue placeholder="Chọn model PRO" /></SelectTrigger>
+          <SelectContent>{studio.elevenConfig?.models.map((model) => <SelectItem key={model.id} value={model.id}>{model.label}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      <div className="grid min-w-0 gap-2">
+        <Label>Voice ID</Label>
+        <Select value={studio.elevenVoiceId} onValueChange={studio.setElevenVoiceId}>
+          <SelectTrigger><SelectValue placeholder="Chọn voice" /></SelectTrigger>
+          <SelectContent>{studio.elevenConfig?.voices.map((voice) => <SelectItem key={voice.id} value={voice.id}>{voice.label}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+    </div>
   );
 }
 

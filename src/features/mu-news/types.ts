@@ -1,4 +1,4 @@
-import type { VideoAspectRatio, VideoBackgroundType, VideoFitMode } from "@/features/story-video/types";
+import type { StoryVoiceProvider, VideoAspectRatio, VideoBackgroundType, VideoFitMode } from "@/features/story-video/types";
 import type { VoiceGenerateResult } from "@/lib/voiceApi";
 
 export type MuNewsStepId = "sources" | "preview" | "filter" | "script" | "voice" | "video";
@@ -95,7 +95,10 @@ export type MuNewsDraft = {
   script: string;
   fileName: string;
   videoFileName: string;
+  provider: StoryVoiceProvider;
   piperModelKey: string;
+  elevenModelId: string;
+  elevenVoiceId: string;
   sentenceSilence: number;
   speechRate: number;
   aspectRatio: VideoAspectRatio;

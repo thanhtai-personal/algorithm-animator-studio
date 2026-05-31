@@ -2,10 +2,12 @@ export type RuntimeSettings = {
   MODEL_DIR?: string;
   PIPER_EXE?: string;
   MUSIC_LIBRARY_DIR?: string;
+  ELEVENLABS_API_KEY?: string;
+  ELEVENLABS_VOICES?: string;
 };
 
 const STORAGE_KEY = "algo.runtimeSettings";
-const KNOWN_KEYS = ["MODEL_DIR", "PIPER_EXE", "MUSIC_LIBRARY_DIR"] as const;
+const KNOWN_KEYS = ["MODEL_DIR", "PIPER_EXE", "MUSIC_LIBRARY_DIR", "ELEVENLABS_API_KEY", "ELEVENLABS_VOICES"] as const;
 
 type RuntimeSettingKey = typeof KNOWN_KEYS[number];
 

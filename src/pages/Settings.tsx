@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { buildApiUrl, parseApiResponse } from "@/lib/runtimeApi";
 import {
   buildRuntimeSettingsHeaders,
@@ -35,13 +36,16 @@ type PiperModel = {
 
 type SelectPathResponse = { ok: boolean; path: string };
 
-type SettingsForm = Required<Pick<RuntimeSettings, "MODEL_DIR" | "PIPER_EXE" | "MUSIC_LIBRARY_DIR">>;
+type ElevenLabsConfigResponse = { hasApiKey: boolean; voices: { id: string; label: string }[] };
 
-const EMPTY_FORM: SettingsForm = { MODEL_DIR: "", PIPER_EXE: "", MUSIC_LIBRARY_DIR: "" };
+type SettingsForm = Required<Pick<RuntimeSettings, "MODEL_DIR" | "PIPER_EXE" | "MUSIC_LIBRARY_DIR" | "ELEVENLABS_API_KEY" | "ELEVENLABS_VOICES">>;
+
+const EMPTY_FORM: SettingsForm = { MODEL_DIR: "", PIPER_EXE: "", MUSIC_LIBRARY_DIR: "", ELEVENLABS_API_KEY: "", ELEVENLABS_VOICES: "" };
 
 export default function Settings() {
   const [form, setForm] = useState<SettingsForm>(() => ({ ...EMPTY_FORM, ...getRuntimeSettings() }));
   const [health, setHealth] = useState<HealthResponse | null>(null);
+  const [elevenLabs, setElevenLabs] = useState<ElevenLabsConfigResponse | null>(null);
   const [models, setModels] = useState<PiperModel[]>([]);
   const [loading, setLoading] = useState(false);
   const [selecting, setSelecting] = useState<string | null>(null);
@@ -56,12 +60,14 @@ export default function Settings() {
     setLoading(true);
     try {
       const headers = buildRuntimeSettingsHeaders();
-      const [healthData, modelData] = await Promise.all([
+      const [healthData, modelData, elevenData] = await Promise.all([
         parseApiResponse<HealthResponse>(await fetch(buildApiUrl("/api/health"), { headers })),
         parseApiResponse<{ models: PiperModel[] }>(await fetch(buildApiUrl("/api/models"), { headers })),
+        parseApiResponse<ElevenLabsConfigResponse>(await fetch(buildApiUrl("/api/elevenlabs/config"), { headers })),
       ]);
       setHealth(healthData);
       setModels(modelData.models);
+      setElevenLabs(elevenData);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không kiểm tra được Piper.");
     } finally {
@@ -75,7 +81,7 @@ export default function Settings() {
 
   async function handleSave() {
     saveRuntimeSettings(form);
-    toast.success("Đã lưu đường dẫn Piper runtime.");
+    toast.success("Đã lưu settings runtime.");
     await refreshHealth();
   }
 
@@ -158,6 +164,25 @@ export default function Settings() {
               onSelect={() => selectPath("directory", "MUSIC_LIBRARY_DIR", "Chọn thư mục thư viện nhạc nền")}
               onOpen={() => openPath(form.MUSIC_LIBRARY_DIR)}
             />
+            <SecretInput
+              id="elevenlabs-api-key"
+              label="ELEVENLABS_API_KEY"
+              description="API key dùng cho ElevenLabs PRO. Giá trị lưu local trong trình duyệt và gửi tới backend qua runtime header."
+              value={form.ELEVENLABS_API_KEY}
+              placeholder="sk_..."
+              onChange={(value) => updateField("ELEVENLABS_API_KEY", value)}
+            />
+            <div className="space-y-2">
+              <Label htmlFor="elevenlabs-voices">ELEVENLABS_VOICES</Label>
+              <p className="text-sm text-muted-foreground">Danh sách voice dạng JSON, ví dụ <code>{'[{"id":"VOICE_ID","label":"Giọng nam VN"}]'}</code>.</p>
+              <Textarea
+                id="elevenlabs-voices"
+                className="min-h-24 font-mono text-xs"
+                value={form.ELEVENLABS_VOICES}
+                placeholder='[{"id":"VOICE_ID","label":"Giọng đọc chính"}]'
+                onChange={(event) => updateField("ELEVENLABS_VOICES", event.target.value)}
+              />
+            </div>
 
             <div className="flex flex-wrap gap-2">
               <Button onClick={handleSave}><Save className="mr-2 h-4 w-4" /> Lưu settings</Button>
@@ -179,6 +204,7 @@ export default function Settings() {
               <StatusTile label="Backend" ok={Boolean(health?.ok)} value={health ? "Đã kết nối" : "Chưa kiểm tra"} />
               <StatusTile label="Piper exe" ok={Boolean(health?.piperExists)} value={health?.piperExe || "-"} />
               <StatusTile label="Models" ok={availableModels > 0} value={`${availableModels}/${models.length} model sẵn sàng`} />
+              <StatusTile label="ElevenLabs" ok={Boolean(elevenLabs?.hasApiKey)} value={elevenLabs?.hasApiKey ? `${elevenLabs.voices.length} voice đã cấu hình` : "Chưa có API key"} />
             </div>
             <div className="rounded-lg border bg-muted/30 p-3 text-sm">
               <p className="font-medium">Model dir đang dùng</p>
@@ -233,6 +259,23 @@ function PathInput({ id, label, description, value, placeholder, busy, onChange,
           <FolderOpen className="mr-2 h-4 w-4" /> Mở
         </Button>
       </div>
+    </div>
+  );
+}
+
+function SecretInput(props: { id: string; label: string; description: string; value: string; placeholder: string; onChange: (value: string) => void }) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={props.id}>{props.label}</Label>
+      <p className="text-sm text-muted-foreground">{props.description}</p>
+      <Input
+        id={props.id}
+        type="password"
+        autoComplete="off"
+        value={props.value}
+        placeholder={props.placeholder}
+        onChange={(event) => props.onChange(event.target.value)}
+      />
     </div>
   );
 }

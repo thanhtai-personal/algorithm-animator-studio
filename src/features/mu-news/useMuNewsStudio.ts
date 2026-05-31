@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import type { GenerateVideoResponse, VideoAspectRatio, VideoBackgroundType, VideoFitMode } from "@/features/story-video/types";
+import type { GenerateVideoResponse, StoryVoiceProvider, VideoAspectRatio, VideoBackgroundType, VideoFitMode } from "@/features/story-video/types";
 import { getMusicLibraryTracks, type MusicLibraryTrack } from "@/lib/musicLibrary";
-import { generatePiperVoice, getPiperModels, type PiperModel } from "@/lib/voiceApi";
+import { generateElevenLabsVoice, generatePiperVoice, getElevenLabsConfig, getPiperModels, type ElevenLabsConfig, type PiperModel } from "@/lib/voiceApi";
 import { fetchMuNews, generateMuNewsTimelineVideo, getMuNewsSources } from "./muNewsApi";
 import { buildMuNewsScriptPrompt } from "./muNewsPrompt";
 import { applyDefaultSources, createDefaultFileName, normalizeVietnameseText, parseSourcesText, sourcesToText } from "./muNewsUtils";
@@ -23,7 +23,10 @@ const DEFAULT_DRAFT: MuNewsDraft = {
   script: "",
   fileName: createDefaultFileName("mu-news-audio"),
   videoFileName: createDefaultFileName("mu-news-video"),
+  provider: "piper",
   piperModelKey: "vi_vais1000",
+  elevenModelId: "",
+  elevenVoiceId: "",
   sentenceSilence: 0.5,
   speechRate: 0.9,
   aspectRatio: "16:9",
@@ -75,7 +78,10 @@ export function useMuNewsStudio() {
   const [script, setScript] = useState(draft.script);
   const [fileName, setFileName] = useState(draft.fileName);
   const [videoFileName, setVideoFileName] = useState(draft.videoFileName);
+  const [provider, setProvider] = useState<StoryVoiceProvider>(draft.provider || "piper");
   const [piperModelKey, setPiperModelKey] = useState(draft.piperModelKey);
+  const [elevenModelId, setElevenModelId] = useState(draft.elevenModelId || "");
+  const [elevenVoiceId, setElevenVoiceId] = useState(draft.elevenVoiceId || "");
   const [sentenceSilence, setSentenceSilence] = useState(draft.sentenceSilence);
   const [speechRate, setSpeechRate] = useState(draft.speechRate);
   const [aspectRatio, setAspectRatio] = useState<VideoAspectRatio>(draft.aspectRatio);
@@ -88,6 +94,7 @@ export function useMuNewsStudio() {
   const [backgroundMusicFadeIn, setBackgroundMusicFadeIn] = useState(draft.backgroundMusicFadeIn);
   const [backgroundMusicFadeOut, setBackgroundMusicFadeOut] = useState(draft.backgroundMusicFadeOut);
   const [piperModels, setPiperModels] = useState<PiperModel[]>([]);
+  const [elevenConfig, setElevenConfig] = useState<ElevenLabsConfig | null>(null);
   const [musicTracks, setMusicTracks] = useState<MusicLibraryTrack[]>([]);
   const [newsResult, setNewsResult] = useState<MuNewsFetchResponse | null>(null);
   const [videoResult, setVideoResult] = useState<GenerateVideoResponse | null>(null);
@@ -130,24 +137,26 @@ export function useMuNewsStudio() {
   useEffect(() => {
     const payload: MuNewsDraft = {
       activeStep, sourcesText, query, selectedIds, channelName, angle, durationMinutes, voiceStyle,
-      scriptLanguage, script, fileName, videoFileName, piperModelKey, sentenceSilence, speechRate,
+      scriptLanguage, script, fileName, videoFileName, provider, piperModelKey, elevenModelId, elevenVoiceId, sentenceSilence, speechRate,
       aspectRatio, backgroundType, fitMode, voiceSegments, backgroundMusicRelativePath,
       backgroundMusicVolume, backgroundMusicLoop, backgroundMusicFadeIn, backgroundMusicFadeOut,
     };
     try { window.localStorage.setItem(DRAFT_KEY, JSON.stringify(payload)); } catch { /* ignore */ }
-  }, [activeStep, sourcesText, query, selectedIds, channelName, angle, durationMinutes, voiceStyle, scriptLanguage, script, fileName, videoFileName, piperModelKey, sentenceSilence, speechRate, aspectRatio, backgroundType, fitMode, voiceSegments, backgroundMusicRelativePath, backgroundMusicVolume, backgroundMusicLoop, backgroundMusicFadeIn, backgroundMusicFadeOut]);
+  }, [activeStep, sourcesText, query, selectedIds, channelName, angle, durationMinutes, voiceStyle, scriptLanguage, script, fileName, videoFileName, provider, piperModelKey, elevenModelId, elevenVoiceId, sentenceSilence, speechRate, aspectRatio, backgroundType, fitMode, voiceSegments, backgroundMusicRelativePath, backgroundMusicVolume, backgroundMusicLoop, backgroundMusicFadeIn, backgroundMusicFadeOut]);
 
   async function boot() {
     setLoading((value) => ({ ...value, boot: true }));
     try {
-      const [sourceData, models, tracks] = await Promise.all([
+      const [sourceData, models, proConfig, tracks] = await Promise.all([
         getMuNewsSources(),
         getPiperModels().catch(() => []),
+        getElevenLabsConfig().catch(() => null),
         getMusicLibraryTracks().catch(() => []),
       ]);
       if (!sourcesText.trim()) setSourcesText(sourcesToText(sourceData.sources));
       else setSourcesText(applyDefaultSources(sourcesText, sourceData.sources));
       setPiperModels(models);
+      if (proConfig) { setElevenConfig(proConfig); if (!elevenModelId) setElevenModelId(proConfig.models[0]?.id || ""); if (!elevenVoiceId) setElevenVoiceId(proConfig.voices[0]?.id || ""); }
       setMusicTracks(tracks);
       if (models.length && !models.some((model) => model.key === piperModelKey)) {
         setPiperModelKey(models.find((model) => model.lang === "vi")?.key || models[0].key);
@@ -201,16 +210,12 @@ export function useMuNewsStudio() {
     setLoading((value) => ({ ...value, audio: true }));
     setMessage("");
     try {
-      const result = await generatePiperVoice({
-        text: segment.text,
-        modelKey: segment.modelKey || piperModelKey,
-        sentenceSilence,
-        speechRate,
-        fileName: segment.fileName,
-      });
+      const result = provider === "elevenlabs"
+        ? await generateElevenLabsVoice({ text: segment.text, modelId: elevenModelId, voiceId: elevenVoiceId, fileName: segment.fileName })
+        : await generatePiperVoice({ text: segment.text, modelKey: segment.modelKey || piperModelKey, sentenceSilence, speechRate, fileName: segment.fileName });
       setVoiceSegments((items) => items.map((item) => item.id === segmentId ? { ...item, selected: true, result } : item));
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Không tạo được voice Piper.");
+      setMessage(error instanceof Error ? error.message : "Không tạo được voice.");
     } finally {
       setLoading((value) => ({ ...value, audio: false }));
     }
@@ -327,6 +332,7 @@ export function useMuNewsStudio() {
     setVoiceStyle(DEFAULT_DRAFT.voiceStyle);
     setScriptLanguage(DEFAULT_DRAFT.scriptLanguage);
     setScript("");
+    setProvider(DEFAULT_DRAFT.provider); setElevenModelId(DEFAULT_DRAFT.elevenModelId); setElevenVoiceId(DEFAULT_DRAFT.elevenVoiceId);
     setFileName(createDefaultFileName("mu-news-audio"));
     setVideoFileName(createDefaultFileName("mu-news-video"));
     setVoiceSegments([]);
@@ -338,7 +344,7 @@ export function useMuNewsStudio() {
     activeStep, setActiveStep, sourcesText, setSourcesText, sources, query, setQuery, selectedIds, selectedItems,
     channelName, setChannelName, angle, setAngle, durationMinutes, setDurationMinutes, voiceStyle, setVoiceStyle,
     scriptLanguage, setScriptLanguage, script, setScript: updateScript, fileName, setFileName, videoFileName, setVideoFileName,
-    piperModelKey, setPiperModelKey, sentenceSilence, setSentenceSilence, speechRate, setSpeechRate,
+    provider, setProvider, piperModelKey, setPiperModelKey, elevenConfig, elevenModelId, setElevenModelId, elevenVoiceId, setElevenVoiceId, sentenceSilence, setSentenceSilence, speechRate, setSpeechRate,
     aspectRatio, setAspectRatio, backgroundType, setBackgroundType, fitMode, setFitMode, piperModels, musicTracks,
     newsResult, audioResult, videoResult, voiceSegments, backgrounds, uploadedVoices, scriptPrompt,
     backgroundMusicRelativePath, setBackgroundMusicRelativePath, backgroundMusicVolume, setBackgroundMusicVolume,

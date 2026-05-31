@@ -12,6 +12,17 @@ const SOURCE_URL_ALIASES = new Map([
 ]);
 
 const REMOVED_SOURCE_HOSTS = new Set(["news.google.com"]);
+const TONE_MARKS: Record<string, string> = {
+  "`": "\u0300",
+  "'": "\u0301",
+  "´": "\u0301",
+  "’": "\u0301",
+  "‘": "\u0301",
+  "?": "\u0309",
+  "~": "\u0303",
+};
+const VIETNAMESE_VOWELS = "aăâeêioôơuưyAĂÂEÊIOÔƠUƯY";
+const TONE_PATTERN = "[`'´’‘?~]";
 
 export function sourcesToText(sources: MuNewsSource[]) {
   return sources.map((source) => `${source.name} | ${source.url} | ${source.trustScore}`).join("\n");
@@ -79,6 +90,32 @@ export function formatDateTime(value: string) {
   }
 }
 
+export function normalizeVietnameseText(value: string) {
+  if (!value) return "";
+  const vowels = escapeRegExp(VIETNAMESE_VOWELS);
+  const consonants = "bcdđghklmnpqrstvxBCDĐGHKLMNPQRSTVX";
+  const markerBeforeConsonant = new RegExp(`([${vowels}])(${TONE_PATTERN})\\s+(?=[${escapeRegExp(consonants)}])`, "g");
+  const markerAfterVowel = new RegExp(`([${vowels}])(${TONE_PATTERN})`, "g");
+
+  return value
+    .normalize("NFKC")
+    .replace(markerBeforeConsonant, "$1$2")
+    .replace(markerAfterVowel, (_, vowel: string, marker: string) => applyVietnameseTone(vowel, marker))
+    .normalize("NFC");
+}
+
+function applyVietnameseTone(vowel: string, marker: string) {
+  const tone = TONE_MARKS[marker];
+  if (!tone) return vowel;
+  const decomposed = vowel.normalize("NFD");
+  if (/[\u0300\u0301\u0303\u0309\u0323]/.test(decomposed)) return vowel;
+  return `${decomposed}${tone}`.normalize("NFC");
+}
+
 function slugify(value: string) {
   return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

@@ -56,6 +56,7 @@ export function useMuNewsValidation({ selectedItems, setSelectedIds, setActiveSt
             status,
             message: result.message,
             detailPublishedAt: result.detailPublishedAt,
+            detailPublishedSource: result.detailPublishedSource,
             resolvedUrl: result.resolvedUrl,
             articleContent: result.articleContent,
             checkedAt: new Date().toISOString(),

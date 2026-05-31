@@ -57,6 +57,7 @@ export type MuNewsValidateItemResponse = {
   message: string;
   sourcePublishedAt: string;
   detailPublishedAt?: string;
+  detailPublishedSource?: string;
   resolvedUrl?: string;
   articleContent?: string;
 };

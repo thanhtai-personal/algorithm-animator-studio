@@ -1,10 +1,11 @@
-import { ArrowRight, Bot, ClipboardPaste, Copy, Mic2 } from "lucide-react";
+import { ArrowRight, Bot, ClipboardPaste, Copy, Languages, Mic2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { normalizeVietnameseText } from "../muNewsUtils";
 import type { useMuNewsStudio } from "../useMuNewsStudio";
 
 export function MuNewsScriptPanel({ studio }: { studio: ReturnType<typeof useMuNewsStudio> }) {
@@ -13,7 +14,11 @@ export function MuNewsScriptPanel({ studio }: { studio: ReturnType<typeof useMuN
   }
 
   async function copyScript() {
-    await navigator.clipboard?.writeText(studio.script || "");
+    await navigator.clipboard?.writeText(normalizeVietnameseText(studio.script || ""));
+  }
+
+  function normalizeScript() {
+    studio.setScript(normalizeVietnameseText(studio.script || ""));
   }
 
   return (
@@ -96,6 +101,9 @@ export function MuNewsScriptPanel({ studio }: { studio: ReturnType<typeof useMuN
             <ClipboardPaste className="h-4 w-4 text-red-400" />
             Paste kịch bản AI trả về
           </Label>
+          <Button className="w-full sm:w-fit" size="sm" variant="outline" onClick={normalizeScript} disabled={!studio.script.trim()}>
+            <Languages className="mr-2 h-4 w-4" /> Chuẩn hóa tiếng Việt
+          </Button>
           <Textarea
             className="min-h-[360px] min-w-0 resize-y font-serif text-sm leading-7 sm:text-base xl:min-h-[52vh]"
             value={studio.script}

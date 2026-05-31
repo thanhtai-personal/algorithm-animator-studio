@@ -105,7 +105,8 @@ function FilterItemRow(props: {
         <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span className="truncate">{props.item.sourceName}</span>
           <span>RSS: {dateLabel}</span>
-          {detailDateLabel ? <span>Chi tiết: {detailDateLabel}</span> : null}
+          {detailDateLabel ? <span>Bài viết: {detailDateLabel}</span> : null}
+          {props.validation?.detailPublishedSource ? <span>Nguồn ngày: {props.validation.detailPublishedSource}</span> : null}
           {props.validation?.articleContent ? <span>{props.validation.articleContent.length.toLocaleString("vi-VN")} ký tự content</span> : null}
         </div>
       </div>

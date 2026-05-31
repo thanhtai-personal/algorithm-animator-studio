@@ -101,13 +101,24 @@ export function MuNewsVoicePanel({ studio }: { studio: MuNewsStudio }) {
 }
 
 function VoiceSegmentCard({ segment, studio }: { segment: MuNewsVoiceSegment; studio: MuNewsStudio }) {
+  const models = studio.piperModels.filter((model) => model.available);
+  const selectableModels = models.length ? models : studio.piperModels;
+
   return (
     <article className="grid min-w-0 gap-3 rounded-xl border border-border bg-background/70 p-3 sm:p-4">
       <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start">
         <Checkbox checked={segment.selected} onCheckedChange={(checked) => studio.updateVoiceSegment(segment.id, { selected: checked === true })} />
         <div className="grid min-w-0 flex-1 gap-3">
-          <div className="grid min-w-0 gap-3 md:grid-cols-[minmax(0,1fr)_minmax(180px,0.55fr)]">
+          <div className="grid min-w-0 gap-3 md:grid-cols-[minmax(0,1fr)_minmax(180px,0.55fr)] xl:grid-cols-[minmax(0,1fr)_minmax(220px,0.65fr)_minmax(180px,0.5fr)]">
             <Input value={segment.title} onChange={(event) => studio.updateVoiceSegment(segment.id, { title: event.target.value })} />
+            <Select value={segment.modelKey || studio.piperModelKey} onValueChange={(modelKey) => studio.updateVoiceSegment(segment.id, { modelKey })}>
+              <SelectTrigger><SelectValue placeholder="Chọn model voice" /></SelectTrigger>
+              <SelectContent>
+                {selectableModels.map((model) => (
+                  <SelectItem key={model.key} value={model.key}>{model.label}{model.available ? "" : " · thiếu file"}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Input value={segment.fileName} onChange={(event) => studio.updateVoiceSegment(segment.id, { fileName: event.target.value })} />
           </div>
           <Textarea className="min-h-36 min-w-0 resize-y text-sm leading-6" value={segment.text} onChange={(event) => studio.updateVoiceSegment(segment.id, { text: event.target.value })} />

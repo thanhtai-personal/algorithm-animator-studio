@@ -54,6 +54,7 @@ export type MuNewsItemValidation = {
   status: MuNewsItemValidationStatus;
   message?: string;
   detailPublishedAt?: string;
+  detailPublishedSource?: string;
   resolvedUrl?: string;
   articleContent?: string;
   checkedAt?: string;
@@ -66,6 +67,7 @@ export type MuNewsValidateItemResponse = {
   message: string;
   sourcePublishedAt: string;
   detailPublishedAt?: string;
+  detailPublishedSource?: string;
   resolvedUrl?: string;
   articleContent?: string;
 };
@@ -75,6 +77,7 @@ export type MuNewsVoiceSegment = {
   title: string;
   text: string;
   fileName: string;
+  modelKey?: string;
   selected: boolean;
   result?: VoiceGenerateResult | null;
 };

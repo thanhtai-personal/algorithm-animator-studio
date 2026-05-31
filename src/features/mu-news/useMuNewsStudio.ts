@@ -4,7 +4,7 @@ import { getMusicLibraryTracks, type MusicLibraryTrack } from "@/lib/musicLibrar
 import { generatePiperVoice, getPiperModels, type PiperModel } from "@/lib/voiceApi";
 import { fetchMuNews, generateMuNewsTimelineVideo, getMuNewsSources } from "./muNewsApi";
 import { buildMuNewsScriptPrompt } from "./muNewsPrompt";
-import { applyDefaultSources, createDefaultFileName, parseSourcesText, sourcesToText } from "./muNewsUtils";
+import { applyDefaultSources, createDefaultFileName, normalizeVietnameseText, parseSourcesText, sourcesToText } from "./muNewsUtils";
 import type { MuNewsDraft, MuNewsFetchResponse, MuNewsItem, MuNewsStepId, MuNewsVoiceSegment } from "./types";
 import { useMuNewsValidation } from "./useMuNewsValidation";
 
@@ -185,8 +185,14 @@ export function useMuNewsStudio() {
   }
 
   function rebuildVoiceSegments() {
-    setVoiceSegments(splitScriptIntoVoiceSegments(script, fileName));
+    const normalizedScript = normalizeVietnameseText(script);
+    if (normalizedScript !== script) setScript(normalizedScript);
+    setVoiceSegments(splitScriptIntoVoiceSegments(normalizedScript, fileName, piperModelKey));
     setActiveStep("voice");
+  }
+
+  function updateScript(value: string) {
+    setScript(normalizeVietnameseText(value));
   }
 
   async function createAudioSegment(segmentId: string) {
@@ -197,7 +203,7 @@ export function useMuNewsStudio() {
     try {
       const result = await generatePiperVoice({
         text: segment.text,
-        modelKey: piperModelKey,
+        modelKey: segment.modelKey || piperModelKey,
         sentenceSilence,
         speechRate,
         fileName: segment.fileName,
@@ -331,7 +337,7 @@ export function useMuNewsStudio() {
   return {
     activeStep, setActiveStep, sourcesText, setSourcesText, sources, query, setQuery, selectedIds, selectedItems,
     channelName, setChannelName, angle, setAngle, durationMinutes, setDurationMinutes, voiceStyle, setVoiceStyle,
-    scriptLanguage, setScriptLanguage, script, setScript, fileName, setFileName, videoFileName, setVideoFileName,
+    scriptLanguage, setScriptLanguage, script, setScript: updateScript, fileName, setFileName, videoFileName, setVideoFileName,
     piperModelKey, setPiperModelKey, sentenceSilence, setSentenceSilence, speechRate, setSpeechRate,
     aspectRatio, setAspectRatio, backgroundType, setBackgroundType, fitMode, setFitMode, piperModels, musicTracks,
     newsResult, audioResult, videoResult, voiceSegments, backgrounds, uploadedVoices, scriptPrompt,
@@ -345,7 +351,7 @@ export function useMuNewsStudio() {
   };
 }
 
-function splitScriptIntoVoiceSegments(text: string, filePrefix: string): MuNewsVoiceSegment[] {
+function splitScriptIntoVoiceSegments(text: string, filePrefix: string, modelKey?: string): MuNewsVoiceSegment[] {
   const blocks = text.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean);
   const segments: string[] = [];
   let current = "";
@@ -365,6 +371,7 @@ function splitScriptIntoVoiceSegments(text: string, filePrefix: string): MuNewsV
     title: `Voice đoạn ${index + 1}`,
     text: segment,
     fileName: `${filePrefix || createDefaultFileName("mu-news-audio")}-${String(index + 1).padStart(2, "0")}`,
+    modelKey,
     selected: true,
     result: null,
   }));

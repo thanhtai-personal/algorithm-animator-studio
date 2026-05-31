@@ -10,6 +10,11 @@ export type NewsDateWindow = {
   toMs: number;
 };
 
+export type PublishedDateInfo = {
+  publishedAt: string;
+  source: string;
+};
+
 export function createMuNewsDateWindow(): NewsDateWindow {
   return {
     fromMs: startOfYesterdayMs(),
@@ -67,17 +72,32 @@ export async function validateMuNewsItemDetail(item?: MuNewsItem): Promise<MuNew
 
   const articleContent = extractArticleContent(article.html);
   if (articleContent.length < MIN_ARTICLE_CONTENT_LENGTH) {
-    return buildValidationResponse(item, false, "Không trích được nội dung bài viết đủ dài để tạo kịch bản.", undefined, article.url);
+    return buildValidationResponse(item, false, "Không trích được nội dung bài viết đủ dài để tạo kịch bản.", undefined, undefined, article.url);
   }
 
-  const detailPublishedAt = extractPublishedDate(article.html);
-  if (!detailPublishedAt) return buildValidationResponse(item, false, "Không tìm thấy thời gian publish trong bài viết.", undefined, article.url);
+  const detailPublishedDate = extractPublishedDateInfo(article.html);
+  if (!detailPublishedDate.publishedAt) return buildValidationResponse(item, false, "Không tìm thấy thời gian publish trong bài viết.", undefined, undefined, article.url);
 
-  if (!isPublishedInWindow(detailPublishedAt, window)) {
-    return buildValidationResponse(item, false, "Thời gian publish trong bài viết không nằm trong khoảng từ hôm qua đến hiện tại.", detailPublishedAt, article.url);
+  if (!isPublishedInWindow(detailPublishedDate.publishedAt, window)) {
+    return buildValidationResponse(
+      item,
+      false,
+      "Thời gian publish trong bài viết không nằm trong khoảng từ hôm qua đến hiện tại.",
+      detailPublishedDate.publishedAt,
+      detailPublishedDate.source,
+      article.url
+    );
   }
 
-  return buildValidationResponse(item, true, "Đã tải được nội dung bài viết và thời gian publish hợp lệ.", detailPublishedAt, article.url, articleContent);
+  return buildValidationResponse(
+    item,
+    true,
+    "Đã tải được nội dung bài viết và thời gian publish hợp lệ.",
+    detailPublishedDate.publishedAt,
+    detailPublishedDate.source,
+    article.url,
+    articleContent
+  );
 }
 
 async function validateNewsItemLinkWithGet(url: string) {
@@ -137,21 +157,98 @@ async function fetchArticleHtml(url: string) {
   }
 }
 
-function extractPublishedDate(html: string) {
-  const patterns = [
-    /<meta[^>]+(?:property|name|itemprop)=["'](?:article:published_time|og:published_time|pubdate|publishdate|date|datePublished|parsely-pub-date|sailthru\.date)["'][^>]+content=["']([^"']+)["']/i,
-    /<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name|itemprop)=["'](?:article:published_time|og:published_time|pubdate|publishdate|date|datePublished|parsely-pub-date|sailthru\.date)["']/i,
-    /<time[^>]+datetime=["']([^"']+)["']/i,
-    /"(?:datePublished|dateCreated|uploadDate)"\s*:\s*"([^"]+)"/i,
-    /'(?:datePublished|dateCreated|uploadDate)'\s*:\s*'([^']+)'/i,
+export function extractPublishedDate(html: string) {
+  return extractPublishedDateInfo(html).publishedAt;
+}
+
+export function extractPublishedDateInfo(html: string): PublishedDateInfo {
+  const candidates: PublishedDateInfo[] = [
+    ...extractMetaPublishedDates(html),
+    ...extractTimeElementDates(html),
+    ...extractJsonLdPublishedDates(html),
+    ...extractInlineJsonPublishedDates(html),
+    ...extractVisiblePublishedDates(html),
   ];
 
-  for (const pattern of patterns) {
-    const match = html.match(pattern);
-    const parsed = normalizeDateValue(match?.[1]);
-    if (parsed) return parsed;
+  return candidates.find((item) => item.publishedAt) || { publishedAt: "", source: "" };
+}
+
+function extractMetaPublishedDates(html: string) {
+  const publishedNames = [
+    "article:published_time",
+    "og:published_time",
+    "pubdate",
+    "publishdate",
+    "date",
+    "datePublished",
+    "parsely-pub-date",
+    "sailthru.date",
+  ].join("|");
+  const modifiedNames = ["article:modified_time", "dateModified"].join("|");
+  return [
+    ...collectMetaDateMatches(html, publishedNames, "meta published"),
+    ...collectMetaDateMatches(html, modifiedNames, "meta modified"),
+  ];
+}
+
+function collectMetaDateMatches(html: string, names: string, source: string) {
+  return [
+    ...collectDateMatches(html, new RegExp(`<meta[^>]+(?:property|name|itemprop)=["'](?:${names})["'][^>]+content=["']([^"']+)["']`, "gi"), source),
+    ...collectDateMatches(html, new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name|itemprop)=["'](?:${names})["']`, "gi"), source),
+  ];
+}
+
+function extractTimeElementDates(html: string) {
+  return collectDateMatches(html, /<time[^>]+datetime=["']([^"']+)["']/gi, "time[datetime]");
+}
+
+function extractJsonLdPublishedDates(html: string) {
+  const scripts = Array.from(html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi));
+  return scripts.flatMap((match) => readJsonDateValues(match[1], "JSON-LD"));
+}
+
+function extractInlineJsonPublishedDates(html: string) {
+  return [
+    ...collectDateMatches(html, /"(?:datePublished|dateCreated|dateModified|uploadDate)"\s*:\s*"([^"]+)"/gi, "inline JSON"),
+    ...collectDateMatches(html, /'(?:datePublished|dateCreated|dateModified|uploadDate)'\s*:\s*'([^']+)'/gi, "inline JSON"),
+  ];
+}
+
+function extractVisiblePublishedDates(html: string) {
+  const text = normalizeText(stripTags(decodeHtmlEntities(html))).slice(0, 20_000);
+  const labels = "(?:published|posted|updated|last updated|date published|ngày đăng|đăng lúc|cập nhật)";
+  return collectDateMatches(
+    text,
+    new RegExp(`${labels}\\s*:?\\s*([A-Z][a-z]+\\s+\\d{1,2},\\s+\\d{4}(?:\\s+\\d{1,2}:\\d{2}\\s*(?:AM|PM)?(?:\\s*(?:GMT|UTC|[+-]\\d{2}:?\\d{2}))?)?)`, "gi"),
+    "visible text"
+  );
+}
+
+function collectDateMatches(value: string, pattern: RegExp, source: string) {
+  return Array.from(value.matchAll(pattern))
+    .map((match) => ({ publishedAt: normalizeDateValue(match[1]), source }))
+    .filter((item) => item.publishedAt);
+}
+
+function readJsonDateValues(value: string, source: string): PublishedDateInfo[] {
+  const decoded = decodeHtmlEntities(value);
+  try {
+    return collectJsonDates(JSON.parse(decoded), source);
+  } catch {
+    return collectDateMatches(decoded, /"(?:datePublished|dateCreated|dateModified|uploadDate)"\s*:\s*"([^"]+)"/gi, source);
   }
-  return "";
+}
+
+function collectJsonDates(value: unknown, source: string): PublishedDateInfo[] {
+  if (!value || typeof value !== "object") return [];
+  if (Array.isArray(value)) return value.flatMap((item) => collectJsonDates(item, source));
+  return Object.entries(value as Record<string, unknown>).flatMap(([key, item]) => {
+    if (["datePublished", "dateCreated", "dateModified", "uploadDate"].includes(key) && typeof item === "string") {
+      const publishedAt = normalizeDateValue(item);
+      return publishedAt ? [{ publishedAt, source }] : [];
+    }
+    return collectJsonDates(item, source);
+  });
 }
 
 function normalizeDateValue(value?: string) {
@@ -201,6 +298,7 @@ function buildValidationResponse(
   valid: boolean,
   message: string,
   detailPublishedAt?: string,
+  detailPublishedSource?: string,
   resolvedUrl?: string,
   articleContent?: string
 ): MuNewsValidateItemResponse {
@@ -211,6 +309,7 @@ function buildValidationResponse(
     message,
     sourcePublishedAt: item?.publishedAt || "",
     detailPublishedAt,
+    detailPublishedSource,
     resolvedUrl,
     articleContent,
   };

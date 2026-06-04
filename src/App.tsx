@@ -14,6 +14,7 @@ const AlgorithmWorld = lazy(() => import("./pages/AlgorithmWorld.tsx"));
 const Auth = lazy(() => import("./pages/Auth.tsx"));
 const GeneratedAssets = lazy(() => import("./pages/GeneratedAssets.tsx"));
 const Index = lazy(() => import("./pages/Index.tsx"));
+const LegalPage = lazy(() => import("./pages/LegalPage.tsx"));
 const LongContent = lazy(() => import("./pages/LongContent.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const MuNewsStudio = lazy(() => import("./pages/MuNewsStudio.tsx"));
@@ -49,6 +50,9 @@ const App = () => (
           <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/auth" element={<Auth />} />
+              <Route path="/privacy" element={<LegalPage type="privacy" />} />
+              <Route path="/term" element={<LegalPage type="terms" />} />
+              <Route path="/terms" element={<LegalPage type="terms" />} />
               <Route path="/" element={<Index />} />
               <Route path="/maze-pathfinding" element={<AlgorithmWorld />} />
               <Route path="/algorithm-world" element={<AlgorithmWorld />} />

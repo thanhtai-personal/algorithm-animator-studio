@@ -276,6 +276,7 @@ export function useYoutubeChannelManager() {
     history,
     lastExported,
     loading,
+    oauthRedirectUri: redirectUri,
     plan,
     playlists,
     refreshToken,

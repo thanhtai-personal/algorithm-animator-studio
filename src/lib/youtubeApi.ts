@@ -3,6 +3,7 @@ import { buildApiUrl, parseApiResponse } from "./runtimeApi";
 export type YoutubeConfigStatus = {
   hasClientId: boolean;
   hasClientSecret: boolean;
+  clientIdHint?: string;
   redirectUri: string;
   defaults: YoutubeUploadForm;
 };

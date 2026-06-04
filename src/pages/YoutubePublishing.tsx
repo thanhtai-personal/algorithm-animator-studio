@@ -60,6 +60,7 @@ export default function YoutubePublishing() {
               connectYoutube={manager.connectYoutube}
               disconnect={manager.disconnect}
               loading={manager.loading}
+              oauthRedirectUri={manager.oauthRedirectUri}
               refreshChannelData={manager.refreshChannelData}
               refreshToken={manager.refreshToken}
             />
@@ -105,6 +106,7 @@ export default function YoutubePublishing() {
             connectYoutube={manager.connectYoutube}
             disconnect={manager.disconnect}
             loading={manager.loading}
+            oauthRedirectUri={manager.oauthRedirectUri}
             refreshChannelData={manager.refreshChannelData}
             refreshToken={manager.refreshToken}
           />

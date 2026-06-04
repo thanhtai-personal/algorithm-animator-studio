@@ -5,9 +5,9 @@ import type { useYoutubeChannelManager } from "../useYoutubeChannelManager";
 
 type Manager = ReturnType<typeof useYoutubeChannelManager>;
 
-type Props = Pick<Manager, "channel" | "config" | "connectYoutube" | "disconnect" | "loading" | "refreshChannelData" | "refreshToken">;
+type Props = Pick<Manager, "channel" | "config" | "connectYoutube" | "disconnect" | "loading" | "oauthRedirectUri" | "refreshChannelData" | "refreshToken">;
 
-export function YoutubeConnectionCard({ channel, config, connectYoutube, disconnect, loading, refreshChannelData, refreshToken }: Props) {
+export function YoutubeConnectionCard({ channel, config, connectYoutube, disconnect, loading, oauthRedirectUri, refreshChannelData, refreshToken }: Props) {
   const ready = Boolean(config?.hasClientId && config?.hasClientSecret);
   return (
     <Card className="h-fit space-y-4 p-4">
@@ -23,6 +23,19 @@ export function YoutubeConnectionCard({ channel, config, connectYoutube, disconn
       <div className={`rounded-lg border px-3 py-2 text-sm ${ready ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200" : "border-yellow-400/30 bg-yellow-400/10 text-yellow-200"}`}>
         {ready ? "OAuth env đã sẵn sàng. Có thể cấp quyền kênh và upload video." : "Thiếu YOUTUBE_CLIENT_ID hoặc YOUTUBE_CLIENT_SECRET trong .env server."}
       </div>
+      {config ? (
+        <div className="space-y-1 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+          <p>
+            Redirect URI cần khai báo trong Google Console:{" "}
+            <span className="break-all text-foreground">{oauthRedirectUri}</span>
+          </p>
+          {config.clientIdHint ? (
+            <p>
+              OAuth client id server đang dùng: <span className="text-foreground">{config.clientIdHint}</span>
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       {refreshToken ? <p className="text-xs text-emerald-300">Đã có quyền YouTube trong trình duyệt này.</p> : null}
       {channel ? <p className="text-xs text-muted-foreground">Kênh đang kết nối: <span className="text-foreground">{channel.title}</span></p> : null}
       <div className="grid gap-2">

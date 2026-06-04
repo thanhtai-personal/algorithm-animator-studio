@@ -10,11 +10,14 @@ const KAI_STUDIO_DEFAULT_TAGS = "algorithm, programming, visualization, code vis
 
 export function getYoutubeConfigStatus(envOverrides: RuntimeEnvValues = {}) {
   const env = readEnvValues(envOverrides);
+  const clientId = env.YOUTUBE_CLIENT_ID || process.env.YOUTUBE_CLIENT_ID || "";
+  const clientSecret = env.YOUTUBE_CLIENT_SECRET || process.env.YOUTUBE_CLIENT_SECRET || "";
 
   return {
-    hasClientId: Boolean(env.YOUTUBE_CLIENT_ID || process.env.YOUTUBE_CLIENT_ID),
-    hasClientSecret: Boolean(env.YOUTUBE_CLIENT_SECRET || process.env.YOUTUBE_CLIENT_SECRET),
+    hasClientId: Boolean(clientId),
+    hasClientSecret: Boolean(clientSecret),
     hasRefreshToken: false,
+    clientIdHint: maskClientId(clientId),
     redirectUri:
       env.YOUTUBE_REDIRECT_URI ||
       process.env.YOUTUBE_REDIRECT_URI ||
@@ -47,7 +50,7 @@ export async function exchangeYoutubeCode(
   envOverrides: RuntimeEnvValues = {}
 ) {
   const auth = createOAuthClient(redirectUri, envOverrides);
-  const { tokens } = await auth.getToken(code);
+  const { tokens } = await getOAuthTokens(auth, code, redirectUri);
 
   return {
     hasRefreshToken: Boolean(tokens.refresh_token),
@@ -213,6 +216,66 @@ function createOAuthClient(
   }
 
   return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+}
+
+async function getOAuthTokens(
+  auth: ReturnType<typeof createOAuthClient>,
+  code: string,
+  redirectUri: string
+) {
+  try {
+    return await auth.getToken(code);
+  } catch (error) {
+    throw normalizeYoutubeOAuthError(error, redirectUri);
+  }
+}
+
+function normalizeYoutubeOAuthError(error: unknown, redirectUri: string) {
+  const googleError = readGoogleOAuthError(error);
+
+  if (googleError.code === "invalid_client") {
+    return new Error(
+      [
+        "Google OAuth trả invalid_client khi đổi authorization code lấy token.",
+        "Kiểm tra YOUTUBE_CLIENT_ID và YOUTUBE_CLIENT_SECRET trên server: cả hai phải được copy từ cùng một OAuth Client ID loại Web application trong Google Cloud.",
+        `Authorized redirect URI của OAuth client phải có chính xác: ${redirectUri}`,
+        "Nếu vừa đổi env trên Vercel/server, cần redeploy hoặc restart server rồi login YouTube lại để lấy code mới.",
+      ].join(" ")
+    );
+  }
+
+  if (googleError.code === "redirect_uri_mismatch") {
+    return new Error(
+      `Google OAuth redirect URI mismatch. Hãy thêm chính xác redirect URI này vào OAuth Client trong Google Cloud: ${redirectUri}`
+    );
+  }
+
+  const description = googleError.description || googleError.message;
+  return new Error(description ? `Google OAuth thất bại: ${description}` : "Google OAuth thất bại khi đổi authorization code.");
+}
+
+function readGoogleOAuthError(error: unknown) {
+  const candidate = error as {
+    message?: string;
+    response?: {
+      data?: {
+        error?: string;
+        error_description?: string;
+      };
+    };
+  };
+
+  return {
+    code: candidate.response?.data?.error,
+    description: candidate.response?.data?.error_description,
+    message: candidate.message,
+  };
+}
+
+function maskClientId(clientId: string) {
+  if (!clientId) return "";
+  if (clientId.length <= 18) return "<configured>";
+  return `${clientId.slice(0, 8)}...${clientId.slice(-16)}`;
 }
 
 function createAuthorizedYoutubeClient(

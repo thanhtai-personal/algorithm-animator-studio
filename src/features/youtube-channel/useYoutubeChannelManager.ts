@@ -242,7 +242,7 @@ export function useYoutubeChannelManager() {
       const channels = current.channels.filter((item) => item.localId !== localId);
       return { activeChannelLocalId: channels[0]?.localId || "", channels };
     });
-    toast.info("Đã xóa kênh khỏi workspace local.");
+    toast.info("Đã ngắt kết nối và xóa kênh khỏi workspace local.");
   }
 
   function selectChannel(localId: string, shouldRefresh = true) {
@@ -338,7 +338,7 @@ function filterHistoryForChannel(history: YoutubeUploadHistoryItem[], channel: Y
 }
 
 function resolveYoutubeRedirectUri(configuredRedirectUri?: string) {
-  const browserRedirectUri = `${window.location.origin}/youtube`;
+  const browserRedirectUri = `${window.location.origin}/channel`;
   const configured = configuredRedirectUri?.trim();
   if (!configured) return browserRedirectUri;
 
@@ -347,6 +347,7 @@ function resolveYoutubeRedirectUri(configuredRedirectUri?: string) {
     const browserUrl = new URL(browserRedirectUri);
     const configuredIsLocal = ["localhost", "127.0.0.1", "0.0.0.0"].includes(configuredUrl.hostname);
     const browserIsLocal = ["localhost", "127.0.0.1", "0.0.0.0"].includes(browserUrl.hostname);
+    if (configuredUrl.origin === browserUrl.origin && configuredUrl.pathname === "/youtube") return browserRedirectUri;
     if (configuredIsLocal && !browserIsLocal) return browserRedirectUri;
     return configured;
   } catch {

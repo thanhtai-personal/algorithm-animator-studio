@@ -1,0 +1,133 @@
+import {
+  Clapperboard,
+  Files,
+  Home,
+  Map,
+  Newspaper,
+  PenLine,
+  Settings,
+  Sparkles,
+  Video,
+  Youtube,
+  type LucideIcon,
+} from "lucide-react";
+import type { Lang } from "@/lib/i18n";
+
+export type AppNavigationItem = {
+  id: string;
+  to: string;
+  icon: LucideIcon;
+  label: Record<Lang, string>;
+  matchPaths?: string[];
+};
+
+export type AppNavigationGroup = {
+  id: string;
+  label: Record<Lang, string>;
+  items: AppNavigationItem[];
+};
+
+export const APP_TITLE = "KAI STUDIO";
+
+export const APP_NAVIGATION_GROUPS: AppNavigationGroup[] = [
+  {
+    id: "algorithm-production",
+    label: { en: "Algorithm Studio", vi: "Thuật toán" },
+    items: [
+      {
+        id: "algorithm-shorts",
+        to: "/",
+        icon: Home,
+        label: { en: "Algorithm Shorts", vi: "Short thuật toán" },
+        matchPaths: ["/"],
+      },
+      {
+        id: "maze-pathfinding",
+        to: "/maze-pathfinding",
+        icon: Map,
+        label: { en: "Maze Pathfinding", vi: "Tìm đường mê cung" },
+        matchPaths: ["/maze-pathfinding", "/algorithm-world"],
+      },
+      {
+        id: "algorithm-long",
+        to: "/long-content",
+        icon: Video,
+        label: { en: "Algorithm Long", vi: "Video thuật toán dài" },
+        matchPaths: ["/long-content"],
+      },
+    ],
+  },
+  {
+    id: "story-production",
+    label: { en: "Story Studio", vi: "Truyện" },
+    items: [
+      {
+        id: "story-video",
+        to: "/story-video",
+        icon: Clapperboard,
+        label: { en: "Story Video", vi: "Video truyện" },
+        matchPaths: ["/story-video"],
+      },
+      {
+        id: "story-author",
+        to: "/story-author",
+        icon: PenLine,
+        label: { en: "Story Author", vi: "Sáng tác truyện" },
+        matchPaths: ["/story-author"],
+      },
+      {
+        id: "story-review",
+        to: "/story-review",
+        icon: Sparkles,
+        label: { en: "Story Review", vi: "Review truyện" },
+        matchPaths: ["/story-review"],
+      },
+    ],
+  },
+  {
+    id: "channels-publishing",
+    label: { en: "Channels", vi: "Kênh & xuất bản" },
+    items: [
+      {
+        id: "mu-news",
+        to: "/mu-news",
+        icon: Newspaper,
+        label: { en: "MU News", vi: "Tin tức MU" },
+        matchPaths: ["/mu-news"],
+      },
+      {
+        id: "channel",
+        to: "/channel",
+        icon: Youtube,
+        label: { en: "Channel Manager", vi: "Quản lý kênh" },
+        matchPaths: ["/channel", "/youtube", "/youtube-publishing", "/social-publishing"],
+      },
+      {
+        id: "assets",
+        to: "/assets",
+        icon: Files,
+        label: { en: "Generated Files", vi: "File đã tạo" },
+        matchPaths: ["/assets"],
+      },
+    ],
+  },
+  {
+    id: "system",
+    label: { en: "System", vi: "Hệ thống" },
+    items: [
+      {
+        id: "settings",
+        to: "/settings",
+        icon: Settings,
+        label: { en: "Settings", vi: "Cài đặt" },
+        matchPaths: ["/settings"],
+      },
+    ],
+  },
+];
+
+export const APP_NAVIGATION: AppNavigationItem[] = APP_NAVIGATION_GROUPS.flatMap((group) => group.items);
+
+export function getActiveNavigationItem(pathname: string) {
+  return APP_NAVIGATION.find((item) => item.matchPaths?.some((path) => path === pathname)) ?? APP_NAVIGATION[0];
+}

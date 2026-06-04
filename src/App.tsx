@@ -2,9 +2,9 @@ import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PublicWebBanner } from "./components/PublicWebBanner";
 import { Analytics } from "@vercel/analytics/react";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import { AppHeader } from "@/components/AppHeader";
+import { AppLayout } from "@/components/AppLayout";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -37,6 +37,11 @@ const RouteFallback = () => (
   </main>
 );
 
+const LegacyChannelRedirect = () => {
+  const location = useLocation();
+  return <Navigate replace to={`/channel${location.search}${location.hash}`} />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} storageKey="kai-studio.theme">
@@ -46,29 +51,31 @@ const App = () => (
         <BrowserRouter>
           <AnalyticsTracker />
           <PublicWebBanner />
-          <AppHeader />
-          <Suspense fallback={<RouteFallback />}>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/privacy" element={<LegalPage type="privacy" />} />
-              <Route path="/term" element={<LegalPage type="terms" />} />
-              <Route path="/terms" element={<LegalPage type="terms" />} />
-              <Route path="/" element={<Index />} />
-              <Route path="/maze-pathfinding" element={<AlgorithmWorld />} />
-              <Route path="/algorithm-world" element={<AlgorithmWorld />} />
-              <Route path="/long-content" element={<LongContent />} />
-              <Route path="/mu-news" element={<MuNewsStudio />} />
-              <Route path="/story-author" element={<StoryAuthorStudio />} />
-              <Route path="/story-review" element={<StoryReviewStudio />} />
-              <Route path="/story-video" element={<StoryVideoStudio />} />
-              <Route path="/assets" element={<GeneratedAssets />} />
-              <Route path="/social-publishing" element={<YoutubePublishing />} />
-              <Route path="/youtube-publishing" element={<YoutubePublishing />} />
-              <Route path="/youtube" element={<YoutubePublishing />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
+          <AppLayout>
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/privacy" element={<LegalPage type="privacy" />} />
+                <Route path="/term" element={<LegalPage type="terms" />} />
+                <Route path="/terms" element={<LegalPage type="terms" />} />
+                <Route path="/" element={<Index />} />
+                <Route path="/maze-pathfinding" element={<AlgorithmWorld />} />
+                <Route path="/algorithm-world" element={<AlgorithmWorld />} />
+                <Route path="/long-content" element={<LongContent />} />
+                <Route path="/mu-news" element={<MuNewsStudio />} />
+                <Route path="/story-author" element={<StoryAuthorStudio />} />
+                <Route path="/story-review" element={<StoryReviewStudio />} />
+                <Route path="/story-video" element={<StoryVideoStudio />} />
+                <Route path="/assets" element={<GeneratedAssets />} />
+                <Route path="/channel" element={<YoutubePublishing />} />
+                <Route path="/social-publishing" element={<LegacyChannelRedirect />} />
+                <Route path="/youtube-publishing" element={<LegacyChannelRedirect />} />
+                <Route path="/youtube" element={<LegacyChannelRedirect />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </AppLayout>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>

@@ -1,80 +1,26 @@
-import { Files, LogIn, LogOut, Moon, Settings, Sun, Youtube } from "lucide-react";
+import { LogIn, LogOut, Menu, Moon, PanelLeftOpen, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { APP_TITLE } from "@/components/appNavigation";
+import type { SidebarMode } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AUTH_STATE_EVENT, AuthProfile, getCurrentProfile, signOut } from "@/lib/auth";
 import { type Lang, readSystemLang, subscribeSystemLang, writeSystemLang } from "@/lib/i18n";
 
-const APP_TITLE = "KAI STUDIO";
+type AppHeaderProps = {
+  sidebarMode: SidebarMode;
+  onToggleSidebar: () => void;
+};
 
-const getPageMeta = (lang: Lang): Record<string, { subtitle: string }> => ({
-  "/": {
-    subtitle: lang === "vi" ? "Tạo video thuật toán ngắn cho Shorts, Reels và TikTok bằng KAI STUDIO." : "Create short algorithm animations for Shorts, Reels and TikTok with KAI STUDIO.",
-  },
-  "/maze-pathfinding": {
-    subtitle: lang === "vi" ? "Tạo video tìm lối ra, so sánh DFS, BFS, Dijkstra và A*." : "Create maze escape videos comparing DFS, BFS, Dijkstra and A*.",
-  },
-  "/algorithm-world": {
-    subtitle: lang === "vi" ? "Tên Algorithm World sẽ dùng cho module lớn hơn sau này." : "Algorithm World is reserved for a broader module later.",
-  },
-  "/long-content": {
-    subtitle: lang === "vi" ? "Tạo video YouTube 16:9 có animation, script, voice và nhạc." : "Create 16:9 YouTube explainers with animation, script, voice and music.",
-  },
-  "/story-video": {
-    subtitle: lang === "vi" ? "Tạo video đọc truyện từ URL, văn bản, giọng đọc và nền." : "Create reading-story videos from URLs, text, voice-over and background media.",
-  },
-  "/story-author": {
-    subtitle: lang === "vi" ? "Lưu trữ truyện đang sáng tác, outline, nhân vật và nội dung chương." : "Store drafted stories, outlines, characters and chapters.",
-  },
-  "/story-review": {
-    subtitle: lang === "vi" ? "Tạo prompt review truyện, phân cảnh Veo3 và ghép video từ clip/ảnh." : "Create story review prompts, Veo3 scenes and videos from clips/images.",
-  },
-  "/mu-news": {
-    subtitle: lang === "vi" ? "Tổng hợp tin Manchester United, viết kịch bản, đọc Piper và tạo video nháp." : "Collect Manchester United news, script it, voice it and draft videos.",
-  },
-  "/youtube": {
-    subtitle: lang === "vi" ? "Quản lý đa kênh YouTube, playlist, metadata, lịch sử upload và đăng video đã xuất." : "Manage multiple YouTube channels, playlists, metadata, upload history and exported videos.",
-  },
-  "/assets": {
-    subtitle: lang === "vi" ? "Quản lý file voice và video đã tạo trên server." : "Manage generated voice and video files on the server.",
-  },
-  "/settings": {
-    subtitle: lang === "vi" ? "Cấu hình local Piper runtime path và kiểm tra trạng thái." : "Configure local Piper runtime paths and health check.",
-  },
-  "/youtube-publishing": {
-    subtitle: lang === "vi" ? "Quản lý đa kênh YouTube, playlist, metadata, lịch sử upload và đăng video đã xuất." : "Manage multiple YouTube channels, playlists, metadata, upload history and exported videos.",
-  },
-  "/social-publishing": {
-    subtitle: lang === "vi" ? "Quản lý đa kênh YouTube, playlist, metadata, lịch sử upload và đăng video đã xuất." : "Manage multiple YouTube channels, playlists, metadata, upload history and exported videos.",
-  },
-});
-
-export function AppHeader() {
+export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { resolvedTheme, setTheme } = useTheme();
   const [profile, setProfile] = useState<AuthProfile | null>(null);
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
   const [mounted, setMounted] = useState(false);
-  const meta = useMemo(() => {
-    const pageMeta = getPageMeta(lang);
-    return pageMeta[location.pathname] ?? pageMeta["/"];
-  }, [lang, location.pathname]);
-  const contentMode = location.pathname === "/story-author"
-    ? "story-author"
-    : location.pathname === "/story-review"
-    ? "story-review"
-    : location.pathname === "/story-video"
-    ? "story-video"
-    : location.pathname === "/mu-news"
-      ? "mu-news"
-      : location.pathname === "/long-content"
-      ? "algorithm-long"
-      : (location.pathname === "/maze-pathfinding" || location.pathname === "/algorithm-world")
-        ? "maze-pathfinding"
-        : "algorithm-shorts";
   const isAuthenticated = profile !== null;
   const authLabel = lang === "vi" ? (isAuthenticated ? "Đăng xuất" : "Đăng nhập") : (isAuthenticated ? "Logout" : "Login");
   const authAriaLabel = lang === "vi" ? authLabel : `${authLabel} account`;
@@ -126,68 +72,27 @@ export function AppHeader() {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
   }
 
-  function changeContentMode(value: string) {
-    if (value === "story-author") navigate("/story-author");
-    else if (value === "story-review") navigate("/story-review");
-    else if (value === "story-video") navigate("/story-video");
-    else if (value === "algorithm-long") navigate("/long-content");
-    else if (value === "mu-news") navigate("/mu-news");
-    else if (value === "maze-pathfinding") navigate("/maze-pathfinding");
-    else navigate("/");
-  }
-
   return (
-    <header className="border-b border-border/40 bg-background/95 px-3 py-3 backdrop-blur md:px-5">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          <img src="/kai-studio-logo.svg" alt="KAI STUDIO logo" className="h-10 w-10 shrink-0 rounded-xl" />
-          <div className="min-w-0">
-            <h1 className="truncate text-base font-bold md:text-lg">{APP_TITLE}</h1>
-            <p className="truncate text-xs text-muted-foreground">{meta.subtitle}</p>
-          </div>
+    <header className="sticky top-0 z-30 border-b border-border/40 bg-background/95 px-3 py-2.5 backdrop-blur md:px-5">
+      <div className="flex items-center gap-3">
+        <Button
+          aria-label={sidebarMode === "hidden" ? (lang === "vi" ? "Mở menu" : "Open menu") : (lang === "vi" ? "Ẩn menu" : "Hide menu")}
+          className="h-10 w-10 shrink-0"
+          size="icon"
+          variant="outline"
+          onClick={onToggleSidebar}
+        >
+          {sidebarMode === "hidden" ? <PanelLeftOpen className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+        </Button>
+
+        <img src="/kai-studio-logo.svg" alt="KAI STUDIO logo" className="h-10 w-10 shrink-0 rounded-xl" />
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-base font-bold md:text-lg">{APP_TITLE}</h1>
         </div>
 
-        <nav className="flex items-center gap-2 overflow-x-auto pb-1 xl:pb-0">
-          <Select value={contentMode} onValueChange={changeContentMode}>
-            <SelectTrigger className="h-10 w-[230px] shrink-0"><SelectValue placeholder={lang === "vi" ? "Chọn studio" : "Choose studio"} /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="algorithm-shorts">Algorithm Shorts</SelectItem>
-              <SelectItem value="maze-pathfinding">{lang === "vi" ? "Tìm đường ra mê cung" : "Maze Pathfinding"}</SelectItem>
-              <SelectItem value="algorithm-long">Algorithm Long 16:9</SelectItem>
-              <SelectItem value="story-author">{lang === "vi" ? "Sáng tác truyện" : "Story author"}</SelectItem>
-              <SelectItem value="story-review">{lang === "vi" ? "Review truyện" : "Story review"}</SelectItem>
-              <SelectItem value="story-video">{lang === "vi" ? "Kênh đọc truyện" : "Story video"}</SelectItem>
-              <SelectItem value="mu-news">{lang === "vi" ? "Kênh tin tức MU" : "MU News channel"}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            className="h-10 shrink-0"
-            variant={location.pathname.startsWith("/youtube") || location.pathname === "/social-publishing" ? "default" : "outline"}
-            onClick={() => navigate("/youtube")}
-          >
-            <Youtube className="h-4 w-4" />
-            <span className="hidden sm:inline">YouTube Manager</span>
-          </Button>
-          <Button
-            aria-label={lang === "vi" ? "Quản lý file" : "Manage files"}
-            className="h-10 shrink-0"
-            variant={location.pathname === "/assets" ? "default" : "outline"}
-            onClick={() => navigate("/assets")}
-          >
-            <Files className="h-4 w-4" />
-            <span className="hidden sm:inline">{lang === "vi" ? "File" : "Files"}</span>
-          </Button>
-          <Button
-            aria-label={lang === "vi" ? "Cài đặt" : "Settings"}
-            className="h-10 shrink-0"
-            size="icon"
-            variant={location.pathname === "/settings" ? "default" : "outline"}
-            onClick={() => navigate("/settings")}
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
+        <div className="flex shrink-0 items-center gap-2">
           <Select value={lang} onValueChange={(value) => changeLanguage(value as Lang)}>
-            <SelectTrigger className="h-10 w-28 shrink-0"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-10 w-[92px] shrink-0 md:w-28"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="en">English</SelectItem>
               <SelectItem value="vi">Tiếng Việt</SelectItem>
@@ -217,7 +122,7 @@ export function AppHeader() {
               <span className="hidden md:inline">{authLabel}</span>
             </Button>
           )}
-        </nav>
+        </div>
       </div>
     </header>
   );

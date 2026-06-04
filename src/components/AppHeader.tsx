@@ -1,4 +1,4 @@
-import { Files, LogIn, LogOut, Moon, Settings, Sparkles, Sun, Youtube } from "lucide-react";
+import { Files, LogIn, LogOut, Moon, Settings, Sun, Youtube } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -7,11 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AUTH_STATE_EVENT, AuthProfile, getCurrentProfile, signOut } from "@/lib/auth";
 import { type Lang, readSystemLang, subscribeSystemLang, writeSystemLang } from "@/lib/i18n";
 
-const APP_TITLE = "KATA Studio";
+const APP_TITLE = "KAI STUDIO";
 
 const getPageMeta = (lang: Lang): Record<string, { subtitle: string }> => ({
   "/": {
-    subtitle: lang === "vi" ? "Tạo video thuật toán ngắn cho Shorts, Reels và TikTok." : "Create short algorithm animations for Shorts, Reels and TikTok.",
+    subtitle: lang === "vi" ? "Tạo video thuật toán ngắn cho Shorts, Reels và TikTok bằng KAI STUDIO." : "Create short algorithm animations for Shorts, Reels and TikTok with KAI STUDIO.",
   },
   "/maze-pathfinding": {
     subtitle: lang === "vi" ? "Tạo video tìm lối ra, so sánh DFS, BFS, Dijkstra và A*." : "Create maze escape videos comparing DFS, BFS, Dijkstra and A*.",
@@ -35,7 +35,7 @@ const getPageMeta = (lang: Lang): Record<string, { subtitle: string }> => ({
     subtitle: lang === "vi" ? "Tổng hợp tin Manchester United, viết kịch bản, đọc Piper và tạo video nháp." : "Collect Manchester United news, script it, voice it and draft videos.",
   },
   "/youtube": {
-    subtitle: lang === "vi" ? "Đăng nhập OAuth qua server .env rồi upload video đã xuất." : "Login with OAuth from server .env, then upload exported videos.",
+    subtitle: lang === "vi" ? "Quản lý kênh YouTube, playlist, metadata, lịch sử upload và đăng video đã xuất." : "Manage YouTube channel, playlists, metadata, upload history and exported videos.",
   },
   "/assets": {
     subtitle: lang === "vi" ? "Quản lý file voice và video đã tạo trên server." : "Manage generated voice and video files on the server.",
@@ -44,10 +44,10 @@ const getPageMeta = (lang: Lang): Record<string, { subtitle: string }> => ({
     subtitle: lang === "vi" ? "Cấu hình local Piper runtime path và kiểm tra trạng thái." : "Configure local Piper runtime paths and health check.",
   },
   "/youtube-publishing": {
-    subtitle: lang === "vi" ? "Đăng nhập OAuth qua server .env rồi upload video đã xuất." : "Login with OAuth from server .env, then upload exported videos.",
+    subtitle: lang === "vi" ? "Quản lý kênh YouTube, playlist, metadata, lịch sử upload và đăng video đã xuất." : "Manage YouTube channel, playlists, metadata, upload history and exported videos.",
   },
   "/social-publishing": {
-    subtitle: lang === "vi" ? "Đăng nhập OAuth qua server .env rồi upload video đã xuất." : "Login with OAuth from server .env, then upload exported videos.",
+    subtitle: lang === "vi" ? "Quản lý kênh YouTube, playlist, metadata, lịch sử upload và đăng video đã xuất." : "Manage YouTube channel, playlists, metadata, upload history and exported videos.",
   },
 });
 
@@ -140,9 +140,7 @@ export function AppHeader() {
     <header className="border-b border-border/40 bg-background/95 px-3 py-3 backdrop-blur md:px-5">
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-400">
-            <Sparkles className="h-5 w-5 text-slate-900" />
-          </div>
+          <img src="/kai-studio-logo.svg" alt="KAI STUDIO logo" className="h-10 w-10 shrink-0 rounded-xl" />
           <div className="min-w-0">
             <h1 className="truncate text-base font-bold md:text-lg">{APP_TITLE}</h1>
             <p className="truncate text-xs text-muted-foreground">{meta.subtitle}</p>
@@ -168,7 +166,7 @@ export function AppHeader() {
             onClick={() => navigate("/youtube")}
           >
             <Youtube className="h-4 w-4" />
-            <span className="hidden sm:inline">YouTube</span>
+            <span className="hidden sm:inline">YouTube Manager</span>
           </Button>
           <Button
             aria-label={lang === "vi" ? "Quản lý file" : "Manage files"}

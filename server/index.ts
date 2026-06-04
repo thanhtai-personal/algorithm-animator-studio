@@ -52,7 +52,7 @@ app.use(`/${GENERATED_BACKGROUND_MUSIC_PUBLIC_PATH}`, createDynamicStaticMiddlew
 app.use("/api", createHealthRouter(), createModelRouter(), createMusicLibraryRouter(), createMuNewsRouter(), createPiperRuntimeRouter(), createSystemRouter(), createResourceRouter(), createStoryReviewRouter(), createWebExtractRouter(), createGenerateRouter(), createElevenLabsRouter(), createSupertonicRouter(), createVideoRouter(), createYoutubeRouter());
 
 app.listen(PORT, () => {
-  console.log(`Algo voice backend running at http://localhost:${PORT}`);
+  console.log(`KAI STUDIO backend running at http://localhost:${PORT}`);
   console.log(`Piper exe: ${PIPER_EXE}`);
   console.log(`Model dir: ${MODEL_DIR}`);
   console.log(`Generated dir: ${GENERATED_DIR}`);

@@ -43,7 +43,7 @@ export function renderLongContentFrame(ctx: CanvasRenderingContext2D, params: Re
   const { theme, scene, sceneProgress, timelineProgress } = params;
   const layout = getSceneLayout(params.scene.animation, params.previousSceneWasAnimation, sceneProgress, params.sceneElapsedSec);
   drawBackground(ctx, theme, params.backgroundImage);
-  drawBrand(ctx, params.channelName ?? "Code Visual Lab", params.lang);
+  drawBrand(ctx, params.channelName ?? "KAI STUDIO", params.lang);
   drawScriptPanel(ctx, params, layout.textPanel);
   drawAnimationPanel(ctx, params, layout.chartReveal);
   drawBottomBar(ctx, scene, sceneProgress, timelineProgress, params.frameLabel);

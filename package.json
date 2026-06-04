@@ -122,10 +122,10 @@
   },
   "main": "electron/main.cjs",
   "description": "Algorithm animation, voice-over and YouTube publishing studio.",
-  "author": "Code Visual Lab",
+  "author": "KAI STUDIO",
   "build": {
-    "appId": "vn.codevisuallab.algoshorts",
-    "productName": "AlgoShorts Studio",
+    "appId": "vn.kaistudio.app",
+    "productName": "KAI STUDIO",
     "directories": {
       "output": "release"
     },
@@ -164,7 +164,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "AlgoShorts Studio"
+      "shortcutName": "KAI STUDIO"
     }
   }
 }

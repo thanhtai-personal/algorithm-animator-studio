@@ -40,7 +40,7 @@ export function subscribeSystemLang(listener: (lang: Lang) => void) {
 
 
 export const STRINGS = {
-  appTitle: { en: "AlgoShorts Studio", vi: "AlgoShorts Studio" },
+  appTitle: { en: "KAI STUDIO", vi: "KAI STUDIO" },
   tagline: {
     en: "Create algorithm videos for TikTok / Reels / Shorts",
     vi: "Tạo video thuật toán cho TikTok / Reels / Shorts",

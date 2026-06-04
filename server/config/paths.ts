@@ -89,7 +89,7 @@ function resolveKataStudioHome() {
   }
 
   if (process.platform === "win32" && process.env.LOCALAPPDATA) {
-    return path.join(process.env.LOCALAPPDATA, "Kata Studio");
+    return path.join(process.env.LOCALAPPDATA, "KAI STUDIO");
   }
 
   return path.join(os.homedir(), ".kata-studio");

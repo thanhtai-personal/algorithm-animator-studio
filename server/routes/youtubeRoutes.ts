@@ -7,11 +7,12 @@ import type { YoutubeUploadBody, YoutubeUploadGeneratedBody } from "../models/Yo
 import {
   createYoutubeAuthUrl,
   exchangeYoutubeCode,
+  getYoutubeChannelProfile,
   getYoutubeConfigStatus,
   listYoutubePlaylists,
   uploadYoutubeVideo,
 } from "../services/YoutubeUploadService";
-import { recordYoutubeUploadHistory } from "../services/YoutubeUploadHistoryService";
+import { listYoutubeUploadHistory, recordYoutubeUploadHistory } from "../services/YoutubeUploadHistoryService";
 import { resolveGeneratedVideoPath } from "../utils/videoOutput";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
 
@@ -47,6 +48,19 @@ export function createYoutubeRouter() {
     } catch (error) {
       sendError(res, error);
     }
+  });
+
+
+  router.post("/youtube/channel", async (req, res) => {
+    try {
+      res.json(await getYoutubeChannelProfile(String(req.body?.refreshToken || ""), readRuntimeEnvFromRequest(req)));
+    } catch (error) {
+      sendError(res, error);
+    }
+  });
+
+  router.get("/youtube/history", (req, res) => {
+    res.json({ history: listYoutubeUploadHistory(readRuntimeEnvFromRequest(req)) });
   });
 
   router.post("/youtube/playlists", async (req, res) => {

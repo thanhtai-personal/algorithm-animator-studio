@@ -297,7 +297,7 @@ app.whenReady().then(async () => {
     await startBackend(runtime);
     sendSetupStatus({ step: "client", status: "running", message: "Đang khởi động client local ở port 6868..." });
     await startClientServer();
-    sendSetupStatus({ step: "ready", status: "done", message: "Hoàn tất. Đang mở AlgoShorts Studio..." });
+    sendSetupStatus({ step: "ready", status: "done", message: "Hoàn tất. Đang mở KAI STUDIO..." });
 
     createMainWindow();
     setTimeout(() => {

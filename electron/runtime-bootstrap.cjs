@@ -71,7 +71,7 @@ async function ensureDesktopRuntime({ appDataDir, onStatus }) {
   process.env.FFPROBE_EXE = process.env.FFPROBE_EXE || runtime.ffprobeExe;
   process.env.KATA_BUNDLED_TOOLS_DIR = process.env.KATA_BUNDLED_TOOLS_DIR || getBundledToolsRoot();
 
-  status(onStatus, "ready", "done", "Đã chuẩn bị xong phần có thể tự xử lý. Đang mở AlgoShorts Studio...");
+  status(onStatus, "ready", "done", "Đã chuẩn bị xong phần có thể tự xử lý. Đang mở KAI STUDIO...");
   return runtime;
 }
 
@@ -136,11 +136,11 @@ async function ensureDefaultModelFiles({ onStatus, modelDir }) {
 function getRuntimeHome(appDataDir) {
   if (isWindows) {
     const localAppData = process.env.LOCALAPPDATA || appDataDir || path.join(os.homedir(), "AppData", "Local");
-    return path.join(localAppData, "AlgoShorts Studio");
+    return path.join(localAppData, "KAI STUDIO");
   }
 
   if (isMac) {
-    return path.join(appDataDir || path.join(os.homedir(), "Library", "Application Support", "AlgoShorts Studio"), "runtime");
+    return path.join(appDataDir || path.join(os.homedir(), "Library", "Application Support", "KAI STUDIO"), "runtime");
   }
 
   return path.join(appDataDir || path.join(os.homedir(), ".kata-studio"), "runtime");
@@ -162,7 +162,7 @@ async function ensurePython(onStatus) {
   } else if (isMac) {
     await installWithBrew("python@3.12", onStatus, "python", "Chưa có Python. Đang thử cài python@3.12 bằng Homebrew...");
   } else {
-    throw new Error("Chưa có Python. Hãy cài Python 3 rồi mở lại AlgoShorts Studio.");
+    throw new Error("Chưa có Python. Hãy cài Python 3 rồi mở lại KAI STUDIO.");
   }
 
   const installed = await resolvePythonCandidate();
@@ -207,7 +207,7 @@ async function ensureFfmpeg({ onStatus, runtimeHome }) {
   } else if (isMac) {
     await installWithBrew("ffmpeg", onStatus, "ffmpeg", "Chưa có FFmpeg. Đang thử cài FFmpeg bằng Homebrew...");
   } else {
-    throw new Error("Chưa có FFmpeg. Hãy cài FFmpeg rồi mở lại AlgoShorts Studio.");
+    throw new Error("Chưa có FFmpeg. Hãy cài FFmpeg rồi mở lại KAI STUDIO.");
   }
 
   const installedPair = await resolveFfmpegPair(runtimeHome);
@@ -253,7 +253,7 @@ async function installWithBrew(packageName, onStatus, step, message) {
   }
 
   if (!(await commandWorks("brew", ["--version"]))) {
-    throw new Error(`Máy macOS chưa có Homebrew nên không thể tự cài ${packageName}. Hãy cài Homebrew tại ${HOMEBREW_INSTALL_HINT}, sau đó mở lại AlgoShorts Studio.`);
+    throw new Error(`Máy macOS chưa có Homebrew nên không thể tự cài ${packageName}. Hãy cài Homebrew tại ${HOMEBREW_INSTALL_HINT}, sau đó mở lại KAI STUDIO.`);
   }
 
   status(onStatus, step, "running", message);

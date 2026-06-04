@@ -9,6 +9,33 @@ export type YoutubeConfigStatus = {
 
 export type YoutubePlaylist = { id: string; title: string };
 
+export type YoutubeChannelProfile = {
+  id: string;
+  title: string;
+  description: string;
+  customUrl?: string;
+  thumbnailUrl?: string;
+  subscriberCount?: string;
+  videoCount?: string;
+  viewCount?: string;
+  uploadsPlaylistId?: string;
+};
+
+export type YoutubeUploadHistoryItem = {
+  id: string;
+  status: "success" | "failure";
+  attemptedAtMs: number;
+  source: "browser-upload" | "generated-video";
+  sourceRelativePath?: string;
+  sourceFileName?: string;
+  youtubeVideoId?: string;
+  youtubeUrl?: string;
+  title?: string;
+  privacyStatus?: string;
+  playlistId?: string;
+  message?: string;
+};
+
 export type YoutubeUploadForm = {
   title: string;
   description: string;
@@ -50,6 +77,14 @@ export async function exchangeYoutubeCode(code: string, redirectUri: string) {
   }));
 }
 
+export async function getYoutubeChannel(refreshToken: string) {
+  return parseApiResponse<YoutubeChannelProfile>(await fetch(buildApiUrl("/api/youtube/channel"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken }),
+  }));
+}
+
 export async function getYoutubePlaylists(refreshToken: string) {
   const data = await parseApiResponse<{ playlists: YoutubePlaylist[] }>(await fetch(buildApiUrl("/api/youtube/playlists"), {
     method: "POST",
@@ -57,6 +92,11 @@ export async function getYoutubePlaylists(refreshToken: string) {
     body: JSON.stringify({ refreshToken }),
   }));
   return data.playlists;
+}
+
+export async function getYoutubeUploadHistory() {
+  const data = await parseApiResponse<{ history: YoutubeUploadHistoryItem[] }>(await fetch(buildApiUrl("/api/youtube/history")));
+  return data.history;
 }
 
 export async function uploadYoutubeVideo(file: File, refreshToken: string, form: YoutubeUploadForm) {

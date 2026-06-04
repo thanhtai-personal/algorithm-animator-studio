@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { getCurrentProfile, isSuperAdminProfile } from "@/lib/auth";
 import { getLastExportedVideo, type ExportedVideoAsset } from "@/lib/studioMediaRegistry";
+import { openOAuthPopup, notifyOAuthOpener, isOAuthPopupWindow } from "@/lib/oauthPopup";
 import { appendYoutubeDescriptionCredit } from "@/lib/youtubeMetadata";
 import {
   exchangeYoutubeCode,
@@ -104,7 +105,11 @@ export function useYoutubeChannelManager() {
       if (current?.refreshToken) await refreshChannelData(current.refreshToken, current.localId);
       await refreshHistory();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Không đọc được cấu hình YouTube.");
+      const message = error instanceof Error ? error.message : "Không đọc được cấu hình YouTube.";
+      if (hasYoutubeOauthCode() && isOAuthPopupWindow()) {
+        notifyOAuthOpener({ provider: "youtube", status: "error", message });
+      }
+      toast.error(message);
     }
   }
 
@@ -123,15 +128,47 @@ export function useYoutubeChannelManager() {
     setChannel(nextProfile);
     setWorkspace((current) => upsertManagedChannel(current, nextProfile, auth.refreshToken));
     window.history.replaceState({}, document.title, window.location.pathname);
+
+    if (isOAuthPopupWindow()) {
+      notifyOAuthOpener({ provider: "youtube", status: "success", channelTitle: nextProfile.title });
+      window.setTimeout(() => window.close(), 250);
+      return;
+    }
+
     toast.success(`Đã cấp quyền YouTube cho kênh ${nextProfile.title}.`);
   }
 
   async function connectYoutube() {
+    if (!config?.hasClientId || !config?.hasClientSecret) {
+      toast.error("YouTube OAuth chưa được cấu hình. Vui lòng kiểm tra Client ID và Client Secret.");
+      return;
+    }
+
     setLoading(true);
     try {
-      window.location.href = await getYoutubeAuthUrl(redirectUri);
+      const authUrl = await getYoutubeAuthUrl(redirectUri);
+      const result = await openOAuthPopup(authUrl, "youtube");
+
+      if (result.status === "success") {
+        await bootstrap();
+        toast.success(result.channelTitle ? `Đã cấp quyền YouTube cho kênh ${result.channelTitle}.` : "Đã cấp quyền YouTube.");
+        return;
+      }
+
+      if (result.status === "blocked") {
+        toast.error("Trình duyệt đã chặn popup OAuth. Hãy cho phép popup rồi thử lại.");
+        return;
+      }
+
+      if (result.status === "closed") {
+        toast.info("Đã hủy kết nối YouTube. Chưa có kênh mới nào được tạo.");
+        return;
+      }
+
+      toast.error(result.message || "Kết nối YouTube thất bại.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không tạo được link OAuth.");
+    } finally {
       setLoading(false);
     }
   }
@@ -335,6 +372,10 @@ function channelSnapshot(channel: YoutubeManagedChannel | null): YoutubeChannelP
 function filterHistoryForChannel(history: YoutubeUploadHistoryItem[], channel: YoutubeManagedChannel | null) {
   if (!channel?.youtubeChannelId) return history;
   return history.filter((item) => !item.channelId || item.channelId === channel.youtubeChannelId);
+}
+
+function hasYoutubeOauthCode() {
+  return new URLSearchParams(window.location.search).has("code");
 }
 
 function resolveYoutubeRedirectUri(configuredRedirectUri?: string) {

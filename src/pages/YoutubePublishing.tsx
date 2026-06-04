@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { SharedChannelSidebar, channelKey, type ChannelProvider, type SharedChannelItem } from "@/features/channel-manager/SharedChannelSidebar";
+import { SharedChannelSidebar, channelKey, type ChannelProvider, type ProviderConnectionState, type SharedChannelItem } from "@/features/channel-manager/SharedChannelSidebar";
 import { YoutubeChannelPlanCard } from "@/features/youtube-channel/components/YoutubeChannelPlanCard";
 import { YoutubeChannelSwitcherCard } from "@/features/youtube-channel/components/YoutubeChannelSwitcherCard";
 import { YoutubeOverviewCard } from "@/features/youtube-channel/components/YoutubeOverviewCard";
@@ -8,6 +8,7 @@ import { YoutubeUploadCard } from "@/features/youtube-channel/components/Youtube
 import { YoutubeUploadHistoryCard } from "@/features/youtube-channel/components/YoutubeUploadHistoryCard";
 import { useYoutubeChannelManager } from "@/features/youtube-channel/useYoutubeChannelManager";
 import type { YoutubeManagedChannel } from "@/features/youtube-channel/types";
+import type { YoutubeConfigStatus } from "@/lib/youtubeApi";
 import { SocialChannelManagerCard } from "@/features/social-channel/components/SocialChannelManagerCard";
 import { useSocialChannelWorkspace } from "@/features/social-channel/hooks/useSocialChannelWorkspace";
 import type { SocialChannel, SocialPlatform } from "@/features/social-channel/types";
@@ -31,8 +32,15 @@ export default function YoutubePublishing() {
     () => buildSharedChannels(manager.channels, socialManager.channels),
     [manager.channels, socialManager.channels]
   );
+  const providerStates = useMemo(
+    () => buildProviderStates(manager.config, vi),
+    [manager.config, vi]
+  );
   const activeSharedChannel = sharedChannels.find((channel) => channelKey(channel) === activeKey) || sharedChannels[0] || null;
   const activeIsYoutube = activeSharedChannel?.provider === "youtube";
+  const channelGridStyle = {
+    "--channel-panel-width": channelMenuCollapsed ? "88px" : "340px",
+  } as CSSProperties;
 
   useEffect(() => subscribeSystemLang(setLang), []);
   useEffect(() => {
@@ -53,6 +61,12 @@ export default function YoutubePublishing() {
   }
 
   function addProviderChannel(provider: ChannelProvider) {
+    const state = providerStates[provider];
+    if (!state?.configured) {
+      toast.info(state?.disabledReason || txt(vi, "Provider này chưa được cấu hình.", "This provider is not configured yet."));
+      return;
+    }
+
     if (provider === "youtube") {
       void manager.connectYoutube();
       return;
@@ -92,12 +106,16 @@ export default function YoutubePublishing() {
           </TabsList>
         </Tabs>
 
-        <div className={`grid gap-4 ${channelMenuCollapsed ? "xl:grid-cols-[88px_minmax(0,1fr)]" : "xl:grid-cols-[340px_minmax(0,1fr)]"}`}>
+        <div
+          className="grid gap-4 transition-[grid-template-columns] duration-300 ease-in-out xl:grid-cols-[var(--channel-panel-width)_minmax(0,1fr)]"
+          style={channelGridStyle}
+        >
           <SharedChannelSidebar
             activeKey={activeSharedChannel ? channelKey(activeSharedChannel) : ""}
             channels={sharedChannels}
             collapsed={channelMenuCollapsed}
             lang={lang}
+            providerStates={providerStates}
             onAddProvider={addProviderChannel}
             onCollapsedChange={setChannelMenuCollapsed}
             onRemove={removeSharedChannel}
@@ -106,19 +124,23 @@ export default function YoutubePublishing() {
 
           <div className="min-w-0">
             {activeTab === "channels" ? (
-              activeIsYoutube ? (
-                <YoutubeChannelSwitcherCard
-                  activeChannel={manager.activeChannel}
-                  addManualChannel={manager.addManualChannel}
-                  channels={manager.channels}
-                  removeChannel={manager.removeChannel}
-                  selectChannel={manager.selectChannel}
-                  updateActiveChannel={manager.updateActiveChannel}
-                  lang={lang}
-                  showSidebar={false}
-                />
+              activeSharedChannel ? (
+                activeIsYoutube ? (
+                  <YoutubeChannelSwitcherCard
+                    activeChannel={manager.activeChannel}
+                    addManualChannel={manager.addManualChannel}
+                    channels={manager.channels}
+                    removeChannel={manager.removeChannel}
+                    selectChannel={manager.selectChannel}
+                    updateActiveChannel={manager.updateActiveChannel}
+                    lang={lang}
+                    showSidebar={false}
+                  />
+                ) : (
+                  <SocialChannelManagerCard lang={lang} manager={socialManager} showSidebar={false} />
+                )
               ) : (
-                <SocialChannelManagerCard lang={lang} manager={socialManager} showSidebar={false} />
+                <EmptyChannelState lang={lang} />
               )
             ) : null}
 
@@ -190,6 +212,15 @@ function YoutubeManagerHeader({ activeChannelTitle, channelCount, connected, lan
   );
 }
 
+function EmptyChannelState({ lang }: { lang: Lang }) {
+  const vi = lang === "vi";
+  return (
+    <Card className="flex min-h-[360px] items-center justify-center border-dashed p-6 text-center text-sm text-muted-foreground">
+      {txt(vi, "Chưa có kênh đã cấp quyền. Hãy chọn provider đã cấu hình trong panel bên trái để kết nối.", "No authorized channels yet. Choose a configured provider in the left panel to connect.")}
+    </Card>
+  );
+}
+
 function ProviderNotice({ channel, lang }: { channel: SharedChannelItem | null; lang: Lang }) {
   const vi = lang === "vi";
   const provider = channel?.provider ? providerLabel(channel.provider) : txt(vi, "kênh", "channel");
@@ -205,22 +236,43 @@ function ProviderNotice({ channel, lang }: { channel: SharedChannelItem | null; 
   );
 }
 
+function buildProviderStates(config: YoutubeConfigStatus | null, vi: boolean): Record<ChannelProvider, ProviderConnectionState> {
+  const youtubeReady = Boolean(config?.hasClientId && config?.hasClientSecret);
+  const socialReason = txt(
+    vi,
+    "Provider này chưa được cấu hình OAuth/backend nên chưa thể kết nối.",
+    "This provider has no OAuth/backend configuration yet, so it cannot connect."
+  );
+
+  return {
+    youtube: {
+      configured: youtubeReady,
+      disabledReason: youtubeReady
+        ? undefined
+        : txt(vi, "YouTube chưa có Client ID/Client Secret.", "YouTube Client ID/Client Secret is not configured."),
+    },
+    facebook: { configured: false, disabledReason: socialReason },
+    tiktok: { configured: false, disabledReason: socialReason },
+    instagram: { configured: false, disabledReason: socialReason },
+  };
+}
+
 function buildSharedChannels(youtubeChannels: YoutubeManagedChannel[], socialChannels: SocialChannel[]): SharedChannelItem[] {
   return [
-    ...youtubeChannels.map((channel) => ({
+    ...youtubeChannels.filter((channel) => Boolean(channel.refreshToken)).map((channel) => ({
       id: channel.localId,
       provider: "youtube" as const,
       title: channel.title,
       subtitle: channel.channelUrl,
       thumbnailUrl: channel.thumbnailUrl,
-      connected: Boolean(channel.refreshToken),
+      connected: true,
     })),
-    ...socialChannels.map((channel) => ({
+    ...socialChannels.filter((channel) => channel.status === "connected").map((channel) => ({
       id: channel.id,
       provider: channel.platform,
       title: channel.name,
       subtitle: channel.handle || channel.url,
-      connected: channel.status === "connected",
+      connected: true,
     })),
   ];
 }

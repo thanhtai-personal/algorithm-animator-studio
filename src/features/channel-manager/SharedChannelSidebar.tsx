@@ -3,9 +3,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { Lang } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import type { SocialPlatform } from "@/features/social-channel/types";
 
 export type ChannelProvider = "youtube" | SocialPlatform;
+
+export type ProviderConnectionState = {
+  configured: boolean;
+  disabledReason?: string;
+};
 
 export type SharedChannelItem = {
   id: string;
@@ -21,6 +27,7 @@ type Props = {
   channels: SharedChannelItem[];
   collapsed: boolean;
   lang: Lang;
+  providerStates?: Partial<Record<ChannelProvider, ProviderConnectionState>>;
   onAddProvider: (provider: ChannelProvider) => void;
   onCollapsedChange: (collapsed: boolean) => void;
   onRemove: (channel: SharedChannelItem) => void;
@@ -29,13 +36,49 @@ type Props = {
 
 const PROVIDERS: ChannelProvider[] = ["youtube", "tiktok", "facebook", "instagram"];
 
-export function SharedChannelSidebar({ activeKey, channels, collapsed, lang, onAddProvider, onCollapsedChange, onRemove, onSelect }: Props) {
+export function SharedChannelSidebar({
+  activeKey,
+  channels,
+  collapsed,
+  lang,
+  providerStates,
+  onAddProvider,
+  onCollapsedChange,
+  onRemove,
+  onSelect,
+}: Props) {
   const vi = lang === "vi";
+
+  function getProviderState(provider: ChannelProvider): ProviderConnectionState {
+    return providerStates?.[provider] ?? { configured: true };
+  }
+
+  function renderProviderButton(provider: ChannelProvider, iconOnly = false) {
+    const state = getProviderState(provider);
+    const label = `${txt(vi, "Thêm", "Add")} ${providerLabel(provider)}`;
+    const disabledTitle = state.disabledReason || txt(vi, "Provider này chưa được cấu hình OAuth.", "This provider is not configured yet.");
+
+    return (
+      <Button
+        key={provider}
+        size={iconOnly ? "icon" : "sm"}
+        variant="outline"
+        disabled={!state.configured}
+        onClick={() => onAddProvider(provider)}
+        aria-label={state.configured ? label : `${label}. ${disabledTitle}`}
+        title={state.configured ? label : disabledTitle}
+        className={cn(!iconOnly && "justify-center", !state.configured && "cursor-not-allowed opacity-50")}
+      >
+        {providerIcon(provider, iconOnly ? "h-4 w-4" : "mr-2 h-4 w-4")}
+        {iconOnly ? null : providerLabel(provider)}
+      </Button>
+    );
+  }
 
   if (collapsed) {
     return (
-      <Card className="h-fit overflow-hidden p-2">
-        <div className="flex flex-col items-center gap-2">
+      <Card className="h-fit overflow-hidden p-2 transition-[width,transform,opacity] duration-300 ease-in-out">
+        <div className="flex flex-col items-center gap-2 transition-opacity duration-200">
           <Button
             type="button"
             size="icon"
@@ -59,18 +102,7 @@ export function SharedChannelSidebar({ activeKey, channels, collapsed, lang, onA
               <Plus className="h-4 w-4" />
             </summary>
             <div className="mt-2 grid gap-2">
-              {PROVIDERS.map((provider) => (
-                <Button
-                  key={provider}
-                  size="icon"
-                  variant="outline"
-                  onClick={() => onAddProvider(provider)}
-                  aria-label={`${txt(vi, "Thêm", "Add")} ${providerLabel(provider)}`}
-                  title={`${txt(vi, "Thêm", "Add")} ${providerLabel(provider)}`}
-                >
-                  {providerIcon(provider, "h-4 w-4")}
-                </Button>
-              ))}
+              {PROVIDERS.map((provider) => renderProviderButton(provider, true))}
             </div>
           </details>
 
@@ -97,8 +129,8 @@ export function SharedChannelSidebar({ activeKey, channels, collapsed, lang, onA
   }
 
   return (
-    <Card className="h-fit overflow-hidden p-0">
-      <div className="border-b border-border p-4">
+    <Card className="h-fit overflow-hidden p-0 transition-[width,transform,opacity] duration-300 ease-in-out">
+      <div className="border-b border-border p-4 transition-opacity duration-200">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="font-semibold">{txt(vi, "Tất cả kênh", "All Channels")}</h2>
@@ -122,19 +154,14 @@ export function SharedChannelSidebar({ activeKey, channels, collapsed, lang, onA
         </div>
       </div>
 
-      <div className="space-y-3 p-3">
+      <div className="space-y-3 p-3 transition-opacity duration-200">
         <details className="group">
           <summary className="flex cursor-pointer list-none items-center justify-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium transition hover:bg-muted">
             <Plus className="h-4 w-4" />
             {txt(vi, "Thêm kênh", "Add channel")}
           </summary>
           <div className="mt-2 grid gap-2">
-            {PROVIDERS.map((provider) => (
-              <Button key={provider} size="sm" variant="outline" onClick={() => onAddProvider(provider)}>
-                {providerIcon(provider)}
-                {providerLabel(provider)}
-              </Button>
-            ))}
+            {PROVIDERS.map((provider) => renderProviderButton(provider))}
           </div>
         </details>
 
@@ -153,7 +180,7 @@ export function SharedChannelSidebar({ activeKey, channels, collapsed, lang, onA
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground">
-            {txt(vi, "Chưa có kênh. Hãy thêm kênh để bắt đầu.", "No channels yet. Add a channel to get started.")}
+            {txt(vi, "Chưa có kênh. Hãy kết nối provider đã cấu hình để bắt đầu.", "No channels yet. Connect a configured provider to get started.")}
           </div>
         )}
       </div>
@@ -190,7 +217,7 @@ function SharedChannelRow({ active, channel, lang, onRemove, onSelect }: { activ
           </div>
           <p className="truncate text-xs text-muted-foreground">{channel.subtitle || txt(vi, "Chưa có URL/handle", "No URL/handle")}</p>
           <Badge className="mt-2" variant={channel.connected ? "default" : "secondary"}>
-            {channel.connected ? txt(vi, "Đã cấp quyền", "Authorized") : txt(vi, "Nháp", "Draft")}
+            {channel.connected ? txt(vi, "Đã cấp quyền", "Authorized") : txt(vi, "Chưa cấp quyền", "Not authorized")}
           </Badge>
         </div>
         <button

@@ -55,10 +55,7 @@ export function createSocialChannel(platform: SocialPlatform, index = 1): Social
 }
 
 function createDefaultWorkspace(): SocialChannelWorkspace {
-  const channel = createSocialChannel("facebook", 1);
-  const workspace = { activePlatform: "facebook" as const, activeChannelId: channel.id, channels: [channel] };
-  writeSocialChannelWorkspace(workspace);
-  return workspace;
+  return { activePlatform: "facebook", activeChannelId: "", channels: [] };
 }
 
 function normalizeWorkspace(input: Partial<SocialChannelWorkspace>): SocialChannelWorkspace {

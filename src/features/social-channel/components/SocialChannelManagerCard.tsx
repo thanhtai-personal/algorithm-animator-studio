@@ -28,6 +28,20 @@ export function SocialChannelManagerCard({ lang, manager: providedManager, showS
     count: manager.channels.filter((channel) => channel.platform === platform).length,
   }));
 
+  if (!showSidebar) {
+    return manager.activeChannel ? (
+      <SocialChannelEditor
+        channel={manager.activeChannel}
+        lang={lang}
+        updateChannel={(patch) => manager.updateChannel(manager.activeChannel!.id, patch)}
+      />
+    ) : (
+      <Card className="flex min-h-[360px] items-center justify-center border-dashed p-6 text-center text-sm text-muted-foreground">
+        {txt(vi, "Chọn một kênh đã kết nối ở panel bên trái để bắt đầu quản lý.", "Select a connected channel from the left panel to start managing.")}
+      </Card>
+    );
+  }
+
   return (
     <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
       <Card className="h-fit overflow-hidden p-0">
@@ -53,8 +67,14 @@ export function SocialChannelManagerCard({ lang, manager: providedManager, showS
         </div>
 
         <div className="space-y-3 p-3">
-          <Button className="w-full" size="sm" variant="outline" onClick={() => manager.addChannel()}>
-            <Plus className="mr-2 h-4 w-4" />{txt(vi, "Thêm", "Add")} {SOCIAL_PLATFORM_LABELS[manager.activePlatform]}
+          <Button
+            className="w-full cursor-not-allowed opacity-50"
+            size="sm"
+            variant="outline"
+            disabled
+            title={txt(vi, "Provider này chưa được cấu hình OAuth/backend.", "This provider has no OAuth/backend configuration yet.")}
+          >
+            <Plus className="mr-2 h-4 w-4" />{txt(vi, "Chưa cấu hình", "Not configured")} {SOCIAL_PLATFORM_LABELS[manager.activePlatform]}
           </Button>
 
           {manager.platformChannels.length ? (
@@ -95,20 +115,6 @@ export function SocialChannelManagerCard({ lang, manager: providedManager, showS
 
 function SocialChannelListItem({ active, channel, lang, onRemove, onSelect }: { active: boolean; channel: SocialChannel; lang: Lang; onRemove: () => void; onSelect: () => void }) {
   const vi = lang === "vi";
-  if (!showSidebar) {
-    return manager.activeChannel ? (
-      <SocialChannelEditor
-        channel={manager.activeChannel}
-        lang={lang}
-        updateChannel={(patch) => manager.updateChannel(manager.activeChannel!.id, patch)}
-      />
-    ) : (
-      <Card className="flex min-h-[360px] items-center justify-center border-dashed p-6 text-center text-sm text-muted-foreground">
-        {txt(vi, "Chọn hoặc thêm một kênh để bắt đầu quản lý.", "Select or add a channel to start managing.")}
-      </Card>
-    );
-  }
-
   return (
     <div
       className={`group cursor-pointer rounded-xl border p-3 transition ${active ? "border-primary/70 bg-primary/10" : "border-border hover:border-primary/40"}`}

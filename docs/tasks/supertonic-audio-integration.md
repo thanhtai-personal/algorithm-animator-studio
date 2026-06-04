@@ -6,7 +6,7 @@ Supertonic được tích hợp như một TTS provider local cho KATA Studio. A
 
 ```bash
 python -m pip install "supertonic[serve]"
-supertonic serve --host 127.0.0.1 --port 7788 --cors http://localhost:3000
+supertonic serve --host 127.0.0.1 --port 6688 --cors http://localhost:3000
 ```
 
 Lần chạy đầu Supertonic sẽ tự tải model từ Hugging Face nếu dùng Python SDK chính thức.
@@ -14,7 +14,7 @@ Lần chạy đầu Supertonic sẽ tự tải model từ Hugging Face nếu dù
 ## Cấu hình `.env`
 
 ```env
-SUPERTONIC_BASE_URL=http://127.0.0.1:7788
+SUPERTONIC_BASE_URL=http://127.0.0.1:6688
 SUPERTONIC_MODEL=supertonic-3
 SUPERTONIC_DEFAULT_VOICE=M1
 SUPERTONIC_DEFAULT_LANG=en

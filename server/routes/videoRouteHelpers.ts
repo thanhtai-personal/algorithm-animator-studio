@@ -11,7 +11,7 @@ import { normalizeVideoBackgroundType } from "../services/VideoService";
 import { getAudioDurationSeconds } from "../utils/ffmpeg";
 import { ensureDirectoryExists, getLocalDateFolderName, getUniqueOutputFileWithExtension, sanitizeFileBaseName } from "../utils/audioOutput";
 
-const BACKGROUND_LIMITS = {
+export const BACKGROUND_LIMITS = {
   gif: 50 * 1024 * 1024,
   image: 20 * 1024 * 1024,
   video: 300 * 1024 * 1024,
@@ -58,7 +58,7 @@ function normalizeNumber(value: unknown, fallback: number, min: number, max: num
   return Math.min(max, Math.max(min, parsed));
 }
 
-async export function saveUploadedAudio(
+export async function saveUploadedAudio(
   file: Express.Multer.File,
   envOverrides: RuntimeEnvValues = {}
 ) {
@@ -91,7 +91,7 @@ async export function saveUploadedAudio(
 }
 
 
-async export function generateNarrationAudio(
+export async function generateNarrationAudio(
   body: GenerateVideoFromTextBody,
   envOverrides: RuntimeEnvValues = {}
 ) {
@@ -164,7 +164,7 @@ export function sendError(res: Response, error: unknown) {
   });
 }
 
-async export function validateBackgroundFile(
+export async function validateBackgroundFile(
   file: Express.Multer.File,
   backgroundType: keyof typeof BACKGROUND_LIMITS,
   envOverrides: RuntimeEnvValues = {}

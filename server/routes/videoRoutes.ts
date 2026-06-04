@@ -4,6 +4,7 @@ import path from "node:path";
 import { Router, type Request, type Response } from "express";
 import type { GenerateVideoFromAudioBody, GenerateVideoFromTextBody } from "../models/Video";
 import multer from "multer";
+import { GENERATED_PUBLIC_PATH, SERVER_ORIGIN, buildGeneratedFileUrl } from "../config/paths";
 import {
   generateVideoFromAudio,
   normalizeVideoAspectRatio,
@@ -11,11 +12,12 @@ import {
   normalizeVideoFitMode,
 } from "../services/VideoService";
 import { listGeneratedVideos } from "../utils/videoOutput";
+import { readEnvValues } from "../services/EnvFileService";
+import { resolveGeneratedResource } from "../services/ResourceService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
-import { generateNarrationAudio, resolveOptionalBackgroundMusic, saveUploadedAudio, sendError, validateBackgroundFile } from "./videoRouteHelpers";
+import { BACKGROUND_LIMITS, generateNarrationAudio, resolveOptionalBackgroundMusic, saveUploadedAudio, sendError, validateBackgroundFile } from "./videoRouteHelpers";
 
 const uploadDirectory = path.join(os.tmpdir(), "piper-react-video-backgrounds");
-const MAX_BACKGROUND_UPLOAD_BYTES = 300 * 1024 * 1024;
 
 const upload = multer({
   dest: uploadDirectory,
@@ -171,4 +173,3 @@ export function createVideoRouter() {
 
   return router;
 }
-

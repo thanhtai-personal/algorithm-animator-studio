@@ -1,0 +1,3205 @@
+{
+  "projectName": "AlgoShorts Studio",
+  "projectDescription": "Algorithm animation, voice-over and YouTube publishing studio.",
+  "languages": [
+    "css",
+    "html",
+    "javascript",
+    "json",
+    "markdown",
+    "text",
+    "typescript",
+    "yaml"
+  ],
+  "frameworks": [
+    "React",
+    "Vite",
+    "TypeScript",
+    "Express",
+    "Electron",
+    "Tailwind CSS",
+    "shadcn/Radix UI"
+  ],
+  "files": [
+    {
+      "path": ".agents/skills/algorithm-lecture-video/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 120,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/algorithm-lecture-video/agents/openai.yaml",
+      "language": "yaml",
+      "sizeLines": 5,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".agents/skills/reactjs/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 56,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".env",
+      "language": "text",
+      "sizeLines": 37,
+      "fileCategory": "data"
+    },
+    {
+      "path": ".env.example",
+      "language": "text",
+      "sizeLines": 42,
+      "fileCategory": "data"
+    },
+    {
+      "path": ".gitignore",
+      "language": "text",
+      "sizeLines": 31,
+      "fileCategory": "data"
+    },
+    {
+      "path": "AGENTS.md",
+      "language": "markdown",
+      "sizeLines": 17,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "README.md",
+      "language": "markdown",
+      "sizeLines": 4,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "api/ga-pageview.js",
+      "language": "javascript",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "components.json",
+      "language": "json",
+      "sizeLines": 21,
+      "fileCategory": "config"
+    },
+    {
+      "path": "docs/free-maze-racing-assets.md",
+      "language": "markdown",
+      "sizeLines": 39,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/mu-news-studio.md",
+      "language": "markdown",
+      "sizeLines": 39,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/short-studio-algorithms.md",
+      "language": "markdown",
+      "sizeLines": 174,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/tasks/ai-long-video-script-generation.md",
+      "language": "markdown",
+      "sizeLines": 284,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/tasks/animal-columns-animation.md",
+      "language": "markdown",
+      "sizeLines": 220,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/tasks/desktop-public-web-runtime.md",
+      "language": "markdown",
+      "sizeLines": 31,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/tasks/long-video-bubble-sort-script.md",
+      "language": "markdown",
+      "sizeLines": 312,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/tasks/short-vs-long-video-audio-export.md",
+      "language": "markdown",
+      "sizeLines": 104,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/tasks/social-auto-publishing.md",
+      "language": "markdown",
+      "sizeLines": 97,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/tasks/sorting-algorithm-tasks.md",
+      "language": "markdown",
+      "sizeLines": 349,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/tasks/supertonic-audio-integration.md",
+      "language": "markdown",
+      "sizeLines": 49,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/tasks/voice-and-youtube-integration.md",
+      "language": "markdown",
+      "sizeLines": 60,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "electron/main.cjs",
+      "language": "javascript",
+      "sizeLines": 327,
+      "fileCategory": "code"
+    },
+    {
+      "path": "electron/runtime-bootstrap.cjs",
+      "language": "javascript",
+      "sizeLines": 557,
+      "fileCategory": "code"
+    },
+    {
+      "path": "electron/setup.html",
+      "language": "html",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "eslint.config.js",
+      "language": "javascript",
+      "sizeLines": 27,
+      "fileCategory": "config"
+    },
+    {
+      "path": "index.html",
+      "language": "html",
+      "sizeLines": 42,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "models/en_US-ryan-medium.onnx.json.download",
+      "language": "text",
+      "sizeLines": 0,
+      "fileCategory": "data"
+    },
+    {
+      "path": "package.json",
+      "language": "json",
+      "sizeLines": 168,
+      "fileCategory": "config"
+    },
+    {
+      "path": "postcss.config.js",
+      "language": "javascript",
+      "sizeLines": 7,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/robots.txt",
+      "language": "text",
+      "sizeLines": 15,
+      "fileCategory": "data"
+    },
+    {
+      "path": "server/.env",
+      "language": "text",
+      "sizeLines": 3,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/config/elevenLabsConfig.ts",
+      "language": "typescript",
+      "sizeLines": 116,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/config/muNewsSources.ts",
+      "language": "typescript",
+      "sizeLines": 54,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/config/paths.ts",
+      "language": "typescript",
+      "sizeLines": 118,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/config/piperModels.ts",
+      "language": "typescript",
+      "sizeLines": 66,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/index.ts",
+      "language": "typescript",
+      "sizeLines": 76,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/models/ElevenLabs.ts",
+      "language": "typescript",
+      "sizeLines": 24,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/models/MuNews.ts",
+      "language": "typescript",
+      "sizeLines": 76,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/models/PiperModel.ts",
+      "language": "typescript",
+      "sizeLines": 20,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/models/Resource.ts",
+      "language": "typescript",
+      "sizeLines": 26,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/models/Supertonic.ts",
+      "language": "typescript",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/models/Video.ts",
+      "language": "typescript",
+      "sizeLines": 50,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/models/WebExtract.ts",
+      "language": "typescript",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/models/YoutubeUpload.ts",
+      "language": "typescript",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/routes/elevenLabsRoutes.ts",
+      "language": "typescript",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/routes/generateRoutes.ts",
+      "language": "typescript",
+      "sizeLines": 53,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/routes/healthRoutes.ts",
+      "language": "typescript",
+      "sizeLines": 26,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/routes/modelRoutes.ts",
+      "language": "typescript",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/routes/muNewsRoutes.ts",
+      "language": "typescript",
+      "sizeLines": 135,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/routes/musicLibraryRoutes.ts",
+      "language": "typescript",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/routes/piperRuntimeRoutes.ts",
+      "language": "typescript",
+      "sizeLines": 27,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/routes/resourceRoutes.ts",
+      "language": "typescript",
+      "sizeLines": 43,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/routes/storyReviewRoutes.ts",
+      "language": "typescript",
+      "sizeLines": 67,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/routes/supertonicRoutes.ts",
+      "language": "typescript",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/routes/systemRoutes.ts",
+      "language": "typescript",
+      "sizeLines": 133,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/routes/videoRoutes.ts",
+      "language": "typescript",
+      "sizeLines": 387,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/routes/webExtractRoutes.ts",
+      "language": "typescript",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/routes/youtubeRoutes.ts",
+      "language": "typescript",
+      "sizeLines": 167,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/services/ElevenLabsService.ts",
+      "language": "typescript",
+      "sizeLines": 120,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/services/EnvFileService.ts",
+      "language": "typescript",
+      "sizeLines": 96,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/services/MuNewsService.ts",
+      "language": "typescript",
+      "sizeLines": 366,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/services/MuNewsValidationService.ts",
+      "language": "typescript",
+      "sizeLines": 325,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/services/MusicLibraryService.ts",
+      "language": "typescript",
+      "sizeLines": 117,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/services/PiperModelInstallService.ts",
+      "language": "typescript",
+      "sizeLines": 85,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/services/PiperService.ts",
+      "language": "typescript",
+      "sizeLines": 356,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/services/ResourceService.ts",
+      "language": "typescript",
+      "sizeLines": 191,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/services/RuntimeEnvService.ts",
+      "language": "typescript",
+      "sizeLines": 75,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/services/StoryReviewVideoService.ts",
+      "language": "typescript",
+      "sizeLines": 121,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/services/SupertonicService.ts",
+      "language": "typescript",
+      "sizeLines": 229,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/services/TtsGenerationService.ts",
+      "language": "typescript",
+      "sizeLines": 302,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/services/VideoService.ts",
+      "language": "typescript",
+      "sizeLines": 289,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/services/WebExtractService.ts",
+      "language": "typescript",
+      "sizeLines": 218,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/services/YoutubeUploadHistoryService.ts",
+      "language": "typescript",
+      "sizeLines": 65,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/services/YoutubeUploadService.ts",
+      "language": "typescript",
+      "sizeLines": 239,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/utils/audioOutput.ts",
+      "language": "typescript",
+      "sizeLines": 88,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/utils/ffmpeg.ts",
+      "language": "typescript",
+      "sizeLines": 102,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/utils/modelFiles.ts",
+      "language": "typescript",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/utils/text.ts",
+      "language": "typescript",
+      "sizeLines": 47,
+      "fileCategory": "code"
+    },
+    {
+      "path": "server/utils/videoOutput.ts",
+      "language": "typescript",
+      "sizeLines": 113,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/App.css",
+      "language": "css",
+      "sizeLines": 43,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/App.tsx",
+      "language": "typescript",
+      "sizeLines": 75,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/AppHeader.tsx",
+      "language": "typescript",
+      "sizeLines": 227,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/NavLink.tsx",
+      "language": "typescript",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/PublicWebBanner.tsx",
+      "language": "typescript",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/YoutubeMetadataPreview.tsx",
+      "language": "typescript",
+      "sizeLines": 59,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/accordion.tsx",
+      "language": "typescript",
+      "sizeLines": 53,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/alert-dialog.tsx",
+      "language": "typescript",
+      "sizeLines": 105,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/alert.tsx",
+      "language": "typescript",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/aspect-ratio.tsx",
+      "language": "typescript",
+      "sizeLines": 6,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/avatar.tsx",
+      "language": "typescript",
+      "sizeLines": 39,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/badge.tsx",
+      "language": "typescript",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/breadcrumb.tsx",
+      "language": "typescript",
+      "sizeLines": 91,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/button.tsx",
+      "language": "typescript",
+      "sizeLines": 48,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/calendar.tsx",
+      "language": "typescript",
+      "sizeLines": 55,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/card.tsx",
+      "language": "typescript",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/carousel.tsx",
+      "language": "typescript",
+      "sizeLines": 225,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/chart.tsx",
+      "language": "typescript",
+      "sizeLines": 304,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/checkbox.tsx",
+      "language": "typescript",
+      "sizeLines": 27,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/collapsible.tsx",
+      "language": "typescript",
+      "sizeLines": 10,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/command.tsx",
+      "language": "typescript",
+      "sizeLines": 133,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/context-menu.tsx",
+      "language": "typescript",
+      "sizeLines": 179,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/dialog.tsx",
+      "language": "typescript",
+      "sizeLines": 96,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/drawer.tsx",
+      "language": "typescript",
+      "sizeLines": 88,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/dropdown-menu.tsx",
+      "language": "typescript",
+      "sizeLines": 180,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/form.tsx",
+      "language": "typescript",
+      "sizeLines": 130,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/hover-card.tsx",
+      "language": "typescript",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/input-otp.tsx",
+      "language": "typescript",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/input.tsx",
+      "language": "typescript",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/label.tsx",
+      "language": "typescript",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/menubar.tsx",
+      "language": "typescript",
+      "sizeLines": 208,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/navigation-menu.tsx",
+      "language": "typescript",
+      "sizeLines": 121,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/pagination.tsx",
+      "language": "typescript",
+      "sizeLines": 82,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/popover.tsx",
+      "language": "typescript",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/progress.tsx",
+      "language": "typescript",
+      "sizeLines": 24,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/radio-group.tsx",
+      "language": "typescript",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/resizable.tsx",
+      "language": "typescript",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/scroll-area.tsx",
+      "language": "typescript",
+      "sizeLines": 39,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/select.tsx",
+      "language": "typescript",
+      "sizeLines": 144,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/separator.tsx",
+      "language": "typescript",
+      "sizeLines": 21,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/sheet.tsx",
+      "language": "typescript",
+      "sizeLines": 108,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/sidebar.tsx",
+      "language": "typescript",
+      "sizeLines": 638,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/skeleton.tsx",
+      "language": "typescript",
+      "sizeLines": 8,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/slider.tsx",
+      "language": "typescript",
+      "sizeLines": 24,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/sonner.tsx",
+      "language": "typescript",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/switch.tsx",
+      "language": "typescript",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/table.tsx",
+      "language": "typescript",
+      "sizeLines": 73,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/tabs.tsx",
+      "language": "typescript",
+      "sizeLines": 54,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/textarea.tsx",
+      "language": "typescript",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/toast.tsx",
+      "language": "typescript",
+      "sizeLines": 112,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/toaster.tsx",
+      "language": "typescript",
+      "sizeLines": 25,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/toggle-group.tsx",
+      "language": "typescript",
+      "sizeLines": 50,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/toggle.tsx",
+      "language": "typescript",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/tooltip.tsx",
+      "language": "typescript",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ui/use-toast.ts",
+      "language": "typescript",
+      "sizeLines": 4,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/mu-news/components/MuNewsFilterPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 129,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/mu-news/components/MuNewsPreviewPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 124,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/mu-news/components/MuNewsScriptPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 124,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/mu-news/components/MuNewsSourcesPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 166,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/mu-news/components/MuNewsVideoPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 134,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/mu-news/components/MuNewsVoicePanel.tsx",
+      "language": "typescript",
+      "sizeLines": 176,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/mu-news/muNewsApi.ts",
+      "language": "typescript",
+      "sizeLines": 77,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/mu-news/muNewsPrompt.ts",
+      "language": "typescript",
+      "sizeLines": 47,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/mu-news/muNewsUtils.ts",
+      "language": "typescript",
+      "sizeLines": 122,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/mu-news/types.ts",
+      "language": "typescript",
+      "sizeLines": 114,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/mu-news/useMuNewsStudio.ts",
+      "language": "typescript",
+      "sizeLines": 394,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/mu-news/useMuNewsValidation.ts",
+      "language": "typescript",
+      "sizeLines": 106,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-author/components/StoryChapterEditor.tsx",
+      "language": "typescript",
+      "sizeLines": 82,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-author/components/StoryDetailsPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 72,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-author/components/StoryLibraryPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 89,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-author/storyAuthorStorage.ts",
+      "language": "typescript",
+      "sizeLines": 42,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-author/types.ts",
+      "language": "typescript",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-author/useStoryAuthorStudio.ts",
+      "language": "typescript",
+      "sizeLines": 116,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-review/components/ReviewRenderPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 73,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-review/components/ReviewScenesPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 79,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-review/components/ReviewScriptPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-review/components/ReviewStoryPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 63,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-review/prompts.ts",
+      "language": "typescript",
+      "sizeLines": 57,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-review/storyReviewApi.ts",
+      "language": "typescript",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-review/types.ts",
+      "language": "typescript",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-review/useStoryReviewStudio.ts",
+      "language": "typescript",
+      "sizeLines": 131,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-video/components/StoryExtractPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 60,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-video/components/StoryTopicPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-video/components/StoryVideoPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 100,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-video/components/StoryVoicePanel.tsx",
+      "language": "typescript",
+      "sizeLines": 106,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-video/storyPresets.ts",
+      "language": "typescript",
+      "sizeLines": 45,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-video/storyVideoApi.ts",
+      "language": "typescript",
+      "sizeLines": 65,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-video/types.ts",
+      "language": "typescript",
+      "sizeLines": 65,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/features/story-video/useStoryVideoStudio.ts",
+      "language": "typescript",
+      "sizeLines": 349,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/hooks/use-mobile.tsx",
+      "language": "typescript",
+      "sizeLines": 20,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/hooks/use-toast.ts",
+      "language": "typescript",
+      "sizeLines": 187,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/index.css",
+      "language": "css",
+      "sizeLines": 106,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/lib/algorithmWorld.ts",
+      "language": "typescript",
+      "sizeLines": 401,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithmWorldFrameBuilder.ts",
+      "language": "typescript",
+      "sizeLines": 124,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithmWorldRaceRunner.ts",
+      "language": "typescript",
+      "sizeLines": 401,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithmWorldRunner.ts",
+      "language": "typescript",
+      "sizeLines": 365,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithmWorldSearchStrategies.ts",
+      "language": "typescript",
+      "sizeLines": 294,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithmWorldTournament.ts",
+      "language": "typescript",
+      "sizeLines": 269,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithmWorldVehicles.ts",
+      "language": "typescript",
+      "sizeLines": 27,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms.ts",
+      "language": "typescript",
+      "sizeLines": 2,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/complexity.ts",
+      "language": "typescript",
+      "sizeLines": 39,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/custom.ts",
+      "language": "typescript",
+      "sizeLines": 56,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/frame.ts",
+      "language": "typescript",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/graph/astar.ts",
+      "language": "typescript",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/graph/bfs.ts",
+      "language": "typescript",
+      "sizeLines": 73,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/graph/dfs.ts",
+      "language": "typescript",
+      "sizeLines": 61,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/graph/dijkstra.ts",
+      "language": "typescript",
+      "sizeLines": 79,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/graph/utils.ts",
+      "language": "typescript",
+      "sizeLines": 95,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/index.ts",
+      "language": "typescript",
+      "sizeLines": 122,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/search/binary.ts",
+      "language": "typescript",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/search/linear.ts",
+      "language": "typescript",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/bitonic.ts",
+      "language": "typescript",
+      "sizeLines": 95,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/bogo.ts",
+      "language": "typescript",
+      "sizeLines": 142,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/bubble.ts",
+      "language": "typescript",
+      "sizeLines": 47,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/bucket.ts",
+      "language": "typescript",
+      "sizeLines": 73,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/cocktail.ts",
+      "language": "typescript",
+      "sizeLines": 60,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/comb.ts",
+      "language": "typescript",
+      "sizeLines": 47,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/counting.ts",
+      "language": "typescript",
+      "sizeLines": 139,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/cycle.ts",
+      "language": "typescript",
+      "sizeLines": 110,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/flash.ts",
+      "language": "typescript",
+      "sizeLines": 163,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/gnome.ts",
+      "language": "typescript",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/heap.ts",
+      "language": "typescript",
+      "sizeLines": 78,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/insertion.ts",
+      "language": "typescript",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/intro.ts",
+      "language": "typescript",
+      "sizeLines": 105,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/merge.ts",
+      "language": "typescript",
+      "sizeLines": 59,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/oddEven.ts",
+      "language": "typescript",
+      "sizeLines": 72,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/pancake.ts",
+      "language": "typescript",
+      "sizeLines": 76,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/pigeonhole.ts",
+      "language": "typescript",
+      "sizeLines": 139,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/quick.ts",
+      "language": "typescript",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/radix.ts",
+      "language": "typescript",
+      "sizeLines": 74,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/selection.ts",
+      "language": "typescript",
+      "sizeLines": 43,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/shell.ts",
+      "language": "typescript",
+      "sizeLines": 49,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/smooth.ts",
+      "language": "typescript",
+      "sizeLines": 123,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/stooge.ts",
+      "language": "typescript",
+      "sizeLines": 70,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/strand.ts",
+      "language": "typescript",
+      "sizeLines": 91,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/tim.ts",
+      "language": "typescript",
+      "sizeLines": 72,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/tournament.ts",
+      "language": "typescript",
+      "sizeLines": 107,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/sorting/treeSort.ts",
+      "language": "typescript",
+      "sizeLines": 80,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/algorithms/types.ts",
+      "language": "typescript",
+      "sizeLines": 232,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/analytics.ts",
+      "language": "typescript",
+      "sizeLines": 84,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/animalColumns.ts",
+      "language": "typescript",
+      "sizeLines": 133,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/audio.ts",
+      "language": "typescript",
+      "sizeLines": 401,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/auth.ts",
+      "language": "typescript",
+      "sizeLines": 183,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/backgroundMusic.ts",
+      "language": "typescript",
+      "sizeLines": 54,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/bitonicKineticTypography.ts",
+      "language": "typescript",
+      "sizeLines": 186,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/bitonicLongContentTimeline.ts",
+      "language": "typescript",
+      "sizeLines": 180,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/canvasText.ts",
+      "language": "typescript",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/exportFileName.ts",
+      "language": "typescript",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/focusPointerRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 173,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/generatedAssetsApi.ts",
+      "language": "typescript",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/i18n.ts",
+      "language": "typescript",
+      "sizeLines": 128,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/insertionLongContentTimeline.ts",
+      "language": "typescript",
+      "sizeLines": 204,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/kineticTextEffects.ts",
+      "language": "typescript",
+      "sizeLines": 181,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/kineticTypographyRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 400,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/longContentData.ts",
+      "language": "typescript",
+      "sizeLines": 311,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/longContentRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 397,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/longContentTimeline.ts",
+      "language": "typescript",
+      "sizeLines": 333,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/longVideoTypes.ts",
+      "language": "typescript",
+      "sizeLines": 25,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/longVideoVoice.ts",
+      "language": "typescript",
+      "sizeLines": 133,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/musicLibrary.ts",
+      "language": "typescript",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/oddEvenKineticTypography.ts",
+      "language": "typescript",
+      "sizeLines": 173,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/oddEvenLongContentTimeline.ts",
+      "language": "typescript",
+      "sizeLines": 119,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/pancakeKineticTypography.ts",
+      "language": "typescript",
+      "sizeLines": 183,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/pancakeLongContentTimeline.ts",
+      "language": "typescript",
+      "sizeLines": 138,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderer.ts",
+      "language": "typescript",
+      "sizeLines": 2,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/algorithmWorldRaceRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 407,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/algorithmWorldRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 330,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/algorithmWorldTournamentRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 345,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/algorithmWorldVehicleRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 75,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/animalColumnRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 304,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/barRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 393,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/bitonicRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 148,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/bogoSortRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 210,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/bucketContentsRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 154,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/codePanelRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 135,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/countingSortRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 390,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/cycleSortRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 130,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/flashSortRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 165,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/graphRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 356,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/index.ts",
+      "language": "typescript",
+      "sizeLines": 205,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/pancakeSortRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 96,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/shapes.ts",
+      "language": "typescript",
+      "sizeLines": 20,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/smoothSortRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 95,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/sortEssenceRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 387,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/sortEssenceTitles.ts",
+      "language": "typescript",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/stoogeSortRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 90,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/theme.ts",
+      "language": "typescript",
+      "sizeLines": 16,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/tournamentRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 131,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/renderers/treeSortRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 90,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/runtimeApi.ts",
+      "language": "typescript",
+      "sizeLines": 24,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/runtimeSettings.ts",
+      "language": "typescript",
+      "sizeLines": 72,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/selectSounds.ts",
+      "language": "typescript",
+      "sizeLines": 60,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/shortKineticBitonicRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 211,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/shortKineticGraphRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 301,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/shortKineticPancakeRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 230,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/shortKineticTypographyRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 401,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/shortVideoTypes.ts",
+      "language": "typescript",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/socialPublishing.ts",
+      "language": "typescript",
+      "sizeLines": 212,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/sprites/LandTileMapSprite.ts",
+      "language": "typescript",
+      "sizeLines": 93,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/sprites/Sprite.ts",
+      "language": "typescript",
+      "sizeLines": 187,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/studioMediaRegistry.ts",
+      "language": "typescript",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/styledLongContentRenderer.ts",
+      "language": "typescript",
+      "sizeLines": 295,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/utils.ts",
+      "language": "typescript",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/voiceApi.ts",
+      "language": "typescript",
+      "sizeLines": 155,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/youtubeApi.ts",
+      "language": "typescript",
+      "sizeLines": 87,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/lib/youtubeMetadata.ts",
+      "language": "typescript",
+      "sizeLines": 347,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/main.tsx",
+      "language": "typescript",
+      "sizeLines": 6,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/AlgorithmWorld.tsx",
+      "language": "typescript",
+      "sizeLines": 78,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/Auth.tsx",
+      "language": "typescript",
+      "sizeLines": 91,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/GeneratedAssets.tsx",
+      "language": "typescript",
+      "sizeLines": 220,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/Index.tsx",
+      "language": "typescript",
+      "sizeLines": 63,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/LongContent.tsx",
+      "language": "typescript",
+      "sizeLines": 302,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/MuNewsStudio.tsx",
+      "language": "typescript",
+      "sizeLines": 135,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/NotFound.tsx",
+      "language": "typescript",
+      "sizeLines": 25,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/Settings.tsx",
+      "language": "typescript",
+      "sizeLines": 420,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/SocialPublishing.tsx",
+      "language": "typescript",
+      "sizeLines": 396,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/StoryAuthorStudio.tsx",
+      "language": "typescript",
+      "sizeLines": 66,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/StoryReviewStudio.tsx",
+      "language": "typescript",
+      "sizeLines": 146,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/StoryVideoStudio.tsx",
+      "language": "typescript",
+      "sizeLines": 96,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/YoutubePublishing.tsx",
+      "language": "typescript",
+      "sizeLines": 293,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/algorithm-world/PhaserMazePreview.tsx",
+      "language": "typescript",
+      "sizeLines": 766,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/algorithm-world/PhaserMazeRaceStyle.ts",
+      "language": "typescript",
+      "sizeLines": 56,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/algorithm-world/TournamentMusicControls.tsx",
+      "language": "typescript",
+      "sizeLines": 91,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/algorithm-world/WorldSetupPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 398,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/long-content/BackgroundImagePanel.tsx",
+      "language": "typescript",
+      "sizeLines": 53,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/long-content/KineticSfxPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/long-content/LongContentTabs.tsx",
+      "language": "typescript",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/long-content/MusicPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 80,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/long-content/ScriptPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 171,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/long-content/VoicePanel.tsx",
+      "language": "typescript",
+      "sizeLines": 130,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/long-content/bitonicCuePosition.ts",
+      "language": "typescript",
+      "sizeLines": 127,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/long-content/oddEvenCuePosition.ts",
+      "language": "typescript",
+      "sizeLines": 119,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/long-content/pancakeCuePosition.ts",
+      "language": "typescript",
+      "sizeLines": 117,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/long-content/studioHelpers.ts",
+      "language": "typescript",
+      "sizeLines": 390,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/long-content/useKineticSlideSfx.ts",
+      "language": "typescript",
+      "sizeLines": 58,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/long-content/useLongContentMusic.ts",
+      "language": "typescript",
+      "sizeLines": 87,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/long-content/useLongContentStudio.ts",
+      "language": "typescript",
+      "sizeLines": 412,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/long-content/useVideoBackgroundImages.ts",
+      "language": "typescript",
+      "sizeLines": 76,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/long-content/voiceCache.ts",
+      "language": "typescript",
+      "sizeLines": 125,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/long-content/voiceTiming.ts",
+      "language": "typescript",
+      "sizeLines": 65,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/studio/CenterPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 72,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/studio/LeftPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 230,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/studio/RightPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 262,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/studio/ShortMusicPanel.tsx",
+      "language": "typescript",
+      "sizeLines": 103,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/studio/demoArrays.ts",
+      "language": "typescript",
+      "sizeLines": 220,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/studio/exportFormats.ts",
+      "language": "typescript",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/studio/renderStudioPreview.ts",
+      "language": "typescript",
+      "sizeLines": 59,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/studio/tournamentTimeline.ts",
+      "language": "typescript",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/studio/useAlgorithmStudio.ts",
+      "language": "typescript",
+      "sizeLines": 768,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/studio/videoExport.ts",
+      "language": "typescript",
+      "sizeLines": 240,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/test/MuNewsValidationService.test.ts",
+      "language": "typescript",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/test/example.test.ts",
+      "language": "typescript",
+      "sizeLines": 43,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/test/muNewsUtils.test.ts",
+      "language": "typescript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/test/setup.ts",
+      "language": "typescript",
+      "sizeLines": 16,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/vite-env.d.ts",
+      "language": "typescript",
+      "sizeLines": 2,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tailwind.config.ts",
+      "language": "typescript",
+      "sizeLines": 92,
+      "fileCategory": "config"
+    },
+    {
+      "path": "tsconfig.app.json",
+      "language": "json",
+      "sizeLines": 31,
+      "fileCategory": "config"
+    },
+    {
+      "path": "tsconfig.json",
+      "language": "json",
+      "sizeLines": 16,
+      "fileCategory": "config"
+    },
+    {
+      "path": "tsconfig.node.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "vercel.json",
+      "language": "json",
+      "sizeLines": 13,
+      "fileCategory": "config"
+    },
+    {
+      "path": "vite.config.ts",
+      "language": "typescript",
+      "sizeLines": 30,
+      "fileCategory": "config"
+    },
+    {
+      "path": "vitest.config.ts",
+      "language": "typescript",
+      "sizeLines": 17,
+      "fileCategory": "config"
+    }
+  ],
+  "importMap": {
+    ".agents/skills/algorithm-lecture-video/SKILL.md": [],
+    ".agents/skills/algorithm-lecture-video/agents/openai.yaml": [],
+    ".agents/skills/reactjs/SKILL.md": [],
+    ".env": [],
+    ".env.example": [],
+    ".gitignore": [],
+    "AGENTS.md": [],
+    "README.md": [],
+    "api/ga-pageview.js": [],
+    "components.json": [],
+    "docs/free-maze-racing-assets.md": [],
+    "docs/mu-news-studio.md": [],
+    "docs/short-studio-algorithms.md": [],
+    "docs/tasks/ai-long-video-script-generation.md": [],
+    "docs/tasks/animal-columns-animation.md": [],
+    "docs/tasks/desktop-public-web-runtime.md": [],
+    "docs/tasks/long-video-bubble-sort-script.md": [],
+    "docs/tasks/short-vs-long-video-audio-export.md": [],
+    "docs/tasks/social-auto-publishing.md": [],
+    "docs/tasks/sorting-algorithm-tasks.md": [],
+    "docs/tasks/supertonic-audio-integration.md": [],
+    "docs/tasks/voice-and-youtube-integration.md": [],
+    "electron/main.cjs": [
+      "electron/runtime-bootstrap.cjs"
+    ],
+    "electron/runtime-bootstrap.cjs": [],
+    "electron/setup.html": [],
+    "eslint.config.js": [],
+    "index.html": [],
+    "models/en_US-ryan-medium.onnx.json.download": [],
+    "package.json": [],
+    "postcss.config.js": [],
+    "public/robots.txt": [],
+    "server/.env": [],
+    "server/config/elevenLabsConfig.ts": [
+      "server/services/EnvFileService.ts",
+      "server/config/paths.ts",
+      "server/models/ElevenLabs.ts"
+    ],
+    "server/config/muNewsSources.ts": [
+      "server/models/MuNews.ts"
+    ],
+    "server/config/paths.ts": [],
+    "server/config/piperModels.ts": [
+      "server/config/paths.ts",
+      "server/models/PiperModel.ts"
+    ],
+    "server/index.ts": [
+      "server/config/paths.ts",
+      "server/routes/elevenLabsRoutes.ts",
+      "server/routes/generateRoutes.ts",
+      "server/routes/healthRoutes.ts",
+      "server/routes/musicLibraryRoutes.ts",
+      "server/routes/muNewsRoutes.ts",
+      "server/routes/modelRoutes.ts",
+      "server/routes/piperRuntimeRoutes.ts",
+      "server/routes/systemRoutes.ts",
+      "server/routes/supertonicRoutes.ts",
+      "server/routes/storyReviewRoutes.ts",
+      "server/routes/videoRoutes.ts",
+      "server/routes/webExtractRoutes.ts",
+      "server/routes/resourceRoutes.ts",
+      "server/routes/youtubeRoutes.ts",
+      "server/services/RuntimeEnvService.ts",
+      "server/services/EnvFileService.ts"
+    ],
+    "server/models/ElevenLabs.ts": [],
+    "server/models/MuNews.ts": [],
+    "server/models/PiperModel.ts": [],
+    "server/models/Resource.ts": [],
+    "server/models/Supertonic.ts": [],
+    "server/models/Video.ts": [],
+    "server/models/WebExtract.ts": [],
+    "server/models/YoutubeUpload.ts": [],
+    "server/routes/elevenLabsRoutes.ts": [
+      "server/models/ElevenLabs.ts",
+      "server/services/ElevenLabsService.ts",
+      "server/services/RuntimeEnvService.ts"
+    ],
+    "server/routes/generateRoutes.ts": [
+      "server/models/PiperModel.ts",
+      "server/services/TtsGenerationService.ts",
+      "server/services/RuntimeEnvService.ts"
+    ],
+    "server/routes/healthRoutes.ts": [
+      "server/config/paths.ts",
+      "server/services/RuntimeEnvService.ts",
+      "server/services/EnvFileService.ts"
+    ],
+    "server/routes/modelRoutes.ts": [
+      "server/config/paths.ts",
+      "server/config/piperModels.ts",
+      "server/services/EnvFileService.ts",
+      "server/services/RuntimeEnvService.ts",
+      "server/utils/modelFiles.ts"
+    ],
+    "server/routes/muNewsRoutes.ts": [
+      "server/config/muNewsSources.ts",
+      "server/models/MuNews.ts",
+      "server/services/MuNewsService.ts",
+      "server/services/MuNewsValidationService.ts",
+      "server/services/ResourceService.ts",
+      "server/services/VideoService.ts",
+      "server/services/RuntimeEnvService.ts"
+    ],
+    "server/routes/musicLibraryRoutes.ts": [
+      "server/services/MusicLibraryService.ts",
+      "server/services/RuntimeEnvService.ts"
+    ],
+    "server/routes/piperRuntimeRoutes.ts": [
+      "server/services/PiperModelInstallService.ts",
+      "server/services/RuntimeEnvService.ts"
+    ],
+    "server/routes/resourceRoutes.ts": [
+      "server/services/ResourceService.ts",
+      "server/services/RuntimeEnvService.ts",
+      "server/models/Resource.ts"
+    ],
+    "server/routes/storyReviewRoutes.ts": [
+      "server/services/RuntimeEnvService.ts",
+      "server/services/StoryReviewVideoService.ts",
+      "server/services/VideoService.ts"
+    ],
+    "server/routes/supertonicRoutes.ts": [
+      "server/models/Supertonic.ts",
+      "server/services/SupertonicService.ts",
+      "server/services/RuntimeEnvService.ts"
+    ],
+    "server/routes/systemRoutes.ts": [],
+    "server/routes/videoRoutes.ts": [
+      "server/models/Video.ts",
+      "server/services/ResourceService.ts",
+      "server/services/TtsGenerationService.ts",
+      "server/services/ElevenLabsService.ts",
+      "server/services/VideoService.ts",
+      "server/utils/ffmpeg.ts",
+      "server/utils/videoOutput.ts",
+      "server/utils/audioOutput.ts",
+      "server/config/paths.ts",
+      "server/services/EnvFileService.ts",
+      "server/services/RuntimeEnvService.ts"
+    ],
+    "server/routes/webExtractRoutes.ts": [
+      "server/models/WebExtract.ts",
+      "server/services/WebExtractService.ts"
+    ],
+    "server/routes/youtubeRoutes.ts": [
+      "server/models/YoutubeUpload.ts",
+      "server/services/YoutubeUploadService.ts",
+      "server/services/YoutubeUploadHistoryService.ts",
+      "server/utils/videoOutput.ts",
+      "server/services/RuntimeEnvService.ts"
+    ],
+    "server/services/ElevenLabsService.ts": [
+      "server/config/paths.ts",
+      "server/services/EnvFileService.ts",
+      "server/config/elevenLabsConfig.ts",
+      "server/models/ElevenLabs.ts",
+      "server/utils/audioOutput.ts"
+    ],
+    "server/services/EnvFileService.ts": [
+      "server/config/paths.ts"
+    ],
+    "server/services/MuNewsService.ts": [
+      "server/config/muNewsSources.ts",
+      "server/models/MuNews.ts",
+      "server/services/MuNewsValidationService.ts"
+    ],
+    "server/services/MuNewsValidationService.ts": [
+      "server/models/MuNews.ts"
+    ],
+    "server/services/MusicLibraryService.ts": [
+      "server/config/paths.ts",
+      "server/services/EnvFileService.ts"
+    ],
+    "server/services/PiperModelInstallService.ts": [
+      "server/config/paths.ts",
+      "server/config/piperModels.ts",
+      "server/services/EnvFileService.ts",
+      "server/services/RuntimeEnvService.ts",
+      "server/utils/modelFiles.ts"
+    ],
+    "server/services/PiperService.ts": [
+      "server/utils/text.ts"
+    ],
+    "server/services/ResourceService.ts": [
+      "server/config/paths.ts",
+      "server/models/Resource.ts",
+      "server/services/EnvFileService.ts"
+    ],
+    "server/services/RuntimeEnvService.ts": [
+      "server/config/paths.ts",
+      "server/services/EnvFileService.ts"
+    ],
+    "server/services/StoryReviewVideoService.ts": [
+      "server/models/Video.ts",
+      "server/utils/videoOutput.ts",
+      "server/utils/ffmpeg.ts",
+      "server/services/EnvFileService.ts"
+    ],
+    "server/services/SupertonicService.ts": [
+      "server/config/paths.ts",
+      "server/models/Supertonic.ts",
+      "server/utils/audioOutput.ts",
+      "server/services/EnvFileService.ts"
+    ],
+    "server/services/TtsGenerationService.ts": [
+      "server/config/paths.ts",
+      "server/services/EnvFileService.ts",
+      "server/services/RuntimeEnvService.ts",
+      "server/config/piperModels.ts",
+      "server/models/PiperModel.ts",
+      "server/utils/audioOutput.ts",
+      "server/utils/modelFiles.ts",
+      "server/utils/text.ts",
+      "server/services/PiperService.ts"
+    ],
+    "server/services/VideoService.ts": [
+      "server/models/Video.ts",
+      "server/utils/ffmpeg.ts",
+      "server/services/EnvFileService.ts",
+      "server/utils/videoOutput.ts"
+    ],
+    "server/services/WebExtractService.ts": [
+      "server/models/WebExtract.ts"
+    ],
+    "server/services/YoutubeUploadHistoryService.ts": [
+      "server/config/paths.ts",
+      "server/models/Resource.ts",
+      "server/utils/audioOutput.ts",
+      "server/services/EnvFileService.ts"
+    ],
+    "server/services/YoutubeUploadService.ts": [
+      "server/config/paths.ts",
+      "server/services/EnvFileService.ts",
+      "server/models/YoutubeUpload.ts"
+    ],
+    "server/utils/audioOutput.ts": [],
+    "server/utils/ffmpeg.ts": [
+      "server/config/paths.ts",
+      "server/services/EnvFileService.ts",
+      "server/services/RuntimeEnvService.ts",
+      "server/utils/text.ts"
+    ],
+    "server/utils/modelFiles.ts": [
+      "server/models/PiperModel.ts"
+    ],
+    "server/utils/text.ts": [
+      "server/models/PiperModel.ts"
+    ],
+    "server/utils/videoOutput.ts": [
+      "server/config/paths.ts",
+      "server/services/EnvFileService.ts",
+      "server/utils/audioOutput.ts"
+    ],
+    "src/App.css": [],
+    "src/App.tsx": [
+      "src/components/PublicWebBanner.tsx",
+      "src/pages/AlgorithmWorld.tsx",
+      "src/pages/Auth.tsx",
+      "src/pages/GeneratedAssets.tsx",
+      "src/pages/Index.tsx",
+      "src/pages/LongContent.tsx",
+      "src/pages/NotFound.tsx",
+      "src/pages/MuNewsStudio.tsx",
+      "src/pages/Settings.tsx",
+      "src/pages/StoryAuthorStudio.tsx",
+      "src/pages/StoryReviewStudio.tsx",
+      "src/pages/StoryVideoStudio.tsx",
+      "src/pages/YoutubePublishing.tsx"
+    ],
+    "src/components/AppHeader.tsx": [],
+    "src/components/NavLink.tsx": [],
+    "src/components/PublicWebBanner.tsx": [],
+    "src/components/YoutubeMetadataPreview.tsx": [],
+    "src/components/ui/accordion.tsx": [],
+    "src/components/ui/alert-dialog.tsx": [],
+    "src/components/ui/alert.tsx": [],
+    "src/components/ui/aspect-ratio.tsx": [],
+    "src/components/ui/avatar.tsx": [],
+    "src/components/ui/badge.tsx": [],
+    "src/components/ui/breadcrumb.tsx": [],
+    "src/components/ui/button.tsx": [],
+    "src/components/ui/calendar.tsx": [],
+    "src/components/ui/card.tsx": [],
+    "src/components/ui/carousel.tsx": [],
+    "src/components/ui/chart.tsx": [],
+    "src/components/ui/checkbox.tsx": [],
+    "src/components/ui/collapsible.tsx": [],
+    "src/components/ui/command.tsx": [],
+    "src/components/ui/context-menu.tsx": [],
+    "src/components/ui/dialog.tsx": [],
+    "src/components/ui/drawer.tsx": [],
+    "src/components/ui/dropdown-menu.tsx": [],
+    "src/components/ui/form.tsx": [],
+    "src/components/ui/hover-card.tsx": [],
+    "src/components/ui/input-otp.tsx": [],
+    "src/components/ui/input.tsx": [],
+    "src/components/ui/label.tsx": [],
+    "src/components/ui/menubar.tsx": [],
+    "src/components/ui/navigation-menu.tsx": [],
+    "src/components/ui/pagination.tsx": [],
+    "src/components/ui/popover.tsx": [],
+    "src/components/ui/progress.tsx": [],
+    "src/components/ui/radio-group.tsx": [],
+    "src/components/ui/resizable.tsx": [],
+    "src/components/ui/scroll-area.tsx": [],
+    "src/components/ui/select.tsx": [],
+    "src/components/ui/separator.tsx": [],
+    "src/components/ui/sheet.tsx": [],
+    "src/components/ui/sidebar.tsx": [],
+    "src/components/ui/skeleton.tsx": [],
+    "src/components/ui/slider.tsx": [],
+    "src/components/ui/sonner.tsx": [],
+    "src/components/ui/switch.tsx": [],
+    "src/components/ui/table.tsx": [],
+    "src/components/ui/tabs.tsx": [],
+    "src/components/ui/textarea.tsx": [],
+    "src/components/ui/toast.tsx": [],
+    "src/components/ui/toaster.tsx": [],
+    "src/components/ui/toggle-group.tsx": [],
+    "src/components/ui/toggle.tsx": [],
+    "src/components/ui/tooltip.tsx": [],
+    "src/components/ui/use-toast.ts": [],
+    "src/features/mu-news/components/MuNewsFilterPanel.tsx": [
+      "src/features/mu-news/types.ts",
+      "src/features/mu-news/useMuNewsStudio.ts"
+    ],
+    "src/features/mu-news/components/MuNewsPreviewPanel.tsx": [
+      "src/features/mu-news/types.ts",
+      "src/features/mu-news/useMuNewsStudio.ts"
+    ],
+    "src/features/mu-news/components/MuNewsScriptPanel.tsx": [
+      "src/features/mu-news/muNewsUtils.ts",
+      "src/features/mu-news/useMuNewsStudio.ts"
+    ],
+    "src/features/mu-news/components/MuNewsSourcesPanel.tsx": [
+      "src/features/mu-news/useMuNewsStudio.ts"
+    ],
+    "src/features/mu-news/components/MuNewsVideoPanel.tsx": [
+      "src/features/mu-news/useMuNewsStudio.ts"
+    ],
+    "src/features/mu-news/components/MuNewsVoicePanel.tsx": [
+      "src/features/mu-news/types.ts",
+      "src/features/mu-news/useMuNewsStudio.ts"
+    ],
+    "src/features/mu-news/muNewsApi.ts": [
+      "src/features/mu-news/types.ts"
+    ],
+    "src/features/mu-news/muNewsPrompt.ts": [
+      "src/features/mu-news/types.ts"
+    ],
+    "src/features/mu-news/muNewsUtils.ts": [
+      "src/features/mu-news/types.ts"
+    ],
+    "src/features/mu-news/types.ts": [],
+    "src/features/mu-news/useMuNewsStudio.ts": [
+      "src/features/mu-news/muNewsApi.ts",
+      "src/features/mu-news/muNewsPrompt.ts",
+      "src/features/mu-news/muNewsUtils.ts",
+      "src/features/mu-news/types.ts",
+      "src/features/mu-news/useMuNewsValidation.ts"
+    ],
+    "src/features/mu-news/useMuNewsValidation.ts": [
+      "src/features/mu-news/muNewsApi.ts",
+      "src/features/mu-news/types.ts"
+    ],
+    "src/features/story-author/components/StoryChapterEditor.tsx": [
+      "src/features/story-author/useStoryAuthorStudio.ts"
+    ],
+    "src/features/story-author/components/StoryDetailsPanel.tsx": [
+      "src/features/story-author/types.ts",
+      "src/features/story-author/useStoryAuthorStudio.ts"
+    ],
+    "src/features/story-author/components/StoryLibraryPanel.tsx": [
+      "src/features/story-author/types.ts",
+      "src/features/story-author/useStoryAuthorStudio.ts"
+    ],
+    "src/features/story-author/storyAuthorStorage.ts": [
+      "src/features/story-author/types.ts"
+    ],
+    "src/features/story-author/types.ts": [],
+    "src/features/story-author/useStoryAuthorStudio.ts": [
+      "src/features/story-author/storyAuthorStorage.ts",
+      "src/features/story-author/types.ts"
+    ],
+    "src/features/story-review/components/ReviewRenderPanel.tsx": [
+      "src/features/story-review/useStoryReviewStudio.ts"
+    ],
+    "src/features/story-review/components/ReviewScenesPanel.tsx": [
+      "src/features/story-review/useStoryReviewStudio.ts"
+    ],
+    "src/features/story-review/components/ReviewScriptPanel.tsx": [
+      "src/features/story-review/useStoryReviewStudio.ts"
+    ],
+    "src/features/story-review/components/ReviewStoryPanel.tsx": [
+      "src/features/story-review/useStoryReviewStudio.ts"
+    ],
+    "src/features/story-review/prompts.ts": [
+      "src/features/story-review/types.ts"
+    ],
+    "src/features/story-review/storyReviewApi.ts": [
+      "src/features/story-review/types.ts"
+    ],
+    "src/features/story-review/types.ts": [],
+    "src/features/story-review/useStoryReviewStudio.ts": [
+      "src/features/story-review/prompts.ts",
+      "src/features/story-review/storyReviewApi.ts",
+      "src/features/story-review/types.ts"
+    ],
+    "src/features/story-video/components/StoryExtractPanel.tsx": [
+      "src/features/story-video/useStoryVideoStudio.ts"
+    ],
+    "src/features/story-video/components/StoryTopicPanel.tsx": [
+      "src/features/story-video/types.ts",
+      "src/features/story-video/useStoryVideoStudio.ts"
+    ],
+    "src/features/story-video/components/StoryVideoPanel.tsx": [
+      "src/features/story-video/types.ts",
+      "src/features/story-video/useStoryVideoStudio.ts"
+    ],
+    "src/features/story-video/components/StoryVoicePanel.tsx": [
+      "src/features/story-video/types.ts",
+      "src/features/story-video/useStoryVideoStudio.ts"
+    ],
+    "src/features/story-video/storyPresets.ts": [
+      "src/features/story-video/types.ts"
+    ],
+    "src/features/story-video/storyVideoApi.ts": [
+      "src/features/story-video/types.ts"
+    ],
+    "src/features/story-video/types.ts": [],
+    "src/features/story-video/useStoryVideoStudio.ts": [
+      "src/features/story-video/storyVideoApi.ts",
+      "src/features/story-video/storyPresets.ts",
+      "src/features/story-video/types.ts"
+    ],
+    "src/hooks/use-mobile.tsx": [],
+    "src/hooks/use-toast.ts": [],
+    "src/index.css": [],
+    "src/lib/algorithmWorld.ts": [
+      "src/lib/algorithms/types.ts",
+      "src/lib/i18n.ts"
+    ],
+    "src/lib/algorithmWorldFrameBuilder.ts": [
+      "src/lib/algorithms/types.ts",
+      "src/lib/algorithmWorld.ts"
+    ],
+    "src/lib/algorithmWorldRaceRunner.ts": [
+      "src/lib/algorithms/types.ts",
+      "src/lib/algorithmWorld.ts",
+      "src/lib/algorithmWorldTournament.ts",
+      "src/lib/algorithmWorldVehicles.ts",
+      "src/lib/algorithmWorldRunner.ts"
+    ],
+    "src/lib/algorithmWorldRunner.ts": [
+      "src/lib/algorithms/types.ts",
+      "src/lib/algorithmWorld.ts",
+      "src/lib/algorithmWorldTournament.ts",
+      "src/lib/algorithmWorldFrameBuilder.ts",
+      "src/lib/algorithmWorldRaceRunner.ts",
+      "src/lib/algorithmWorldSearchStrategies.ts"
+    ],
+    "src/lib/algorithmWorldSearchStrategies.ts": [
+      "src/lib/algorithms/types.ts",
+      "src/lib/algorithmWorld.ts",
+      "src/lib/algorithmWorldFrameBuilder.ts",
+      "src/lib/algorithmWorldRunner.ts"
+    ],
+    "src/lib/algorithmWorldTournament.ts": [
+      "src/lib/algorithms/types.ts",
+      "src/lib/i18n.ts",
+      "src/lib/algorithmWorld.ts"
+    ],
+    "src/lib/algorithmWorldVehicles.ts": [],
+    "src/lib/algorithms.ts": [
+      "src/lib/algorithms/index.ts"
+    ],
+    "src/lib/algorithms/complexity.ts": [
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/custom.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/frame.ts": [
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/graph/astar.ts": [
+      "src/lib/algorithms/types.ts",
+      "src/lib/algorithmWorldRunner.ts"
+    ],
+    "src/lib/algorithms/graph/bfs.ts": [
+      "src/lib/algorithms/types.ts",
+      "src/lib/algorithms/graph/utils.ts"
+    ],
+    "src/lib/algorithms/graph/dfs.ts": [
+      "src/lib/algorithms/types.ts",
+      "src/lib/algorithms/graph/utils.ts"
+    ],
+    "src/lib/algorithms/graph/dijkstra.ts": [
+      "src/lib/algorithms/types.ts",
+      "src/lib/algorithms/graph/utils.ts"
+    ],
+    "src/lib/algorithms/graph/utils.ts": [
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/index.ts": [
+      "src/lib/algorithms/custom.ts",
+      "src/lib/algorithms/graph/astar.ts",
+      "src/lib/algorithms/graph/bfs.ts",
+      "src/lib/algorithms/graph/dfs.ts",
+      "src/lib/algorithms/graph/dijkstra.ts",
+      "src/lib/algorithms/search/binary.ts",
+      "src/lib/algorithms/search/linear.ts",
+      "src/lib/algorithms/sorting/bitonic.ts",
+      "src/lib/algorithms/sorting/bogo.ts",
+      "src/lib/algorithms/sorting/bubble.ts",
+      "src/lib/algorithms/sorting/bucket.ts",
+      "src/lib/algorithms/sorting/flash.ts",
+      "src/lib/algorithms/sorting/cocktail.ts",
+      "src/lib/algorithms/sorting/comb.ts",
+      "src/lib/algorithms/sorting/counting.ts",
+      "src/lib/algorithms/sorting/cycle.ts",
+      "src/lib/algorithms/sorting/gnome.ts",
+      "src/lib/algorithms/sorting/heap.ts",
+      "src/lib/algorithms/sorting/insertion.ts",
+      "src/lib/algorithms/sorting/intro.ts",
+      "src/lib/algorithms/sorting/merge.ts",
+      "src/lib/algorithms/sorting/oddEven.ts",
+      "src/lib/algorithms/sorting/pancake.ts",
+      "src/lib/algorithms/sorting/pigeonhole.ts",
+      "src/lib/algorithms/sorting/quick.ts",
+      "src/lib/algorithms/sorting/radix.ts",
+      "src/lib/algorithms/sorting/selection.ts",
+      "src/lib/algorithms/sorting/shell.ts",
+      "src/lib/algorithms/sorting/smooth.ts",
+      "src/lib/algorithms/sorting/stooge.ts",
+      "src/lib/algorithms/sorting/strand.ts",
+      "src/lib/algorithms/sorting/tim.ts",
+      "src/lib/algorithms/sorting/tournament.ts",
+      "src/lib/algorithms/sorting/treeSort.ts",
+      "src/lib/algorithms/types.ts",
+      "src/lib/algorithms/complexity.ts",
+      "src/lib/algorithms/graph/utils.ts"
+    ],
+    "src/lib/algorithms/search/binary.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/search/linear.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/bitonic.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/bogo.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/bubble.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/bucket.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/cocktail.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/comb.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/counting.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/cycle.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/flash.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/gnome.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/heap.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/insertion.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/intro.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/merge.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/oddEven.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/pancake.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/pigeonhole.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/quick.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/radix.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/selection.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/shell.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/smooth.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/stooge.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/strand.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/tim.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/tournament.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/sorting/treeSort.ts": [
+      "src/lib/algorithms/frame.ts",
+      "src/lib/algorithms/types.ts"
+    ],
+    "src/lib/algorithms/types.ts": [],
+    "src/lib/analytics.ts": [],
+    "src/lib/animalColumns.ts": [],
+    "src/lib/audio.ts": [],
+    "src/lib/auth.ts": [],
+    "src/lib/backgroundMusic.ts": [
+      "src/lib/audio.ts",
+      "src/lib/i18n.ts"
+    ],
+    "src/lib/bitonicKineticTypography.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/canvasText.ts",
+      "src/lib/i18n.ts",
+      "src/lib/kineticTypographyRenderer.ts",
+      "src/lib/renderers/shapes.ts"
+    ],
+    "src/lib/bitonicLongContentTimeline.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/i18n.ts",
+      "src/lib/longContentTimeline.ts"
+    ],
+    "src/lib/canvasText.ts": [],
+    "src/lib/exportFileName.ts": [
+      "src/lib/i18n.ts"
+    ],
+    "src/lib/focusPointerRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/i18n.ts",
+      "src/lib/longContentTimeline.ts",
+      "src/lib/renderer.ts",
+      "src/lib/renderers/shapes.ts"
+    ],
+    "src/lib/generatedAssetsApi.ts": [
+      "src/lib/runtimeApi.ts",
+      "src/lib/runtimeSettings.ts"
+    ],
+    "src/lib/i18n.ts": [],
+    "src/lib/insertionLongContentTimeline.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/i18n.ts",
+      "src/lib/longContentTimeline.ts"
+    ],
+    "src/lib/kineticTextEffects.ts": [
+      "src/lib/canvasText.ts"
+    ],
+    "src/lib/kineticTypographyRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/i18n.ts",
+      "src/lib/longContentTimeline.ts",
+      "src/lib/longVideoTypes.ts",
+      "src/lib/renderer.ts",
+      "src/lib/canvasText.ts",
+      "src/lib/bitonicKineticTypography.ts",
+      "src/lib/kineticTextEffects.ts",
+      "src/lib/oddEvenKineticTypography.ts",
+      "src/lib/pancakeKineticTypography.ts",
+      "src/lib/renderers/shapes.ts"
+    ],
+    "src/lib/longContentData.ts": [
+      "src/lib/i18n.ts"
+    ],
+    "src/lib/longContentRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/animalColumns.ts",
+      "src/lib/canvasText.ts",
+      "src/lib/focusPointerRenderer.ts",
+      "src/lib/i18n.ts",
+      "src/lib/longContentTimeline.ts",
+      "src/lib/longVideoTypes.ts",
+      "src/lib/renderer.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/styledLongContentRenderer.ts"
+    ],
+    "src/lib/longContentTimeline.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/bitonicLongContentTimeline.ts",
+      "src/lib/insertionLongContentTimeline.ts",
+      "src/lib/oddEvenLongContentTimeline.ts",
+      "src/lib/pancakeLongContentTimeline.ts",
+      "src/lib/i18n.ts",
+      "src/lib/longContentData.ts"
+    ],
+    "src/lib/longVideoTypes.ts": [],
+    "src/lib/longVideoVoice.ts": [
+      "src/lib/i18n.ts",
+      "src/lib/longContentTimeline.ts",
+      "src/lib/longVideoTypes.ts"
+    ],
+    "src/lib/musicLibrary.ts": [
+      "src/lib/runtimeSettings.ts",
+      "src/lib/runtimeApi.ts",
+      "src/lib/backgroundMusic.ts"
+    ],
+    "src/lib/oddEvenKineticTypography.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/canvasText.ts",
+      "src/lib/i18n.ts",
+      "src/lib/kineticTypographyRenderer.ts",
+      "src/lib/renderers/shapes.ts"
+    ],
+    "src/lib/oddEvenLongContentTimeline.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/i18n.ts",
+      "src/lib/longContentTimeline.ts"
+    ],
+    "src/lib/pancakeKineticTypography.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/canvasText.ts",
+      "src/lib/i18n.ts",
+      "src/lib/kineticTypographyRenderer.ts",
+      "src/lib/renderers/shapes.ts"
+    ],
+    "src/lib/pancakeLongContentTimeline.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/i18n.ts",
+      "src/lib/longContentTimeline.ts"
+    ],
+    "src/lib/renderer.ts": [
+      "src/lib/renderers/index.ts"
+    ],
+    "src/lib/renderers/algorithmWorldRaceRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/i18n.ts",
+      "src/lib/renderers/theme.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/renderers/algorithmWorldTournamentRenderer.ts"
+    ],
+    "src/lib/renderers/algorithmWorldRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/i18n.ts",
+      "src/lib/algorithmWorld.ts",
+      "src/lib/renderers/algorithmWorldRaceRenderer.ts",
+      "src/lib/renderers/algorithmWorldVehicleRenderer.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/renderers/algorithmWorldTournamentRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/i18n.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/renderers/algorithmWorldVehicleRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/renderers/animalColumnRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/animalColumns.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/renderers/barRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/renderers/bitonicRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/renderers/bogoSortRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/i18n.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/renderers/bucketContentsRenderer.ts": [
+      "src/lib/renderers/shapes.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/renderers/codePanelRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/i18n.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/renderers/countingSortRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/animalColumns.ts",
+      "src/lib/i18n.ts",
+      "src/lib/renderers/animalColumnRenderer.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/renderers/cycleSortRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/renderers/flashSortRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/i18n.ts",
+      "src/lib/renderers/bucketContentsRenderer.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/renderers/graphRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/i18n.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/renderers/index.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/animalColumns.ts",
+      "src/lib/i18n.ts",
+      "src/lib/renderers/animalColumnRenderer.ts",
+      "src/lib/renderers/algorithmWorldRenderer.ts",
+      "src/lib/renderers/barRenderer.ts",
+      "src/lib/renderers/codePanelRenderer.ts",
+      "src/lib/renderers/countingSortRenderer.ts",
+      "src/lib/renderers/graphRenderer.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/renderers/sortEssenceRenderer.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/renderers/pancakeSortRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/i18n.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/renderers/shapes.ts": [],
+    "src/lib/renderers/smoothSortRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/renderers/sortEssenceRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/i18n.ts",
+      "src/lib/renderers/barRenderer.ts",
+      "src/lib/renderers/bitonicRenderer.ts",
+      "src/lib/renderers/bogoSortRenderer.ts",
+      "src/lib/renderers/bucketContentsRenderer.ts",
+      "src/lib/renderers/cycleSortRenderer.ts",
+      "src/lib/renderers/flashSortRenderer.ts",
+      "src/lib/renderers/pancakeSortRenderer.ts",
+      "src/lib/renderers/smoothSortRenderer.ts",
+      "src/lib/renderers/sortEssenceTitles.ts",
+      "src/lib/renderers/stoogeSortRenderer.ts",
+      "src/lib/renderers/theme.ts",
+      "src/lib/renderers/tournamentRenderer.ts",
+      "src/lib/renderers/treeSortRenderer.ts"
+    ],
+    "src/lib/renderers/sortEssenceTitles.ts": [
+      "src/lib/i18n.ts"
+    ],
+    "src/lib/renderers/stoogeSortRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/renderers/theme.ts": [],
+    "src/lib/renderers/tournamentRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/renderers/treeSortRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/renderers/theme.ts"
+    ],
+    "src/lib/runtimeApi.ts": [],
+    "src/lib/runtimeSettings.ts": [],
+    "src/lib/selectSounds.ts": [
+      "src/lib/audio.ts",
+      "src/lib/i18n.ts"
+    ],
+    "src/lib/shortKineticBitonicRenderer.ts": [
+      "src/lib/canvasText.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/shortKineticTypographyRenderer.ts"
+    ],
+    "src/lib/shortKineticGraphRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/canvasText.ts",
+      "src/lib/i18n.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/shortKineticTypographyRenderer.ts"
+    ],
+    "src/lib/shortKineticPancakeRenderer.ts": [
+      "src/lib/canvasText.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/shortKineticTypographyRenderer.ts"
+    ],
+    "src/lib/shortKineticTypographyRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/canvasText.ts",
+      "src/lib/i18n.ts",
+      "src/lib/renderers/shapes.ts",
+      "src/lib/shortKineticBitonicRenderer.ts",
+      "src/lib/shortKineticGraphRenderer.ts",
+      "src/lib/shortKineticPancakeRenderer.ts"
+    ],
+    "src/lib/shortVideoTypes.ts": [],
+    "src/lib/socialPublishing.ts": [],
+    "src/lib/sprites/LandTileMapSprite.ts": [],
+    "src/lib/sprites/Sprite.ts": [],
+    "src/lib/studioMediaRegistry.ts": [
+      "src/lib/youtubeMetadata.ts"
+    ],
+    "src/lib/styledLongContentRenderer.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/i18n.ts",
+      "src/lib/kineticTypographyRenderer.ts",
+      "src/lib/longContentTimeline.ts",
+      "src/lib/longVideoTypes.ts",
+      "src/lib/renderer.ts",
+      "src/lib/renderers/shapes.ts"
+    ],
+    "src/lib/utils.ts": [],
+    "src/lib/voiceApi.ts": [
+      "src/lib/runtimeApi.ts",
+      "src/lib/runtimeSettings.ts",
+      "src/lib/i18n.ts"
+    ],
+    "src/lib/youtubeApi.ts": [
+      "src/lib/runtimeApi.ts"
+    ],
+    "src/lib/youtubeMetadata.ts": [
+      "src/lib/algorithms.ts",
+      "src/lib/algorithms/types.ts",
+      "src/lib/algorithmWorld.ts",
+      "src/lib/algorithmWorldTournament.ts",
+      "src/lib/longContentData.ts",
+      "src/lib/longVideoTypes.ts",
+      "src/lib/i18n.ts"
+    ],
+    "src/main.tsx": [
+      "src/App.tsx",
+      "src/index.css"
+    ],
+    "src/pages/AlgorithmWorld.tsx": [
+      "src/pages/studio/CenterPanel.tsx",
+      "src/pages/studio/RightPanel.tsx",
+      "src/pages/studio/ShortMusicPanel.tsx",
+      "src/pages/studio/useAlgorithmStudio.ts",
+      "src/pages/algorithm-world/WorldSetupPanel.tsx"
+    ],
+    "src/pages/Auth.tsx": [],
+    "src/pages/GeneratedAssets.tsx": [],
+    "src/pages/Index.tsx": [
+      "src/pages/studio/CenterPanel.tsx",
+      "src/pages/studio/LeftPanel.tsx",
+      "src/pages/studio/RightPanel.tsx",
+      "src/pages/studio/ShortMusicPanel.tsx",
+      "src/pages/studio/useAlgorithmStudio.ts"
+    ],
+    "src/pages/LongContent.tsx": [
+      "src/pages/studio/exportFormats.ts",
+      "src/pages/long-content/BackgroundImagePanel.tsx",
+      "src/pages/long-content/KineticSfxPanel.tsx",
+      "src/pages/long-content/LongContentTabs.tsx",
+      "src/pages/long-content/MusicPanel.tsx",
+      "src/pages/long-content/useLongContentStudio.ts"
+    ],
+    "src/pages/MuNewsStudio.tsx": [],
+    "src/pages/NotFound.tsx": [],
+    "src/pages/Settings.tsx": [],
+    "src/pages/SocialPublishing.tsx": [],
+    "src/pages/StoryAuthorStudio.tsx": [],
+    "src/pages/StoryReviewStudio.tsx": [],
+    "src/pages/StoryVideoStudio.tsx": [],
+    "src/pages/YoutubePublishing.tsx": [],
+    "src/pages/algorithm-world/PhaserMazePreview.tsx": [
+      "src/pages/algorithm-world/PhaserMazeRaceStyle.ts"
+    ],
+    "src/pages/algorithm-world/PhaserMazeRaceStyle.ts": [],
+    "src/pages/algorithm-world/TournamentMusicControls.tsx": [],
+    "src/pages/algorithm-world/WorldSetupPanel.tsx": [
+      "src/pages/algorithm-world/TournamentMusicControls.tsx"
+    ],
+    "src/pages/long-content/BackgroundImagePanel.tsx": [
+      "src/pages/long-content/useLongContentStudio.ts"
+    ],
+    "src/pages/long-content/KineticSfxPanel.tsx": [
+      "src/pages/long-content/useLongContentStudio.ts"
+    ],
+    "src/pages/long-content/LongContentTabs.tsx": [
+      "src/pages/long-content/ScriptPanel.tsx",
+      "src/pages/long-content/VoicePanel.tsx",
+      "src/pages/long-content/useLongContentStudio.ts"
+    ],
+    "src/pages/long-content/MusicPanel.tsx": [
+      "src/pages/long-content/useLongContentStudio.ts"
+    ],
+    "src/pages/long-content/ScriptPanel.tsx": [
+      "src/pages/long-content/useLongContentStudio.ts"
+    ],
+    "src/pages/long-content/VoicePanel.tsx": [
+      "src/pages/long-content/useLongContentStudio.ts"
+    ],
+    "src/pages/long-content/bitonicCuePosition.ts": [],
+    "src/pages/long-content/oddEvenCuePosition.ts": [],
+    "src/pages/long-content/pancakeCuePosition.ts": [],
+    "src/pages/long-content/studioHelpers.ts": [
+      "src/pages/long-content/bitonicCuePosition.ts",
+      "src/pages/long-content/oddEvenCuePosition.ts",
+      "src/pages/long-content/pancakeCuePosition.ts"
+    ],
+    "src/pages/long-content/useKineticSlideSfx.ts": [],
+    "src/pages/long-content/useLongContentMusic.ts": [],
+    "src/pages/long-content/useLongContentStudio.ts": [
+      "src/pages/studio/exportFormats.ts",
+      "src/pages/studio/demoArrays.ts",
+      "src/pages/long-content/studioHelpers.ts",
+      "src/pages/long-content/voiceCache.ts",
+      "src/pages/long-content/voiceTiming.ts",
+      "src/pages/long-content/useKineticSlideSfx.ts",
+      "src/pages/long-content/useLongContentMusic.ts",
+      "src/pages/long-content/useVideoBackgroundImages.ts"
+    ],
+    "src/pages/long-content/useVideoBackgroundImages.ts": [],
+    "src/pages/long-content/voiceCache.ts": [
+      "src/pages/long-content/studioHelpers.ts",
+      "src/pages/long-content/useLongContentStudio.ts"
+    ],
+    "src/pages/long-content/voiceTiming.ts": [],
+    "src/pages/studio/CenterPanel.tsx": [
+      "src/pages/studio/useAlgorithmStudio.ts",
+      "src/pages/algorithm-world/PhaserMazePreview.tsx"
+    ],
+    "src/pages/studio/LeftPanel.tsx": [
+      "src/pages/studio/useAlgorithmStudio.ts"
+    ],
+    "src/pages/studio/RightPanel.tsx": [
+      "src/pages/studio/exportFormats.ts",
+      "src/pages/studio/ShortMusicPanel.tsx",
+      "src/pages/studio/useAlgorithmStudio.ts"
+    ],
+    "src/pages/studio/ShortMusicPanel.tsx": [
+      "src/pages/studio/useAlgorithmStudio.ts"
+    ],
+    "src/pages/studio/demoArrays.ts": [],
+    "src/pages/studio/exportFormats.ts": [],
+    "src/pages/studio/renderStudioPreview.ts": [],
+    "src/pages/studio/tournamentTimeline.ts": [],
+    "src/pages/studio/useAlgorithmStudio.ts": [
+      "src/pages/studio/exportFormats.ts",
+      "src/pages/studio/demoArrays.ts",
+      "src/pages/studio/videoExport.ts",
+      "src/pages/studio/renderStudioPreview.ts",
+      "src/pages/studio/tournamentTimeline.ts"
+    ],
+    "src/pages/studio/videoExport.ts": [
+      "src/pages/studio/exportFormats.ts"
+    ],
+    "src/test/MuNewsValidationService.test.ts": [
+      "server/services/MuNewsValidationService.ts"
+    ],
+    "src/test/example.test.ts": [],
+    "src/test/muNewsUtils.test.ts": [],
+    "src/test/setup.ts": [],
+    "src/vite-env.d.ts": [],
+    "tailwind.config.ts": [],
+    "tsconfig.app.json": [],
+    "tsconfig.json": [],
+    "tsconfig.node.json": [],
+    "vercel.json": [],
+    "vite.config.ts": [],
+    "vitest.config.ts": []
+  },
+  "complexity": "complex",
+  "filteredByIgnore": 0
+}

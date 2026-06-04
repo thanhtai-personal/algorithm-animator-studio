@@ -9,6 +9,7 @@ import {
   exchangeYoutubeCode,
   getYoutubeChannelProfile,
   getYoutubeConfigStatus,
+  listYoutubeChannelVideos,
   listYoutubePlaylists,
   uploadYoutubeVideo,
 } from "../services/YoutubeUploadService";
@@ -66,6 +67,18 @@ export function createYoutubeRouter() {
   router.post("/youtube/playlists", async (req, res) => {
     try {
       res.json(await listYoutubePlaylists(String(req.body?.refreshToken || ""), readRuntimeEnvFromRequest(req)));
+    } catch (error) {
+      sendError(res, error);
+    }
+  });
+
+  router.post("/youtube/videos", async (req, res) => {
+    try {
+      res.json(await listYoutubeChannelVideos(
+        String(req.body?.refreshToken || ""),
+        String(req.body?.uploadsPlaylistId || ""),
+        readRuntimeEnvFromRequest(req)
+      ));
     } catch (error) {
       sendError(res, error);
     }

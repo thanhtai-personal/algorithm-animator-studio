@@ -120,6 +120,47 @@ export async function listYoutubePlaylists(
   return { playlists };
 }
 
+export async function listYoutubeChannelVideos(
+  refreshToken: string | undefined,
+  uploadsPlaylistId?: string,
+  envOverrides: RuntimeEnvValues = {}
+) {
+  const youtube = createAuthorizedYoutubeClient(refreshToken, envOverrides);
+  const playlistId = uploadsPlaylistId || (await getYoutubeChannelProfile(refreshToken, envOverrides)).uploadsPlaylistId;
+  if (!playlistId) throw new Error("Không tìm thấy playlist uploads của kênh YouTube.");
+
+  const videos = [];
+  let pageToken: string | undefined;
+
+  do {
+    const response = await youtube.playlistItems.list({
+      part: ["snippet", "contentDetails"],
+      maxResults: 50,
+      pageToken,
+      playlistId,
+    });
+
+    videos.push(
+      ...(response.data.items || [])
+        .map((item) => {
+          const videoId = item.contentDetails?.videoId || item.snippet?.resourceId?.videoId || "";
+          return {
+            id: videoId,
+            title: item.snippet?.title || "Untitled video",
+            description: item.snippet?.description || "",
+            publishedAt: item.contentDetails?.videoPublishedAt || item.snippet?.publishedAt || "",
+            thumbnailUrl: item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url,
+            url: videoId ? `https://www.youtube.com/watch?v=${videoId}` : "",
+          };
+        })
+        .filter((video) => video.id)
+    );
+    pageToken = response.data.nextPageToken || undefined;
+  } while (pageToken);
+
+  return { videos };
+}
+
 export async function uploadYoutubeVideo(params: {
   filePath: string;
   originalFileName: string;

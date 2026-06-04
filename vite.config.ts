@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import fs from "fs";
 import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
@@ -8,6 +9,8 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 3000,
+    allowedHosts: ["kai-studio.pro"],
+    https: localHttpsConfig(),
     hmr: {
       overlay: false,
     },
@@ -36,3 +39,13 @@ export default defineConfig(({ mode }) => ({
     },
   },
 }));
+
+function localHttpsConfig() {
+  const certPath = path.resolve(__dirname, ".certs/kai-studio.pro.pem");
+  const keyPath = path.resolve(__dirname, ".certs/kai-studio.pro-key.pem");
+  if (!fs.existsSync(certPath) || !fs.existsSync(keyPath)) return undefined;
+  return {
+    cert: fs.readFileSync(certPath),
+    key: fs.readFileSync(keyPath),
+  };
+}

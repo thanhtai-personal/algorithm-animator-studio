@@ -251,8 +251,10 @@ export default function YoutubePublishing() {
                 <YoutubeUploadHistoryCard
                   history={manager.activeHistory}
                   refreshHistory={manager.refreshHistory}
+                  refreshToken={manager.refreshToken}
                   title={txt(vi, "Lịch sử upload của kênh đang chọn", "Upload history for the selected channel")}
                   subtitle={txt(vi, "Chỉ hiển thị lịch sử khớp với YouTube channel ID hiện tại; bản ghi cũ chưa có thông tin kênh vẫn được giữ lại.", "Only entries matching the current YouTube channel ID are filtered; older entries without channel data are still kept.")}
+                  uploadsPlaylistId={manager.channel?.uploadsPlaylistId}
                   lang={lang}
                 />
               ) : <ProviderNotice channel={activeSharedChannel} lang={lang} />

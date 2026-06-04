@@ -39,6 +39,15 @@ export type YoutubeUploadHistoryItem = {
   message?: string;
 };
 
+export type YoutubeChannelVideo = {
+  id: string;
+  title: string;
+  description: string;
+  publishedAt: string;
+  thumbnailUrl?: string;
+  url: string;
+};
+
 export type YoutubeUploadForm = {
   title: string;
   description: string;
@@ -102,6 +111,15 @@ export async function getYoutubePlaylists(refreshToken: string) {
 export async function getYoutubeUploadHistory() {
   const data = await parseApiResponse<{ history: YoutubeUploadHistoryItem[] }>(await fetch(buildApiUrl("/api/youtube/history")));
   return data.history;
+}
+
+export async function getYoutubeChannelVideos(refreshToken: string, uploadsPlaylistId?: string) {
+  const data = await parseApiResponse<{ videos: YoutubeChannelVideo[] }>(await fetch(buildApiUrl("/api/youtube/videos"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken, uploadsPlaylistId }),
+  }));
+  return data.videos;
 }
 
 export async function uploadYoutubeVideo(file: File, refreshToken: string, form: YoutubeUploadForm) {

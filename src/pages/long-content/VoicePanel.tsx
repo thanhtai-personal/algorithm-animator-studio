@@ -1,4 +1,4 @@
-import { RefreshCcw, Volume2 } from "lucide-react";
+import { RefreshCcw, Upload, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -83,11 +83,30 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
       {s.voiceProvider === "supertonic" ? (
         <div className="grid gap-3">
           <div>
-            <Label>Supertonic voice</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label>Supertonic voice/style</Label>
+              <Button type="button" size="sm" variant="outline" disabled={s.supertonicImporting} asChild>
+                <label className="cursor-pointer" htmlFor="supertonic-voice-json">
+                  <Upload className="mr-2 h-3.5 w-3.5" /> {s.supertonicImporting ? "Đang import..." : "Import voice JSON"}
+                </label>
+              </Button>
+              <input
+                id="supertonic-voice-json"
+                className="hidden"
+                type="file"
+                accept="application/json,.json"
+                onChange={(event) => {
+                  const file = event.currentTarget.files?.[0];
+                  event.currentTarget.value = "";
+                  if (file) void s.importSupertonicVoiceJson(file);
+                }}
+              />
+            </div>
             <Select value={s.supertonicVoice} onValueChange={s.setSupertonicVoice}>
               <SelectTrigger className="mt-2"><SelectValue placeholder="Chọn voice Supertonic" /></SelectTrigger>
               <SelectContent>{(s.supertonicConfig?.voices ?? []).map((voice) => <SelectItem key={voice.id} value={voice.id}>{voice.label}</SelectItem>)}</SelectContent>
             </Select>
+            <p className="mt-2 text-xs text-muted-foreground">Model được chọn khi start server; dropdown này dùng nhiều voice/style trong model đang chạy.</p>
           </div>
           <div className="rounded-lg border border-border bg-background/40 p-3 text-xs text-muted-foreground">
             <div className="grid gap-1">

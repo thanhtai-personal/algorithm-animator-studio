@@ -11,7 +11,7 @@ import { buildLongContentScenes, getSceneAtTime, getTotalDuration } from "@/lib/
 import type { LongVideoType } from "@/lib/longVideoTypes";
 import { buildLongVideoVoiceSegments } from "@/lib/longVideoVoice";
 import { THEMES } from "@/lib/renderer";
-import { generateElevenLabsVoice, generatePiperVoice, generateSupertonicVoice, getElevenLabsConfig, getPiperModels, getPiperRuntimeStatus, getSupertonicConfig, getVoiceHealth, installPiperModel, type ElevenLabsConfig, type PiperModel, type PiperRuntimeStatus, type SupertonicConfig, type VoiceGenerateResult, type VoiceHealth } from "@/lib/voiceApi";
+import { generateElevenLabsVoice, generatePiperVoice, generateSupertonicVoice, getElevenLabsConfig, getPiperModels, getPiperRuntimeStatus, getSupertonicConfig, getVoiceHealth, importSupertonicVoiceStyle, installPiperModel, type ElevenLabsConfig, type PiperModel, type PiperRuntimeStatus, type SupertonicConfig, type VoiceGenerateResult, type VoiceHealth } from "@/lib/voiceApi";
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
 import { buildYoutubeMetadata } from "@/lib/youtubeMetadata";
 import { ExportFormat, getExportFormat } from "../studio/exportFormats";
@@ -67,6 +67,7 @@ export function useLongContentStudio() {
   const [supertonicConfig, setSupertonicConfig] = useState<SupertonicConfig | null>(null);
   const [supertonicVoice, setSupertonicVoice] = useState("M1");
   const [supertonicTotalSteps, setSupertonicTotalSteps] = useState(8);
+  const [supertonicImporting, setSupertonicImporting] = useState(false);
   const [scriptOverrides, setScriptOverrides] = useState<Record<string, ScriptSceneOverride>>({});
   const algo = ALGORITHMS[algoId] ?? ALGORITHMS[DEFAULT_ALGORITHM_ID];
   const theme = THEMES[themeName] ?? THEMES.neon;
@@ -268,6 +269,23 @@ export function useLongContentStudio() {
       setPiperInstalling(false);
     }
   }
+  async function importSupertonicVoiceJson(file: File) {
+    setSupertonicImporting(true);
+    try {
+      const text = await file.text();
+      const styleJson = JSON.parse(text);
+      const result = await importSupertonicVoiceStyle(styleJson);
+      setSupertonicConfig((current) => current ? { ...current, voices: result.voices, model: result.model } : current);
+      const nextVoice = result.voices[0]?.id;
+      if (nextVoice) setSupertonicVoice(nextVoice);
+      toast.success(`Đã import voice Supertonic: ${file.name}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Import Supertonic voice thất bại.");
+    } finally {
+      setSupertonicImporting(false);
+    }
+  }
+
   async function refreshPiperRuntime() {
     try {
       const [health, runtime, models, supertonic] = await Promise.all([getVoiceHealth(), getPiperRuntimeStatus(), getPiperModels(), getSupertonicConfig()]);
@@ -405,7 +423,7 @@ export function useLongContentStudio() {
     elapsedSec, setElapsedSec, playing, setPlaying, exporting, exportProgress, scenes, totalDuration, timelineState, frameIdx, frames, narrationEnabled, setNarrationEnabled, narrationRate, setNarrationRate,
     narrationVol, setNarrationVol, music, musicVol, setMusicVol, ...backgrounds, ...kineticSfx, onMusicUpload, voiceProvider, setVoiceProvider, voiceUrl, voiceFileName, voiceDurationSec, voiceLoading,
     generateVoiceOver, voiceHealth, piperRuntime, piperInstalling, installSelectedPiperModel, refreshPiperRuntime, piperModels, piperModelKey, setPiperModelKey, elevenConfig, elevenModelId, setElevenModelId,
-    elevenVoiceId, setElevenVoiceId, supertonicConfig, supertonicVoice, setSupertonicVoice, supertonicTotalSteps, setSupertonicTotalSteps, narrationScript, updateScriptScene, resetScriptScene, resetAllScriptScenes: () => setScriptOverrides({}), W: LONG_W, H: LONG_H, exportVideo,
+    elevenVoiceId, setElevenVoiceId, supertonicConfig, supertonicVoice, setSupertonicVoice, supertonicTotalSteps, setSupertonicTotalSteps, supertonicImporting, importSupertonicVoiceJson, narrationScript, updateScriptScene, resetScriptScene, resetAllScriptScenes: () => setScriptOverrides({}), W: LONG_W, H: LONG_H, exportVideo,
   };
 }
 export type LongContentStudio = ReturnType<typeof useLongContentStudio>;

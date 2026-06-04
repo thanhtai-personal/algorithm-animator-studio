@@ -112,6 +112,14 @@ export async function getSupertonicConfig() {
   return parseApiResponse<SupertonicConfig>(await fetch(buildApiUrl("/api/supertonic/config"), { headers: buildRuntimeSettingsHeaders() }));
 }
 
+export async function importSupertonicVoiceStyle(styleJson: unknown) {
+  return parseApiResponse<{ ok: boolean; voices: SupertonicVoice[]; model: string }>(await fetch(buildApiUrl("/api/supertonic/styles/import"), {
+    method: "POST",
+    headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ styleJson }),
+  }));
+}
+
 export async function generateSupertonicVoice(payload: {
   text: string;
   segments?: string[];

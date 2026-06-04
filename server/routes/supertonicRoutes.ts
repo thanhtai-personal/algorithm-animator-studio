@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
-import type { SupertonicGenerateBody } from "../models/Supertonic";
-import { generateSupertonicAudio, getSupertonicConfigStatus } from "../services/SupertonicService";
+import type { SupertonicGenerateBody, SupertonicImportStyleBody } from "../models/Supertonic";
+import { generateSupertonicAudio, getSupertonicConfigStatus, importSupertonicStyle } from "../services/SupertonicService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
 
 export function createSupertonicRouter() {
@@ -18,6 +18,20 @@ export function createSupertonicRouter() {
       } catch (error) {
         res.status(500).json({
           error: error instanceof Error ? error.message : "Yêu cầu Supertonic thất bại.",
+        });
+      }
+    }
+  );
+
+
+  router.post(
+    "/supertonic/styles/import",
+    async (req: Request<unknown, unknown, SupertonicImportStyleBody>, res: Response) => {
+      try {
+        res.json(await importSupertonicStyle(req.body, readRuntimeEnvFromRequest(req)));
+      } catch (error) {
+        res.status(500).json({
+          error: error instanceof Error ? error.message : "Import Supertonic voice thất bại.",
         });
       }
     }

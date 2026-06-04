@@ -6,7 +6,7 @@ import {
   buildGeneratedFileUrl,
   getGeneratedDir,
 } from "../config/paths";
-import type { SupertonicConfigStatus, SupertonicGenerateBody, SupertonicVoice } from "../models/Supertonic";
+import type { SupertonicConfigStatus, SupertonicGenerateBody, SupertonicImportStyleBody, SupertonicVoice } from "../models/Supertonic";
 import { ensureDirectoryExists, getLocalDateFolderName, getUniqueOutputFileWithExtension, sanitizeFileBaseName } from "../utils/audioOutput";
 import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
 
@@ -61,6 +61,32 @@ export async function getSupertonicConfigStatus(envOverrides: RuntimeEnvValues =
       error: error instanceof Error ? error.message : "Không kết nối được Supertonic server.",
     };
   }
+}
+
+export async function importSupertonicStyle(body: SupertonicImportStyleBody, envOverrides: RuntimeEnvValues = {}) {
+  const env = readEnvValues(envOverrides);
+  const baseUrl = getSupertonicBaseUrl(env);
+  const styleJson = normalizeStyleJson(body.styleJson);
+
+  const response = await fetchWithTimeout(`${baseUrl}/v1/styles/import`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(styleJson),
+  });
+
+  if (!response.ok) {
+    throw new Error(await readSupertonicError(response));
+  }
+
+  const imported = await response.json().catch(() => ({ ok: true }));
+  const config = await getSupertonicConfigStatus(envOverrides);
+
+  return {
+    ok: true,
+    imported,
+    voices: config.voices,
+    model: config.model,
+  };
 }
 
 export async function generateSupertonicAudio(body: SupertonicGenerateBody, envOverrides: RuntimeEnvValues = {}) {
@@ -125,6 +151,19 @@ export async function generateSupertonicAudio(body: SupertonicGenerateBody, envO
     responseFormat,
     inputCharacters: text.length,
   };
+}
+
+function normalizeStyleJson(value: unknown) {
+  if (!value) throw new Error("Chưa có nội dung voice JSON để import.");
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value);
+    } catch {
+      throw new Error("Voice JSON không hợp lệ.");
+    }
+  }
+  if (typeof value === "object") return value;
+  throw new Error("Voice JSON phải là object hoặc chuỗi JSON.");
 }
 
 function getSupertonicBaseUrl(env: RuntimeEnvValues) {

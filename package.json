@@ -15,7 +15,7 @@
     "dev:server": "tsx watch server/index.ts",
     "dev:supertonic": "npm run supertonic:serve",
     "supertonic:install": "python -m pip install \"supertonic[serve]\"",
-    "supertonic:serve": "supertonic serve --host 127.0.0.1 --port 6688 --cors http://localhost:3000",
+    "supertonic:serve": "node scripts/start-supertonic.mjs",
     "dev:full": "npm run dev",
     "start:server": "tsx server/index.ts",
     "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --outfile=dist-electron/server/index.js",
@@ -25,7 +25,10 @@
     "dist:win:nsis": "npm run build:desktop && electron-builder --win nsis --x64 --config.directories.output=release/win",
     "dist:win:unpacked": "npm run build:desktop && electron-builder --win --x64 --dir --config.directories.output=release/win",
     "dist:clean": "node -e \"require('fs').rmSync('release',{recursive:true,force:true});require('fs').rmSync('dist-electron',{recursive:true,force:true})\"",
-    "build:public": "cross-env VITE_PUBLIC_WEB=true npm run build"
+    "build:public": "cross-env VITE_PUBLIC_WEB=true npm run build",
+    "supertonic:serve:v3": "cross-env SUPERTONIC_MODEL=supertonic-3 npm run supertonic:serve",
+    "supertonic:serve:v2": "cross-env SUPERTONIC_MODEL=supertonic-2 npm run supertonic:serve",
+    "supertonic:serve:v1": "cross-env SUPERTONIC_MODEL=supertonic npm run supertonic:serve"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

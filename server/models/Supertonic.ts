@@ -18,6 +18,11 @@ export type SupertonicConfigStatus = {
   error?: string;
 };
 
+export type SupertonicImportStyleBody = {
+  styleJson?: unknown;
+  fileName?: string;
+};
+
 export type SupertonicGenerateBody = {
   text?: string;
   segments?: string[];

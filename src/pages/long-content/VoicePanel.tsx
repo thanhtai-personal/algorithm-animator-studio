@@ -91,7 +91,7 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
           <div className="rounded-lg border border-border bg-background/40 p-3 text-xs text-muted-foreground">
             <div className="grid gap-1">
               <span>Server: <strong className={s.supertonicConfig?.serverOk ? "text-emerald-300" : "text-rose-300"}>{s.supertonicConfig?.serverOk ? "đã kết nối" : "chưa chạy"}</strong></span>
-              <span>Base URL: <strong>{s.supertonicConfig?.baseUrl || "http://127.0.0.1:7788"}</strong></span>
+              <span>Base URL: <strong>{s.supertonicConfig?.baseUrl || "http://127.0.0.1:6688"}</strong></span>
               <span>Model: <strong>{s.supertonicConfig?.model || "supertonic-3"}</strong></span>
               {s.supertonicConfig?.error ? <span className="text-yellow-300">{s.supertonicConfig.error}</span> : null}
             </div>

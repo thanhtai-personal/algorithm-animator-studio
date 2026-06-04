@@ -9,6 +9,14 @@ python -m pip install "supertonic[serve]"
 supertonic serve --host 127.0.0.1 --port 6688 --cors http://localhost:3000
 ```
 
+Hoặc chạy chung toàn bộ môi trường dev:
+
+```bash
+npm run dev
+```
+
+Lệnh `dev` sẽ khởi động đồng thời frontend, backend và Supertonic server.
+
 Lần chạy đầu Supertonic sẽ tự tải model từ Hugging Face nếu dùng Python SDK chính thức.
 
 ## Cấu hình `.env`

@@ -201,9 +201,9 @@ export default function Settings() {
             <SecretInput
               id="supertonic-base-url"
               label="SUPERTONIC_BASE_URL"
-              description="URL của Supertonic local server, mặc định http://127.0.0.1:7788."
+              description="URL của Supertonic local server, mặc định http://127.0.0.1:6688."
               value={form.SUPERTONIC_BASE_URL}
-              placeholder="http://127.0.0.1:7788"
+              placeholder="http://127.0.0.1:6688"
               type="text"
               onChange={(value) => updateField("SUPERTONIC_BASE_URL", value)}
             />

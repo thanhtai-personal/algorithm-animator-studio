@@ -128,7 +128,7 @@ export async function generateSupertonicAudio(body: SupertonicGenerateBody, envO
 }
 
 function getSupertonicBaseUrl(env: RuntimeEnvValues) {
-  return (env.SUPERTONIC_BASE_URL || "http://127.0.0.1:7788").replace(/\/+$/g, "");
+  return (env.SUPERTONIC_BASE_URL || "http://127.0.0.1:6688").replace(/\/+$/g, "");
 }
 
 function normalizeText(body: SupertonicGenerateBody) {

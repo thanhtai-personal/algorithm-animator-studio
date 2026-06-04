@@ -32,3 +32,4 @@ runtime/
 server/data
 models/
 src/assets/audios/bg-audio/
+server/.env.temp

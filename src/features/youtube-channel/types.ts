@@ -19,6 +19,29 @@ export type YoutubeChannelPlan = {
   ideas: ChannelIdea[];
 };
 
+export type YoutubeManagedChannel = {
+  localId: string;
+  youtubeChannelId?: string;
+  title: string;
+  channelUrl: string;
+  description?: string;
+  customUrl?: string;
+  thumbnailUrl?: string;
+  subscriberCount?: string;
+  videoCount?: string;
+  viewCount?: string;
+  uploadsPlaylistId?: string;
+  refreshToken?: string;
+  connectedAtMs?: number;
+  lastSyncedAtMs?: number;
+  plan: YoutubeChannelPlan;
+};
+
+export type YoutubeChannelWorkspace = {
+  activeChannelLocalId: string;
+  channels: YoutubeManagedChannel[];
+};
+
 export type YoutubeManagerState = {
   authStatus: AuthStatus;
   loading: boolean;

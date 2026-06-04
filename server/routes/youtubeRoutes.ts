@@ -97,6 +97,8 @@ export function createYoutubeRouter() {
           title: result.title || req.body.title,
           privacyStatus: result.privacyStatus || req.body.privacyStatus,
           playlistId: result.playlistId,
+          channelId: req.body.channelId,
+          channelTitle: req.body.channelTitle,
           message: result.playlistWarning,
         }, envOverrides);
 
@@ -109,6 +111,8 @@ export function createYoutubeRouter() {
           title: req.body?.title,
           privacyStatus: req.body?.privacyStatus,
           playlistId: req.body?.playlistId,
+          channelId: req.body?.channelId,
+          channelTitle: req.body?.channelTitle,
           message: error instanceof Error ? error.message : "Yêu cầu YouTube thất bại.",
         }, readRuntimeEnvFromRequest(req));
         sendError(res, error);
@@ -148,6 +152,8 @@ export function createYoutubeRouter() {
           title: result.title || req.body.title,
           privacyStatus: result.privacyStatus || req.body.privacyStatus,
           playlistId: result.playlistId,
+          channelId: req.body.channelId,
+          channelTitle: req.body.channelTitle,
           message: result.playlistWarning,
         }, envOverrides);
 
@@ -163,6 +169,8 @@ export function createYoutubeRouter() {
           title: req.body?.title,
           privacyStatus: req.body?.privacyStatus,
           playlistId: req.body?.playlistId,
+          channelId: req.body?.channelId,
+          channelTitle: req.body?.channelTitle,
           message: error instanceof Error ? error.message : "Yêu cầu YouTube thất bại.",
         }, readRuntimeEnvFromRequest(req));
         sendError(res, error);

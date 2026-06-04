@@ -21,5 +21,7 @@ export type YoutubeUploadHistoryItem = {
   title?: string;
   privacyStatus?: string;
   playlistId?: string;
+  channelId?: string;
+  channelTitle?: string;
   message?: string;
 };

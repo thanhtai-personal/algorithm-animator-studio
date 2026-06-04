@@ -7,15 +7,17 @@ import type { YoutubeUploadHistoryItem } from "@/lib/youtubeApi";
 type Props = {
   history: YoutubeUploadHistoryItem[];
   refreshHistory: () => Promise<void>;
+  title?: string;
+  subtitle?: string;
 };
 
-export function YoutubeUploadHistoryCard({ history, refreshHistory }: Props) {
+export function YoutubeUploadHistoryCard({ history, refreshHistory, subtitle, title = "Lịch sử upload" }: Props) {
   return (
     <Card className="space-y-4 p-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="font-semibold">Lịch sử upload</h2>
-          <p className="text-xs text-muted-foreground">Theo dõi video đăng từ file upload hoặc video đã tạo trong app.</p>
+          <h2 className="font-semibold">{title}</h2>
+          <p className="text-xs text-muted-foreground">{subtitle || "Theo dõi video đăng từ file upload hoặc video đã tạo trong app."}</p>
         </div>
         <Button size="sm" variant="outline" onClick={() => void refreshHistory()}>
           <RefreshCcw className="mr-2 h-4 w-4" />Tải lại
@@ -23,12 +25,15 @@ export function YoutubeUploadHistoryCard({ history, refreshHistory }: Props) {
       </div>
       {history.length ? (
         <div className="space-y-2">
-          {history.slice(0, 12).map((item) => (
+          {history.slice(0, 20).map((item) => (
             <div key={item.id} className="rounded-lg border border-border p-3">
               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div>
                   <p className="font-medium">{item.title || item.sourceFileName || "Untitled upload"}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(item.attemptedAtMs).toLocaleString()} · {item.source}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(item.attemptedAtMs).toLocaleString()} · {item.source}
+                    {item.channelTitle ? ` · ${item.channelTitle}` : ""}
+                  </p>
                 </div>
                 <Badge variant={item.status === "success" ? "default" : "destructive"}>{item.status}</Badge>
               </div>

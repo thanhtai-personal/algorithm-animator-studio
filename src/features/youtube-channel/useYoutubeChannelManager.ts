@@ -18,11 +18,13 @@ import {
   type YoutubeUploadHistoryItem,
   type YoutubeUploadResult,
 } from "@/lib/youtubeApi";
-import { readYoutubeChannelPlan, writeYoutubeChannelPlan } from "./channelPlanStorage";
-import type { AuthStatus, YoutubeChannelPlan } from "./types";
-
-const TOKEN_KEY = "kai-studio.youtube.refreshToken";
-const LEGACY_TOKEN_KEY = "algoshorts.youtube.refreshToken";
+import {
+  createManualManagedChannel,
+  readYoutubeChannelWorkspace,
+  upsertManagedChannel,
+  writeYoutubeChannelWorkspace,
+} from "./channelPlanStorage";
+import type { AuthStatus, YoutubeChannelPlan, YoutubeChannelWorkspace, YoutubeManagedChannel } from "./types";
 
 const DEFAULT_FORM: YoutubeUploadForm = {
   title: "Algorithm explained visually",
@@ -40,17 +42,19 @@ const DEFAULT_FORM: YoutubeUploadForm = {
 export function useYoutubeChannelManager() {
   const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
   const [config, setConfig] = useState<YoutubeConfigStatus | null>(null);
-  const [refreshToken, setRefreshToken] = useState(() => readStoredToken());
+  const [workspace, setWorkspaceState] = useState<YoutubeChannelWorkspace>(() => readYoutubeChannelWorkspace());
   const [playlists, setPlaylists] = useState<YoutubePlaylist[]>([]);
-  const [channel, setChannel] = useState<YoutubeChannelProfile | null>(null);
+  const [channel, setChannel] = useState<YoutubeChannelProfile | null>(() => channelSnapshot(getActiveChannel(readYoutubeChannelWorkspace())));
   const [history, setHistory] = useState<YoutubeUploadHistoryItem[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [lastExported, setLastExported] = useState<ExportedVideoAsset | null>(() => getLastExportedVideo());
   const [form, setForm] = useState<YoutubeUploadForm>(DEFAULT_FORM);
-  const [plan, setPlan] = useState<YoutubeChannelPlan>(() => readYoutubeChannelPlan());
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<YoutubeUploadResult | null>(null);
 
+  const activeChannel = useMemo(() => getActiveChannel(workspace), [workspace]);
+  const refreshToken = activeChannel?.refreshToken || "";
+  const plan = activeChannel?.plan;
   const selectedFile = videoFile ?? lastExported?.file ?? null;
   const selectedMusicLicense = !videoFile ? lastExported?.youtubeDescriptionAppend : undefined;
   const displayedDescription = appendYoutubeDescriptionCredit(
@@ -60,6 +64,7 @@ export function useYoutubeChannelManager() {
   );
   const redirectUri = useMemo(() => resolveYoutubeRedirectUri(config?.redirectUri), [config?.redirectUri]);
   const canUpload = Boolean(selectedFile && refreshToken && config?.hasClientId && config?.hasClientSecret);
+  const activeHistory = useMemo(() => filterHistoryForChannel(history, activeChannel), [history, activeChannel]);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,8 +99,9 @@ export function useYoutubeChannelManager() {
       const latest = getLastExportedVideo();
       setForm((current) => applyExportMetadata({ ...current, ...nextConfig.defaults, title: current.title || nextConfig.defaults.title }, latest));
       await exchangeCodeIfNeeded(resolveYoutubeRedirectUri(nextConfig.redirectUri));
-      const token = readStoredToken();
-      if (token) await refreshChannelData(token);
+      const current = getActiveChannel(readYoutubeChannelWorkspace());
+      setChannel(channelSnapshot(current));
+      if (current?.refreshToken) await refreshChannelData(current.refreshToken, current.localId);
       await refreshHistory();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không đọc được cấu hình YouTube.");
@@ -108,10 +114,16 @@ export function useYoutubeChannelManager() {
     if (!code) return;
     const auth = await exchangeYoutubeCode(code, codeRedirectUri);
     if (!auth.refreshToken) throw new Error("Google không trả refresh token. Hãy revoke quyền cũ rồi cấp lại với prompt consent.");
-    storeToken(auth.refreshToken);
-    setRefreshToken(auth.refreshToken);
+
+    const [nextProfile, nextPlaylists] = await Promise.all([
+      getYoutubeChannel(auth.refreshToken),
+      getYoutubePlaylists(auth.refreshToken),
+    ]);
+    setPlaylists(nextPlaylists);
+    setChannel(nextProfile);
+    setWorkspace((current) => upsertManagedChannel(current, nextProfile, auth.refreshToken));
     window.history.replaceState({}, document.title, window.location.pathname);
-    toast.success("Đã cấp quyền YouTube.");
+    toast.success(`Đã cấp quyền YouTube cho kênh ${nextProfile.title}.`);
   }
 
   async function connectYoutube() {
@@ -124,16 +136,17 @@ export function useYoutubeChannelManager() {
     }
   }
 
-  async function refreshChannelData(token = refreshToken) {
+  async function refreshChannelData(token = refreshToken, localId = activeChannel?.localId) {
     if (!token) {
       setPlaylists([]);
-      setChannel(null);
+      setChannel(channelSnapshot(activeChannel));
       return;
     }
     try {
       const [nextPlaylists, nextChannel] = await Promise.all([getYoutubePlaylists(token), getYoutubeChannel(token)]);
       setPlaylists(nextPlaylists);
       setChannel(nextChannel);
+      setWorkspace((current) => upsertManagedChannel(current, nextChannel, token));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không tải được dữ liệu kênh YouTube.");
     }
@@ -149,14 +162,20 @@ export function useYoutubeChannelManager() {
 
   async function upload() {
     if (!selectedFile) return toast.error("Chưa chọn video để đăng.");
-    if (!refreshToken) return toast.error("Chưa cấp quyền YouTube.");
+    if (!refreshToken) return toast.error("Chưa cấp quyền YouTube cho kênh đang chọn.");
     setLoading(true);
     setResult(null);
     try {
       const next = await uploadYoutubeVideo(
         selectedFile,
         refreshToken,
-        normalizeForm({ ...form, description: displayedDescription, musicLicenseText: selectedMusicLicense })
+        normalizeForm({
+          ...form,
+          description: displayedDescription,
+          musicLicenseText: selectedMusicLicense,
+          channelId: activeChannel?.youtubeChannelId,
+          channelTitle: activeChannel?.title,
+        })
       );
       setResult(next);
       toast.success(next.playlistWarning ? "Video đã đăng, nhưng playlist có cảnh báo." : "Đã upload YouTube.");
@@ -169,12 +188,13 @@ export function useYoutubeChannelManager() {
   }
 
   function disconnect() {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(LEGACY_TOKEN_KEY);
-    setRefreshToken("");
+    if (!activeChannel) return;
+    setWorkspace((current) => ({
+      ...current,
+      channels: current.channels.map((item) => item.localId === activeChannel.localId ? { ...item, refreshToken: undefined } : item),
+    }));
     setPlaylists([]);
-    setChannel(null);
-    toast.info("Đã ngắt refresh token ở trình duyệt này.");
+    toast.info(`Đã ngắt refresh token của ${activeChannel.title}.`);
   }
 
   function useLatestExport() {
@@ -185,17 +205,71 @@ export function useYoutubeChannelManager() {
   }
 
   function updatePlan(patch: Partial<YoutubeChannelPlan>) {
-    setPlan((current) => {
-      const next = { ...current, ...patch };
-      writeYoutubeChannelPlan(next);
+    if (!activeChannel) return;
+    setWorkspace((current) => ({
+      ...current,
+      channels: current.channels.map((item) => {
+        if (item.localId !== activeChannel.localId) return item;
+        const nextPlan = { ...item.plan, ...patch };
+        return { ...item, plan: nextPlan, channelUrl: patch.channelUrl ?? item.channelUrl };
+      }),
+    }));
+  }
+
+  function updateActiveChannel(patch: Partial<YoutubeManagedChannel>) {
+    if (!activeChannel) return;
+    setWorkspace((current) => ({
+      ...current,
+      channels: current.channels.map((item) => {
+        if (item.localId !== activeChannel.localId) return item;
+        const nextPlan = patch.channelUrl !== undefined ? { ...item.plan, channelUrl: patch.channelUrl } : item.plan;
+        return { ...item, ...patch, plan: nextPlan };
+      }),
+    }));
+    setChannel((current) => current ? { ...current, title: patch.title ?? current.title } : current);
+  }
+
+  function addManualChannel() {
+    const channel = createManualManagedChannel();
+    setWorkspace((current) => ({ activeChannelLocalId: channel.localId, channels: [channel, ...current.channels] }));
+    setChannel(channelSnapshot(channel));
+    setPlaylists([]);
+    toast.success("Đã thêm kênh nháp để quản lý kế hoạch.");
+  }
+
+  function removeChannel(localId: string) {
+    setWorkspace((current) => {
+      const channels = current.channels.filter((item) => item.localId !== localId);
+      return { activeChannelLocalId: channels[0]?.localId || "", channels };
+    });
+    toast.info("Đã xóa kênh khỏi workspace local.");
+  }
+
+  function selectChannel(localId: string, shouldRefresh = true) {
+    const next = workspace.channels.find((item) => item.localId === localId || item.youtubeChannelId === localId);
+    if (!next) return;
+    setWorkspace((current) => ({ ...current, activeChannelLocalId: next.localId }));
+    setChannel(channelSnapshot(next));
+    setResult(null);
+    setPlaylists([]);
+    if (shouldRefresh && next.refreshToken) void refreshChannelData(next.refreshToken, next.localId);
+  }
+
+  function setWorkspace(updater: (current: YoutubeChannelWorkspace) => YoutubeChannelWorkspace) {
+    setWorkspaceState((current) => {
+      const next = updater(current);
+      writeYoutubeChannelWorkspace(next);
       return next;
     });
   }
 
   return {
+    activeChannel,
+    activeHistory,
     authStatus,
     canUpload,
     channel,
+    channels: workspace.channels,
     config,
     displayedDescription,
     form,
@@ -209,10 +283,14 @@ export function useYoutubeChannelManager() {
     selectedFile,
     selectedMusicLicense,
     videoFile,
+    addManualChannel,
     connectYoutube,
     disconnect,
     refreshChannelData,
     refreshHistory,
+    removeChannel,
+    selectChannel,
+    updateActiveChannel,
     setForm,
     setPlan: updatePlan,
     setVideoFile,
@@ -234,6 +312,30 @@ function applyExportMetadata(form: YoutubeUploadForm, asset: ExportedVideoAsset 
   };
 }
 
+function getActiveChannel(workspace: YoutubeChannelWorkspace) {
+  return workspace.channels.find((item) => item.localId === workspace.activeChannelLocalId) || workspace.channels[0] || null;
+}
+
+function channelSnapshot(channel: YoutubeManagedChannel | null): YoutubeChannelProfile | null {
+  if (!channel) return null;
+  return {
+    id: channel.youtubeChannelId || channel.localId,
+    title: channel.title,
+    description: channel.description || "",
+    customUrl: channel.customUrl,
+    thumbnailUrl: channel.thumbnailUrl,
+    subscriberCount: channel.subscriberCount,
+    videoCount: channel.videoCount,
+    viewCount: channel.viewCount,
+    uploadsPlaylistId: channel.uploadsPlaylistId,
+  };
+}
+
+function filterHistoryForChannel(history: YoutubeUploadHistoryItem[], channel: YoutubeManagedChannel | null) {
+  if (!channel?.youtubeChannelId) return history;
+  return history.filter((item) => !item.channelId || item.channelId === channel.youtubeChannelId);
+}
+
 function resolveYoutubeRedirectUri(configuredRedirectUri?: string) {
   const browserRedirectUri = `${window.location.origin}/youtube`;
   const configured = configuredRedirectUri?.trim();
@@ -249,15 +351,4 @@ function resolveYoutubeRedirectUri(configuredRedirectUri?: string) {
   } catch {
     return browserRedirectUri;
   }
-}
-
-function readStoredToken() {
-  const token = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(LEGACY_TOKEN_KEY) || "";
-  if (token && !localStorage.getItem(TOKEN_KEY)) localStorage.setItem(TOKEN_KEY, token);
-  return token;
-}
-
-function storeToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem(LEGACY_TOKEN_KEY, token);
 }

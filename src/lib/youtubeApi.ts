@@ -33,6 +33,8 @@ export type YoutubeUploadHistoryItem = {
   title?: string;
   privacyStatus?: string;
   playlistId?: string;
+  channelId?: string;
+  channelTitle?: string;
   message?: string;
 };
 
@@ -48,6 +50,8 @@ export type YoutubeUploadForm = {
   notifySubscribers: boolean;
   containsSyntheticMedia: boolean;
   musicLicenseText?: string;
+  channelId?: string;
+  channelTitle?: string;
 };
 
 export type YoutubeUploadResult = {
@@ -114,6 +118,8 @@ export async function uploadYoutubeVideo(file: File, refreshToken: string, form:
   append(data, "notifySubscribers", String(form.notifySubscribers));
   append(data, "containsSyntheticMedia", String(form.containsSyntheticMedia));
   append(data, "musicLicenseText", form.musicLicenseText || "");
+  append(data, "channelId", form.channelId || "");
+  append(data, "channelTitle", form.channelTitle || "");
 
   return parseApiResponse<YoutubeUploadResult>(await fetch(buildApiUrl("/api/youtube/upload"), {
     method: "POST",

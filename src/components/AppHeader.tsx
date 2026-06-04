@@ -35,7 +35,7 @@ const getPageMeta = (lang: Lang): Record<string, { subtitle: string }> => ({
     subtitle: lang === "vi" ? "Tổng hợp tin Manchester United, viết kịch bản, đọc Piper và tạo video nháp." : "Collect Manchester United news, script it, voice it and draft videos.",
   },
   "/youtube": {
-    subtitle: lang === "vi" ? "Quản lý kênh YouTube, playlist, metadata, lịch sử upload và đăng video đã xuất." : "Manage YouTube channel, playlists, metadata, upload history and exported videos.",
+    subtitle: lang === "vi" ? "Quản lý đa kênh YouTube, playlist, metadata, lịch sử upload và đăng video đã xuất." : "Manage multiple YouTube channels, playlists, metadata, upload history and exported videos.",
   },
   "/assets": {
     subtitle: lang === "vi" ? "Quản lý file voice và video đã tạo trên server." : "Manage generated voice and video files on the server.",
@@ -44,10 +44,10 @@ const getPageMeta = (lang: Lang): Record<string, { subtitle: string }> => ({
     subtitle: lang === "vi" ? "Cấu hình local Piper runtime path và kiểm tra trạng thái." : "Configure local Piper runtime paths and health check.",
   },
   "/youtube-publishing": {
-    subtitle: lang === "vi" ? "Quản lý kênh YouTube, playlist, metadata, lịch sử upload và đăng video đã xuất." : "Manage YouTube channel, playlists, metadata, upload history and exported videos.",
+    subtitle: lang === "vi" ? "Quản lý đa kênh YouTube, playlist, metadata, lịch sử upload và đăng video đã xuất." : "Manage multiple YouTube channels, playlists, metadata, upload history and exported videos.",
   },
   "/social-publishing": {
-    subtitle: lang === "vi" ? "Quản lý kênh YouTube, playlist, metadata, lịch sử upload và đăng video đã xuất." : "Manage YouTube channel, playlists, metadata, upload history and exported videos.",
+    subtitle: lang === "vi" ? "Quản lý đa kênh YouTube, playlist, metadata, lịch sử upload và đăng video đã xuất." : "Manage multiple YouTube channels, playlists, metadata, upload history and exported videos.",
   },
 });
 

@@ -42,6 +42,22 @@ export type ElevenLabsModel = {
 
 export type ElevenLabsVoice = { id: string; label: string };
 
+export type SupertonicVoice = { id: string; label: string; description?: string };
+
+export type SupertonicConfig = {
+  enabled: boolean;
+  serverOk: boolean;
+  baseUrl: string;
+  model: string;
+  defaultVoice: string;
+  defaultLang: string;
+  defaultTotalSteps: number;
+  voices: SupertonicVoice[];
+  sampleRate?: number;
+  version?: string;
+  error?: string;
+};
+
 export type ElevenLabsConfig = {
   hasApiKey: boolean;
   models: ElevenLabsModel[];
@@ -88,7 +104,27 @@ export async function generatePiperVoice(payload: {
 }
 
 export async function getElevenLabsConfig() {
-  return parseApiResponse<ElevenLabsConfig>(await fetch(buildApiUrl("/api/elevenlabs/config")));
+  return parseApiResponse<ElevenLabsConfig>(await fetch(buildApiUrl("/api/elevenlabs/config"), { headers: buildRuntimeSettingsHeaders() }));
+}
+
+export async function getSupertonicConfig() {
+  return parseApiResponse<SupertonicConfig>(await fetch(buildApiUrl("/api/supertonic/config"), { headers: buildRuntimeSettingsHeaders() }));
+}
+
+export async function generateSupertonicVoice(payload: {
+  text: string;
+  segments?: string[];
+  voice: string;
+  lang: string;
+  speed: number;
+  totalSteps: number;
+  fileName: string;
+}) {
+  return parseApiResponse<VoiceGenerateResult>(await fetch(buildApiUrl("/api/supertonic/generate"), {
+    method: "POST",
+    headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ ...payload, responseFormat: "wav" }),
+  }));
 }
 
 export async function generateElevenLabsVoice(payload: {

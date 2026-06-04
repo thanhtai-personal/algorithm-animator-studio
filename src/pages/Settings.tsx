@@ -37,17 +37,19 @@ type PiperModel = {
 type SelectPathResponse = { ok: boolean; path: string };
 
 type ElevenLabsConfigResponse = { hasApiKey: boolean; voices: { id: string; label: string }[] };
+type SupertonicConfigResponse = { serverOk: boolean; baseUrl: string; model: string; defaultVoice: string; voices: { id: string; label: string }[]; error?: string };
 type VoiceRow = { id: string; label: string };
 
-type SettingsForm = Required<Pick<RuntimeSettings, "MODEL_DIR" | "PIPER_EXE" | "MUSIC_LIBRARY_DIR" | "ELEVENLABS_API_KEY" | "ELEVENLABS_VOICES">>;
+type SettingsForm = Required<Pick<RuntimeSettings, "MODEL_DIR" | "PIPER_EXE" | "MUSIC_LIBRARY_DIR" | "ELEVENLABS_API_KEY" | "ELEVENLABS_VOICES" | "SUPERTONIC_BASE_URL" | "SUPERTONIC_MODEL" | "SUPERTONIC_DEFAULT_VOICE" | "SUPERTONIC_DEFAULT_LANG" | "SUPERTONIC_TOTAL_STEPS">>;
 
-const EMPTY_FORM: SettingsForm = { MODEL_DIR: "", PIPER_EXE: "", MUSIC_LIBRARY_DIR: "", ELEVENLABS_API_KEY: "", ELEVENLABS_VOICES: "" };
+const EMPTY_FORM: SettingsForm = { MODEL_DIR: "", PIPER_EXE: "", MUSIC_LIBRARY_DIR: "", ELEVENLABS_API_KEY: "", ELEVENLABS_VOICES: "", SUPERTONIC_BASE_URL: "", SUPERTONIC_MODEL: "", SUPERTONIC_DEFAULT_VOICE: "", SUPERTONIC_DEFAULT_LANG: "", SUPERTONIC_TOTAL_STEPS: "" };
 
 export default function Settings() {
   const [form, setForm] = useState<SettingsForm>(() => ({ ...EMPTY_FORM, ...getRuntimeSettings() }));
   const [voiceRows, setVoiceRows] = useState<VoiceRow[]>(() => parseVoiceRows(getRuntimeSettings().ELEVENLABS_VOICES));
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [elevenLabs, setElevenLabs] = useState<ElevenLabsConfigResponse | null>(null);
+  const [supertonic, setSupertonic] = useState<SupertonicConfigResponse | null>(null);
   const [models, setModels] = useState<PiperModel[]>([]);
   const [loading, setLoading] = useState(false);
   const [selecting, setSelecting] = useState<string | null>(null);
@@ -62,14 +64,16 @@ export default function Settings() {
     setLoading(true);
     try {
       const headers = buildRuntimeSettingsHeaders();
-      const [healthData, modelData, elevenData] = await Promise.all([
+      const [healthData, modelData, elevenData, supertonicData] = await Promise.all([
         parseApiResponse<HealthResponse>(await fetch(buildApiUrl("/api/health"), { headers })),
         parseApiResponse<{ models: PiperModel[] }>(await fetch(buildApiUrl("/api/models"), { headers })),
         parseApiResponse<ElevenLabsConfigResponse>(await fetch(buildApiUrl("/api/elevenlabs/config"), { headers })),
+        parseApiResponse<SupertonicConfigResponse>(await fetch(buildApiUrl("/api/supertonic/config"), { headers })),
       ]);
       setHealth(healthData);
       setModels(modelData.models);
       setElevenLabs(elevenData);
+      setSupertonic(supertonicData);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không kiểm tra được Piper.");
     } finally {
@@ -194,6 +198,54 @@ export default function Settings() {
             />
             <VoiceRowsTable rows={voiceRows} onAdd={addVoiceRow} onUpdate={updateVoiceRow} onRemove={removeVoiceRow} />
 
+            <SecretInput
+              id="supertonic-base-url"
+              label="SUPERTONIC_BASE_URL"
+              description="URL của Supertonic local server, mặc định http://127.0.0.1:7788."
+              value={form.SUPERTONIC_BASE_URL}
+              placeholder="http://127.0.0.1:7788"
+              type="text"
+              onChange={(value) => updateField("SUPERTONIC_BASE_URL", value)}
+            />
+            <SecretInput
+              id="supertonic-model"
+              label="SUPERTONIC_MODEL"
+              description="Model Supertonic cần dùng, ví dụ supertonic-3."
+              value={form.SUPERTONIC_MODEL}
+              placeholder="supertonic-3"
+              type="text"
+              onChange={(value) => updateField("SUPERTONIC_MODEL", value)}
+            />
+            <div className="grid gap-3 md:grid-cols-3">
+              <SecretInput
+                id="supertonic-default-voice"
+                label="SUPERTONIC_DEFAULT_VOICE"
+                description="Voice mặc định, ví dụ M1/F1 hoặc custom voice đã import."
+                value={form.SUPERTONIC_DEFAULT_VOICE}
+                placeholder="M1"
+                type="text"
+                onChange={(value) => updateField("SUPERTONIC_DEFAULT_VOICE", value)}
+              />
+              <SecretInput
+                id="supertonic-default-lang"
+                label="SUPERTONIC_DEFAULT_LANG"
+                description="Ngôn ngữ mặc định: en, vi hoặc na."
+                value={form.SUPERTONIC_DEFAULT_LANG}
+                placeholder="en"
+                type="text"
+                onChange={(value) => updateField("SUPERTONIC_DEFAULT_LANG", value)}
+              />
+              <SecretInput
+                id="supertonic-total-steps"
+                label="SUPERTONIC_TOTAL_STEPS"
+                description="Chất lượng 5-12, mặc định 8."
+                value={form.SUPERTONIC_TOTAL_STEPS}
+                placeholder="8"
+                type="text"
+                onChange={(value) => updateField("SUPERTONIC_TOTAL_STEPS", value)}
+              />
+            </div>
+
             <div className="flex flex-wrap gap-2">
               <Button onClick={handleSave}><Save className="mr-2 h-4 w-4" /> Lưu settings</Button>
               <Button variant="outline" onClick={refreshHealth} disabled={loading}>
@@ -215,6 +267,7 @@ export default function Settings() {
               <StatusTile label="Piper exe" ok={Boolean(health?.piperExists)} value={health?.piperExe || "-"} />
               <StatusTile label="Models" ok={availableModels > 0} value={`${availableModels}/${models.length} model sẵn sàng`} />
               <StatusTile label="ElevenLabs" ok={Boolean(elevenLabs?.hasApiKey)} value={elevenLabs?.hasApiKey ? `${elevenLabs.voices.length} voice đã cấu hình` : "Chưa có API key"} />
+              <StatusTile label="Supertonic" ok={Boolean(supertonic?.serverOk)} value={supertonic?.serverOk ? `${supertonic.voices.length} voice · ${supertonic.model}` : supertonic?.error || "Chưa chạy server"} />
             </div>
             <div className="rounded-lg border bg-muted/30 p-3 text-sm">
               <p className="font-medium">Model dir đang dùng</p>
@@ -273,14 +326,14 @@ function PathInput({ id, label, description, value, placeholder, busy, onChange,
   );
 }
 
-function SecretInput(props: { id: string; label: string; description: string; value: string; placeholder: string; onChange: (value: string) => void }) {
+function SecretInput(props: { id: string; label: string; description: string; value: string; placeholder: string; type?: string; onChange: (value: string) => void }) {
   return (
     <div className="space-y-2">
       <Label htmlFor={props.id}>{props.label}</Label>
       <p className="text-sm text-muted-foreground">{props.description}</p>
       <Input
         id={props.id}
-        type="password"
+        type={props.type ?? "password"}
         autoComplete="off"
         value={props.value}
         placeholder={props.placeholder}

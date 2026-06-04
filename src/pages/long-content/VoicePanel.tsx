@@ -31,6 +31,7 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
             <SelectItem value="browser">Browser TTS · preview only</SelectItem>
             <SelectItem value="piper">Piper local · tạo file và nhúng vào video</SelectItem>
             <SelectItem value="elevenlabs">ElevenLabs PRO · tạo file và nhúng vào video</SelectItem>
+            <SelectItem value="supertonic">Supertonic local · 44.1kHz WAV</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -77,6 +78,28 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
           <p className="text-xs text-muted-foreground">API key: {s.elevenConfig?.hasApiKey ? "đã cấu hình" : "chưa có ELEVENLABS_API_KEY"}</p>
         </div>
       ) : null}
+
+      {s.voiceProvider === "supertonic" ? (
+        <div className="grid gap-3">
+          <div>
+            <Label>Supertonic voice</Label>
+            <Select value={s.supertonicVoice} onValueChange={s.setSupertonicVoice}>
+              <SelectTrigger className="mt-2"><SelectValue placeholder="Chọn voice Supertonic" /></SelectTrigger>
+              <SelectContent>{(s.supertonicConfig?.voices ?? []).map((voice) => <SelectItem key={voice.id} value={voice.id}>{voice.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="rounded-lg border border-border bg-background/40 p-3 text-xs text-muted-foreground">
+            <div className="grid gap-1">
+              <span>Server: <strong className={s.supertonicConfig?.serverOk ? "text-emerald-300" : "text-rose-300"}>{s.supertonicConfig?.serverOk ? "đã kết nối" : "chưa chạy"}</strong></span>
+              <span>Base URL: <strong>{s.supertonicConfig?.baseUrl || "http://127.0.0.1:7788"}</strong></span>
+              <span>Model: <strong>{s.supertonicConfig?.model || "supertonic-3"}</strong></span>
+              {s.supertonicConfig?.error ? <span className="text-yellow-300">{s.supertonicConfig.error}</span> : null}
+            </div>
+            <Button type="button" size="sm" variant="outline" className="mt-3" onClick={s.refreshPiperRuntime}><RefreshCcw className="mr-2 h-3.5 w-3.5" /> Kiểm tra</Button>
+          </div>
+          <NumberSlider label="Chất lượng Supertonic" value={s.supertonicTotalSteps} min={5} max={12} suffix=" steps" step={1} onChange={s.setSupertonicTotalSteps} />
+        </div>
+      ) : null}
       <NumberSlider label="Tốc độ đọc" value={s.narrationRate} min={0.7} max={1.2} suffix="x" step={0.05} onChange={s.setNarrationRate} />
       <NumberSlider label="Âm lượng voice" value={s.narrationVol} min={0} max={100} suffix="%" onChange={s.setNarrationVol} />
       <Button className="w-full" variant={s.voiceProvider === "browser" ? "outline" : "default"} onClick={s.generateVoiceOver} disabled={s.voiceLoading}>
@@ -84,7 +107,7 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
       </Button>
       {s.voiceUrl ? <audio className="w-full" controls src={s.voiceUrl} /> : null}
       <p className="text-xs text-muted-foreground">
-        Browser TTS chỉ dùng để nghe thử. Muốn video export có voice, hãy chọn Piper hoặc ElevenLabs.
+        Browser TTS chỉ dùng để nghe thử. Muốn video export có voice, hãy chọn Piper, ElevenLabs hoặc Supertonic.
         {s.voiceFileName ? ` File hiện tại: ${s.voiceFileName}` : ""}
       </p>
     </Card>

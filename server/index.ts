@@ -27,6 +27,7 @@ import { createMuNewsRouter } from "./routes/muNewsRoutes";
 import { createModelRouter } from "./routes/modelRoutes";
 import { createPiperRuntimeRouter } from "./routes/piperRuntimeRoutes";
 import { createSystemRouter } from "./routes/systemRoutes";
+import { createSupertonicRouter } from "./routes/supertonicRoutes";
 import { createStoryReviewRouter } from "./routes/storyReviewRoutes";
 import { createVideoRouter } from "./routes/videoRoutes";
 import { createWebExtractRouter } from "./routes/webExtractRoutes";
@@ -48,7 +49,7 @@ app.use(`/${GENERATED_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedD
 app.use(`/${GENERATED_PREVIEW_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedPreviewDir));
 app.use(`/${GENERATED_VIDEO_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedVideoDir));
 app.use(`/${GENERATED_BACKGROUND_MUSIC_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedBackgroundMusicDir));
-app.use("/api", createHealthRouter(), createModelRouter(), createMusicLibraryRouter(), createMuNewsRouter(), createPiperRuntimeRouter(), createSystemRouter(), createResourceRouter(), createStoryReviewRouter(), createWebExtractRouter(), createGenerateRouter(), createElevenLabsRouter(), createVideoRouter(), createYoutubeRouter());
+app.use("/api", createHealthRouter(), createModelRouter(), createMusicLibraryRouter(), createMuNewsRouter(), createPiperRuntimeRouter(), createSystemRouter(), createResourceRouter(), createStoryReviewRouter(), createWebExtractRouter(), createGenerateRouter(), createElevenLabsRouter(), createSupertonicRouter(), createVideoRouter(), createYoutubeRouter());
 
 app.listen(PORT, () => {
   console.log(`Algo voice backend running at http://localhost:${PORT}`);

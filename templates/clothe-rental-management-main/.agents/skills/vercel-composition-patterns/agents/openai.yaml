@@ -1,7 +1,0 @@
-interface:
-  display_name: "React Composition Patterns"
-  short_description: "Composition-first React patterns to replace boolean-prop and coupled-state designs."
-  default_prompt: "Refactor the target components toward composition patterns while preserving behavior."
-
-policy:
-  allow_implicit_invocation: false

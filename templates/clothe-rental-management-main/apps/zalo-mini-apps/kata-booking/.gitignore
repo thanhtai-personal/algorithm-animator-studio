@@ -1,7 +1,0 @@
-node_modules
-dist
-www
-.env
-.env.local
-.npm-cache
-tsconfig.tsbuildinfo

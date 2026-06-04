@@ -1,1 +1,0 @@
-export const AUTO_STOP_RECORDING_MS = 8_000;

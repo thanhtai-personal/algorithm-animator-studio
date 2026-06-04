@@ -1,7 +1,0 @@
-interface:
-  display_name: "Web Design Guidelines Review"
-  short_description: "Audit UI code for web interface quality and accessibility rules."
-  default_prompt: "Review these files against the web design guidelines and report findings."
-
-policy:
-  allow_implicit_invocation: false

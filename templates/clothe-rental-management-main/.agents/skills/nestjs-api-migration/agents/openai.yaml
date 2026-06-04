@@ -1,7 +1,0 @@
-interface:
-  display_name: "NestJS API Migration"
-  short_description: "Migrate APIs from legacy handlers to NestJS with parity and safe client cutover."
-  default_prompt: "Migrate this endpoint group from legacy handlers to NestJS with contract parity and caller cutover."
-
-policy:
-  allow_implicit_invocation: true

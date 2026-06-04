@@ -1,4 +1,0 @@
-interface:
-  display_name: "My Money Cloud Engineer"
-  short_description: "Implement safely in My Money Cloud architecture"
-  default_prompt: "Use $my-money-cloud-engineer to implement and debug features in this repo while preserving architecture and offline/auth invariants."

@@ -116,7 +116,7 @@ export function useYoutubeChannelManager() {
   async function exchangeCodeIfNeeded(codeRedirectUri = redirectUri) {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
-    if (!code) return;
+    if (!code || params.get("state")?.startsWith("kai-studio:")) return;
     const auth = await exchangeYoutubeCode(code, codeRedirectUri);
     if (!auth.refreshToken) throw new Error("Google không trả refresh token. Hãy revoke quyền cũ rồi cấp lại với prompt consent.");
 
@@ -375,7 +375,8 @@ function filterHistoryForChannel(history: YoutubeUploadHistoryItem[], channel: Y
 }
 
 function hasYoutubeOauthCode() {
-  return new URLSearchParams(window.location.search).has("code");
+  const params = new URLSearchParams(window.location.search);
+  return params.has("code") && !params.get("state")?.startsWith("kai-studio:");
 }
 
 function resolveYoutubeRedirectUri(configuredRedirectUri?: string) {

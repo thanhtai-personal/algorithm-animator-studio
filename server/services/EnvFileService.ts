@@ -4,6 +4,7 @@ import { parse } from "dotenv";
 import { SERVER_ROOT } from "../config/paths";
 
 const ENV_PATH = path.resolve(SERVER_ROOT, "..", ".env");
+const SERVER_ENV_PATH = path.resolve(SERVER_ROOT, ".env");
 
 export const DEFAULT_ENV_VALUES: Record<string, string> = {
   CLIENT_ORIGIN: "http://localhost:3000",
@@ -32,6 +33,18 @@ export const DEFAULT_ENV_VALUES: Record<string, string> = {
   YOUTUBE_MADE_FOR_KIDS: "false",
   YOUTUBE_NOTIFY_SUBSCRIBERS: "false",
   YOUTUBE_CONTAINS_SYNTHETIC_MEDIA: "true",
+  TIKTOK_CLIENT_KEY: "",
+  TIKTOK_CLIENT_SECRET: "",
+  TIKTOK_REDIRECT_URI: "http://localhost:3000/channel",
+  TIKTOK_SCOPES: "user.info.basic",
+  FACEBOOK_APP_ID: "",
+  FACEBOOK_APP_SECRET: "",
+  FACEBOOK_REDIRECT_URI: "http://localhost:3000/channel",
+  FACEBOOK_SCOPES: "pages_show_list,pages_read_engagement",
+  INSTAGRAM_APP_ID: "",
+  INSTAGRAM_APP_SECRET: "",
+  INSTAGRAM_REDIRECT_URI: "http://localhost:3000/channel",
+  INSTAGRAM_SCOPES: "instagram_basic,pages_show_list,pages_read_engagement",
   ELEVENLABS_API_KEY: "",
   ELEVENLABS_VOICES: "",
   SUPERTONIC_BASE_URL: "http://127.0.0.1:6688",
@@ -57,7 +70,8 @@ export function readEnvValues(overrides: RuntimeEnvValues = {}): RuntimeEnvValue
   return normalizeLegacyEnvValues({
     ...DEFAULT_ENV_VALUES,
     ...pickKnownEnv(process.env),
-    ...readDotEnvValues(),
+    ...readDotEnvValues(ENV_PATH),
+    ...readDotEnvValues(SERVER_ENV_PATH),
     ...pickKnownEnv(overrides),
   });
 }
@@ -86,10 +100,10 @@ function normalizeLegacyEnvValue(key: string, value: string): string {
   return LEGACY_LOCAL_ENV_VALUES[key]?.[trimmed] ?? value;
 }
 
-function readDotEnvValues(): RuntimeEnvValues {
-  if (!fs.existsSync(ENV_PATH)) {
+function readDotEnvValues(envPath: string): RuntimeEnvValues {
+  if (!fs.existsSync(envPath)) {
     return {};
   }
 
-  return pickKnownEnv(parse(fs.readFileSync(ENV_PATH, "utf8")));
+  return pickKnownEnv(parse(fs.readFileSync(envPath, "utf8")));
 }

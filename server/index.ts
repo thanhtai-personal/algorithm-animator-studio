@@ -21,6 +21,7 @@ import {
 } from "./config/paths";
 import { createElevenLabsRouter } from "./routes/elevenLabsRoutes";
 import { createGenerateRouter } from "./routes/generateRoutes";
+import { createChannelProviderRouter } from "./routes/channelProviderRoutes";
 import { createHealthRouter } from "./routes/healthRoutes";
 import { createMusicLibraryRouter } from "./routes/musicLibraryRoutes";
 import { createMuNewsRouter } from "./routes/muNewsRoutes";
@@ -49,7 +50,7 @@ app.use(`/${GENERATED_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedD
 app.use(`/${GENERATED_PREVIEW_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedPreviewDir));
 app.use(`/${GENERATED_VIDEO_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedVideoDir));
 app.use(`/${GENERATED_BACKGROUND_MUSIC_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedBackgroundMusicDir));
-app.use("/api", createHealthRouter(), createModelRouter(), createMusicLibraryRouter(), createMuNewsRouter(), createPiperRuntimeRouter(), createSystemRouter(), createResourceRouter(), createStoryReviewRouter(), createWebExtractRouter(), createGenerateRouter(), createElevenLabsRouter(), createSupertonicRouter(), createVideoRouter(), createYoutubeRouter());
+app.use("/api", createHealthRouter(), createModelRouter(), createMusicLibraryRouter(), createMuNewsRouter(), createPiperRuntimeRouter(), createSystemRouter(), createResourceRouter(), createStoryReviewRouter(), createWebExtractRouter(), createGenerateRouter(), createChannelProviderRouter(), createElevenLabsRouter(), createSupertonicRouter(), createVideoRouter(), createYoutubeRouter());
 
 app.listen(PORT, () => {
   console.log(`KAI STUDIO backend running at http://localhost:${PORT}`);

@@ -8,6 +8,22 @@ export type OAuthPopupMessage = {
   status: Exclude<OAuthPopupStatus, "closed" | "blocked">;
   message?: string;
   channelTitle?: string;
+  channel?: {
+    id: string;
+    platform: "facebook" | "tiktok" | "instagram";
+    name: string;
+    handle: string;
+    url: string;
+    thumbnailUrl?: string;
+  };
+  channels?: Array<{
+    id: string;
+    platform: "facebook" | "tiktok" | "instagram";
+    name: string;
+    handle: string;
+    url: string;
+    thumbnailUrl?: string;
+  }>;
 };
 
 export type OAuthPopupResult =

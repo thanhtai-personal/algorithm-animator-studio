@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { createSocialChannel, readSocialChannelWorkspace, writeSocialChannelWorkspace } from "../socialChannelStorage";
 import type { SocialChannel, SocialChannelWorkspace, SocialPlatform } from "../types";
+import type { ConnectedSocialProviderChannel } from "@/lib/channelProviderApi";
 
 export function useSocialChannelWorkspace() {
   const [workspace, setWorkspaceState] = useState<SocialChannelWorkspace>(() => readSocialChannelWorkspace());
@@ -77,6 +78,39 @@ export function useSocialChannelWorkspace() {
     toast.info("Đã ngắt kết nối và xóa kênh khỏi workspace.");
   }
 
+  function upsertConnectedChannel(profile: ConnectedSocialProviderChannel) {
+    let savedId = profile.id;
+    setWorkspace((current) => {
+      const now = Date.now();
+      const existing = current.channels.find((channel) => channel.platform === profile.platform && (channel.id === profile.id || channel.url === profile.url || channel.handle === profile.handle));
+      const nextChannel: SocialChannel = {
+        ...(existing || createSocialChannel(profile.platform, current.channels.filter((channel) => channel.platform === profile.platform).length + 1)),
+        id: existing?.id || profile.id,
+        platform: profile.platform,
+        name: profile.name,
+        handle: profile.handle,
+        url: profile.url,
+        status: "connected",
+        updatedAtMs: now,
+        createdAtMs: existing?.createdAtMs || now,
+      };
+      savedId = nextChannel.id;
+      const channels = existing
+        ? current.channels.map((channel) => channel.id === existing.id ? nextChannel : channel)
+        : [nextChannel, ...current.channels];
+      return { activePlatform: profile.platform, activeChannelId: savedId, channels };
+    });
+    toast.success(`Đã kết nối ${profile.name}.`);
+    return savedId;
+  }
+
+  function upsertConnectedChannels(profiles: ConnectedSocialProviderChannel[]) {
+    if (!profiles.length) return "";
+    let lastId = "";
+    for (const profile of profiles) lastId = upsertConnectedChannel(profile);
+    return lastId;
+  }
+
   return {
     activeChannel,
     activePlatform,
@@ -87,5 +121,7 @@ export function useSocialChannelWorkspace() {
     selectChannel,
     selectPlatform,
     updateChannel,
+    upsertConnectedChannel,
+    upsertConnectedChannels,
   };
 }

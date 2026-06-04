@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { SharedChannelSidebar, channelKey, type ChannelProvider, type ProviderConnectionState, type SharedChannelItem } from "@/features/channel-manager/SharedChannelSidebar";
 import { YoutubeChannelPlanCard } from "@/features/youtube-channel/components/YoutubeChannelPlanCard";
@@ -9,6 +9,9 @@ import { YoutubeUploadHistoryCard } from "@/features/youtube-channel/components/
 import { useYoutubeChannelManager } from "@/features/youtube-channel/useYoutubeChannelManager";
 import type { YoutubeManagedChannel } from "@/features/youtube-channel/types";
 import type { YoutubeConfigStatus } from "@/lib/youtubeApi";
+import { exchangeSocialProviderCode, getSocialProviderAuthUrl, getSocialProviderConfig, type SocialProviderConfigStatus } from "@/lib/channelProviderApi";
+import { isOAuthPopupWindow, notifyOAuthOpener, openOAuthPopup } from "@/lib/oauthPopup";
+import { createPkcePair, savePkceVerifier, takePkceVerifier } from "@/lib/oauthPkce";
 import { SocialChannelManagerCard } from "@/features/social-channel/components/SocialChannelManagerCard";
 import { useSocialChannelWorkspace } from "@/features/social-channel/hooks/useSocialChannelWorkspace";
 import type { SocialChannel, SocialPlatform } from "@/features/social-channel/types";
@@ -26,15 +29,17 @@ export default function YoutubePublishing() {
   const [activeTab, setActiveTab] = useState<ChannelTab>("channels");
   const [activeKey, setActiveKey] = useState("");
   const [channelMenuCollapsed, setChannelMenuCollapsed] = useState(false);
+  const [socialProviderConfig, setSocialProviderConfig] = useState<SocialProviderConfigStatus | null>(null);
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
+  const processedSocialCallbackRef = useRef(false);
   const vi = lang === "vi";
   const sharedChannels = useMemo(
     () => buildSharedChannels(manager.channels, socialManager.channels),
     [manager.channels, socialManager.channels]
   );
   const providerStates = useMemo(
-    () => buildProviderStates(manager.config, vi),
-    [manager.config, vi]
+    () => buildProviderStates(manager.config, socialProviderConfig, vi),
+    [manager.config, socialProviderConfig, vi]
   );
   const activeSharedChannel = sharedChannels.find((channel) => channelKey(channel) === activeKey) || sharedChannels[0] || null;
   const activeIsYoutube = activeSharedChannel?.provider === "youtube";
@@ -43,6 +48,48 @@ export default function YoutubePublishing() {
   } as CSSProperties;
 
   useEffect(() => subscribeSystemLang(setLang), []);
+  useEffect(() => {
+    let cancelled = false;
+    getSocialProviderConfig()
+      .then((config) => {
+        if (!cancelled) setSocialProviderConfig(config);
+      })
+      .catch((error) => {
+        if (!cancelled) toast.error(error instanceof Error ? error.message : txt(vi, "Không đọc được cấu hình provider.", "Could not read provider config."));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [vi]);
+  useEffect(() => {
+    if (processedSocialCallbackRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const provider = parseSocialOAuthState(params.get("state"));
+    if (!code || !provider) return;
+
+    processedSocialCallbackRef.current = true;
+    const redirectUri = resolveProviderRedirectUri(socialProviderConfig?.providers[provider]?.redirectUri);
+    const codeVerifier = takePkceVerifier(params.get("state") || "");
+
+    exchangeSocialProviderCode(provider, code, redirectUri, codeVerifier)
+      .then(({ channel, channels }) => {
+        const connectedChannels = channels?.length ? channels : channel ? [channel] : [];
+        socialManager.upsertConnectedChannels(connectedChannels);
+        window.history.replaceState({}, document.title, window.location.pathname);
+        if (isOAuthPopupWindow()) {
+          notifyOAuthOpener({ provider, status: "success", channelTitle: channelTitle(connectedChannels, provider), channel: connectedChannels[0], channels: connectedChannels });
+          window.setTimeout(() => window.close(), 250);
+          return;
+        }
+        toast.success(txt(vi, `Đã kết nối ${providerLabel(provider)}.`, `${providerLabel(provider)} connected.`));
+      })
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : txt(vi, "Kết nối provider thất bại.", "Provider connection failed.");
+        if (isOAuthPopupWindow()) notifyOAuthOpener({ provider, status: "error", message });
+        toast.error(message);
+      });
+  }, [socialManager, socialProviderConfig, vi]);
   useEffect(() => {
     if (!sharedChannels.length) {
       setActiveKey("");
@@ -72,13 +119,36 @@ export default function YoutubePublishing() {
       return;
     }
 
-    toast.error(
-      txt(
-        vi,
-        `Chưa có OAuth ${providerLabel(provider)}. Kênh chỉ được thêm sau khi connect thành công.`,
-        `${providerLabel(provider)} OAuth is not implemented yet. A channel is added only after a successful connection.`
-      )
-    );
+    void connectSocialProvider(provider);
+  }
+
+  async function connectSocialProvider(provider: SocialPlatform) {
+    try {
+      const redirectUri = resolveProviderRedirectUri(socialProviderConfig?.providers[provider]?.redirectUri);
+      const state = createSocialOAuthState(provider);
+      const pkce = await createPkcePair();
+      savePkceVerifier(state, pkce.codeVerifier);
+      const authUrl = await getSocialProviderAuthUrl(provider, redirectUri, state, pkce.codeChallenge);
+      const result = await openOAuthPopup(authUrl, provider);
+
+      if (result.status === "success") {
+        const connectedChannels = result.channels?.length ? result.channels : result.channel ? [result.channel] : [];
+        socialManager.upsertConnectedChannels(connectedChannels);
+        toast.success(result.channelTitle ? `Đã kết nối ${result.channelTitle}.` : `Đã kết nối ${providerLabel(provider)}.`);
+        return;
+      }
+      if (result.status === "blocked") {
+        toast.error("Trình duyệt đã chặn popup OAuth. Hãy cho phép popup rồi thử lại.");
+        return;
+      }
+      if (result.status === "closed") {
+        toast.info(`Đã hủy kết nối ${providerLabel(provider)}. Chưa có kênh mới nào được tạo.`);
+        return;
+      }
+      toast.error(result.message || `Kết nối ${providerLabel(provider)} thất bại.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : `Không tạo được link OAuth ${providerLabel(provider)}.`);
+    }
   }
 
   function removeSharedChannel(channel: SharedChannelItem) {
@@ -236,13 +306,17 @@ function ProviderNotice({ channel, lang }: { channel: SharedChannelItem | null; 
   );
 }
 
-function buildProviderStates(config: YoutubeConfigStatus | null, vi: boolean): Record<ChannelProvider, ProviderConnectionState> {
+function buildProviderStates(config: YoutubeConfigStatus | null, socialConfig: SocialProviderConfigStatus | null, vi: boolean): Record<ChannelProvider, ProviderConnectionState> {
   const youtubeReady = Boolean(config?.hasClientId && config?.hasClientSecret);
   const socialReason = txt(
     vi,
-    "Provider này chưa được cấu hình OAuth/backend nên chưa thể kết nối.",
-    "This provider has no OAuth/backend configuration yet, so it cannot connect."
+    "Provider này chưa có đủ Client ID/Secret trong cấu hình.",
+    "This provider does not have enough Client ID/Secret configuration."
   );
+  const providerState = (provider: SocialPlatform) => ({
+    configured: Boolean(socialConfig?.providers[provider]?.configured),
+    disabledReason: socialConfig?.providers[provider]?.configured ? undefined : socialReason,
+  });
 
   return {
     youtube: {
@@ -251,9 +325,9 @@ function buildProviderStates(config: YoutubeConfigStatus | null, vi: boolean): R
         ? undefined
         : txt(vi, "YouTube chưa có Client ID/Client Secret.", "YouTube Client ID/Client Secret is not configured."),
     },
-    facebook: { configured: false, disabledReason: socialReason },
-    tiktok: { configured: false, disabledReason: socialReason },
-    instagram: { configured: false, disabledReason: socialReason },
+    facebook: providerState("facebook"),
+    tiktok: providerState("tiktok"),
+    instagram: providerState("instagram"),
   };
 }
 
@@ -282,6 +356,29 @@ function providerLabel(provider: ChannelProvider | SocialPlatform) {
   if (provider === "facebook") return "Facebook";
   if (provider === "instagram") return "Instagram";
   return "TikTok";
+}
+
+function createSocialOAuthState(provider: SocialPlatform) {
+  return `kai-studio:${provider}:${Date.now()}:${Math.random().toString(16).slice(2)}`;
+}
+
+function parseSocialOAuthState(state: string | null): SocialPlatform | null {
+  if (!state?.startsWith("kai-studio:")) return null;
+  const provider = state.split(":")[1];
+  if (provider === "facebook" || provider === "tiktok" || provider === "instagram") return provider;
+  return null;
+}
+
+function resolveProviderRedirectUri(configuredRedirectUri?: string) {
+  const fallback = `${window.location.origin}/channel`;
+  const configured = configuredRedirectUri?.trim();
+  return configured || fallback;
+}
+
+function channelTitle(channels: Array<{ name: string }>, provider: SocialPlatform) {
+  if (channels.length === 1) return channels[0].name;
+  if (channels.length > 1) return `${channels.length} ${providerLabel(provider)} channels`;
+  return providerLabel(provider);
 }
 
 function ScreenMessage({ text }: { text: string }) {

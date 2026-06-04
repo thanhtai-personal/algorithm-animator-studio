@@ -211,7 +211,7 @@ export function useLongContentStudio() {
   async function generateVoiceOver() {
     if (voiceProvider === "browser") {
       speakNarration(narrationScript, lang, narrationRate, narrationVol / 100);
-      toast.info("Đang đọc thử bằng Browser TTS. Browser TTS chỉ dùng để preview; export có voice cần Piper hoặc ElevenLabs.");
+      toast.info("Đang đọc thử bằng Browser TTS. Browser TTS chỉ dùng để preview; export có voice cần Piper, ElevenLabs hoặc Supertonic.");
       return;
     }
     setVoiceLoading(true);

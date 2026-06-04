@@ -25,9 +25,12 @@ Lần chạy đầu Supertonic sẽ tự tải model từ Hugging Face nếu dù
 SUPERTONIC_BASE_URL=http://127.0.0.1:6688
 SUPERTONIC_MODEL=supertonic-3
 SUPERTONIC_DEFAULT_VOICE=M1
-SUPERTONIC_DEFAULT_LANG=en
 SUPERTONIC_TOTAL_STEPS=8
 ```
+
+## Ngôn ngữ TTS
+
+Supertonic không còn chọn ngôn ngữ riêng trong Settings. Khi tạo voice-over trong Long Content Studio, frontend lấy ngôn ngữ hệ thống đang chọn ở header app (`en` hoặc `vi`) và truyền thẳng xuống `/api/supertonic/generate`.
 
 ## API nội bộ đã thêm
 

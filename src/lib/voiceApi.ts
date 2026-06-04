@@ -1,5 +1,6 @@
 import { buildApiUrl, parseApiResponse } from "./runtimeApi";
 import { buildRuntimeSettingsHeaders } from "./runtimeSettings";
+import type { Lang } from "./i18n";
 
 export type PiperModel = {
   key: string;
@@ -115,7 +116,7 @@ export async function generateSupertonicVoice(payload: {
   text: string;
   segments?: string[];
   voice: string;
-  lang: string;
+  lang: Lang;
   speed: number;
   totalSteps: number;
   fileName: string;

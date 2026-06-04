@@ -10,6 +10,7 @@ import type { LongContentStudio } from "./useLongContentStudio";
 export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
   const piperModels = [...s.piperModels].sort((a, b) => Number(b.lang === s.lang) - Number(a.lang === s.lang));
   const selectedPiperModel = s.piperModels.find((model) => model.key === s.piperModelKey);
+  const supertonicLangLabel = s.lang === "vi" ? "Vietnamese (vi)" : "English (en)";
   return (
     <Card className="space-y-4 border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.34),0_0_28px_rgba(16,185,129,0.05)]">
       <div>
@@ -93,6 +94,7 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
               <span>Server: <strong className={s.supertonicConfig?.serverOk ? "text-emerald-300" : "text-rose-300"}>{s.supertonicConfig?.serverOk ? "đã kết nối" : "chưa chạy"}</strong></span>
               <span>Base URL: <strong>{s.supertonicConfig?.baseUrl || "http://127.0.0.1:6688"}</strong></span>
               <span>Model: <strong>{s.supertonicConfig?.model || "supertonic-3"}</strong></span>
+              <span>Ngôn ngữ TTS: <strong className="text-emerald-300">{supertonicLangLabel}</strong> · lấy theo header app</span>
               {s.supertonicConfig?.error ? <span className="text-yellow-300">{s.supertonicConfig.error}</span> : null}
             </div>
             <Button type="button" size="sm" variant="outline" className="mt-3" onClick={s.refreshPiperRuntime}><RefreshCcw className="mr-2 h-3.5 w-3.5" /> Kiểm tra</Button>

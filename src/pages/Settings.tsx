@@ -40,9 +40,9 @@ type ElevenLabsConfigResponse = { hasApiKey: boolean; voices: { id: string; labe
 type SupertonicConfigResponse = { serverOk: boolean; baseUrl: string; model: string; defaultVoice: string; voices: { id: string; label: string }[]; error?: string };
 type VoiceRow = { id: string; label: string };
 
-type SettingsForm = Required<Pick<RuntimeSettings, "MODEL_DIR" | "PIPER_EXE" | "MUSIC_LIBRARY_DIR" | "ELEVENLABS_API_KEY" | "ELEVENLABS_VOICES" | "SUPERTONIC_BASE_URL" | "SUPERTONIC_MODEL" | "SUPERTONIC_DEFAULT_VOICE" | "SUPERTONIC_DEFAULT_LANG" | "SUPERTONIC_TOTAL_STEPS">>;
+type SettingsForm = Required<Pick<RuntimeSettings, "MODEL_DIR" | "PIPER_EXE" | "MUSIC_LIBRARY_DIR" | "ELEVENLABS_API_KEY" | "ELEVENLABS_VOICES" | "SUPERTONIC_BASE_URL" | "SUPERTONIC_MODEL" | "SUPERTONIC_DEFAULT_VOICE" | "SUPERTONIC_TOTAL_STEPS">>;
 
-const EMPTY_FORM: SettingsForm = { MODEL_DIR: "", PIPER_EXE: "", MUSIC_LIBRARY_DIR: "", ELEVENLABS_API_KEY: "", ELEVENLABS_VOICES: "", SUPERTONIC_BASE_URL: "", SUPERTONIC_MODEL: "", SUPERTONIC_DEFAULT_VOICE: "", SUPERTONIC_DEFAULT_LANG: "", SUPERTONIC_TOTAL_STEPS: "" };
+const EMPTY_FORM: SettingsForm = { MODEL_DIR: "", PIPER_EXE: "", MUSIC_LIBRARY_DIR: "", ELEVENLABS_API_KEY: "", ELEVENLABS_VOICES: "", SUPERTONIC_BASE_URL: "", SUPERTONIC_MODEL: "", SUPERTONIC_DEFAULT_VOICE: "", SUPERTONIC_TOTAL_STEPS: "" };
 
 export default function Settings() {
   const [form, setForm] = useState<SettingsForm>(() => ({ ...EMPTY_FORM, ...getRuntimeSettings() }));
@@ -216,7 +216,7 @@ export default function Settings() {
               type="text"
               onChange={(value) => updateField("SUPERTONIC_MODEL", value)}
             />
-            <div className="grid gap-3 md:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-2">
               <SecretInput
                 id="supertonic-default-voice"
                 label="SUPERTONIC_DEFAULT_VOICE"
@@ -225,15 +225,6 @@ export default function Settings() {
                 placeholder="M1"
                 type="text"
                 onChange={(value) => updateField("SUPERTONIC_DEFAULT_VOICE", value)}
-              />
-              <SecretInput
-                id="supertonic-default-lang"
-                label="SUPERTONIC_DEFAULT_LANG"
-                description="Ngôn ngữ mặc định: en, vi hoặc na."
-                value={form.SUPERTONIC_DEFAULT_LANG}
-                placeholder="en"
-                type="text"
-                onChange={(value) => updateField("SUPERTONIC_DEFAULT_LANG", value)}
               />
               <SecretInput
                 id="supertonic-total-steps"

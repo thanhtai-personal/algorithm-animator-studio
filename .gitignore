@@ -29,3 +29,4 @@ release/
 dist-electron/
 runtime/
 
+server/data

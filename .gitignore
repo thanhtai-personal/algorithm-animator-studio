@@ -30,3 +30,4 @@ dist-electron/
 runtime/
 
 server/data
+models/

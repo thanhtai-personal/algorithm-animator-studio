@@ -22,7 +22,7 @@ import { THEMES, Theme } from "@/lib/renderer";
 import type { ShortVideoType } from "@/lib/shortVideoTypes";
 import { buildMazeTournamentSeriesYoutubeMetadata, buildMazeTournamentYoutubeMetadata, buildYoutubeMetadata } from "@/lib/youtubeMetadata";
 import { ExportFormat } from "./exportFormats";
-import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm, maxDemoSizeForAlgorithm, normalizeAnimalArray, parseInputArray, shouldUseAlgorithmDemo } from "./demoArrays";
+import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm, maxDemoSizeForAlgorithm, shouldUseAlgorithmDemo } from "./demoArrays";
 import { exportAlgorithmVideo } from "./videoExport";
 import { renderStudioPreview } from "./renderStudioPreview";
 import { buildWorldTournamentTimeline, findTournamentWinner } from "./tournamentTimeline";
@@ -31,8 +31,8 @@ import { nextTournamentEntrants, normalizeTournamentEntrants, normalizeTournamen
 import { createWorldRandomSeed, readTournamentResults, readTournamentSettings, tournamentMusicForFrame, tournamentMusicLicenseText, writeTournamentResults, writeTournamentSettings, type StoredTournamentSettings } from "./studioTournamentStorage";
 import { useAlgorithmStudioPlayback } from "./useAlgorithmStudioPlayback";
 import { useAlgorithmStudioMusic } from "./useAlgorithmStudioMusic";
+import { useAlgorithmStudioArrayControls } from "./useAlgorithmStudioArrayControls";
 
-const DEFAULT_ANIMAL_ARRAY_SIZE = 14;
 
 type UseAlgorithmStudioOptions = {
   requireConfigAccess?: () => boolean;
@@ -304,47 +304,21 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     sfxSwap,
   });
 
-  const newArray = () => {
-    if (!requireConfigAccess()) return;
-    const trimmed = input.trim();
-    const inputMatchesCurrentArray = trimmed === arr.join(", ");
-    let next = columnVisualMode === "animal" ? demoAnimalArray(size) : trimmed && !inputMatchesCurrentArray
-      ? parseInputArray(input)
-      : demoArrayForAlgorithm(algoId, size);
-    if (columnVisualMode === "animal") next = normalizeAnimalArray(next);
-    if (!next.length) next = columnVisualMode === "animal" ? demoAnimalArray(size) : demoArrayForAlgorithm(algoId, size);
-    setSizeState(next.length);
-    setArr(next);
-    setInput(next.join(", "));
-    setFrameIdx(0);
-    setTransitionProgress(1);
-    setPlaying(false);
-  };
-
-  const setSize = (nextSize: number) => {
-    if (!requireConfigAccess()) return;
-    const effectiveSize = demoSizeForAlgorithm(algoId, nextSize);
-    setSizeState(effectiveSize);
-    const next = columnVisualMode === "animal" ? demoAnimalArray(effectiveSize) : demoArrayForAlgorithm(algoId, effectiveSize);
-    setArr(next);
-    setInput(next.join(", "));
-    setFrameIdx(0);
-    setTransitionProgress(1);
-    setPlaying(false);
-  };
-
-  const setColumnVisualModeWithDefaults = (value: ColumnVisualMode) => {
-    if (!requireConfigAccess()) return;
-    setColumnVisualMode(value);
-    if (value !== "animal") return;
-    const next = demoAnimalArray(DEFAULT_ANIMAL_ARRAY_SIZE);
-    setSizeState(DEFAULT_ANIMAL_ARRAY_SIZE);
-    setArr(next);
-    setInput(next.join(", "));
-    setFrameIdx(0);
-    setTransitionProgress(1);
-    setPlaying(false);
-  };
+  const { newArray, setSize, setColumnVisualModeWithDefaults } = useAlgorithmStudioArrayControls({
+    requireConfigAccess,
+    input,
+    arr,
+    size,
+    columnVisualMode,
+    algoId,
+    setSizeState,
+    setArr,
+    setInput,
+    setFrameIdx,
+    setTransitionProgress,
+    setPlaying,
+    setColumnVisualMode,
+  });
 
   const exportVideo = async () => {
     setExporting(true);

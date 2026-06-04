@@ -11,7 +11,7 @@ import { buildLongContentScenes, getSceneAtTime, getTotalDuration } from "@/lib/
 import type { LongVideoType } from "@/lib/longVideoTypes";
 import { buildLongVideoVoiceSegments } from "@/lib/longVideoVoice";
 import { THEMES } from "@/lib/renderer";
-import { generateElevenLabsVoice, generatePiperVoice, generateSupertonicVoice, getElevenLabsConfig, getPiperModels, getPiperRuntimeStatus, getSupertonicConfig, getVoiceHealth, importSupertonicVoiceStyle, installPiperModel, type ElevenLabsConfig, type PiperModel, type PiperRuntimeStatus, type SupertonicConfig, type VoiceGenerateResult, type VoiceHealth } from "@/lib/voiceApi";
+import { generateElevenLabsVoice, generatePiperVoice, generateSupertonicVoice, type VoiceGenerateResult } from "@/lib/voiceApi";
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
 import { buildYoutubeMetadata } from "@/lib/youtubeMetadata";
 import { ExportFormat, getExportFormat } from "../studio/exportFormats";
@@ -21,6 +21,7 @@ import { buildGeneratedVoiceScriptKey, type GeneratedVoiceProvider, useRestoreGe
 import { fitSceneDurationsToNarration } from "./voiceTiming";
 import { useKineticSlideSfx } from "./useKineticSlideSfx";
 import { useLongContentMusic } from "./useLongContentMusic";
+import { useLongContentVoiceRuntime } from "./useLongContentVoiceRuntime";
 import { useVideoBackgroundImages } from "./useVideoBackgroundImages";
 const LONG_W = 1920, LONG_H = 1080, DEFAULT_GRAPH = "A-B:4, A-C:2, B-D:5, C-D:8, C-E:10, D-E:2, D-F:6, E-G:3, F-G:1";
 export type VoiceProvider = "browser" | "piper" | "elevenlabs" | "supertonic";
@@ -56,19 +57,15 @@ export function useLongContentStudio() {
   const [voiceSegmentDurationsSec, setVoiceSegmentDurationsSec] = useState<number[]>([]);
   const [voiceScriptKey, setVoiceScriptKey] = useState("");
   const [voiceLoading, setVoiceLoading] = useState(false);
-  const [voiceHealth, setVoiceHealth] = useState<VoiceHealth | null>(null);
-  const [piperRuntime, setPiperRuntime] = useState<PiperRuntimeStatus | null>(null);
-  const [piperInstalling, setPiperInstalling] = useState(false);
-  const [piperModels, setPiperModels] = useState<PiperModel[]>([]);
-  const [piperModelKey, setPiperModelKey] = useState("vi_vais1000");
-  const [elevenConfig, setElevenConfig] = useState<ElevenLabsConfig | null>(null);
-  const [elevenModelId, setElevenModelId] = useState("eleven_flash_v2_5");
-  const [elevenVoiceId, setElevenVoiceId] = useState("");
-  const [supertonicConfig, setSupertonicConfig] = useState<SupertonicConfig | null>(null);
-  const [supertonicVoice, setSupertonicVoice] = useState("M1");
-  const [supertonicTotalSteps, setSupertonicTotalSteps] = useState(8);
-  const [supertonicImporting, setSupertonicImporting] = useState(false);
   const [scriptOverrides, setScriptOverrides] = useState<Record<string, ScriptSceneOverride>>({});
+  const voiceRuntime = useLongContentVoiceRuntime(lang);
+  const {
+    voiceHealth, piperRuntime, piperInstalling, installSelectedPiperModel, refreshPiperRuntime,
+    piperModels, piperModelKey, setPiperModelKey, elevenConfig, elevenModelId, setElevenModelId,
+    elevenVoiceId, setElevenVoiceId, supertonicConfig, supertonicVoice, setSupertonicVoice,
+    supertonicTotalSteps, setSupertonicTotalSteps, supertonicImporting, importSupertonicVoiceJson,
+  } = voiceRuntime;
+
   const algo = ALGORITHMS[algoId] ?? ALGORITHMS[DEFAULT_ALGORITHM_ID];
   const theme = THEMES[themeName] ?? THEMES.neon;
   const graph = useMemo(() => parseGraph(DEFAULT_GRAPH) ?? makeSampleGraph(), []);
@@ -101,7 +98,7 @@ export function useLongContentStudio() {
     return clampFrameIndex(timelineState.progress, frames.length);
   }, [elapsedSec, frames.length, timelineState, totalDuration]);
   const kineticSfx = useKineticSlideSfx({ algoId, lang, scenes, elapsedSec, playing, exporting, longVideoType });
-  useEffect(() => { preloadAnimalSprites(); void loadVoiceRuntime(); }, []);
+  useEffect(() => { preloadAnimalSprites(); }, []);
   useEffect(() => subscribeSystemLang(setLang), []);
   useEffect(() => { audioEngine.setMusicVolume(musicVol / 100); }, [musicVol]);
   useEffect(() => { audioEngine.setVoiceVolume(narrationVol / 100); }, [narrationVol]);
@@ -109,15 +106,6 @@ export function useLongContentStudio() {
   useEffect(() => {
     if (longVideoType === "classic" && !narrationEnabled) setNarrationEnabled(true);
   }, [longVideoType, narrationEnabled]);
-  useEffect(() => {
-    if (!piperModels.length) return;
-    const current = piperModels.find((model) => model.key === piperModelKey);
-    if (current?.lang === lang) return;
-    const nextModel = piperModels.find((model) => model.lang === lang && model.available)
-      ?? piperModels.find((model) => model.lang === lang)
-      ?? current;
-    if (nextModel && nextModel.key !== piperModelKey) setPiperModelKey(nextModel.key);
-  }, [lang, piperModelKey, piperModels]);
   useEffect(() => {
     setElapsedSec(0);
     setPlaying(false);
@@ -186,29 +174,6 @@ export function useLongContentStudio() {
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [playing, totalDuration, scenes, narrationEnabled, voiceProvider]);
-  async function loadVoiceRuntime() {
-    const [health, runtime, models, pro, supertonic] = await Promise.allSettled([getVoiceHealth(), getPiperRuntimeStatus(), getPiperModels(), getElevenLabsConfig(), getSupertonicConfig()]);
-    if (health.status === "fulfilled") setVoiceHealth(health.value);
-    if (runtime.status === "fulfilled") setPiperRuntime(runtime.value);
-    if (models.status === "fulfilled") {
-      setPiperModels(models.value);
-      const langModel = models.value.find((model) => model.lang === lang && model.available)
-        ?? models.value.find((model) => model.lang === lang)
-        ?? models.value.find((model) => model.available)
-        ?? models.value[0];
-      if (langModel) setPiperModelKey(langModel.key);
-    }
-    if (pro.status === "fulfilled") {
-      setElevenConfig(pro.value);
-      if (pro.value.models[0]) setElevenModelId(pro.value.models[0].id);
-      if (pro.value.voices[0]) setElevenVoiceId(pro.value.voices[0].id);
-    }
-    if (supertonic.status === "fulfilled") {
-      setSupertonicConfig(supertonic.value);
-      setSupertonicVoice(supertonic.value.defaultVoice || supertonic.value.voices[0]?.id || "M1");
-      setSupertonicTotalSteps(supertonic.value.defaultTotalSteps || 8);
-    }
-  }
   async function generateVoiceOver() {
     if (voiceProvider === "browser") {
       speakNarration(narrationScript, lang, narrationRate, narrationVol / 100);
@@ -255,47 +220,6 @@ export function useLongContentStudio() {
     toast.info("Đang tự tạo voice-over theo kịch bản trước khi export video...");
     await generateVoiceOverForProvider(voiceProvider);
     return true;
-  }
-  async function installSelectedPiperModel() {
-    setPiperInstalling(true);
-    try {
-      const result = await installPiperModel(piperModelKey);
-      setPiperRuntime(result.status);
-      setPiperModels(result.status.models);
-      toast.success(`Đã cài model: ${result.model.label}`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Cài model Piper thất bại.");
-    } finally {
-      setPiperInstalling(false);
-    }
-  }
-  async function importSupertonicVoiceJson(file: File) {
-    setSupertonicImporting(true);
-    try {
-      const text = await file.text();
-      const styleJson = JSON.parse(text);
-      const result = await importSupertonicVoiceStyle(styleJson);
-      setSupertonicConfig((current) => current ? { ...current, voices: result.voices, model: result.model } : current);
-      const nextVoice = result.voices[0]?.id;
-      if (nextVoice) setSupertonicVoice(nextVoice);
-      toast.success(`Đã import voice Supertonic: ${file.name}`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Import Supertonic voice thất bại.");
-    } finally {
-      setSupertonicImporting(false);
-    }
-  }
-
-  async function refreshPiperRuntime() {
-    try {
-      const [health, runtime, models, supertonic] = await Promise.all([getVoiceHealth(), getPiperRuntimeStatus(), getPiperModels(), getSupertonicConfig()]);
-      setVoiceHealth(health);
-      setPiperRuntime(runtime);
-      setPiperModels(models);
-      setSupertonicConfig(supertonic);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Không kiểm tra được Piper runtime.");
-    }
   }
   function drawFrame(timeSec: number, targetCanvas: HTMLCanvasElement | null = canvasRef.current) {
     drawLongContentFrameAtTime({

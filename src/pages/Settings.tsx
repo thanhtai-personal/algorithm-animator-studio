@@ -7,7 +7,7 @@ import { parseVoiceRows, serializeVoiceRows, type VoiceRow } from "./settings/Se
 import { SettingsApiKeyTab } from "./settings/SettingsApiKeyTab";
 import { SettingsDataTab } from "./settings/SettingsDataTab";
 import { SettingsHealthTab } from "./settings/SettingsHealthTab";
-import { EMPTY_FORM, type ElevenLabsConfigResponse, type HealthResponse, type PiperModel, type SelectPathResponse, type SettingsForm, type SettingsFormKey, type SupertonicConfigResponse } from "./settings/SettingsTypes";
+import { EMPTY_FORM, type ElevenLabsConfigResponse, type HealthResponse, type PiperModel, type RvcApplioConfigResponse, type SelectPathResponse, type SettingsForm, type SettingsFormKey, type SupertonicConfigResponse } from "./settings/SettingsTypes";
 import { SettingsVoiceTab } from "./settings/SettingsVoiceTab";
 import { readSystemLang, subscribeSystemLang, t, type Lang } from "@/lib/i18n";
 import { buildApiUrl, parseApiResponse } from "@/lib/runtimeApi";
@@ -25,6 +25,7 @@ export default function Settings() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [elevenLabs, setElevenLabs] = useState<ElevenLabsConfigResponse | null>(null);
   const [supertonic, setSupertonic] = useState<SupertonicConfigResponse | null>(null);
+  const [rvcApplio, setRvcApplio] = useState<RvcApplioConfigResponse | null>(null);
   const [models, setModels] = useState<PiperModel[]>([]);
   const [loading, setLoading] = useState(false);
   const [selecting, setSelecting] = useState<string | null>(null);
@@ -41,16 +42,18 @@ export default function Settings() {
     setLoading(true);
     try {
       const headers = buildRuntimeSettingsHeaders();
-      const [healthData, modelData, elevenData, supertonicData] = await Promise.all([
+      const [healthData, modelData, elevenData, supertonicData, rvcApplioData] = await Promise.all([
         parseApiResponse<HealthResponse>(await fetch(buildApiUrl("/api/health"), { headers })),
         parseApiResponse<{ models: PiperModel[] }>(await fetch(buildApiUrl("/api/models"), { headers })),
         parseApiResponse<ElevenLabsConfigResponse>(await fetch(buildApiUrl("/api/elevenlabs/config"), { headers })),
         parseApiResponse<SupertonicConfigResponse>(await fetch(buildApiUrl("/api/supertonic/config"), { headers })),
+        parseApiResponse<RvcApplioConfigResponse>(await fetch(buildApiUrl("/api/rvc-applio/config"), { headers })),
       ]);
       setHealth(healthData);
       setModels(modelData.models);
       setElevenLabs(elevenData);
       setSupertonic(supertonicData);
+      setRvcApplio(rvcApplioData);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t(lang, "settingsCouldNotCheckPiper"));
     } finally {
@@ -177,6 +180,7 @@ export default function Settings() {
               loading={loading}
               models={models}
               onRefreshHealth={refreshHealth}
+              rvcApplio={rvcApplio}
               supertonic={supertonic}
             />
           </TabsContent>

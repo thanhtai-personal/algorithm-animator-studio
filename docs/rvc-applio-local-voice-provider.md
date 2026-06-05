@@ -127,6 +127,7 @@ Thêm hoặc sửa các biến sau:
 ```env
 # RVC/Applio local voice conversion provider
 RVC_APPLIO_BASE_URL=http://127.0.0.1:6969
+RVC_APPLIO_START_COMMAND=C:/Applio/run-applio.bat
 RVC_APPLIO_API_NAME=/infer_convert
 RVC_APPLIO_ARG_TEMPLATE_JSON=[0,"${input}","${model}","${index}","${f0_method}","${index_rate}","${filter_radius}",0,0.25,"${protect}","wav"]
 RVC_APPLIO_PYTHON=python
@@ -143,11 +144,15 @@ RVC_APPLIO_TIMEOUT_MS=1200000
 
 Có thể cấu hình các field này trong màn **Settings** của app. Runtime settings trong UI sẽ override `.env`.
 
+`RVC_APPLIO_START_COMMAND` là lệnh tùy chọn được `npm run dev` chạy cùng frontend/backend/Supertonic. Nếu để trống, app không tự start Applio và bạn cần chạy Applio thủ công.
+
+Lưu ý: tích hợp hiện tại dùng Applio/RVC để **chuyển giọng từ audio nguồn**, không phải text-to-speech trực tiếp. Vì vậy pipeline vẫn cần một provider tạo audio nguồn như Piper trước khi RVC convert, trừ khi bản Applio trên máy bạn có endpoint TTS riêng và ta bổ sung mapping API tương ứng.
+
 ---
 
 ## 6. Sử dụng trong Long Content Studio
 
-1. Chạy Applio trước.
+1. Chạy Applio trước, hoặc cấu hình `RVC_APPLIO_START_COMMAND` để `npm run dev` tự chạy.
 2. Chạy KAI STUDIO:
 
 ```bash

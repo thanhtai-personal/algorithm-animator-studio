@@ -33,6 +33,27 @@ export type SupertonicConfigResponse = {
   error?: string;
 };
 
+export type RvcApplioConfigResponse = {
+  enabled: boolean;
+  serverOk: boolean;
+  baseUrl: string;
+  startCommand: string;
+  startCommandConfigured: boolean;
+  apiName: string;
+  modelName: string;
+  indexPath: string;
+  pythonExe: string;
+  pythonExists: boolean;
+  bridgeExists: boolean;
+  argTemplateConfigured: boolean;
+  f0Method: string;
+  pitch: number;
+  indexRate: number;
+  protect: number;
+  filterRadius: number;
+  error?: string;
+};
+
 export type SettingsForm = Required<Pick<
   RuntimeSettings,
   | "MODEL_DIR"
@@ -46,6 +67,7 @@ export type SettingsForm = Required<Pick<
   | "SUPERTONIC_DEFAULT_VOICE"
   | "SUPERTONIC_TOTAL_STEPS"
   | "RVC_APPLIO_BASE_URL"
+  | "RVC_APPLIO_START_COMMAND"
   | "RVC_APPLIO_API_NAME"
   | "RVC_APPLIO_ARG_TEMPLATE_JSON"
   | "RVC_APPLIO_PYTHON"
@@ -71,6 +93,7 @@ export const EMPTY_FORM: SettingsForm = {
   SUPERTONIC_DEFAULT_VOICE: "",
   SUPERTONIC_TOTAL_STEPS: "",
   RVC_APPLIO_BASE_URL: "",
+  RVC_APPLIO_START_COMMAND: "",
   RVC_APPLIO_API_NAME: "",
   RVC_APPLIO_ARG_TEMPLATE_JSON: "",
   RVC_APPLIO_PYTHON: "",

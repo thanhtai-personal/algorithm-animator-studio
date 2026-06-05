@@ -28,6 +28,7 @@ import { validateGenerateRequest } from "./TtsGenerationService";
 
 const CONFIG_TIMEOUT_MS = 3500;
 const DEFAULT_TIMEOUT_MS = 20 * 60 * 1000;
+const BRIDGE_PATH = path.join(PROJECT_ROOT, "scripts", "rvc-applio-gradio-bridge.py");
 
 export async function getRvcApplioConfigStatus(envOverrides: RuntimeEnvValues = {}): Promise<RvcApplioConfigStatus> {
   const env = readEnvValues(envOverrides);
@@ -177,8 +178,7 @@ async function convertSegmentWithApplio(params: ConvertSegmentParams) {
     argTemplate: params.argTemplate,
   }, null, 2));
 
-  const bridgePath = path.join(PROJECT_ROOT, "scripts", "rvc-applio-gradio-bridge.py");
-  const result = await runProcess(params.config.pythonExe, [bridgePath, "--payload", payloadPath], params.timeoutMs);
+  const result = await runProcess(params.config.pythonExe, [BRIDGE_PATH, "--payload", payloadPath], params.timeoutMs);
 
   if (!fs.existsSync(params.outputPath)) {
     throw new Error(JSON.stringify({
@@ -213,12 +213,19 @@ async function concatenateWithSilence(
 }
 
 function readRvcConfig(env: RuntimeEnvValues): RvcRuntimeConfig {
+  const startCommand = env.RVC_APPLIO_START_COMMAND || "";
+  const pythonExe = resolveRuntimeExecutable(env.RVC_APPLIO_PYTHON || "python");
   return {
     baseUrl: (env.RVC_APPLIO_BASE_URL || "http://127.0.0.1:6969").replace(/\/+$/g, ""),
+    startCommand,
+    startCommandConfigured: Boolean(startCommand.trim()),
     apiName: env.RVC_APPLIO_API_NAME || "/infer_convert",
     modelName: env.RVC_APPLIO_MODEL_NAME || "",
     indexPath: env.RVC_APPLIO_INDEX_PATH || "",
-    pythonExe: resolveRuntimeExecutable(env.RVC_APPLIO_PYTHON || "python"),
+    pythonExe,
+    pythonExists: commandLooksExecutable(pythonExe),
+    bridgeExists: fs.existsSync(BRIDGE_PATH),
+    argTemplateConfigured: Boolean(env.RVC_APPLIO_ARG_TEMPLATE_JSON?.trim()),
     f0Method: normalizeF0Method(env.RVC_APPLIO_F0_METHOD || "rmvpe"),
     pitch: clampPitch(env.RVC_APPLIO_PITCH),
     indexRate: clampRatio(env.RVC_APPLIO_INDEX_RATE || 0.75),
@@ -310,3 +317,8 @@ function clampRatio(value: unknown) {
   return Math.min(1, Math.max(0, numberValue));
 }
 function normalizeF0Method(value: string) { return value.trim() || "rmvpe"; }
+
+function commandLooksExecutable(command: string) {
+  if (command === "python" || command === "python3" || command === "py") return true;
+  return fs.existsSync(command);
+}

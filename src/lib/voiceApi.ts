@@ -49,10 +49,15 @@ export type RvcApplioConfig = {
   enabled: boolean;
   serverOk: boolean;
   baseUrl: string;
+  startCommand: string;
+  startCommandConfigured: boolean;
   apiName: string;
   modelName: string;
   indexPath: string;
   pythonExe: string;
+  pythonExists: boolean;
+  bridgeExists: boolean;
+  argTemplateConfigured: boolean;
   f0Method: string;
   pitch: number;
   indexRate: number;

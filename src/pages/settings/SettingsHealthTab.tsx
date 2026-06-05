@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import {uiText, t, type Lang} from "@/lib/i18n";
 import { StatusTile } from "./SettingsFields";
-import type { ElevenLabsConfigResponse, HealthResponse, PiperModel, SettingsForm, SupertonicConfigResponse } from "./SettingsTypes";
+import type { ElevenLabsConfigResponse, HealthResponse, PiperModel, RvcApplioConfigResponse, SettingsForm, SupertonicConfigResponse } from "./SettingsTypes";
 
 type SettingsHealthTabProps = {
   availableModels: number;
@@ -16,6 +16,7 @@ type SettingsHealthTabProps = {
   loading: boolean;
   models: PiperModel[];
   onRefreshHealth: () => void;
+  rvcApplio: RvcApplioConfigResponse | null;
   supertonic: SupertonicConfigResponse | null;
 };
 
@@ -38,6 +39,10 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
           <StatusTile lang={props.lang} label={uiText("Models")} ok={props.availableModels > 0} value={`${props.availableModels}/${props.models.length} ${t(props.lang, "settingsModelsReady")}`} />
           <StatusTile lang={props.lang} label={uiText("ElevenLabs")} ok={Boolean(props.elevenLabs?.hasApiKey)} value={props.elevenLabs?.hasApiKey ? `${props.elevenLabs.voices.length} ${t(props.lang, "settingsVoicesConfigured")}` : t(props.lang, "settingsNoApiKey")} />
           <StatusTile lang={props.lang} label={uiText("Supertonic")} ok={Boolean(props.supertonic?.serverOk)} value={props.supertonic?.serverOk ? `${props.supertonic.voices.length} ${t(props.lang, "settingsVoiceTab")} · ${props.supertonic.model}` : props.supertonic?.error || t(props.lang, "settingsServerNotRunning")} />
+          <StatusTile lang={props.lang} label={uiText("Applio server")} ok={Boolean(props.rvcApplio?.serverOk)} value={props.rvcApplio?.serverOk ? props.rvcApplio.baseUrl : props.rvcApplio?.error || t(props.lang, "settingsServerNotRunning")} />
+          <StatusTile lang={props.lang} label={uiText("Applio Python")} ok={Boolean(props.rvcApplio?.pythonExists && props.rvcApplio?.bridgeExists)} value={`${props.rvcApplio?.pythonExe || "-"} · bridge ${props.rvcApplio?.bridgeExists ? "OK" : t(props.lang, "settingsMissing")}`} />
+          <StatusTile lang={props.lang} label={uiText("Applio API template")} ok={Boolean(props.rvcApplio?.argTemplateConfigured)} value={props.rvcApplio?.argTemplateConfigured ? props.rvcApplio.apiName : "RVC_APPLIO_ARG_TEMPLATE_JSON"} />
+          <StatusTile lang={props.lang} label={uiText("Applio dev startup")} ok={Boolean(props.rvcApplio?.startCommandConfigured)} value={props.rvcApplio?.startCommandConfigured ? props.rvcApplio.startCommand : "RVC_APPLIO_START_COMMAND"} />
           <StatusTile lang={props.lang} label={t(props.lang, "settingsGeneratedData")} ok={Boolean(props.health?.generatedDir)} value={props.health?.generatedDir || "-"} />
         </div>
         <div className="rounded-lg border bg-muted/30 p-3 text-sm">

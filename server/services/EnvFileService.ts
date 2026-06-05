@@ -53,6 +53,7 @@ export const DEFAULT_ENV_VALUES: Record<string, string> = {
   SUPERTONIC_DEFAULT_LANG: "en",
   SUPERTONIC_TOTAL_STEPS: "8",
   RVC_APPLIO_BASE_URL: "http://127.0.0.1:6969",
+  RVC_APPLIO_START_COMMAND: "",
   RVC_APPLIO_API_NAME: "/infer_convert",
   RVC_APPLIO_ARG_TEMPLATE_JSON: "",
   RVC_APPLIO_PYTHON: "python",

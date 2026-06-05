@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { t, type Lang } from "@/lib/i18n";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { t, text, type Lang } from "@/lib/i18n";
 import { PathInput, SecretInput, VoiceRowsTable, type VoiceRow } from "./SettingsFields";
 import type { SettingsForm, SettingsFormKey } from "./SettingsTypes";
 
@@ -23,116 +24,188 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
         <CardTitle>{t(props.lang, "settingsVoiceTab")}</CardTitle>
         <CardDescription>{t(props.lang, "settingsVoiceDescription")}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-5">
-        <PathInput
-          id="model-dir"
-          label={t(props.lang, "settingsModelDirLabel")}
-          description={t(props.lang, "settingsModelDirDescription")}
-          lang={props.lang}
-          value={props.form.MODEL_DIR}
-          placeholder="models"
-          busy={props.selecting === "MODEL_DIR"}
-          onChange={(value) => props.onUpdateField("MODEL_DIR", value)}
-          onSelect={() => props.onSelectPath("directory", "MODEL_DIR", t(props.lang, "settingsSelectPiperModelsFolder"))}
-          onOpen={() => props.onOpenPath(props.form.MODEL_DIR)}
-        />
-        <PathInput
-          id="piper-exe"
-          label={t(props.lang, "settingsPiperExeLabel")}
-          description={t(props.lang, "settingsPiperExeDescription")}
-          lang={props.lang}
-          value={props.form.PIPER_EXE}
-          placeholder="models/.venv/Scripts/piper.exe"
-          busy={props.selecting === "PIPER_EXE"}
-          onChange={(value) => props.onUpdateField("PIPER_EXE", value)}
-          onSelect={() => props.onSelectPath("file", "PIPER_EXE", t(props.lang, "settingsSelectPiperExe"))}
-          onOpen={() => props.onOpenPath(props.form.PIPER_EXE)}
-        />
-        <VoiceRowsTable rows={props.voiceRows} lang={props.lang} onAdd={props.onAddVoiceRow} onUpdate={props.onUpdateVoiceRow} onRemove={props.onRemoveVoiceRow} />
-        <div className="grid gap-3 md:grid-cols-2">
-          <SecretInput
-            id="supertonic-default-voice"
-            label={t(props.lang, "settingsSupertonicDefaultVoiceLabel")}
-            description={t(props.lang, "settingsDefaultVoiceDescription")}
-            value={props.form.SUPERTONIC_DEFAULT_VOICE}
-            placeholder="M1"
-            type="text"
-            onChange={(value) => props.onUpdateField("SUPERTONIC_DEFAULT_VOICE", value)}
-          />
-          <SecretInput
-            id="supertonic-total-steps"
-            label={t(props.lang, "settingsSupertonicTotalStepsLabel")}
-            description={t(props.lang, "settingsTotalStepsDescription")}
-            value={props.form.SUPERTONIC_TOTAL_STEPS}
-            placeholder="8"
-            type="text"
-            onChange={(value) => props.onUpdateField("SUPERTONIC_TOTAL_STEPS", value)}
-          />
-        </div>
+      <CardContent>
+        <Tabs defaultValue="piper" className="space-y-4">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/40 p-1 md:grid-cols-4">
+            <TabsTrigger value="piper">Piper</TabsTrigger>
+            <TabsTrigger value="elevenlabs">ElevenLabs</TabsTrigger>
+            <TabsTrigger value="supertonic">Supertonic</TabsTrigger>
+            <TabsTrigger value="applio">Applio</TabsTrigger>
+          </TabsList>
 
-        <div className="rounded-lg border border-border/70 p-3">
-          <p className="mb-3 text-sm font-medium">RVC/Applio</p>
-          <p className="mb-3 text-xs text-muted-foreground">{t(props.lang, "settingsRvcApplioVoiceDescription")}</p>
-          <div className="grid gap-3 md:grid-cols-2">
-            <SecretInput
-              id="rvc-applio-python"
-              label={t(props.lang, "settingsRvcApplioPythonLabel")}
-              description="python hoặc đường dẫn python.exe trong môi trường Applio."
-              value={props.form.RVC_APPLIO_PYTHON}
-              placeholder="python"
-              type="text"
-              onChange={(value) => props.onUpdateField("RVC_APPLIO_PYTHON", value)}
-            />
-            <SecretInput
-              id="rvc-applio-source-piper"
-              label={t(props.lang, "settingsRvcApplioSourcePiperLabel")}
-              description="Model Piper dùng tạo audio nguồn trước khi convert."
-              value={props.form.RVC_APPLIO_SOURCE_PIPER_MODEL}
-              placeholder="vi_vais1000"
-              type="text"
-              onChange={(value) => props.onUpdateField("RVC_APPLIO_SOURCE_PIPER_MODEL", value)}
-            />
-            <SecretInput
-              id="rvc-applio-model-name"
-              label={t(props.lang, "settingsRvcApplioModelNameLabel")}
-              description="Tên .pth/model đúng như endpoint Gradio yêu cầu."
-              value={props.form.RVC_APPLIO_MODEL_NAME}
-              placeholder="my_voice.pth"
-              type="text"
-              onChange={(value) => props.onUpdateField("RVC_APPLIO_MODEL_NAME", value)}
+          <TabsContent value="piper" className="mt-0 space-y-5">
+            <PathInput
+              id="model-dir"
+              label={t(props.lang, "settingsModelDirLabel")}
+              description={t(props.lang, "settingsModelDirDescription")}
+              lang={props.lang}
+              value={props.form.MODEL_DIR}
+              placeholder="models"
+              busy={props.selecting === "MODEL_DIR"}
+              onChange={(value) => props.onUpdateField("MODEL_DIR", value)}
+              onSelect={() => props.onSelectPath("directory", "MODEL_DIR", t(props.lang, "settingsSelectPiperModelsFolder"))}
+              onOpen={() => props.onOpenPath(props.form.MODEL_DIR)}
             />
             <PathInput
-              id="rvc-applio-index-path"
-              label={t(props.lang, "settingsRvcApplioIndexPathLabel")}
-              description="File .index của model RVC, có thể để trống nếu model không dùng index."
+              id="piper-exe"
+              label={t(props.lang, "settingsPiperExeLabel")}
+              description={t(props.lang, "settingsPiperExeDescription")}
               lang={props.lang}
-              value={props.form.RVC_APPLIO_INDEX_PATH}
-              placeholder="C:/Applio/logs/my_voice/added_...index"
-              busy={props.selecting === "RVC_APPLIO_INDEX_PATH"}
-              onChange={(value) => props.onUpdateField("RVC_APPLIO_INDEX_PATH", value)}
-              onSelect={() => props.onSelectPath("file", "RVC_APPLIO_INDEX_PATH", "Select RVC index file")}
-              onOpen={() => props.onOpenPath(props.form.RVC_APPLIO_INDEX_PATH)}
+              value={props.form.PIPER_EXE}
+              placeholder="models/.venv/Scripts/piper.exe"
+              busy={props.selecting === "PIPER_EXE"}
+              onChange={(value) => props.onUpdateField("PIPER_EXE", value)}
+              onSelect={() => props.onSelectPath("file", "PIPER_EXE", t(props.lang, "settingsSelectPiperExe"))}
+              onOpen={() => props.onOpenPath(props.form.PIPER_EXE)}
             />
+          </TabsContent>
+
+          <TabsContent value="elevenlabs" className="mt-0 space-y-5">
             <SecretInput
-              id="rvc-applio-pitch"
-              label={t(props.lang, "settingsRvcApplioPitchLabel")}
-              description="0 nếu cùng giới/tông; tăng/giảm theo semitone khi cần."
-              value={props.form.RVC_APPLIO_PITCH}
-              placeholder="0"
-              type="text"
-              onChange={(value) => props.onUpdateField("RVC_APPLIO_PITCH", value)}
+              id="elevenlabs-api-key-voice"
+              label={t(props.lang, "settingsElevenLabsApiKeyLabel")}
+              description={t(props.lang, "settingsElevenLabsApiKeyDescription")}
+              value={props.form.ELEVENLABS_API_KEY}
+              placeholder="sk_..."
+              onChange={(value) => props.onUpdateField("ELEVENLABS_API_KEY", value)}
             />
+            <VoiceRowsTable rows={props.voiceRows} lang={props.lang} onAdd={props.onAddVoiceRow} onUpdate={props.onUpdateVoiceRow} onRemove={props.onRemoveVoiceRow} />
+          </TabsContent>
+
+          <TabsContent value="supertonic" className="mt-0 space-y-5">
             <SecretInput
-              id="rvc-applio-f0"
-              label={t(props.lang, "settingsRvcApplioF0MethodLabel")}
-              description="Thường dùng rmvpe cho speech."
-              value={props.form.RVC_APPLIO_F0_METHOD}
-              placeholder="rmvpe"
+              id="supertonic-base-url-voice"
+              label={t(props.lang, "settingsSupertonicBaseUrlLabel")}
+              description={t(props.lang, "settingsSupertonicBaseUrlDescription")}
+              value={props.form.SUPERTONIC_BASE_URL}
+              placeholder="http://127.0.0.1:6688"
               type="text"
-              onChange={(value) => props.onUpdateField("RVC_APPLIO_F0_METHOD", value)}
+              onChange={(value) => props.onUpdateField("SUPERTONIC_BASE_URL", value)}
             />
-          </div>
-        </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              <SecretInput
+                id="supertonic-model-voice"
+                label={t(props.lang, "settingsSupertonicModelLabel")}
+                description={t(props.lang, "settingsSupertonicModelDescription")}
+                value={props.form.SUPERTONIC_MODEL}
+                placeholder="supertonic-3"
+                type="text"
+                onChange={(value) => props.onUpdateField("SUPERTONIC_MODEL", value)}
+              />
+              <SecretInput
+                id="supertonic-default-voice"
+                label={t(props.lang, "settingsSupertonicDefaultVoiceLabel")}
+                description={t(props.lang, "settingsDefaultVoiceDescription")}
+                value={props.form.SUPERTONIC_DEFAULT_VOICE}
+                placeholder="M1"
+                type="text"
+                onChange={(value) => props.onUpdateField("SUPERTONIC_DEFAULT_VOICE", value)}
+              />
+              <SecretInput
+                id="supertonic-total-steps"
+                label={t(props.lang, "settingsSupertonicTotalStepsLabel")}
+                description={t(props.lang, "settingsTotalStepsDescription")}
+                value={props.form.SUPERTONIC_TOTAL_STEPS}
+                placeholder="8"
+                type="text"
+                onChange={(value) => props.onUpdateField("SUPERTONIC_TOTAL_STEPS", value)}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="applio" className="mt-0 space-y-5">
+            <p className="rounded-lg border border-yellow-400/40 bg-yellow-400/10 p-3 text-sm text-yellow-100">
+              {text(props.lang, "Applio/RVC converts an existing source audio into a trained voice model. It is not direct text-to-speech in the current integration.", "Applio/RVC chuyển audio nguồn sang model giọng đã train. Tích hợp hiện tại không phải text-to-speech trực tiếp.")}
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              <SecretInput
+                id="rvc-applio-base-url"
+                label={t(props.lang, "settingsRvcApplioBaseUrlLabel")}
+                description={t(props.lang, "settingsRvcApplioBaseUrlDescription")}
+                value={props.form.RVC_APPLIO_BASE_URL}
+                placeholder="http://127.0.0.1:6969"
+                type="text"
+                onChange={(value) => props.onUpdateField("RVC_APPLIO_BASE_URL", value)}
+              />
+              <SecretInput
+                id="rvc-applio-start-command"
+                label={text(props.lang, "Applio start command", "Lệnh chạy Applio")}
+                description={text(props.lang, "Command run by npm run dev, for example C:/Applio/run-applio.bat.", "Lệnh được chạy cùng npm run dev, ví dụ C:/Applio/run-applio.bat.")}
+                value={props.form.RVC_APPLIO_START_COMMAND}
+                placeholder="C:/Applio/run-applio.bat"
+                type="text"
+                onChange={(value) => props.onUpdateField("RVC_APPLIO_START_COMMAND", value)}
+              />
+              <SecretInput
+                id="rvc-applio-api-name"
+                label={t(props.lang, "settingsRvcApplioApiNameLabel")}
+                description={t(props.lang, "settingsRvcApplioApiNameDescription")}
+                value={props.form.RVC_APPLIO_API_NAME}
+                placeholder="/infer_convert"
+                type="text"
+                onChange={(value) => props.onUpdateField("RVC_APPLIO_API_NAME", value)}
+              />
+              <PathInput
+                id="rvc-applio-python"
+                label={t(props.lang, "settingsRvcApplioPythonLabel")}
+                description={text(props.lang, "python or python.exe inside the Applio environment.", "python hoặc python.exe trong môi trường Applio.")}
+                lang={props.lang}
+                value={props.form.RVC_APPLIO_PYTHON}
+                placeholder="python"
+                busy={props.selecting === "RVC_APPLIO_PYTHON"}
+                onChange={(value) => props.onUpdateField("RVC_APPLIO_PYTHON", value)}
+                onSelect={() => props.onSelectPath("file", "RVC_APPLIO_PYTHON", "Select RVC bridge Python")}
+                onOpen={() => props.onOpenPath(props.form.RVC_APPLIO_PYTHON)}
+              />
+            </div>
+            <SecretInput
+              id="rvc-applio-arg-template"
+              label={t(props.lang, "settingsRvcApplioArgTemplateLabel")}
+              description={t(props.lang, "settingsRvcApplioArgTemplateDescription")}
+              value={props.form.RVC_APPLIO_ARG_TEMPLATE_JSON}
+              placeholder='[0,"${input}","${model}","${index}","${f0_method}","${index_rate}","${filter_radius}",0,0.25,"${protect}","wav"]'
+              type="text"
+              onChange={(value) => props.onUpdateField("RVC_APPLIO_ARG_TEMPLATE_JSON", value)}
+            />
+            <div className="grid gap-3 md:grid-cols-2">
+              <SecretInput
+                id="rvc-applio-source-piper"
+                label={t(props.lang, "settingsRvcApplioSourcePiperLabel")}
+                description={text(props.lang, "Source Piper model used before RVC conversion.", "Model Piper nguồn dùng trước bước convert RVC.")}
+                value={props.form.RVC_APPLIO_SOURCE_PIPER_MODEL}
+                placeholder="vi_vais1000"
+                type="text"
+                onChange={(value) => props.onUpdateField("RVC_APPLIO_SOURCE_PIPER_MODEL", value)}
+              />
+              <SecretInput
+                id="rvc-applio-model-name"
+                label={t(props.lang, "settingsRvcApplioModelNameLabel")}
+                description={text(props.lang, "Target .pth/model name expected by the Gradio endpoint.", "Tên .pth/model đích đúng với endpoint Gradio.")}
+                value={props.form.RVC_APPLIO_MODEL_NAME}
+                placeholder="my_voice.pth"
+                type="text"
+                onChange={(value) => props.onUpdateField("RVC_APPLIO_MODEL_NAME", value)}
+              />
+              <PathInput
+                id="rvc-applio-index-path"
+                label={t(props.lang, "settingsRvcApplioIndexPathLabel")}
+                description={text(props.lang, "Optional .index file for the RVC model.", "File .index tùy chọn của model RVC.")}
+                lang={props.lang}
+                value={props.form.RVC_APPLIO_INDEX_PATH}
+                placeholder="C:/Applio/logs/my_voice/added_...index"
+                busy={props.selecting === "RVC_APPLIO_INDEX_PATH"}
+                onChange={(value) => props.onUpdateField("RVC_APPLIO_INDEX_PATH", value)}
+                onSelect={() => props.onSelectPath("file", "RVC_APPLIO_INDEX_PATH", "Select RVC index file")}
+                onOpen={() => props.onOpenPath(props.form.RVC_APPLIO_INDEX_PATH)}
+              />
+              <SecretInput id="rvc-applio-pitch" label={t(props.lang, "settingsRvcApplioPitchLabel")} description="Semitone pitch shift." value={props.form.RVC_APPLIO_PITCH} placeholder="0" type="text" onChange={(value) => props.onUpdateField("RVC_APPLIO_PITCH", value)} />
+              <SecretInput id="rvc-applio-f0" label={t(props.lang, "settingsRvcApplioF0MethodLabel")} description="rmvpe is usually best for speech." value={props.form.RVC_APPLIO_F0_METHOD} placeholder="rmvpe" type="text" onChange={(value) => props.onUpdateField("RVC_APPLIO_F0_METHOD", value)} />
+              <SecretInput id="rvc-applio-index-rate" label="RVC index rate" description="0.5-0.8 is a practical range for speech." value={props.form.RVC_APPLIO_INDEX_RATE} placeholder="0.75" type="text" onChange={(value) => props.onUpdateField("RVC_APPLIO_INDEX_RATE", value)} />
+              <SecretInput id="rvc-applio-protect" label="RVC protect" description="Higher values preserve consonants and reduce artifacts." value={props.form.RVC_APPLIO_PROTECT} placeholder="0.33" type="text" onChange={(value) => props.onUpdateField("RVC_APPLIO_PROTECT", value)} />
+              <SecretInput id="rvc-applio-filter-radius" label="RVC filter radius" description="F0 smoothing radius, default 3." value={props.form.RVC_APPLIO_FILTER_RADIUS} placeholder="3" type="text" onChange={(value) => props.onUpdateField("RVC_APPLIO_FILTER_RADIUS", value)} />
+            </div>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );

@@ -18,6 +18,7 @@ import { KineticSfxPanel } from "./long-content/KineticSfxPanel";
 import { LongContentTabs } from "./long-content/LongContentTabs";
 import { MusicPanel } from "./long-content/MusicPanel";
 import { LongContentStudio, useLongContentStudio } from "./long-content/useLongContentStudio";
+import { uiText } from "@/lib/i18n";
 
 export default function LongContent() {
   const navigate = useNavigate();
@@ -66,18 +67,18 @@ function LeftControls({ studio: s, onExport }: { studio: LongContentStudio; onEx
   return (
     <Tabs defaultValue="export" className="space-y-4">
       <TabsList className="grid grid-cols-2">
-        <TabsTrigger value="export">Export</TabsTrigger>
-        <TabsTrigger value="content">Nội dung</TabsTrigger>
+        <TabsTrigger value="export">{uiText("Export")}</TabsTrigger>
+        <TabsTrigger value="content">{uiText("Nội dung")}</TabsTrigger>
       </TabsList>
       <TabsContent value="export" className="mt-0 space-y-4">
         <VisualExportPanel studio={s} onExport={onExport} />
       </TabsContent>
       <TabsContent value="content" className="mt-0 space-y-4">
-        <CollapsibleSection title="Cấu hình nội dung" icon={<Film className="h-4 w-4 text-emerald-400" />}>
+        <CollapsibleSection title={uiText("Cấu hình nội dung")} icon={<Film className="h-4 w-4 text-emerald-400" />}>
           <SystemLanguageInfo studio={s} />
 
           <div>
-            <Label>Thuật toán</Label>
+            <Label>{uiText("Thuật toán")}</Label>
             <Select value={s.algoId} onValueChange={s.setAlgoId}>
               <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -101,13 +102,13 @@ function LeftControls({ studio: s, onExport }: { studio: LongContentStudio; onEx
           <KineticSfxPanel studio={s} />
 
           <div className="grid grid-cols-2 gap-3">
-            <NumberSlider label="Intro" value={s.introSeconds} min={3} max={10} suffix="s" onChange={s.setIntroSeconds} />
-            <NumberSlider label="Animation" value={s.animationSeconds} min={12} max={90} suffix="s" onChange={s.setAnimationSeconds} />
+            <NumberSlider label={uiText("Intro")} value={s.introSeconds} min={3} max={10} suffix="s" onChange={s.setIntroSeconds} />
+            <NumberSlider label={uiText("Animation")} value={s.animationSeconds} min={12} max={90} suffix="s" onChange={s.setAnimationSeconds} />
           </div>
-          <NumberSlider label="FPS export" value={s.fps} min={15} max={60} suffix="fps" onChange={s.setFps} />
+          <NumberSlider label={uiText("FPS export")} value={s.fps} min={15} max={60} suffix="fps" onChange={s.setFps} />
 
           <div>
-            <Label>Theme</Label>
+            <Label>{uiText("Theme")}</Label>
             <div className="mt-2 flex flex-wrap gap-2">
               {Object.keys(THEMES).map((name) => (
                 <Button key={name} size="sm" variant={s.themeName === name ? "default" : "outline"} onClick={() => s.setThemeName(name as keyof typeof THEMES)}>
@@ -127,8 +128,8 @@ function VisualExportPanel({ studio: s, onExport }: { studio: LongContentStudio;
     <Card className="space-y-4 border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.34),0_0_28px_rgba(16,185,129,0.06)]">
       <div className="space-y-3">
         <div>
-          <h2 className="font-semibold">Visual & export</h2>
-          <p className="text-xs text-muted-foreground">Cấu hình hình ảnh và xuất video.</p>
+          <h2 className="font-semibold">{uiText("Visual & export")}</h2>
+          <p className="text-xs text-muted-foreground">{uiText("Cấu hình hình ảnh và xuất video.")}</p>
         </div>
         <Button className="w-full bg-emerald-500 text-slate-950 hover:bg-emerald-600" onClick={onExport} disabled={s.exporting}>
           <Download className="mr-2 h-4 w-4" />
@@ -138,13 +139,13 @@ function VisualExportPanel({ studio: s, onExport }: { studio: LongContentStudio;
 
       <div className="grid gap-3">
         <div>
-          <Label>Tỉ lệ video</Label>
+          <Label>{uiText("Tỉ lệ video")}</Label>
           <div className="mt-2 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200">
             YouTube long video · 16:9 · 1920×1080
           </div>
         </div>
         <div>
-          <Label>Định dạng</Label>
+          <Label>{uiText("Định dạng")}</Label>
           <Select value={s.exportFormat} onValueChange={(v) => s.setExportFormat(v as ExportFormat)}>
             <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -153,7 +154,7 @@ function VisualExportPanel({ studio: s, onExport }: { studio: LongContentStudio;
           </Select>
         </div>
         <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
-          <Label>Hiện code trong animation</Label>
+          <Label>{uiText("Hiện code trong animation")}</Label>
           <Switch checked={s.showCode} onCheckedChange={s.setShowCode} />
         </div>
       </div>
@@ -171,7 +172,7 @@ function VideoTypeSelect({ studio: s }: { studio: LongContentStudio }) {
   }
   return (
     <div>
-      <Label>Type video</Label>
+      <Label>{uiText("Type video")}</Label>
       <Select value={s.longVideoType} onValueChange={(value) => selectVideoType(value as LongVideoType)}>
         <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
         <SelectContent>
@@ -237,7 +238,7 @@ function PreviewPanel({ studio: s }: { studio: LongContentStudio }) {
 function SystemLanguageInfo({ studio: s }: { studio: LongContentStudio }) {
   return (
     <div className="rounded-lg border border-border bg-card/50 p-3">
-      <Label className="flex items-center gap-2"><Languages className="h-4 w-4" /> Ngôn ngữ kịch bản</Label>
+      <Label className="flex items-center gap-2"><Languages className="h-4 w-4" /> {uiText("Ngôn ngữ kịch bản")}</Label>
       <div className="mt-2 rounded-md border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm font-semibold text-emerald-200">
         {s.lang === "vi" ? "Tiếng Việt" : "English"}
       </div>
@@ -277,21 +278,21 @@ function AnimalControls({ studio: s, compact = false }: { studio: LongContentStu
   return (
     <div className="space-y-3 rounded-lg border border-border/70 bg-background/30 p-3 shadow-[0_10px_24px_rgba(15,23,42,0.24)]">
       <div>
-        <Label>Kiểu cột</Label>
+        <Label>{uiText("Kiểu cột")}</Label>
         <Select value={s.columnVisualMode} onValueChange={(value) => s.setColumnVisualMode(value as typeof s.columnVisualMode)}>
           <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="bar">Cột thường</SelectItem>
-            <SelectItem value="animal">Animal columns</SelectItem>
+            <SelectItem value="bar">{uiText("Cột thường")}</SelectItem>
+            <SelectItem value="animal">{uiText("Animal columns")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
       {s.columnVisualMode === "animal" ? (
         <div className={compact ? "grid gap-3 md:grid-cols-3" : "space-y-3"}>
-          <NumberSlider label="Sprite" value={s.animalSpriteScale} min={0.6} max={1.6} suffix="x" step={0.1} onChange={s.setAnimalSpriteScale} />
-          <NumberSlider label="Độ nhảy" value={s.animalJumpIntensity} min={0.4} max={1.8} suffix="x" step={0.1} onChange={s.setAnimalJumpIntensity} />
+          <NumberSlider label={uiText("Sprite")} value={s.animalSpriteScale} min={0.6} max={1.6} suffix="x" step={0.1} onChange={s.setAnimalSpriteScale} />
+          <NumberSlider label={uiText("Độ nhảy")} value={s.animalJumpIntensity} min={0.4} max={1.8} suffix="x" step={0.1} onChange={s.setAnimalJumpIntensity} />
           <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 px-3 py-2">
-            <Label>Highlight cũng nhảy</Label>
+            <Label>{uiText("Highlight cũng nhảy")}</Label>
             <Switch checked={s.animalHighlightJump} onCheckedChange={s.setAnimalHighlightJump} />
           </div>
         </div>

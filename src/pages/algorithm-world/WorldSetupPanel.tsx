@@ -13,6 +13,7 @@ import { WORLD_VEHICLES, type AlgorithmWorldVehiclePreset } from "@/lib/algorith
 import { resolveTournamentMatch, tournamentMatchOptions, tournamentRoundLabel } from "@/lib/algorithmWorldTournament";
 import type { AlgorithmStudio } from "@/pages/studio/useAlgorithmStudio";
 import { TournamentMusicControls } from "./TournamentMusicControls";
+import { uiText } from "@/lib/i18n";
 
 type Props = { studio: AlgorithmStudio };
 type TFn = (vi: string, en: string) => string;
@@ -93,8 +94,8 @@ function VideoLayoutCard({ s, isLong, isRace, compareEnabled, t }: PanelProps & 
     <Card className="space-y-3 p-4">
       <div className="flex items-center gap-2"><Zap className="h-4 w-4 text-yellow-300" /><Label>{t("Khung hình video", "Video layout")}</Label></div>
       <div className="grid grid-cols-2 gap-2">
-        <ModeButton active={!isLong} icon={<Route className="h-4 w-4" />} title="Short 9:16" desc={t("1 hoặc 2 thuật toán", "1 or 2 algorithms")} onClick={() => s.setWorldVideoMode("short")} />
-        <ModeButton active={isLong} icon={<GitCompare className="h-4 w-4" />} title="Long 16:9" desc={t("So sánh ngang", "Side-by-side compare")} onClick={() => s.setWorldVideoMode("long")} />
+        <ModeButton active={!isLong} icon={<Route className="h-4 w-4" />} title={uiText("Short 9:16")} desc={t("1 hoặc 2 thuật toán", "1 or 2 algorithms")} onClick={() => s.setWorldVideoMode("short")} />
+        <ModeButton active={isLong} icon={<GitCompare className="h-4 w-4" />} title={uiText("Long 16:9")} desc={t("So sánh ngang", "Side-by-side compare")} onClick={() => s.setWorldVideoMode("long")} />
       </div>
       <div className="flex items-center justify-between rounded-lg border border-border/60 bg-background/60 px-3 py-2">
         <div>

@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { MuNewsItem, MuNewsItemValidation } from "../types";
 import type { useMuNewsStudio } from "../useMuNewsStudio";
+import { uiText } from "@/lib/i18n";
 
 type MuNewsStudio = ReturnType<typeof useMuNewsStudio>;
 
@@ -19,7 +20,7 @@ export function MuNewsFilterPanel({ studio }: { studio: MuNewsStudio }) {
           <div className="min-w-0">
             <CardTitle className="flex items-start gap-2 text-base leading-7 sm:text-lg">
               <Filter className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
-              <span>Step 3 — Lọc tin chi tiết</span>
+              <span>{uiText("Step 3 — Lọc tin chi tiết")}</span>
             </CardTitle>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
               Tải từng URL đã chọn theo thứ tự, trích nội dung bài và kiểm tra thời gian publish. Tin không lấy được content hoặc sai ngày sẽ chuyển đỏ và tự bỏ chọn.
@@ -116,13 +117,13 @@ function FilterItemRow(props: {
 
 function ValidationBadge({ validation, selected }: { validation?: MuNewsItemValidation; selected: boolean }) {
   if (validation?.status === "loading") {
-    return <Badge className="w-fit shrink-0" variant="secondary"><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> Đang kiểm tra</Badge>;
+    return <Badge className="w-fit shrink-0" variant="secondary"><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> {uiText("Đang kiểm tra")}</Badge>;
   }
   if (validation?.status === "valid") {
-    return <Badge className="w-fit shrink-0"><CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Hợp lệ</Badge>;
+    return <Badge className="w-fit shrink-0"><CheckCircle2 className="mr-1 h-3.5 w-3.5" /> {uiText("Hợp lệ")}</Badge>;
   }
   if (validation?.status === "invalid" || validation?.status === "error") {
-    return <Badge className="w-fit shrink-0" variant="destructive"><XCircle className="mr-1 h-3.5 w-3.5" /> Đã bỏ chọn</Badge>;
+    return <Badge className="w-fit shrink-0" variant="destructive"><XCircle className="mr-1 h-3.5 w-3.5" /> {uiText("Đã bỏ chọn")}</Badge>;
   }
   return <Badge className="w-fit shrink-0" variant="outline">{selected ? "Chưa kiểm tra" : "Chưa chọn"}</Badge>;
 }

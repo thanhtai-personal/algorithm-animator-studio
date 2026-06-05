@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { useStoryReviewStudio } from "../useStoryReviewStudio";
+import { uiText } from "@/lib/i18n";
 
 type Studio = ReturnType<typeof useStoryReviewStudio>;
 
@@ -16,7 +17,7 @@ export function ReviewScenesPanel({ studio }: { studio: Studio }) {
           <h2 className="flex items-center gap-2 font-semibold">
             <Video className="h-4 w-4 text-purple-400" /> Step 3 - Prompt phân cảnh Veo3
           </h2>
-          <p className="text-xs text-muted-foreground">Tạo/copy từng prompt sang Google Veo3, rồi upload clip hoặc ảnh về từng cảnh.</p>
+          <p className="text-xs text-muted-foreground">{uiText("Tạo/copy từng prompt sang Google Veo3, rồi upload clip hoặc ảnh về từng cảnh.")}</p>
         </div>
         <Button variant="outline" onClick={studio.addScene}>
           <Plus className="mr-2 h-4 w-4" /> Thêm cảnh
@@ -28,11 +29,11 @@ export function ReviewScenesPanel({ studio }: { studio: Studio }) {
           <div key={scene.id} className="grid gap-3 rounded-lg border border-border bg-muted/20 p-3 lg:grid-cols-[160px_minmax(0,1fr)_160px]">
             <div className="space-y-3">
               <div>
-                <Label>Tên cảnh</Label>
+                <Label>{uiText("Tên cảnh")}</Label>
                 <Input className="mt-2" value={scene.title} onChange={(event) => studio.updateScene(scene.id, { title: event.target.value })} />
               </div>
               <div>
-                <Label>Thời lượng giây</Label>
+                <Label>{uiText("Thời lượng giây")}</Label>
                 <Input
                   className="mt-2"
                   type="number"
@@ -56,7 +57,7 @@ export function ReviewScenesPanel({ studio }: { studio: Studio }) {
 
             <div className="space-y-3">
               <div>
-                <Label>Clip/ảnh đã tạo</Label>
+                <Label>{uiText("Clip/ảnh đã tạo")}</Label>
                 <Input className="mt-2" type="file" accept="image/*,video/*" onChange={(event) => studio.updateScene(scene.id, { file: event.target.files?.[0] || null })} />
                 <p className="mt-1 truncate text-xs text-muted-foreground">{scene.file?.name || "Chưa chọn file"}</p>
               </div>

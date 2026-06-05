@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { normalizeVietnameseText } from "../muNewsUtils";
 import type { useMuNewsStudio } from "../useMuNewsStudio";
+import { uiText } from "@/lib/i18n";
 
 export function MuNewsScriptPanel({ studio }: { studio: ReturnType<typeof useMuNewsStudio> }) {
   async function copyPrompt() {
@@ -28,7 +29,7 @@ export function MuNewsScriptPanel({ studio }: { studio: ReturnType<typeof useMuN
           <div className="min-w-0">
             <CardTitle className="flex items-start gap-2 text-base leading-7 sm:text-lg">
               <Bot className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
-              <span>Step 4 — Tạo prompt và paste kịch bản</span>
+              <span>{uiText("Step 4 — Tạo prompt và paste kịch bản")}</span>
             </CardTitle>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
               Copy prompt sang ChatGPT hoặc AI bên ngoài để tạo kịch bản, sau đó paste kết quả lại đây để tách voice.
@@ -47,26 +48,26 @@ export function MuNewsScriptPanel({ studio }: { studio: ReturnType<typeof useMuN
       <CardContent className="grid min-w-0 gap-4 p-4 pt-0 sm:p-6 sm:pt-0">
         <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_130px_180px]">
           <div className="grid min-w-0 gap-2">
-            <Label>Tên kênh / series</Label>
+            <Label>{uiText("Tên kênh / series")}</Label>
             <Input className="min-w-0" value={studio.channelName} onChange={(event) => studio.setChannelName(event.target.value)} />
           </div>
           <div className="grid min-w-0 gap-2">
-            <Label>Độ dài phút</Label>
+            <Label>{uiText("Độ dài phút")}</Label>
             <Input type="number" min={2} max={12} value={studio.durationMinutes} onChange={(event) => studio.setDurationMinutes(Number(event.target.value) || 6)} />
           </div>
           <div className="grid min-w-0 gap-2">
-            <Label>Ngôn ngữ script</Label>
-            <Input value={studio.scriptLanguage} onChange={(event) => studio.setScriptLanguage(event.target.value)} placeholder="Tiếng Việt" />
+            <Label>{uiText("Ngôn ngữ script")}</Label>
+            <Input value={studio.scriptLanguage} onChange={(event) => studio.setScriptLanguage(event.target.value)} placeholder={uiText("Tiếng Việt")} />
           </div>
         </div>
 
         <div className="grid min-w-0 gap-3 lg:grid-cols-2">
           <div className="grid min-w-0 gap-2">
-            <Label>Góc biên tập</Label>
+            <Label>{uiText("Góc biên tập")}</Label>
             <Textarea className="min-h-24 min-w-0 resize-y leading-6" value={studio.angle} onChange={(event) => studio.setAngle(event.target.value)} />
           </div>
           <div className="grid min-w-0 gap-2">
-            <Label>Phong cách giọng đọc / nhịp nói</Label>
+            <Label>{uiText("Phong cách giọng đọc / nhịp nói")}</Label>
             <Textarea className="min-h-24 min-w-0 resize-y leading-6" value={studio.voiceStyle} onChange={(event) => studio.setVoiceStyle(event.target.value)} />
           </div>
         </div>
@@ -84,7 +85,7 @@ export function MuNewsScriptPanel({ studio }: { studio: ReturnType<typeof useMuN
 
         <div className="grid min-w-0 gap-2">
           <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <Label>Prompt copy sang ChatGPT</Label>
+            <Label>{uiText("Prompt copy sang ChatGPT")}</Label>
             <Button className="w-full sm:w-auto" size="sm" variant="outline" onClick={copyPrompt} disabled={!studio.scriptPrompt.trim()}>
               <Copy className="mr-2 h-4 w-4" /> Copy prompt
             </Button>
@@ -108,7 +109,7 @@ export function MuNewsScriptPanel({ studio }: { studio: ReturnType<typeof useMuN
             className="min-h-[360px] min-w-0 resize-y font-serif text-sm leading-7 sm:text-base xl:min-h-[52vh]"
             value={studio.script}
             onChange={(event) => studio.setScript(event.target.value)}
-            placeholder="Paste kịch bản hoàn chỉnh từ ChatGPT vào đây, chỉnh sửa nếu cần, rồi bấm Tách voice."
+            placeholder={uiText("Paste kịch bản hoàn chỉnh từ ChatGPT vào đây, chỉnh sửa nếu cần, rồi bấm Tách voice.", "Paste the completed script from ChatGPT here, edit if needed, then click Split voice.")}
           />
         </div>
 

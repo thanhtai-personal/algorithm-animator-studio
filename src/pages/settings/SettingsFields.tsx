@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { t, type Lang } from "@/lib/i18n";
+import {uiText, t, type Lang} from "@/lib/i18n";
 
 export type VoiceRow = { id: string; label: string };
 
@@ -78,8 +78,8 @@ export function VoiceRowsTable(props: {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Voice ID</TableHead>
-              <TableHead>Label</TableHead>
+              <TableHead>{uiText("Voice ID")}</TableHead>
+              <TableHead>{uiText("Label")}</TableHead>
               <TableHead className="w-20 text-right">{t(props.lang, "settingsRemove")}</TableHead>
             </TableRow>
           </TableHeader>

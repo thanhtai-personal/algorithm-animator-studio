@@ -9,6 +9,7 @@ import { StoryVideoPanel } from "@/features/story-video/components/StoryVideoPan
 import { StoryVoicePanel } from "@/features/story-video/components/StoryVoicePanel";
 import { useStoryVideoStudio } from "@/features/story-video/useStoryVideoStudio";
 import { AuthProfile, getCurrentProfile, isSuperAdminProfile } from "@/lib/auth";
+import { uiText } from "@/lib/i18n";
 
 export default function StoryVideoStudio() {
   const navigate = useNavigate();
@@ -60,8 +61,8 @@ function StatusPanel({ studio }: { studio: ReturnType<typeof useStoryVideoStudio
     <Card className="space-y-3 border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.30)]">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="font-semibold">Trạng thái workflow</h2>
-          <p className="text-xs text-muted-foreground">Text → Voice → Video → YouTube.</p>
+          <h2 className="font-semibold">{uiText("Trạng thái workflow")}</h2>
+          <p className="text-xs text-muted-foreground">{uiText("Text → Voice → Video → YouTube.")}</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
           <RefreshCcw className="mr-2 h-4 w-4" /> Tải lại
@@ -69,10 +70,10 @@ function StatusPanel({ studio }: { studio: ReturnType<typeof useStoryVideoStudio
       </div>
 
       <div className="grid gap-2 text-sm">
-        <StatusLine label="Piper models" value={studio.piperModels.length ? `${studio.piperModels.length} model` : "chưa tải"} />
-        <StatusLine label="ElevenLabs" value={studio.elevenConfig?.hasApiKey ? "đã có API key" : "chưa cấu hình / chưa tải"} />
-        <StatusLine label="Audio" value={studio.selectedAudio?.fileName || studio.audioResult?.fileName || "chưa tạo"} />
-        <StatusLine label="Video" value={studio.videoResult?.video.fileName || "chưa tạo"} />
+        <StatusLine label={uiText("Piper models")} value={studio.piperModels.length ? `${studio.piperModels.length} model` : "chưa tải"} />
+        <StatusLine label={uiText("ElevenLabs")} value={studio.elevenConfig?.hasApiKey ? "đã có API key" : "chưa cấu hình / chưa tải"} />
+        <StatusLine label={uiText("Audio")} value={studio.selectedAudio?.fileName || studio.audioResult?.fileName || "chưa tạo"} />
+        <StatusLine label={uiText("Video")} value={studio.videoResult?.video.fileName || "chưa tạo"} />
       </div>
 
       {studio.message ? (

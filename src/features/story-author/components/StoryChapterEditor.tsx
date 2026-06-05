@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { useStoryAuthorStudio } from "../useStoryAuthorStudio";
+import { uiText } from "@/lib/i18n";
 
 type Studio = ReturnType<typeof useStoryAuthorStudio>;
 
@@ -19,8 +20,8 @@ export function StoryChapterEditor({ studio }: { studio: Studio }) {
     <Card className="space-y-4 border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.30)]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="flex items-center gap-2 font-semibold"><FileText className="h-4 w-4 text-cyan-400" /> Nội dung chương</h2>
-          <p className="text-xs text-muted-foreground">Viết và lưu lại từng chương trong cùng một truyện.</p>
+          <h2 className="flex items-center gap-2 font-semibold"><FileText className="h-4 w-4 text-cyan-400" /> {uiText("Nội dung chương")}</h2>
+          <p className="text-xs text-muted-foreground">{uiText("Viết và lưu lại từng chương trong cùng một truyện.")}</p>
         </div>
         <Button variant="outline" onClick={studio.addChapter}>
           <Plus className="mr-2 h-4 w-4" /> Thêm chương
@@ -29,9 +30,9 @@ export function StoryChapterEditor({ studio }: { studio: Studio }) {
 
       <div className="grid gap-3 lg:grid-cols-[260px_minmax(0,1fr)]">
         <div>
-          <Label>Danh sách chương</Label>
+          <Label>{uiText("Danh sách chương")}</Label>
           <Select value={studio.selectedChapterId} onValueChange={studio.setSelectedChapterId}>
-            <SelectTrigger className="mt-2"><SelectValue placeholder="Chọn chương" /></SelectTrigger>
+            <SelectTrigger className="mt-2"><SelectValue placeholder={uiText("Chọn chương")} /></SelectTrigger>
             <SelectContent>
               {project.chapters.map((item, index) => (
                 <SelectItem key={item.id} value={item.id}>{index + 1}. {item.title}</SelectItem>
@@ -57,7 +58,7 @@ export function StoryChapterEditor({ studio }: { studio: Studio }) {
           <div className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
               <div>
-                <Label>Tên chương</Label>
+                <Label>{uiText("Tên chương")}</Label>
                 <Input className="mt-2" value={chapter.title} onChange={(event) => studio.updateChapter({ title: event.target.value })} />
               </div>
               <Button className="self-end" variant="destructive" onClick={() => studio.deleteChapter(chapter.id)} disabled={project.chapters.length <= 1}>
@@ -65,12 +66,12 @@ export function StoryChapterEditor({ studio }: { studio: Studio }) {
               </Button>
             </div>
             <div>
-              <Label>Nội dung</Label>
+              <Label>{uiText("Nội dung")}</Label>
               <Textarea
                 className="mt-2 min-h-[520px] font-serif text-base leading-7"
                 value={chapter.content}
                 onChange={(event) => studio.updateChapter({ content: event.target.value })}
-                placeholder="Viết nội dung chương tại đây..."
+                placeholder={uiText("Viết nội dung chương tại đây...", "Write chapter content here...")}
               />
             </div>
           </div>

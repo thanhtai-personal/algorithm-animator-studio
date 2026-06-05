@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { VideoAspectRatio, VideoBackgroundType, VideoFitMode } from "../types";
 import type { useStoryVideoStudio } from "../useStoryVideoStudio";
+import { uiText } from "@/lib/i18n";
 
 type StoryStudio = ReturnType<typeof useStoryVideoStudio>;
 
@@ -14,32 +15,32 @@ export function StoryVideoPanel({ studio }: { studio: StoryStudio }) {
   return (
     <Card className="space-y-4 border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.30)]">
       <div>
-        <h2 className="flex items-center gap-2 font-semibold"><Film className="h-4 w-4 text-purple-400" /> Tạo video từ audio + nền</h2>
-        <p className="text-xs text-muted-foreground">Clone video workflow từ template: chọn audio, nền ảnh/GIF/video, xuất MP4 bằng FFmpeg.</p>
+        <h2 className="flex items-center gap-2 font-semibold"><Film className="h-4 w-4 text-purple-400" /> {uiText("Tạo video từ audio + nền")}</h2>
+        <p className="text-xs text-muted-foreground">{uiText("Clone video workflow từ template: chọn audio, nền ảnh/GIF/video, xuất MP4 bằng FFmpeg.")}</p>
       </div>
 
       <div className="grid gap-3 xl:grid-cols-[1fr_1fr_1fr]">
         <div>
-          <Label>Audio đã tạo</Label>
+          <Label>{uiText("Audio đã tạo")}</Label>
           <Select value={studio.selectedAudioPath} onValueChange={studio.setSelectedAudioPath}>
-            <SelectTrigger className="mt-2"><SelectValue placeholder="Chọn audio" /></SelectTrigger>
+            <SelectTrigger className="mt-2"><SelectValue placeholder={uiText("Chọn audio")} /></SelectTrigger>
             <SelectContent>
               {studio.generatedAudio.slice(0, 80).map((audio) => <SelectItem key={audio.relativePath} value={audio.relativePath}>{audio.fileName}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-        <FileField label="Hoặc upload audio" accept="audio/*" onChange={studio.setUploadedAudioFile} />
+        <FileField label={uiText("Hoặc upload audio")} accept="audio/*" onChange={studio.setUploadedAudioFile} />
         <div>
-          <Label>Tên file video</Label>
+          <Label>{uiText("Tên file video")}</Label>
           <Input className="mt-2" value={studio.videoFileName} onChange={(e) => studio.setVideoFileName(e.target.value)} />
         </div>
       </div>
 
       <div className="grid gap-3 xl:grid-cols-[1fr_0.75fr_0.75fr_0.75fr]">
-        <FileField label="Nền video" accept="image/*,video/*" onChange={studio.setBackgroundFile} />
-        <SelectField label="Loại nền" value={studio.backgroundType} onValueChange={(v) => studio.setBackgroundType(v as VideoBackgroundType)} items={["image", "gif", "video"]} />
-        <SelectField label="Tỉ lệ" value={studio.aspectRatio} onValueChange={(v) => studio.setAspectRatio(v as VideoAspectRatio)} items={["16:9", "9:16"]} />
-        <SelectField label="Fit mode" value={studio.fitMode} onValueChange={(v) => studio.setFitMode(v as VideoFitMode)} items={["cover", "contain"]} />
+        <FileField label={uiText("Nền video")} accept="image/*,video/*" onChange={studio.setBackgroundFile} />
+        <SelectField label={uiText("Loại nền")} value={studio.backgroundType} onValueChange={(v) => studio.setBackgroundType(v as VideoBackgroundType)} items={["image", "gif", "video"]} />
+        <SelectField label={uiText("Tỉ lệ")} value={studio.aspectRatio} onValueChange={(v) => studio.setAspectRatio(v as VideoAspectRatio)} items={["16:9", "9:16"]} />
+        <SelectField label={uiText("Fit mode")} value={studio.fitMode} onValueChange={(v) => studio.setFitMode(v as VideoFitMode)} items={["cover", "contain"]} />
       </div>
 
       {studio.backgroundPreviewUrl ? (
@@ -47,7 +48,7 @@ export function StoryVideoPanel({ studio }: { studio: StoryStudio }) {
           {studio.backgroundType === "video" ? (
             <video src={studio.backgroundPreviewUrl} controls className="max-h-72 w-full object-contain" />
           ) : (
-            <img src={studio.backgroundPreviewUrl} alt="Preview nền" className="max-h-72 w-full object-contain" />
+            <img src={studio.backgroundPreviewUrl} alt={uiText("Preview nền")} className="max-h-72 w-full object-contain" />
           )}
         </div>
       ) : null}
@@ -79,7 +80,7 @@ function FileField(props: { label: string; accept: string; onChange: (file: File
       <Label>{props.label}</Label>
       <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted/40">
         <Upload className="h-4 w-4" />
-        <span className="truncate">Chọn tệp</span>
+        <span className="truncate">{uiText("Chọn tệp")}</span>
         <input type="file" accept={props.accept} className="hidden" onChange={(e) => props.onChange(e.target.files?.[0] || null)} />
       </label>
     </div>

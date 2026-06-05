@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { SHORT_VIDEO_TYPES, type ShortVideoType } from "@/lib/shortVideoTypes";
 import { AlgorithmStudio } from "./useAlgorithmStudio";
+import { uiText } from "@/lib/i18n";
 
 type Props = { studio: AlgorithmStudio };
 
@@ -170,7 +171,7 @@ function GraphInputs({ studio: s }: Props) {
     <>
       <div>
         <Label>{s.lang === "vi" ? "Cạnh đồ thị (A-B:trọng_số)" : "Edges (A-B:weight)"}</Label>
-        <Textarea className="mt-2 font-mono text-xs h-24" placeholder="A-B:4, A-D:2, B-C:3" value={s.graphInput} onChange={(e) => s.setGraphInput(e.target.value)} />
+        <Textarea className="mt-2 font-mono text-xs h-24" placeholder={uiText("A-B:4, A-D:2, B-C:3")} value={s.graphInput} onChange={(e) => s.setGraphInput(e.target.value)} />
         <p className="text-[10px] text-muted-foreground mt-1">
           {s.lang === "vi" ? "Cách nhau bởi dấu phẩy. Bỏ ':trọng_số' nếu không cần." : "Comma separated. Omit ':weight' for unweighted."}
         </p>

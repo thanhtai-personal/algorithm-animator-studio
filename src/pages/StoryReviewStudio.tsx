@@ -13,6 +13,7 @@ import { ReviewStoryPanel } from "@/features/story-review/components/ReviewStory
 import type { StoryReviewStepId } from "@/features/story-review/types";
 import { useStoryReviewStudio } from "@/features/story-review/useStoryReviewStudio";
 import { AuthProfile, getCurrentProfile, isSuperAdminProfile } from "@/lib/auth";
+import { uiText } from "@/lib/i18n";
 
 const STEPS: { id: StoryReviewStepId; label: string; shortLabel: string; icon: typeof BookOpen }[] = [
   { id: "story", label: "1. Truyện & nguồn", shortLabel: "Truyện", icon: BookOpen },
@@ -57,19 +58,19 @@ export default function StoryReviewStudio() {
             <CardHeader className="space-y-3 p-4 sm:p-5">
               <CardTitle className="flex items-start gap-2 text-lg leading-7 sm:text-xl">
                 <Mic2 className="mt-0.5 h-5 w-5 shrink-0 text-purple-300" />
-                <span>Video review truyện</span>
+                <span>{uiText("Video review truyện")}</span>
               </CardTitle>
               <p className="text-sm leading-6 text-muted-foreground">
                 Studio 4 step: chọn truyện/nguồn → prompt lời thoại → prompt Veo3 → ghép clip/ảnh thành video.
               </p>
             </CardHeader>
             <CardContent className="grid gap-2 p-4 pt-0 text-sm sm:p-5 sm:pt-0">
-              <StatusLine label="Truyện" value={studio.draft.storyTitle || "chưa nhập"} />
-              <StatusLine label="Nguồn" value={studio.draft.sourceName || "chưa nhập"} />
-              <StatusLine label="Lời thoại" value={studio.draft.reviewScript ? `${studio.draft.reviewScript.length.toLocaleString("vi-VN")} ký tự` : "chưa có"} />
-              <StatusLine label="Phân cảnh" value={`${studio.scenesWithFiles}/${studio.scenes.length} file`} />
-              <StatusLine label="Audio" value={studio.audioFile?.name || "tùy chọn"} />
-              <StatusLine label="Video" value={studio.videoResult?.video.fileName || "chưa ghép"} />
+              <StatusLine label={uiText("Truyện")} value={studio.draft.storyTitle || "chưa nhập"} />
+              <StatusLine label={uiText("Nguồn")} value={studio.draft.sourceName || "chưa nhập"} />
+              <StatusLine label={uiText("Lời thoại")} value={studio.draft.reviewScript ? `${studio.draft.reviewScript.length.toLocaleString("vi-VN")} ký tự` : "chưa có"} />
+              <StatusLine label={uiText("Phân cảnh")} value={`${studio.scenesWithFiles}/${studio.scenes.length} file`} />
+              <StatusLine label={uiText("Audio")} value={studio.audioFile?.name || "tùy chọn"} />
+              <StatusLine label={uiText("Video")} value={studio.videoResult?.video.fileName || "chưa ghép"} />
               <Button className="mt-1 w-full" variant="outline" onClick={() => window.location.reload()}>
                 <RefreshCcw className="mr-2 h-4 w-4" /> Tải lại
               </Button>
@@ -96,7 +97,7 @@ export default function StoryReviewStudio() {
           {studio.message ? (
             <Alert className="whitespace-pre-line border-purple-500/40 bg-purple-500/10">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Thông báo</AlertTitle>
+              <AlertTitle>{uiText("Thông báo")}</AlertTitle>
               <AlertDescription className="break-words">{studio.message}</AlertDescription>
             </Alert>
           ) : null}

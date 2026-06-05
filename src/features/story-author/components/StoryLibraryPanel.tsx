@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { STORY_STATUS_LABELS, type StoryStatus } from "../types";
 import type { useStoryAuthorStudio } from "../useStoryAuthorStudio";
+import { uiText } from "@/lib/i18n";
 
 type Studio = ReturnType<typeof useStoryAuthorStudio>;
 
@@ -15,7 +16,7 @@ export function StoryLibraryPanel({ studio }: { studio: Studio }) {
     <Card className="space-y-4 border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.30)]">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="font-semibold">Kho truyện sáng tác</h2>
+          <h2 className="font-semibold">{uiText("Kho truyện sáng tác")}</h2>
           <p className="text-xs text-muted-foreground">{studio.filteredProjects.length}/{studio.projects.length} truyện đang hiển thị</p>
         </div>
         <Button size="sm" onClick={studio.createProject}>
@@ -25,21 +26,21 @@ export function StoryLibraryPanel({ studio }: { studio: Studio }) {
 
       <div className="space-y-3">
         <div>
-          <Label>Tìm kiếm</Label>
+          <Label>{uiText("Tìm kiếm")}</Label>
           <div className="relative mt-2">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               className="pl-9"
               value={studio.filters.query}
               onChange={(event) => studio.setFilters({ ...studio.filters, query: event.target.value })}
-              placeholder="Tên truyện, ý tưởng, tag..."
+              placeholder={uiText("Tên truyện, ý tưởng, tag...", "Story title, idea, tag...")}
             />
           </div>
         </div>
         <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
-          <FilterSelect label="Trạng thái" value={studio.filters.status} onChange={(status) => studio.setFilters({ ...studio.filters, status: status as "all" | StoryStatus })} items={Object.entries(STORY_STATUS_LABELS)} />
-          <FilterSelect label="Thể loại" value={studio.filters.genre} onChange={(genre) => studio.setFilters({ ...studio.filters, genre })} items={studio.genres.map((genre) => [genre, genre])} />
-          <FilterSelect label="Tag" value={studio.filters.tag} onChange={(tag) => studio.setFilters({ ...studio.filters, tag })} items={studio.tags.map((tag) => [tag, tag])} />
+          <FilterSelect label={uiText("Trạng thái")} value={studio.filters.status} onChange={(status) => studio.setFilters({ ...studio.filters, status: status as "all" | StoryStatus })} items={Object.entries(STORY_STATUS_LABELS)} />
+          <FilterSelect label={uiText("Thể loại")} value={studio.filters.genre} onChange={(genre) => studio.setFilters({ ...studio.filters, genre })} items={studio.genres.map((genre) => [genre, genre])} />
+          <FilterSelect label={uiText("Tag")} value={studio.filters.tag} onChange={(tag) => studio.setFilters({ ...studio.filters, tag })} items={studio.tags.map((tag) => [tag, tag])} />
         </div>
       </div>
 
@@ -79,7 +80,7 @@ function FilterSelect(props: { label: string; value: string; items: [string, str
       <Select value={props.value} onValueChange={props.onChange}>
         <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Tất cả</SelectItem>
+          <SelectItem value="all">{uiText("Tất cả")}</SelectItem>
           {props.items.map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
         </SelectContent>
       </Select>

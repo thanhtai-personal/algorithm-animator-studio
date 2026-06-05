@@ -5,14 +5,15 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { LongContentStudio } from "./useLongContentStudio";
+import { uiText } from "@/lib/i18n";
 
 export function BackgroundImagePanel({ studio: s }: { studio: LongContentStudio }) {
   const [url, setUrl] = useState("");
   return (
     <Card className="space-y-4 border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.34),0_0_28px_rgba(59,130,246,0.06)]">
       <div>
-        <h2 className="font-semibold">Ảnh nền video</h2>
-        <p className="mt-1 text-xs text-muted-foreground">Nhập link ảnh hoặc upload nhiều ảnh. Duration trống sẽ tự chia đều theo độ dài video.</p>
+        <h2 className="font-semibold">{uiText("Ảnh nền video")}</h2>
+        <p className="mt-1 text-xs text-muted-foreground">{uiText("Nhập link ảnh hoặc upload nhiều ảnh. Duration trống sẽ tự chia đều theo độ dài video.")}</p>
       </div>
       <div className="grid gap-2 sm:grid-cols-[1fr_auto] xl:grid-cols-[1fr_150px_170px]">
         <div className="relative">
@@ -37,8 +38,8 @@ export function BackgroundImagePanel({ studio: s }: { studio: LongContentStudio 
                 <p className="text-xs text-muted-foreground">{item.image ? "Đã tải" : "Đang tải..."}</p>
               </div>
               <div className="sm:col-span-2 xl:col-span-1">
-                <Label className="mb-1 block text-[11px] text-muted-foreground">Duration</Label>
-                <Input value={item.durationSec ?? ""} inputMode="decimal" placeholder="auto" onChange={(event) => s.updateBackgroundDuration(item.id, event.target.value)} />
+                <Label className="mb-1 block text-[11px] text-muted-foreground">{uiText("Duration")}</Label>
+                <Input value={item.durationSec ?? ""} inputMode="decimal" placeholder={uiText("auto")} onChange={(event) => s.updateBackgroundDuration(item.id, event.target.value)} />
               </div>
               <button type="button" className="flex h-10 w-full items-center justify-center rounded-md border border-border/70 text-muted-foreground hover:bg-destructive/10 hover:text-destructive sm:col-span-2 xl:col-span-1 xl:w-9 xl:border-0" onClick={() => s.removeBackground(item.id)}>
                 <Trash2 className="h-4 w-4" />

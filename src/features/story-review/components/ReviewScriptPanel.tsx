@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { useStoryReviewStudio } from "../useStoryReviewStudio";
+import { uiText } from "@/lib/i18n";
 
 type Studio = ReturnType<typeof useStoryReviewStudio>;
 
@@ -14,7 +15,7 @@ export function ReviewScriptPanel({ studio }: { studio: Studio }) {
         <h2 className="flex items-center gap-2 font-semibold">
           <Bot className="h-4 w-4 text-cyan-400" /> Step 2 - Dán lời thoại review
         </h2>
-        <p className="text-xs text-muted-foreground">Copy prompt sang AI khác, lấy lời thoại đã viết và dán lại vào đây.</p>
+        <p className="text-xs text-muted-foreground">{uiText("Copy prompt sang AI khác, lấy lời thoại đã viết và dán lại vào đây.")}</p>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -27,12 +28,12 @@ export function ReviewScriptPanel({ studio }: { studio: Studio }) {
       </div>
 
       <div>
-        <Label>Lời thoại review đã tạo</Label>
+        <Label>{uiText("Lời thoại review đã tạo")}</Label>
         <Textarea
           className="mt-2 min-h-[440px] text-base leading-7"
           value={studio.draft.reviewScript}
           onChange={(event) => studio.updateDraft({ reviewScript: event.target.value })}
-          placeholder="Dán lời thoại review từ AI vào đây..."
+          placeholder={uiText("Dán lời thoại review từ AI vào đây...", "Paste the AI-generated review script here...")}
         />
       </div>
     </Card>

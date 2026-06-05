@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { MuNewsItem } from "../types";
 import type { useMuNewsStudio } from "../useMuNewsStudio";
+import { uiText } from "@/lib/i18n";
 
 type MuNewsStudio = ReturnType<typeof useMuNewsStudio>;
 
@@ -19,7 +20,7 @@ export function MuNewsPreviewPanel({ studio }: { studio: MuNewsStudio }) {
           <div className="min-w-0">
             <CardTitle className="flex items-start gap-2 text-base leading-7 sm:text-lg">
               <Newspaper className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
-              <span>Step 2 — Preview và chọn tin</span>
+              <span>{uiText("Step 2 — Preview và chọn tin")}</span>
             </CardTitle>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
               Duyệt headline đã tải, chọn các tin đủ tin cậy để AI viết bản tin theo góc nhìn fan Việt.
@@ -40,7 +41,7 @@ export function MuNewsPreviewPanel({ studio }: { studio: MuNewsStudio }) {
           <Badge variant="secondary">{items.length.toLocaleString("vi-VN")} tin tải được</Badge>
           <Badge variant={studio.selectedItems.length ? "default" : "outline"}>{studio.selectedItems.length.toLocaleString("vi-VN")} tin đang chọn</Badge>
           {studio.newsResult?.dateWindow ? <Badge variant="outline">Từ {formatWindowDate(studio.newsResult.dateWindow.from)} đến hiện tại</Badge> : null}
-          <span className="text-sm text-muted-foreground">Tick vào ô bên trái mỗi tin để đưa vào kịch bản.</span>
+          <span className="text-sm text-muted-foreground">{uiText("Tick vào ô bên trái mỗi tin để đưa vào kịch bản.")}</span>
           <Button className="w-full sm:ml-auto sm:w-auto" size="sm" variant="outline" onClick={studio.selectAllNews} disabled={!items.length || studio.selectedItems.length === items.length}>
             <CheckSquare className="mr-2 h-4 w-4" /> Chọn tất cả
           </Button>
@@ -113,7 +114,7 @@ function NewsItemRow(props: { item: MuNewsItem; selected: boolean; onSelectedCha
           <span>•</span>
           <span>{dateLabel}</span>
           <a className="inline-flex min-w-0 items-center gap-1 text-red-300 hover:text-red-200" href={props.item.link} target="_blank" rel="noreferrer">
-            <span className="truncate">Mở nguồn</span>
+            <span className="truncate">{uiText("Mở nguồn")}</span>
             <ExternalLink className="h-3.5 w-3.5 shrink-0" />
           </a>
         </div>

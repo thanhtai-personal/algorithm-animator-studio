@@ -8,6 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import type { StoryVoiceProvider } from "../types";
 import type { useStoryVideoStudio } from "../useStoryVideoStudio";
+import { uiText } from "@/lib/i18n";
 
 type StoryStudio = ReturnType<typeof useStoryVideoStudio>;
 
@@ -17,27 +18,27 @@ export function StoryVoicePanel({ studio }: { studio: StoryStudio }) {
   return (
     <Card className="space-y-4 border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.30)]">
       <div>
-        <h2 className="flex items-center gap-2 font-semibold"><Volume2 className="h-4 w-4 text-emerald-400" /> Voice đọc truyện</h2>
-        <p className="text-xs text-muted-foreground">Clone luồng TTS từ template: text → Piper/ElevenLabs → audio file.</p>
+        <h2 className="flex items-center gap-2 font-semibold"><Volume2 className="h-4 w-4 text-emerald-400" /> {uiText("Voice đọc truyện")}</h2>
+        <p className="text-xs text-muted-foreground">{uiText("Clone luồng TTS từ template: text → Piper/ElevenLabs → audio file.")}</p>
       </div>
 
       <div className="grid gap-3 lg:grid-cols-3">
         <div>
-          <Label>Nguồn giọng</Label>
+          <Label>{uiText("Nguồn giọng")}</Label>
           <Select value={studio.provider} onValueChange={(value) => studio.setProvider(value as StoryVoiceProvider)}>
             <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="piper">Piper local</SelectItem>
-              <SelectItem value="elevenlabs">ElevenLabs PRO</SelectItem>
+              <SelectItem value="piper">{uiText("Piper local")}</SelectItem>
+              <SelectItem value="elevenlabs">{uiText("ElevenLabs PRO")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div>
-          <Label>Tên file audio</Label>
+          <Label>{uiText("Tên file audio")}</Label>
           <Input className="mt-2" value={studio.fileName} onChange={(e) => studio.setFileName(e.target.value)} />
         </div>
         <div>
-          <Label>Số ký tự</Label>
+          <Label>{uiText("Số ký tự")}</Label>
           <div className="mt-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm">{studio.characterCount.toLocaleString("vi-VN")}</div>
         </div>
       </div>
@@ -45,32 +46,32 @@ export function StoryVoicePanel({ studio }: { studio: StoryStudio }) {
       {studio.provider === "piper" ? (
         <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
           <div>
-            <Label>Piper model</Label>
+            <Label>{uiText("Piper model")}</Label>
             <Select value={studio.piperModelKey} onValueChange={studio.setPiperModelKey}>
-              <SelectTrigger className="mt-2"><SelectValue placeholder="Chọn model" /></SelectTrigger>
+              <SelectTrigger className="mt-2"><SelectValue placeholder={uiText("Chọn model")} /></SelectTrigger>
               <SelectContent>
                 {availablePiperModels.map((model) => <SelectItem key={model.key} value={model.key}>{model.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
-          <SliderField label="Nghỉ giữa câu" value={studio.sentenceSilence} min={0} max={2} step={0.05} suffix="s" onChange={studio.setSentenceSilence} />
-          <SliderField label="Tốc độ đọc" value={studio.speechRate} min={0.55} max={1.35} step={0.01} suffix="x" onChange={studio.setSpeechRate} />
+          <SliderField label={uiText("Nghỉ giữa câu")} value={studio.sentenceSilence} min={0} max={2} step={0.05} suffix="s" onChange={studio.setSentenceSilence} />
+          <SliderField label={uiText("Tốc độ đọc")} value={studio.speechRate} min={0.55} max={1.35} step={0.01} suffix="x" onChange={studio.setSpeechRate} />
         </div>
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
           <div>
-            <Label>ElevenLabs model</Label>
+            <Label>{uiText("ElevenLabs model")}</Label>
             <Select value={studio.elevenModelId} onValueChange={studio.setElevenModelId}>
-              <SelectTrigger className="mt-2"><SelectValue placeholder="Chọn model PRO" /></SelectTrigger>
+              <SelectTrigger className="mt-2"><SelectValue placeholder={uiText("Chọn model PRO")} /></SelectTrigger>
               <SelectContent>
                 {studio.elevenConfig?.models.map((model) => <SelectItem key={model.id} value={model.id}>{model.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label>Voice ID</Label>
+            <Label>{uiText("Voice ID")}</Label>
             <Select value={studio.elevenVoiceId} onValueChange={studio.setElevenVoiceId}>
-              <SelectTrigger className="mt-2"><SelectValue placeholder="Chọn voice" /></SelectTrigger>
+              <SelectTrigger className="mt-2"><SelectValue placeholder={uiText("Chọn voice")} /></SelectTrigger>
               <SelectContent>
                 {studio.elevenConfig?.voices.map((voice) => <SelectItem key={voice.id} value={voice.id}>{voice.label}</SelectItem>)}
               </SelectContent>
@@ -80,7 +81,7 @@ export function StoryVoicePanel({ studio }: { studio: StoryStudio }) {
       )}
 
       <div>
-        <Label>Nội dung/kịch bản đọc truyện</Label>
+        <Label>{uiText("Nội dung/kịch bản đọc truyện")}</Label>
         <Textarea className="mt-2 min-h-[320px] font-serif text-base leading-7" value={studio.text} onChange={(e) => studio.setText(e.target.value)} />
       </div>
 

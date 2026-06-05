@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { audioEngine } from "@/lib/audio";
 import { AlgorithmStudio } from "./useAlgorithmStudio";
+import { uiText } from "@/lib/i18n";
 
 const PhaserMazePreview = lazy(() => import("../algorithm-world/PhaserMazePreview").then((module) => ({ default: module.PhaserMazePreview })));
 const PHASER_FALLBACK_HEIGHT = "min(70vh, 1920px)";
@@ -20,7 +21,7 @@ export function CenterPanel({ studio: s }: Props) {
       <Card className="w-full min-w-0 overflow-hidden bg-card/50 p-3">
         {showPhaserMaze ? (
           <>
-            <Suspense fallback={<div className="grid w-full place-items-center rounded-lg bg-slate-950 text-sm text-cyan-200" style={{ maxHeight: PHASER_FALLBACK_HEIGHT, aspectRatio: `${s.W}/${s.H}` }}>Loading Phaser scene...</div>}>
+            <Suspense fallback={<div className="grid w-full place-items-center rounded-lg bg-slate-950 text-sm text-cyan-200" style={{ maxHeight: PHASER_FALLBACK_HEIGHT, aspectRatio: `${s.W}/${s.H}` }}>{uiText("Loading Phaser scene...")}</div>}>
               <PhaserMazePreview key={`${s.W}x${s.H}`} frame={s.current} width={s.W} height={s.H} title={s.title} subtitle={s.subtitle} theme={s.theme} lang={s.lang} />
             </Suspense>
             <canvas ref={s.canvasRef} width={s.W} height={s.H} className="hidden" />

@@ -270,7 +270,7 @@ function YoutubeManagerHeader({ activeChannelTitle, channelCount, connected, lan
   return (
     <Card className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
       <div>
-        <h1 className="text-xl font-bold">Channel Manager</h1>
+        <h1 className="text-xl font-bold">{txt(vi, "Quản lý kênh", "Channel Manager")}</h1>
         <p className="text-sm text-muted-foreground">{txt(vi, "Quản lý YouTube, Facebook, TikTok và Instagram theo từng kênh riêng.", "Manage YouTube, Facebook, TikTok, and Instagram as separate channels.")}</p>
       </div>
       <div className="flex flex-wrap gap-2">

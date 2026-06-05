@@ -12,6 +12,7 @@ import { MuNewsVideoPanel } from "@/features/mu-news/components/MuNewsVideoPanel
 import { MuNewsVoicePanel } from "@/features/mu-news/components/MuNewsVoicePanel";
 import type { MuNewsStepId } from "@/features/mu-news/types";
 import { useMuNewsStudio } from "@/features/mu-news/useMuNewsStudio";
+import { uiText } from "@/lib/i18n";
 
 const STEPS: { id: MuNewsStepId; label: string; shortLabel: string; icon: typeof Rss }[] = [
   { id: "sources", label: "1. Nguồn tin", shortLabel: "Nguồn", icon: Rss },
@@ -33,20 +34,20 @@ export default function MuNewsStudio() {
             <CardHeader className="space-y-3 p-4 sm:p-5">
               <CardTitle className="flex items-start gap-2 text-lg leading-7 sm:text-xl">
                 <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
-                <span>Kênh tin tức MU</span>
+                <span>{uiText("Kênh tin tức MU")}</span>
               </CardTitle>
               <p className="text-sm leading-6 text-muted-foreground">
                 Studio 6 step: nguồn tin → preview → lọc tin → kịch bản → voice nhiều đoạn → video timeline.
               </p>
             </CardHeader>
             <CardContent className="grid gap-2 p-4 pt-0 text-sm sm:p-5 sm:pt-0">
-              <StatusLine label="Nguồn RSS" value={`${studio.sources.length} nguồn`} />
-              <StatusLine label="Tin đã tải" value={`${studio.newsResult?.count || 0} tin`} />
-              <StatusLine label="Tin chọn" value={`${studio.selectedItems.length} tin`} />
-              <StatusLine label="Kịch bản" value={studio.script ? `${studio.script.length.toLocaleString("vi-VN")} ký tự` : "chưa có"} />
-              <StatusLine label="Voice" value={`${studio.generatedVoiceCount}/${studio.voiceSegments.length} đoạn`} />
-              <StatusLine label="Nền video" value={`${studio.backgrounds.length} ảnh`} />
-              <StatusLine label="Video" value={studio.videoResult?.video.fileName || "chưa render"} />
+              <StatusLine label={uiText("Nguồn RSS")} value={`${studio.sources.length} nguồn`} />
+              <StatusLine label={uiText("Tin đã tải")} value={`${studio.newsResult?.count || 0} tin`} />
+              <StatusLine label={uiText("Tin chọn")} value={`${studio.selectedItems.length} tin`} />
+              <StatusLine label={uiText("Kịch bản")} value={studio.script ? `${studio.script.length.toLocaleString("vi-VN")} ký tự` : "chưa có"} />
+              <StatusLine label={uiText("Voice")} value={`${studio.generatedVoiceCount}/${studio.voiceSegments.length} đoạn`} />
+              <StatusLine label={uiText("Nền video")} value={`${studio.backgrounds.length} ảnh`} />
+              <StatusLine label={uiText("Video")} value={studio.videoResult?.video.fileName || "chưa render"} />
               <Button className="mt-1 w-full" variant="outline" onClick={studio.resetDraft}>
                 <RefreshCcw className="mr-2 h-4 w-4" /> Làm bản tin mới
               </Button>
@@ -72,7 +73,7 @@ export default function MuNewsStudio() {
 
           <Alert className="border-yellow-500/40 bg-yellow-500/10">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Lưu ý kiếm tiền</AlertTitle>
+            <AlertTitle>{uiText("Lưu ý kiếm tiền")}</AlertTitle>
             <AlertDescription className="text-sm leading-6">
               Không dịch nguyên văn bài báo. Hãy giữ nguồn, chấm độ tin cậy và thêm góc nhìn fan Việt.
             </AlertDescription>
@@ -81,7 +82,7 @@ export default function MuNewsStudio() {
           {studio.message ? (
             <Alert className="whitespace-pre-line border-red-500/40 bg-red-500/10">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Thông báo</AlertTitle>
+              <AlertTitle>{uiText("Thông báo")}</AlertTitle>
               <AlertDescription className="break-words">{studio.message}</AlertDescription>
             </Alert>
           ) : null}

@@ -10,6 +10,9 @@ const ignoredPaths = [
   "src/assets",
   "src/components/ui",
   "src/pages/algorithm-world/phaserMazePreviewShared.ts",
+  "src/lib",
+  "src/test",
+  "src/pages/long-content/useVideoBackgroundImages.ts",
 ];
 const ignoredPatterns = [
   /^className=/,

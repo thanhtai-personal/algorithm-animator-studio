@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/sonner";
 import { getCurrentProfile, isSuperAdminProfile } from "@/lib/auth";
+import { uiText } from "@/lib/i18n";
 import {
   deleteSocialConfig,
   getDefaultConfigs,
@@ -199,8 +200,8 @@ export default function SocialPublishing() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-xl font-semibold">Social Publishing</h1>
-          <p className="text-sm text-muted-foreground">Configure admin-only publishing data locally for Facebook, YouTube, and TikTok.</p>
+          <h1 className="text-xl font-semibold">{uiText("Social Publishing")}</h1>
+          <p className="text-sm text-muted-foreground">{uiText("Configure admin-only publishing data locally for Facebook, YouTube, and TikTok.")}</p>
         </div>
       </header>
 
@@ -310,31 +311,31 @@ function PublishCard(props: {
 }) {
   return (
     <Card className="space-y-4 p-4">
-      <h2 className="text-lg font-semibold">Publish video</h2>
+      <h2 className="text-lg font-semibold">{uiText("Publish video")}</h2>
       <p className="text-xs text-muted-foreground">
         Jobs are saved locally. Auth still uses the API, but social publishing data is stored in this browser.
       </p>
       <form className="space-y-3" onSubmit={props.onSubmit}>
         <Input accept="video/*" type="file" onChange={(event: ChangeEvent<HTMLInputElement>) => props.onFileChange(event.target.files?.[0] ?? null)} />
         {props.videoFile ? <p className="text-xs text-muted-foreground">{props.videoFile.name}</p> : null}
-        <Input placeholder="Title" value={props.metadata.title} onChange={(event) => props.onMetadataChange({ title: event.target.value })} />
-        <Textarea placeholder="Description or caption" value={props.metadata.description} onChange={(event) => props.onMetadataChange({ description: event.target.value })} />
-        <Input placeholder="#tags, comma separated" value={props.metadata.tags} onChange={(event) => props.onMetadataChange({ tags: event.target.value })} />
+        <Input placeholder={uiText("Title")} value={props.metadata.title} onChange={(event) => props.onMetadataChange({ title: event.target.value })} />
+        <Textarea placeholder={uiText("Description or caption")} value={props.metadata.description} onChange={(event) => props.onMetadataChange({ description: event.target.value })} />
+        <Input placeholder={uiText("#tags, comma separated")} value={props.metadata.tags} onChange={(event) => props.onMetadataChange({ tags: event.target.value })} />
         <Select value={props.metadata.privacy} onValueChange={(value) => props.onMetadataChange({ privacy: value as SocialPublishMetadata["privacy"] })}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="private">Private</SelectItem>
-            <SelectItem value="unlisted">Unlisted</SelectItem>
-            <SelectItem value="public">Public</SelectItem>
+            <SelectItem value="private">{uiText("Private")}</SelectItem>
+            <SelectItem value="unlisted">{uiText("Unlisted")}</SelectItem>
+            <SelectItem value="public">{uiText("Public")}</SelectItem>
           </SelectContent>
         </Select>
         <Input type="datetime-local" value={props.metadata.scheduledAt} onChange={(event) => props.onMetadataChange({ scheduledAt: event.target.value })} />
-        <Input placeholder="YouTube category ID" value={props.metadata.youtubeCategory} onChange={(event) => props.onMetadataChange({ youtubeCategory: event.target.value })} />
-        <Input placeholder="Facebook Page ID override" value={props.metadata.facebookPageId} onChange={(event) => props.onMetadataChange({ facebookPageId: event.target.value })} />
-        <ToggleRow label="YouTube made for kids" checked={props.metadata.youtubeMadeForKids} onChange={(checked) => props.onMetadataChange({ youtubeMadeForKids: checked })} />
-        <ToggleRow label="TikTok comments" checked={props.metadata.tiktokAllowComments} onChange={(checked) => props.onMetadataChange({ tiktokAllowComments: checked })} />
-        <ToggleRow label="TikTok duet" checked={props.metadata.tiktokAllowDuet} onChange={(checked) => props.onMetadataChange({ tiktokAllowDuet: checked })} />
-        <ToggleRow label="TikTok stitch" checked={props.metadata.tiktokAllowStitch} onChange={(checked) => props.onMetadataChange({ tiktokAllowStitch: checked })} />
+        <Input placeholder={uiText("YouTube category ID")} value={props.metadata.youtubeCategory} onChange={(event) => props.onMetadataChange({ youtubeCategory: event.target.value })} />
+        <Input placeholder={uiText("Facebook Page ID override")} value={props.metadata.facebookPageId} onChange={(event) => props.onMetadataChange({ facebookPageId: event.target.value })} />
+        <ToggleRow label={uiText("YouTube made for kids")} checked={props.metadata.youtubeMadeForKids} onChange={(checked) => props.onMetadataChange({ youtubeMadeForKids: checked })} />
+        <ToggleRow label={uiText("TikTok comments")} checked={props.metadata.tiktokAllowComments} onChange={(checked) => props.onMetadataChange({ tiktokAllowComments: checked })} />
+        <ToggleRow label={uiText("TikTok duet")} checked={props.metadata.tiktokAllowDuet} onChange={(checked) => props.onMetadataChange({ tiktokAllowDuet: checked })} />
+        <ToggleRow label={uiText("TikTok stitch")} checked={props.metadata.tiktokAllowStitch} onChange={(checked) => props.onMetadataChange({ tiktokAllowStitch: checked })} />
         <div className="space-y-2">
           {SOCIAL_PLATFORMS.map((platform) => (
             <label key={platform.id} className="flex items-center gap-2 text-sm">
@@ -355,8 +356,8 @@ function PublishCard(props: {
 function HistoryCard({ history }: { history: SocialPublishHistoryItem[] }) {
   return (
     <Card className="space-y-3 p-4">
-      <h2 className="text-lg font-semibold">History</h2>
-      {history.length === 0 ? <p className="text-sm text-muted-foreground">No publish jobs yet.</p> : null}
+      <h2 className="text-lg font-semibold">{uiText("History")}</h2>
+      {history.length === 0 ? <p className="text-sm text-muted-foreground">{uiText("No publish jobs yet.")}</p> : null}
       {history.slice(0, 8).map((item) => (
         <div key={item.id} className="rounded-md border border-border p-3 text-sm">
           <div className="flex justify-between gap-2">
@@ -364,7 +365,7 @@ function HistoryCard({ history }: { history: SocialPublishHistoryItem[] }) {
             <Badge variant="outline">{item.status}</Badge>
           </div>
           <p className="mt-1 truncate text-muted-foreground">{item.title}</p>
-          {item.publishedUrl ? <a className="text-emerald-400 underline" href={item.publishedUrl}>Open post</a> : null}
+          {item.publishedUrl ? <a className="text-emerald-400 underline" href={item.publishedUrl}>{uiText("Open post")}</a> : null}
           {item.errorMessage ? <p className="text-destructive">{item.errorMessage}</p> : null}
         </div>
       ))}

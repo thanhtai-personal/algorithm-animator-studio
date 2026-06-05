@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { uiText } from "@/lib/i18n";
 import type { Lang } from "@/lib/i18n";
 import type { YoutubePlaylist } from "@/lib/youtubeApi";
 import type { YoutubeManagedChannel } from "../types";
@@ -98,7 +99,7 @@ function ChannelItem({ active, channel, lang, onRemove, onSelect }: { active: bo
     >
       <div className="flex items-start gap-3">
         {channel.thumbnailUrl ? (
-          <img src={channel.thumbnailUrl} alt="YouTube channel avatar" className="h-11 w-11 shrink-0 rounded-full object-cover" />
+          <img src={channel.thumbnailUrl} alt={uiText("YouTube channel avatar")} className="h-11 w-11 shrink-0 rounded-full object-cover" />
         ) : (
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-500/15 text-red-300"><Youtube className="h-5 w-5" /></div>
         )}
@@ -133,7 +134,7 @@ function ChannelDetails({ channel, playlists, lang }: { channel: YoutubeManagedC
       <div className="flex flex-col gap-3 border-b border-border pb-4 md:flex-row md:items-start md:justify-between">
         <div className="flex items-start gap-3">
           {channel.thumbnailUrl ? (
-            <img src={channel.thumbnailUrl} alt="YouTube channel avatar" className="h-14 w-14 rounded-full object-cover" />
+            <img src={channel.thumbnailUrl} alt={uiText("YouTube channel avatar")} className="h-14 w-14 rounded-full object-cover" />
           ) : (
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500/15 text-red-300"><Youtube className="h-6 w-6" /></div>
           )}
@@ -153,7 +154,7 @@ function ChannelDetails({ channel, playlists, lang }: { channel: YoutubeManagedC
       <div className="grid gap-3 md:grid-cols-3">
         <StatBox label={txt(vi, "Người đăng ký", "Subscribers")} value={channel.subscriberCount || "—"} />
         <StatBox label={txt(vi, "Video", "Videos")} value={channel.videoCount || "—"} />
-        <StatBox label="Views" value={channel.viewCount || "—"} />
+        <StatBox label={uiText("Views")} value={channel.viewCount || "—"} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">

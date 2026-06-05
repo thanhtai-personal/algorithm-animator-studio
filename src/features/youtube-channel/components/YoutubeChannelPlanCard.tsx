@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { uiText } from "@/lib/i18n";
 import type { Lang } from "@/lib/i18n";
 import { createIdea } from "../channelPlanStorage";
 import type { ChannelIdea, YoutubeChannelPlan } from "../types";
@@ -32,7 +33,7 @@ export function YoutubeChannelPlanCard({ lang, plan, setPlan }: Props) {
         <p className="text-xs text-muted-foreground">{txt(vi, "Lưu local để thống nhất định vị, lịch đăng, tag mặc định và backlog ý tưởng.", "Saved locally to align positioning, posting cadence, default tags, and the idea backlog.")}</p>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
-        <Field label="Channel URL" value={plan.channelUrl} onChange={(value) => setPlan({ channelUrl: value })} />
+        <Field label={uiText("Channel URL")} value={plan.channelUrl} onChange={(value) => setPlan({ channelUrl: value })} />
         <Field label={txt(vi, "Nhịp upload", "Upload cadence")} value={plan.uploadCadence} onChange={(value) => setPlan({ uploadCadence: value })} />
       </div>
       <Field label={txt(vi, "Đối tượng mục tiêu", "Target audience")} value={plan.targetAudience} onChange={(value) => setPlan({ targetAudience: value })} />
@@ -53,18 +54,18 @@ export function YoutubeChannelPlanCard({ lang, plan, setPlan }: Props) {
             <Select value={idea.format} onValueChange={(value) => updateIdea(idea.id, { format: value as ChannelIdea["format"] })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="short">Short</SelectItem>
-                <SelectItem value="long">Long</SelectItem>
-                <SelectItem value="series">Series</SelectItem>
+                <SelectItem value="short">{uiText("Short")}</SelectItem>
+                <SelectItem value="long">{uiText("Long")}</SelectItem>
+                <SelectItem value="series">{uiText("Series")}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={idea.status} onValueChange={(value) => updateIdea(idea.id, { status: value as ChannelIdea["status"] })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="idea">Idea</SelectItem>
-                <SelectItem value="script">Script</SelectItem>
-                <SelectItem value="recording">Recording</SelectItem>
-                <SelectItem value="uploaded">Uploaded</SelectItem>
+                <SelectItem value="idea">{uiText("Idea")}</SelectItem>
+                <SelectItem value="script">{uiText("Script")}</SelectItem>
+                <SelectItem value="recording">{uiText("Recording")}</SelectItem>
+                <SelectItem value="uploaded">{uiText("Uploaded")}</SelectItem>
               </SelectContent>
             </Select>
             <Button size="icon" variant="ghost" onClick={() => removeIdea(idea.id)} aria-label={txt(vi, "Xóa ý tưởng", "Delete idea")}><Trash2 className="h-4 w-4" /></Button>

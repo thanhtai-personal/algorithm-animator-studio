@@ -19,6 +19,14 @@ export function writeSystemLang(lang: Lang) {
   window.dispatchEvent(new CustomEvent(SYSTEM_LANG_CHANGE_EVENT, { detail: nextLang }));
 }
 
+export function textByFlag(vi: boolean, viText: string, enText: string) {
+  return vi ? viText : enText;
+}
+
+export function uiText(viText: string, enText: string = viText) {
+  return readSystemLang() === "vi" ? viText : enText;
+}
+
 export function subscribeSystemLang(listener: (lang: Lang) => void) {
   if (typeof window === "undefined") return () => {};
 

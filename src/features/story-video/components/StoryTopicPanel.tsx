@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { StoryTopicId } from "../types";
 import type { useStoryVideoStudio } from "../useStoryVideoStudio";
+import { uiText } from "@/lib/i18n";
 
 type StoryStudio = ReturnType<typeof useStoryVideoStudio>;
 
@@ -16,13 +17,13 @@ export function StoryTopicPanel({ studio }: { studio: StoryStudio }) {
           <h2 className="flex items-center gap-2 font-semibold">
             <BookOpen className="h-4 w-4 text-emerald-400" /> Chủ đề sản xuất
           </h2>
-          <p className="text-xs text-muted-foreground">Chọn preset để chuyển workflow sang kênh đọc truyện.</p>
+          <p className="text-xs text-muted-foreground">{uiText("Chọn preset để chuyển workflow sang kênh đọc truyện.")}</p>
         </div>
-        <Badge variant="outline" className="border-emerald-400/50 text-emerald-300">Story channel</Badge>
+        <Badge variant="outline" className="border-emerald-400/50 text-emerald-300">{uiText("Story channel")}</Badge>
       </div>
 
       <div>
-        <Label>Chủ đề / dòng nội dung</Label>
+        <Label>{uiText("Chủ đề / dòng nội dung")}</Label>
         <Select value={studio.topicId} onValueChange={(value) => studio.changeTopic(value as StoryTopicId)}>
           <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
           <SelectContent>

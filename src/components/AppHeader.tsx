@@ -95,7 +95,7 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
             <SelectTrigger className="h-10 w-[92px] shrink-0 md:w-28"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="en">English</SelectItem>
-              <SelectItem value="vi">Tiếng Việt</SelectItem>
+              <SelectItem value="vi">{text(lang, "Vietnamese", "Tiếng Việt")}</SelectItem>
             </SelectContent>
           </Select>
           <Button aria-label={text(lang, "Toggle light/dark theme", "Đổi giao diện sáng/tối")} className="h-10 shrink-0" size="icon" variant="outline" onClick={toggleTheme}>

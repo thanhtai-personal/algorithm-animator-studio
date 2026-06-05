@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { VideoAspectRatio, VideoFitMode } from "@/features/story-video/types";
 import type { useStoryReviewStudio } from "../useStoryReviewStudio";
+import { uiText } from "@/lib/i18n";
 
 type Studio = ReturnType<typeof useStoryReviewStudio>;
 
@@ -18,16 +19,16 @@ export function ReviewRenderPanel({ studio }: { studio: Studio }) {
         <h2 className="flex items-center gap-2 font-semibold">
           <Video className="h-4 w-4 text-emerald-400" /> Step 4 - Ghép video review
         </h2>
-        <p className="text-xs text-muted-foreground">Ghép các clip nhỏ hoặc ảnh có thời lượng thành video review. Audio lời thoại là tùy chọn.</p>
+        <p className="text-xs text-muted-foreground">{uiText("Ghép các clip nhỏ hoặc ảnh có thời lượng thành video review. Audio lời thoại là tùy chọn.")}</p>
       </div>
 
       <div className="grid gap-3 lg:grid-cols-4">
         <div>
-          <Label>Tên file video</Label>
+          <Label>{uiText("Tên file video")}</Label>
           <Input className="mt-2" value={draft.videoFileName} onChange={(event) => studio.updateDraft({ videoFileName: event.target.value })} />
         </div>
         <div>
-          <Label>Tỉ lệ</Label>
+          <Label>{uiText("Tỉ lệ")}</Label>
           <Select value={draft.aspectRatio} onValueChange={(aspectRatio) => studio.updateDraft({ aspectRatio: aspectRatio as VideoAspectRatio })}>
             <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -37,17 +38,17 @@ export function ReviewRenderPanel({ studio }: { studio: Studio }) {
           </Select>
         </div>
         <div>
-          <Label>Fit mode</Label>
+          <Label>{uiText("Fit mode")}</Label>
           <Select value={draft.fitMode} onValueChange={(fitMode) => studio.updateDraft({ fitMode: fitMode as VideoFitMode })}>
             <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="cover">cover</SelectItem>
-              <SelectItem value="contain">contain</SelectItem>
+              <SelectItem value="cover">{uiText("cover")}</SelectItem>
+              <SelectItem value="contain">{uiText("contain")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div>
-          <Label>Audio lời thoại</Label>
+          <Label>{uiText("Audio lời thoại")}</Label>
           <Input className="mt-2" type="file" accept="audio/*" onChange={(event) => studio.setAudioFile(event.target.files?.[0] || null)} />
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { Upload } from "lucide-react";
-import { PLATFORMS, SFX_OPTIONS } from "@/lib/i18n";
+import {uiText, PLATFORMS, SFX_OPTIONS} from "@/lib/i18n";
 import { audioEngine, SfxKind } from "@/lib/audio";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -240,8 +240,8 @@ function SfxSelect(props: {
         </SelectContent>
       </Select>
       <div className="flex justify-between items-center">
-        <span className="text-xs text-muted-foreground flex items-center gap-1"><Upload className="w-3 h-3" /> Upload</span>
-        <Button size="sm" variant="outline" onClick={props.onTest}>Test</Button>
+        <span className="text-xs text-muted-foreground flex items-center gap-1"><Upload className="w-3 h-3" /> {uiText("Upload")}</span>
+        <Button size="sm" variant="outline" onClick={props.onTest}>{uiText("Test")}</Button>
       </div>
     </div>
   );

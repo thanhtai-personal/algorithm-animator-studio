@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { useMuNewsStudio } from "../useMuNewsStudio";
+import { uiText } from "@/lib/i18n";
 
 export function MuNewsSourcesPanel({ studio }: { studio: ReturnType<typeof useMuNewsStudio> }) {
   const sourceRows = sourcesTextToRows(studio.sourcesText);
@@ -31,7 +32,7 @@ export function MuNewsSourcesPanel({ studio }: { studio: ReturnType<typeof useMu
           <div className="min-w-0">
             <CardTitle className="flex items-start gap-2 text-base leading-7 sm:text-lg">
               <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
-              <span>Step 1 — Xác định nguồn tin tức</span>
+              <span>{uiText("Step 1 — Xác định nguồn tin tức")}</span>
             </CardTitle>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
               Cấu hình RSS/Google News RSS và từ khóa lọc trước khi lấy tin. Mỗi dòng: Tên nguồn | RSS URL | điểm tin cậy 1-10.
@@ -46,47 +47,47 @@ export function MuNewsSourcesPanel({ studio }: { studio: ReturnType<typeof useMu
         <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(280px,0.7fr)_minmax(360px,1.3fr)]">
           <div className="grid min-w-0 gap-4 rounded-xl border border-border bg-muted/20 p-3 sm:p-4">
             <div className="grid min-w-0 gap-2">
-              <Label>Từ khóa lọc tin</Label>
+              <Label>{uiText("Từ khóa lọc tin")}</Label>
               <Input
                 className="min-w-0"
                 value={studio.query}
                 onChange={(event) => studio.setQuery(event.target.value)}
-                placeholder="Manchester United OR Man Utd OR MUFC"
+                placeholder={uiText("Manchester United OR Man Utd OR MUFC")}
               />
-              <p className="text-xs leading-5 text-muted-foreground">Dùng OR để gom nhiều từ khóa. Nên giữ MUFC/Man Utd để tránh lọt tin không liên quan.</p>
+              <p className="text-xs leading-5 text-muted-foreground">{uiText("Dùng OR để gom nhiều từ khóa. Nên giữ MUFC/Man Utd để tránh lọt tin không liên quan.")}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Badge variant="secondary">{studio.sources.length} nguồn hợp lệ</Badge>
-              <Badge variant="outline">Step tiếp theo: preview tin</Badge>
+              <Badge variant="outline">{uiText("Step tiếp theo: preview tin")}</Badge>
             </div>
           </div>
 
           <div className="grid min-w-0 gap-3">
             <div className="flex items-center justify-between gap-3">
-              <Label>Danh sách nguồn tin</Label>
+              <Label>{uiText("Danh sách nguồn tin")}</Label>
               <Button type="button" size="sm" variant="outline" onClick={addSourceRow}>
                 <Plus className="mr-2 h-4 w-4" /> Thêm nguồn
               </Button>
             </div>
             <div className="grid min-w-0 gap-2 rounded-xl border border-border bg-background/60 p-3">
               <div className="hidden grid-cols-[minmax(140px,0.8fr)_minmax(240px,1.5fr)_90px_40px] gap-2 px-1 text-xs font-medium text-muted-foreground md:grid">
-                <span>Tên nguồn</span>
-                <span>RSS URL</span>
-                <span>Trust</span>
+                <span>{uiText("Tên nguồn")}</span>
+                <span>{uiText("RSS URL")}</span>
+                <span>{uiText("Trust")}</span>
                 <span />
               </div>
               {sourceRows.map((source, index) => (
                 <div key={index} className="grid min-w-0 gap-2 rounded-lg border border-border bg-muted/10 p-2 md:grid-cols-[minmax(140px,0.8fr)_minmax(240px,1.5fr)_90px_40px] md:border-0 md:bg-transparent md:p-0">
                   <div className="grid min-w-0 gap-1 md:block">
-                    <Label className="text-xs text-muted-foreground md:hidden">Tên nguồn</Label>
+                    <Label className="text-xs text-muted-foreground md:hidden">{uiText("Tên nguồn")}</Label>
                     <Input
                       value={source.name}
                       onChange={(event) => updateSourceRow(index, { name: event.target.value })}
-                      placeholder="BBC Sport"
+                      placeholder={uiText("BBC Sport")}
                     />
                   </div>
                   <div className="grid min-w-0 gap-1 md:block">
-                    <Label className="text-xs text-muted-foreground md:hidden">RSS URL</Label>
+                    <Label className="text-xs text-muted-foreground md:hidden">{uiText("RSS URL")}</Label>
                     <Input
                       value={source.url}
                       onChange={(event) => updateSourceRow(index, { url: event.target.value })}
@@ -94,7 +95,7 @@ export function MuNewsSourcesPanel({ studio }: { studio: ReturnType<typeof useMu
                     />
                   </div>
                   <div className="grid min-w-0 gap-1 md:block">
-                    <Label className="text-xs text-muted-foreground md:hidden">Trust</Label>
+                    <Label className="text-xs text-muted-foreground md:hidden">{uiText("Trust")}</Label>
                     <Input
                       type="number"
                       min={1}
@@ -109,7 +110,7 @@ export function MuNewsSourcesPanel({ studio }: { studio: ReturnType<typeof useMu
                     variant="outline"
                     className="h-10 w-full md:w-10"
                     onClick={() => removeSourceRow(index)}
-                    aria-label="Xóa nguồn tin"
+                    aria-label={uiText("Xóa nguồn tin", "Remove news source")}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -123,7 +124,7 @@ export function MuNewsSourcesPanel({ studio }: { studio: ReturnType<typeof useMu
         </div>
 
         <div className="flex flex-col gap-2 rounded-xl border border-dashed border-border p-3 text-sm leading-6 text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:p-4">
-          <span>Bấm load tin để chuyển sang Step 2. Tin tải xong sẽ được chọn top 6 mặc định, bạn có thể bật/tắt lại từng tin.</span>
+          <span>{uiText("Bấm load tin để chuyển sang Step 2. Tin tải xong sẽ được chọn top 6 mặc định, bạn có thể bật/tắt lại từng tin.")}</span>
           <Button className="w-full sm:w-auto" variant="outline" onClick={() => studio.setActiveStep("preview")} disabled={!studio.newsResult?.items.length}>
             Sang preview <ArrowRight className="ml-2 h-4 w-4" />
           </Button>

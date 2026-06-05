@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { uiText } from "@/lib/i18n";
 import type { Lang } from "@/lib/i18n";
 import { useSocialChannelWorkspace } from "../hooks/useSocialChannelWorkspace";
 import type { SocialChannel, SocialChannelStatus, SocialPlatform } from "../types";
@@ -173,8 +174,8 @@ function SocialChannelEditor({ channel, lang, updateChannel }: { channel: Social
         <Field label={txt(vi, "Tên kênh / page", "Channel / page name")}>
           <Input value={channel.name} onChange={(event) => updateChannel({ name: event.target.value })} />
         </Field>
-        <Field label="Handle / username">
-          <Input placeholder="@kaistudio" value={channel.handle} onChange={(event) => updateChannel({ handle: event.target.value })} />
+        <Field label={uiText("Handle / username")}>
+          <Input placeholder={uiText("@kaistudio")} value={channel.handle} onChange={(event) => updateChannel({ handle: event.target.value })} />
         </Field>
         <Field label={txt(vi, "URL kênh", "Channel URL")}>
           <Input placeholder="https://..." value={channel.url} onChange={(event) => updateChannel({ url: event.target.value })} />

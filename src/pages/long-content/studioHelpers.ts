@@ -11,7 +11,7 @@ import { getBitonicCuePosition } from "./bitonicCuePosition";
 import { getOddEvenCuePosition } from "./oddEvenCuePosition";
 import { getPancakeCuePosition } from "./pancakeCuePosition";
 
-type VoiceProvider = "browser" | "piper" | "elevenlabs" | "supertonic";
+type VoiceProvider = "browser" | "piper" | "elevenlabs" | "supertonic" | "rvc-applio";
 export type ScriptSceneField = "title" | "subtitle" | "narration" | "bulletsText" | "dataSetText";
 export type ScriptSceneOverride = Partial<Record<ScriptSceneField, string>>;
 

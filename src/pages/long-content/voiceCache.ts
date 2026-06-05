@@ -26,6 +26,7 @@ type VoiceScriptKeyParts = {
   elevenVoiceId: string;
   supertonicVoice: string;
   supertonicTotalSteps: number;
+  rvcApplioKey?: string;
   narrationRate: number;
   narrationScript: string;
 };
@@ -65,6 +66,7 @@ export function useRestoreGeneratedVoiceCache(params: VoiceRestoreParams) {
     params.piperModelKey,
     params.supertonicTotalSteps,
     params.supertonicVoice,
+    params.rvcApplioKey,
     params.voiceLoading,
     params.voiceProvider,
     params.voiceUrl,
@@ -76,7 +78,7 @@ export function buildGeneratedVoiceScriptKey(parts: VoiceScriptKeyParts) {
     provider: parts.provider,
     algoId: parts.algoId,
     lang: parts.lang,
-    modelKey: [parts.piperModelKey, parts.supertonicVoice, parts.supertonicTotalSteps].join("|"),
+    modelKey: [parts.piperModelKey, parts.supertonicVoice, parts.supertonicTotalSteps, parts.rvcApplioKey || ""].join("|"),
     elevenModelId: parts.elevenModelId,
     elevenVoiceId: parts.elevenVoiceId,
     rate: parts.narrationRate,
@@ -98,7 +100,7 @@ function readCachedGeneratedVoice(): CachedGeneratedVoice | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<CachedGeneratedVoice>;
     if (
-      (parsed.provider !== "piper" && parsed.provider !== "elevenlabs" && parsed.provider !== "supertonic")
+      (parsed.provider !== "piper" && parsed.provider !== "elevenlabs" && parsed.provider !== "supertonic" && parsed.provider !== "rvc-applio")
       || !parsed.scriptKey
       || !parsed.audioUrl
       || !parsed.fileName

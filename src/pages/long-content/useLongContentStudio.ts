@@ -11,7 +11,7 @@ import { buildLongContentScenes, getSceneAtTime, getTotalDuration } from "@/lib/
 import type { LongVideoType } from "@/lib/longVideoTypes";
 import { buildLongVideoVoiceSegments } from "@/lib/longVideoVoice";
 import { THEMES } from "@/lib/renderer";
-import { generateElevenLabsVoice, generatePiperVoice, generateSupertonicVoice, type VoiceGenerateResult } from "@/lib/voiceApi";
+import { generateElevenLabsVoice, generatePiperVoice, generateRvcApplioVoice, generateSupertonicVoice, type VoiceGenerateResult } from "@/lib/voiceApi";
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
 import { buildYoutubeMetadata } from "@/lib/youtubeMetadata";
 import { ExportFormat, getExportFormat } from "../studio/exportFormats";
@@ -24,7 +24,7 @@ import { useLongContentMusic } from "./useLongContentMusic";
 import { useLongContentVoiceRuntime } from "./useLongContentVoiceRuntime";
 import { useVideoBackgroundImages } from "./useVideoBackgroundImages";
 const LONG_W = 1920, LONG_H = 1080, DEFAULT_GRAPH = "A-B:4, A-C:2, B-D:5, C-D:8, C-E:10, D-E:2, D-F:6, E-G:3, F-G:1";
-export type VoiceProvider = "browser" | "piper" | "elevenlabs" | "supertonic";
+export type VoiceProvider = "browser" | "piper" | "elevenlabs" | "supertonic" | "rvc-applio";
 export function useLongContentStudio() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastSpokenSceneId = useRef<string | null>(null);
@@ -63,12 +63,13 @@ export function useLongContentStudio() {
     voiceHealth, piperRuntime, piperInstalling, installSelectedPiperModel, refreshPiperRuntime,
     piperModels, piperModelKey, setPiperModelKey, elevenConfig, elevenModelId, setElevenModelId,
     elevenVoiceId, setElevenVoiceId, supertonicConfig, supertonicVoice, setSupertonicVoice,
-    supertonicTotalSteps, setSupertonicTotalSteps, supertonicImporting, importSupertonicVoiceJson,
+    supertonicTotalSteps, setSupertonicTotalSteps, supertonicImporting, importSupertonicVoiceJson, rvcApplioConfig,
   } = voiceRuntime;
 
   const algo = ALGORITHMS[algoId] ?? ALGORITHMS[DEFAULT_ALGORITHM_ID];
   const theme = THEMES[themeName] ?? THEMES.neon;
   const graph = useMemo(() => parseGraph(DEFAULT_GRAPH) ?? makeSampleGraph(), []);
+  const rvcApplioKey = [rvcApplioConfig?.baseUrl, rvcApplioConfig?.apiName, rvcApplioConfig?.modelName, rvcApplioConfig?.indexPath].filter(Boolean).join("|");
   const music = useLongContentMusic(lang, musicUrl);
   const sceneParams = { algo, complexity: COMPLEXITY[algoId], animationSeconds, introSeconds };
   const baseScenes = useMemo(() => buildLongContentScenes({ ...sceneParams, lang }), [algo, algoId, animationSeconds, introSeconds, lang]);
@@ -115,9 +116,9 @@ export function useLongContentStudio() {
     setVoiceDurationSec(0);
     setVoiceSegmentDurationsSec([]);
     setVoiceScriptKey("");
-  }, [algoId, animationSeconds, introSeconds, lang, longVideoType, narrationRate, piperModelKey, elevenModelId, elevenVoiceId, supertonicVoice, supertonicTotalSteps, narrationScript]);
+  }, [algoId, animationSeconds, introSeconds, lang, longVideoType, narrationRate, piperModelKey, elevenModelId, elevenVoiceId, supertonicVoice, supertonicTotalSteps, rvcApplioKey, narrationScript]);
   useRestoreGeneratedVoiceCache({
-    algoId: algo.id, lang, piperModelKey, elevenModelId, elevenVoiceId, supertonicVoice, supertonicTotalSteps, narrationRate, narrationScript,
+    algoId: algo.id, lang, piperModelKey, elevenModelId, elevenVoiceId, supertonicVoice, supertonicTotalSteps, rvcApplioKey, narrationRate, narrationScript,
     voiceUrl, voiceLoading, voiceProvider, setVoiceProvider, setVoiceUrl, setVoiceFileName, setVoiceDurationSec,
     setVoiceSegmentDurationsSec, setVoiceScriptKey,
   });
@@ -177,7 +178,7 @@ export function useLongContentStudio() {
   async function generateVoiceOver() {
     if (voiceProvider === "browser") {
       speakNarration(narrationScript, lang, narrationRate, narrationVol / 100);
-      toast.info("Đang đọc thử bằng Browser TTS. Browser TTS chỉ dùng để preview; export có voice cần Piper, ElevenLabs hoặc Supertonic.");
+      toast.info("Đang đọc thử bằng Browser TTS. Browser TTS chỉ dùng để preview; export có voice cần Piper, ElevenLabs, Supertonic hoặc RVC/Applio.");
       return;
     }
     setVoiceLoading(true);
@@ -197,7 +198,9 @@ export function useLongContentStudio() {
       ? await generatePiperVoice({ text: narrationScript, segments: narrationSegments, modelKey: piperModelKey, sentenceSilence: 0.08, speechRate: narrationRate, fileName })
       : provider === "supertonic"
         ? await generateSupertonicVoice({ text: narrationScript, segments: narrationSegments, voice: supertonicVoice, lang, speed: narrationRate, totalSteps: supertonicTotalSteps, fileName })
-        : await generateElevenLabsVoice({ text: narrationScript, modelId: elevenModelId, voiceId: elevenVoiceId, fileName });
+        : provider === "rvc-applio"
+          ? await generateRvcApplioVoice({ text: narrationScript, segments: narrationSegments, piperModelKey, sentenceSilence: 0.08, speechRate: narrationRate, fileName })
+          : await generateElevenLabsVoice({ text: narrationScript, modelId: elevenModelId, voiceId: elevenVoiceId, fileName });
     const scriptKey = getVoiceScriptKeyForProvider(provider);
     setVoiceUrl(result.audioUrl);
     setVoiceFileName(result.fileName);
@@ -246,7 +249,7 @@ export function useLongContentStudio() {
     let shouldPlayVoice = false;
     try {
       if (narrationEnabled && voiceProvider === "browser") {
-        toast.error("Browser TTS chỉ dùng để preview. Để export có voice, hãy chọn Piper hoặc ElevenLabs rồi tạo voice-over.");
+        toast.error("Browser TTS chỉ dùng để preview. Để export có voice, hãy chọn Piper, ElevenLabs, Supertonic hoặc RVC/Applio rồi tạo voice-over.");
         return;
       }
       shouldPlayVoice = await ensureVoiceForExport();
@@ -338,7 +341,7 @@ export function useLongContentStudio() {
   }
   function getVoiceScriptKeyForProvider(provider: GeneratedVoiceProvider) {
     return buildGeneratedVoiceScriptKey({
-      provider, algoId: `${algo.id}-${longVideoType}`, lang, piperModelKey, elevenModelId, elevenVoiceId, supertonicVoice, supertonicTotalSteps, narrationRate, narrationScript,
+      provider, algoId: `${algo.id}-${longVideoType}`, lang, piperModelKey, elevenModelId, elevenVoiceId, supertonicVoice, supertonicTotalSteps, rvcApplioKey, narrationRate, narrationScript,
     });
   }
   return {
@@ -347,7 +350,7 @@ export function useLongContentStudio() {
     elapsedSec, setElapsedSec, playing, setPlaying, exporting, exportProgress, scenes, totalDuration, timelineState, frameIdx, frames, narrationEnabled, setNarrationEnabled, narrationRate, setNarrationRate,
     narrationVol, setNarrationVol, music, musicVol, setMusicVol, ...backgrounds, ...kineticSfx, onMusicUpload, voiceProvider, setVoiceProvider, voiceUrl, voiceFileName, voiceDurationSec, voiceLoading,
     generateVoiceOver, voiceHealth, piperRuntime, piperInstalling, installSelectedPiperModel, refreshPiperRuntime, piperModels, piperModelKey, setPiperModelKey, elevenConfig, elevenModelId, setElevenModelId,
-    elevenVoiceId, setElevenVoiceId, supertonicConfig, supertonicVoice, setSupertonicVoice, supertonicTotalSteps, setSupertonicTotalSteps, supertonicImporting, importSupertonicVoiceJson, narrationScript, updateScriptScene, resetScriptScene, resetAllScriptScenes: () => setScriptOverrides({}), W: LONG_W, H: LONG_H, exportVideo,
+    elevenVoiceId, setElevenVoiceId, supertonicConfig, supertonicVoice, setSupertonicVoice, supertonicTotalSteps, setSupertonicTotalSteps, supertonicImporting, importSupertonicVoiceJson, rvcApplioConfig, narrationScript, updateScriptScene, resetScriptScene, resetAllScriptScenes: () => setScriptOverrides({}), W: LONG_W, H: LONG_H, exportVideo,
   };
 }
 export type LongContentStudio = ReturnType<typeof useLongContentStudio>;

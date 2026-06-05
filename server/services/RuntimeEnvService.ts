@@ -50,10 +50,14 @@ function normalizeRuntimePaths(env: RuntimeEnvValues): RuntimeEnvValues {
     }
   }
 
-  for (const key of ["PIPER_EXE", "FFMPEG_EXE", "FFPROBE_EXE"]) {
+  for (const key of ["PIPER_EXE", "FFMPEG_EXE", "FFPROBE_EXE", "RVC_APPLIO_PYTHON"]) {
     if (normalized[key]) {
       normalized[key] = resolveRuntimeExecutable(normalized[key]);
     }
+  }
+
+  if (normalized.RVC_APPLIO_INDEX_PATH && looksLikePath(normalized.RVC_APPLIO_INDEX_PATH)) {
+    normalized.RVC_APPLIO_INDEX_PATH = resolveRuntimePath(normalized.RVC_APPLIO_INDEX_PATH, APP_ROOT);
   }
 
   return normalized;

@@ -69,6 +69,70 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
             onChange={(value) => props.onUpdateField("SUPERTONIC_TOTAL_STEPS", value)}
           />
         </div>
+
+        <div className="rounded-lg border border-border/70 p-3">
+          <p className="mb-3 text-sm font-medium">RVC/Applio</p>
+          <p className="mb-3 text-xs text-muted-foreground">{t(props.lang, "settingsRvcApplioVoiceDescription")}</p>
+          <div className="grid gap-3 md:grid-cols-2">
+            <SecretInput
+              id="rvc-applio-python"
+              label={t(props.lang, "settingsRvcApplioPythonLabel")}
+              description="python hoặc đường dẫn python.exe trong môi trường Applio."
+              value={props.form.RVC_APPLIO_PYTHON}
+              placeholder="python"
+              type="text"
+              onChange={(value) => props.onUpdateField("RVC_APPLIO_PYTHON", value)}
+            />
+            <SecretInput
+              id="rvc-applio-source-piper"
+              label={t(props.lang, "settingsRvcApplioSourcePiperLabel")}
+              description="Model Piper dùng tạo audio nguồn trước khi convert."
+              value={props.form.RVC_APPLIO_SOURCE_PIPER_MODEL}
+              placeholder="vi_vais1000"
+              type="text"
+              onChange={(value) => props.onUpdateField("RVC_APPLIO_SOURCE_PIPER_MODEL", value)}
+            />
+            <SecretInput
+              id="rvc-applio-model-name"
+              label={t(props.lang, "settingsRvcApplioModelNameLabel")}
+              description="Tên .pth/model đúng như endpoint Gradio yêu cầu."
+              value={props.form.RVC_APPLIO_MODEL_NAME}
+              placeholder="my_voice.pth"
+              type="text"
+              onChange={(value) => props.onUpdateField("RVC_APPLIO_MODEL_NAME", value)}
+            />
+            <PathInput
+              id="rvc-applio-index-path"
+              label={t(props.lang, "settingsRvcApplioIndexPathLabel")}
+              description="File .index của model RVC, có thể để trống nếu model không dùng index."
+              lang={props.lang}
+              value={props.form.RVC_APPLIO_INDEX_PATH}
+              placeholder="C:/Applio/logs/my_voice/added_...index"
+              busy={props.selecting === "RVC_APPLIO_INDEX_PATH"}
+              onChange={(value) => props.onUpdateField("RVC_APPLIO_INDEX_PATH", value)}
+              onSelect={() => props.onSelectPath("file", "RVC_APPLIO_INDEX_PATH", "Select RVC index file")}
+              onOpen={() => props.onOpenPath(props.form.RVC_APPLIO_INDEX_PATH)}
+            />
+            <SecretInput
+              id="rvc-applio-pitch"
+              label={t(props.lang, "settingsRvcApplioPitchLabel")}
+              description="0 nếu cùng giới/tông; tăng/giảm theo semitone khi cần."
+              value={props.form.RVC_APPLIO_PITCH}
+              placeholder="0"
+              type="text"
+              onChange={(value) => props.onUpdateField("RVC_APPLIO_PITCH", value)}
+            />
+            <SecretInput
+              id="rvc-applio-f0"
+              label={t(props.lang, "settingsRvcApplioF0MethodLabel")}
+              description="Thường dùng rmvpe cho speech."
+              value={props.form.RVC_APPLIO_F0_METHOD}
+              placeholder="rmvpe"
+              type="text"
+              onChange={(value) => props.onUpdateField("RVC_APPLIO_F0_METHOD", value)}
+            />
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

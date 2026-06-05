@@ -5,6 +5,7 @@ import {
   getElevenLabsConfig,
   getPiperModels,
   getPiperRuntimeStatus,
+  getRvcApplioConfig,
   getSupertonicConfig,
   getVoiceHealth,
   importSupertonicVoiceStyle,
@@ -12,6 +13,7 @@ import {
   type ElevenLabsConfig,
   type PiperModel,
   type PiperRuntimeStatus,
+  type RvcApplioConfig,
   type SupertonicConfig,
   type VoiceHealth,
 } from "@/lib/voiceApi";
@@ -29,6 +31,7 @@ export function useLongContentVoiceRuntime(lang: Lang) {
   const [supertonicVoice, setSupertonicVoice] = useState("M1");
   const [supertonicTotalSteps, setSupertonicTotalSteps] = useState(8);
   const [supertonicImporting, setSupertonicImporting] = useState(false);
+  const [rvcApplioConfig, setRvcApplioConfig] = useState<RvcApplioConfig | null>(null);
 
   useEffect(() => { void loadVoiceRuntime(); }, []);
   useEffect(() => {
@@ -42,7 +45,7 @@ export function useLongContentVoiceRuntime(lang: Lang) {
   }, [lang, piperModelKey, piperModels]);
 
   async function loadVoiceRuntime() {
-    const [health, runtime, models, pro, supertonic] = await Promise.allSettled([getVoiceHealth(), getPiperRuntimeStatus(), getPiperModels(), getElevenLabsConfig(), getSupertonicConfig()]);
+    const [health, runtime, models, pro, supertonic, rvcApplio] = await Promise.allSettled([getVoiceHealth(), getPiperRuntimeStatus(), getPiperModels(), getElevenLabsConfig(), getSupertonicConfig(), getRvcApplioConfig()]);
     if (health.status === "fulfilled") setVoiceHealth(health.value);
     if (runtime.status === "fulfilled") setPiperRuntime(runtime.value);
     if (models.status === "fulfilled") {
@@ -63,6 +66,7 @@ export function useLongContentVoiceRuntime(lang: Lang) {
       setSupertonicVoice(supertonic.value.defaultVoice || supertonic.value.voices[0]?.id || "M1");
       setSupertonicTotalSteps(supertonic.value.defaultTotalSteps || 8);
     }
+    if (rvcApplio.status === "fulfilled") setRvcApplioConfig(rvcApplio.value);
   }
 
   async function installSelectedPiperModel() {
@@ -98,11 +102,12 @@ export function useLongContentVoiceRuntime(lang: Lang) {
 
   async function refreshPiperRuntime() {
     try {
-      const [health, runtime, models, supertonic] = await Promise.all([getVoiceHealth(), getPiperRuntimeStatus(), getPiperModels(), getSupertonicConfig()]);
+      const [health, runtime, models, supertonic, rvcApplio] = await Promise.all([getVoiceHealth(), getPiperRuntimeStatus(), getPiperModels(), getSupertonicConfig(), getRvcApplioConfig()]);
       setVoiceHealth(health);
       setPiperRuntime(runtime);
       setPiperModels(models);
       setSupertonicConfig(supertonic);
+      setRvcApplioConfig(rvcApplio);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không kiểm tra được Piper runtime.");
     }
@@ -112,6 +117,6 @@ export function useLongContentVoiceRuntime(lang: Lang) {
     voiceHealth, piperRuntime, piperInstalling, installSelectedPiperModel, refreshPiperRuntime,
     piperModels, piperModelKey, setPiperModelKey, elevenConfig, elevenModelId, setElevenModelId,
     elevenVoiceId, setElevenVoiceId, supertonicConfig, supertonicVoice, setSupertonicVoice,
-    supertonicTotalSteps, setSupertonicTotalSteps, supertonicImporting, importSupertonicVoiceJson,
+    supertonicTotalSteps, setSupertonicTotalSteps, supertonicImporting, importSupertonicVoiceJson, rvcApplioConfig,
   };
 }

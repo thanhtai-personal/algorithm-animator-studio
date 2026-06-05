@@ -43,6 +43,34 @@ export function SettingsApiKeyTab(props: SettingsApiKeyTabProps) {
           type="text"
           onChange={(value) => props.onUpdateField("SUPERTONIC_MODEL", value)}
         />
+
+        <SecretInput
+          id="rvc-applio-base-url"
+          label={t(props.lang, "settingsRvcApplioBaseUrlLabel")}
+          description={t(props.lang, "settingsRvcApplioBaseUrlDescription")}
+          value={props.form.RVC_APPLIO_BASE_URL}
+          placeholder="http://127.0.0.1:6969"
+          type="text"
+          onChange={(value) => props.onUpdateField("RVC_APPLIO_BASE_URL", value)}
+        />
+        <SecretInput
+          id="rvc-applio-api-name"
+          label={t(props.lang, "settingsRvcApplioApiNameLabel")}
+          description={t(props.lang, "settingsRvcApplioApiNameDescription")}
+          value={props.form.RVC_APPLIO_API_NAME}
+          placeholder="/infer_convert"
+          type="text"
+          onChange={(value) => props.onUpdateField("RVC_APPLIO_API_NAME", value)}
+        />
+        <SecretInput
+          id="rvc-applio-arg-template"
+          label={t(props.lang, "settingsRvcApplioArgTemplateLabel")}
+          description={t(props.lang, "settingsRvcApplioArgTemplateDescription")}
+          value={props.form.RVC_APPLIO_ARG_TEMPLATE_JSON}
+          placeholder='["${input}", "${model}", "${index}"]'
+          type="text"
+          onChange={(value) => props.onUpdateField("RVC_APPLIO_ARG_TEMPLATE_JSON", value)}
+        />
       </CardContent>
     </Card>
   );

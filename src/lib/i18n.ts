@@ -113,6 +113,15 @@ export const STRINGS = {
   settingsElevenLabsApiKeyLabel: { en: "ElevenLabs API key", vi: "API key ElevenLabs" },
   settingsSupertonicBaseUrlLabel: { en: "Supertonic base URL", vi: "URL gốc Supertonic" },
   settingsSupertonicModelLabel: { en: "Supertonic model", vi: "Model Supertonic" },
+  settingsRvcApplioBaseUrlLabel: { en: "RVC/Applio base URL", vi: "URL gốc RVC/Applio" },
+  settingsRvcApplioApiNameLabel: { en: "RVC/Applio API name", vi: "Tên API RVC/Applio" },
+  settingsRvcApplioArgTemplateLabel: { en: "RVC/Applio arg template JSON", vi: "JSON template tham số RVC/Applio" },
+  settingsRvcApplioPythonLabel: { en: "RVC bridge Python", vi: "Python chạy bridge RVC" },
+  settingsRvcApplioSourcePiperLabel: { en: "RVC source Piper model", vi: "Model Piper nguồn cho RVC" },
+  settingsRvcApplioModelNameLabel: { en: "RVC target model name", vi: "Tên model RVC đích" },
+  settingsRvcApplioIndexPathLabel: { en: "RVC index path", vi: "Đường dẫn index RVC" },
+  settingsRvcApplioPitchLabel: { en: "RVC pitch", vi: "Pitch RVC" },
+  settingsRvcApplioF0MethodLabel: { en: "RVC F0 method", vi: "Phương pháp F0 RVC" },
   settingsVoiceDescription: {
     en: "Piper paths, voice mapping, and default voice settings.",
     vi: "Đường dẫn Piper, voice mapping và thông số voice mặc định.",
@@ -161,6 +170,22 @@ export const STRINGS = {
   settingsSupertonicModelDescription: {
     en: "Supertonic model to use, for example supertonic-3.",
     vi: "Model Supertonic cần dùng, ví dụ supertonic-3.",
+  },
+  settingsRvcApplioBaseUrlDescription: {
+    en: "URL of the local Applio/RVC Gradio server, for example http://127.0.0.1:6969.",
+    vi: "URL của server Gradio Applio/RVC local, ví dụ http://127.0.0.1:6969.",
+  },
+  settingsRvcApplioApiNameDescription: {
+    en: "Endpoint copied from Gradio Use via API, for example /infer_convert.",
+    vi: "Endpoint copy từ Gradio Use via API, ví dụ /infer_convert.",
+  },
+  settingsRvcApplioArgTemplateDescription: {
+    en: "JSON array of Gradio arguments. Use placeholders like ${input}, ${model}, ${index}, ${pitch}, ${f0_method}.",
+    vi: "JSON array tham số Gradio. Dùng placeholder như ${input}, ${model}, ${index}, ${pitch}, ${f0_method}.",
+  },
+  settingsRvcApplioVoiceDescription: {
+    en: "RVC/Applio converts the Piper source voice into your trained custom voice model.",
+    vi: "RVC/Applio chuyển giọng nguồn Piper thành model giọng custom đã train.",
   },
   settingsHealthDescription: {
     en: "Check the local backend, piper.exe, voice services, and available models.",

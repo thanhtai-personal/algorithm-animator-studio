@@ -45,6 +45,22 @@ export type ElevenLabsVoice = { id: string; label: string };
 
 export type SupertonicVoice = { id: string; label: string; description?: string };
 
+export type RvcApplioConfig = {
+  enabled: boolean;
+  serverOk: boolean;
+  baseUrl: string;
+  apiName: string;
+  modelName: string;
+  indexPath: string;
+  pythonExe: string;
+  f0Method: string;
+  pitch: number;
+  indexRate: number;
+  protect: number;
+  filterRadius: number;
+  error?: string;
+};
+
 export type SupertonicConfig = {
   enabled: boolean;
   serverOk: boolean;
@@ -112,6 +128,10 @@ export async function getSupertonicConfig() {
   return parseApiResponse<SupertonicConfig>(await fetch(buildApiUrl("/api/supertonic/config"), { headers: buildRuntimeSettingsHeaders() }));
 }
 
+export async function getRvcApplioConfig() {
+  return parseApiResponse<RvcApplioConfig>(await fetch(buildApiUrl("/api/rvc-applio/config"), { headers: buildRuntimeSettingsHeaders() }));
+}
+
 export async function importSupertonicVoiceStyle(styleJson: unknown) {
   return parseApiResponse<{ ok: boolean; voices: SupertonicVoice[]; model: string }>(await fetch(buildApiUrl("/api/supertonic/styles/import"), {
     method: "POST",
@@ -133,6 +153,23 @@ export async function generateSupertonicVoice(payload: {
     method: "POST",
     headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ ...payload, responseFormat: "wav" }),
+  }));
+}
+
+export async function generateRvcApplioVoice(payload: {
+  text: string;
+  segments?: string[];
+  piperModelKey: string;
+  sentenceSilence: number;
+  speechRate: number;
+  fileName: string;
+  pitch?: number;
+  f0Method?: string;
+}) {
+  return parseApiResponse<VoiceGenerateResult>(await fetch(buildApiUrl("/api/rvc-applio/generate"), {
+    method: "POST",
+    headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(payload),
   }));
 }
 

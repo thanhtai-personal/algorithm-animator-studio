@@ -1,5 +1,6 @@
 const ACCESS_TOKEN_STORAGE_KEY = "auth:accessToken";
 const REFRESH_TOKEN_STORAGE_KEY = "auth:refreshToken";
+const PROFILE_CACHE_TTL_MS = 60_000;
 export const AUTH_STATE_EVENT = "algorithm-studio:auth-state";
 
 export type AuthProfile = {
@@ -33,6 +34,20 @@ type UserContextResponse = {
   error?: string;
 };
 
+type ProfileCache = {
+  accessToken: string;
+  expiresAtMs: number;
+  profile: AuthProfile;
+};
+
+type ProfileRequestCache = {
+  accessToken: string;
+  request: Promise<AuthProfile>;
+};
+
+let profileCache: ProfileCache | null = null;
+let profileRequestCache: ProfileRequestCache | null = null;
+
 function sanitize(value: string | null | undefined): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
@@ -53,6 +68,7 @@ function persistTokens(session: AuthSession): void {
   const accessToken = sanitize(session.access_token);
   const refreshToken = sanitize(session.refresh_token);
 
+  clearProfileCache();
   if (accessToken) localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, accessToken);
   if (refreshToken) localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken);
   window.dispatchEvent(new Event(AUTH_STATE_EVENT));
@@ -67,6 +83,7 @@ function readRefreshToken(): string | null {
 }
 
 export function clearAuthTokens(): void {
+  clearProfileCache();
   localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
   localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
   window.dispatchEvent(new Event(AUTH_STATE_EVENT));
@@ -132,6 +149,22 @@ export async function getCurrentProfile(): Promise<AuthProfile> {
   if (!accessToken) accessToken = await refreshAuthSession();
   if (!accessToken) throw new Error("Unauthorized");
 
+  const cachedProfile = readCachedProfile(accessToken);
+  if (cachedProfile) return cachedProfile;
+
+  if (profileRequestCache?.accessToken === accessToken) return profileRequestCache.request;
+
+  const request = loadCurrentProfile(accessToken);
+  profileRequestCache = { accessToken, request };
+
+  try {
+    return await request;
+  } finally {
+    if (profileRequestCache?.request === request) profileRequestCache = null;
+  }
+}
+
+async function loadCurrentProfile(accessToken: string): Promise<AuthProfile> {
   let response = await fetchProfile(accessToken);
   if (response.status === 401) {
     accessToken = await refreshAuthSession();
@@ -144,12 +177,14 @@ export async function getCurrentProfile(): Promise<AuthProfile> {
     throw new Error(data.error ?? "Failed to load user profile");
   }
 
-  return {
+  const profile = {
     id: data.profile.id,
     fullName: data.profile.full_name ?? null,
     email: data.profile.email ?? null,
     role: normalizeRole(data.profile.role),
   };
+  writeProfileCache(accessToken, profile);
+  return profile;
 }
 
 function normalizeSession(data: SignInResponse): AuthSession {
@@ -166,6 +201,28 @@ function fetchProfile(accessToken: string) {
     credentials: "same-origin",
     cache: "no-store",
   });
+}
+
+function readCachedProfile(accessToken: string): AuthProfile | null {
+  if (!profileCache || profileCache.accessToken !== accessToken) return null;
+  if (Date.now() >= profileCache.expiresAtMs) {
+    clearProfileCache();
+    return null;
+  }
+  return profileCache.profile;
+}
+
+function writeProfileCache(accessToken: string, profile: AuthProfile): void {
+  profileCache = {
+    accessToken,
+    expiresAtMs: Date.now() + PROFILE_CACHE_TTL_MS,
+    profile,
+  };
+}
+
+function clearProfileCache(): void {
+  profileCache = null;
+  profileRequestCache = null;
 }
 
 export async function signOut(): Promise<void> {

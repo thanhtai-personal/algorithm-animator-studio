@@ -193,7 +193,7 @@ export default function YoutubePublishing() {
               <TabsList className="grid h-9 w-full grid-cols-4 gap-1 bg-muted/40 p-1">
                 <TabsTrigger value="channels" className="h-7 px-2 text-xs sm:text-sm">{txt(vi, "Chung", "General")}</TabsTrigger>
                 <TabsTrigger value="plan" className="h-7 px-2 text-xs sm:text-sm">{txt(vi, "Kế hoạch", "Plan")}</TabsTrigger>
-                <TabsTrigger value="upload" className="h-7 px-2 text-xs sm:text-sm">Upload</TabsTrigger>
+                <TabsTrigger value="upload" className="h-7 px-2 text-xs sm:text-sm">{txt(vi, "Chọn video", "Select Video")}</TabsTrigger>
                 <TabsTrigger value="history" className="h-7 px-2 text-xs sm:text-sm">{txt(vi, "Video", "Videos")}</TabsTrigger>
               </TabsList>
             </Tabs>

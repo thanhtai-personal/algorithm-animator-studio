@@ -1,7 +1,10 @@
 import { Download, MonitorSpeaker } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSystemLang } from "@/hooks/use-system-lang";
+import { text } from "@/lib/i18n";
 
 export function PublicWebBanner() {
+  const lang = useSystemLang();
   const isPublicWeb = import.meta.env.VITE_PUBLIC_WEB === "true";
   const downloadUrl = String(import.meta.env.VITE_DESKTOP_DOWNLOAD_URL || "").trim();
 
@@ -13,14 +16,20 @@ export function PublicWebBanner() {
         <div className="flex items-start gap-3">
           <MonitorSpeaker className="mt-0.5 h-5 w-5 text-amber-300" />
           <div>
-            <p className="font-semibold">Bản web public đang chạy ở chế độ giới hạn.</p>
-            <p className="text-amber-100/80">Browser vẫn tạo animation/export cơ bản được, nhưng Piper local, FFmpeg, chọn folder máy và YouTube secret cần dùng Desktop app.</p>
+            <p className="font-semibold">{text(lang, "Public web is running in limited mode.", "Bản web public đang chạy ở chế độ giới hạn.")}</p>
+            <p className="text-amber-100/80">
+              {text(
+                lang,
+                "The browser can still create basic animations/exports, but local Piper, FFmpeg, folder picking, and YouTube secrets require the Desktop app.",
+                "Browser vẫn tạo animation/export cơ bản được, nhưng Piper local, FFmpeg, chọn folder máy và YouTube secret cần dùng Desktop app.",
+              )}
+            </p>
           </div>
         </div>
         {downloadUrl ? (
           <Button asChild size="sm" className="bg-amber-300 text-slate-950 hover:bg-amber-200">
             <a href={downloadUrl} target="_blank" rel="noreferrer">
-              <Download className="mr-2 h-4 w-4" /> Tải Desktop app
+              <Download className="mr-2 h-4 w-4" /> {text(lang, "Download Desktop app", "Tải Desktop app")}
             </a>
           </Button>
         ) : null}

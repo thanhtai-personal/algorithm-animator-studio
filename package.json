@@ -28,7 +28,8 @@
     "build:public": "cross-env VITE_PUBLIC_WEB=true npm run build",
     "supertonic:serve:v3": "cross-env SUPERTONIC_MODEL=supertonic-3 npm run supertonic:serve",
     "supertonic:serve:v2": "cross-env SUPERTONIC_MODEL=supertonic-2 npm run supertonic:serve",
-    "supertonic:serve:v1": "cross-env SUPERTONIC_MODEL=supertonic npm run supertonic:serve"
+    "supertonic:serve:v1": "cross-env SUPERTONIC_MODEL=supertonic npm run supertonic:serve",
+    "audit:i18n": "node scripts/audit-i18n-hardcoded.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

@@ -7,7 +7,7 @@ import type { SidebarMode } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AUTH_STATE_EVENT, AuthProfile, getCurrentProfile, signOut } from "@/lib/auth";
-import { type Lang, readSystemLang, subscribeSystemLang, writeSystemLang } from "@/lib/i18n";
+import { text, type Lang, readSystemLang, subscribeSystemLang, writeSystemLang } from "@/lib/i18n";
 
 type AppHeaderProps = {
   sidebarMode: SidebarMode;
@@ -22,8 +22,8 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
   const [mounted, setMounted] = useState(false);
   const isAuthenticated = profile !== null;
-  const authLabel = lang === "vi" ? (isAuthenticated ? "Đăng xuất" : "Đăng nhập") : (isAuthenticated ? "Logout" : "Login");
-  const authAriaLabel = lang === "vi" ? authLabel : `${authLabel} account`;
+  const authLabel = isAuthenticated ? text(lang, "Logout", "Đăng xuất") : text(lang, "Login", "Đăng nhập");
+  const authAriaLabel = isAuthenticated ? text(lang, "Logout account", "Đăng xuất tài khoản") : text(lang, "Login account", "Đăng nhập tài khoản");
   const authFrom = location.pathname === "/auth" ? "/" : location.pathname;
 
   const refreshProfile = useCallback(() => {
@@ -76,7 +76,7 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
     <header className="sticky top-0 z-30 border-b border-border/40 bg-background/95 px-3 py-2.5 backdrop-blur md:px-5">
       <div className="flex items-center gap-3">
         <Button
-          aria-label={sidebarMode === "hidden" ? (lang === "vi" ? "Mở menu" : "Open menu") : (lang === "vi" ? "Ẩn menu" : "Hide menu")}
+          aria-label={sidebarMode === "hidden" ? text(lang, "Open menu", "Mở menu") : text(lang, "Hide menu", "Ẩn menu")}
           className="h-10 w-10 shrink-0"
           size="icon"
           variant="outline"
@@ -85,7 +85,7 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
           {sidebarMode === "hidden" ? <PanelLeftOpen className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </Button>
 
-        <img src="/kai-studio-logo.svg" alt="KAI STUDIO logo" className="h-10 w-10 shrink-0 rounded-xl" />
+        <img src="/kai-studio-logo.svg" alt={text(lang, "KAI STUDIO logo", "Logo KAI STUDIO")} className="h-10 w-10 shrink-0 rounded-xl" />
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-base font-bold md:text-lg">{APP_TITLE}</h1>
         </div>
@@ -98,7 +98,7 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
               <SelectItem value="vi">Tiếng Việt</SelectItem>
             </SelectContent>
           </Select>
-          <Button aria-label={lang === "vi" ? "Đổi giao diện sáng/tối" : "Toggle light/dark theme"} className="h-10 shrink-0" size="icon" variant="outline" onClick={toggleTheme}>
+          <Button aria-label={text(lang, "Toggle light/dark theme", "Đổi giao diện sáng/tối")} className="h-10 shrink-0" size="icon" variant="outline" onClick={toggleTheme}>
             {mounted && resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
           {isAuthenticated ? (

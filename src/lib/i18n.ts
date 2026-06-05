@@ -198,6 +198,10 @@ export const STRINGS = {
 export type StringKey = keyof typeof STRINGS;
 export const t = (lang: Lang, k: StringKey) => STRINGS[k][lang];
 
+export function text(lang: Lang, enText: string, viText: string = enText) {
+  return lang === "vi" ? viText : enText;
+}
+
 export const PLATFORMS = [
   { id: "tiktok", label: "TikTok 9:16 (1080×1920)", w: 1080, h: 1920 },
   { id: "reel", label: "Facebook Reel 9:16 (1080×1920)", w: 1080, h: 1920 },

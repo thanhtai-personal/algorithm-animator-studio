@@ -8,6 +8,8 @@ import { AppLayout } from "@/components/AppLayout";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useSystemLang } from "@/hooks/use-system-lang";
+import { text } from "@/lib/i18n";
 
 const queryClient = new QueryClient();
 const AlgorithmWorld = lazy(() => import("./pages/AlgorithmWorld.tsx"));
@@ -31,11 +33,14 @@ const AnalyticsTracker = () => {
   return <Analytics mode="production" route={location.pathname} path={path} />;
 };
 
-const RouteFallback = () => (
-  <main className="grid min-h-[60vh] place-items-center px-4 text-sm font-medium text-muted-foreground">
-    Loading...
-  </main>
-);
+const RouteFallback = () => {
+  const lang = useSystemLang();
+  return (
+    <main className="grid min-h-[60vh] place-items-center px-4 text-sm font-medium text-muted-foreground">
+      {text(lang, "Loading...", "Đang tải...")}
+    </main>
+  );
+};
 
 const LegacyChannelRedirect = () => {
   const location = useLocation();

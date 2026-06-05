@@ -6,12 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { clearAuthTokens, isSuperAdminProfile, signInWithPassword } from "@/lib/auth";
+import { useSystemLang } from "@/hooks/use-system-lang";
+import { text } from "@/lib/i18n";
 
 type LocationState = {
   from?: string;
 };
 
 export default function Auth() {
+  const lang = useSystemLang();
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as LocationState | null;
@@ -27,13 +30,13 @@ export default function Auth() {
       const profile = await signInWithPassword({ email, password });
       if (!isSuperAdminProfile(profile)) {
         clearAuthTokens();
-        toast.error("Tài khoản này không có quyền truy cập Animation Studio.");
+        toast.error(text(lang, "This account does not have access to Animation Studio.", "Tài khoản này không có quyền truy cập Animation Studio."));
         return;
       }
 
       navigate(state?.from ?? "/", { replace: true });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Đăng nhập thất bại.");
+      toast.error(error instanceof Error ? error.message : text(lang, "Login failed.", "Đăng nhập thất bại."));
     } finally {
       setLoading(false);
     }
@@ -47,18 +50,18 @@ export default function Auth() {
             <LockKeyhole className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold">Animation Studio</h1>
-            <p className="text-sm text-muted-foreground">Đăng nhập bằng tài khoản owner_admin.</p>
+            <h1 className="text-2xl font-semibold">{text(lang, "Animation Studio", "Animation Studio")}</h1>
+            <p className="text-sm text-muted-foreground">{text(lang, "Sign in with the owner_admin account.", "Đăng nhập bằng tài khoản owner_admin.")}</p>
           </div>
         </div>
 
         <div className="mb-4 rounded-md border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-sm text-amber-200">
-          Tip: Cần đăng nhập tài khoản admin để sử dụng các tính năng cấu hình của tools.
+          {text(lang, "Tip: An admin account is required to use tool configuration features.", "Tip: Cần đăng nhập tài khoản admin để sử dụng các tính năng cấu hình của tools.")}
         </div>
 
         <form className="space-y-5 rounded-lg border border-border bg-card p-5 shadow-sm" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{text(lang, "Email", "Email")}</Label>
             <Input
               id="email"
               autoComplete="email"
@@ -69,7 +72,7 @@ export default function Auth() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Mật khẩu</Label>
+            <Label htmlFor="password">{text(lang, "Password", "Mật khẩu")}</Label>
             <Input
               id="password"
               autoComplete="current-password"
@@ -81,7 +84,7 @@ export default function Auth() {
           </div>
           <Button className="w-full" disabled={loading} type="submit">
             <LogIn className="h-4 w-4" />
-            {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+            {loading ? text(lang, "Signing in...", "Đang đăng nhập...") : text(lang, "Sign in", "Đăng nhập")}
           </Button>
         </form>
       </div>

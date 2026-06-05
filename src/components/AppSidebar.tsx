@@ -5,7 +5,7 @@ import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import type { Lang } from "@/lib/i18n";
+import { text, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 export type SidebarMode = "expanded" | "collapsed" | "hidden";
@@ -25,7 +25,7 @@ export function AppSidebar({ lang, mode, onClose, onCollapse, onExpand }: AppSid
 
   return (
     <>
-      {!isHidden ? <button aria-label={lang === "vi" ? "Đóng menu" : "Close menu"} className="fixed inset-0 z-30 bg-background/70 backdrop-blur-sm lg:hidden" onClick={onClose} /> : null}
+      {!isHidden ? <button aria-label={text(lang, "Close menu", "Đóng menu")} className="fixed inset-0 z-30 bg-background/70 backdrop-blur-sm lg:hidden" onClick={onClose} /> : null}
       <aside
         className={cn(
           "fixed left-0 top-0 z-40 h-dvh w-72 border-r border-border/60 bg-background/95 shadow-2xl backdrop-blur transition-all duration-300 lg:top-[65px] lg:h-[calc(100dvh-65px)] lg:shadow-none",
@@ -36,20 +36,20 @@ export function AppSidebar({ lang, mode, onClose, onCollapse, onExpand }: AppSid
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between gap-2 border-b border-border/60 p-3 lg:hidden">
             <div className="flex min-w-0 items-center gap-2">
-              <img src="/kai-studio-logo.svg" alt="KAI STUDIO logo" className="h-9 w-9 rounded-xl" />
+              <img src="/kai-studio-logo.svg" alt={text(lang, "KAI STUDIO logo", "Logo KAI STUDIO")} className="h-9 w-9 rounded-xl" />
               <p className="truncate text-sm font-bold">{APP_TITLE}</p>
             </div>
-            <Button aria-label={lang === "vi" ? "Đóng menu" : "Close menu"} size="icon" variant="ghost" onClick={onClose}>
+            <Button aria-label={text(lang, "Close menu", "Đóng menu")} size="icon" variant="ghost" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
           </div>
 
           <div className="hidden items-center justify-end gap-1 border-b border-border/60 p-3 lg:flex">
-            <Button aria-label={isCollapsed ? (lang === "vi" ? "Mở rộng menu" : "Expand menu") : (lang === "vi" ? "Thu gọn menu" : "Collapse menu")} size="icon" variant="ghost" onClick={isCollapsed ? onExpand : onCollapse}>
+            <Button aria-label={isCollapsed ? text(lang, "Expand menu", "Mở rộng menu") : text(lang, "Collapse menu", "Thu gọn menu")} size="icon" variant="ghost" onClick={isCollapsed ? onExpand : onCollapse}>
               {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
             </Button>
             {!isCollapsed ? (
-              <Button aria-label={lang === "vi" ? "Ẩn menu" : "Hide menu"} size="icon" variant="ghost" onClick={onClose}>
+              <Button aria-label={text(lang, "Hide menu", "Ẩn menu")} size="icon" variant="ghost" onClick={onClose}>
                 <PanelLeftClose className="h-4 w-4" />
               </Button>
             ) : null}

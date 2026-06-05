@@ -30,7 +30,6 @@ export function YoutubeUploadCard({ canUpload, displayedDescription, form, lang,
   const vi = lang === "vi";
   const [generatedVideos, setGeneratedVideos] = useState<GeneratedAsset[]>([]);
   const [activeTab, setActiveTab] = useState<"upload" | "metadata">("upload");
-  const [sourceMode, setSourceMode] = useState<"generated" | "upload">("generated");
   const [loadingGenerated, setLoadingGenerated] = useState(false);
   const [generatedMetadataApplied, setGeneratedMetadataApplied] = useState(false);
   const [selectedGeneratedPath, setSelectedGeneratedPath] = useState("");
@@ -98,7 +97,6 @@ export function YoutubeUploadCard({ canUpload, displayedDescription, form, lang,
       const asset = await uploadGeneratedVideo(file);
       setGeneratedVideos((current) => [asset, ...current.filter((item) => item.relativePath !== asset.relativePath)]);
       setSelectedGeneratedPath(asset.relativePath);
-      setSourceMode("generated");
       setPage(0);
       setListScrollTop(0);
       toast.success(txt(vi, "Đã lưu video vào danh sách generated.", "Video saved to generated list."));
@@ -117,63 +115,58 @@ export function YoutubeUploadCard({ canUpload, displayedDescription, form, lang,
       </div>
 
       {activeTab === "upload" ? <Card className="space-y-4 p-4">
-        <h2 className="font-semibold">{txt(vi, "Video nguồn", "Source video")}</h2>
-        <div className="grid gap-2 rounded-lg border border-border bg-muted/20 p-1 md:grid-cols-2">
-          <button type="button" className={sourceTabClass(sourceMode === "generated")} onClick={() => setSourceMode("generated")}>{txt(vi, "Video đã tạo", "Generated video")}</button>
-          <button type="button" className={sourceTabClass(sourceMode === "upload")} onClick={() => setSourceMode("upload")}>{txt(vi, "Upload file", "Upload file")}</button>
-        </div>
-        {sourceMode === "generated" ? (
-          <div className="space-y-3">
-            {lastExported ? <p className="text-sm text-emerald-300">{txt(vi, "Video mới export:", "Latest exported video:")} {lastExported.fileName}</p> : <p className="text-sm text-muted-foreground">{txt(vi, "Chưa có video export trong phiên này.", "No exported video in this session yet.")}</p>}
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <p className="text-xs text-muted-foreground">{txt(vi, "Chọn trực tiếp trong danh sách video đã tạo.", "Select directly from the generated video list.")}</p>
-              <Button variant="outline" onClick={refreshGeneratedVideos} disabled={loadingGenerated}>
-                <RefreshCcw className="mr-2 h-4 w-4" />{txt(vi, "Tải lại", "Refresh")}
-              </Button>
-            </div>
-            <GeneratedVideoList
-              key={page}
-              items={pageItems}
-              selectedPath={selectedGeneratedPath}
-              virtualState={virtualState}
-              onScrollTopChange={setListScrollTop}
-              onSelect={selectGeneratedVideo}
-              vi={vi}
-            />
-            <div className="flex flex-col gap-2 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">
-              <span>{txt(vi, "Tổng video:", "Total videos:")} {generatedVideos.length}</span>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => { setPage((value) => Math.max(0, value - 1)); setListScrollTop(0); }}><ChevronLeft className="h-4 w-4" /></Button>
-                <span>{page + 1}/{pageCount}</span>
-                <Button variant="outline" size="sm" disabled={page >= pageCount - 1} onClick={() => { setPage((value) => Math.min(pageCount - 1, value + 1)); setListScrollTop(0); }}><ChevronRight className="h-4 w-4" /></Button>
-              </div>
-            </div>
-            {!loadingGenerated && !generatedVideos.length ? <p className="text-xs text-muted-foreground">{txt(vi, "Chưa có video đã tạo trong thư mục generated data.", "No generated videos found in generated data.")}</p> : null}
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="font-semibold">{txt(vi, "Video nguồn", "Source video")}</h2>
+            {lastExported ? <p className="mt-1 text-sm text-emerald-300">{txt(vi, "Video mới export:", "Latest exported video:")} {lastExported.fileName}</p> : null}
           </div>
-        ) : (
-          <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border p-3 text-sm text-muted-foreground">
-            <Upload className="h-4 w-4" /> {txt(vi, "Chọn file video (.mp4/.webm)", "Choose a video file (.mp4/.webm)")}
-            <input type="file" accept="video/*" className="hidden" onChange={(event) => void handleUploadFile(event.target.files?.[0])} />
-          </label>
-        )}
+          <div className="flex flex-wrap gap-2">
+            <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow transition hover:bg-primary/90">
+              <Upload className="h-4 w-4" /> {txt(vi, "Upload video", "Upload video")}
+              <input type="file" accept="video/*" className="hidden" onChange={(event) => void handleUploadFile(event.target.files?.[0])} />
+            </label>
+            <Button variant="outline" onClick={refreshGeneratedVideos} disabled={loadingGenerated}>
+              <RefreshCcw className="mr-2 h-4 w-4" />{txt(vi, "Tải lại", "Refresh")}
+            </Button>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">{txt(vi, "Video upload từ máy sẽ được lưu và hiển thị ngay trong danh sách video đã tạo bên dưới.", "Uploaded videos are saved and shown immediately in the generated video list below.")}</p>
+        <GeneratedVideoList
+          key={page}
+          items={pageItems}
+          selectedPath={selectedGeneratedPath}
+          virtualState={virtualState}
+          onScrollTopChange={setListScrollTop}
+          onSelect={selectGeneratedVideo}
+          vi={vi}
+        />
+        <div className="flex flex-col gap-2 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">
+          <span>{txt(vi, "Tổng video:", "Total videos:")} {generatedVideos.length}</span>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" disabled={page === 0} onClick={() => { setPage((value) => Math.max(0, value - 1)); setListScrollTop(0); }}><ChevronLeft className="h-4 w-4" /></Button>
+            <span>{page + 1}/{pageCount}</span>
+            <Button variant="outline" size="sm" disabled={page >= pageCount - 1} onClick={() => { setPage((value) => Math.min(pageCount - 1, value + 1)); setListScrollTop(0); }}><ChevronRight className="h-4 w-4" /></Button>
+          </div>
+        </div>
+        {!loadingGenerated && !generatedVideos.length ? <p className="text-xs text-muted-foreground">{txt(vi, "Chưa có video đã tạo trong thư mục generated data.", "No generated videos found in generated data.")}</p> : null}
         {selectedFile ? <p className="text-xs text-muted-foreground">{txt(vi, "Đang chọn:", "Selected:")} {selectedFile.name} · {(selectedFile.size / 1024 / 1024).toFixed(1)} MB</p> : null}
       </Card> : null}
 
       {activeTab === "metadata" ? <Card className="space-y-4 p-4">
         <h2 className="font-semibold">{txt(vi, "Metadata đăng video", "Video publishing metadata")}</h2>
-        <Field label="Title" value={form.title} onChange={(value) => setForm({ ...form, title: value })} />
+        <Field label={txt(vi, "Tiêu đề", "Title")} value={form.title} onChange={(value) => setForm({ ...form, title: value })} />
         <div>
-          <Label>Description</Label>
+          <Label>{txt(vi, "Mô tả", "Description")}</Label>
           <Textarea className="mt-2 min-h-48" value={displayedDescription} onChange={(event) => setForm({ ...form, description: event.target.value })} />
           {lastExported?.youtubeMetadata && !videoFile ? <p className="mt-2 text-xs text-emerald-300">{txt(vi, "Đã tự điền metadata theo thuật toán của video export.", "Metadata was auto-filled from the exported video algorithm.")}</p> : null}
           {generatedMetadataApplied ? <p className="mt-2 text-xs text-emerald-300">{txt(vi, "Đã tự điền metadata đi kèm video đã tạo.", "Metadata was auto-filled from the generated video.")}</p> : null}
           {selectedMusicLicense ? <p className="mt-2 text-xs text-yellow-300">{txt(vi, "Bản quyền nhạc đã được thêm vào cuối mô tả.", "Music credit has been appended to the description.")}</p> : null}
         </div>
-        <Field label="Tags" value={form.tags} onChange={(value) => setForm({ ...form, tags: value })} />
+        <Field label={txt(vi, "Tags", "Tags")} value={form.tags} onChange={(value) => setForm({ ...form, tags: value })} />
         <div className="grid gap-3 md:grid-cols-3">
-          <Field label="Category ID" value={form.categoryId} onChange={(value) => setForm({ ...form, categoryId: value })} />
+          <Field label={txt(vi, "Category ID", "Category ID")} value={form.categoryId} onChange={(value) => setForm({ ...form, categoryId: value })} />
           <div>
-            <Label>Privacy</Label>
+            <Label>{txt(vi, "Quyền riêng tư", "Privacy")}</Label>
             <Select value={form.privacyStatus} onValueChange={(value) => setForm({ ...form, privacyStatus: value })}>
               <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -186,7 +179,7 @@ export function YoutubeUploadCard({ canUpload, displayedDescription, form, lang,
           <Field label={txt(vi, "Lịch đăng", "Publish at")} type="datetime-local" value={form.publishAt || ""} onChange={(value) => setForm({ ...form, publishAt: value })} />
         </div>
         <div>
-          <Label>Playlist</Label>
+          <Label>{txt(vi, "Playlist", "Playlist")}</Label>
           <Select value={form.playlistId || "none"} onValueChange={(value) => setForm({ ...form, playlistId: value === "none" ? "" : value })}>
             <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -200,7 +193,7 @@ export function YoutubeUploadCard({ canUpload, displayedDescription, form, lang,
           <Toggle label={txt(vi, "Thông báo subscriber", "Notify subscribers")} checked={form.notifySubscribers} onChange={(value) => setForm({ ...form, notifySubscribers: value })} />
           <Toggle label={txt(vi, "Nội dung tổng hợp/AI", "Synthetic media")} checked={form.containsSyntheticMedia} onChange={(value) => setForm({ ...form, containsSyntheticMedia: value })} />
         </div>
-        <Button className="w-full bg-red-500 text-white hover:bg-red-600" onClick={upload} disabled={loading || !canUpload}>Upload YouTube</Button>
+        <Button className="w-full bg-red-500 text-white hover:bg-red-600" onClick={upload} disabled={loading || !canUpload}>{txt(vi, "Upload YouTube", "Upload YouTube")}</Button>
       </Card> : null}
 
       {result ? (
@@ -265,7 +258,7 @@ function GeneratedVideoList(props: {
                   <span className="block truncate text-xs text-muted-foreground">{asset.relativePath}</span>
                   <span className="block text-xs text-muted-foreground">{formatSize(asset.sizeBytes)} · {formatDate(asset.createdAtMs)}</span>
                 </span>
-                {asset.youtubeMetadata ? <span className="rounded-full border border-emerald-400/40 px-2 py-0.5 text-xs text-emerald-300">Metadata</span> : null}
+                {asset.youtubeMetadata ? <span className="rounded-full border border-emerald-400/40 px-2 py-0.5 text-xs text-emerald-300">{txt(props.vi, "Metadata", "Metadata")}</span> : null}
               </button>
             );
           })}

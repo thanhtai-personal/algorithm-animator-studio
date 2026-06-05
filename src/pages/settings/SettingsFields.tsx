@@ -1,4 +1,4 @@
-import { FolderOpen, Plus, Search, Trash2 } from "lucide-react";
+import { CircleCheck, FolderOpen, Plus, Search, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -115,7 +115,13 @@ export function StatusTile({ label, ok, value, lang }: { label: string; ok: bool
     <div className="rounded-lg border p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="font-medium">{label}</p>
-        <Badge variant={ok ? "default" : "secondary"}>{ok ? "OK" : t(lang, "settingsCheck")}</Badge>
+        {ok ? (
+          <Badge className="bg-emerald-600/15 px-2 text-emerald-700 hover:bg-emerald-600/20 dark:text-emerald-300" aria-label={t(lang, "settingsReady")}>
+            <CircleCheck className="h-4 w-4" />
+          </Badge>
+        ) : (
+          <Badge variant="secondary">{t(lang, "settingsCheck")}</Badge>
+        )}
       </div>
       <p className="break-all text-sm text-muted-foreground">{value}</p>
     </div>

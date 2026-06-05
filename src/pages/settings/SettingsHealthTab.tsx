@@ -2,15 +2,13 @@ import { RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import {uiText, t, type Lang} from "@/lib/i18n";
 import { StatusTile } from "./SettingsFields";
-import type { ElevenLabsConfigResponse, HealthResponse, PiperModel, RvcApplioConfigResponse, SettingsForm, SupertonicConfigResponse } from "./SettingsTypes";
+import type { ElevenLabsConfigResponse, HealthResponse, PiperModel, RvcApplioConfigResponse, SupertonicConfigResponse } from "./SettingsTypes";
 
 type SettingsHealthTabProps = {
   availableModels: number;
   elevenLabs: ElevenLabsConfigResponse | null;
-  form: SettingsForm;
   health: HealthResponse | null;
   lang: Lang;
   loading: boolean;
@@ -45,11 +43,6 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
           <StatusTile lang={props.lang} label={uiText("Applio dev startup")} ok={Boolean(props.rvcApplio?.startCommandConfigured)} value={props.rvcApplio?.startCommandConfigured ? props.rvcApplio.startCommand : "RVC_APPLIO_START_COMMAND"} />
           <StatusTile lang={props.lang} label={t(props.lang, "settingsGeneratedData")} ok={Boolean(props.health?.generatedDir)} value={props.health?.generatedDir || "-"} />
         </div>
-        <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-          <p className="font-medium">{t(props.lang, "settingsActiveModelDir")}</p>
-          <p className="break-all text-muted-foreground">{props.health?.modelDir || props.form.MODEL_DIR || "models"}</p>
-        </div>
-        <Separator />
         <div className="grid gap-3 md:grid-cols-2">
           {props.models.map((model) => (
             <div key={model.key} className="rounded-lg border p-3">
@@ -58,7 +51,12 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
                   <p className="font-medium">{model.label}</p>
                   <p className="text-xs text-muted-foreground">{model.lang.toUpperCase()} · {model.key}</p>
                 </div>
-                <Badge variant={model.available ? "default" : "secondary"}>{model.available ? t(props.lang, "settingsReady") : t(props.lang, "settingsMissing")}</Badge>
+                <Badge
+                  className={model.available ? "bg-emerald-600/15 text-emerald-700 hover:bg-emerald-600/20 dark:text-emerald-300" : "bg-amber-500/15 text-amber-700 hover:bg-amber-500/20 dark:text-amber-300"}
+                  variant="default"
+                >
+                  {model.available ? t(props.lang, "settingsReady") : t(props.lang, "settingsMissing")}
+                </Badge>
               </div>
               <p className="break-all text-xs text-muted-foreground">ONNX: {model.modelPath}</p>
               <p className="break-all text-xs text-muted-foreground">JSON: {model.jsonPath}</p>

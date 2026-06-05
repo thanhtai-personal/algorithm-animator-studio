@@ -10,7 +10,13 @@ import {
   getGeneratedDir,
   getGeneratedVideoDir,
 } from "../config/paths";
-import type { GeneratedResource, GeneratedResourceKind } from "../models/Resource";
+import type { GeneratedResource, GeneratedResourceKind, GeneratedYoutubeMetadata } from "../models/Resource";
+import {
+  ensureDirectoryExists,
+  getLocalDateFolderName,
+  getUniqueOutputFileWithExtension,
+  sanitizeFileBaseName,
+} from "../utils/audioOutput";
 import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
 
 const AUDIO_EXTENSIONS = new Set([".wav", ".mp3", ".m4a", ".aac", ".ogg", ".opus"]);
@@ -87,6 +93,7 @@ export function deleteGeneratedResource(
   }
 
   fs.rmSync(resolved.absolutePath, { force: true });
+  removeMetadataSidecars(resolved.absolutePath);
   removeEmptyParents(path.dirname(resolved.absolutePath), path.resolve(getResourceRootPath(params.kind, readEnvValues(envOverrides).SERVER_DATA_DIR)));
   return { ok: true, deleted: 1, relativePath: resolved.relativePath };
 }
@@ -104,6 +111,41 @@ export function deleteGeneratedResourcesByKind(kind: GeneratedResourceKind, envO
   const deleted = deleteFilesByExtension(rootPath, rootPath, extensions);
   removeEmptyParents(rootPath, rootPath);
   return { ok: true, deleted, kind };
+}
+
+export function saveUploadedGeneratedVideo(
+  file: { path: string; originalname: string; size: number },
+  envOverrides: RuntimeEnvValues = {}
+): GeneratedResource {
+  const extension = path.extname(file.originalname).toLowerCase();
+  if (!VIDEO_EXTENSIONS.has(extension)) {
+    throw new Error("Chỉ hỗ trợ lưu video .mp4, .mov, .m4v hoặc .webm.");
+  }
+
+  const env = readEnvValues(envOverrides);
+  const generatedVideoDir = getGeneratedVideoDir(env.SERVER_DATA_DIR);
+  const dateFolderName = getLocalDateFolderName();
+  const outputDir = path.join(generatedVideoDir, dateFolderName);
+  const baseName = sanitizeFileBaseName(file.originalname.replace(/\.(mp4|mov|m4v|webm)$/i, ""));
+  const { outputFileName, outputPath } = getUniqueOutputFileWithExtension({
+    baseName,
+    extension: extension.slice(1),
+    outputDir,
+  });
+  const serverOrigin = env.SERVER_ORIGIN || SERVER_ORIGIN;
+  const relativePath = `${dateFolderName}/${outputFileName}`;
+
+  ensureDirectoryExists(outputDir);
+  fs.copyFileSync(file.path, outputPath);
+
+  return {
+    kind: "video",
+    fileName: outputFileName,
+    relativePath,
+    url: buildGeneratedFileUrl(GENERATED_VIDEO_PUBLIC_PATH, relativePath, serverOrigin),
+    sizeBytes: file.size,
+    createdAtMs: fs.statSync(outputPath).mtimeMs,
+  };
 }
 
 function listGeneratedResources(params: {
@@ -144,6 +186,7 @@ function listEntry(
   }
 
   const relativePath = path.relative(params.directory, entryPath).replaceAll(path.sep, "/");
+  const metadata = params.kind === "video" ? readGeneratedVideoMetadata(entryPath) : {};
   return [{
     kind: params.kind,
     fileName: name,
@@ -151,7 +194,64 @@ function listEntry(
     url: buildGeneratedFileUrl(params.publicBasePath, relativePath, params.serverOrigin),
     sizeBytes: stat.size,
     createdAtMs: stat.mtimeMs,
+    ...metadata,
   }];
+}
+
+function readGeneratedVideoMetadata(videoPath: string): Pick<GeneratedResource, "youtubeMetadata" | "youtubeDescriptionAppend"> {
+  for (const metadataPath of getMetadataSidecarPaths(videoPath)) {
+    if (!fs.existsSync(metadataPath)) continue;
+    try {
+      const raw = JSON.parse(fs.readFileSync(metadataPath, "utf8")) as unknown;
+      return normalizeGeneratedVideoMetadata(raw);
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
+function getMetadataSidecarPaths(videoPath: string) {
+  const parsed = path.parse(videoPath);
+  const withoutExtension = path.join(parsed.dir, parsed.name);
+  return [
+    `${videoPath}.youtube.json`,
+    `${videoPath}.metadata.json`,
+    `${withoutExtension}.youtube.json`,
+    `${withoutExtension}.metadata.json`,
+  ];
+}
+
+function normalizeGeneratedVideoMetadata(raw: unknown): Pick<GeneratedResource, "youtubeMetadata" | "youtubeDescriptionAppend"> {
+  if (!raw || typeof raw !== "object") return {};
+  const source = raw as {
+    youtubeMetadata?: unknown;
+    youtubeDescriptionAppend?: unknown;
+    title?: unknown;
+    description?: unknown;
+    tags?: unknown;
+    lang?: unknown;
+    videoType?: unknown;
+  };
+  const metadata = normalizeYoutubeMetadata(source.youtubeMetadata ?? raw);
+  return {
+    ...(metadata ? { youtubeMetadata: metadata } : {}),
+    ...(typeof source.youtubeDescriptionAppend === "string" ? { youtubeDescriptionAppend: source.youtubeDescriptionAppend } : {}),
+  };
+}
+
+function normalizeYoutubeMetadata(raw: unknown): GeneratedYoutubeMetadata | null {
+  if (!raw || typeof raw !== "object") return null;
+  const source = raw as Record<string, unknown>;
+  if (typeof source.title !== "string" || typeof source.description !== "string" || typeof source.tags !== "string") return null;
+  const lang = source.lang === "vi" ? "vi" : "en";
+  return {
+    title: source.title,
+    description: source.description,
+    tags: source.tags,
+    lang,
+    ...(typeof source.videoType === "string" ? { videoType: source.videoType } : {}),
+  };
 }
 
 function getResourceRootPath(kind: GeneratedResourceKind, serverDataDir?: string) {
@@ -173,10 +273,17 @@ function deleteFilesByExtension(rootPath: string, currentDirectory: string, exte
       removeEmptyParents(entryPath, rootPath);
     } else if (entry.isFile() && extensions.has(path.extname(entry.name).toLowerCase())) {
       fs.rmSync(entryPath, { force: true });
+      removeMetadataSidecars(entryPath);
       deleted += 1;
     }
   }
   return deleted;
+}
+
+function removeMetadataSidecars(videoPath: string) {
+  for (const metadataPath of getMetadataSidecarPaths(videoPath)) {
+    fs.rmSync(metadataPath, { force: true });
+  }
 }
 
 function removeEmptyParents(startDirectory: string, rootPath: string) {

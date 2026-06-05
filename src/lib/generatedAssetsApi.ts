@@ -1,5 +1,6 @@
 import { buildApiUrl, parseApiResponse } from "./runtimeApi";
 import { buildRuntimeSettingsHeaders } from "./runtimeSettings";
+import type { YoutubeAlgorithmMetadata } from "./youtubeMetadata";
 
 export type GeneratedAssetKind = "audio" | "video";
 
@@ -10,12 +11,24 @@ export type GeneratedAsset = {
   url: string;
   sizeBytes: number;
   createdAtMs: number;
+  youtubeMetadata?: YoutubeAlgorithmMetadata;
+  youtubeDescriptionAppend?: string;
 };
 
 export async function getGeneratedAssets() {
   return parseApiResponse<{ audio: GeneratedAsset[]; video: GeneratedAsset[]; music: GeneratedAsset[] }>(
     await fetch(buildApiUrl("/api/resources"), { headers: buildRuntimeSettingsHeaders() }),
   );
+}
+
+export async function uploadGeneratedVideo(file: File) {
+  const data = new FormData();
+  data.append("video", file);
+  return parseApiResponse<GeneratedAsset>(await fetch(buildApiUrl("/api/resources/video"), {
+    method: "POST",
+    headers: buildRuntimeSettingsHeaders(),
+    body: data,
+  }));
 }
 
 export async function deleteGeneratedAsset(kind: GeneratedAssetKind, relativePath: string) {

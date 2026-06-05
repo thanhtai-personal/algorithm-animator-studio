@@ -1,7 +1,17 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { Router } from "express";
-import { deleteGeneratedResource, deleteGeneratedResourcesByKind, getResourceOverview } from "../services/ResourceService";
+import multer from "multer";
+import { deleteGeneratedResource, deleteGeneratedResourcesByKind, getResourceOverview, saveUploadedGeneratedVideo } from "../services/ResourceService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
 import type { GeneratedResourceKind } from "../models/Resource";
+
+const uploadDirectory = path.join(os.tmpdir(), "kata-generated-video-uploads");
+const upload = multer({
+  dest: uploadDirectory,
+  limits: { fileSize: 2 * 1024 * 1024 * 1024 },
+});
 
 export function createResourceRouter() {
   const router = Router();
@@ -30,6 +40,19 @@ export function createResourceRouter() {
       res.json(deleteGeneratedResourcesByKind(kind, readRuntimeEnvFromRequest(req)));
     } catch (error) {
       res.status(400).json({ error: error instanceof Error ? error.message : "Không xóa được tài nguyên." });
+    }
+  });
+
+  router.post("/resources/video", upload.single("video"), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "Chưa chọn video." });
+      }
+      res.json(saveUploadedGeneratedVideo(req.file, readRuntimeEnvFromRequest(req)));
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Không lưu được video." });
+    } finally {
+      if (req.file?.path) fs.rm(req.file.path, { force: true }, () => undefined);
     }
   });
 

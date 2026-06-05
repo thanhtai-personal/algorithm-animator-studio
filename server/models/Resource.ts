@@ -7,6 +7,16 @@ export type GeneratedResource = {
   url: string;
   sizeBytes: number;
   createdAtMs: number;
+  youtubeMetadata?: GeneratedYoutubeMetadata;
+  youtubeDescriptionAppend?: string;
+};
+
+export type GeneratedYoutubeMetadata = {
+  title: string;
+  description: string;
+  tags: string;
+  lang: "en" | "vi";
+  videoType?: string;
 };
 
 export type YoutubeUploadHistoryItem = {

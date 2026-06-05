@@ -9,8 +9,7 @@ import { SettingsDataTab } from "./settings/SettingsDataTab";
 import { SettingsHealthTab } from "./settings/SettingsHealthTab";
 import { EMPTY_FORM, type ElevenLabsConfigResponse, type HealthResponse, type PiperModel, type SelectPathResponse, type SettingsForm, type SettingsFormKey, type SupertonicConfigResponse } from "./settings/SettingsTypes";
 import { SettingsVoiceTab } from "./settings/SettingsVoiceTab";
-import { txt } from "./settings/settingsText";
-import { readSystemLang, subscribeSystemLang, type Lang } from "@/lib/i18n";
+import { readSystemLang, subscribeSystemLang, t, type Lang } from "@/lib/i18n";
 import { buildApiUrl, parseApiResponse } from "@/lib/runtimeApi";
 import {
   buildRuntimeSettingsHeaders,
@@ -31,7 +30,6 @@ export default function Settings() {
   const [selecting, setSelecting] = useState<string | null>(null);
 
   const availableModels = useMemo(() => models.filter((model) => model.available).length, [models]);
-  const vi = lang === "vi";
 
   useEffect(() => {
     void refreshHealth();
@@ -54,7 +52,7 @@ export default function Settings() {
       setElevenLabs(elevenData);
       setSupertonic(supertonicData);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : txt(vi, "Không kiểm tra được Piper.", "Could not check Piper."));
+      toast.error(error instanceof Error ? error.message : t(lang, "settingsCouldNotCheckPiper"));
     } finally {
       setLoading(false);
     }
@@ -83,7 +81,7 @@ export default function Settings() {
 
   async function handleSave() {
     saveRuntimeSettings(form);
-    toast.success(txt(vi, "Đã lưu settings runtime.", "Runtime settings saved."));
+    toast.success(t(lang, "settingsRuntimeSaved"));
     await refreshHealth();
   }
 
@@ -91,13 +89,13 @@ export default function Settings() {
     clearRuntimeSettings();
     setForm(EMPTY_FORM);
     setVoiceRows([]);
-    toast.success(txt(vi, "Đã xoá cấu hình runtime local. App sẽ dùng .env/default.", "Local runtime overrides cleared. The app will use .env/default values."));
+    toast.success(t(lang, "settingsOverridesCleared"));
     await refreshHealth();
   }
 
   async function selectPath(kind: "directory" | "file", target: SettingsFormKey, title: string) {
     setSelecting(target);
-    const toastId = toast.loading(txt(vi, "Đang mở hộp chọn đường dẫn...", "Opening path picker..."));
+    const toastId = toast.loading(t(lang, "settingsOpeningPathPicker"));
     try {
       const data = await parseApiResponse<SelectPathResponse>(await fetch(buildApiUrl("/api/system/select-directory"), {
         method: "POST",
@@ -105,9 +103,9 @@ export default function Settings() {
         body: JSON.stringify({ kind, title, initialPath: form[target] }),
       }));
       updateField(target, data.path);
-      toast.success(txt(vi, "Đã chọn đường dẫn.", "Path selected."), { id: toastId });
+      toast.success(t(lang, "settingsPathSelected"), { id: toastId });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : txt(vi, "Không chọn được đường dẫn.", "Could not select the path."), { id: toastId });
+      toast.error(error instanceof Error ? error.message : t(lang, "settingsCouldNotSelectPath"), { id: toastId });
     } finally {
       setSelecting(null);
     }
@@ -121,7 +119,7 @@ export default function Settings() {
         body: JSON.stringify({ path: targetPath }),
       }));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : txt(vi, "Không mở được Explorer.", "Could not open the folder."));
+      toast.error(error instanceof Error ? error.message : t(lang, "settingsCouldNotOpenFolder"));
     }
   }
 
@@ -130,23 +128,23 @@ export default function Settings() {
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{txt(vi, "Cài đặt", "Settings")}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{t(lang, "settingsTitle")}</h1>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={handleSave}><Save className="mr-2 h-4 w-4" /> {txt(vi, "Lưu settings", "Save settings")}</Button>
+            <Button onClick={handleSave}><Save className="mr-2 h-4 w-4" /> {t(lang, "settingsSave")}</Button>
             <Button variant="outline" onClick={refreshHealth} disabled={loading}>
-              <RefreshCw className="mr-2 h-4 w-4" /> {txt(vi, "Kiểm tra lại", "Check again")}
+              <RefreshCw className="mr-2 h-4 w-4" /> {t(lang, "settingsCheckAgain")}
             </Button>
-            <Button variant="ghost" onClick={handleReset}><Trash2 className="mr-2 h-4 w-4" /> {txt(vi, "Xoá override", "Clear overrides")}</Button>
+            <Button variant="ghost" onClick={handleReset}><Trash2 className="mr-2 h-4 w-4" /> {t(lang, "settingsClearOverrides")}</Button>
           </div>
         </div>
 
         <Tabs defaultValue="voice" className="space-y-4">
           <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/40 p-1 md:grid-cols-4">
-            <TabsTrigger value="voice">Voice</TabsTrigger>
-            <TabsTrigger value="data">Data</TabsTrigger>
-            <TabsTrigger value="api-key">API Key</TabsTrigger>
-            <TabsTrigger value="health">{txt(vi, "Health Check", "Health Check")}</TabsTrigger>
+            <TabsTrigger value="voice">{t(lang, "settingsVoiceTab")}</TabsTrigger>
+            <TabsTrigger value="data">{t(lang, "settingsDataTab")}</TabsTrigger>
+            <TabsTrigger value="api-key">{t(lang, "settingsApiKeyTab")}</TabsTrigger>
+            <TabsTrigger value="health">{t(lang, "settingsHealthCheckTab")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="voice" className="mt-0">

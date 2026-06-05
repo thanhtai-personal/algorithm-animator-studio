@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { Lang } from "@/lib/i18n";
+import { t, type Lang } from "@/lib/i18n";
 
 export type VoiceRow = { id: string; label: string };
 
@@ -22,7 +22,6 @@ type PathInputProps = {
 };
 
 export function PathInput({ id, label, description, value, placeholder, busy, lang, onChange, onSelect, onOpen }: PathInputProps) {
-  const vi = lang === "vi";
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
@@ -30,10 +29,10 @@ export function PathInput({ id, label, description, value, placeholder, busy, la
       <div className="flex flex-col gap-2 md:flex-row">
         <Input id={id} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} />
         <Button type="button" variant="outline" onClick={onSelect} disabled={busy}>
-          <Search className="mr-2 h-4 w-4" /> {txt(vi, "Chọn", "Select")}
+          <Search className="mr-2 h-4 w-4" /> {t(lang, "settingsSelect")}
         </Button>
         <Button type="button" variant="ghost" onClick={onOpen} disabled={!value.trim()}>
-          <FolderOpen className="mr-2 h-4 w-4" /> {txt(vi, "Mở", "Open")}
+          <FolderOpen className="mr-2 h-4 w-4" /> {t(lang, "settingsOpen")}
         </Button>
       </div>
     </div>
@@ -64,16 +63,15 @@ export function VoiceRowsTable(props: {
   onUpdate: (index: number, patch: Partial<VoiceRow>) => void;
   onRemove: (index: number) => void;
 }) {
-  const vi = props.lang === "vi";
   return (
     <div className="space-y-2">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <Label>ELEVENLABS_VOICES</Label>
-          <p className="mt-1 text-sm text-muted-foreground">{txt(vi, "Khai báo các voice sẽ xuất hiện trong dropdown ElevenLabs.", "Declare the voices that appear in the ElevenLabs dropdown.")}</p>
+          <Label>{t(props.lang, "settingsElevenLabsVoicesLabel")}</Label>
+          <p className="mt-1 text-sm text-muted-foreground">{t(props.lang, "settingsElevenLabsVoicesDescription")}</p>
         </div>
         <Button type="button" variant="outline" size="sm" onClick={props.onAdd}>
-          <Plus className="mr-2 h-4 w-4" /> {txt(vi, "Thêm voice", "Add voice")}
+          <Plus className="mr-2 h-4 w-4" /> {t(props.lang, "settingsAddVoice")}
         </Button>
       </div>
       <div className="rounded-md border">
@@ -82,7 +80,7 @@ export function VoiceRowsTable(props: {
             <TableRow>
               <TableHead>Voice ID</TableHead>
               <TableHead>Label</TableHead>
-              <TableHead className="w-20 text-right">{txt(vi, "Xóa", "Remove")}</TableHead>
+              <TableHead className="w-20 text-right">{t(props.lang, "settingsRemove")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -92,17 +90,17 @@ export function VoiceRowsTable(props: {
                   <Input value={row.id} placeholder="VOICE_ID" onChange={(event) => props.onUpdate(index, { id: event.target.value })} />
                 </TableCell>
                 <TableCell>
-                  <Input value={row.label} placeholder={txt(vi, "Giọng đọc chính", "Main voice")} onChange={(event) => props.onUpdate(index, { label: event.target.value })} />
+                  <Input value={row.label} placeholder={t(props.lang, "settingsMainVoice")} onChange={(event) => props.onUpdate(index, { label: event.target.value })} />
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button type="button" variant="ghost" size="icon" onClick={() => props.onRemove(index)} aria-label={txt(vi, "Xóa voice", "Remove voice")}>
+                  <Button type="button" variant="ghost" size="icon" onClick={() => props.onRemove(index)} aria-label={t(props.lang, "settingsRemoveVoice")}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </TableCell>
               </TableRow>
             )) : (
               <TableRow>
-                <TableCell colSpan={3} className="text-center text-muted-foreground">{txt(vi, "Chưa có voice. Bấm Thêm voice để nhập Voice ID.", "No voices yet. Click Add voice to enter a Voice ID.")}</TableCell>
+                <TableCell colSpan={3} className="text-center text-muted-foreground">{t(props.lang, "settingsNoVoices")}</TableCell>
               </TableRow>
             )}
           </TableBody>
@@ -117,7 +115,7 @@ export function StatusTile({ label, ok, value, lang }: { label: string; ok: bool
     <div className="rounded-lg border p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="font-medium">{label}</p>
-        <Badge variant={ok ? "default" : "secondary"}>{ok ? "OK" : txt(lang === "vi", "Kiểm tra", "Check")}</Badge>
+        <Badge variant={ok ? "default" : "secondary"}>{ok ? "OK" : t(lang, "settingsCheck")}</Badge>
       </div>
       <p className="break-all text-sm text-muted-foreground">{value}</p>
     </div>
@@ -141,8 +139,4 @@ export function serializeVoiceRows(rows: VoiceRow[]) {
     .map((row) => ({ id: row.id.trim(), label: row.label.trim() || row.id.trim() }))
     .filter((row) => row.id);
   return voices.length ? JSON.stringify(voices) : "";
-}
-
-function txt(vi: boolean, viText: string, enText: string) {
-  return vi ? viText : enText;
 }

@@ -47,7 +47,14 @@ function normalizeKind(value: unknown): SelectKind {
 
 async function selectDirectory(title: string, initialPath: string) {
   ensureWindowsDialogSupport();
-  const initialScript = initialPath ? `$dialog.SelectedPath = ${toPowerShellString(initialPath)};` : "";
+  const initialScript = initialPath ? `
+$initialPath = ${toPowerShellString(initialPath)}
+if ($initialPath -and (Test-Path -LiteralPath $initialPath)) {
+  $initialItem = Get-Item -LiteralPath $initialPath
+  if ($initialItem.PSIsContainer) { $dialog.InitialDirectory = $initialItem.FullName }
+  else { $dialog.InitialDirectory = $initialItem.DirectoryName }
+}
+`.trim() : "";
   const script = `
 Add-Type -AssemblyName System.Windows.Forms
 $owner = New-Object System.Windows.Forms.Form
@@ -59,13 +66,26 @@ $owner.Width = 1
 $owner.Height = 1
 $owner.Show()
 $owner.Activate()
-$dialog = New-Object System.Windows.Forms.FolderBrowserDialog
-$dialog.Description = ${toPowerShellString(title)}
-$dialog.ShowNewFolderButton = $true
+$dialog = New-Object System.Windows.Forms.OpenFileDialog
+$dialog.Title = ${toPowerShellString(title)}
+$dialog.Filter = 'Folders|*.folder|All files (*.*)|*.*'
+$dialog.CheckFileExists = $false
+$dialog.CheckPathExists = $true
+$dialog.ValidateNames = $false
+$dialog.Multiselect = $false
+$dialog.FileName = 'Select this folder'
 ${initialScript}
 $result = $dialog.ShowDialog($owner)
 $owner.Dispose()
-if ($result -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $dialog.SelectedPath }
+if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
+  $selectedPath = $dialog.FileName
+  if (Test-Path -LiteralPath $selectedPath -PathType Container) {
+    Write-Output $selectedPath
+  } else {
+    $selectedFolder = Split-Path -Parent $selectedPath
+    if ($selectedFolder) { Write-Output $selectedFolder }
+  }
+}
 `.trim();
 
   return runPowerShellPicker(script);

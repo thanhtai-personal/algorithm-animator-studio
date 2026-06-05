@@ -95,6 +95,12 @@ export const APP_NAVIGATION_GROUPS: AppNavigationGroup[] = [
         label: { en: "MU News", vi: "Tin tức MU" },
         matchPaths: ["/mu-news"],
       },
+    ],
+  },
+  {
+    id: "system",
+    label: { en: "System", vi: "Hệ thống" },
+    items: [
       {
         id: "channel",
         to: "/channel",
@@ -109,12 +115,6 @@ export const APP_NAVIGATION_GROUPS: AppNavigationGroup[] = [
         label: { en: "Generated Files", vi: "File đã tạo" },
         matchPaths: ["/assets"],
       },
-    ],
-  },
-  {
-    id: "system",
-    label: { en: "System", vi: "Hệ thống" },
-    items: [
       {
         id: "settings",
         to: "/settings",

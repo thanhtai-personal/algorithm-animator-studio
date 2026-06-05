@@ -238,7 +238,6 @@ export default function YoutubePublishing() {
                   setForm={manager.setForm}
                   setVideoFile={manager.setVideoFile}
                   upload={manager.upload}
-                  useLatestExport={manager.useLatestExport}
                   videoFile={manager.videoFile}
                   lang={lang}
                 />

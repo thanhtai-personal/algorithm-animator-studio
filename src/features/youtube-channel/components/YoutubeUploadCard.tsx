@@ -16,7 +16,7 @@ import type { useYoutubeChannelManager } from "../useYoutubeChannelManager";
 type Manager = ReturnType<typeof useYoutubeChannelManager>;
 
 type Props = Pick<Manager,
-  "canUpload" | "displayedDescription" | "form" | "lastExported" | "loading" | "playlists" | "result" | "selectedFile" | "selectedMusicLicense" | "setForm" | "setVideoFile" | "upload" | "useLatestExport" | "videoFile"
+  "canUpload" | "displayedDescription" | "form" | "lastExported" | "loading" | "playlists" | "result" | "selectedFile" | "selectedMusicLicense" | "setForm" | "setVideoFile" | "upload" | "videoFile"
 > & {
   lang: Lang;
 };
@@ -26,7 +26,7 @@ const ROW_HEIGHT = 78;
 const LIST_HEIGHT = 390;
 const OVERSCAN = 4;
 
-export function YoutubeUploadCard({ canUpload, displayedDescription, form, lang, lastExported, loading, playlists, result, selectedFile, selectedMusicLicense, setForm, setVideoFile, upload, useLatestExport, videoFile }: Props) {
+export function YoutubeUploadCard({ canUpload, displayedDescription, form, lang, lastExported, loading, playlists, result, selectedFile, selectedMusicLicense, setForm, setVideoFile, upload, videoFile }: Props) {
   const vi = lang === "vi";
   const [generatedVideos, setGeneratedVideos] = useState<GeneratedAsset[]>([]);
   const [activeTab, setActiveTab] = useState<"upload" | "metadata">("upload");
@@ -112,17 +112,12 @@ export function YoutubeUploadCard({ canUpload, displayedDescription, form, lang,
   return (
     <div className="space-y-4">
       <div className="grid gap-2 rounded-lg border border-border bg-muted/20 p-1 md:grid-cols-2">
-        <button type="button" className={sourceTabClass(activeTab === "upload")} onClick={() => setActiveTab("upload")}>{txt(vi, "Upload", "Upload")}</button>
+        <button type="button" className={sourceTabClass(activeTab === "upload")} onClick={() => setActiveTab("upload")}>{txt(vi, "Chọn video", "Select Video")}</button>
         <button type="button" className={sourceTabClass(activeTab === "metadata")} onClick={() => setActiveTab("metadata")}>{txt(vi, "Metadata", "Metadata")}</button>
       </div>
 
       {activeTab === "upload" ? <Card className="space-y-4 p-4">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <h2 className="font-semibold">{txt(vi, "Video nguồn", "Source video")}</h2>
-          <Button variant="outline" size="sm" onClick={() => { setGeneratedMetadataApplied(false); useLatestExport(); }}>
-            <RefreshCcw className="mr-2 h-4 w-4" />{txt(vi, "Lấy video mới export", "Use latest exported video")}
-          </Button>
-        </div>
+        <h2 className="font-semibold">{txt(vi, "Video nguồn", "Source video")}</h2>
         <div className="grid gap-2 rounded-lg border border-border bg-muted/20 p-1 md:grid-cols-2">
           <button type="button" className={sourceTabClass(sourceMode === "generated")} onClick={() => setSourceMode("generated")}>{txt(vi, "Video đã tạo", "Generated video")}</button>
           <button type="button" className={sourceTabClass(sourceMode === "upload")} onClick={() => setSourceMode("upload")}>{txt(vi, "Upload file", "Upload file")}</button>

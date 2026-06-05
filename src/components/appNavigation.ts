@@ -86,7 +86,7 @@ export const APP_NAVIGATION_GROUPS: AppNavigationGroup[] = [
   },
   {
     id: "channels-publishing",
-    label: { en: "Channels", vi: "Kênh & xuất bản" },
+    label: { en: "Football news studio", vi: "Studio tin bóng đá" },
     items: [
       {
         id: "mu-news",
@@ -112,7 +112,7 @@ export const APP_NAVIGATION_GROUPS: AppNavigationGroup[] = [
         id: "assets",
         to: "/assets",
         icon: Files,
-        label: { en: "Generated Files", vi: "File đã tạo" },
+        label: { en: "Files Management", vi: "Quản lý file" },
         matchPaths: ["/assets"],
       },
       {

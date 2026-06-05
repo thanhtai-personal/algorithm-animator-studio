@@ -90,7 +90,7 @@ export const STRINGS = {
   settingsTitle: { en: "Settings", vi: "Cài đặt" },
   settingsSave: { en: "Save settings", vi: "Lưu settings" },
   settingsCheckAgain: { en: "Check again", vi: "Kiểm tra lại" },
-  settingsClearOverrides: { en: "Clear overrides", vi: "Xoá override" },
+  settingsClearOverrides: { en: "Reset", vi: "Đặt lại" },
   settingsVoiceTab: { en: "Voice", vi: "Voice" },
   settingsDataTab: { en: "Data", vi: "Data" },
   settingsApiKeyTab: { en: "API Key", vi: "API Key" },

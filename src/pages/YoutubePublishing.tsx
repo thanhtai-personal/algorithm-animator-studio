@@ -1,14 +1,14 @@
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { SharedChannelSidebar, channelKey, type ChannelProvider, type ProviderConnectionState, type SharedChannelItem } from "@/features/channel-manager/SharedChannelSidebar";
+import { SharedChannelSidebar, channelKey, type ChannelProvider, type SharedChannelItem } from "@/features/channel-manager/SharedChannelSidebar";
+import { buildProviderStates } from "@/features/channel-manager/channelProviderState";
+import { useSharedChannelOrder } from "@/features/channel-manager/useSharedChannelOrder";
 import { YoutubeChannelPlanCard } from "@/features/youtube-channel/components/YoutubeChannelPlanCard";
 import { YoutubeChannelSwitcherCard } from "@/features/youtube-channel/components/YoutubeChannelSwitcherCard";
-import { YoutubeOverviewCard } from "@/features/youtube-channel/components/YoutubeOverviewCard";
 import { YoutubeUploadCard } from "@/features/youtube-channel/components/YoutubeUploadCard";
 import { YoutubeUploadHistoryCard } from "@/features/youtube-channel/components/YoutubeUploadHistoryCard";
 import { useYoutubeChannelManager } from "@/features/youtube-channel/useYoutubeChannelManager";
 import type { YoutubeManagedChannel } from "@/features/youtube-channel/types";
-import type { YoutubeConfigStatus } from "@/lib/youtubeApi";
 import { exchangeSocialProviderCode, getSocialProviderAuthUrl, getSocialProviderConfig, type SocialProviderConfigStatus } from "@/lib/channelProviderApi";
 import { isOAuthPopupWindow, notifyOAuthOpener, openOAuthPopup } from "@/lib/oauthPopup";
 import { createPkcePair, savePkceVerifier, takePkceVerifier } from "@/lib/oauthPkce";
@@ -21,7 +21,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { readSystemLang, subscribeSystemLang, type Lang } from "@/lib/i18n";
 import { toast } from "sonner";
 
-type ChannelTab = "channels" | "overview" | "plan" | "upload" | "history";
+type ChannelTab = "channels" | "plan" | "upload" | "history";
 
 export default function YoutubePublishing() {
   const manager = useYoutubeChannelManager();
@@ -33,10 +33,12 @@ export default function YoutubePublishing() {
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
   const processedSocialCallbackRef = useRef(false);
   const vi = lang === "vi";
-  const sharedChannels = useMemo(
+  const rawSharedChannels = useMemo(
     () => buildSharedChannels(manager.channels, socialManager.channels),
     [manager.channels, socialManager.channels]
   );
+  const sharedOrder = useSharedChannelOrder(rawSharedChannels);
+  const sharedChannels = sharedOrder.channels;
   const providerStates = useMemo(
     () => buildProviderStates(manager.config, socialProviderConfig, vi),
     [manager.config, socialProviderConfig, vi]
@@ -166,16 +168,6 @@ export default function YoutubePublishing() {
           lang={lang}
         />
 
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ChannelTab)}>
-          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/40 p-1 md:grid-cols-3 xl:grid-cols-5">
-            <TabsTrigger value="channels">{txt(vi, "Kênh", "Channels")}</TabsTrigger>
-            <TabsTrigger value="overview">{txt(vi, "Tổng quan", "Overview")}</TabsTrigger>
-            <TabsTrigger value="plan">{txt(vi, "Kế hoạch", "Plan")}</TabsTrigger>
-            <TabsTrigger value="upload">Upload</TabsTrigger>
-            <TabsTrigger value="history">{txt(vi, "Lịch sử", "History")}</TabsTrigger>
-          </TabsList>
-        </Tabs>
-
         <div
           className="grid gap-4 transition-[grid-template-columns] duration-300 ease-in-out xl:grid-cols-[var(--channel-panel-width)_minmax(0,1fr)]"
           style={channelGridStyle}
@@ -188,11 +180,24 @@ export default function YoutubePublishing() {
             providerStates={providerStates}
             onAddProvider={addProviderChannel}
             onCollapsedChange={setChannelMenuCollapsed}
+            onReorderCancel={sharedOrder.cancelReorder}
+            onReorderCommit={sharedOrder.commitReorder}
+            onReorderPreview={sharedOrder.previewReorder}
+            onReorderStart={sharedOrder.startReorder}
             onRemove={removeSharedChannel}
             onSelect={selectSharedChannel}
           />
 
-          <div className="min-w-0">
+          <div className="min-w-0 space-y-4">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ChannelTab)}>
+              <TabsList className="grid h-9 w-full grid-cols-4 gap-1 bg-muted/40 p-1">
+                <TabsTrigger value="channels" className="h-7 px-2 text-xs sm:text-sm">{txt(vi, "Chung", "General")}</TabsTrigger>
+                <TabsTrigger value="plan" className="h-7 px-2 text-xs sm:text-sm">{txt(vi, "Kế hoạch", "Plan")}</TabsTrigger>
+                <TabsTrigger value="upload" className="h-7 px-2 text-xs sm:text-sm">Upload</TabsTrigger>
+                <TabsTrigger value="history" className="h-7 px-2 text-xs sm:text-sm">{txt(vi, "Video", "Videos")}</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
             {activeTab === "channels" ? (
               activeSharedChannel ? (
                 activeIsYoutube ? (
@@ -202,7 +207,7 @@ export default function YoutubePublishing() {
                     channels={manager.channels}
                     removeChannel={manager.removeChannel}
                     selectChannel={manager.selectChannel}
-                    updateActiveChannel={manager.updateActiveChannel}
+                    playlists={manager.playlists}
                     lang={lang}
                     showSidebar={false}
                   />
@@ -212,12 +217,6 @@ export default function YoutubePublishing() {
               ) : (
                 <EmptyChannelState lang={lang} />
               )
-            ) : null}
-
-            {activeTab === "overview" ? (
-              activeIsYoutube ? (
-                <YoutubeOverviewCard channel={manager.channel} channelUrl={manager.plan?.channelUrl || manager.activeChannel?.channelUrl || ""} playlists={manager.playlists} lang={lang} />
-              ) : <ProviderNotice channel={activeSharedChannel} lang={lang} />
             ) : null}
 
             {activeTab === "plan" ? (
@@ -252,7 +251,7 @@ export default function YoutubePublishing() {
                   history={manager.activeHistory}
                   refreshHistory={manager.refreshHistory}
                   refreshToken={manager.refreshToken}
-                  title={txt(vi, "Lịch sử upload của kênh đang chọn", "Upload history for the selected channel")}
+                  title={txt(vi, "Video của kênh đang chọn", "Videos for the selected channel")}
                   subtitle={txt(vi, "Chỉ hiển thị lịch sử khớp với YouTube channel ID hiện tại; bản ghi cũ chưa có thông tin kênh vẫn được giữ lại.", "Only entries matching the current YouTube channel ID are filtered; older entries without channel data are still kept.")}
                   uploadsPlaylistId={manager.channel?.uploadsPlaylistId}
                   lang={lang}
@@ -306,31 +305,6 @@ function ProviderNotice({ channel, lang }: { channel: SharedChannelItem | null; 
       </p>
     </Card>
   );
-}
-
-function buildProviderStates(config: YoutubeConfigStatus | null, socialConfig: SocialProviderConfigStatus | null, vi: boolean): Record<ChannelProvider, ProviderConnectionState> {
-  const youtubeReady = Boolean(config?.hasClientId && config?.hasClientSecret);
-  const socialReason = txt(
-    vi,
-    "Provider này chưa có đủ Client ID/Secret trong cấu hình.",
-    "This provider does not have enough Client ID/Secret configuration."
-  );
-  const providerState = (provider: SocialPlatform) => ({
-    configured: Boolean(socialConfig?.providers[provider]?.configured),
-    disabledReason: socialConfig?.providers[provider]?.configured ? undefined : socialReason,
-  });
-
-  return {
-    youtube: {
-      configured: youtubeReady,
-      disabledReason: youtubeReady
-        ? undefined
-        : txt(vi, "YouTube chưa có Client ID/Client Secret.", "YouTube Client ID/Client Secret is not configured."),
-    },
-    facebook: providerState("facebook"),
-    tiktok: providerState("tiktok"),
-    instagram: providerState("instagram"),
-  };
 }
 
 function buildSharedChannels(youtubeChannels: YoutubeManagedChannel[], socialChannels: SocialChannel[]): SharedChannelItem[] {

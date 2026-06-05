@@ -1,4 +1,6 @@
+import { RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { t, type Lang } from "@/lib/i18n";
@@ -11,16 +13,23 @@ type SettingsHealthTabProps = {
   form: SettingsForm;
   health: HealthResponse | null;
   lang: Lang;
+  loading: boolean;
   models: PiperModel[];
+  onRefreshHealth: () => void;
   supertonic: SupertonicConfigResponse | null;
 };
 
 export function SettingsHealthTab(props: SettingsHealthTabProps) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{t(props.lang, "settingsHealthCheckTab")}</CardTitle>
-        <CardDescription>{t(props.lang, "settingsHealthDescription")}</CardDescription>
+      <CardHeader className="gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-1.5">
+          <CardTitle>{t(props.lang, "settingsHealthCheckTab")}</CardTitle>
+          <CardDescription>{t(props.lang, "settingsHealthDescription")}</CardDescription>
+        </div>
+        <Button variant="outline" onClick={props.onRefreshHealth} disabled={props.loading}>
+          <RefreshCw className="mr-2 h-4 w-4" /> {t(props.lang, "settingsCheckAgain")}
+        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-3 md:grid-cols-3">

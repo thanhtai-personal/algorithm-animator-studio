@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, Save, Trash2 } from "lucide-react";
+import { Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -132,9 +132,6 @@ export default function Settings() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={handleSave}><Save className="mr-2 h-4 w-4" /> {t(lang, "settingsSave")}</Button>
-            <Button variant="outline" onClick={refreshHealth} disabled={loading}>
-              <RefreshCw className="mr-2 h-4 w-4" /> {t(lang, "settingsCheckAgain")}
-            </Button>
             <Button variant="ghost" onClick={handleReset}><Trash2 className="mr-2 h-4 w-4" /> {t(lang, "settingsClearOverrides")}</Button>
           </div>
         </div>
@@ -177,7 +174,9 @@ export default function Settings() {
               form={form}
               health={health}
               lang={lang}
+              loading={loading}
               models={models}
+              onRefreshHealth={refreshHealth}
               supertonic={supertonic}
             />
           </TabsContent>

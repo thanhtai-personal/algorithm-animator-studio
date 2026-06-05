@@ -2,9 +2,9 @@ import { CheckCircle2, Link2, Plus, Trash2, Youtube } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Lang } from "@/lib/i18n";
+import type { YoutubePlaylist } from "@/lib/youtubeApi";
 import type { YoutubeManagedChannel } from "../types";
 
 type Props = {
@@ -13,17 +13,17 @@ type Props = {
   addManualChannel: () => void;
   removeChannel: (localId: string) => void;
   selectChannel: (localId: string) => void;
-  updateActiveChannel: (patch: Partial<YoutubeManagedChannel>) => void;
+  playlists?: YoutubePlaylist[];
   lang: Lang;
   showSidebar?: boolean;
 };
 
-export function YoutubeChannelSwitcherCard({ activeChannel, addManualChannel, channels, removeChannel, selectChannel, updateActiveChannel, lang, showSidebar = true }: Props) {
+export function YoutubeChannelSwitcherCard({ activeChannel, addManualChannel, channels, removeChannel, selectChannel, playlists = [], lang, showSidebar = true }: Props) {
   const vi = lang === "vi";
 
   if (!showSidebar) {
     return activeChannel ? (
-      <ChannelDetails channel={activeChannel} updateActiveChannel={updateActiveChannel} lang={lang} />
+      <ChannelDetails channel={activeChannel} playlists={playlists} lang={lang} />
     ) : (
       <Card className="flex min-h-[360px] items-center justify-center border-dashed p-6 text-center text-sm text-muted-foreground">
         {txt(vi, "Chọn hoặc thêm một kênh để bắt đầu quản lý.", "Select or add a channel to start managing.")}
@@ -71,7 +71,7 @@ export function YoutubeChannelSwitcherCard({ activeChannel, addManualChannel, ch
       </Card>
 
       {activeChannel ? (
-        <ChannelDetails channel={activeChannel} updateActiveChannel={updateActiveChannel} lang={lang} />
+        <ChannelDetails channel={activeChannel} playlists={playlists} lang={lang} />
       ) : (
         <Card className="flex min-h-[360px] items-center justify-center border-dashed p-6 text-center text-sm text-muted-foreground">
           {txt(vi, "Chọn hoặc thêm một kênh để bắt đầu quản lý.", "Select or add a channel to start managing.")}
@@ -126,7 +126,7 @@ function ChannelItem({ active, channel, lang, onRemove, onSelect }: { active: bo
   );
 }
 
-function ChannelDetails({ channel, lang, updateActiveChannel }: { channel: YoutubeManagedChannel; lang: Lang; updateActiveChannel: (patch: Partial<YoutubeManagedChannel>) => void }) {
+function ChannelDetails({ channel, playlists, lang }: { channel: YoutubeManagedChannel; playlists: YoutubePlaylist[]; lang: Lang }) {
   const vi = lang === "vi";
   return (
     <Card className="space-y-5 p-4">
@@ -158,15 +158,37 @@ function ChannelDetails({ channel, lang, updateActiveChannel }: { channel: Youtu
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <Label>{txt(vi, "Tên hiển thị trong workspace", "Display name in workspace")}</Label>
-          <Input value={channel.title} onChange={(event) => updateActiveChannel({ title: event.target.value })} />
+          <Label>{txt(vi, "Tên kênh YouTube thực tế", "Actual YouTube channel name")}</Label>
+          <ReadOnlyValue value={channel.title} />
         </div>
         <div className="space-y-2">
-          <Label>Channel URL</Label>
-          <Input value={channel.channelUrl} onChange={(event) => updateActiveChannel({ channelUrl: event.target.value })} />
+          <Label>{txt(vi, "URL kênh YouTube thực tế", "Actual YouTube channel URL")}</Label>
+          <ReadOnlyValue value={channel.channelUrl} />
         </div>
       </div>
+
+      <div>
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="text-sm font-medium">{txt(vi, "Playlist đã tải", "Loaded playlists")}</h3>
+          <Badge variant="secondary">{playlists.length}</Badge>
+        </div>
+        {playlists.length ? (
+          <div className="flex flex-wrap gap-2">
+            {playlists.slice(0, 12).map((playlist) => <Badge key={playlist.id} variant="outline">{playlist.title}</Badge>)}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">{txt(vi, "Chưa có playlist hoặc chưa cấp quyền YouTube.", "No playlists yet or YouTube has not been authorized.")}</p>
+        )}
+      </div>
     </Card>
+  );
+}
+
+function ReadOnlyValue({ value }: { value: string }) {
+  return (
+    <div className="min-h-10 rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-foreground">
+      <p className="break-all">{value || "—"}</p>
+    </div>
   );
 }
 

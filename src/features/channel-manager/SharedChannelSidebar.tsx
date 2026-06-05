@@ -1,7 +1,9 @@
-import { Facebook, Instagram, PanelLeftClose, PanelLeftOpen, Plus, RadioTower, Trash2, Youtube } from "lucide-react";
+import { useState, type DragEvent } from "react";
+import { ChevronDown, Facebook, GripVertical, Instagram, PanelLeftClose, PanelLeftOpen, Plus, RadioTower, Trash2, Youtube } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { SocialPlatform } from "@/features/social-channel/types";
@@ -31,6 +33,10 @@ type Props = {
   onAddProvider: (provider: ChannelProvider) => void;
   onCollapsedChange: (collapsed: boolean) => void;
   onRemove: (channel: SharedChannelItem) => void;
+  onReorderCancel?: () => void;
+  onReorderCommit?: () => void;
+  onReorderPreview?: (draggedKey: string, targetKey: string) => void;
+  onReorderStart?: () => void;
   onSelect: (channel: SharedChannelItem) => void;
 };
 
@@ -45,33 +51,91 @@ export function SharedChannelSidebar({
   onAddProvider,
   onCollapsedChange,
   onRemove,
+  onReorderCancel,
+  onReorderCommit,
+  onReorderPreview,
+  onReorderStart,
   onSelect,
 }: Props) {
   const vi = lang === "vi";
+  const [draggingKey, setDraggingKey] = useState("");
 
   function getProviderState(provider: ChannelProvider): ProviderConnectionState {
     return providerStates?.[provider] ?? { configured: true };
   }
 
-  function renderProviderButton(provider: ChannelProvider, iconOnly = false) {
+  function renderProviderMenuItem(provider: ChannelProvider) {
     const state = getProviderState(provider);
     const label = `${txt(vi, "Thêm", "Add")} ${providerLabel(provider)}`;
     const disabledTitle = state.disabledReason || txt(vi, "Provider này chưa được cấu hình OAuth.", "This provider is not configured yet.");
 
     return (
-      <Button
+      <DropdownMenuItem
         key={provider}
-        size={iconOnly ? "icon" : "sm"}
-        variant="outline"
         disabled={!state.configured}
         onClick={() => onAddProvider(provider)}
         aria-label={state.configured ? label : `${label}. ${disabledTitle}`}
         title={state.configured ? label : disabledTitle}
-        className={cn(!iconOnly && "justify-center", !state.configured && "cursor-not-allowed opacity-50")}
+        className="gap-2"
       >
-        {providerIcon(provider, iconOnly ? "h-4 w-4" : "mr-2 h-4 w-4")}
-        {iconOnly ? null : providerLabel(provider)}
-      </Button>
+        {providerIcon(provider, "h-4 w-4")}
+        <span>{providerLabel(provider)}</span>
+      </DropdownMenuItem>
+    );
+  }
+
+  function handleDragStart(channel: SharedChannelItem, event: DragEvent) {
+    const key = channelKey(channel);
+    onReorderStart?.();
+    setDraggingKey(key);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", key);
+  }
+
+  function handleDragOver(channel: SharedChannelItem, event: DragEvent) {
+    event.preventDefault();
+    const targetKey = channelKey(channel);
+    const sourceKey = event.dataTransfer.getData("text/plain") || draggingKey;
+    if (sourceKey && sourceKey !== targetKey) onReorderPreview?.(sourceKey, targetKey);
+    event.dataTransfer.dropEffect = "move";
+  }
+
+  function handleDrop(event: DragEvent) {
+    event.preventDefault();
+    onReorderCommit?.();
+    clearDragState();
+  }
+
+  function handleDragEnd() {
+    onReorderCancel?.();
+    clearDragState();
+  }
+
+  function clearDragState() {
+    setDraggingKey("");
+  }
+
+  function AddChannelDropdown({ iconOnly = false }: { iconOnly?: boolean }) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            size={iconOnly ? "icon" : "sm"}
+            variant="outline"
+            className={cn(!iconOnly && "w-full justify-center gap-2")}
+            aria-label={txt(vi, "Thêm kênh", "Add channel")}
+            title={txt(vi, "Thêm kênh", "Add channel")}
+          >
+            <Plus className="h-4 w-4" />
+            {iconOnly ? null : <span>{txt(vi, "Thêm kênh", "Add channel")}</span>}
+            {iconOnly ? null : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align={iconOnly ? "center" : "start"} className="min-w-44">
+          {PROVIDERS.map((provider) => renderProviderMenuItem(provider))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 
@@ -93,20 +157,9 @@ export function SharedChannelSidebar({
             {channels.length}
           </Badge>
 
-          <details className="w-full">
-            <summary
-              className="flex h-10 w-full cursor-pointer list-none items-center justify-center rounded-md border border-border text-muted-foreground transition hover:bg-muted hover:text-foreground"
-              aria-label={txt(vi, "Thêm kênh", "Add channel")}
-              title={txt(vi, "Thêm kênh", "Add channel")}
-            >
-              <Plus className="h-4 w-4" />
-            </summary>
-            <div className="mt-2 grid gap-2">
-              {PROVIDERS.map((provider) => renderProviderButton(provider, true))}
-            </div>
-          </details>
+          <AddChannelDropdown iconOnly />
 
-          <div className="w-full space-y-2 pt-1">
+          <div className="w-full max-h-[70vh] space-y-2 overflow-y-auto pr-1 pt-1">
             {channels.map((channel) => {
               const active = channelKey(channel) === activeKey;
               return (
@@ -155,24 +208,21 @@ export function SharedChannelSidebar({
       </div>
 
       <div className="space-y-3 p-3 transition-opacity duration-200">
-        <details className="group">
-          <summary className="flex cursor-pointer list-none items-center justify-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium transition hover:bg-muted">
-            <Plus className="h-4 w-4" />
-            {txt(vi, "Thêm kênh", "Add channel")}
-          </summary>
-          <div className="mt-2 grid gap-2">
-            {PROVIDERS.map((provider) => renderProviderButton(provider))}
-          </div>
-        </details>
+        <AddChannelDropdown />
 
         {channels.length ? (
-          <div className="space-y-2">
+          <div className="max-h-[70vh] space-y-2 overflow-y-auto pr-1">
             {channels.map((channel) => (
               <SharedChannelRow
                 key={channelKey(channel)}
                 active={channelKey(channel) === activeKey}
                 channel={channel}
+                dragging={channelKey(channel) === draggingKey}
                 lang={lang}
+                onDragEnd={handleDragEnd}
+                onDragOver={(event) => handleDragOver(channel, event)}
+                onDragStart={(event) => handleDragStart(channel, event)}
+                onDrop={handleDrop}
                 onRemove={() => onRemove(channel)}
                 onSelect={() => onSelect(channel)}
               />
@@ -192,14 +242,45 @@ export function channelKey(channel: Pick<SharedChannelItem, "id" | "provider">) 
   return `${channel.provider}:${channel.id}`;
 }
 
-function SharedChannelRow({ active, channel, lang, onRemove, onSelect }: { active: boolean; channel: SharedChannelItem; lang: Lang; onRemove: () => void; onSelect: () => void }) {
+function SharedChannelRow({
+  active,
+  channel,
+  dragging,
+  lang,
+  onDragEnd,
+  onDragOver,
+  onDragStart,
+  onDrop,
+  onRemove,
+  onSelect,
+}: {
+  active: boolean;
+  channel: SharedChannelItem;
+  dragging: boolean;
+  lang: Lang;
+  onDragEnd: () => void;
+  onDragOver: (event: DragEvent) => void;
+  onDragStart: (event: DragEvent) => void;
+  onDrop: (event: DragEvent) => void;
+  onRemove: () => void;
+  onSelect: () => void;
+}) {
   const vi = lang === "vi";
 
   return (
     <div
-      className={`group cursor-pointer rounded-xl border p-3 text-left transition hover:border-primary/60 ${active ? "border-primary/70 bg-primary/10" : "border-border bg-card"}`}
+      draggable
+      className={cn(
+        "group cursor-pointer rounded-xl border p-3 text-left transition-all duration-200 ease-out hover:border-primary/60",
+        active ? "border-primary/70 bg-primary/10" : "border-border bg-card",
+        dragging && "scale-[0.98] opacity-50 shadow-lg"
+      )}
       role="button"
       tabIndex={0}
+      onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
+      onDragStart={onDragStart}
+      onDrop={onDrop}
       onClick={onSelect}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -209,6 +290,12 @@ function SharedChannelRow({ active, channel, lang, onRemove, onSelect }: { activ
       }}
     >
       <div className="flex items-start gap-3">
+        <div
+          className="mt-3 cursor-grab rounded-md p-1 text-muted-foreground opacity-70 transition hover:bg-muted hover:text-foreground active:cursor-grabbing"
+          aria-hidden="true"
+        >
+          <GripVertical className="h-4 w-4" />
+        </div>
         <ChannelAvatar channel={channel} sizeClassName="h-11 w-11" iconClassName="h-4 w-4" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">

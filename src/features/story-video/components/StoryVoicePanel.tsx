@@ -1,4 +1,4 @@
-import { Loader2, Volume2 } from "lucide-react";
+import { Loader2, Wand2, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -89,6 +89,10 @@ export function StoryVoicePanel({ studio }: { studio: StoryStudio }) {
         <Button onClick={studio.generateAudio} disabled={!studio.canGenerateAudio} className="bg-emerald-500 text-slate-950 hover:bg-emerald-600">
           {studio.loading.audio ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
           Tạo audio đọc truyện
+        </Button>
+        <Button type="button" variant="outline" onClick={studio.convertAudioWithApplio} disabled={studio.loading.convert || !studio.selectedAudioPath || !studio.rvcApplioConfig?.serverOk}>
+          {studio.loading.convert ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+          Chuyển sang custom voice
         </Button>
         {studio.audioResult?.audioUrl ? <audio controls src={studio.audioResult.audioUrl} className="h-10 flex-1" /> : null}
       </div>

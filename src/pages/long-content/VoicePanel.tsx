@@ -34,7 +34,6 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
             <SelectItem value="piper">{uiText("Piper local · tạo file và nhúng vào video")}</SelectItem>
             <SelectItem value="elevenlabs">{uiText("ElevenLabs PRO · tạo file và nhúng vào video")}</SelectItem>
             <SelectItem value="supertonic">{uiText("Supertonic local · 44.1kHz WAV")}</SelectItem>
-            <SelectItem value="rvc-applio">{uiText("RVC/Applio local · clone giọng")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -124,39 +123,29 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
         </div>
       ) : null}
 
-      {s.voiceProvider === "rvc-applio" ? (
-        <div className="grid gap-3">
-          <div>
-            <Label>{uiText("Piper source model")}</Label>
-            <Select value={s.piperModelKey} onValueChange={s.setPiperModelKey}>
-              <SelectTrigger className="mt-2"><SelectValue placeholder={uiText("Chọn model Piper nguồn")} /></SelectTrigger>
-              <SelectContent>
-                {piperModels.map((model) => <SelectItem key={model.key} value={model.key}>{model.label}{model.available ? "" : " · thiếu file"}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <p className="mt-2 text-xs text-muted-foreground">{uiText("Flow: Piper tạo giọng gốc từng scene → RVC/Applio chuyển sang model giọng custom → ghép WAV để export.")}</p>
-          </div>
-          <div className="rounded-lg border border-border bg-background/40 p-3 text-xs text-muted-foreground">
-            <div className="grid gap-1">
-              <span>{uiText("Server:")} <strong className={s.rvcApplioConfig?.serverOk ? "text-emerald-300" : "text-rose-300"}>{s.rvcApplioConfig?.serverOk ? "đã kết nối" : "chưa chạy"}</strong></span>
-              <span>{uiText("Base URL:")} <strong>{s.rvcApplioConfig?.baseUrl || "http://127.0.0.1:6969"}</strong></span>
-              <span>{uiText("API:")} <strong>{s.rvcApplioConfig?.apiName || "/infer_convert"}</strong></span>
-              <span>{uiText("Model:")} <strong>{s.rvcApplioConfig?.modelName || "chọn trong Settings/.env"}</strong></span>
-              <span>{uiText("F0:")} <strong>{s.rvcApplioConfig?.f0Method || "rmvpe"}</strong> · pitch <strong>{s.rvcApplioConfig?.pitch ?? 0}</strong></span>
-              {s.rvcApplioConfig?.error ? <span className="text-yellow-300">{s.rvcApplioConfig.error}</span> : null}
-            </div>
-            <Button type="button" size="sm" variant="outline" className="mt-3" onClick={s.refreshPiperRuntime}><RefreshCcw className="mr-2 h-3.5 w-3.5" /> {uiText("Kiểm tra")}</Button>
-          </div>
+      <div className="rounded-lg border border-border bg-background/40 p-3 text-xs text-muted-foreground">
+        <div className="grid gap-1">
+          <span>{uiText("Applio custom voice:")} <strong className={s.rvcApplioConfig?.serverOk ? "text-emerald-300" : "text-rose-300"}>{s.rvcApplioConfig?.serverOk ? "đã kết nối" : "chưa chạy"}</strong></span>
+          <span>{uiText("Model:")} <strong>{s.rvcApplioConfig?.modelName || "chọn trong Settings/.env"}</strong></span>
+          <span>{uiText("Workflow:")} <strong>{uiText("tạo audio bằng provider ở trên → chuyển voice bằng Applio")}</strong></span>
+          {s.rvcApplioConfig?.error ? <span className="text-yellow-300">{s.rvcApplioConfig.error}</span> : null}
         </div>
-      ) : null}
+      </div>
       <NumberSlider label={uiText("Tốc độ đọc")} value={s.narrationRate} min={0.7} max={1.2} suffix="x" step={0.05} onChange={s.setNarrationRate} />
       <NumberSlider label={uiText("Âm lượng voice")} value={s.narrationVol} min={0} max={100} suffix="%" onChange={s.setNarrationVol} />
       <Button className="w-full" variant={s.voiceProvider === "browser" ? "outline" : "default"} onClick={s.generateVoiceOver} disabled={s.voiceLoading}>
         {s.voiceLoading ? "Đang tạo voice..." : s.voiceProvider === "browser" ? "Đọc thử Browser TTS" : "Tạo voice-over cho video"}
       </Button>
-      {s.voiceUrl ? <audio className="w-full" controls src={s.voiceUrl} /> : null}
+      {s.voiceUrl ? (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <audio className="h-10 min-w-0 flex-1" controls src={s.voiceUrl} />
+          <Button type="button" variant="outline" onClick={s.convertVoiceWithApplio} disabled={s.voiceConverting || !s.voiceRelativePath || !s.rvcApplioConfig?.serverOk}>
+            {s.voiceConverting ? "Đang chuyển..." : "Chuyển sang custom voice"}
+          </Button>
+        </div>
+      ) : null}
       <p className="text-xs text-muted-foreground">
-        Browser TTS chỉ dùng để nghe thử. Muốn video export có voice, hãy chọn Piper, ElevenLabs, Supertonic hoặc RVC/Applio.
+        Browser TTS chỉ dùng để nghe thử. Muốn video export có voice, hãy chọn Piper, ElevenLabs hoặc Supertonic. Applio dùng để chuyển file audio đã tạo sang custom voice.
         {s.voiceFileName ? ` File hiện tại: ${s.voiceFileName}` : ""}
       </p>
     </Card>

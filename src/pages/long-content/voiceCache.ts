@@ -11,6 +11,7 @@ export type CachedGeneratedVoice = {
   provider: GeneratedVoiceProvider;
   scriptKey: string;
   audioUrl: string;
+  relativePath?: string;
   fileName: string;
   durationSec: number;
   segmentDurationsSec?: number[];
@@ -37,6 +38,7 @@ type VoiceRestoreParams = Omit<VoiceScriptKeyParts, "provider"> & {
   voiceProvider: VoiceProvider;
   setVoiceProvider: (provider: VoiceProvider) => void;
   setVoiceUrl: (url: string) => void;
+  setVoiceRelativePath: (relativePath: string) => void;
   setVoiceFileName: (fileName: string) => void;
   setVoiceDurationSec: (durationSec: number) => void;
   setVoiceSegmentDurationsSec: (durations: number[]) => void;
@@ -52,6 +54,7 @@ export function useRestoreGeneratedVoiceCache(params: VoiceRestoreParams) {
     if (cached.scriptKey !== expectedKey) return;
     params.setVoiceProvider(cached.provider);
     params.setVoiceUrl(cached.audioUrl);
+    params.setVoiceRelativePath(cached.relativePath || "");
     params.setVoiceFileName(cached.fileName);
     params.setVoiceDurationSec(cached.durationSec);
     params.setVoiceSegmentDurationsSec(cached.segmentDurationsSec ?? []);
@@ -100,7 +103,7 @@ function readCachedGeneratedVoice(): CachedGeneratedVoice | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<CachedGeneratedVoice>;
     if (
-      (parsed.provider !== "piper" && parsed.provider !== "elevenlabs" && parsed.provider !== "supertonic" && parsed.provider !== "rvc-applio")
+      (parsed.provider !== "piper" && parsed.provider !== "elevenlabs" && parsed.provider !== "supertonic")
       || !parsed.scriptKey
       || !parsed.audioUrl
       || !parsed.fileName
@@ -112,6 +115,7 @@ function readCachedGeneratedVoice(): CachedGeneratedVoice | null {
       provider: parsed.provider,
       scriptKey: parsed.scriptKey,
       audioUrl: parsed.audioUrl,
+      relativePath: typeof parsed.relativePath === "string" ? parsed.relativePath : "",
       fileName: parsed.fileName,
       durationSec: Number.isFinite(parsed.durationSec) ? Number(parsed.durationSec) : 0,
       segmentDurationsSec: Array.isArray(parsed.segmentDurationsSec)

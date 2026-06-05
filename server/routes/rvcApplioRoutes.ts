@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
-import type { RvcApplioGenerateBody } from "../models/RvcApplio";
-import { generateRvcApplioAudio, getRvcApplioConfigStatus } from "../services/RvcApplioService";
+import type { RvcApplioConvertBody } from "../models/RvcApplio";
+import { convertRvcApplioAudio, getRvcApplioConfigStatus } from "../services/RvcApplioService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
 
 export function createRvcApplioRouter() {
@@ -11,10 +11,10 @@ export function createRvcApplioRouter() {
   });
 
   router.post(
-    "/rvc-applio/generate",
-    async (req: Request<unknown, unknown, RvcApplioGenerateBody>, res: Response) => {
+    "/rvc-applio/convert",
+    async (req: Request<unknown, unknown, RvcApplioConvertBody>, res: Response) => {
       try {
-        res.json(await generateRvcApplioAudio(req.body, readRuntimeEnvFromRequest(req)));
+        res.json(await convertRvcApplioAudio(req.body, readRuntimeEnvFromRequest(req)));
       } catch (error) {
         res.status(500).json({
           error: error instanceof Error ? error.message : "RVC/Applio voice conversion thất bại.",

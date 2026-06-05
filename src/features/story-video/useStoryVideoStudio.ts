@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  convertRvcApplioVoice,
   generateElevenLabsVoice,
   generatePiperVoice,
   getElevenLabsConfig,
   getPiperModels,
+  getRvcApplioConfig,
   type ElevenLabsConfig,
   type PiperModel,
+  type RvcApplioConfig,
   type VoiceGenerateResult,
 } from "@/lib/voiceApi";
 import {
@@ -76,6 +79,7 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
   const [provider, setProvider] = useState<StoryVoiceProvider>(draft.provider || "piper");
   const [piperModels, setPiperModels] = useState<PiperModel[]>([]);
   const [elevenConfig, setElevenConfig] = useState<ElevenLabsConfig | null>(null);
+  const [rvcApplioConfig, setRvcApplioConfig] = useState<RvcApplioConfig | null>(null);
   const [piperModelKey, setPiperModelKey] = useState(draft.piperModelKey || "vi_vais1000");
   const [elevenModelId, setElevenModelId] = useState(draft.elevenModelId || "");
   const [elevenVoiceId, setElevenVoiceId] = useState(draft.elevenVoiceId || "");
@@ -98,7 +102,7 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
   const [linkResult, setLinkResult] = useState<ExtractLinksResponse | null>(null);
   const [audioResult, setAudioResult] = useState<VoiceGenerateResult | null>(null);
   const [videoResult, setVideoResult] = useState<GenerateVideoResponse | null>(null);
-  const [loading, setLoading] = useState({ boot: true, links: false, extract: false, audio: false, video: false });
+  const [loading, setLoading] = useState({ boot: true, links: false, extract: false, audio: false, convert: false, video: false });
   const [message, setMessage] = useState("");
 
   const urls = useMemo(() => parseUrls(urlList), [urlList]);
@@ -161,9 +165,10 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
   async function loadBootstrap() {
     setLoading((state) => ({ ...state, boot: true }));
     try {
-      const [models, proConfig, resources, videos] = await Promise.allSettled([
+      const [models, proConfig, rvcConfig, resources, videos] = await Promise.allSettled([
         getPiperModels(),
         getElevenLabsConfig(),
+        getRvcApplioConfig(),
         getGeneratedResources(),
         getGeneratedVideos(),
       ]);
@@ -177,6 +182,7 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
         if (!draft.elevenModelId) setElevenModelId(proConfig.value.models[0]?.id || "");
         if (!draft.elevenVoiceId) setElevenVoiceId(proConfig.value.voices[0]?.id || "");
       }
+      if (rvcConfig.status === "fulfilled") setRvcApplioConfig(rvcConfig.value);
       if (resources.status === "fulfilled") setGeneratedAudio(resources.value.audio);
       if (videos.status === "fulfilled") setGeneratedVideos(videos.value.videos);
     } finally {
@@ -240,6 +246,35 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
     }
   }
 
+  async function convertAudioWithApplio() {
+    if (!selectedAudioPath) return setMessage("Chưa có file audio đã tạo để chuyển voice.");
+    setLoading((state) => ({ ...state, convert: true }));
+    setMessage("");
+    try {
+      const result = await convertRvcApplioVoice({
+        audioRelativePath: selectedAudioPath,
+        fileName: `${fileName}-applio`,
+      });
+      setAudioResult(result);
+      const resource: GeneratedResource = {
+        kind: "audio",
+        fileName: result.fileName,
+        relativePath: result.relativePath,
+        url: result.audioUrl,
+        sizeBytes: 0,
+        createdAtMs: Date.now(),
+      };
+      setGeneratedAudio((current) => [resource, ...current.filter((item) => item.relativePath !== resource.relativePath)]);
+      setSelectedAudioPath(resource.relativePath);
+      setUploadedAudioFile(null);
+      setMessage("Đã chuyển audio sang custom voice bằng Applio.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Chuyển voice bằng Applio thất bại.");
+    } finally {
+      setLoading((state) => ({ ...state, convert: false }));
+    }
+  }
+
   async function generateVideo() {
     if (!requireVideoGenerationAccess()) return;
     if (!backgroundFile) return setMessage("Chưa chọn ảnh/GIF/video nền.");
@@ -298,6 +333,7 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
     fitMode,
     generatedAudio,
     generatedVideos,
+    convertAudioWithApplio,
     generateAudio,
     generateVideo,
     linkPageUrl,
@@ -308,6 +344,7 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
     piperModelKey,
     piperModels,
     provider,
+    rvcApplioConfig,
     selectedAudio,
     selectedAudioPath,
     sentenceSilence,

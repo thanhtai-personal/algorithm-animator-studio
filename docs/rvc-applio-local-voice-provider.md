@@ -131,7 +131,6 @@ RVC_APPLIO_START_COMMAND=C:/Applio/run-applio.bat
 RVC_APPLIO_API_NAME=/infer_convert
 RVC_APPLIO_ARG_TEMPLATE_JSON=[0,"${input}","${model}","${index}","${f0_method}","${index_rate}","${filter_radius}",0,0.25,"${protect}","wav"]
 RVC_APPLIO_PYTHON=python
-RVC_APPLIO_SOURCE_PIPER_MODEL=vi_vais1000
 RVC_APPLIO_MODEL_NAME=my_voice.pth
 RVC_APPLIO_INDEX_PATH=C:/Applio/logs/my_voice/added_IVFxxx.index
 RVC_APPLIO_PITCH=0
@@ -146,7 +145,7 @@ Có thể cấu hình các field này trong màn **Settings** của app. Runtime
 
 `RVC_APPLIO_START_COMMAND` là lệnh tùy chọn được `npm run dev` chạy cùng frontend/backend/Supertonic. Nếu để trống, app không tự start Applio và bạn cần chạy Applio thủ công.
 
-Lưu ý: tích hợp hiện tại dùng Applio/RVC để **chuyển giọng từ audio nguồn**, không phải text-to-speech trực tiếp. Vì vậy pipeline vẫn cần một provider tạo audio nguồn như Piper trước khi RVC convert, trừ khi bản Applio trên máy bạn có endpoint TTS riêng và ta bổ sung mapping API tương ứng.
+Lưu ý: tích hợp hiện tại dùng Applio/RVC để **chuyển giọng từ audio nguồn**, không phải text-to-speech trực tiếp. Hãy tạo audio trước bằng Piper, ElevenLabs hoặc Supertonic, sau đó bấm nút chuyển sang custom voice để gọi Applio.
 
 ---
 
@@ -161,24 +160,14 @@ npm run dev
 
 3. Vào **Long Content**.
 4. Mở panel **Voice-over**.
-5. Chọn provider:
+5. Chọn provider tạo audio nguồn: Piper, ElevenLabs hoặc Supertonic.
+6. Bấm **Tạo voice-over cho video**.
+7. Khi audio đã tạo xong, bấm **Chuyển sang custom voice** để gọi Applio.
+
+Backend sẽ xử lý file audio đã tạo:
 
 ```txt
-RVC/Applio local · clone giọng
-```
-
-6. Chọn **Piper source model**.
-7. Bấm **Kiểm tra** để xác nhận backend thấy Applio server.
-8. Bấm **Tạo voice-over cho video**.
-
-Backend sẽ xử lý theo từng scene/segment:
-
-```txt
-segment 1 → Piper WAV → RVC WAV
-segment 2 → Piper WAV → RVC WAV
-segment 3 → Piper WAV → RVC WAV
-...
-concat → final WAV
+generated audio WAV/MP3/... → RVC WAV
 ```
 
 File kết quả lưu ở:

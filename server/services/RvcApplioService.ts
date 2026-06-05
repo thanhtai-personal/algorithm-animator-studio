@@ -1,6 +1,4 @@
-import crypto from "node:crypto";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { Buffer } from "node:buffer";
@@ -11,20 +9,18 @@ import {
   getGeneratedDir,
   PROJECT_ROOT,
 } from "../config/paths";
-import type { RvcApplioConfigStatus, RvcApplioGenerateBody } from "../models/RvcApplio";
+import type { RvcApplioConfigStatus, RvcApplioConvertBody } from "../models/RvcApplio";
 import {
-  clampSentenceSilence,
   ensureDirectoryExists,
   getLocalDateFolderName,
   getUniqueOutputFileWithExtension,
   sanitizeFileBaseName,
 } from "../utils/audioOutput";
-import { getAudioDurationSeconds, runFfmpeg } from "../utils/ffmpeg";
+import { getAudioDurationSeconds } from "../utils/ffmpeg";
 import { stripAnsi } from "../utils/text";
-import { runPiper } from "./PiperService";
 import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
+import { resolveGeneratedResource } from "./ResourceService";
 import { resolveRuntimeExecutable } from "./RuntimeEnvService";
-import { validateGenerateRequest } from "./TtsGenerationService";
 
 const CONFIG_TIMEOUT_MS = 3500;
 const DEFAULT_TIMEOUT_MS = 20 * 60 * 1000;
@@ -47,103 +43,54 @@ export async function getRvcApplioConfigStatus(envOverrides: RuntimeEnvValues = 
   }
 }
 
-export async function generateRvcApplioAudio(body: RvcApplioGenerateBody, envOverrides: RuntimeEnvValues = {}) {
+export async function convertRvcApplioAudio(body: RvcApplioConvertBody, envOverrides: RuntimeEnvValues = {}) {
   const env = readEnvValues(envOverrides);
   const config = readRvcConfig(env);
   const argTemplate = parseArgTemplate(env.RVC_APPLIO_ARG_TEMPLATE_JSON);
-  const validation = validateGenerateRequest({
-    text: body.text,
-    segments: body.segments,
-    modelKey: body.piperModelKey || env.RVC_APPLIO_SOURCE_PIPER_MODEL || "vi_vais1000",
-    fileName: body.fileName,
-    sentenceSilence: body.sentenceSilence,
-    speechRate: body.speechRate,
-  }, envOverrides);
+  const source = resolveGeneratedResource({ kind: "audio", relativePath: body.audioRelativePath }, envOverrides);
 
-  if ("status" in validation) {
-    throw new Error(String(validation.body?.error || validation.body?.message || "Yêu cầu Piper nguồn không hợp lệ."));
+  if (!fs.existsSync(source.absolutePath)) {
+    throw new Error("Không tìm thấy file audio nguồn để chuyển voice.");
   }
 
-  const segments = validation.cleanedSegments?.length ? validation.cleanedSegments : [validation.cleanedText];
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "kata-rvc-applio-"));
-  const convertedSegmentPaths: string[] = [];
-  const sourceSegmentPaths: string[] = [];
-  const segmentDurationsSec: number[] = [];
+  const dateFolderName = getLocalDateFolderName();
+  const outputDir = path.join(getGeneratedDir(env.SERVER_DATA_DIR), "rvc-applio", dateFolderName);
+  ensureDirectoryExists(outputDir);
 
-  try {
-    const piperExe = resolveRuntimeExecutable(env.PIPER_EXE || "models/.venv/Scripts/piper.exe");
-    const sentenceSilence = clampSentenceSilence(body.sentenceSilence ?? 0.08);
-    const speechRate = clampSpeechRate(body.speechRate);
+  const sourceBaseName = path.basename(source.relativePath, path.extname(source.relativePath));
+  const { outputFileName, outputPath } = getUniqueOutputFileWithExtension({
+    baseName: sanitizeFileBaseName(body.fileName || `${sourceBaseName}-custom-voice`),
+    extension: "wav",
+    outputDir,
+  });
 
-    for (let index = 0; index < segments.length; index += 1) {
-      const indexLabel = String(index).padStart(5, "0");
-      const sourcePath = path.join(tempDir, `${indexLabel}-source.wav`);
-      const convertedPath = path.join(tempDir, `${indexLabel}-rvc.wav`);
-      sourceSegmentPaths.push(sourcePath);
-      convertedSegmentPaths.push(convertedPath);
+  await convertSegmentWithApplio({
+    config,
+    inputPath: source.absolutePath,
+    outputPath,
+    argTemplate,
+    pitch: clampPitch(body.pitch ?? config.pitch),
+    f0Method: normalizeF0Method(body.f0Method || config.f0Method),
+    indexRate: clampRatio(body.indexRate ?? config.indexRate),
+    protect: clampRatio(body.protect ?? config.protect),
+    filterRadius: clampInteger(body.filterRadius ?? config.filterRadius, 0, 7),
+    timeoutMs: Number(env.RVC_APPLIO_TIMEOUT_MS || DEFAULT_TIMEOUT_MS),
+  });
 
-      await runPiper({
-        text: segments[index],
-        modelPath: validation.selectedModel.modelPath,
-        outputPath: sourcePath,
-        sentenceSilence: 0,
-        speechRate,
-        piperExe,
-      });
-
-      await convertSegmentWithApplio({
-        config,
-        inputPath: sourcePath,
-        outputPath: convertedPath,
-        argTemplate,
-        pitch: clampPitch(body.pitch ?? config.pitch),
-        f0Method: normalizeF0Method(body.f0Method || config.f0Method),
-        indexRate: clampRatio(body.indexRate ?? config.indexRate),
-        protect: clampRatio(body.protect ?? config.protect),
-        filterRadius: clampInteger(body.filterRadius ?? config.filterRadius, 0, 7),
-        timeoutMs: Number(env.RVC_APPLIO_TIMEOUT_MS || DEFAULT_TIMEOUT_MS),
-      });
-
-      const measured = await readDurationOrZero(convertedPath, envOverrides);
-      segmentDurationsSec.push(measured + (index < segments.length - 1 ? sentenceSilence : 0));
-    }
-
-    const dateFolderName = getLocalDateFolderName();
-    const outputDir = path.join(getGeneratedDir(env.SERVER_DATA_DIR), "rvc-applio", dateFolderName);
-    ensureDirectoryExists(outputDir);
-
-    const { outputFileName, outputPath } = getUniqueOutputFileWithExtension({
-      baseName: sanitizeFileBaseName(body.fileName || `rvc-applio-${crypto.randomUUID()}`),
-      extension: "wav",
-      outputDir,
-    });
-
-    if (convertedSegmentPaths.length === 1) {
-      fs.copyFileSync(convertedSegmentPaths[0], outputPath);
-    } else {
-      await concatenateWithSilence(convertedSegmentPaths, outputPath, sentenceSilence, tempDir, envOverrides);
-    }
-
-    const relativePath = `rvc-applio/${dateFolderName}/${outputFileName}`;
-    return {
-      ok: true,
-      fileName: outputFileName,
-      folderName: dateFolderName,
-      relativePath,
-      audioPath: outputPath,
-      audioUrl: buildGeneratedFileUrl(GENERATED_PUBLIC_PATH, relativePath, env.SERVER_ORIGIN || SERVER_ORIGIN),
-      model: `RVC/Applio · ${config.modelName || "selected model"}`,
-      lang: validation.selectedModel.lang,
-      speechRate,
-      inputCharacters: validation.cleanedText.length,
-      sourceModel: validation.selectedModel.label,
-      rvcModelName: config.modelName,
-      segmentDurationsSec: segmentDurationsSec.some(Boolean) ? segmentDurationsSec : undefined,
-      sourceSegments: sourceSegmentPaths.length,
-    };
-  } finally {
-    fs.rmSync(tempDir, { recursive: true, force: true });
-  }
+  const relativePath = `rvc-applio/${dateFolderName}/${outputFileName}`;
+  const durationSec = await readDurationOrZero(outputPath, envOverrides);
+  return {
+    ok: true,
+    fileName: outputFileName,
+    folderName: dateFolderName,
+    relativePath,
+    audioPath: outputPath,
+    audioUrl: buildGeneratedFileUrl(GENERATED_PUBLIC_PATH, relativePath, env.SERVER_ORIGIN || SERVER_ORIGIN),
+    model: `RVC/Applio · ${config.modelName || "selected model"}`,
+    rvcModelName: config.modelName,
+    sourceRelativePath: source.relativePath,
+    segmentDurationsSec: durationSec > 0 ? [durationSec] : undefined,
+  };
 }
 
 type RvcRuntimeConfig = Omit<RvcApplioConfigStatus, "enabled" | "serverOk" | "error">;
@@ -187,29 +134,6 @@ async function convertSegmentWithApplio(params: ConvertSegmentParams) {
       stderr: result.stderr,
     }, null, 2));
   }
-}
-
-async function concatenateWithSilence(
-  inputPaths: string[],
-  outputPath: string,
-  silenceSeconds: number,
-  tempDir: string,
-  envOverrides: RuntimeEnvValues
-) {
-  const concatPaths = [...inputPaths];
-  if (silenceSeconds > 0) {
-    const silencePath = path.join(tempDir, "silence.wav");
-    await runFfmpeg(["-y", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", silenceSeconds.toFixed(3), silencePath], envOverrides);
-    concatPaths.length = 0;
-    inputPaths.forEach((item, index) => {
-      concatPaths.push(item);
-      if (index < inputPaths.length - 1) concatPaths.push(silencePath);
-    });
-  }
-
-  const listPath = path.join(tempDir, "concat.txt");
-  fs.writeFileSync(listPath, concatPaths.map((item) => `file '${escapeConcatPath(item)}'`).join("\n"), "utf8");
-  await runFfmpeg(["-y", "-f", "concat", "-safe", "0", "-i", listPath, "-c:a", "pcm_s16le", outputPath], envOverrides);
 }
 
 function readRvcConfig(env: RuntimeEnvValues): RvcRuntimeConfig {
@@ -293,16 +217,6 @@ function runProcess(command: string, args: string[], timeoutMs: number): Promise
       resolve({ stdout: cleanStdout, stderr: cleanStderr });
     });
   });
-}
-
-function escapeConcatPath(filePath: string) {
-  return filePath.replace(/'/g, "'\\''").replace(/\\/g, "/");
-}
-
-function clampSpeechRate(value: unknown) {
-  const speed = Number(value);
-  if (!Number.isFinite(speed)) return 0.96;
-  return Math.min(1.2, Math.max(0.7, speed));
 }
 
 function clampPitch(value: unknown) { return clampInteger(value ?? 0, -24, 24); }

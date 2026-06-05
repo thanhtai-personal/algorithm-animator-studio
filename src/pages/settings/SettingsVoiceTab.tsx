@@ -1,5 +1,7 @@
+import { useState } from "react";
+import { Bot, ChevronsLeft, ChevronsRight, Mic2, Radio, Waves } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { t, text, type Lang } from "@/lib/i18n";
 import { PathInput, SecretInput, VoiceRowsTable, type VoiceRow } from "./SettingsFields";
 import type { SettingsForm, SettingsFormKey } from "./SettingsTypes";
@@ -17,7 +19,19 @@ type SettingsVoiceTabProps = {
   onUpdateVoiceRow: (index: number, patch: Partial<VoiceRow>) => void;
 };
 
+type VoiceSection = "piper" | "elevenlabs" | "supertonic" | "applio";
+
+const VOICE_SECTIONS: { id: VoiceSection; label: string; shortLabel: string; icon: typeof Mic2 }[] = [
+  { id: "piper", label: "Piper", shortLabel: "P", icon: Mic2 },
+  { id: "elevenlabs", label: "ElevenLabs", shortLabel: "E", icon: Waves },
+  { id: "supertonic", label: "Supertonic", shortLabel: "S", icon: Radio },
+  { id: "applio", label: "Applio", shortLabel: "A", icon: Bot },
+];
+
 export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
+  const [activeSection, setActiveSection] = useState<VoiceSection>("piper");
+  const [menuCollapsed, setMenuCollapsed] = useState(false);
+
   return (
     <Card>
       <CardHeader>
@@ -25,15 +39,42 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
         <CardDescription>{t(props.lang, "settingsVoiceDescription")}</CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="piper" className="space-y-4">
-          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/40 p-1 md:grid-cols-4">
-            <TabsTrigger value="piper">Piper</TabsTrigger>
-            <TabsTrigger value="elevenlabs">ElevenLabs</TabsTrigger>
-            <TabsTrigger value="supertonic">Supertonic</TabsTrigger>
-            <TabsTrigger value="applio">Applio</TabsTrigger>
-          </TabsList>
+        <div className="grid gap-4 lg:grid-cols-[auto_minmax(0,1fr)]">
+          <aside className={`rounded-lg border border-border bg-muted/30 p-2 transition-[width] duration-200 ${menuCollapsed ? "w-[68px]" : "w-full lg:w-56"}`}>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              {!menuCollapsed ? <span className="px-2 text-xs font-semibold text-muted-foreground">{text(props.lang, "Voice providers", "Provider voice")}</span> : null}
+              <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setMenuCollapsed((value) => !value)}>
+                {menuCollapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
+              </Button>
+            </div>
+            <nav className="grid gap-1" aria-label={text(props.lang, "Voice provider settings", "Cài đặt provider voice")}>
+              {VOICE_SECTIONS.map((section) => {
+                const Icon = section.icon;
+                const selected = activeSection === section.id;
+                return (
+                  <button
+                    key={section.id}
+                    type="button"
+                    className={[
+                      "flex h-10 items-center gap-2 rounded-md px-2 text-sm font-medium transition-colors",
+                      selected ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+                      menuCollapsed ? "justify-center" : "justify-start",
+                    ].join(" ")}
+                    title={section.label}
+                    aria-current={selected ? "page" : undefined}
+                    onClick={() => setActiveSection(section.id)}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    {menuCollapsed ? <span className="sr-only">{section.label}</span> : <span>{section.label}</span>}
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
 
-          <TabsContent value="piper" className="mt-0 space-y-5">
+          <div className="min-w-0">
+            {activeSection === "piper" ? (
+            <div className="space-y-5">
             <PathInput
               id="model-dir"
               label={t(props.lang, "settingsModelDirLabel")}
@@ -58,9 +99,11 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               onSelect={() => props.onSelectPath("file", "PIPER_EXE", t(props.lang, "settingsSelectPiperExe"))}
               onOpen={() => props.onOpenPath(props.form.PIPER_EXE)}
             />
-          </TabsContent>
+            </div>
+            ) : null}
 
-          <TabsContent value="elevenlabs" className="mt-0 space-y-5">
+            {activeSection === "elevenlabs" ? (
+            <div className="space-y-5">
             <SecretInput
               id="elevenlabs-api-key-voice"
               label={t(props.lang, "settingsElevenLabsApiKeyLabel")}
@@ -70,9 +113,11 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               onChange={(value) => props.onUpdateField("ELEVENLABS_API_KEY", value)}
             />
             <VoiceRowsTable rows={props.voiceRows} lang={props.lang} onAdd={props.onAddVoiceRow} onUpdate={props.onUpdateVoiceRow} onRemove={props.onRemoveVoiceRow} />
-          </TabsContent>
+            </div>
+            ) : null}
 
-          <TabsContent value="supertonic" className="mt-0 space-y-5">
+            {activeSection === "supertonic" ? (
+            <div className="space-y-5">
             <SecretInput
               id="supertonic-base-url-voice"
               label={t(props.lang, "settingsSupertonicBaseUrlLabel")}
@@ -111,11 +156,13 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
                 onChange={(value) => props.onUpdateField("SUPERTONIC_TOTAL_STEPS", value)}
               />
             </div>
-          </TabsContent>
+            </div>
+            ) : null}
 
-          <TabsContent value="applio" className="mt-0 space-y-5">
+            {activeSection === "applio" ? (
+            <div className="space-y-5">
             <p className="rounded-lg border border-yellow-400/40 bg-yellow-400/10 p-3 text-sm text-yellow-100">
-              {text(props.lang, "Applio/RVC converts an existing source audio into a trained voice model. It is not direct text-to-speech in the current integration.", "Applio/RVC chuyển audio nguồn sang model giọng đã train. Tích hợp hiện tại không phải text-to-speech trực tiếp.")}
+              {text(props.lang, "Applio/RVC converts generated audio from Piper, ElevenLabs, or Supertonic into a trained custom voice.", "Applio/RVC chuyển audio đã tạo từ Piper, ElevenLabs hoặc Supertonic sang custom voice đã train.")}
             </p>
             <div className="grid gap-3 md:grid-cols-2">
               <SecretInput
@@ -169,15 +216,6 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
             />
             <div className="grid gap-3 md:grid-cols-2">
               <SecretInput
-                id="rvc-applio-source-piper"
-                label={t(props.lang, "settingsRvcApplioSourcePiperLabel")}
-                description={text(props.lang, "Source Piper model used before RVC conversion.", "Model Piper nguồn dùng trước bước convert RVC.")}
-                value={props.form.RVC_APPLIO_SOURCE_PIPER_MODEL}
-                placeholder="vi_vais1000"
-                type="text"
-                onChange={(value) => props.onUpdateField("RVC_APPLIO_SOURCE_PIPER_MODEL", value)}
-              />
-              <SecretInput
                 id="rvc-applio-model-name"
                 label={t(props.lang, "settingsRvcApplioModelNameLabel")}
                 description={text(props.lang, "Target .pth/model name expected by the Gradio endpoint.", "Tên .pth/model đích đúng với endpoint Gradio.")}
@@ -204,8 +242,10 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               <SecretInput id="rvc-applio-protect" label="RVC protect" description="Higher values preserve consonants and reduce artifacts." value={props.form.RVC_APPLIO_PROTECT} placeholder="0.33" type="text" onChange={(value) => props.onUpdateField("RVC_APPLIO_PROTECT", value)} />
               <SecretInput id="rvc-applio-filter-radius" label="RVC filter radius" description="F0 smoothing radius, default 3." value={props.form.RVC_APPLIO_FILTER_RADIUS} placeholder="3" type="text" onChange={(value) => props.onUpdateField("RVC_APPLIO_FILTER_RADIUS", value)} />
             </div>
-          </TabsContent>
-        </Tabs>
+            </div>
+            ) : null}
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

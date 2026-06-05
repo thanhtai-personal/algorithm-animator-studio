@@ -161,17 +161,13 @@ export async function generateSupertonicVoice(payload: {
   }));
 }
 
-export async function generateRvcApplioVoice(payload: {
-  text: string;
-  segments?: string[];
-  piperModelKey: string;
-  sentenceSilence: number;
-  speechRate: number;
-  fileName: string;
+export async function convertRvcApplioVoice(payload: {
+  audioRelativePath: string;
+  fileName?: string;
   pitch?: number;
   f0Method?: string;
 }) {
-  return parseApiResponse<VoiceGenerateResult>(await fetch(buildApiUrl("/api/rvc-applio/generate"), {
+  return parseApiResponse<VoiceGenerateResult>(await fetch(buildApiUrl("/api/rvc-applio/convert"), {
     method: "POST",
     headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),

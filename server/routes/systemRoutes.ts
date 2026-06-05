@@ -5,6 +5,7 @@ import { promisify } from "node:util";
 import { Router } from "express";
 
 const execFileAsync = promisify(execFile);
+const WSL_POWERSHELL_PATH = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe";
 
 type SelectKind = "directory" | "file";
 
@@ -49,11 +50,21 @@ async function selectDirectory(title: string, initialPath: string) {
   const initialScript = initialPath ? `$dialog.SelectedPath = ${toPowerShellString(initialPath)};` : "";
   const script = `
 Add-Type -AssemblyName System.Windows.Forms
+$owner = New-Object System.Windows.Forms.Form
+$owner.TopMost = $true
+$owner.StartPosition = 'CenterScreen'
+$owner.ShowInTaskbar = $false
+$owner.Opacity = 0.01
+$owner.Width = 1
+$owner.Height = 1
+$owner.Show()
+$owner.Activate()
 $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
 $dialog.Description = ${toPowerShellString(title)}
 $dialog.ShowNewFolderButton = $true
 ${initialScript}
-$result = $dialog.ShowDialog()
+$result = $dialog.ShowDialog($owner)
+$owner.Dispose()
 if ($result -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $dialog.SelectedPath }
 `.trim();
 
@@ -66,12 +77,22 @@ async function selectFile(title: string, initialPath: string) {
   const initialScript = initial ? `$dialog.InitialDirectory = ${toPowerShellString(initial)};` : "";
   const script = `
 Add-Type -AssemblyName System.Windows.Forms
+$owner = New-Object System.Windows.Forms.Form
+$owner.TopMost = $true
+$owner.StartPosition = 'CenterScreen'
+$owner.ShowInTaskbar = $false
+$owner.Opacity = 0.01
+$owner.Width = 1
+$owner.Height = 1
+$owner.Show()
+$owner.Activate()
 $dialog = New-Object System.Windows.Forms.OpenFileDialog
 $dialog.Title = ${toPowerShellString(title)}
 $dialog.Filter = 'Executable (*.exe)|*.exe|All files (*.*)|*.*'
 $dialog.Multiselect = $false
 ${initialScript}
-$result = $dialog.ShowDialog()
+$result = $dialog.ShowDialog($owner)
+$owner.Dispose()
 if ($result -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $dialog.FileName }
 `.trim();
 
@@ -79,8 +100,9 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $dialog.
 }
 
 async function runPowerShellPicker(script: string) {
+  const powershellCommand = getPowerShellCommand();
   const { stdout } = await execFileAsync(
-    "powershell.exe",
+    powershellCommand,
     ["-NoProfile", "-STA", "-ExecutionPolicy", "Bypass", "-Command", script],
     { windowsHide: false, timeout: 120_000 }
   );
@@ -118,9 +140,14 @@ function resolveInitialDirectory(value: string) {
 }
 
 function ensureWindowsDialogSupport() {
-  if (process.platform !== "win32") {
+  if (!getPowerShellCommand()) {
     throw new Error("Chọn bằng Explorer hiện chỉ hỗ trợ khi chạy backend local trên Windows.");
   }
+}
+
+function getPowerShellCommand() {
+  if (process.platform === "win32") return "powershell.exe";
+  return fs.existsSync(WSL_POWERSHELL_PATH) ? WSL_POWERSHELL_PATH : "";
 }
 
 function toPowerShellString(value: string) {

@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { RefreshCw, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PathInput, SecretInput, StatusTile, VoiceRowsTable, parseVoiceRows, serializeVoiceRows, type VoiceRow } from "./settings/SettingsFields";
+import { parseVoiceRows, serializeVoiceRows, type VoiceRow } from "./settings/SettingsFields";
+import { SettingsApiKeyTab } from "./settings/SettingsApiKeyTab";
+import { SettingsDataTab } from "./settings/SettingsDataTab";
+import { SettingsHealthTab } from "./settings/SettingsHealthTab";
+import { EMPTY_FORM, type ElevenLabsConfigResponse, type HealthResponse, type PiperModel, type SelectPathResponse, type SettingsForm, type SettingsFormKey, type SupertonicConfigResponse } from "./settings/SettingsTypes";
+import { SettingsVoiceTab } from "./settings/SettingsVoiceTab";
+import { txt } from "./settings/settingsText";
 import { readSystemLang, subscribeSystemLang, type Lang } from "@/lib/i18n";
 import { buildApiUrl, parseApiResponse } from "@/lib/runtimeApi";
 import {
@@ -14,33 +17,7 @@ import {
   clearRuntimeSettings,
   getRuntimeSettings,
   saveRuntimeSettings,
-  type RuntimeSettings,
 } from "@/lib/runtimeSettings";
-
-type HealthResponse = {
-  ok: boolean;
-  piperExe: string;
-  piperExists: boolean;
-  modelDir: string;
-  generatedDir?: string;
-};
-
-type PiperModel = {
-  key: string;
-  label: string;
-  lang: "vi" | "en";
-  available: boolean;
-  modelPath: string;
-  jsonPath: string;
-};
-
-type SelectPathResponse = { ok: boolean; path: string };
-
-type ElevenLabsConfigResponse = { hasApiKey: boolean; voices: { id: string; label: string }[] };
-type SupertonicConfigResponse = { serverOk: boolean; baseUrl: string; model: string; defaultVoice: string; voices: { id: string; label: string }[]; error?: string };
-type SettingsForm = Required<Pick<RuntimeSettings, "MODEL_DIR" | "PIPER_EXE" | "MUSIC_LIBRARY_DIR" | "ELEVENLABS_API_KEY" | "ELEVENLABS_VOICES" | "SUPERTONIC_BASE_URL" | "SUPERTONIC_MODEL" | "SUPERTONIC_DEFAULT_VOICE" | "SUPERTONIC_TOTAL_STEPS">>;
-
-const EMPTY_FORM: SettingsForm = { MODEL_DIR: "", PIPER_EXE: "", MUSIC_LIBRARY_DIR: "", ELEVENLABS_API_KEY: "", ELEVENLABS_VOICES: "", SUPERTONIC_BASE_URL: "", SUPERTONIC_MODEL: "", SUPERTONIC_DEFAULT_VOICE: "", SUPERTONIC_TOTAL_STEPS: "" };
 
 export default function Settings() {
   const [form, setForm] = useState<SettingsForm>(() => ({ ...EMPTY_FORM, ...getRuntimeSettings() }));
@@ -83,7 +60,7 @@ export default function Settings() {
     }
   }
 
-  function updateField(key: keyof SettingsForm, value: string) {
+  function updateField(key: SettingsFormKey, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
@@ -118,7 +95,7 @@ export default function Settings() {
     await refreshHealth();
   }
 
-  async function selectPath(kind: "directory" | "file", target: keyof SettingsForm, title: string) {
+  async function selectPath(kind: "directory" | "file", target: SettingsFormKey, title: string) {
     setSelecting(target);
     const toastId = toast.loading(txt(vi, "Đang mở hộp chọn đường dẫn...", "Opening path picker..."));
     try {
@@ -165,160 +142,49 @@ export default function Settings() {
         </div>
 
         <Tabs defaultValue="voice" className="space-y-4">
-          <TabsList className="grid h-auto w-full grid-cols-3 gap-2 bg-muted/40 p-1">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/40 p-1 md:grid-cols-4">
             <TabsTrigger value="voice">Voice</TabsTrigger>
+            <TabsTrigger value="data">Data</TabsTrigger>
             <TabsTrigger value="api-key">API Key</TabsTrigger>
             <TabsTrigger value="health">{txt(vi, "Health Check", "Health Check")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="voice" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Voice</CardTitle>
-                <CardDescription>{txt(vi, "Đường dẫn Piper, thư viện nhạc nền, voice mapping và thông số voice mặc định.", "Piper paths, background music library, voice mapping, and default voice settings.")}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <PathInput
-                  id="model-dir"
-                  label="MODEL_DIR"
-                  description={txt(vi, "Thư mục chứa các file model .onnx và .onnx.json.", "Folder containing .onnx and .onnx.json model files.")}
-                  lang={lang}
-                  value={form.MODEL_DIR}
-                  placeholder="models"
-                  busy={selecting === "MODEL_DIR"}
-                  onChange={(value) => updateField("MODEL_DIR", value)}
-                  onSelect={() => selectPath("directory", "MODEL_DIR", txt(vi, "Chọn thư mục chứa Piper models", "Select the Piper models folder"))}
-                  onOpen={() => openPath(form.MODEL_DIR)}
-                />
-                <PathInput
-                  id="piper-exe"
-                  label="PIPER_EXE"
-                  description={txt(vi, "Đường dẫn tới piper.exe, ví dụ models/.venv/Scripts/piper.exe.", "Path to piper.exe, for example models/.venv/Scripts/piper.exe.")}
-                  lang={lang}
-                  value={form.PIPER_EXE}
-                  placeholder="models/.venv/Scripts/piper.exe"
-                  busy={selecting === "PIPER_EXE"}
-                  onChange={(value) => updateField("PIPER_EXE", value)}
-                  onSelect={() => selectPath("file", "PIPER_EXE", txt(vi, "Chọn piper.exe", "Select piper.exe"))}
-                  onOpen={() => openPath(form.PIPER_EXE)}
-                />
-                <PathInput
-                  id="music-library-dir"
-                  label="MUSIC_LIBRARY_DIR"
-                  description={txt(vi, "Thư mục chứa thư viện nhạc nền. Mỗi track nằm trong một folder riêng, kèm License.txt nếu cần ghi credit YouTube.", "Folder containing the background music library. Each track should be in its own folder, with License.txt when YouTube credit is needed.")}
-                  lang={lang}
-                  value={form.MUSIC_LIBRARY_DIR}
-                  placeholder="C:/Users/.../Music/youtube-audios"
-                  busy={selecting === "MUSIC_LIBRARY_DIR"}
-                  onChange={(value) => updateField("MUSIC_LIBRARY_DIR", value)}
-                  onSelect={() => selectPath("directory", "MUSIC_LIBRARY_DIR", txt(vi, "Chọn thư mục thư viện nhạc nền", "Select the background music library folder"))}
-                  onOpen={() => openPath(form.MUSIC_LIBRARY_DIR)}
-                />
-                <VoiceRowsTable rows={voiceRows} lang={lang} onAdd={addVoiceRow} onUpdate={updateVoiceRow} onRemove={removeVoiceRow} />
-                <div className="grid gap-3 md:grid-cols-2">
-                  <SecretInput
-                    id="supertonic-default-voice"
-                    label="SUPERTONIC_DEFAULT_VOICE"
-                    description={txt(vi, "Voice mặc định, ví dụ M1/F1 hoặc custom voice đã import.", "Default voice, for example M1/F1 or an imported custom voice.")}
-                    value={form.SUPERTONIC_DEFAULT_VOICE}
-                    placeholder="M1"
-                    type="text"
-                    onChange={(value) => updateField("SUPERTONIC_DEFAULT_VOICE", value)}
-                  />
-                  <SecretInput
-                    id="supertonic-total-steps"
-                    label="SUPERTONIC_TOTAL_STEPS"
-                    description={txt(vi, "Chất lượng 5-12, mặc định 8.", "Quality from 5-12, default 8.")}
-                    value={form.SUPERTONIC_TOTAL_STEPS}
-                    placeholder="8"
-                    type="text"
-                    onChange={(value) => updateField("SUPERTONIC_TOTAL_STEPS", value)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            <SettingsVoiceTab
+              form={form}
+              lang={lang}
+              selecting={selecting}
+              voiceRows={voiceRows}
+              onAddVoiceRow={addVoiceRow}
+              onOpenPath={openPath}
+              onRemoveVoiceRow={removeVoiceRow}
+              onSelectPath={selectPath}
+              onUpdateField={updateField}
+              onUpdateVoiceRow={updateVoiceRow}
+            />
+          </TabsContent>
+
+          <TabsContent value="data" className="mt-0">
+            <SettingsDataTab form={form} lang={lang} selecting={selecting} onOpenPath={openPath} onSelectPath={selectPath} onUpdateField={updateField} />
           </TabsContent>
 
           <TabsContent value="api-key" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>API Key</CardTitle>
-                <CardDescription>{txt(vi, "API key và cấu hình kết nối tới các voice provider local/cloud.", "API keys and connection settings for local/cloud voice providers.")}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <SecretInput
-                  id="elevenlabs-api-key"
-                  label="ELEVENLABS_API_KEY"
-                  description={txt(vi, "API key dùng cho ElevenLabs PRO. Giá trị lưu local trong trình duyệt và gửi tới backend qua runtime header.", "API key for ElevenLabs PRO. The value is stored locally in the browser and sent to the backend through runtime headers.")}
-                  value={form.ELEVENLABS_API_KEY}
-                  placeholder="sk_..."
-                  onChange={(value) => updateField("ELEVENLABS_API_KEY", value)}
-                />
-                <SecretInput
-                  id="supertonic-base-url"
-                  label="SUPERTONIC_BASE_URL"
-                  description={txt(vi, "URL của Supertonic local server, mặc định http://127.0.0.1:6688.", "URL of the local Supertonic server, default http://127.0.0.1:6688.")}
-                  value={form.SUPERTONIC_BASE_URL}
-                  placeholder="http://127.0.0.1:6688"
-                  type="text"
-                  onChange={(value) => updateField("SUPERTONIC_BASE_URL", value)}
-                />
-                <SecretInput
-                  id="supertonic-model"
-                  label="SUPERTONIC_MODEL"
-                  description={txt(vi, "Model Supertonic cần dùng, ví dụ supertonic-3.", "Supertonic model to use, for example supertonic-3.")}
-                  value={form.SUPERTONIC_MODEL}
-                  placeholder="supertonic-3"
-                  type="text"
-                  onChange={(value) => updateField("SUPERTONIC_MODEL", value)}
-                />
-              </CardContent>
-            </Card>
+            <SettingsApiKeyTab form={form} lang={lang} onUpdateField={updateField} />
           </TabsContent>
 
           <TabsContent value="health" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Health Check</CardTitle>
-                <CardDescription>{txt(vi, "Kiểm tra backend local, piper.exe, voice services và danh sách model hiện có.", "Check the local backend, piper.exe, voice services, and available models.")}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-3 md:grid-cols-3">
-                  <StatusTile lang={lang} label="Backend" ok={Boolean(health?.ok)} value={health ? txt(vi, "Đã kết nối", "Connected") : txt(vi, "Chưa kiểm tra", "Not checked")} />
-                  <StatusTile lang={lang} label="Piper exe" ok={Boolean(health?.piperExists)} value={health?.piperExe || "-"} />
-                  <StatusTile lang={lang} label="Models" ok={availableModels > 0} value={txt(vi, `${availableModels}/${models.length} model sẵn sàng`, `${availableModels}/${models.length} models ready`)} />
-                  <StatusTile lang={lang} label="ElevenLabs" ok={Boolean(elevenLabs?.hasApiKey)} value={elevenLabs?.hasApiKey ? txt(vi, `${elevenLabs.voices.length} voice đã cấu hình`, `${elevenLabs.voices.length} voices configured`) : txt(vi, "Chưa có API key", "No API key")} />
-                  <StatusTile lang={lang} label="Supertonic" ok={Boolean(supertonic?.serverOk)} value={supertonic?.serverOk ? `${supertonic.voices.length} voice · ${supertonic.model}` : supertonic?.error || txt(vi, "Chưa chạy server", "Server is not running")} />
-                </div>
-                <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-                  <p className="font-medium">{txt(vi, "Model dir đang dùng", "Active model directory")}</p>
-                  <p className="break-all text-muted-foreground">{health?.modelDir || form.MODEL_DIR || "models"}</p>
-                </div>
-                <Separator />
-                <div className="grid gap-3 md:grid-cols-2">
-                  {models.map((model) => (
-                    <div key={model.key} className="rounded-lg border p-3">
-                      <div className="mb-2 flex items-center justify-between gap-2">
-                        <div>
-                          <p className="font-medium">{model.label}</p>
-                          <p className="text-xs text-muted-foreground">{model.lang.toUpperCase()} · {model.key}</p>
-                        </div>
-                        <Badge variant={model.available ? "default" : "secondary"}>{model.available ? txt(vi, "Sẵn sàng", "Ready") : txt(vi, "Thiếu", "Missing")}</Badge>
-                      </div>
-                      <p className="break-all text-xs text-muted-foreground">ONNX: {model.modelPath}</p>
-                      <p className="break-all text-xs text-muted-foreground">JSON: {model.jsonPath}</p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <SettingsHealthTab
+              availableModels={availableModels}
+              elevenLabs={elevenLabs}
+              form={form}
+              health={health}
+              lang={lang}
+              models={models}
+              supertonic={supertonic}
+            />
           </TabsContent>
         </Tabs>
       </main>
     </div>
   );
-}
-
-function txt(vi: boolean, viText: string, enText: string) {
-  return vi ? viText : enText;
 }

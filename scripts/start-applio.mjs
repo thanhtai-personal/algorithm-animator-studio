@@ -11,12 +11,14 @@ if (!command) {
   process.exit(0);
 }
 
+const commandCwd = getCommandCwd(command) || process.cwd();
 console.log(`[applio] starting: ${command}`);
+if (commandCwd !== process.cwd()) console.log(`[applio] cwd: ${commandCwd}`);
 const child = spawn(command, {
   stdio: "inherit",
   shell: true,
-  env: process.env,
-  cwd: process.cwd(),
+  env,
+  cwd: commandCwd,
 });
 
 child.on("error", (error) => {
@@ -44,4 +46,25 @@ function readDotEnv(filePath) {
         return [key, value];
       })
   );
+}
+
+function getCommandCwd(commandValue) {
+  const executable = getFirstCommandToken(commandValue);
+  if (!/\.(bat|cmd)$/i.test(executable)) return "";
+  if (!/[\\/]|^[A-Za-z]:/.test(executable)) return "";
+  return path.dirname(executable.replaceAll("\\", "/"));
+}
+
+function getFirstCommandToken(commandValue) {
+  const trimmed = commandValue.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith('"')) {
+    const endIndex = trimmed.indexOf('"', 1);
+    return endIndex > 0 ? trimmed.slice(1, endIndex) : trimmed.slice(1);
+  }
+  if (trimmed.startsWith("'")) {
+    const endIndex = trimmed.indexOf("'", 1);
+    return endIndex > 0 ? trimmed.slice(1, endIndex) : trimmed.slice(1);
+  }
+  return trimmed.split(/\s+/)[0];
 }

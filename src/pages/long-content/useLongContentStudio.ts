@@ -216,7 +216,7 @@ export function useLongContentStudio() {
     writeCachedGeneratedVoice({ provider, scriptKey, audioUrl: result.audioUrl, relativePath: result.relativePath, fileName: result.fileName, durationSec, segmentDurationsSec, savedAt: Date.now() });
     return result;
   }
-  async function convertVoiceWithApplio() {
+  async function convertVoiceWithApplio(templateId?: string) {
     if (!voiceRelativePath) {
       toast.error("Chưa có file audio đã tạo để chuyển sang custom voice.");
       return;
@@ -225,7 +225,7 @@ export function useLongContentStudio() {
     setPlaying(false);
     try {
       const baseFileName = voiceFileName.replace(/\.[^.]+$/, "") || `${algo.id}-${longVideoType}-${lang}-custom-voice`;
-      const result = await convertRvcApplioVoice({ audioRelativePath: voiceRelativePath, fileName: `${baseFileName}-applio` });
+      const result = await convertRvcApplioVoice({ audioRelativePath: voiceRelativePath, fileName: `${baseFileName}-applio`, templateId });
       const provider = voiceProvider === "browser" ? "piper" : voiceProvider;
       const scriptKey = getVoiceScriptKeyForProvider(provider);
       setVoiceUrl(result.audioUrl);

@@ -63,6 +63,19 @@ export type RvcApplioConfig = {
   indexRate: number;
   protect: number;
   filterRadius: number;
+  templates: {
+    id: string;
+    label: string;
+    apiName: string;
+    modelName: string;
+    indexPath: string;
+    argTemplateConfigured: boolean;
+    f0Method: string;
+    pitch: number;
+    indexRate: number;
+    protect: number;
+    filterRadius: number;
+  }[];
   error?: string;
 };
 
@@ -164,6 +177,7 @@ export async function generateSupertonicVoice(payload: {
 export async function convertRvcApplioVoice(payload: {
   audioRelativePath: string;
   fileName?: string;
+  templateId?: string;
   pitch?: number;
   f0Method?: string;
 }) {

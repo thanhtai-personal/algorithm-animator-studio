@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, Wand2, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,6 +15,14 @@ type StoryStudio = ReturnType<typeof useStoryVideoStudio>;
 
 export function StoryVoicePanel({ studio }: { studio: StoryStudio }) {
   const availablePiperModels = studio.piperModels.filter((model) => model.available);
+  const applioTemplates = useMemo(() => studio.rvcApplioConfig?.templates ?? [], [studio.rvcApplioConfig?.templates]);
+  const [applioTemplateId, setApplioTemplateId] = useState("");
+
+  useEffect(() => {
+    if (!applioTemplates.some((template) => template.id === applioTemplateId)) {
+      setApplioTemplateId(applioTemplates[0]?.id || "");
+    }
+  }, [applioTemplateId, applioTemplates]);
 
   return (
     <Card className="space-y-4 border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.30)]">
@@ -90,7 +99,13 @@ export function StoryVoicePanel({ studio }: { studio: StoryStudio }) {
           {studio.loading.audio ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
           Tạo audio đọc truyện
         </Button>
-        <Button type="button" variant="outline" onClick={studio.convertAudioWithApplio} disabled={studio.loading.convert || !studio.selectedAudioPath || !studio.rvcApplioConfig?.serverOk}>
+        {applioTemplates.length > 0 ? (
+          <Select value={applioTemplateId} onValueChange={setApplioTemplateId}>
+            <SelectTrigger className="sm:w-56"><SelectValue placeholder={uiText("Chọn custom voice")} /></SelectTrigger>
+            <SelectContent>{applioTemplates.map((template) => <SelectItem key={template.id} value={template.id}>{template.label}</SelectItem>)}</SelectContent>
+          </Select>
+        ) : null}
+        <Button type="button" variant="outline" onClick={() => studio.convertAudioWithApplio(applioTemplateId || undefined)} disabled={studio.loading.convert || !studio.selectedAudioPath || !studio.rvcApplioConfig?.serverOk}>
           {studio.loading.convert ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
           Chuyển sang custom voice
         </Button>

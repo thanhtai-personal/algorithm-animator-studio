@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { RefreshCcw, Upload, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,6 +13,14 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
   const piperModels = [...s.piperModels].sort((a, b) => Number(b.lang === s.lang) - Number(a.lang === s.lang));
   const selectedPiperModel = s.piperModels.find((model) => model.key === s.piperModelKey);
   const supertonicLangLabel = s.lang === "vi" ? "Vietnamese (vi)" : "English (en)";
+  const applioTemplates = useMemo(() => s.rvcApplioConfig?.templates ?? [], [s.rvcApplioConfig?.templates]);
+  const [applioTemplateId, setApplioTemplateId] = useState("");
+
+  useEffect(() => {
+    if (!applioTemplates.some((template) => template.id === applioTemplateId)) {
+      setApplioTemplateId(applioTemplates[0]?.id || "");
+    }
+  }, [applioTemplateId, applioTemplates]);
   return (
     <Card className="space-y-4 border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.34),0_0_28px_rgba(16,185,129,0.05)]">
       <div>
@@ -126,7 +135,7 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
       <div className="rounded-lg border border-border bg-background/40 p-3 text-xs text-muted-foreground">
         <div className="grid gap-1">
           <span>{uiText("Applio custom voice:")} <strong className={s.rvcApplioConfig?.serverOk ? "text-emerald-300" : "text-rose-300"}>{s.rvcApplioConfig?.serverOk ? "đã kết nối" : "chưa chạy"}</strong></span>
-          <span>{uiText("Model:")} <strong>{s.rvcApplioConfig?.modelName || "chọn trong Settings/.env"}</strong></span>
+          <span>{uiText("Templates:")} <strong>{applioTemplates.length ? applioTemplates.length : "chọn trong Settings/.env"}</strong></span>
           <span>{uiText("Workflow:")} <strong>{uiText("tạo audio bằng provider ở trên → chuyển voice bằng Applio")}</strong></span>
           {s.rvcApplioConfig?.error ? <span className="text-yellow-300">{s.rvcApplioConfig.error}</span> : null}
         </div>
@@ -139,7 +148,13 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
       {s.voiceUrl ? (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <audio className="h-10 min-w-0 flex-1" controls src={s.voiceUrl} />
-          <Button type="button" variant="outline" onClick={s.convertVoiceWithApplio} disabled={s.voiceConverting || !s.voiceRelativePath || !s.rvcApplioConfig?.serverOk}>
+          {applioTemplates.length > 0 ? (
+            <Select value={applioTemplateId} onValueChange={setApplioTemplateId}>
+              <SelectTrigger className="sm:w-56"><SelectValue placeholder={uiText("Chọn custom voice")} /></SelectTrigger>
+              <SelectContent>{applioTemplates.map((template) => <SelectItem key={template.id} value={template.id}>{template.label}</SelectItem>)}</SelectContent>
+            </Select>
+          ) : null}
+          <Button type="button" variant="outline" onClick={() => s.convertVoiceWithApplio(applioTemplateId || undefined)} disabled={s.voiceConverting || !s.voiceRelativePath || !s.rvcApplioConfig?.serverOk}>
             {s.voiceConverting ? "Đang chuyển..." : "Chuyển sang custom voice"}
           </Button>
         </div>

@@ -15,11 +15,17 @@ const cors = env.SUPERTONIC_CORS || env.CLIENT_ORIGIN || "http://localhost:3000"
 const args = ["serve", "--host", host, "--port", port, "--model", model, "--cors", cors];
 console.log(`[supertonic] starting ${model} at http://${host}:${port}`);
 
-const child = spawn("supertonic", args, {
+const child = process.platform === "win32"
+  ? spawn("cmd.exe", ["/d", "/s", "/c", buildCommandLine(["supertonic", ...args])], {
+    stdio: "inherit",
+    shell: false,
+    env: process.env,
+  })
+  : spawn("supertonic", args, {
   stdio: "inherit",
-  shell: process.platform === "win32",
+  shell: false,
   env: process.env,
-});
+  });
 
 child.on("error", (error) => {
   console.error("[supertonic] failed to start:", error.message);
@@ -47,4 +53,14 @@ function readDotEnv(filePath) {
         return [key, value];
       })
   );
+}
+
+function buildCommandLine(parts) {
+  return parts.map(quoteCommandPart).join(" ");
+}
+
+function quoteCommandPart(value) {
+  const text = String(value);
+  if (!/[ \t"&|<>^]/.test(text)) return text;
+  return `"${text.replace(/"/g, '\\"')}"`;
 }

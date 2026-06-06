@@ -51,6 +51,14 @@ export type RvcApplioConfigResponse = {
   indexRate: number;
   protect: number;
   filterRadius: number;
+  templates: {
+    id: string;
+    label: string;
+    apiName: string;
+    modelName: string;
+    indexPath: string;
+    argTemplateConfigured: boolean;
+  }[];
   error?: string;
 };
 
@@ -70,6 +78,7 @@ export type SettingsForm = Required<Pick<
   | "RVC_APPLIO_START_COMMAND"
   | "RVC_APPLIO_API_NAME"
   | "RVC_APPLIO_ARG_TEMPLATE_JSON"
+  | "RVC_APPLIO_TEMPLATES_JSON"
   | "RVC_APPLIO_PYTHON"
   | "RVC_APPLIO_SOURCE_PIPER_MODEL"
   | "RVC_APPLIO_MODEL_NAME"
@@ -96,6 +105,7 @@ export const EMPTY_FORM: SettingsForm = {
   RVC_APPLIO_START_COMMAND: "",
   RVC_APPLIO_API_NAME: "",
   RVC_APPLIO_ARG_TEMPLATE_JSON: "",
+  RVC_APPLIO_TEMPLATES_JSON: "",
   RVC_APPLIO_PYTHON: "",
   RVC_APPLIO_SOURCE_PIPER_MODEL: "",
   RVC_APPLIO_MODEL_NAME: "",

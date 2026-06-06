@@ -246,7 +246,7 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
     }
   }
 
-  async function convertAudioWithApplio() {
+  async function convertAudioWithApplio(templateId?: string) {
     if (!selectedAudioPath) return setMessage("Chưa có file audio đã tạo để chuyển voice.");
     setLoading((state) => ({ ...state, convert: true }));
     setMessage("");
@@ -254,6 +254,7 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
       const result = await convertRvcApplioVoice({
         audioRelativePath: selectedAudioPath,
         fileName: `${fileName}-applio`,
+        templateId,
       });
       setAudioResult(result);
       const resource: GeneratedResource = {

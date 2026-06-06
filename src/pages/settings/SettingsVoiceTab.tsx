@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Bot, ChevronsLeft, ChevronsRight, Mic2, Radio, Waves } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { t, text, type Lang } from "@/lib/i18n";
 import { PathInput, SecretInput, VoiceRowsTable, type VoiceRow } from "./SettingsFields";
 import type { SettingsForm, SettingsFormKey } from "./SettingsTypes";
@@ -27,6 +29,22 @@ const VOICE_SECTIONS: { id: VoiceSection; label: string; shortLabel: string; ico
   { id: "supertonic", label: "Supertonic", shortLabel: "S", icon: Radio },
   { id: "applio", label: "Applio", shortLabel: "A", icon: Bot },
 ];
+
+const APPLIO_TEMPLATES_PLACEHOLDER = `[
+  {
+    "id": "voice-1",
+    "label": "Voice 1",
+    "apiName": "/infer_convert",
+    "modelName": "voice_1.pth",
+    "indexPath": "C:/Applio/logs/voice_1/added.index",
+    "pitch": 0,
+    "f0Method": "rmvpe",
+    "indexRate": 0.75,
+    "protect": 0.33,
+    "filterRadius": 3,
+    "argTemplate": []
+  }
+]`;
 
 export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
   const [activeSection, setActiveSection] = useState<VoiceSection>("piper");
@@ -208,12 +226,25 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
             <SecretInput
               id="rvc-applio-arg-template"
               label={t(props.lang, "settingsRvcApplioArgTemplateLabel")}
-              description={t(props.lang, "settingsRvcApplioArgTemplateDescription")}
+              description={text(props.lang, "Fallback template used when the multi-template list is empty.", "Template fallback dùng khi danh sách nhiều template đang trống.")}
               value={props.form.RVC_APPLIO_ARG_TEMPLATE_JSON}
               placeholder='[0,"${input}","${model}","${index}","${f0_method}","${index_rate}","${filter_radius}",0,0.25,"${protect}","wav"]'
               type="text"
               onChange={(value) => props.onUpdateField("RVC_APPLIO_ARG_TEMPLATE_JSON", value)}
             />
+            <div>
+              <Label htmlFor="rvc-applio-templates">{text(props.lang, "Applio voice templates", "Danh sách template voice Applio")}</Label>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {text(props.lang, "JSON array. Each item is one selectable custom voice for Applio conversion.", "JSON array. Mỗi item là một custom voice có thể chọn khi chuyển voice bằng Applio.")}
+              </p>
+              <Textarea
+                id="rvc-applio-templates"
+                className="mt-2 min-h-[220px] font-mono text-xs"
+                value={props.form.RVC_APPLIO_TEMPLATES_JSON}
+                placeholder={APPLIO_TEMPLATES_PLACEHOLDER}
+                onChange={(event) => props.onUpdateField("RVC_APPLIO_TEMPLATES_JSON", event.target.value)}
+              />
+            </div>
             <div className="grid gap-3 md:grid-cols-2">
               <SecretInput
                 id="rvc-applio-model-name"

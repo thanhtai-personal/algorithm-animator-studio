@@ -84,6 +84,12 @@ C:\Applio\env\Scripts\python.exe
 
 ## 4. Lấy API template từ Applio
 
+Xem hướng dẫn chi tiết và text mẫu để tạo voice tại:
+
+```txt
+docs/applio-api-template-and-voice-text.md
+```
+
 Trong UI Applio:
 
 1. Vào tab **Inference** hoặc tab convert tương ứng.

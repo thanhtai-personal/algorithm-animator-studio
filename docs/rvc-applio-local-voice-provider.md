@@ -62,6 +62,12 @@ Index rate: 0.75
 Protect: 0.33
 ```
 
+Hướng dẫn train chi tiết và bộ text mẫu để thu âm dataset nằm ở:
+
+```txt
+docs/applio-rvc-model-training-guide.md
+```
+
 ---
 
 ## 3. Cài Python client cho bridge

@@ -17,6 +17,29 @@ Bạn đọc text mẫu và thu âm
 -> Cấu hình template Applio trong KAI STUDIO
 ```
 
+## 0. Cài Applio Trước Khi Train
+
+Tải bản Applio đang dùng trong project, ví dụ `ApplioV3.6.2.zip`, rồi giải nén vào một đường dẫn đơn giản:
+
+```txt
+C:\TOOLS\ApplioV3.6.2
+```
+
+Không nên đặt Applio hoặc dataset trong đường dẫn có dấu tiếng Việt, ký tự lạ, hoặc thư mục quá sâu. Ví dụ nên tránh:
+
+```txt
+C:\Users\Tài\Desktop\giọng của mình\Applio
+C:\Users\...\OneDrive\Dữ liệu train giọng
+```
+
+Sau khi giải nén, chạy:
+
+```bat
+C:\TOOLS\ApplioV3.6.2\run-applio.bat
+```
+
+Nếu Applio báo thiếu môi trường hoặc yêu cầu install, kiểm tra trong thư mục Applio có thư mục `env` hay chưa. Bản portable đúng thường đã có `env`. Nếu tải nhầm bản source code hoặc giải nén thiếu file, `run-applio.bat` có thể báo phải chạy install.
+
 ---
 
 ## 1. Mục Tiêu Dataset
@@ -60,6 +83,82 @@ Không nên:
 - Nói quá sát mic gây pop/bass quá dày.
 - Ghép nhiều ngày thu có mic/volume mỗi lần quá khác nhau.
 - Dùng audio đã qua noise reduction quá mạnh làm giọng bị kim loại.
+
+### Cấu hình UPOD/mic để thu dataset
+
+Nếu dùng sound card UPOD hoặc thiết bị có nhiều mode hiệu ứng, mục tiêu là thu **giọng mộc**, không phải giọng karaoke.
+
+Không dùng các mode kiểu:
+
+```txt
+Karaoke
+Karaoke Theatre
+Karaoke Reverb
+Hall
+Theatre
+Plate
+Room có reverb mạnh
+Echo/Reverb/FX
+Autotune/Pitch
+```
+
+Nếu thiết bị có mode:
+
+```txt
+Dry
+Original
+Recording
+Studio
+No Effect
+Bypass
+Direct Out
+```
+
+thì chọn một trong các mode đó. Nếu UPOD bắt buộc chọn một mode phòng, hãy chọn mode nghe **khô nhất, ít vang nhất**. Trên một số bảng mode, `Small Room` có thể là lựa chọn ít hại hơn karaoke, nhưng vẫn phải giảm hiệu ứng về 0.
+
+Thiết lập nhanh:
+
+```txt
+Mode: Dry / Original / Recording / No Effect / Direct Out
+Echo: 0 / Min
+Reverb: 0 / Min
+Effect/FX: 0 / Min
+Autotune/Pitch: Off
+Music/BGM: 0
+Voice-over effect: 0 / Min
+Mic gain: vừa đủ, không đỏ peak
+EQ Hi/Mid/Low: để giữa 12 giờ
+Master/Headphone: chỉ chỉnh để nghe monitor, không dùng để làm to file thu
+```
+
+Nếu thiết bị có các công tắc:
+
+```txt
+Direct Out: bật
+Direct Out + DSP: tắt
+Mic with DSP: tắt
+Mixing: bật nếu cần thu USB vào PC
+```
+
+`DSP` thường nghĩa là có xử lý hiệu ứng. Khi train Applio/RVC, nên tắt DSP để model không học luôn tiếng vang/hiệu ứng.
+
+Về phantom power:
+
+```txt
++48V: chỉ bật khi dùng mic condenser XLR cần phantom power
++48V: tắt nếu dùng mic dynamic, mic 3.5mm, hoặc mic không cần nguồn phantom
+```
+
+Test nhanh trước khi thu dài:
+
+```txt
+Hôm nay tôi đang thu giọng sạch để huấn luyện model voice conversion.
+```
+
+Nghe lại file test:
+
+- Nếu giọng khô, rõ, giống nói trực tiếp: dùng được.
+- Nếu còn vang, ngân, dày ảo, rè, méo, autotune: đổi mode hoặc giảm Echo/Reverb/FX.
 
 ---
 
@@ -188,6 +287,48 @@ Mỗi file nên dài khoảng 5-15 giây nếu bạn cắt tay. Nếu Applio có
 
 Tên tab trong Applio có thể thay đổi theo version. Nếu UI khác, hãy tìm các bước có ý nghĩa tương đương: dataset/preprocess, feature extraction, train, index, inference.
 
+Nếu bạn đã có sẵn bộ file `.wav`, ví dụ:
+
+```txt
+C:\DATA\KATA-Studio\my-voice
+```
+
+hãy trỏ **Dataset Path** thẳng tới thư mục chứa các file audio đó. Không chọn thư mục cha nếu file `.wav` nằm sâu bên trong.
+
+Trước khi train, kiểm tra nhanh:
+
+```txt
+File: .wav hoặc .flac là tốt nhất
+Thời lượng: ít nhất 10 phút để test, tốt hơn 15-30 phút
+Tên model: không dấu, không khoảng trắng
+Dataset path: đường dẫn đơn giản, tránh dấu tiếng Việt
+Không echo/reverb/karaoke/noise nặng
+```
+
+Ví dụ tên model nên dùng:
+
+```txt
+tai_voice_v1
+kai_voice_v1
+my_voice_v1
+```
+
+Không nên dùng:
+
+```txt
+giọng Tài
+my voice
+Tài model
+```
+
+Nếu Applio không đọc được dataset ở thư mục ngoài, copy toàn bộ file `.wav` vào thư mục dataset của Applio, ví dụ:
+
+```txt
+C:\TOOLS\ApplioV3.6.2\assets\datasets\tai_voice_v1
+```
+
+Sau đó chọn path đó trong Applio.
+
 1. Chạy Applio:
 
 ```bat
@@ -229,9 +370,31 @@ Nếu máy yếu: harvest hoặc crepe có thể chậm/khác tùy bản
 Gợi ý ban đầu:
 
 ```txt
-Epochs: 100-200 cho dataset 20-30 phút
-Save every epoch: 10 hoặc 20
-Batch size: tùy VRAM, bắt đầu 4-8 nếu GPU yếu
+Total Epochs: 250 cho lần test đầu
+Save Every Epoch: 25
+Batch Size: tùy VRAM, bắt đầu 4-8 nếu GPU yếu
+Save Only Latest: bật nếu muốn tiết kiệm ổ
+Save Every Weights: tắt nếu không cần giữ nhiều checkpoint
+Cache Dataset in GPU: tắt nếu VRAM thấp
+```
+
+Gợi ý epoch theo thời lượng dataset:
+
+```txt
+Dưới 10 phút: 200-250 epoch
+10-20 phút: 250-350 epoch
+20-40 phút: 300-500 epoch
+```
+
+Không nên đặt quá cao ngay từ đầu như 1000-10000 epoch. Model có thể overfit: nghe giống dataset nhưng convert câu mới bị rè, méo, robot hoặc mất tự nhiên.
+
+Gợi ý batch size theo GPU:
+
+```txt
+GPU 4GB: Batch Size 2
+GPU 6GB: Batch Size 4
+GPU 8GB: Batch Size 6
+GPU 12GB trở lên: Batch Size 8
 ```
 
 Nếu Applio có preset, dùng preset mặc định trước. Đừng tối ưu quá sớm. Hãy train một model chạy được, test convert, rồi mới chỉnh.
@@ -255,6 +418,100 @@ Hoặc:
 ```txt
 C:\TOOLS\ApplioV3.6.2\logs\my_voice\*.pth
 ```
+
+Nếu Applio có mục **Index Algorithm**, chọn:
+
+```txt
+Auto
+```
+
+Nếu bắt buộc chọn thủ công:
+
+```txt
+Faiss: phù hợp dataset nhỏ/vừa, dùng ổn cho đa số case
+KMeans: chỉ nên dùng khi dataset lớn, nhiều dữ liệu sạch
+```
+
+Với model cá nhân lần đầu, `Auto` là lựa chọn an toàn.
+
+### Export model sau khi train
+
+Sau khi **Start Training** chạy xong hoàn toàn và **Generate Index** không lỗi:
+
+1. Xuống phần **Export Model**.
+2. Bấm **Refresh**.
+3. Ở **Pth file**, chọn file `.pth` của model, ví dụ:
+
+```txt
+tai_voice_v1.pth
+tai_voice_v1_e250_sxxxxx.pth
+```
+
+4. Ở **Index File**, chọn file `.index`, thường có tên kiểu:
+
+```txt
+added_IVF...tai_voice_v1...index
+trained_IVF...tai_voice_v1...index
+```
+
+5. Bấm **Export Model** nếu Applio yêu cầu export riêng.
+
+Nếu dropdown trống:
+
+```txt
+Chưa train xong nên chưa có file .pth
+Chưa bấm Generate Index nên chưa có file .index
+Generate Index bị lỗi
+Applio chưa refresh danh sách file
+Model name khác với lúc train
+Training lỗi giữa chừng
+```
+
+File thường nằm ở:
+
+```txt
+C:\TOOLS\ApplioV3.6.2\logs\<tên_model>\
+C:\TOOLS\ApplioV3.6.2\assets\weights\
+```
+
+Nếu chỉ thấy `.pth` mà không thấy `.index`, hãy chạy lại **Generate Index**. Nếu không thấy cả `.pth`, training chưa tạo model thành công.
+
+### Bổ sung voice và train tiếp
+
+Train xong rồi vẫn có thể bổ sung thêm voice, nhưng nên làm theo kiểu version để dễ quay lại nếu bản mới tệ hơn.
+
+Khuyến nghị:
+
+```txt
+Dataset cũ + file voice mới
+-> Preprocess lại
+-> Extract Features lại
+-> Train model v2
+-> Generate Index lại
+-> Test so sánh v1 và v2
+```
+
+Ví dụ:
+
+```txt
+tai_voice_v1  giữ lại làm bản ổn định
+tai_voice_v2  train từ toàn bộ dataset cũ + file mới
+```
+
+Không nên train chỉ bằng file mới, vì model dễ lệch giọng hoặc quên chất giọng đã học. File mới cũng phải cùng chất lượng với file cũ:
+
+```txt
+WAV
+Mono càng tốt
+44.1kHz hoặc 48kHz
+Không echo
+Không karaoke
+Không nhạc nền
+Không noise nặng
+Âm lượng không bị rè/clip
+```
+
+Resume/continue từ checkpoint cũ chỉ nên dùng khi bạn đã backup model v1, file mới cùng chất lượng với file cũ, và chỉ bổ sung thêm ít dữ liệu. Cách ổn định hơn là train bản `v2` từ toàn bộ dataset.
 
 ---
 
@@ -558,6 +815,51 @@ Thử:
 ### Train xong không thấy file index
 
 Trong một số bản Applio, train model và train index là hai bước riêng. Tìm nút **Train index**, **Create index**, hoặc **Feature index** trong tab Training.
+
+### UI báo generated successfully nhưng không có `.pth` và `.index`
+
+Nếu log có các dòng như:
+
+```txt
+No wav file found.
+An error occurred extracting the index: need at least one array to concatenate
+```
+
+thì không phải train thành công. Nghĩa là Applio không tìm thấy audio đã preprocess để tạo feature/index. UI có thể vẫn báo success, nhưng thư mục experiment đang rỗng.
+
+Kiểm tra trong thư mục Applio:
+
+```txt
+C:\TOOLS\ApplioV3.6.2\logs\<experiment_name>\
+```
+
+Các thư mục sau phải có file:
+
+```txt
+sliced_audios\
+sliced_audios_16k\
+extracted\
+f0\
+f0_voiced\
+```
+
+Nếu các thư mục này rỗng, hãy xử lý theo thứ tự:
+
+1. Kiểm tra dataset path trong Applio có đúng thư mục chứa file audio không.
+2. Đảm bảo file train là `.wav`, `.mp3`, `.flac`, hoặc format Applio hỗ trợ. An toàn nhất là WAV.
+3. Tránh đặt dataset trong đường dẫn có ký tự lạ, dấu tiếng Việt, hoặc thư mục đồng bộ cloud. Nên dùng đường dẫn đơn giản:
+
+```txt
+C:\DATA\voice-datasets\kai-voice-v1
+```
+
+4. Mở thư mục dataset và chắc chắn bên trong có file audio thật, không phải file project như `.aup3`.
+5. Chạy lại **Preprocess dataset** trước, đừng bấm Generate Index ngay.
+6. Sau preprocess, kiểm tra `sliced_audios` và `sliced_audios_16k` đã có `.wav`.
+7. Chạy **Extract features/F0**. Sau bước này, `extracted`, `f0`, `f0_voiced` phải có file.
+8. Chỉ khi các thư mục trên có dữ liệu thì mới bấm **Start Training** và **Generate Index**.
+
+Nếu `filelist.txt` rỗng, training sẽ không tạo được `.pth`. Nếu `extracted` rỗng, index sẽ báo `need at least one array to concatenate`.
 
 ### Convert fail trong KAI STUDIO
 

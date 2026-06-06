@@ -21,12 +21,13 @@ type SettingsVoiceTabProps = {
   onUpdateVoiceRow: (index: number, patch: Partial<VoiceRow>) => void;
 };
 
-type VoiceSection = "piper" | "elevenlabs" | "supertonic" | "applio";
+type VoiceSection = "piper" | "elevenlabs" | "supertonic" | "vieneu" | "applio";
 
 const VOICE_SECTIONS: { id: VoiceSection; label: string; shortLabel: string; icon: typeof Mic2 }[] = [
   { id: "piper", label: "Piper", shortLabel: "P", icon: Mic2 },
   { id: "elevenlabs", label: "ElevenLabs", shortLabel: "E", icon: Waves },
   { id: "supertonic", label: "Supertonic", shortLabel: "S", icon: Radio },
+  { id: "vieneu", label: "VieNeu", shortLabel: "V", icon: Waves },
   { id: "applio", label: "Applio", shortLabel: "A", icon: Bot },
 ];
 
@@ -190,10 +191,113 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
             </div>
             ) : null}
 
+            {activeSection === "vieneu" ? (
+            <div className="space-y-5">
+            <p className="rounded-lg border border-emerald-400/30 bg-emerald-400/10 p-3 text-sm text-emerald-100">
+              {text(props.lang, "VieNeu-TTS is a local Vietnamese TTS SDK provider. It runs through Python, so health check must show Python, bridge and SDK as OK.", "VieNeu-TTS là provider TTS tiếng Việt local chạy qua Python SDK. Health check cần báo Python, bridge và SDK đều OK.")}
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              <PathInput
+                id="vieneu-python"
+                label={text(props.lang, "VieNeu Python", "Python chạy VieNeu")}
+                description={text(props.lang, "python/python.exe inside the environment where package vieneu is installed.", "python/python.exe trong môi trường đã cài package vieneu.")}
+                lang={props.lang}
+                value={props.form.VIENEU_PYTHON}
+                placeholder="python"
+                busy={props.selecting === "VIENEU_PYTHON"}
+                onChange={(value) => props.onUpdateField("VIENEU_PYTHON", value)}
+                onSelect={() => props.onSelectPath("file", "VIENEU_PYTHON", "Select VieNeu Python")}
+                onOpen={() => props.onOpenPath(props.form.VIENEU_PYTHON)}
+              />
+              <SecretInput
+                id="vieneu-mode"
+                label="VieNeu mode"
+                description={text(props.lang, "Use turbo for CPU tests, standard for higher quality, remote for a VieNeu server.", "Dùng turbo để test CPU, standard cho chất lượng cao hơn, remote khi có VieNeu server.")}
+                value={props.form.VIENEU_MODE}
+                placeholder="turbo"
+                type="text"
+                onChange={(value) => props.onUpdateField("VIENEU_MODE", value)}
+              />
+              <SecretInput
+                id="vieneu-emotion"
+                label="VieNeu emotion"
+                description={text(props.lang, "Common values: natural or storytelling.", "Giá trị thường dùng: natural hoặc storytelling.")}
+                value={props.form.VIENEU_EMOTION}
+                placeholder="natural"
+                type="text"
+                onChange={(value) => props.onUpdateField("VIENEU_EMOTION", value)}
+              />
+              <SecretInput
+                id="vieneu-default-voice-id"
+                label={text(props.lang, "Preset voice ID", "ID giọng preset")}
+                description={text(props.lang, "Optional. Leave empty to use VieNeu default voice.", "Không bắt buộc. Để trống để dùng giọng mặc định của VieNeu.")}
+                value={props.form.VIENEU_DEFAULT_VOICE_ID}
+                placeholder=""
+                type="text"
+                onChange={(value) => props.onUpdateField("VIENEU_DEFAULT_VOICE_ID", value)}
+              />
+              <PathInput
+                id="vieneu-reference-audio"
+                label={text(props.lang, "Reference audio", "Audio mẫu clone giọng")}
+                description={text(props.lang, "Optional WAV/MP3 reference audio for zero-shot voice cloning.", "Không bắt buộc. WAV/MP3 mẫu để clone giọng zero-shot.")}
+                lang={props.lang}
+                value={props.form.VIENEU_REFERENCE_AUDIO}
+                placeholder="C:/voices/my-voice.wav"
+                busy={props.selecting === "VIENEU_REFERENCE_AUDIO"}
+                onChange={(value) => props.onUpdateField("VIENEU_REFERENCE_AUDIO", value)}
+                onSelect={() => props.onSelectPath("file", "VIENEU_REFERENCE_AUDIO", "Select VieNeu reference audio")}
+                onOpen={() => props.onOpenPath(props.form.VIENEU_REFERENCE_AUDIO)}
+              />
+              <SecretInput
+                id="vieneu-timeout"
+                label="VieNeu timeout ms"
+                description={text(props.lang, "First run may download/load models, so keep this high.", "Lần đầu có thể tải/load model nên để timeout cao.")}
+                value={props.form.VIENEU_TIMEOUT_MS}
+                placeholder="1200000"
+                type="text"
+                onChange={(value) => props.onUpdateField("VIENEU_TIMEOUT_MS", value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="vieneu-reference-text">{text(props.lang, "Reference text", "Text khớp với audio mẫu")}</Label>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {text(props.lang, "Optional but recommended for standard mode cloning. Type the exact sentence spoken in the reference audio.", "Không bắt buộc nhưng nên có khi clone giọng ở standard mode. Gõ đúng câu được nói trong audio mẫu.")}
+              </p>
+              <Textarea
+                id="vieneu-reference-text"
+                className="mt-2 min-h-[90px]"
+                value={props.form.VIENEU_REFERENCE_TEXT}
+                placeholder="Tôi đang thu một đoạn âm thanh mẫu để clone giọng."
+                onChange={(event) => props.onUpdateField("VIENEU_REFERENCE_TEXT", event.target.value)}
+              />
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <SecretInput
+                id="vieneu-remote-api"
+                label="Remote API base"
+                description={text(props.lang, "Only used when VIENEU_MODE=remote.", "Chỉ dùng khi VIENEU_MODE=remote.")}
+                value={props.form.VIENEU_REMOTE_API_BASE}
+                placeholder="http://127.0.0.1:23333/v1"
+                type="text"
+                onChange={(value) => props.onUpdateField("VIENEU_REMOTE_API_BASE", value)}
+              />
+              <SecretInput
+                id="vieneu-remote-model"
+                label="Remote model"
+                description={text(props.lang, "Model name for remote VieNeu server.", "Tên model cho VieNeu server remote.")}
+                value={props.form.VIENEU_REMOTE_MODEL}
+                placeholder="pnnbao-ump/VieNeu-TTS-v2"
+                type="text"
+                onChange={(value) => props.onUpdateField("VIENEU_REMOTE_MODEL", value)}
+              />
+            </div>
+            </div>
+            ) : null}
+
             {activeSection === "applio" ? (
             <div className="space-y-5">
             <p className="rounded-lg border border-yellow-400/40 bg-yellow-400/10 p-3 text-sm text-yellow-100">
-              {text(props.lang, "Applio/RVC converts generated audio from Piper, ElevenLabs, or Supertonic into a trained custom voice.", "Applio/RVC chuyển audio đã tạo từ Piper, ElevenLabs hoặc Supertonic sang custom voice đã train.")}
+              {text(props.lang, "Applio/RVC converts generated audio from Piper, ElevenLabs, Supertonic, or VieNeu into a trained custom voice.", "Applio/RVC chuyển audio đã tạo từ Piper, ElevenLabs, Supertonic hoặc VieNeu sang custom voice đã train.")}
             </p>
             <div className="grid gap-3 md:grid-cols-2">
               <SecretInput

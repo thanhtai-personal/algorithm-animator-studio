@@ -7,6 +7,7 @@ import {
   getPiperRuntimeStatus,
   getRvcApplioConfig,
   getSupertonicConfig,
+  getVieneuConfig,
   getVoiceHealth,
   importSupertonicVoiceStyle,
   installPiperModel,
@@ -15,6 +16,7 @@ import {
   type PiperRuntimeStatus,
   type RvcApplioConfig,
   type SupertonicConfig,
+  type VieneuConfig,
   type VoiceHealth,
 } from "@/lib/voiceApi";
 
@@ -32,6 +34,10 @@ export function useLongContentVoiceRuntime(lang: Lang) {
   const [supertonicTotalSteps, setSupertonicTotalSteps] = useState(8);
   const [supertonicImporting, setSupertonicImporting] = useState(false);
   const [rvcApplioConfig, setRvcApplioConfig] = useState<RvcApplioConfig | null>(null);
+  const [vieneuConfig, setVieneuConfig] = useState<VieneuConfig | null>(null);
+  const [vieneuVoiceId, setVieneuVoiceId] = useState("");
+  const [vieneuMode, setVieneuMode] = useState("turbo");
+  const [vieneuEmotion, setVieneuEmotion] = useState("natural");
 
   useEffect(() => { void loadVoiceRuntime(); }, []);
   useEffect(() => {
@@ -45,7 +51,7 @@ export function useLongContentVoiceRuntime(lang: Lang) {
   }, [lang, piperModelKey, piperModels]);
 
   async function loadVoiceRuntime() {
-    const [health, runtime, models, pro, supertonic, rvcApplio] = await Promise.allSettled([getVoiceHealth(), getPiperRuntimeStatus(), getPiperModels(), getElevenLabsConfig(), getSupertonicConfig(), getRvcApplioConfig()]);
+    const [health, runtime, models, pro, supertonic, rvcApplio, vieneu] = await Promise.allSettled([getVoiceHealth(), getPiperRuntimeStatus(), getPiperModels(), getElevenLabsConfig(), getSupertonicConfig(), getRvcApplioConfig(), getVieneuConfig()]);
     if (health.status === "fulfilled") setVoiceHealth(health.value);
     if (runtime.status === "fulfilled") setPiperRuntime(runtime.value);
     if (models.status === "fulfilled") {
@@ -67,6 +73,12 @@ export function useLongContentVoiceRuntime(lang: Lang) {
       setSupertonicTotalSteps(supertonic.value.defaultTotalSteps || 8);
     }
     if (rvcApplio.status === "fulfilled") setRvcApplioConfig(rvcApplio.value);
+    if (vieneu.status === "fulfilled") {
+      setVieneuConfig(vieneu.value);
+      setVieneuVoiceId(vieneu.value.defaultVoiceId || "");
+      setVieneuMode(vieneu.value.mode || "turbo");
+      setVieneuEmotion(vieneu.value.emotion || "natural");
+    }
   }
 
   async function installSelectedPiperModel() {
@@ -102,12 +114,13 @@ export function useLongContentVoiceRuntime(lang: Lang) {
 
   async function refreshPiperRuntime() {
     try {
-      const [health, runtime, models, supertonic, rvcApplio] = await Promise.all([getVoiceHealth(), getPiperRuntimeStatus(), getPiperModels(), getSupertonicConfig(), getRvcApplioConfig()]);
+      const [health, runtime, models, supertonic, rvcApplio, vieneu] = await Promise.all([getVoiceHealth(), getPiperRuntimeStatus(), getPiperModels(), getSupertonicConfig(), getRvcApplioConfig(), getVieneuConfig()]);
       setVoiceHealth(health);
       setPiperRuntime(runtime);
       setPiperModels(models);
       setSupertonicConfig(supertonic);
       setRvcApplioConfig(rvcApplio);
+      setVieneuConfig(vieneu);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không kiểm tra được Piper runtime.");
     }
@@ -118,5 +131,6 @@ export function useLongContentVoiceRuntime(lang: Lang) {
     piperModels, piperModelKey, setPiperModelKey, elevenConfig, elevenModelId, setElevenModelId,
     elevenVoiceId, setElevenVoiceId, supertonicConfig, supertonicVoice, setSupertonicVoice,
     supertonicTotalSteps, setSupertonicTotalSteps, supertonicImporting, importSupertonicVoiceJson, rvcApplioConfig,
+    vieneuConfig, vieneuVoiceId, setVieneuVoiceId, vieneuMode, setVieneuMode, vieneuEmotion, setVieneuEmotion,
   };
 }

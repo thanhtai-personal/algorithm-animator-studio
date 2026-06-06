@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { RefreshCcw, Upload, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -50,6 +51,7 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
             <SelectItem value="piper">{uiText("Piper local · tạo file và nhúng vào video")}</SelectItem>
             <SelectItem value="elevenlabs">{uiText("ElevenLabs PRO · tạo file và nhúng vào video")}</SelectItem>
             <SelectItem value="supertonic">{uiText("Supertonic local · 44.1kHz WAV")}</SelectItem>
+            <SelectItem value="vieneu">{uiText("VieNeu-TTS local · tiếng Việt/clone giọng")}</SelectItem>
             <SelectItem value="applio">{uiText("Applio TTS/RVC · EdgeTTS sang custom voice")}</SelectItem>
           </SelectContent>
         </Select>
@@ -140,6 +142,35 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
         </div>
       ) : null}
 
+      {s.voiceProvider === "vieneu" ? (
+        <div className="grid gap-3">
+          <div className="grid gap-3 md:grid-cols-3">
+            <div>
+              <Label>{uiText("VieNeu mode")}</Label>
+              <Input className="mt-2" value={s.vieneuMode} onChange={(event) => s.setVieneuMode(event.target.value)} placeholder="turbo" />
+            </div>
+            <div>
+              <Label>{uiText("Emotion")}</Label>
+              <Input className="mt-2" value={s.vieneuEmotion} onChange={(event) => s.setVieneuEmotion(event.target.value)} placeholder="natural" />
+            </div>
+            <div>
+              <Label>{uiText("Preset voice ID")}</Label>
+              <Input className="mt-2" value={s.vieneuVoiceId} onChange={(event) => s.setVieneuVoiceId(event.target.value)} placeholder={uiText("Để trống = mặc định")} />
+            </div>
+          </div>
+          <div className="rounded-lg border border-border bg-background/40 p-3 text-xs text-muted-foreground">
+            <div className="grid gap-1">
+              <span>{uiText("Python:")} <strong>{s.vieneuConfig?.pythonExe || "python"}</strong></span>
+              <span>{uiText("VieNeu SDK:")} <strong className={s.vieneuConfig?.sdkInstalled ? "text-emerald-300" : "text-rose-300"}>{s.vieneuConfig?.sdkInstalled ? `OK${s.vieneuConfig.version ? ` · ${s.vieneuConfig.version}` : ""}` : "chưa sẵn sàng"}</strong></span>
+              <span>{uiText("Bridge:")} <strong className={s.vieneuConfig?.bridgeExists ? "text-emerald-300" : "text-rose-300"}>{s.vieneuConfig?.bridgeExists ? "OK" : "thiếu script"}</strong></span>
+              <span>{uiText("Reference audio:")} <strong>{s.vieneuConfig?.referenceAudioExists ? "đã cấu hình" : "không dùng"}</strong></span>
+              {s.vieneuConfig?.error ? <span className="text-yellow-300">{s.vieneuConfig.error}</span> : null}
+            </div>
+            <Button type="button" size="sm" variant="outline" className="mt-3" onClick={s.refreshPiperRuntime}><RefreshCcw className="mr-2 h-3.5 w-3.5" /> {uiText("Kiểm tra")}</Button>
+          </div>
+        </div>
+      ) : null}
+
       <div className="rounded-lg border border-border bg-background/40 p-3 text-xs text-muted-foreground">
         <div className="grid gap-1">
           <span>{uiText("Applio custom voice:")} <strong className={s.rvcApplioConfig?.serverOk ? "text-emerald-300" : "text-rose-300"}>{s.rvcApplioConfig?.serverOk ? "đã kết nối" : "chưa chạy"}</strong></span>
@@ -159,7 +190,7 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
       </div>
       <NumberSlider label={uiText("Tốc độ đọc")} value={s.narrationRate} min={0.7} max={1.2} suffix="x" step={0.05} onChange={s.setNarrationRate} />
       <NumberSlider label={uiText("Âm lượng voice")} value={s.narrationVol} min={0} max={100} suffix="%" onChange={s.setNarrationVol} />
-      <Button className="w-full" variant={s.voiceProvider === "browser" ? "outline" : "default"} onClick={() => s.generateVoiceOver(applioTtsTemplateId || undefined)} disabled={s.voiceLoading || (s.voiceProvider === "applio" && (!s.rvcApplioConfig?.serverOk || applioTtsTemplates.length === 0))}>
+      <Button className="w-full" variant={s.voiceProvider === "browser" ? "outline" : "default"} onClick={() => s.generateVoiceOver(applioTtsTemplateId || undefined)} disabled={s.voiceLoading || (s.voiceProvider === "vieneu" && !s.vieneuConfig?.sdkInstalled) || (s.voiceProvider === "applio" && (!s.rvcApplioConfig?.serverOk || applioTtsTemplates.length === 0))}>
         {s.voiceLoading ? "Đang tạo voice..." : s.voiceProvider === "browser" ? "Đọc thử Browser TTS" : "Tạo voice-over cho video"}
       </Button>
       {s.voiceUrl ? (
@@ -177,7 +208,7 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
         </div>
       ) : null}
       <p className="text-xs text-muted-foreground">
-        Browser TTS chỉ dùng để nghe thử. Muốn video export có voice, hãy chọn Piper, ElevenLabs hoặc Supertonic. Applio dùng để chuyển file audio đã tạo sang custom voice.
+        Browser TTS chỉ dùng để nghe thử. Muốn video export có voice, hãy chọn Piper, ElevenLabs, Supertonic hoặc VieNeu. Applio dùng để chuyển file audio đã tạo sang custom voice.
         {s.voiceFileName ? ` File hiện tại: ${s.voiceFileName}` : ""}
       </p>
     </Card>

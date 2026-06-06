@@ -33,6 +33,25 @@ export type SupertonicConfigResponse = {
   error?: string;
 };
 
+export type VieneuConfigResponse = {
+  enabled: boolean;
+  sdkInstalled: boolean;
+  pythonExe: string;
+  pythonExists: boolean;
+  bridgeExists: boolean;
+  mode: string;
+  emotion: string;
+  defaultVoiceId: string;
+  referenceAudioPath: string;
+  referenceAudioExists: boolean;
+  referenceTextConfigured: boolean;
+  remoteApiBase: string;
+  remoteModel: string;
+  timeoutMs: number;
+  version?: string;
+  error?: string;
+};
+
 export type RvcApplioTemplateResponse = {
   id: string;
   label: string;
@@ -80,6 +99,15 @@ export type SettingsForm = Required<Pick<
   | "SUPERTONIC_MODEL"
   | "SUPERTONIC_DEFAULT_VOICE"
   | "SUPERTONIC_TOTAL_STEPS"
+  | "VIENEU_PYTHON"
+  | "VIENEU_MODE"
+  | "VIENEU_EMOTION"
+  | "VIENEU_DEFAULT_VOICE_ID"
+  | "VIENEU_REFERENCE_AUDIO"
+  | "VIENEU_REFERENCE_TEXT"
+  | "VIENEU_REMOTE_API_BASE"
+  | "VIENEU_REMOTE_MODEL"
+  | "VIENEU_TIMEOUT_MS"
   | "RVC_APPLIO_BASE_URL"
   | "RVC_APPLIO_START_COMMAND"
   | "RVC_APPLIO_API_NAME"
@@ -108,6 +136,15 @@ export const EMPTY_FORM: SettingsForm = {
   SUPERTONIC_MODEL: "",
   SUPERTONIC_DEFAULT_VOICE: "",
   SUPERTONIC_TOTAL_STEPS: "",
+  VIENEU_PYTHON: "",
+  VIENEU_MODE: "",
+  VIENEU_EMOTION: "",
+  VIENEU_DEFAULT_VOICE_ID: "",
+  VIENEU_REFERENCE_AUDIO: "",
+  VIENEU_REFERENCE_TEXT: "",
+  VIENEU_REMOTE_API_BASE: "",
+  VIENEU_REMOTE_MODEL: "",
+  VIENEU_TIMEOUT_MS: "",
   RVC_APPLIO_BASE_URL: "",
   RVC_APPLIO_START_COMMAND: "",
   RVC_APPLIO_API_NAME: "",

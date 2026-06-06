@@ -16,6 +16,8 @@
     "dev:supertonic": "npm run supertonic:serve",
     "dev:applio": "node scripts/start-applio.mjs",
     "supertonic:install": "python -m pip install \"supertonic[serve]\"",
+    "vieneu:install": "python -m pip install vieneu --extra-index-url https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu/",
+    "vieneu:health": "python scripts/vieneu-health.py",
     "supertonic:serve": "node scripts/start-supertonic.mjs",
     "dev:full": "npm run dev",
     "start:server": "tsx server/index.ts",
@@ -120,7 +122,7 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
     "vite": "^7.3.3",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.8"
   },
   "main": "electron/main.cjs",
   "description": "Algorithm animation, voice-over and YouTube publishing studio.",

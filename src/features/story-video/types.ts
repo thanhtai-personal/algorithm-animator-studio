@@ -1,5 +1,5 @@
 export type StoryTopicId = "tien-hiep" | "trong-sinh" | "audio-book" | "review-truyen";
-export type StoryVoiceProvider = "piper" | "elevenlabs" | "applio";
+export type StoryVoiceProvider = "piper" | "elevenlabs" | "vieneu" | "applio";
 export type VideoAspectRatio = "16:9" | "9:16";
 export type VideoBackgroundType = "image" | "gif" | "video";
 export type VideoFitMode = "cover" | "contain";

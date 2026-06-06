@@ -85,6 +85,26 @@ export type RvcApplioConfig = {
   error?: string;
 };
 
+
+export type VieneuConfig = {
+  enabled: boolean;
+  sdkInstalled: boolean;
+  pythonExe: string;
+  pythonExists: boolean;
+  bridgeExists: boolean;
+  mode: string;
+  emotion: string;
+  defaultVoiceId: string;
+  referenceAudioPath: string;
+  referenceAudioExists: boolean;
+  referenceTextConfigured: boolean;
+  remoteApiBase: string;
+  remoteModel: string;
+  timeoutMs: number;
+  version?: string;
+  error?: string;
+};
+
 export type SupertonicConfig = {
   enabled: boolean;
   serverOk: boolean;
@@ -156,6 +176,10 @@ export async function getRvcApplioConfig() {
   return parseApiResponse<RvcApplioConfig>(await fetch(buildApiUrl("/api/rvc-applio/config"), { headers: buildRuntimeSettingsHeaders() }));
 }
 
+export async function getVieneuConfig() {
+  return parseApiResponse<VieneuConfig>(await fetch(buildApiUrl("/api/vieneu/config"), { headers: buildRuntimeSettingsHeaders() }));
+}
+
 export async function importSupertonicVoiceStyle(styleJson: unknown) {
   return parseApiResponse<{ ok: boolean; voices: SupertonicVoice[]; model: string }>(await fetch(buildApiUrl("/api/supertonic/styles/import"), {
     method: "POST",
@@ -177,6 +201,23 @@ export async function generateSupertonicVoice(payload: {
     method: "POST",
     headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ ...payload, responseFormat: "wav" }),
+  }));
+}
+
+export async function generateVieneuVoice(payload: {
+  text: string;
+  segments?: string[];
+  fileName: string;
+  mode?: string;
+  emotion?: string;
+  voiceId?: string;
+  referenceAudioPath?: string;
+  referenceText?: string;
+}) {
+  return parseApiResponse<VoiceGenerateResult>(await fetch(buildApiUrl("/api/vieneu/generate"), {
+    method: "POST",
+    headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(payload),
   }));
 }
 

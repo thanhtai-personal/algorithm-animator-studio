@@ -4,12 +4,15 @@ import {
   generateElevenLabsVoice,
   generatePiperVoice,
   generateRvcApplioVoice,
+  generateVieneuVoice,
   getElevenLabsConfig,
   getPiperModels,
   getRvcApplioConfig,
+  getVieneuConfig,
   type ElevenLabsConfig,
   type PiperModel,
   type RvcApplioConfig,
+  type VieneuConfig,
   type VoiceGenerateResult,
 } from "@/lib/voiceApi";
 import {
@@ -48,6 +51,9 @@ type StoryVideoDraft = {
   piperModelKey: string;
   elevenModelId: string;
   elevenVoiceId: string;
+  vieneuMode: string;
+  vieneuEmotion: string;
+  vieneuVoiceId: string;
   sentenceSilence: number;
   speechRate: number;
   linkPageUrl: string;
@@ -81,9 +87,13 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
   const [piperModels, setPiperModels] = useState<PiperModel[]>([]);
   const [elevenConfig, setElevenConfig] = useState<ElevenLabsConfig | null>(null);
   const [rvcApplioConfig, setRvcApplioConfig] = useState<RvcApplioConfig | null>(null);
+  const [vieneuConfig, setVieneuConfig] = useState<VieneuConfig | null>(null);
   const [piperModelKey, setPiperModelKey] = useState(draft.piperModelKey || "vi_vais1000");
   const [elevenModelId, setElevenModelId] = useState(draft.elevenModelId || "");
   const [elevenVoiceId, setElevenVoiceId] = useState(draft.elevenVoiceId || "");
+  const [vieneuMode, setVieneuMode] = useState(draft.vieneuMode || "turbo");
+  const [vieneuEmotion, setVieneuEmotion] = useState(draft.vieneuEmotion || "natural");
+  const [vieneuVoiceId, setVieneuVoiceId] = useState(draft.vieneuVoiceId || "");
   const [sentenceSilence, setSentenceSilence] = useState(draft.sentenceSilence ?? 0.55);
   const [speechRate, setSpeechRate] = useState(draft.speechRate ?? 0.86);
   const [linkPageUrl, setLinkPageUrl] = useState(draft.linkPageUrl || "");
@@ -109,7 +119,7 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
   const urls = useMemo(() => parseUrls(urlList), [urlList]);
   const selectedAudio = generatedAudio.find((item) => item.relativePath === selectedAudioPath) || null;
   const characterCount = text.trim().length;
-  const canGenerateAudio = Boolean(text.trim()) && !loading.audio;
+  const canGenerateAudio = Boolean(text.trim()) && !loading.audio && (provider !== "vieneu" || Boolean(vieneuConfig?.sdkInstalled));
   const canGenerateVideo = Boolean(backgroundFile) && !loading.video && (Boolean(selectedAudioPath) || Boolean(uploadedAudioFile));
 
   useEffect(() => {
@@ -136,6 +146,9 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
       piperModelKey,
       elevenModelId,
       elevenVoiceId,
+      vieneuMode,
+      vieneuEmotion,
+      vieneuVoiceId,
       sentenceSilence,
       speechRate,
       linkPageUrl,
@@ -152,7 +165,7 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
     } catch {
       // ignore storage failures
     }
-  }, [topicId, text, fileName, videoFileName, provider, piperModelKey, elevenModelId, elevenVoiceId, sentenceSilence, speechRate, linkPageUrl, linkSelector, urlList, contentSelector, selectedAudioPath, aspectRatio, backgroundType, fitMode]);
+  }, [topicId, text, fileName, videoFileName, provider, piperModelKey, elevenModelId, elevenVoiceId, vieneuMode, vieneuEmotion, vieneuVoiceId, sentenceSilence, speechRate, linkPageUrl, linkSelector, urlList, contentSelector, selectedAudioPath, aspectRatio, backgroundType, fitMode]);
 
   function changeTopic(nextTopicId: StoryTopicId) {
     const nextTopic = getStoryTopicPreset(nextTopicId);
@@ -166,10 +179,11 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
   async function loadBootstrap() {
     setLoading((state) => ({ ...state, boot: true }));
     try {
-      const [models, proConfig, rvcConfig, resources, videos] = await Promise.allSettled([
+      const [models, proConfig, rvcConfig, vieneuStatus, resources, videos] = await Promise.allSettled([
         getPiperModels(),
         getElevenLabsConfig(),
         getRvcApplioConfig(),
+        getVieneuConfig(),
         getGeneratedResources(),
         getGeneratedVideos(),
       ]);
@@ -184,6 +198,12 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
         if (!draft.elevenVoiceId) setElevenVoiceId(proConfig.value.voices[0]?.id || "");
       }
       if (rvcConfig.status === "fulfilled") setRvcApplioConfig(rvcConfig.value);
+      if (vieneuStatus.status === "fulfilled") {
+        setVieneuConfig(vieneuStatus.value);
+        if (!draft.vieneuMode) setVieneuMode(vieneuStatus.value.mode || "turbo");
+        if (!draft.vieneuEmotion) setVieneuEmotion(vieneuStatus.value.emotion || "natural");
+        if (!draft.vieneuVoiceId) setVieneuVoiceId(vieneuStatus.value.defaultVoiceId || "");
+      }
       if (resources.status === "fulfilled") setGeneratedAudio(resources.value.audio);
       if (videos.status === "fulfilled") setGeneratedVideos(videos.value.videos);
     } finally {
@@ -227,9 +247,11 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
     try {
       const result = provider === "elevenlabs"
         ? await generateElevenLabsVoice({ text, modelId: elevenModelId, voiceId: elevenVoiceId, fileName })
-        : provider === "applio"
-          ? await generateRvcApplioVoice({ text, fileName, templateId: applioTemplateId })
-          : await generatePiperVoice({ text, modelKey: piperModelKey, sentenceSilence, speechRate, fileName });
+        : provider === "vieneu"
+          ? await generateVieneuVoice({ text, fileName, mode: vieneuMode, emotion: vieneuEmotion, voiceId: vieneuVoiceId })
+          : provider === "applio"
+            ? await generateRvcApplioVoice({ text, fileName, templateId: applioTemplateId })
+            : await generatePiperVoice({ text, modelKey: piperModelKey, sentenceSilence, speechRate, fileName });
       setAudioResult(result);
       const resource: GeneratedResource = {
         kind: "audio",
@@ -349,6 +371,10 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
     piperModels,
     provider,
     rvcApplioConfig,
+    vieneuConfig,
+    vieneuMode,
+    vieneuEmotion,
+    vieneuVoiceId,
     selectedAudio,
     selectedAudioPath,
     sentenceSilence,
@@ -366,6 +392,9 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
     setProvider,
     setSelectedAudioPath,
     setSentenceSilence,
+    setVieneuMode,
+    setVieneuEmotion,
+    setVieneuVoiceId,
     setSpeechRate,
     setText,
     setUploadedAudioFile,

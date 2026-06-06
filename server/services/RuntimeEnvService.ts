@@ -50,7 +50,7 @@ function normalizeRuntimePaths(env: RuntimeEnvValues): RuntimeEnvValues {
     }
   }
 
-  for (const key of ["PIPER_EXE", "FFMPEG_EXE", "FFPROBE_EXE", "RVC_APPLIO_PYTHON"]) {
+  for (const key of ["PIPER_EXE", "FFMPEG_EXE", "FFPROBE_EXE", "RVC_APPLIO_PYTHON", "VIENEU_PYTHON"]) {
     if (normalized[key]) {
       normalized[key] = resolveRuntimeExecutable(normalized[key]);
     }
@@ -58,6 +58,10 @@ function normalizeRuntimePaths(env: RuntimeEnvValues): RuntimeEnvValues {
 
   if (normalized.RVC_APPLIO_INDEX_PATH && looksLikePath(normalized.RVC_APPLIO_INDEX_PATH)) {
     normalized.RVC_APPLIO_INDEX_PATH = resolveRuntimePath(normalized.RVC_APPLIO_INDEX_PATH, APP_ROOT);
+  }
+
+  if (normalized.VIENEU_REFERENCE_AUDIO && looksLikePath(normalized.VIENEU_REFERENCE_AUDIO)) {
+    normalized.VIENEU_REFERENCE_AUDIO = resolveRuntimePath(normalized.VIENEU_REFERENCE_AUDIO, APP_ROOT);
   }
 
   return normalized;

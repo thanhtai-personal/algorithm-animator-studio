@@ -46,6 +46,7 @@ export function StoryVoicePanel({ studio }: { studio: StoryStudio }) {
             <SelectContent>
               <SelectItem value="piper">{uiText("Piper local")}</SelectItem>
               <SelectItem value="elevenlabs">{uiText("ElevenLabs PRO")}</SelectItem>
+              <SelectItem value="vieneu">{uiText("VieNeu-TTS local")}</SelectItem>
               <SelectItem value="applio">{uiText("Applio TTS/RVC")}</SelectItem>
             </SelectContent>
           </Select>
@@ -95,6 +96,28 @@ export function StoryVoicePanel({ studio }: { studio: StoryStudio }) {
             </Select>
           </div>
         </div>
+      ) : studio.provider === "vieneu" ? (
+        <div className="grid gap-3">
+          <div className="grid gap-3 lg:grid-cols-3">
+            <div>
+              <Label>{uiText("VieNeu mode")}</Label>
+              <Input className="mt-2" value={studio.vieneuMode} onChange={(event) => studio.setVieneuMode(event.target.value)} placeholder="turbo" />
+            </div>
+            <div>
+              <Label>{uiText("Emotion")}</Label>
+              <Input className="mt-2" value={studio.vieneuEmotion} onChange={(event) => studio.setVieneuEmotion(event.target.value)} placeholder="natural" />
+            </div>
+            <div>
+              <Label>{uiText("Preset voice ID")}</Label>
+              <Input className="mt-2" value={studio.vieneuVoiceId} onChange={(event) => studio.setVieneuVoiceId(event.target.value)} placeholder={uiText("Để trống = mặc định")} />
+            </div>
+          </div>
+          <div className="rounded-md border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+            <div>{uiText("VieNeu SDK:")} <strong className={studio.vieneuConfig?.sdkInstalled ? "text-emerald-300" : "text-rose-300"}>{studio.vieneuConfig?.sdkInstalled ? "OK" : "chưa sẵn sàng"}</strong></div>
+            <div>{uiText("Python:")} <strong>{studio.vieneuConfig?.pythonExe || "python"}</strong></div>
+            {studio.vieneuConfig?.error ? <div className="mt-1 text-yellow-300">{studio.vieneuConfig.error}</div> : null}
+          </div>
+        </div>
       ) : (
         <div>
           <Label>{uiText("Applio TTS template")}</Label>
@@ -112,7 +135,7 @@ export function StoryVoicePanel({ studio }: { studio: StoryStudio }) {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <Button onClick={() => studio.generateAudio(applioTtsTemplateId || undefined)} disabled={!studio.canGenerateAudio || (studio.provider === "applio" && (!studio.rvcApplioConfig?.serverOk || applioTtsTemplates.length === 0))} className="bg-emerald-500 text-slate-950 hover:bg-emerald-600">
+        <Button onClick={() => studio.generateAudio(applioTtsTemplateId || undefined)} disabled={!studio.canGenerateAudio || (studio.provider === "vieneu" && !studio.vieneuConfig?.sdkInstalled) || (studio.provider === "applio" && (!studio.rvcApplioConfig?.serverOk || applioTtsTemplates.length === 0))} className="bg-emerald-500 text-slate-950 hover:bg-emerald-600">
           {studio.loading.audio ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
           Tạo audio đọc truyện
         </Button>

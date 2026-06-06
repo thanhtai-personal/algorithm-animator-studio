@@ -48,7 +48,7 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
             ok={Boolean(props.rvcApplio?.argTemplateConfigured || props.rvcApplio?.ttsTemplateConfigured)}
             value={props.rvcApplio?.argTemplateConfigured || props.rvcApplio?.ttsTemplateConfigured
               ? `${props.rvcApplio.templates.length} convert · ${props.rvcApplio.ttsTemplates.length} TTS`
-              : "RVC_APPLIO_TEMPLATES_JSON"}
+              : "server/data/config/rvc-applio-templates.json"}
           />
           <StatusTile lang={props.lang} label={uiText("Applio dev startup")} ok={Boolean(props.rvcApplio?.startCommandConfigured)} value={props.rvcApplio?.startCommandConfigured ? props.rvcApplio.startCommand : "RVC_APPLIO_START_COMMAND"} />
           <StatusTile lang={props.lang} label={t(props.lang, "settingsGeneratedData")} ok={Boolean(props.health?.generatedDir)} value={props.health?.generatedDir || "-"} />

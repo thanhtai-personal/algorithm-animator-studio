@@ -7,7 +7,7 @@ import { parseVoiceRows, serializeVoiceRows, type VoiceRow } from "./settings/Se
 import { SettingsApiKeyTab } from "./settings/SettingsApiKeyTab";
 import { SettingsDataTab } from "./settings/SettingsDataTab";
 import { SettingsHealthTab } from "./settings/SettingsHealthTab";
-import { EMPTY_FORM, type ElevenLabsConfigResponse, type HealthResponse, type PiperModel, type RvcApplioConfigResponse, type SelectPathResponse, type SettingsForm, type SettingsFormKey, type SupertonicConfigResponse, type VieneuConfigResponse } from "./settings/SettingsTypes";
+import { EMPTY_FORM, type ElevenLabsConfigResponse, type HealthResponse, type PiperModel, type RvcApplioConfigResponse, type RvcApplioTemplateFileResponse, type SelectPathResponse, type SettingsForm, type SettingsFormKey, type SupertonicConfigResponse, type VieneuConfigResponse } from "./settings/SettingsTypes";
 import { SettingsVoiceTab } from "./settings/SettingsVoiceTab";
 import { readSystemLang, subscribeSystemLang, t, type Lang } from "@/lib/i18n";
 import { buildApiUrl, parseApiResponse } from "@/lib/runtimeApi";
@@ -20,6 +20,11 @@ import {
 
 export default function Settings() {
   const [form, setForm] = useState<SettingsForm>(() => ({ ...EMPTY_FORM, ...getRuntimeSettings() }));
+  const [applioTemplates, setApplioTemplates] = useState<RvcApplioTemplateFileResponse>({
+    filePath: "",
+    convertTemplatesJson: "[]",
+    ttsTemplatesJson: "[]",
+  });
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
   const [voiceRows, setVoiceRows] = useState<VoiceRow[]>(() => parseVoiceRows(getRuntimeSettings().ELEVENLABS_VOICES));
   const [health, setHealth] = useState<HealthResponse | null>(null);
@@ -43,13 +48,14 @@ export default function Settings() {
     setLoading(true);
     try {
       const headers = buildRuntimeSettingsHeaders();
-      const [healthData, modelData, elevenData, supertonicData, rvcApplioData, vieneuData] = await Promise.all([
+      const [healthData, modelData, elevenData, supertonicData, rvcApplioData, vieneuData, applioTemplateData] = await Promise.all([
         parseApiResponse<HealthResponse>(await fetch(buildApiUrl("/api/health"), { headers })),
         parseApiResponse<{ models: PiperModel[] }>(await fetch(buildApiUrl("/api/models"), { headers })),
         parseApiResponse<ElevenLabsConfigResponse>(await fetch(buildApiUrl("/api/elevenlabs/config"), { headers })),
         parseApiResponse<SupertonicConfigResponse>(await fetch(buildApiUrl("/api/supertonic/config"), { headers })),
         parseApiResponse<RvcApplioConfigResponse>(await fetch(buildApiUrl("/api/rvc-applio/config"), { headers })),
         parseApiResponse<VieneuConfigResponse>(await fetch(buildApiUrl("/api/vieneu/config"), { headers })),
+        parseApiResponse<RvcApplioTemplateFileResponse>(await fetch(buildApiUrl("/api/rvc-applio/templates"), { headers })),
       ]);
       setHealth(healthData);
       setModels(modelData.models);
@@ -57,6 +63,7 @@ export default function Settings() {
       setSupertonic(supertonicData);
       setRvcApplio(rvcApplioData);
       setVieneu(vieneuData);
+      setApplioTemplates(applioTemplateData);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t(lang, "settingsCouldNotCheckPiper"));
     } finally {
@@ -66,6 +73,10 @@ export default function Settings() {
 
   function updateField(key: SettingsFormKey, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateApplioTemplate(key: keyof Pick<RvcApplioTemplateFileResponse, "convertTemplatesJson" | "ttsTemplatesJson">, value: string) {
+    setApplioTemplates((current) => ({ ...current, [key]: value }));
   }
 
   function updateVoiceRows(nextRows: VoiceRow[]) {
@@ -87,6 +98,15 @@ export default function Settings() {
 
   async function handleSave() {
     saveRuntimeSettings(form);
+    const savedTemplates = await parseApiResponse<RvcApplioTemplateFileResponse>(await fetch(buildApiUrl("/api/rvc-applio/templates"), {
+      method: "PUT",
+      headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({
+        convertTemplatesJson: applioTemplates.convertTemplatesJson,
+        ttsTemplatesJson: applioTemplates.ttsTemplatesJson,
+      }),
+    }));
+    setApplioTemplates(savedTemplates);
     toast.success(t(lang, "settingsRuntimeSaved"));
     await refreshHealth();
   }
@@ -152,6 +172,7 @@ export default function Settings() {
 
           <TabsContent value="voice" className="mt-0">
             <SettingsVoiceTab
+              applioTemplates={applioTemplates}
               form={form}
               lang={lang}
               selecting={selecting}
@@ -161,6 +182,7 @@ export default function Settings() {
               onRemoveVoiceRow={removeVoiceRow}
               onSelectPath={selectPath}
               onUpdateField={updateField}
+              onUpdateApplioTemplate={updateApplioTemplate}
               onUpdateVoiceRow={updateVoiceRow}
             />
           </TabsContent>

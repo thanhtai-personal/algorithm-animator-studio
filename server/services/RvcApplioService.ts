@@ -21,6 +21,7 @@ import { stripAnsi } from "../utils/text";
 import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
 import { resolveGeneratedResource } from "./ResourceService";
 import { resolveRuntimeExecutable } from "./RuntimeEnvService";
+import { readRvcTemplates, readRvcTtsTemplates, type RvcRuntimeTemplate } from "./RvcApplioTemplateParser";
 import { assertApplioTemplateReady } from "./RvcApplioTemplateValidation";
 
 const CONFIG_TIMEOUT_MS = 3500;
@@ -34,7 +35,7 @@ export async function getRvcApplioConfigStatus(envOverrides: RuntimeEnvValues = 
     config = readRvcConfig(env);
   } catch (error) {
     return {
-      ...readRvcConfig({ ...env, RVC_APPLIO_TEMPLATES_JSON: "", RVC_APPLIO_TTS_TEMPLATES_JSON: "", RVC_APPLIO_ARG_TEMPLATE_JSON: "" }),
+      ...readRvcConfigWithoutTemplates(env),
       enabled: false,
       serverOk: false,
       error: error instanceof Error ? error.message : "Cấu hình RVC/Applio không hợp lệ.",
@@ -144,8 +145,6 @@ export async function generateRvcApplioSpeech(body: RvcApplioTextToSpeechBody, e
 
 type RvcRuntimeConfig = Omit<RvcApplioConfigStatus, "enabled" | "serverOk" | "error"> & { runtimeTemplates: RvcRuntimeTemplate[]; ttsRuntimeTemplates: RvcRuntimeTemplate[] };
 
-type RvcRuntimeTemplate = RvcApplioTemplateStatus & { argTemplate: unknown[] };
-
 type ConvertSegmentParams = {
   config: RvcRuntimeConfig;
   template: RvcRuntimeTemplate;
@@ -198,7 +197,7 @@ function readRvcConfig(env: RuntimeEnvValues): RvcRuntimeConfig {
   const startCommand = env.RVC_APPLIO_START_COMMAND || "";
   const pythonExe = resolveRuntimeExecutable(env.RVC_APPLIO_PYTHON || "python");
   const runtimeTemplates = readRvcTemplates(env);
-  const ttsRuntimeTemplates = parseTemplatesJson(env.RVC_APPLIO_TTS_TEMPLATES_JSON, env, "RVC_APPLIO_TTS_TEMPLATES_JSON");
+  const ttsRuntimeTemplates = readRvcTtsTemplates(env);
   const primaryTemplate = runtimeTemplates[0];
   return {
     baseUrl: (env.RVC_APPLIO_BASE_URL || "http://127.0.0.1:6969").replace(/\/+$/g, ""),
@@ -224,74 +223,31 @@ function readRvcConfig(env: RuntimeEnvValues): RvcRuntimeConfig {
   };
 }
 
-function readRvcTemplates(env: RuntimeEnvValues): RvcRuntimeTemplate[] {
-  const configuredTemplates = parseTemplatesJson(env.RVC_APPLIO_TEMPLATES_JSON, env, "RVC_APPLIO_TEMPLATES_JSON");
-  if (configuredTemplates.length > 0) return configuredTemplates;
-
-  if (!env.RVC_APPLIO_ARG_TEMPLATE_JSON?.trim()) return [];
-  return [{
-    id: "default",
-    label: env.RVC_APPLIO_MODEL_NAME || "Default Applio voice",
+function readRvcConfigWithoutTemplates(env: RuntimeEnvValues): RvcRuntimeConfig {
+  const startCommand = env.RVC_APPLIO_START_COMMAND || "";
+  const pythonExe = resolveRuntimeExecutable(env.RVC_APPLIO_PYTHON || "python");
+  return {
+    baseUrl: (env.RVC_APPLIO_BASE_URL || "http://127.0.0.1:6969").replace(/\/+$/g, ""),
+    startCommand,
+    startCommandConfigured: Boolean(startCommand.trim()),
     apiName: env.RVC_APPLIO_API_NAME || "/infer_convert",
     modelName: env.RVC_APPLIO_MODEL_NAME || "",
     indexPath: env.RVC_APPLIO_INDEX_PATH || "",
-    argTemplate: parseArgTemplate(env.RVC_APPLIO_ARG_TEMPLATE_JSON),
-    argTemplateConfigured: true,
+    pythonExe,
+    pythonExists: commandLooksExecutable(pythonExe),
+    bridgeExists: fs.existsSync(BRIDGE_PATH),
+    argTemplateConfigured: false,
+    ttsTemplateConfigured: false,
     f0Method: normalizeF0Method(env.RVC_APPLIO_F0_METHOD || "rmvpe"),
     pitch: clampPitch(env.RVC_APPLIO_PITCH),
     indexRate: clampRatio(env.RVC_APPLIO_INDEX_RATE || 0.75),
     protect: clampRatio(env.RVC_APPLIO_PROTECT || 0.33),
     filterRadius: clampInteger(env.RVC_APPLIO_FILTER_RADIUS || 3, 0, 7),
-  }];
-}
-
-function parseTemplatesJson(value: string | undefined, env: RuntimeEnvValues, envKey: string): RvcRuntimeTemplate[] {
-  if (!value?.trim()) return [];
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(value);
-  } catch {
-    throw new Error(`${envKey} phải là JSON array hợp lệ.`);
-  }
-
-  if (!Array.isArray(parsed)) {
-    throw new Error(`${envKey} phải là một JSON array.`);
-  }
-
-  return parsed.map((item, index) => normalizeTemplateItem(item, index, env, envKey));
-}
-
-function normalizeTemplateItem(item: unknown, index: number, env: RuntimeEnvValues, envKey: string): RvcRuntimeTemplate {
-  if (!item || typeof item !== "object" || Array.isArray(item)) {
-    throw new Error(`${envKey} item #${index + 1} phải là object.`);
-  }
-  const record = item as Record<string, unknown>;
-  const rawId = stringValue(record.id) || stringValue(record.name) || `template-${index + 1}`;
-  const modelName = stringValue(record.modelName) || stringValue(record.model) || env.RVC_APPLIO_MODEL_NAME || "";
-  const label = stringValue(record.label) || stringValue(record.name) || modelName || `Applio template ${index + 1}`;
-  return {
-    id: sanitizeTemplateId(rawId, index),
-    label,
-    apiName: stringValue(record.apiName) || env.RVC_APPLIO_API_NAME || "/infer_convert",
-    modelName,
-    indexPath: stringValue(record.indexPath) || stringValue(record.index) || env.RVC_APPLIO_INDEX_PATH || "",
-    argTemplate: readTemplateArgs(record, env),
-    argTemplateConfigured: true,
-    f0Method: normalizeF0Method(stringValue(record.f0Method) || env.RVC_APPLIO_F0_METHOD || "rmvpe"),
-    pitch: clampPitch(record.pitch ?? env.RVC_APPLIO_PITCH),
-    indexRate: clampRatio(record.indexRate ?? env.RVC_APPLIO_INDEX_RATE ?? 0.75),
-    protect: clampRatio(record.protect ?? env.RVC_APPLIO_PROTECT ?? 0.33),
-    filterRadius: clampInteger(record.filterRadius ?? env.RVC_APPLIO_FILTER_RADIUS ?? 3, 0, 7),
-    ttsVoice: stringValue(record.ttsVoice) || stringValue(record.voice) || "",
-    ttsSpeed: clampInteger(record.ttsSpeed ?? record.speed ?? 0, -100, 100),
+    templates: [],
+    ttsTemplates: [],
+    runtimeTemplates: [],
+    ttsRuntimeTemplates: [],
   };
-}
-
-function readTemplateArgs(record: Record<string, unknown>, env: RuntimeEnvValues) {
-  if (Array.isArray(record.argTemplate)) return record.argTemplate;
-  if (typeof record.argTemplateJson === "string") return parseArgTemplate(record.argTemplateJson);
-  return parseArgTemplate(env.RVC_APPLIO_ARG_TEMPLATE_JSON);
 }
 
 function selectRvcTemplate(config: RvcRuntimeConfig, templateId?: string, mode: "convert" | "tts" = "convert") {
@@ -302,37 +258,13 @@ function selectRvcTemplate(config: RvcRuntimeConfig, templateId?: string, mode: 
   if (selected) return selected;
   if (templateId) throw new Error(`Không tìm thấy Applio template: ${templateId}`);
   throw new Error(mode === "tts"
-    ? "Chưa cấu hình Applio TTS template. Thêm RVC_APPLIO_TTS_TEMPLATES_JSON trong Settings."
-    : "Chưa cấu hình Applio template. Thêm RVC_APPLIO_TEMPLATES_JSON hoặc RVC_APPLIO_ARG_TEMPLATE_JSON trong Settings.");
+    ? "Chưa cấu hình Applio TTS template. Thêm ttsTemplates trong Settings -> Voice -> Applio."
+    : "Chưa cấu hình Applio template. Thêm convertTemplates trong Settings -> Voice -> Applio.");
 }
 
 function toTemplateStatus(template: RvcRuntimeTemplate): RvcApplioTemplateStatus {
   const { argTemplate: _argTemplate, ...status } = template;
   return status;
-}
-
-function parseArgTemplate(value?: string): unknown[] {
-  if (!value?.trim()) {
-    throw new Error("Chưa cấu hình RVC_APPLIO_ARG_TEMPLATE_JSON. Mở docs/rvc-applio-local-voice-provider.md và copy template API từ Applio/Gradio.");
-  }
-
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    if (Array.isArray(parsed)) return parsed;
-  } catch {
-    // Fall through to a friendly error below.
-  }
-
-  throw new Error("RVC_APPLIO_ARG_TEMPLATE_JSON phải là một JSON array đúng định dạng Gradio API.");
-}
-
-function stringValue(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function sanitizeTemplateId(value: string, index: number) {
-  const sanitized = value.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
-  return sanitized || `template-${index + 1}`;
 }
 
 async function readDurationOrZero(audioPath: string, envOverrides: RuntimeEnvValues) {

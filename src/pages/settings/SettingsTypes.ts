@@ -87,6 +87,12 @@ export type RvcApplioConfigResponse = {
   error?: string;
 };
 
+export type RvcApplioTemplateFileResponse = {
+  filePath: string;
+  convertTemplatesJson: string;
+  ttsTemplatesJson: string;
+};
+
 export type SettingsForm = Required<Pick<
   RuntimeSettings,
   | "MODEL_DIR"
@@ -111,9 +117,6 @@ export type SettingsForm = Required<Pick<
   | "RVC_APPLIO_BASE_URL"
   | "RVC_APPLIO_START_COMMAND"
   | "RVC_APPLIO_API_NAME"
-  | "RVC_APPLIO_ARG_TEMPLATE_JSON"
-  | "RVC_APPLIO_TEMPLATES_JSON"
-  | "RVC_APPLIO_TTS_TEMPLATES_JSON"
   | "RVC_APPLIO_PYTHON"
   | "RVC_APPLIO_SOURCE_PIPER_MODEL"
   | "RVC_APPLIO_MODEL_NAME"
@@ -148,9 +151,6 @@ export const EMPTY_FORM: SettingsForm = {
   RVC_APPLIO_BASE_URL: "",
   RVC_APPLIO_START_COMMAND: "",
   RVC_APPLIO_API_NAME: "",
-  RVC_APPLIO_ARG_TEMPLATE_JSON: "",
-  RVC_APPLIO_TEMPLATES_JSON: "",
-  RVC_APPLIO_TTS_TEMPLATES_JSON: "",
   RVC_APPLIO_PYTHON: "",
   RVC_APPLIO_SOURCE_PIPER_MODEL: "",
   RVC_APPLIO_MODEL_NAME: "",

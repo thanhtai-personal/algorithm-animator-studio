@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import type { RvcApplioConvertBody, RvcApplioTextToSpeechBody } from "../models/RvcApplio";
 import { convertRvcApplioAudio, generateRvcApplioSpeech, getRvcApplioConfigStatus } from "../services/RvcApplioService";
+import { readRvcApplioTemplateFileText, saveRvcApplioTemplateFileText } from "../services/RvcApplioTemplateFileService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
 
 export function createRvcApplioRouter() {
@@ -8,6 +9,25 @@ export function createRvcApplioRouter() {
 
   router.get("/rvc-applio/config", async (req, res) => {
     res.json(await getRvcApplioConfigStatus(readRuntimeEnvFromRequest(req)));
+  });
+
+  router.get("/rvc-applio/templates", async (req, res) => {
+    try {
+      res.json(readRvcApplioTemplateFileText(readRuntimeEnvFromRequest(req)));
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Không đọc được Applio templates file." });
+    }
+  });
+
+  router.put("/rvc-applio/templates", async (req, res) => {
+    try {
+      res.json(saveRvcApplioTemplateFileText(readRuntimeEnvFromRequest(req), {
+        convertTemplatesJson: String(req.body?.convertTemplatesJson || "[]"),
+        ttsTemplatesJson: String(req.body?.ttsTemplatesJson || "[]"),
+      }));
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Không lưu được Applio templates file." });
+    }
   });
 
   router.post(

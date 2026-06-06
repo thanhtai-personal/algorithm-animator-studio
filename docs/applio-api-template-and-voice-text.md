@@ -1,6 +1,6 @@
 # Applio API template và text tạo voice
 
-Tài liệu này hướng dẫn cách điền `RVC_APPLIO_TEMPLATES_JSON` hoặc fallback `RVC_APPLIO_ARG_TEMPLATE_JSON` cho KAI STUDIO, đồng thời cung cấp bộ text mẫu phù hợp để tạo audio nguồn trước khi chuyển sang custom voice bằng Applio/RVC.
+Tài liệu này hướng dẫn cách điền Applio templates cho KAI STUDIO qua file `server/data/config/rvc-applio-templates.json`, đồng thời cung cấp bộ text mẫu phù hợp để tạo audio nguồn trước khi chuyển sang custom voice bằng Applio/RVC.
 
 Applio trong app này là bước **voice-to-voice**:
 
@@ -11,37 +11,23 @@ Text kịch bản
 → App dùng file audio đã convert để preview hoặc export video
 ```
 
-Vì vậy `RVC_APPLIO_ARG_TEMPLATE_JSON` không tạo voice từ text. Nó mô tả cách backend gọi đúng API convert audio của Applio.
+Mỗi template phải tự khai báo `argTemplate`. App không còn dùng fallback template trong `.env`.
 
 ---
 
 ## 1. Mục tiêu của API template
 
-Trong Settings → Voice → Applio, field **Applio voice templates** tương ứng với biến:
+Trong Settings → Voice → Applio, field **Applio voice templates** được lưu vào:
 
-```env
-RVC_APPLIO_TEMPLATES_JSON=
+```txt
+server/data/config/rvc-applio-templates.json
 ```
 
-Đây là JSON array, mỗi item là một voice/template có thể chọn khi bấm **Chuyển sang custom voice**.
-
-Field **Applio API template** cũ tương ứng với biến:
-
-```env
-RVC_APPLIO_ARG_TEMPLATE_JSON=
-```
-
-Giá trị này vẫn được hỗ trợ làm fallback khi `RVC_APPLIO_TEMPLATES_JSON` trống.
+Trong file này, `convertTemplates` là JSON array, mỗi item là một voice/template có thể chọn khi bấm **Chuyển sang custom voice**.
 
 Mỗi `argTemplate` là một JSON array mô phỏng danh sách tham số truyền vào `client.predict(...)` của Gradio/Applio.
 
-Nếu muốn dùng Applio như một provider tạo voice độc lập từ text, dùng thêm:
-
-```env
-RVC_APPLIO_TTS_TEMPLATES_JSON=
-```
-
-Biến này chứa JSON array cho tab **Text to Speech** của Applio. App sẽ gửi text trực tiếp sang Applio, Applio dùng EdgeTTS làm giọng nguồn rồi RVC chuyển sang voice model đã chọn.
+Nếu muốn dùng Applio như một provider tạo voice độc lập từ text, điền `ttsTemplates`. Array này dành cho tab **Text to Speech** của Applio. App sẽ gửi text trực tiếp sang Applio, Applio dùng EdgeTTS làm giọng nguồn rồi RVC chuyển sang voice model đã chọn nếu template có model/index.
 
 Ví dụ minh họa:
 
@@ -88,8 +74,8 @@ client.predict(
 
 Bạn cần lấy:
 
-- `api_name`: điền vào `RVC_APPLIO_API_NAME`
-- danh sách tham số trước `api_name`: chuyển thành `RVC_APPLIO_ARG_TEMPLATE_JSON`
+- `api_name`: điền vào `apiName` của template.
+- danh sách tham số trước `api_name`: chuyển thành `argTemplate` của template.
 
 ---
 
@@ -120,14 +106,7 @@ Chuyển thành JSON array:
 [0, "${input}", "${model}", "${index}", "${f0_method}", "${index_rate}", "${filter_radius}", 0, 0.25, "${protect}", "wav"]
 ```
 
-Điền trong `.env`:
-
-```env
-RVC_APPLIO_API_NAME=/infer_convert
-RVC_APPLIO_ARG_TEMPLATE_JSON=[0,"${input}","${model}","${index}","${f0_method}","${index_rate}","${filter_radius}",0,0.25,"${protect}","wav"]
-```
-
-Hoặc điền trực tiếp trong Settings → Voice → Applio → **Applio API template**.
+Điền JSON này vào `argTemplate` của một item trong Settings → Voice → Applio → **Applio voice templates**.
 
 ---
 
@@ -158,15 +137,7 @@ Các giá trị không cần thay đổi có thể để cố định trong JSON
 
 ## 5. Ví dụ cấu hình nhiều template
 
-```env
-RVC_APPLIO_BASE_URL=http://127.0.0.1:6969
-RVC_APPLIO_START_COMMAND=C:/TOOLS/ApplioV3.6.2/run-applio.bat
-RVC_APPLIO_PYTHON=C:/TOOLS/ApplioV3.6.2/env/python.exe
-RVC_APPLIO_TEMPLATES_JSON=[{"id":"male-news","label":"Nam đọc news","apiName":"/infer_convert","modelName":"male_news.pth","indexPath":"C:/TOOLS/ApplioV3.6.2/logs/male_news/added.index","pitch":0,"f0Method":"rmvpe","indexRate":0.75,"protect":0.33,"filterRadius":3,"argTemplate":[0,"${input}","${model}","${index}","${f0_method}","${index_rate}","${filter_radius}",0,0.25,"${protect}","wav"]},{"id":"female-story","label":"Nữ đọc truyện","apiName":"/infer_convert","modelName":"female_story.pth","indexPath":"C:/TOOLS/ApplioV3.6.2/logs/female_story/added.index","pitch":0,"f0Method":"rmvpe","indexRate":0.65,"protect":0.45,"filterRadius":3,"argTemplate":[0,"${input}","${model}","${index}","${f0_method}","${index_rate}","${filter_radius}",0,0.25,"${protect}","wav"]}]
-RVC_APPLIO_TIMEOUT_MS=1200000
-```
-
-Định dạng dễ đọc trước khi paste vào Settings:
+Paste vào `convertTemplates` trong Settings:
 
 ```json
 [
@@ -211,23 +182,7 @@ Các field trong mỗi template:
 
 ---
 
-## 6. Ví dụ cấu hình fallback một template
-
-```env
-RVC_APPLIO_BASE_URL=http://127.0.0.1:6969
-RVC_APPLIO_START_COMMAND=C:/TOOLS/ApplioV3.6.2/run-applio.bat
-RVC_APPLIO_API_NAME=/infer_convert
-RVC_APPLIO_ARG_TEMPLATE_JSON=[0,"${input}","${model}","${index}","${f0_method}","${index_rate}","${filter_radius}",0,0.25,"${protect}","wav"]
-RVC_APPLIO_PYTHON=C:/TOOLS/ApplioV3.6.2/env/python.exe
-RVC_APPLIO_MODEL_NAME=my_voice.pth
-RVC_APPLIO_INDEX_PATH=C:/TOOLS/ApplioV3.6.2/logs/my_voice/added_IVF123.index
-RVC_APPLIO_PITCH=0
-RVC_APPLIO_F0_METHOD=rmvpe
-RVC_APPLIO_INDEX_RATE=0.75
-RVC_APPLIO_PROTECT=0.33
-RVC_APPLIO_FILTER_RADIUS=3
-RVC_APPLIO_TIMEOUT_MS=1200000
-```
+## 6. Ví dụ cấu hình một template convert
 
 Nếu model đã được chọn sẵn trong UI Applio và `Use via API` không có tham số model/index, hãy bỏ `${model}` hoặc `${index}` khỏi template. Template phải khớp đúng thứ tự tham số mà `Use via API` đưa ra.
 
@@ -258,11 +213,7 @@ Ví dụ minh họa:
 ]
 ```
 
-Điền trong `.env`:
-
-```env
-RVC_APPLIO_TTS_TEMPLATES_JSON=[{"id":"my-voice-tts","label":"Giọng của tôi - Applio TTS","apiName":"/infer_tts","modelName":"my_voice.pth","indexPath":"C:/TOOLS/ApplioV3.6.2/logs/my_voice/added.index","ttsVoice":"en-US-SteffanNeural","ttsSpeed":0,"f0Method":"rmvpe","indexRate":0.65,"protect":0.45,"filterRadius":3,"argTemplate":["${text}","${tts_voice}","${tts_speed}","${model}","${index}","${f0_method}","${index_rate}","${protect}","${filter_radius}"]}]
-```
+Paste template TTS vào `ttsTemplates` trong Settings.
 
 Lưu ý: `apiName` và `argTemplate` ở trên chỉ là ví dụ. Nếu Applio của bạn dùng endpoint hoặc thứ tự tham số khác, hãy dùng đúng nội dung trong **Use via API** của máy bạn.
 
@@ -285,8 +236,8 @@ Applio API template xanh
 
 Nếu lỗi:
 
-- `Applio API template` chưa xanh: chưa điền `RVC_APPLIO_TEMPLATES_JSON` hoặc fallback `RVC_APPLIO_ARG_TEMPLATE_JSON`.
-- Không thấy provider Applio tạo voice được: chưa điền `RVC_APPLIO_TTS_TEMPLATES_JSON`.
+- `Applio API template` chưa xanh: chưa điền `convertTemplates` hoặc `ttsTemplates` trong `server/data/config/rvc-applio-templates.json`.
+- Không thấy provider Applio tạo voice được: chưa điền `ttsTemplates` trong `server/data/config/rvc-applio-templates.json`.
 - `Python bridge RVC/Applio thất bại`: kiểm tra `RVC_APPLIO_PYTHON` và package `gradio_client`.
 - `result did not contain a downloadable audio file`: API trả về format khác, cần copy lại đúng `Use via API`.
 - Giọng bị rè: giảm `index_rate`, tăng `protect`, dùng nguồn đọc chậm và rõ hơn.
@@ -364,7 +315,7 @@ End of the test. If this audio sounds clean and stable, it is ready for voice co
 - Applio server đang chạy.
 - `RVC_APPLIO_BASE_URL` mở được trong browser.
 - `RVC_APPLIO_PYTHON` trỏ đúng Python có `gradio_client`.
-- `RVC_APPLIO_TEMPLATES_JSON` là JSON array hợp lệ, hoặc fallback `RVC_APPLIO_ARG_TEMPLATE_JSON` là JSON array hợp lệ.
+- `convertTemplates` là JSON array hợp lệ.
 - Mỗi template có `apiName` khớp `Use via API`.
 - `${input}` nằm đúng vị trí tham số audio nguồn.
 - `${model}` và `${index}` chỉ xuất hiện nếu API của Applio yêu cầu.

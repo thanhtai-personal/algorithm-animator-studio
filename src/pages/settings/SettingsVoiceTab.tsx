@@ -56,7 +56,7 @@ const APPLIO_TTS_TEMPLATES_PLACEHOLDER = `[
     "indexPath": "C:/Applio/logs/voice_1/added.index",
     "ttsVoice": "en-US-SteffanNeural",
     "ttsSpeed": 0,
-    "argTemplate": ["${text}", "${tts_voice}", "${tts_speed}", "${model}", "${index}", "${f0_method}", "${index_rate}", "${protect}"]
+    "argTemplate": ["\${text}", "\${tts_voice}", "\${tts_speed}", "\${model}", "\${index}", "\${f0_method}", "\${index_rate}", "\${protect}"]
   }
 ]`;
 

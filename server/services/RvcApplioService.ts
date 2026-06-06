@@ -21,6 +21,7 @@ import { stripAnsi } from "../utils/text";
 import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
 import { resolveGeneratedResource } from "./ResourceService";
 import { resolveRuntimeExecutable } from "./RuntimeEnvService";
+import { assertApplioTemplateReady } from "./RvcApplioTemplateValidation";
 
 const CONFIG_TIMEOUT_MS = 3500;
 const DEFAULT_TIMEOUT_MS = 20 * 60 * 1000;
@@ -162,6 +163,7 @@ type ConvertSegmentParams = {
 };
 
 async function runApplioBridge(params: ConvertSegmentParams) {
+  assertApplioTemplateReady(params.template, { ttsVoice: params.ttsVoice });
   const payloadPath = path.join(path.dirname(params.outputPath), `${path.basename(params.outputPath)}.payload.json`);
   fs.writeFileSync(payloadPath, JSON.stringify({
     baseUrl: params.config.baseUrl,

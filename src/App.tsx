@@ -26,9 +26,20 @@ const StoryReviewStudio = lazy(() => import("./pages/StoryReviewStudio.tsx"));
 const StoryVideoStudio = lazy(() => import("./pages/StoryVideoStudio.tsx"));
 const YoutubePublishing = lazy(() => import("./pages/YoutubePublishing.tsx"));
 
+function shouldUseVercelAnalytics() {
+  const configured = String(import.meta.env.VITE_VERCEL_ANALYTICS || "").toLowerCase();
+  if (configured === "true") return true;
+  if (configured === "false") return false;
+  if (typeof window === "undefined" || !import.meta.env.PROD) return false;
+
+  return window.location.hostname.endsWith(".vercel.app");
+}
+
 const AnalyticsTracker = () => {
   const location = useLocation();
   const path = `${location.pathname}${location.search}${location.hash}`;
+
+  if (!shouldUseVercelAnalytics()) return null;
 
   return <Analytics mode="production" route={location.pathname} path={path} />;
 };

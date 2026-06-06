@@ -56,25 +56,29 @@ def main() -> int:
 def render_template_arg(value: Any, payload: dict[str, Any]) -> Any:
     if isinstance(value, str):
         mapping = {
-            "${input}": handle_file(payload["inputPath"]),
-            "${input_path}": payload["inputPath"],
-            "${output}": payload["outputPath"],
-            "${model}": payload.get("modelName", ""),
-            "${model_name}": payload.get("modelName", ""),
-            "${index}": payload.get("indexPath", ""),
-            "${index_path}": payload.get("indexPath", ""),
-            "${pitch}": payload.get("pitch", 0),
-            "${f0_method}": payload.get("f0Method", "rmvpe"),
-            "${index_rate}": payload.get("indexRate", 0.75),
-            "${protect}": payload.get("protect", 0.33),
-            "${filter_radius}": payload.get("filterRadius", 3),
+            "${input}": lambda: handle_file(payload["inputPath"]),
+            "${input_path}": lambda: payload["inputPath"],
+            "${output}": lambda: payload["outputPath"],
+            "${text}": lambda: payload.get("text", ""),
+            "${model}": lambda: payload.get("modelName", ""),
+            "${model_name}": lambda: payload.get("modelName", ""),
+            "${index}": lambda: payload.get("indexPath", ""),
+            "${index_path}": lambda: payload.get("indexPath", ""),
+            "${pitch}": lambda: payload.get("pitch", 0),
+            "${f0_method}": lambda: payload.get("f0Method", "rmvpe"),
+            "${index_rate}": lambda: payload.get("indexRate", 0.75),
+            "${protect}": lambda: payload.get("protect", 0.33),
+            "${filter_radius}": lambda: payload.get("filterRadius", 3),
+            "${tts_voice}": lambda: payload.get("ttsVoice", ""),
+            "${tts_speed}": lambda: payload.get("ttsSpeed", 0),
+            "${speed}": lambda: payload.get("ttsSpeed", 0),
         }
         if value in mapping:
-            return mapping[value]
+            return mapping[value]()
         result = value
-        for token, replacement in mapping.items():
+        for token, get_replacement in mapping.items():
             if token in result:
-                result = result.replace(token, str(replacement))
+                result = result.replace(token, str(get_replacement()))
         return result
 
     if isinstance(value, list):

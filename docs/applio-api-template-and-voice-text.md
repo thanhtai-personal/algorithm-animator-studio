@@ -35,6 +35,14 @@ Giá trị này vẫn được hỗ trợ làm fallback khi `RVC_APPLIO_TEMPLATE
 
 Mỗi `argTemplate` là một JSON array mô phỏng danh sách tham số truyền vào `client.predict(...)` của Gradio/Applio.
 
+Nếu muốn dùng Applio như một provider tạo voice độc lập từ text, dùng thêm:
+
+```env
+RVC_APPLIO_TTS_TEMPLATES_JSON=
+```
+
+Biến này chứa JSON array cho tab **Text to Speech** của Applio. App sẽ gửi text trực tiếp sang Applio, Applio dùng EdgeTTS làm giọng nguồn rồi RVC chuyển sang voice model đã chọn.
+
 Ví dụ minh họa:
 
 ```json
@@ -130,6 +138,7 @@ Hoặc điền trực tiếp trong Settings → Voice → Applio → **Applio AP
 | `${input}` | File audio nguồn, được gửi bằng `gradio_client.handle_file(...)`. Đây là lựa chọn nên dùng cho input audio. |
 | `${input_path}` | Đường dẫn file audio nguồn dạng text. Chỉ dùng nếu API Applio của bạn yêu cầu string path thay vì file upload. |
 | `${output}` | Đường dẫn output mong muốn. Chỉ dùng nếu API của bạn có tham số output path. |
+| `${text}` | Text kịch bản gửi vào tab Text to Speech của Applio. |
 | `${model}` | Giá trị `RVC_APPLIO_MODEL_NAME`. |
 | `${model_name}` | Giống `${model}`. |
 | `${index}` | Giá trị `RVC_APPLIO_INDEX_PATH`. |
@@ -139,6 +148,9 @@ Hoặc điền trực tiếp trong Settings → Voice → Applio → **Applio AP
 | `${index_rate}` | Giá trị `RVC_APPLIO_INDEX_RATE`, thường 0.5-0.8. |
 | `${protect}` | Giá trị `RVC_APPLIO_PROTECT`, thường 0.33-0.5. |
 | `${filter_radius}` | Giá trị `RVC_APPLIO_FILTER_RADIUS`, thường là 3. |
+| `${tts_voice}` | Voice nguồn EdgeTTS trong Applio, ví dụ `en-US-SteffanNeural`. |
+| `${tts_speed}` | Tốc độ TTS của Applio, thường từ `-100` đến `100`. |
+| `${speed}` | Giống `${tts_speed}` nếu API của Applio đặt tên tham số là speed. |
 
 Các giá trị không cần thay đổi có thể để cố định trong JSON, ví dụ `0`, `0.25`, `"wav"`.
 
@@ -221,7 +233,42 @@ Nếu model đã được chọn sẵn trong UI Applio và `Use via API` không 
 
 ---
 
-## 7. Cách kiểm tra template
+## 7. Ví dụ cấu hình Applio Text-to-Speech
+
+Trong Applio, mở tab **Text to Speech**, chọn voice model, index file, TTS voice, chỉnh TTS speed, sau đó bấm **Use via API**. Copy đúng `api_name` và thứ tự tham số của `client.predict(...)`.
+
+Ví dụ minh họa:
+
+```json
+[
+  {
+    "id": "my-voice-tts",
+    "label": "Giọng của tôi - Applio TTS",
+    "apiName": "/infer_tts",
+    "modelName": "my_voice.pth",
+    "indexPath": "C:/TOOLS/ApplioV3.6.2/logs/my_voice/added.index",
+    "ttsVoice": "en-US-SteffanNeural",
+    "ttsSpeed": 0,
+    "f0Method": "rmvpe",
+    "indexRate": 0.65,
+    "protect": 0.45,
+    "filterRadius": 3,
+    "argTemplate": ["${text}", "${tts_voice}", "${tts_speed}", "${model}", "${index}", "${f0_method}", "${index_rate}", "${protect}", "${filter_radius}"]
+  }
+]
+```
+
+Điền trong `.env`:
+
+```env
+RVC_APPLIO_TTS_TEMPLATES_JSON=[{"id":"my-voice-tts","label":"Giọng của tôi - Applio TTS","apiName":"/infer_tts","modelName":"my_voice.pth","indexPath":"C:/TOOLS/ApplioV3.6.2/logs/my_voice/added.index","ttsVoice":"en-US-SteffanNeural","ttsSpeed":0,"f0Method":"rmvpe","indexRate":0.65,"protect":0.45,"filterRadius":3,"argTemplate":["${text}","${tts_voice}","${tts_speed}","${model}","${index}","${f0_method}","${index_rate}","${protect}","${filter_radius}"]}]
+```
+
+Lưu ý: `apiName` và `argTemplate` ở trên chỉ là ví dụ. Nếu Applio của bạn dùng endpoint hoặc thứ tự tham số khác, hãy dùng đúng nội dung trong **Use via API** của máy bạn.
+
+---
+
+## 8. Cách kiểm tra template
 
 1. Settings → Health Check.
 2. Kiểm tra:
@@ -233,18 +280,20 @@ Applio API template xanh
 ```
 
 3. Tạo audio nguồn bằng Piper/ElevenLabs/Supertonic.
-4. Bấm **Chuyển sang custom voice**.
+4. Nếu dùng convert template, tạo audio nguồn rồi bấm **Chuyển sang custom voice**.
+5. Nếu dùng TTS template, chọn provider **Applio TTS/RVC** trong app rồi bấm tạo voice.
 
 Nếu lỗi:
 
 - `Applio API template` chưa xanh: chưa điền `RVC_APPLIO_TEMPLATES_JSON` hoặc fallback `RVC_APPLIO_ARG_TEMPLATE_JSON`.
+- Không thấy provider Applio tạo voice được: chưa điền `RVC_APPLIO_TTS_TEMPLATES_JSON`.
 - `Python bridge RVC/Applio thất bại`: kiểm tra `RVC_APPLIO_PYTHON` và package `gradio_client`.
 - `result did not contain a downloadable audio file`: API trả về format khác, cần copy lại đúng `Use via API`.
 - Giọng bị rè: giảm `index_rate`, tăng `protect`, dùng nguồn đọc chậm và rõ hơn.
 
 ---
 
-## 8. Bộ text tiếng Việt để tạo voice nguồn
+## 9. Bộ text tiếng Việt để tạo voice nguồn
 
 Dùng text này để tạo audio bằng Piper/ElevenLabs/Supertonic, sau đó chuyển bằng Applio. Text cố tình có câu ngắn, câu dài, số, dấu câu, tên riêng và nhiều âm tiếng Việt để kiểm tra độ rõ.
 
@@ -280,7 +329,7 @@ Nguồn audio: WAV nếu có thể
 
 ---
 
-## 9. Bộ text tiếng Anh để test âm quốc tế
+## 10. Bộ text tiếng Anh để test âm quốc tế
 
 ```txt
 Hello, this is a voice conversion test for an automated video production workflow.
@@ -302,7 +351,7 @@ End of the test. If this audio sounds clean and stable, it is ready for voice co
 
 ---
 
-## 10. Text ngắn để test nhanh
+## 11. Text ngắn để test nhanh
 
 ```txt
 Đây là đoạn test nhanh cho Applio. Tôi sẽ tạo audio nguồn trước, sau đó chuyển sang custom voice. Nếu giọng đọc rõ, không rè, không méo tiếng và giữ được nhịp tự nhiên, cấu hình hiện tại có thể dùng để tạo video.
@@ -310,7 +359,7 @@ End of the test. If this audio sounds clean and stable, it is ready for voice co
 
 ---
 
-## 11. Checklist trước khi bấm convert
+## 12. Checklist trước khi bấm convert
 
 - Applio server đang chạy.
 - `RVC_APPLIO_BASE_URL` mở được trong browser.

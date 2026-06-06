@@ -16,13 +16,20 @@ type StoryStudio = ReturnType<typeof useStoryVideoStudio>;
 export function StoryVoicePanel({ studio }: { studio: StoryStudio }) {
   const availablePiperModels = studio.piperModels.filter((model) => model.available);
   const applioTemplates = useMemo(() => studio.rvcApplioConfig?.templates ?? [], [studio.rvcApplioConfig?.templates]);
+  const applioTtsTemplates = useMemo(() => studio.rvcApplioConfig?.ttsTemplates ?? [], [studio.rvcApplioConfig?.ttsTemplates]);
   const [applioTemplateId, setApplioTemplateId] = useState("");
+  const [applioTtsTemplateId, setApplioTtsTemplateId] = useState("");
 
   useEffect(() => {
     if (!applioTemplates.some((template) => template.id === applioTemplateId)) {
       setApplioTemplateId(applioTemplates[0]?.id || "");
     }
   }, [applioTemplateId, applioTemplates]);
+  useEffect(() => {
+    if (!applioTtsTemplates.some((template) => template.id === applioTtsTemplateId)) {
+      setApplioTtsTemplateId(applioTtsTemplates[0]?.id || "");
+    }
+  }, [applioTtsTemplateId, applioTtsTemplates]);
 
   return (
     <Card className="space-y-4 border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.30)]">
@@ -39,6 +46,7 @@ export function StoryVoicePanel({ studio }: { studio: StoryStudio }) {
             <SelectContent>
               <SelectItem value="piper">{uiText("Piper local")}</SelectItem>
               <SelectItem value="elevenlabs">{uiText("ElevenLabs PRO")}</SelectItem>
+              <SelectItem value="applio">{uiText("Applio TTS/RVC")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -66,7 +74,7 @@ export function StoryVoicePanel({ studio }: { studio: StoryStudio }) {
           <SliderField label={uiText("Nghỉ giữa câu")} value={studio.sentenceSilence} min={0} max={2} step={0.05} suffix="s" onChange={studio.setSentenceSilence} />
           <SliderField label={uiText("Tốc độ đọc")} value={studio.speechRate} min={0.55} max={1.35} step={0.01} suffix="x" onChange={studio.setSpeechRate} />
         </div>
-      ) : (
+      ) : studio.provider === "elevenlabs" ? (
         <div className="grid gap-3 lg:grid-cols-2">
           <div>
             <Label>{uiText("ElevenLabs model")}</Label>
@@ -87,6 +95,15 @@ export function StoryVoicePanel({ studio }: { studio: StoryStudio }) {
             </Select>
           </div>
         </div>
+      ) : (
+        <div>
+          <Label>{uiText("Applio TTS template")}</Label>
+          <Select value={applioTtsTemplateId} onValueChange={setApplioTtsTemplateId}>
+            <SelectTrigger className="mt-2"><SelectValue placeholder={uiText("Chọn Applio TTS template")} /></SelectTrigger>
+            <SelectContent>{applioTtsTemplates.map((template) => <SelectItem key={template.id} value={template.id}>{template.label}</SelectItem>)}</SelectContent>
+          </Select>
+          <p className="mt-2 text-xs text-muted-foreground">{uiText("Applio dùng EdgeTTS làm audio nguồn rồi chuyển sang voice model đã chọn.")}</p>
+        </div>
       )}
 
       <div>
@@ -95,7 +112,7 @@ export function StoryVoicePanel({ studio }: { studio: StoryStudio }) {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <Button onClick={studio.generateAudio} disabled={!studio.canGenerateAudio} className="bg-emerald-500 text-slate-950 hover:bg-emerald-600">
+        <Button onClick={() => studio.generateAudio(applioTtsTemplateId || undefined)} disabled={!studio.canGenerateAudio || (studio.provider === "applio" && (!studio.rvcApplioConfig?.serverOk || applioTtsTemplates.length === 0))} className="bg-emerald-500 text-slate-950 hover:bg-emerald-600">
           {studio.loading.audio ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
           Tạo audio đọc truyện
         </Button>

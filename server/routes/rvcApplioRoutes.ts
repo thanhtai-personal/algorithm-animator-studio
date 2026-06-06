@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
-import type { RvcApplioConvertBody } from "../models/RvcApplio";
-import { convertRvcApplioAudio, getRvcApplioConfigStatus } from "../services/RvcApplioService";
+import type { RvcApplioConvertBody, RvcApplioTextToSpeechBody } from "../models/RvcApplio";
+import { convertRvcApplioAudio, generateRvcApplioSpeech, getRvcApplioConfigStatus } from "../services/RvcApplioService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
 
 export function createRvcApplioRouter() {
@@ -18,6 +18,19 @@ export function createRvcApplioRouter() {
       } catch (error) {
         res.status(500).json({
           error: error instanceof Error ? error.message : "RVC/Applio voice conversion thất bại.",
+        });
+      }
+    }
+  );
+
+  router.post(
+    "/rvc-applio/tts",
+    async (req: Request<unknown, unknown, RvcApplioTextToSpeechBody>, res: Response) => {
+      try {
+        res.json(await generateRvcApplioSpeech(req.body, readRuntimeEnvFromRequest(req)));
+      } catch (error) {
+        res.status(500).json({
+          error: error instanceof Error ? error.message : "RVC/Applio text-to-speech thất bại.",
         });
       }
     }

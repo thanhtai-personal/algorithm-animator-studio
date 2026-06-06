@@ -1,77 +1,170 @@
-# Huong dan train model giong ca nhan bang Applio/RVC
+# Hướng Dẫn Train Model Giọng Cá Nhân Bằng Applio/RVC
 
-Tai lieu nay huong dan cach chuan bi dataset, train model trong Applio/RVC, va cung cap bo text de ban thu am giong that cua minh lam du lieu train.
+Tài liệu này hướng dẫn cách chuẩn bị dataset, train model trong Applio/RVC, và cung cấp bộ text để bạn thu âm giọng thật của mình làm dữ liệu train.
 
-Quan trong: audio train model nen la **giong that cua ban**. Khong nen dung audio tao boi Piper, ElevenLabs, Supertonic, hoac mot model AI khac de train "giong cua ban", vi model se hoc lai chat luong va loi cua nguon AI do.
+Quan trọng: audio train model nên là **giọng thật của bạn**. Không nên dùng audio tạo bởi Piper, ElevenLabs, Supertonic, hoặc một model AI khác để train "giọng của bạn", vì model sẽ học lại chất lượng và lỗi của nguồn AI đó.
 
-Workflow dung:
+Workflow đúng:
 
 ```txt
-Ban doc text mau va thu am
--> Cat/lam sach dataset
+Bạn đọc text mẫu và thu âm
+-> Cắt/làm sạch dataset
 -> Applio preprocess
 -> Extract features/F0
 -> Train model
 -> Train/create index
--> Test convert audio nguon sang giong cua ban
--> Cau hinh template Applio trong KAI STUDIO
+-> Test convert audio nguồn sang giọng của bạn
+-> Cấu hình template Applio trong KAI STUDIO
 ```
 
 ---
 
-## 1. Muc tieu dataset
+## 1. Mục Tiêu Dataset
 
-Dataset tot cho narration/video can:
+Dataset tốt cho narration/video cần:
 
-- Giong ro, it noise, khong nhac nen.
-- Nhieu cau ngan va cau dai.
-- Co dau cau, so, ten rieng, tu tieng Anh pho bien.
-- Co nhieu am kho trong tieng Viet: tr/ch, s/x, r/d/gi, n/ng, l/n, uyen, uong, anh, ach.
-- Toc do doc tu nhien, khong qua nhanh, khong dien kich qua muc.
-- Volume on dinh, khong luc to luc nho.
+- Giọng rõ, ít noise, không nhạc nền.
+- Nhiều câu ngắn và câu dài.
+- Có dấu câu, số, tên riêng, từ tiếng Anh phổ biến.
+- Có nhiều âm khó trong tiếng Việt: tr/ch, s/x, r/d/gi, n/ng, l/n, uyên, ương, anh, ách.
+- Tốc độ đọc tự nhiên, không quá nhanh, không diễn kịch quá mức.
+- Volume ổn định, không lúc to lúc nhỏ.
 
-Moc thoi luong khuyen nghi:
+Mốc thời lượng khuyến nghị:
 
-| Muc | Thoi luong sach | Dung khi |
+| Mức | Thời lượng sạch | Dùng khi |
 | --- | --- | --- |
-| Test nhanh | 5-10 phut | Kiem tra pipeline train/convert |
-| Dung duoc | 20-30 phut | Voice-over video ca nhan |
-| Tot hon | 45-60 phut | Giong on dinh hon, it meo hon |
+| Test nhanh | 5-10 phút | Kiểm tra pipeline train/convert |
+| Dùng được | 20-30 phút | Voice-over video cá nhân |
+| Tốt hơn | 45-60 phút | Giọng ổn định hơn, ít méo hơn |
 
-Neu chi lam giong thuyet minh video, 20-30 phut audio sach thuong du de bat dau.
-
----
-
-## 2. Chuan bi thu am
-
-Thiet lap khuyen nghi:
-
-- Thu trong phong yen tinh, tat quat/may lanh neu co tieng on.
-- Dat mic cach mieng 15-25 cm.
-- Dung pop filter neu co.
-- Doc deu, khong can qua dien cam.
-- Tranh clip/peaking: neu waveform cham tran lien tuc, giam gain.
-- Nen thu WAV mono hoac stereo, 44.1 kHz/48 kHz, 16-bit hoac 24-bit.
-
-Khong nen:
-
-- Thu trong phong vang nhieu.
-- De nhac nen, tieng game, tieng TV.
-- Noi qua sat mic gay pop/bass qua day.
-- Ghep nhieu ngay thu co mic/volume moi lan qua khac nhau.
-- Dung audio da qua noise reduction qua manh lam giong bi kim loai.
+Nếu chỉ làm giọng thuyết minh video, 20-30 phút audio sạch thường đủ để bắt đầu.
 
 ---
 
-## 3. Cau truc thu muc dataset
+## 2. Chuẩn Bị Thu Âm
 
-Tao mot thu muc rieng, vi du:
+Thiết lập khuyến nghị:
+
+- Thu trong phòng yên tĩnh, tắt quạt/máy lạnh nếu có tiếng ồn.
+- Đặt mic cách miệng 15-25 cm.
+- Dùng pop filter nếu có.
+- Đọc đều, không cần quá diễn cảm.
+- Tránh clip/peaking: nếu waveform chạm trần liên tục, giảm gain.
+- Nên thu WAV mono hoặc stereo, 44.1 kHz/48 kHz, 16-bit hoặc 24-bit.
+
+Không nên:
+
+- Thu trong phòng vang nhiều.
+- Để nhạc nền, tiếng game, tiếng TV.
+- Nói quá sát mic gây pop/bass quá dày.
+- Ghép nhiều ngày thu có mic/volume mỗi lần quá khác nhau.
+- Dùng audio đã qua noise reduction quá mạnh làm giọng bị kim loại.
+
+---
+
+## 3. Phần Mềm Thu Âm Phù Hợp
+
+Ưu tiên dùng phần mềm có waveform rõ, dễ cắt đoạn sai, và export được WAV lossless. Với dataset train Applio/RVC, mục tiêu là file sạch và ổn định, không phải xử lý hiệu ứng phức tạp.
+
+### Khuyến nghị mặc định: Audacity
+
+Audacity phù hợp nhất để bắt đầu vì miễn phí, dễ dùng, chạy trên Windows/macOS/Linux, và hỗ trợ record/edit/export WAV.
+
+Link chính thức:
+
+```txt
+https://www.audacityteam.org/download/
+```
+
+Thiết lập gợi ý trong Audacity:
+
+```txt
+Project rate: 44100 Hz hoặc 48000 Hz
+Recording channels: Mono nếu chỉ thu một mic
+Sample format: 24-bit nếu có, 16-bit cũng được
+Export: WAV signed 16-bit PCM hoặc 24-bit PCM
+```
+
+Quy trình thu trong Audacity:
+
+1. Chọn đúng microphone ở thanh input device.
+2. Bấm record và đọc từng block text.
+3. Nếu đọc sai, dừng 1-2 giây rồi đọc lại câu đó.
+4. Sau khi thu xong, cắt bỏ đoạn sai, đoạn im lặng dài, tiếng gõ bàn hoặc tiếng thở mạnh.
+5. Export từng file WAV vào thư mục dataset.
+
+Không chỉ **Save Project** rồi đem file `.aup3` vào Applio. Applio cần file audio như `.wav`, nên phải dùng **Export Audio**.
+
+### Lựa chọn đơn giản hơn: ocenaudio
+
+ocenaudio phù hợp nếu bạn muốn giao diện gọn, thao tác cắt nhanh và không cần nhiều tính năng. Phần mềm này cũng có bản Windows/macOS/Linux.
+
+Link chính thức:
+
+```txt
+https://www.ocenaudio.com/
+```
+
+Nên dùng ocenaudio khi:
+
+- Chỉ cần record/cắt/lưu WAV.
+- Không muốn nhìn quá nhiều panel.
+- Muốn thao tác nhanh với từng file audio riêng.
+
+### Lựa chọn chuyên nghiệp: Adobe Audition
+
+Adobe Audition phù hợp nếu bạn đã có Adobe license hoặc cần công cụ xử lý audio chuyên nghiệp hơn. Audition mạnh ở waveform editing, spectral view, noise reduction và quản lý nhiều track.
+
+Link chính thức:
+
+```txt
+https://www.adobe.com/products/audition.html
+```
+
+Nên dùng Audition khi:
+
+- Bạn đã quen bộ Adobe.
+- Cần xử lý noise thủ công cẩn thận.
+- Có nhiều buổi thu và cần workflow quản lý session tốt hơn.
+
+### Lưu file như thế nào
+
+Định dạng khuyến nghị cho dataset:
+
+```txt
+WAV
+Mono
+44100 Hz hoặc 48000 Hz
+16-bit PCM hoặc 24-bit PCM
+Không nhạc nền
+Không reverb/echo
+Không normalize quá mạnh
+```
+
+Tên file nên dễ đọc:
+
+```txt
+001_intro.wav
+002_bong-da.wav
+003_chien-thuat.wav
+004_cong-nghe.wav
+005_am-kho.wav
+```
+
+Nếu thu một file dài 20-30 phút, vẫn nên cắt thành nhiều file nhỏ khoảng 5-15 giây hoặc để Applio preprocess tự cắt nếu bản Applio của bạn hỗ trợ tốt.
+
+---
+
+## 4. Cấu Trúc Thư Mục Dataset
+
+Tạo một thư mục riêng, ví dụ:
 
 ```txt
 C:\DATA\voice-datasets\my_voice_raw
 ```
 
-Dat file theo ten de kiem tra:
+Đặt file theo tên dễ kiểm tra:
 
 ```txt
 001_intro.wav
@@ -81,83 +174,83 @@ Dat file theo ten de kiem tra:
 005_football.wav
 ```
 
-Sau khi cat/lam sach, dung thu muc processed rieng:
+Sau khi cắt/làm sạch, dùng thư mục processed riêng:
 
 ```txt
 C:\DATA\voice-datasets\my_voice_clean
 ```
 
-Moi file nen dai khoang 5-15 giay neu ban cat tay. Neu Applio co preprocess tu dong, co the dua file dai hon vao dataset raw va de Applio cat.
+Mỗi file nên dài khoảng 5-15 giây nếu bạn cắt tay. Nếu Applio có preprocess tự động, có thể đưa file dài hơn vào dataset raw và để Applio cắt.
 
 ---
 
-## 4. Train trong Applio
+## 5. Train Trong Applio
 
-Ten tab trong Applio co the thay doi theo version. Neu UI khac, hay tim cac buoc co y nghia tuong duong: dataset/preprocess, feature extraction, train, index, inference.
+Tên tab trong Applio có thể thay đổi theo version. Nếu UI khác, hãy tìm các bước có ý nghĩa tương đương: dataset/preprocess, feature extraction, train, index, inference.
 
-1. Chay Applio:
+1. Chạy Applio:
 
 ```bat
 C:\TOOLS\ApplioV3.6.2\run-applio.bat
 ```
 
-2. Mo UI local, thuong la:
+2. Mở UI local, thường là:
 
 ```txt
 http://127.0.0.1:6969
 ```
 
-3. Vao khu vuc **Training**.
+3. Vào khu vực **Training**.
 
-4. Tao experiment/model moi:
+4. Tạo experiment/model mới:
 
 ```txt
 Experiment/model name: my_voice
 Dataset path: C:\DATA\voice-datasets\my_voice_raw
-Sample rate: 40k hoac 48k
-Version: RVC v2 neu co
-F0/GPU: bat F0 neu train giong noi/hat co cao do
+Sample rate: 40k hoặc 48k
+Version: RVC v2 nếu có
+F0/GPU: bật F0 nếu train giọng nói/hát có cao độ
 ```
 
-5. Chay **Preprocess dataset**.
+5. Chạy **Preprocess dataset**.
 
-6. Chay **Extract features** hoac **Extract F0/features**.
+6. Chạy **Extract features** hoặc **Extract F0/features**.
 
-Thiet lap goi y cho voice-over:
+Thiết lập gợi ý cho voice-over:
 
 ```txt
 F0 method: rmvpe
-Hop le cho speech: rmvpe
-Neu may yeu: harvest hoac crepe co the cham/hay khac tuy ban
+Hợp lệ cho speech: rmvpe
+Nếu máy yếu: harvest hoặc crepe có thể chậm/khác tùy bản
 ```
 
-7. Chay **Train model**.
+7. Chạy **Train model**.
 
-Goi y ban dau:
+Gợi ý ban đầu:
 
 ```txt
-Epochs: 100-200 cho dataset 20-30 phut
-Save every epoch: 10 hoac 20
-Batch size: tuy VRAM, bat dau 4-8 neu GPU yeu
+Epochs: 100-200 cho dataset 20-30 phút
+Save every epoch: 10 hoặc 20
+Batch size: tùy VRAM, bắt đầu 4-8 nếu GPU yếu
 ```
 
-Neu Applio co preset, dung preset mac dinh truoc. Dung co toi uu qua som. Hay train mot model chay duoc, test convert, roi moi chinh.
+Nếu Applio có preset, dùng preset mặc định trước. Đừng tối ưu quá sớm. Hãy train một model chạy được, test convert, rồi mới chỉnh.
 
-8. Tao **index**:
+8. Tạo **index**:
 
-Sau khi train xong, chay train/create index neu Applio co nut rieng. File index thuong nam trong:
+Sau khi train xong, chạy train/create index nếu Applio có nút riêng. File index thường nằm trong:
 
 ```txt
 C:\TOOLS\ApplioV3.6.2\logs\my_voice\added_*.index
 ```
 
-Model `.pth` co the nam trong:
+Model `.pth` có thể nằm trong:
 
 ```txt
 C:\TOOLS\ApplioV3.6.2\assets\weights\my_voice.pth
 ```
 
-Hoac:
+Hoặc:
 
 ```txt
 C:\TOOLS\ApplioV3.6.2\logs\my_voice\*.pth
@@ -165,17 +258,17 @@ C:\TOOLS\ApplioV3.6.2\logs\my_voice\*.pth
 
 ---
 
-## 5. Test model trong Applio
+## 6. Test Model Trong Applio
 
-Truoc khi cau hinh vao KAI STUDIO, test trong chinh Applio:
+Trước khi cấu hình vào KAI STUDIO, test trong chính Applio:
 
-1. Vao **Inference/Convert**.
-2. Chon model `.pth` vua train.
-3. Chon file `.index` neu co.
-4. Upload mot audio nguon sach, co the la Piper/Supertonic doc mot doan ngan.
+1. Vào **Inference/Convert**.
+2. Chọn model `.pth` vừa train.
+3. Chọn file `.index` nếu có.
+4. Upload một audio nguồn sạch, có thể là Piper/Supertonic đọc một đoạn ngắn.
 5. Convert.
 
-Tham so khoi dau:
+Tham số khởi đầu:
 
 ```txt
 Pitch: 0
@@ -186,36 +279,36 @@ Filter radius: 3
 Output format: wav
 ```
 
-Neu giong bi robot/re:
+Nếu giọng bị robot/rè:
 
-- Giam `index rate` ve 0.45-0.6.
-- Tang `protect` len 0.45-0.5.
-- Dung audio nguon doc cham hon.
-- Kiem tra dataset co noise, vang phong, hoac clip khong.
+- Giảm `index rate` về 0.45-0.6.
+- Tăng `protect` lên 0.45-0.5.
+- Dùng audio nguồn đọc chậm hơn.
+- Kiểm tra dataset có noise, vang phòng, hoặc clip không.
 
-Neu giong chua giong ban:
+Nếu giọng chưa giống bạn:
 
-- Tang thoi luong dataset sach.
-- Them cau doc gan dung use case: football news, video giai thich, truyen.
-- Train them epoch, nhung dung train qua lau neu bat dau nghe bi meo.
+- Tăng thời lượng dataset sạch.
+- Thêm câu đọc gần đúng use case: football news, video giải thích, truyện.
+- Train thêm epoch, nhưng dừng train quá lâu nếu bắt đầu nghe bị méo.
 
 ---
 
-## 6. Ket noi voi KAI STUDIO
+## 7. Kết Nối Với KAI STUDIO
 
 Sau khi model test OK trong Applio:
 
-1. Lay `Use via API` trong Applio.
-2. Tao template trong Settings -> Voice -> Applio.
-3. Dien model va index vao `RVC_APPLIO_TEMPLATES_JSON`.
+1. Lấy `Use via API` trong Applio.
+2. Tạo template trong Settings -> Voice -> Applio.
+3. Điền model và index vào `RVC_APPLIO_TEMPLATES_JSON`.
 
-Vi du:
+Ví dụ:
 
 ```json
 [
   {
     "id": "my-voice",
-    "label": "Giong cua toi",
+    "label": "Giọng của tôi",
     "apiName": "/infer_convert",
     "modelName": "my_voice.pth",
     "indexPath": "C:/TOOLS/ApplioV3.6.2/logs/my_voice/added.index",
@@ -229,9 +322,9 @@ Vi du:
 ]
 ```
 
-Chi dung `argTemplate` minh hoa neu no khop voi **Use via API** tren may ban. Neu Applio cua ban co thu tu tham so khac, hay copy theo `client.predict(...)` cua chinh UI Applio.
+Chỉ dùng `argTemplate` minh họa nếu nó khớp với **Use via API** trên máy bạn. Nếu Applio của bạn có thứ tự tham số khác, hãy copy theo `client.predict(...)` của chính UI Applio.
 
-Xem chi tiet template tai:
+Xem chi tiết template tại:
 
 ```txt
 docs/applio-api-template-and-voice-text.md
@@ -239,168 +332,168 @@ docs/applio-api-template-and-voice-text.md
 
 ---
 
-## 7. Bo text thu am dataset tieng Viet
+## 8. Bộ Text Thu Âm Dataset Tiếng Việt
 
-Cach dung:
+Cách dùng:
 
-- Doc bang giong that cua ban.
-- Moi block co the thu thanh mot file rieng.
-- Neu doc sai, dung lai 1-2 giay va doc lai cau do; sau nay cat bo phan sai.
-- Khong can doc het trong mot lan. Tot nhat giu cung mic, cung phong, cung volume.
+- Đọc bằng giọng thật của bạn.
+- Mỗi block có thể thu thành một file riêng.
+- Nếu đọc sai, dừng lại 1-2 giây và đọc lại câu đó; sau này cắt bỏ phần sai.
+- Không cần đọc hết trong một lần. Tốt nhất giữ cùng mic, cùng phòng, cùng volume.
 
-### Block 1: Gioi thieu va giong thuyet minh
+### Block 1: Giới Thiệu Và Giọng Thuyết Minh
 
 ```txt
-Xin chao, day la bo du lieu thu am de train model giong ca nhan.
+Xin chào, đây là bộ dữ liệu thu âm để train model giọng cá nhân.
 
-Toi se doc voi toc do vua phai, ro tung cau, giu am luong on dinh va khong noi qua nhanh.
+Tôi sẽ đọc với tốc độ vừa phải, rõ từng câu, giữ âm lượng ổn định và không nói quá nhanh.
 
-Muc tieu cua bo thu am nay la tao ra mot giong doc tu nhien cho video thuyet minh, tin tuc bong da, va cac noi dung giai thich ngan gon.
+Mục tiêu của bộ thu âm này là tạo ra một giọng đọc tự nhiên cho video thuyết minh, tin tức bóng đá, và các nội dung giải thích ngắn gọn.
 
-Khi doc, toi se giu khoang nghi nhe giua cac cau. Neu co cau dai, toi se ngat hoi dung cho de nghe.
+Khi đọc, tôi sẽ giữ khoảng nghỉ nhẹ giữa các câu. Nếu có câu dài, tôi sẽ ngắt hơi đúng chỗ để dễ nghe.
 
-Day khong phai la mot man trinh dien. Day la giong noi binh thuong, ro rang, tu nhien, va de theo doi.
+Đây không phải là một màn trình diễn. Đây là giọng nói bình thường, rõ ràng, tự nhiên, và dễ theo dõi.
 ```
 
-### Block 2: Tin tuc bong da
+### Block 2: Tin Tức Bóng Đá
 
 ```txt
-Tran dau toi qua dien ra voi toc do rat cao ngay tu nhung phut dau tien.
+Trận đấu tối qua diễn ra với tốc độ rất cao ngay từ những phút đầu tiên.
 
-Doi chu nha chu dong day cao doi hinh, gay ap luc len hang tien ve doi phuong va lien tuc dua bong ra hai bien.
+Đội chủ nhà chủ động đẩy cao đội hình, gây áp lực lên hàng tiền vệ đối phương và liên tục đưa bóng ra hai biên.
 
-Phut thu muoi bay, tien dao so chin co pha di chuyen thong minh sau lung trung ve. Anh nhan duong chuyen dai, khong che bang chan phai, roi dut diem cheo goc.
+Phút thứ mười bảy, tiền đạo số chín có pha di chuyển thông minh sau lưng trung vệ. Anh nhận đường chuyền dài, khống chế bằng chân phải, rồi dứt điểm chéo góc.
 
-Thu mon da bay nguoi het co, nhung bong van di sat cot doc va vao luoi.
+Thủ môn đã bay người hết cỡ, nhưng bóng vẫn đi sát cột dọc và vào lưới.
 
-Sau ban thang mo ty so, the tran tro nen cang thang hon. Doi khach buoc phai day cao, de lo nhieu khoang trong o phia sau hang phong ngu.
+Sau bàn thắng mở tỷ số, thế trận trở nên căng thẳng hơn. Đội khách buộc phải đẩy cao, để lộ nhiều khoảng trống ở phía sau hàng phòng ngự.
 
-Neu duy tri duoc cuong do pressing va kha nang chuyen trang thai nhanh, doi chu nha co the tao ra them nhieu co hoi trong hiep hai.
+Nếu duy trì được cường độ pressing và khả năng chuyển trạng thái nhanh, đội chủ nhà có thể tạo ra thêm nhiều cơ hội trong hiệp hai.
 ```
 
-### Block 3: Phan tich chien thuat
+### Block 3: Phân Tích Chiến Thuật
 
 ```txt
-Diem dang chu y nam o cach doi bong to chuc khoi phong ngu tam giac ben canh trai.
+Điểm đáng chú ý nằm ở cách đội bóng tổ chức khối phòng ngự tam giác bên cánh trái.
 
-Hau ve bien giu vi tri rong, tien ve trung tam lui xuong lam diem noi, con tien dao le di chuyen vao khoang trong giua hau ve bien va trung ve.
+Hậu vệ biên giữ vị trí rộng, tiền vệ trung tâm lùi xuống làm điểm nối, còn tiền đạo lệch di chuyển vào khoảng trống giữa hậu vệ biên và trung vệ.
 
-Khi bong duoc luan chuyen nhanh, doi phuong khong kip keo gian cu ly doi hinh. Dieu nay tao ra mot hanh lang tan cong rat ro.
+Khi bóng được luân chuyển nhanh, đối phương không kịp kéo giãn cự ly đội hình. Điều này tạo ra một hành lang tấn công rất rõ.
 
-Tuy nhien, chien thuat nay cung co rui ro. Neu mat bong o khu vuc giua san, khoang trong sau lung hau ve bien co the bi khai thac ngay lap tuc.
+Tuy nhiên, chiến thuật này cũng có rủi ro. Nếu mất bóng ở khu vực giữa sân, khoảng trống sau lưng hậu vệ biên có thể bị khai thác ngay lập tức.
 
-Vi vay, cau thu cam bong can ra quyet dinh nhanh: chuyen tiep, giu nhip, hay tra bong ve tuyen sau.
+Vì vậy, cầu thủ cầm bóng cần ra quyết định nhanh: chuyển tiếp, giữ nhịp, hay trả bóng về tuyến sau.
 ```
 
-### Block 4: Giai thich cong nghe
+### Block 4: Giải Thích Công Nghệ
 
 ```txt
-Mot thuat toan tot khong chi can chay dung, ma con can de hieu, de kiem tra va de bao tri.
+Một thuật toán tốt không chỉ cần chạy đúng, mà còn cần dễ hiểu, dễ kiểm tra và dễ bảo trì.
 
-Khi giai thich mot bai toan, chung ta nen bat dau tu truc giac. Sau do moi di vao chi tiet ve du lieu, vong lap, dieu kien dung, va do phuc tap.
+Khi giải thích một bài toán, chúng ta nên bắt đầu từ trực giác. Sau đó mới đi vào chi tiết về dữ liệu, vòng lặp, điều kiện dừng, và độ phức tạp.
 
-Vi du, voi sap xep noi bot, y tuong co ban la dua phan tu lon nhat ve cuoi mang sau moi luot duyet.
+Ví dụ, với sắp xếp nổi bọt, ý tưởng cơ bản là đưa phần tử lớn nhất về cuối mảng sau mỗi lượt duyệt.
 
-Thuat toan nay khong nhanh voi du lieu lon, nhung rat phu hop de minh hoa cach so sanh va hoan doi hoat dong.
+Thuật toán này không nhanh với dữ liệu lớn, nhưng rất phù hợp để minh họa cách so sánh và hoán đổi hoạt động.
 
-Trong video, hinh anh truc quan se giup nguoi xem thay duoc vi sao tung buoc lai can thiet.
+Trong video, hình ảnh trực quan sẽ giúp người xem thấy được vì sao từng bước lại cần thiết.
 ```
 
-### Block 5: Truyen ngan va cam xuc nhe
+### Block 5: Truyện Ngắn Và Cảm Xúc Nhẹ
 
 ```txt
-Buoi sang hom do, thanh pho thuc day trong mot lop suong mong.
+Buổi sáng hôm đó, thành phố thức dậy trong một lớp sương mỏng.
 
-Tren con duong nho dan ra ben song, mot nguoi dan ong tre tuoi dung lai, lang nghe tieng gio thoi qua hang cay.
+Trên con đường nhỏ dẫn ra bến sông, một người đàn ông trẻ tuổi dừng lại, lắng nghe tiếng gió thổi qua hàng cây.
 
-Anh khong voi va. Lan dau tien sau nhieu thang, anh cam thay minh co du thoi gian de nhin moi thu cham hon.
+Anh không vội vã. Lần đầu tiên sau nhiều tháng, anh cảm thấy mình có đủ thời gian để nhìn mọi thứ chậm hơn.
 
-Mot chiec la roi xuong mat duong. Mot chuyen xe buyt di ngang qua. Va o dau do, tieng chuong nha tho vang len rat khe.
+Một chiếc lá rơi xuống mặt đường. Một chuyến xe buýt đi ngang qua. Và ở đâu đó, tiếng chuông nhà thờ vang lên rất khẽ.
 
-Co nhung khoanh khac khong can qua dac biet, nhung van du suc lam nguoi ta nho mai.
+Có những khoảnh khắc không cần quá đặc biệt, nhưng vẫn đủ sức làm người ta nhớ mãi.
 ```
 
-### Block 6: So, ngay thang, ten rieng
+### Block 6: Số, Ngày Tháng, Tên Riêng
 
 ```txt
-Bay gio toi se doc mot so cum co chu so va ten rieng de model hoc cach phat am ro hon.
+Bây giờ tôi sẽ đọc một số cụm có chữ số và tên riêng để model học cách phát âm rõ hơn.
 
-Mot, hai, ba, bon, nam, sau, bay, tam, chin, muoi.
+Một, hai, ba, bốn, năm, sáu, bảy, tám, chín, mười.
 
-Muoi lam phut, hai muoi ba cau thu, bon muoi chin nghin khan gia, mot tram linh tam nghin luot xem.
+Mười lăm phút, hai mươi ba cầu thủ, bốn mươi chín nghìn khán giả, một trăm linh tám nghìn lượt xem.
 
-Ngay hai muoi thang muoi mot nam hai nghin khong tram hai muoi sau.
+Ngày hai mươi tháng mười một năm hai nghìn không trăm hai mươi sáu.
 
-Ty so la hai mot. Doi chu nha kiem soat bong nam muoi tam phan tram. Tong so cu sut la muoi hai, trong do co bon lan trung dich.
+Tỷ số là hai một. Đội chủ nhà kiểm soát bóng năm mươi tám phần trăm. Tổng số cú sút là mười hai, trong đó có bốn lần trúng đích.
 
 Manchester United, Liverpool, Arsenal, Chelsea, Tottenham, Barcelona, Real Madrid, Cristiano Ronaldo, Lionel Messi, Bruno Fernandes.
 ```
 
-### Block 7: Am kho tieng Viet
+### Block 7: Âm Khó Tiếng Việt
 
 ```txt
-Nguyen, Quyen, Huynh, Truong, Chien, Chuyen, Chuyen doi, Chuyen trang thai.
+Nguyễn, Quyền, Huỳnh, Trường, Chiến, Chuyển, Chuyển đổi, Chuyển trạng thái.
 
-Sau sac, xanh xao, xuat sac, san sang, song song, sang suot.
+Sâu sắc, xanh xao, xuất sắc, sẵn sàng, song song, sáng suốt.
 
-Ranh gioi, danh gia, giai phap, du doan, du lieu, dieu kien, giao dien.
+Ranh giới, đánh giá, giải pháp, dự đoán, dữ liệu, điều kiện, giao diện.
 
-Luyen tap, lap lai, noi lieu, nong long, lang nghe, luu loat.
+Luyện tập, lặp lại, nói liệu, nóng lòng, lắng nghe, lưu loát.
 
-Khoang trong, kiem soat, phan cong, chong bong, thang hoa, quyet dinh.
+Khoảng trống, kiểm soát, phản công, chống bóng, thăng hoa, quyết định.
 
-Toi se doc cham lai mot chut de tung am duoc ro rang, sau do quay ve toc do binh thuong.
+Tôi sẽ đọc chậm lại một chút để từng âm được rõ ràng, sau đó quay về tốc độ bình thường.
 ```
 
-### Block 8: Cau hoi, nhan manh, va dau cau
+### Block 8: Câu Hỏi, Nhấn Mạnh, Và Dấu Câu
 
 ```txt
-Vi sao tinh huong nay lai quan trong?
+Vì sao tình huống này lại quan trọng?
 
-Neu cau thu dut diem som hon, lieu ban thang co den khong?
+Nếu cầu thủ dứt điểm sớm hơn, liệu bàn thắng có đến không?
 
-Day la cau hoi ma nhieu nguoi ham mo se dat ra sau tran dau.
+Đây là câu hỏi mà nhiều người hâm mộ sẽ đặt ra sau trận đấu.
 
-Hay nhin lai pha bong mot lan nua. Dau tien la duong chuyen cat tuyen, tiep theo la pha chay cho, va cuoi cung la cu sut vao goc xa.
+Hãy nhìn lại pha bóng một lần nữa. Đầu tiên là đường chuyền cắt tuyến, tiếp theo là pha chạy chỗ, và cuối cùng là cú sút vào góc xa.
 
-Chinh khoanh khac do da thay doi cuc dien.
+Chính khoảnh khắc đó đã thay đổi cục diện.
 
-Khong on ao, khong phuc tap, nhung rat hieu qua.
+Không ồn ào, không phức tạp, nhưng rất hiệu quả.
 ```
 
-### Block 9: Doc dai hon, nhip on dinh
+### Block 9: Đọc Dài Hơn, Nhịp Ổn Định
 
 ```txt
-Trong san xuat video, giong doc co vai tro rat quan trong. Mot hinh anh dep co the thu hut nguoi xem trong vai giay dau tien, nhung giong thuyet minh moi la thu giu cho mach noi dung duoc lien tuc.
+Trong sản xuất video, giọng đọc có vai trò rất quan trọng. Một hình ảnh đẹp có thể thu hút người xem trong vài giây đầu tiên, nhưng giọng thuyết minh mới là thứ giữ cho mạch nội dung được liên tục.
 
-Neu giong doc qua nhanh, nguoi xem khong kip xu ly thong tin. Neu giong doc qua cham, video se mat nang luong. Neu am thanh co nhieu tap am, nguoi xem se cam thay met moi, ngay ca khi noi dung duoc viet rat tot.
+Nếu giọng đọc quá nhanh, người xem không kịp xử lý thông tin. Nếu giọng đọc quá chậm, video sẽ mất năng lượng. Nếu âm thanh có nhiều tạp âm, người xem sẽ cảm thấy mệt mỏi, ngay cả khi nội dung được viết rất tốt.
 
-Vi vay, khi train model giong ca nhan, dieu quan trong nhat khong phai la doc that nhieu, ma la doc sach, doc deu, va doc dung phong cach minh muon su dung ve sau.
+Vì vậy, khi train model giọng cá nhân, điều quan trọng nhất không phải là đọc thật nhiều, mà là đọc sạch, đọc đều, và đọc đúng phong cách mình muốn sử dụng về sau.
 
-Neu ban muon lam video tin tuc bong da, hay them nhieu cau co ten cau thu, ty so, thoi gian, va cac tinh huong tren san.
+Nếu bạn muốn làm video tin tức bóng đá, hãy thêm nhiều câu có tên cầu thủ, tỷ số, thời gian, và các tình huống trên sân.
 
-Neu ban muon lam video giai thich cong nghe, hay them nhieu cau co thuat ngu, so lieu, va cau truc ly luan ro rang.
+Nếu bạn muốn làm video giải thích công nghệ, hãy thêm nhiều câu có thuật ngữ, số liệu, và cấu trúc lý luận rõ ràng.
 ```
 
-### Block 10: Ket thuc dataset
+### Block 10: Kết Thúc Dataset
 
 ```txt
-Day la phan cuoi cua bo thu am mau.
+Đây là phần cuối của bộ thu âm mẫu.
 
-Toi se giu giong doc on dinh, phat am ro, va ket thuc moi cau bang khoang nghi ngan.
+Tôi sẽ giữ giọng đọc ổn định, phát âm rõ, và kết thúc mỗi câu bằng khoảng nghỉ ngắn.
 
-Sau khi thu xong, toi se nghe lai de loai bo nhung doan co tieng on, noi sai, bi vo am, hoac qua nho.
+Sau khi thu xong, tôi sẽ nghe lại để loại bỏ những đoạn có tiếng ồn, nói sai, bị vỡ âm, hoặc quá nhỏ.
 
-Mot dataset tot se giup model hoc giong tot hon, giam hien tuong meo tieng, va tao ra ket qua tu nhien hon khi chuyen voice bang Applio.
+Một dataset tốt sẽ giúp model học giọng tốt hơn, giảm hiện tượng méo tiếng, và tạo ra kết quả tự nhiên hơn khi chuyển voice bằng Applio.
 
-Ket thuc phan thu am.
+Kết thúc phần thu âm.
 ```
 
 ---
 
-## 8. Bo text bo sung tieng Anh va tu quoc te
+## 9. Bộ Text Bổ Sung Tiếng Anh Và Từ Quốc Tế
 
-Dung block nay neu video cua ban hay co ten tieng Anh, cau lac bo, cau thu, hoac thuat ngu cong nghe.
+Dùng block này nếu video của bạn hay có tên tiếng Anh, câu lạc bộ, cầu thủ, hoặc thuật ngữ công nghệ.
 
 ```txt
 Hello, this is an additional recording block for English words and international names.
@@ -418,60 +511,60 @@ This sample should be read clearly, calmly, and at a natural pace.
 
 ---
 
-## 9. Checklist chat luong truoc khi train
+## 10. Checklist Chất Lượng Trước Khi Train
 
-Truoc khi dua dataset vao Applio, kiem tra:
+Trước khi đưa dataset vào Applio, kiểm tra:
 
-- Khong co nhac nen.
-- Khong co tieng quat/may lanh qua ro.
-- Khong bi clip/vo tieng.
-- Khong co doan im lang qua dai.
-- Khong co doan noi sai chua cat.
-- Volume giua cac file khong chen nhau qua nhieu.
-- Tong audio sach dat it nhat 10 phut cho test, tot hon la 20-30 phut.
+- Không có nhạc nền.
+- Không có tiếng quạt/máy lạnh quá rõ.
+- Không bị clip/vỡ tiếng.
+- Không có đoạn im lặng quá dài.
+- Không có đoạn nói sai chưa cắt.
+- Volume giữa các file không chênh nhau quá nhiều.
+- Tổng audio sạch đạt ít nhất 10 phút cho test, tốt hơn là 20-30 phút.
 
-Neu co thoi gian, nghe ngau nhien 5-10 file. Neu tai ban thay kho nghe, model cung se hoc kho.
+Nếu có thời gian, nghe ngẫu nhiên 5-10 file. Nếu tai bạn thấy khó nghe, model cũng sẽ học khó.
 
 ---
 
-## 10. Loi thuong gap khi train
+## 11. Lỗi Thường Gặp Khi Train
 
-### Model nghe giong nhung bi re
+### Model nghe giống nhưng bị rè
 
-Nguyen nhan thuong gap:
+Nguyên nhân thường gặp:
 
-- Dataset co noise hoac phong vang.
-- Audio nguon convert qua nhanh/qua cao.
-- `index rate` qua cao.
-- `protect` qua thap.
+- Dataset có noise hoặc phòng vang.
+- Audio nguồn convert quá nhanh/quá cao.
+- `index rate` quá cao.
+- `protect` quá thấp.
 
-Thu:
+Thử:
 
 ```txt
 Index rate: 0.45-0.65
 Protect: 0.45-0.5
-Speech rate audio nguon: 0.9-0.96
+Speech rate audio nguồn: 0.9-0.96
 ```
 
-### Model khong giong minh
+### Model không giống mình
 
-Thu:
+Thử:
 
-- Tang dataset sach len 30-60 phut.
-- Doc dung phong cach su dung thuc te.
-- Dung index file dung model.
-- Kiem tra co dang chon nham `.pth` hoac `.index` khong.
+- Tăng dataset sạch lên 30-60 phút.
+- Đọc đúng phong cách sử dụng thực tế.
+- Dùng index file đúng model.
+- Kiểm tra có đang chọn nhầm `.pth` hoặc `.index` không.
 
-### Train xong khong thay file index
+### Train xong không thấy file index
 
-Trong mot so ban Applio, train model va train index la hai buoc rieng. Tim nut **Train index**, **Create index**, hoac **Feature index** trong tab Training.
+Trong một số bản Applio, train model và train index là hai bước riêng. Tìm nút **Train index**, **Create index**, hoặc **Feature index** trong tab Training.
 
 ### Convert fail trong KAI STUDIO
 
-Neu convert trong Applio OK nhung trong KAI STUDIO fail, kha nang cao la `argTemplate` khong khop `Use via API`. Copy lai `client.predict(...)` tu dung tab convert dang dung.
+Nếu convert trong Applio OK nhưng trong KAI STUDIO fail, khả năng cao là `argTemplate` không khớp `Use via API`. Copy lại `client.predict(...)` từ đúng tab convert đang dùng.
 
 ---
 
-## 11. Ghi chu phap ly va dao duc
+## 12. Ghi Chú Pháp Lý Và Đạo Đức
 
-Chi train giong cua chinh ban hoac nguoi da cho phep ro rang. Neu dung de dang len YouTube, TikTok, Facebook, hoac cac nen tang khac, hay tuan thu yeu cau cong bo noi dung AI/synthetic voice cua nen tang do.
+Chỉ train giọng của chính bạn hoặc người đã cho phép rõ ràng. Nếu dùng để đăng lên YouTube, TikTok, Facebook, hoặc các nền tảng khác, hãy tuân thủ yêu cầu công bố nội dung AI/synthetic voice của nền tảng đó.

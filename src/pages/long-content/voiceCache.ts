@@ -103,7 +103,7 @@ function readCachedGeneratedVoice(): CachedGeneratedVoice | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<CachedGeneratedVoice>;
     if (
-      (parsed.provider !== "piper" && parsed.provider !== "elevenlabs" && parsed.provider !== "supertonic")
+      (parsed.provider !== "piper" && parsed.provider !== "elevenlabs" && parsed.provider !== "supertonic" && parsed.provider !== "applio")
       || !parsed.scriptKey
       || !parsed.audioUrl
       || !parsed.fileName

@@ -9,7 +9,7 @@ import {
   getGeneratedDir,
   PROJECT_ROOT,
 } from "../config/paths";
-import type { RvcApplioConfigStatus, RvcApplioConvertBody, RvcApplioTemplateStatus } from "../models/RvcApplio";
+import type { RvcApplioConfigStatus, RvcApplioConvertBody, RvcApplioTemplateStatus, RvcApplioTextToSpeechBody } from "../models/RvcApplio";
 import {
   ensureDirectoryExists,
   getLocalDateFolderName,
@@ -33,7 +33,7 @@ export async function getRvcApplioConfigStatus(envOverrides: RuntimeEnvValues = 
     config = readRvcConfig(env);
   } catch (error) {
     return {
-      ...readRvcConfig({ ...env, RVC_APPLIO_TEMPLATES_JSON: "", RVC_APPLIO_ARG_TEMPLATE_JSON: "" }),
+      ...readRvcConfig({ ...env, RVC_APPLIO_TEMPLATES_JSON: "", RVC_APPLIO_TTS_TEMPLATES_JSON: "", RVC_APPLIO_ARG_TEMPLATE_JSON: "" }),
       enabled: false,
       serverOk: false,
       error: error instanceof Error ? error.message : "Cấu hình RVC/Applio không hợp lệ.",
@@ -42,11 +42,11 @@ export async function getRvcApplioConfigStatus(envOverrides: RuntimeEnvValues = 
 
   try {
     await fetchWithTimeout(config.baseUrl, { method: "GET" }, CONFIG_TIMEOUT_MS);
-    return { ...config, enabled: config.argTemplateConfigured, serverOk: true };
+    return { ...config, enabled: config.argTemplateConfigured || config.ttsTemplateConfigured, serverOk: true };
   } catch (error) {
     return {
       ...config,
-      enabled: config.argTemplateConfigured,
+      enabled: config.argTemplateConfigured || config.ttsTemplateConfigured,
       serverOk: false,
       error: error instanceof Error ? error.message : "Không kết nối được RVC/Applio server.",
     };
@@ -74,7 +74,7 @@ export async function convertRvcApplioAudio(body: RvcApplioConvertBody, envOverr
     outputDir,
   });
 
-  await convertSegmentWithApplio({
+  await runApplioBridge({
     config,
     template,
     inputPath: source.absolutePath,
@@ -103,39 +103,81 @@ export async function convertRvcApplioAudio(body: RvcApplioConvertBody, envOverr
   };
 }
 
-type RvcRuntimeConfig = Omit<RvcApplioConfigStatus, "enabled" | "serverOk" | "error"> & {
-  runtimeTemplates: RvcRuntimeTemplate[];
-};
+export async function generateRvcApplioSpeech(body: RvcApplioTextToSpeechBody, envOverrides: RuntimeEnvValues = {}) {
+  const text = body.text?.trim();
+  if (!text) throw new Error("Chưa có text để tạo voice bằng Applio.");
+
+  const env = readEnvValues(envOverrides);
+  const config = readRvcConfig(env);
+  const template = selectRvcTemplate(config, body.templateId, "tts");
+  const dateFolderName = getLocalDateFolderName();
+  const outputDir = path.join(getGeneratedDir(env.SERVER_DATA_DIR), "rvc-applio-tts", dateFolderName);
+  ensureDirectoryExists(outputDir);
+
+  const { outputFileName, outputPath } = getUniqueOutputFileWithExtension({ baseName: sanitizeFileBaseName(body.fileName || "applio-tts"), extension: "wav", outputDir });
+
+  await runApplioBridge({
+    config,
+    template,
+    outputPath,
+    text,
+    ttsVoice: body.ttsVoice || template.ttsVoice || "",
+    ttsSpeed: clampInteger(body.ttsSpeed ?? template.ttsSpeed ?? 0, -100, 100),
+    timeoutMs: Number(env.RVC_APPLIO_TIMEOUT_MS || DEFAULT_TIMEOUT_MS),
+  });
+
+  const relativePath = `rvc-applio-tts/${dateFolderName}/${outputFileName}`;
+  const durationSec = await readDurationOrZero(outputPath, envOverrides);
+  return {
+    ok: true,
+    fileName: outputFileName,
+    folderName: dateFolderName,
+    relativePath,
+    audioPath: outputPath,
+    audioUrl: buildGeneratedFileUrl(GENERATED_PUBLIC_PATH, relativePath, env.SERVER_ORIGIN || SERVER_ORIGIN),
+    model: `Applio TTS/RVC · ${template.label || template.modelName || template.ttsVoice || "selected voice"}`,
+    rvcModelName: template.modelName,
+    segmentDurationsSec: durationSec > 0 ? [durationSec] : undefined,
+  };
+}
+
+type RvcRuntimeConfig = Omit<RvcApplioConfigStatus, "enabled" | "serverOk" | "error"> & { runtimeTemplates: RvcRuntimeTemplate[]; ttsRuntimeTemplates: RvcRuntimeTemplate[] };
 
 type RvcRuntimeTemplate = RvcApplioTemplateStatus & { argTemplate: unknown[] };
 
 type ConvertSegmentParams = {
   config: RvcRuntimeConfig;
   template: RvcRuntimeTemplate;
-  inputPath: string;
+  inputPath?: string;
   outputPath: string;
-  pitch: number;
-  f0Method: string;
-  indexRate: number;
-  protect: number;
-  filterRadius: number;
+  text?: string;
+  pitch?: number;
+  f0Method?: string;
+  indexRate?: number;
+  protect?: number;
+  filterRadius?: number;
+  ttsVoice?: string;
+  ttsSpeed?: number;
   timeoutMs: number;
 };
 
-async function convertSegmentWithApplio(params: ConvertSegmentParams) {
+async function runApplioBridge(params: ConvertSegmentParams) {
   const payloadPath = path.join(path.dirname(params.outputPath), `${path.basename(params.outputPath)}.payload.json`);
   fs.writeFileSync(payloadPath, JSON.stringify({
     baseUrl: params.config.baseUrl,
     apiName: params.template.apiName,
-    inputPath: params.inputPath,
+    inputPath: params.inputPath || "",
     outputPath: params.outputPath,
+    text: params.text || "",
     modelName: params.template.modelName,
     indexPath: params.template.indexPath,
-    pitch: params.pitch,
-    f0Method: params.f0Method,
-    indexRate: params.indexRate,
-    protect: params.protect,
-    filterRadius: params.filterRadius,
+    pitch: params.pitch ?? params.template.pitch,
+    f0Method: params.f0Method ?? params.template.f0Method,
+    indexRate: params.indexRate ?? params.template.indexRate,
+    protect: params.protect ?? params.template.protect,
+    filterRadius: params.filterRadius ?? params.template.filterRadius,
+    ttsVoice: params.ttsVoice || params.template.ttsVoice || "",
+    ttsSpeed: params.ttsSpeed ?? params.template.ttsSpeed ?? 0,
     argTemplate: params.template.argTemplate,
   }, null, 2));
 
@@ -154,6 +196,7 @@ function readRvcConfig(env: RuntimeEnvValues): RvcRuntimeConfig {
   const startCommand = env.RVC_APPLIO_START_COMMAND || "";
   const pythonExe = resolveRuntimeExecutable(env.RVC_APPLIO_PYTHON || "python");
   const runtimeTemplates = readRvcTemplates(env);
+  const ttsRuntimeTemplates = parseTemplatesJson(env.RVC_APPLIO_TTS_TEMPLATES_JSON, env, "RVC_APPLIO_TTS_TEMPLATES_JSON");
   const primaryTemplate = runtimeTemplates[0];
   return {
     baseUrl: (env.RVC_APPLIO_BASE_URL || "http://127.0.0.1:6969").replace(/\/+$/g, ""),
@@ -166,18 +209,21 @@ function readRvcConfig(env: RuntimeEnvValues): RvcRuntimeConfig {
     pythonExists: commandLooksExecutable(pythonExe),
     bridgeExists: fs.existsSync(BRIDGE_PATH),
     argTemplateConfigured: runtimeTemplates.some((template) => template.argTemplateConfigured),
+    ttsTemplateConfigured: ttsRuntimeTemplates.some((template) => template.argTemplateConfigured),
     f0Method: primaryTemplate?.f0Method || normalizeF0Method(env.RVC_APPLIO_F0_METHOD || "rmvpe"),
     pitch: primaryTemplate?.pitch ?? clampPitch(env.RVC_APPLIO_PITCH),
     indexRate: primaryTemplate?.indexRate ?? clampRatio(env.RVC_APPLIO_INDEX_RATE || 0.75),
     protect: primaryTemplate?.protect ?? clampRatio(env.RVC_APPLIO_PROTECT || 0.33),
     filterRadius: primaryTemplate?.filterRadius ?? clampInteger(env.RVC_APPLIO_FILTER_RADIUS || 3, 0, 7),
     templates: runtimeTemplates.map(toTemplateStatus),
+    ttsTemplates: ttsRuntimeTemplates.map(toTemplateStatus),
     runtimeTemplates,
+    ttsRuntimeTemplates,
   };
 }
 
 function readRvcTemplates(env: RuntimeEnvValues): RvcRuntimeTemplate[] {
-  const configuredTemplates = parseTemplatesJson(env.RVC_APPLIO_TEMPLATES_JSON, env);
+  const configuredTemplates = parseTemplatesJson(env.RVC_APPLIO_TEMPLATES_JSON, env, "RVC_APPLIO_TEMPLATES_JSON");
   if (configuredTemplates.length > 0) return configuredTemplates;
 
   if (!env.RVC_APPLIO_ARG_TEMPLATE_JSON?.trim()) return [];
@@ -197,26 +243,26 @@ function readRvcTemplates(env: RuntimeEnvValues): RvcRuntimeTemplate[] {
   }];
 }
 
-function parseTemplatesJson(value: string | undefined, env: RuntimeEnvValues): RvcRuntimeTemplate[] {
+function parseTemplatesJson(value: string | undefined, env: RuntimeEnvValues, envKey: string): RvcRuntimeTemplate[] {
   if (!value?.trim()) return [];
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(value);
   } catch {
-    throw new Error("RVC_APPLIO_TEMPLATES_JSON phải là JSON array hợp lệ.");
+    throw new Error(`${envKey} phải là JSON array hợp lệ.`);
   }
 
   if (!Array.isArray(parsed)) {
-    throw new Error("RVC_APPLIO_TEMPLATES_JSON phải là một JSON array.");
+    throw new Error(`${envKey} phải là một JSON array.`);
   }
 
-  return parsed.map((item, index) => normalizeTemplateItem(item, index, env));
+  return parsed.map((item, index) => normalizeTemplateItem(item, index, env, envKey));
 }
 
-function normalizeTemplateItem(item: unknown, index: number, env: RuntimeEnvValues): RvcRuntimeTemplate {
+function normalizeTemplateItem(item: unknown, index: number, env: RuntimeEnvValues, envKey: string): RvcRuntimeTemplate {
   if (!item || typeof item !== "object" || Array.isArray(item)) {
-    throw new Error(`RVC_APPLIO_TEMPLATES_JSON item #${index + 1} phải là object.`);
+    throw new Error(`${envKey} item #${index + 1} phải là object.`);
   }
   const record = item as Record<string, unknown>;
   const rawId = stringValue(record.id) || stringValue(record.name) || `template-${index + 1}`;
@@ -235,6 +281,8 @@ function normalizeTemplateItem(item: unknown, index: number, env: RuntimeEnvValu
     indexRate: clampRatio(record.indexRate ?? env.RVC_APPLIO_INDEX_RATE ?? 0.75),
     protect: clampRatio(record.protect ?? env.RVC_APPLIO_PROTECT ?? 0.33),
     filterRadius: clampInteger(record.filterRadius ?? env.RVC_APPLIO_FILTER_RADIUS ?? 3, 0, 7),
+    ttsVoice: stringValue(record.ttsVoice) || stringValue(record.voice) || "",
+    ttsSpeed: clampInteger(record.ttsSpeed ?? record.speed ?? 0, -100, 100),
   };
 }
 
@@ -244,13 +292,16 @@ function readTemplateArgs(record: Record<string, unknown>, env: RuntimeEnvValues
   return parseArgTemplate(env.RVC_APPLIO_ARG_TEMPLATE_JSON);
 }
 
-function selectRvcTemplate(config: RvcRuntimeConfig, templateId?: string) {
+function selectRvcTemplate(config: RvcRuntimeConfig, templateId?: string, mode: "convert" | "tts" = "convert") {
+  const templates = mode === "tts" ? config.ttsRuntimeTemplates : config.runtimeTemplates;
   const selected = templateId
-    ? config.runtimeTemplates.find((template) => template.id === templateId)
-    : config.runtimeTemplates[0];
+    ? templates.find((template) => template.id === templateId)
+    : templates[0];
   if (selected) return selected;
   if (templateId) throw new Error(`Không tìm thấy Applio template: ${templateId}`);
-  throw new Error("Chưa cấu hình Applio template. Thêm RVC_APPLIO_TEMPLATES_JSON hoặc RVC_APPLIO_ARG_TEMPLATE_JSON trong Settings.");
+  throw new Error(mode === "tts"
+    ? "Chưa cấu hình Applio TTS template. Thêm RVC_APPLIO_TTS_TEMPLATES_JSON trong Settings."
+    : "Chưa cấu hình Applio template. Thêm RVC_APPLIO_TEMPLATES_JSON hoặc RVC_APPLIO_ARG_TEMPLATE_JSON trong Settings.");
 }
 
 function toTemplateStatus(template: RvcRuntimeTemplate): RvcApplioTemplateStatus {

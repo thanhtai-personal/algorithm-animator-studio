@@ -3,6 +3,7 @@ import {
   convertRvcApplioVoice,
   generateElevenLabsVoice,
   generatePiperVoice,
+  generateRvcApplioVoice,
   getElevenLabsConfig,
   getPiperModels,
   getRvcApplioConfig,
@@ -220,13 +221,15 @@ export function useStoryVideoStudio(options: UseStoryVideoStudioOptions = {}) {
     }
   }
 
-  async function generateAudio() {
+  async function generateAudio(applioTemplateId?: string) {
     setLoading((state) => ({ ...state, audio: true }));
     setMessage("");
     try {
       const result = provider === "elevenlabs"
         ? await generateElevenLabsVoice({ text, modelId: elevenModelId, voiceId: elevenVoiceId, fileName })
-        : await generatePiperVoice({ text, modelKey: piperModelKey, sentenceSilence, speechRate, fileName });
+        : provider === "applio"
+          ? await generateRvcApplioVoice({ text, fileName, templateId: applioTemplateId })
+          : await generatePiperVoice({ text, modelKey: piperModelKey, sentenceSilence, speechRate, fileName });
       setAudioResult(result);
       const resource: GeneratedResource = {
         kind: "audio",

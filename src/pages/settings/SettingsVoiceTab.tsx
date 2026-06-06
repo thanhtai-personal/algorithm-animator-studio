@@ -46,6 +46,19 @@ const APPLIO_TEMPLATES_PLACEHOLDER = `[
   }
 ]`;
 
+const APPLIO_TTS_TEMPLATES_PLACEHOLDER = `[
+  {
+    "id": "my-voice-tts",
+    "label": "My voice via EdgeTTS",
+    "apiName": "/infer_tts",
+    "modelName": "voice_1.pth",
+    "indexPath": "C:/Applio/logs/voice_1/added.index",
+    "ttsVoice": "en-US-SteffanNeural",
+    "ttsSpeed": 0,
+    "argTemplate": ["${text}", "${tts_voice}", "${tts_speed}", "${model}", "${index}", "${f0_method}", "${index_rate}", "${protect}"]
+  }
+]`;
+
 export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
   const [activeSection, setActiveSection] = useState<VoiceSection>("piper");
   const [menuCollapsed, setMenuCollapsed] = useState(false);
@@ -243,6 +256,19 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
                 value={props.form.RVC_APPLIO_TEMPLATES_JSON}
                 placeholder={APPLIO_TEMPLATES_PLACEHOLDER}
                 onChange={(event) => props.onUpdateField("RVC_APPLIO_TEMPLATES_JSON", event.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="rvc-applio-tts-templates">{text(props.lang, "Applio TTS templates", "Danh sách template TTS Applio")}</Label>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {text(props.lang, "JSON array for Applio Text-to-Speech. Copy the exact argument order from Use via API.", "JSON array cho Text-to-Speech của Applio. Copy đúng thứ tự tham số từ Use via API.")}
+              </p>
+              <Textarea
+                id="rvc-applio-tts-templates"
+                className="mt-2 min-h-[180px] font-mono text-xs"
+                value={props.form.RVC_APPLIO_TTS_TEMPLATES_JSON}
+                placeholder={APPLIO_TTS_TEMPLATES_PLACEHOLDER}
+                onChange={(event) => props.onUpdateField("RVC_APPLIO_TTS_TEMPLATES_JSON", event.target.value)}
               />
             </div>
             <div className="grid gap-3 md:grid-cols-2">

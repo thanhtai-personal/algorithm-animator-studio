@@ -45,6 +45,22 @@ export type ElevenLabsVoice = { id: string; label: string };
 
 export type SupertonicVoice = { id: string; label: string; description?: string };
 
+export type RvcApplioTemplate = {
+  id: string;
+  label: string;
+  apiName: string;
+  modelName: string;
+  indexPath: string;
+  argTemplateConfigured: boolean;
+  f0Method: string;
+  pitch: number;
+  indexRate: number;
+  protect: number;
+  filterRadius: number;
+  ttsVoice?: string;
+  ttsSpeed?: number;
+};
+
 export type RvcApplioConfig = {
   enabled: boolean;
   serverOk: boolean;
@@ -63,19 +79,9 @@ export type RvcApplioConfig = {
   indexRate: number;
   protect: number;
   filterRadius: number;
-  templates: {
-    id: string;
-    label: string;
-    apiName: string;
-    modelName: string;
-    indexPath: string;
-    argTemplateConfigured: boolean;
-    f0Method: string;
-    pitch: number;
-    indexRate: number;
-    protect: number;
-    filterRadius: number;
-  }[];
+  templates: RvcApplioTemplate[];
+  ttsTemplates: RvcApplioTemplate[];
+  ttsTemplateConfigured: boolean;
   error?: string;
 };
 
@@ -182,6 +188,21 @@ export async function convertRvcApplioVoice(payload: {
   f0Method?: string;
 }) {
   return parseApiResponse<VoiceGenerateResult>(await fetch(buildApiUrl("/api/rvc-applio/convert"), {
+    method: "POST",
+    headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(payload),
+  }));
+}
+
+export async function generateRvcApplioVoice(payload: {
+  text: string;
+  segments?: string[];
+  fileName: string;
+  templateId?: string;
+  ttsVoice?: string;
+  ttsSpeed?: number;
+}) {
+  return parseApiResponse<VoiceGenerateResult>(await fetch(buildApiUrl("/api/rvc-applio/tts"), {
     method: "POST",
     headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),

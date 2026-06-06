@@ -33,6 +33,17 @@ export type SupertonicConfigResponse = {
   error?: string;
 };
 
+export type RvcApplioTemplateResponse = {
+  id: string;
+  label: string;
+  apiName: string;
+  modelName: string;
+  indexPath: string;
+  argTemplateConfigured: boolean;
+  ttsVoice?: string;
+  ttsSpeed?: number;
+};
+
 export type RvcApplioConfigResponse = {
   enabled: boolean;
   serverOk: boolean;
@@ -51,14 +62,9 @@ export type RvcApplioConfigResponse = {
   indexRate: number;
   protect: number;
   filterRadius: number;
-  templates: {
-    id: string;
-    label: string;
-    apiName: string;
-    modelName: string;
-    indexPath: string;
-    argTemplateConfigured: boolean;
-  }[];
+  templates: RvcApplioTemplateResponse[];
+  ttsTemplates: RvcApplioTemplateResponse[];
+  ttsTemplateConfigured: boolean;
   error?: string;
 };
 
@@ -79,6 +85,7 @@ export type SettingsForm = Required<Pick<
   | "RVC_APPLIO_API_NAME"
   | "RVC_APPLIO_ARG_TEMPLATE_JSON"
   | "RVC_APPLIO_TEMPLATES_JSON"
+  | "RVC_APPLIO_TTS_TEMPLATES_JSON"
   | "RVC_APPLIO_PYTHON"
   | "RVC_APPLIO_SOURCE_PIPER_MODEL"
   | "RVC_APPLIO_MODEL_NAME"
@@ -106,6 +113,7 @@ export const EMPTY_FORM: SettingsForm = {
   RVC_APPLIO_API_NAME: "",
   RVC_APPLIO_ARG_TEMPLATE_JSON: "",
   RVC_APPLIO_TEMPLATES_JSON: "",
+  RVC_APPLIO_TTS_TEMPLATES_JSON: "",
   RVC_APPLIO_PYTHON: "",
   RVC_APPLIO_SOURCE_PIPER_MODEL: "",
   RVC_APPLIO_MODEL_NAME: "",

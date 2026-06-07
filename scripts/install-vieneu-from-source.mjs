@@ -1,17 +1,17 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import dotenv from "dotenv";
 
-dotenv.config();
-
-const DEFAULT_SOURCE_DIR = "C:/DATA/working/sources/VieNeu-TTS";
+const projectRoot = process.cwd();
+const dotEnv = readDotEnv(path.join(projectRoot, ".env"));
+const runtimeEnv = { ...dotEnv, ...process.env };
+const DEFAULT_SOURCE_DIR = path.join(projectRoot, "libs", "VieNeu-TTS");
 const EXTRA_INDEX_URL = "https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu/";
 
-const sourceDir = path.resolve(process.env.VIENEU_SOURCE_DIR || DEFAULT_SOURCE_DIR);
+const sourceDir = path.resolve(runtimeEnv.VIENEU_SOURCE_DIR || DEFAULT_SOURCE_DIR);
 const venvDir = path.join(sourceDir, ".venv");
 const pythonExe = path.resolve(
-  process.env.VIENEU_PYTHON ||
+  runtimeEnv.VIENEU_PYTHON ||
   (process.platform === "win32"
     ? path.join(venvDir, "Scripts", "python.exe")
     : path.join(venvDir, "bin", "python")),
@@ -50,3 +50,20 @@ run(pythonExe, ["-c", "import vieneu; print(getattr(vieneu, '__version__', 'dev'
 console.log("\nVieNeu-TTS source install OK.");
 console.log(`VIENEU_PYTHON=${pythonExe.replace(/\\/g, "/")}`);
 console.log("Copy giá trị VIENEU_PYTHON này vào .env hoặc Settings -> Voice -> VieNeu.");
+
+function readDotEnv(filePath) {
+  if (!fs.existsSync(filePath)) return {};
+  return Object.fromEntries(
+    fs.readFileSync(filePath, "utf8")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith("#") && line.includes("="))
+      .map((line) => {
+        const index = line.indexOf("=");
+        const key = line.slice(0, index).trim();
+        const rawValue = line.slice(index + 1).trim();
+        const value = rawValue.replace(/^['"]|['"]$/g, "");
+        return [key, value];
+      }),
+  );
+}

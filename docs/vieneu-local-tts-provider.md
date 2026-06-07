@@ -41,7 +41,7 @@ npm run vieneu:install
 npm run vieneu:health
 ```
 
-`npm run vieneu:install` hiện được thiết kế để cài từ source VieNeu-TTS đã fork/clone về máy, không cài package public trực tiếp. `npm run vieneu:health` cũng dùng `VIENEU_PYTHON` hoặc mặc định `C:/DATA/working/sources/VieNeu-TTS/.venv/Scripts/python.exe`.
+`npm run vieneu:install` hiện cài editable từ source VieNeu-TTS trong `libs/VieNeu-TTS` mặc định. `npm run dev` cũng chạy thêm process `dev:vieneu` để kiểm tra bridge VieNeu sẵn sàng.
 
 ## 2. Yêu cầu máy local
 
@@ -52,47 +52,34 @@ Khuyến nghị:
 - Có mạng trong lần chạy đầu tiên để SDK tải model/cache nếu cần.
 - CPU vẫn test được với `VIENEU_MODE=turbo`; GPU/standard cho chất lượng tốt hơn.
 
-## 3. Cài VieNeu-TTS bằng cách fork/clone source
+## 3. Cài VieNeu-TTS từ source trong `libs/`
 
-Không khuyến nghị cài VieNeu bằng `pip install vieneu` trực tiếp nữa. Cách ổn định hơn cho dự án này là fork repo VieNeu-TTS, clone source về máy, rồi cài editable từ source để dễ sửa code, đổi model, kiểm tra lỗi và cập nhật thủ công.
-
-Source VieNeu-TTS hiện tại đang đặt ở:
+Không khuyến nghị cài VieNeu bằng `pip install vieneu` trực tiếp nữa. Source VieNeu-TTS hiện đã nằm trong repo tại:
 
 ```txt
-C:\DATA\working\sources\VieNeu-TTS
+libs/VieNeu-TTS
 ```
 
-Nếu chưa có source, fork repo VieNeu-TTS trên GitHub về tài khoản của bạn, sau đó clone về đúng thư mục trên:
-
-```bat
-cd /d C:\DATA\working\sources
-git clone https://github.com/<your-github-user>/VieNeu-TTS.git VieNeu-TTS
-cd VieNeu-TTS
-```
-
-Nếu đã có source ở `C:\DATA\working\sources\VieNeu-TTS`, chỉ cần vào thư mục đó và tạo virtual environment riêng cho VieNeu:
-
-```bat
-cd /d C:\DATA\working\sources\VieNeu-TTS
-python -m venv .venv
-.venv\Scripts\activate
-python -m pip install --upgrade pip setuptools wheel
-python -m pip install -e . --extra-index-url https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu/
-```
-
-Kiểm tra import SDK:
-
-```bat
-.venv\Scripts\python.exe -c "import vieneu; print(getattr(vieneu, '__version__', 'dev'))"
-```
-
-Hoặc chạy lệnh helper từ source KAI Studio. Lệnh này mặc định dùng `VIENEU_SOURCE_DIR=C:/DATA/working/sources/VieNeu-TTS` và tạo/cài vào `.venv` trong chính source VieNeu:
+Cách chuẩn là tạo virtual environment ngay trong `libs/VieNeu-TTS` và cài editable từ source để KAI Studio có thể dùng code VieNeu local:
 
 ```bat
 npm run vieneu:install
 ```
 
-Nếu source VieNeu nằm chỗ khác, đặt biến trước khi chạy:
+Lệnh trên mặc định dùng:
+
+```txt
+VIENEU_SOURCE_DIR=libs/VieNeu-TTS
+VIENEU_PYTHON=libs/VieNeu-TTS/.venv/Scripts/python.exe
+```
+
+Kiểm tra import SDK:
+
+```bat
+npm run vieneu:health
+```
+
+Nếu muốn dùng source VieNeu ở thư mục fork riêng, đặt biến trước khi chạy:
 
 ```bat
 set VIENEU_SOURCE_DIR=D:\AI\VieNeu-TTS
@@ -104,8 +91,10 @@ npm run vieneu:install
 Thêm hoặc chỉnh các biến sau:
 
 ```env
-VIENEU_SOURCE_DIR=C:/DATA/working/sources/VieNeu-TTS
-VIENEU_PYTHON=C:/DATA/working/sources/VieNeu-TTS/.venv/Scripts/python.exe
+VIENEU_SOURCE_DIR=libs/VieNeu-TTS
+VIENEU_PYTHON=libs/VieNeu-TTS/.venv/Scripts/python.exe
+VIENEU_START_MODE=bridge
+VIENEU_AUTO_START=true
 VIENEU_MODE=turbo
 VIENEU_EMOTION=natural
 VIENEU_DEFAULT_VOICE_ID=
@@ -120,8 +109,10 @@ Giải thích nhanh:
 
 | Biến | Ý nghĩa |
 | --- | --- |
-| `VIENEU_SOURCE_DIR` | Chỉ dùng cho lệnh helper `npm run vieneu:install`/`npm run vieneu:health`, mặc định `C:/DATA/working/sources/VieNeu-TTS`. |
-| `VIENEU_PYTHON` | Python executable trong virtualenv của source VieNeu-TTS đã fork/clone. Với máy hiện tại nên dùng `C:/DATA/working/sources/VieNeu-TTS/.venv/Scripts/python.exe`. |
+| `VIENEU_SOURCE_DIR` | Source VieNeu-TTS, mặc định `libs/VieNeu-TTS`. Dùng cho `npm run vieneu:install`, `npm run vieneu:health`, `npm run dev:vieneu`. |
+| `VIENEU_PYTHON` | Python executable trong virtualenv của source VieNeu-TTS, mặc định `libs/VieNeu-TTS/.venv/Scripts/python.exe`. |
+| `VIENEU_START_MODE` | Chế độ process VieNeu khi `npm run dev`: `bridge` để health-check và chờ backend gọi on-demand, `gradio` để mở UI Gradio, `off` để tắt. |
+| `VIENEU_AUTO_START` | Đặt `false` nếu không muốn `npm run dev` tự chạy process VieNeu. |
 | `VIENEU_MODE` | `turbo`, `standard`, hoặc `remote`. CPU nên test bằng `turbo`. |
 | `VIENEU_EMOTION` | Emotion truyền vào SDK, mặc định `natural`. |
 | `VIENEU_DEFAULT_VOICE_ID` | Preset voice ID nếu SDK/model có preset voice. Để trống dùng giọng mặc định. |
@@ -146,16 +137,26 @@ Nếu OK sẽ thấy JSON tương tự:
 Nếu lỗi import `vieneu`, kiểm tra lại:
 
 ```bat
-.venv-vieneu\Scripts\activate
-python -c "import vieneu; print(vieneu.__version__)"
+libs\VieNeu-TTS\.venv\Scripts\activate
+python -c "import vieneu; print(getattr(vieneu, '__version__', 'dev'))"
 ```
 
-## 6. Health check trong app
+## 6. Chạy cùng `npm run dev` và health check trong app
 
-Chạy backend/frontend như bình thường:
+Chạy dev như bình thường. Lệnh này hiện khởi động đồng thời `client`, `server`, `supertonic`, `applio` và `vieneu`:
 
 ```bat
 npm run dev
+```
+
+Mặc định `dev:vieneu` chạy chế độ `bridge`: kiểm tra SDK, báo ready và giữ process sống để log không biến mất. Backend vẫn tạo audio bằng `/api/vieneu/generate`, không cần mở Gradio.
+
+Nếu muốn mở Gradio VieNeu cùng lúc dev:
+
+```env
+VIENEU_START_MODE=gradio
+GRADIO_SERVER_NAME=127.0.0.1
+GRADIO_SERVER_PORT=7860
 ```
 
 Vào:
@@ -166,7 +167,7 @@ Settings -> Voice -> VieNeu
 
 Kiểm tra các field:
 
-- `VieNeu Python`: trỏ đúng `C:/DATA/working/sources/VieNeu-TTS/.venv/Scripts/python.exe`.
+- `VieNeu Python`: trỏ đúng `libs/VieNeu-TTS/.venv/Scripts/python.exe` hoặc đường dẫn tuyệt đối tương ứng.
 - `VieNeu mode`: `turbo` để test CPU.
 - `VieNeu emotion`: `natural`.
 - Bấm lưu settings nếu đang chỉnh runtime settings.
@@ -256,7 +257,7 @@ Lưu ý:
 Kiểm tra `VIENEU_PYTHON` có đúng file không:
 
 ```bat
-C:\DATA\working\sources\VieNeu-TTS\.venv\Scripts\python.exe --version
+libs\VieNeu-TTS\.venv\Scripts\python.exe --version
 ```
 
 Nếu dùng runtime settings trong UI, đường dẫn trên UI sẽ override `.env`.
@@ -266,7 +267,7 @@ Nếu dùng runtime settings trong UI, đường dẫn trên UI sẽ override `.
 Cài lại từ source VieNeu-TTS trong đúng môi trường:
 
 ```bat
-cd /d C:\DATA\working\sources\VieNeu-TTS
+cd /d libs\VieNeu-TTS
 .venv\Scripts\activate
 python -m pip install --upgrade pip setuptools wheel
 python -m pip install -e . --extra-index-url https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu/
@@ -301,4 +302,4 @@ VIENEU_REMOTE_API_BASE=http://127.0.0.1:23333/v1
 VIENEU_REMOTE_MODEL=pnnbao-ump/VieNeu-TTS-v2
 ```
 
-Sau đó chạy server VieNeu riêng theo hướng dẫn của repo VieNeu-TTS.
+Sau đó chạy server VieNeu riêng theo hướng dẫn của repo VieNeu-TTS, hoặc đặt `VIENEU_START_MODE=gradio` nếu chỉ cần mở Gradio local đi kèm dev.

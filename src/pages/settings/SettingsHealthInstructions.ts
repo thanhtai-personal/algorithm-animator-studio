@@ -1,6 +1,16 @@
 import type { Lang } from "@/lib/i18n";
-import enMarkdown from "./health-instructions/en.md?raw";
-import viMarkdown from "./health-instructions/vi.md?raw";
+import applioEn from "./health-instructions/en/applio.md?raw";
+import elevenLabsEn from "./health-instructions/en/elevenlabs.md?raw";
+import piperEn from "./health-instructions/en/piper.md?raw";
+import supertonicEn from "./health-instructions/en/supertonic.md?raw";
+import systemEn from "./health-instructions/en/system.md?raw";
+import vieneuEn from "./health-instructions/en/vieneu.md?raw";
+import applioVi from "./health-instructions/vi/applio.md?raw";
+import elevenLabsVi from "./health-instructions/vi/elevenlabs.md?raw";
+import piperVi from "./health-instructions/vi/piper.md?raw";
+import supertonicVi from "./health-instructions/vi/supertonic.md?raw";
+import systemVi from "./health-instructions/vi/system.md?raw";
+import vieneuVi from "./health-instructions/vi/vieneu.md?raw";
 import type { HealthResponse, RvcApplioConfigResponse, SupertonicConfigResponse, VieneuConfigResponse } from "./SettingsTypes";
 
 type InstructionId = "system" | "piper" | "applio" | "supertonic" | "vieneu" | "elevenlabs";
@@ -8,6 +18,25 @@ type InstructionId = "system" | "piper" | "applio" | "supertonic" | "vieneu" | "
 export type HealthInstruction = {
   description: string;
   markdown: string;
+};
+
+const HEALTH_INSTRUCTION_MARKDOWN: Record<Lang, Record<InstructionId, string>> = {
+  en: {
+    system: systemEn,
+    piper: piperEn,
+    applio: applioEn,
+    supertonic: supertonicEn,
+    vieneu: vieneuEn,
+    elevenlabs: elevenLabsEn,
+  },
+  vi: {
+    system: systemVi,
+    piper: piperVi,
+    applio: applioVi,
+    supertonic: supertonicVi,
+    vieneu: vieneuVi,
+    elevenlabs: elevenLabsVi,
+  },
 };
 
 export function systemInstruction(lang: Lang, health: HealthResponse | null): HealthInstruction {
@@ -45,7 +74,7 @@ export function supertonicInstruction(lang: Lang, config: SupertonicConfigRespon
 
 export function vieneuInstruction(lang: Lang, config: VieneuConfigResponse | null): HealthInstruction {
   return buildInstruction(lang, "vieneu", {
-    VIENEU_PYTHON: config?.pythonExe || "python",
+    VIENEU_PYTHON: config?.pythonExe || "libs/VieNeu-TTS/.venv/Scripts/python.exe",
   });
 }
 
@@ -54,14 +83,8 @@ export function elevenLabsInstruction(lang: Lang): HealthInstruction {
 }
 
 function buildInstruction(lang: Lang, id: InstructionId, values: Record<string, string> = {}): HealthInstruction {
-  const markdown = applyValues(extractSection(lang === "vi" ? viMarkdown : enMarkdown, id), values);
+  const markdown = applyValues(HEALTH_INSTRUCTION_MARKDOWN[lang][id].trim(), values);
   return { description: extractDescription(markdown), markdown };
-}
-
-function extractSection(markdown: string, id: InstructionId) {
-  const escapedId = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const match = markdown.match(new RegExp(`(^|\\n)## ${escapedId}\\n([\\s\\S]*?)(?=\\n## |$)`, "i"));
-  return match?.[2]?.trim() || markdown.trim();
 }
 
 function applyValues(markdown: string, values: Record<string, string>) {

@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n client,server,supertonic,applio -c cyan,green,magenta,yellow \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:supertonic\" \"npm run dev:applio\"",
+    "dev": "concurrently -n client,server,supertonic,applio,vieneu -c cyan,green,magenta,yellow,blue \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:supertonic\" \"npm run dev:applio\" \"npm run dev:vieneu\"",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
@@ -33,7 +33,9 @@
     "supertonic:serve:v3": "cross-env SUPERTONIC_MODEL=supertonic-3 npm run supertonic:serve",
     "supertonic:serve:v2": "cross-env SUPERTONIC_MODEL=supertonic-2 npm run supertonic:serve",
     "supertonic:serve:v1": "cross-env SUPERTONIC_MODEL=supertonic npm run supertonic:serve",
-    "audit:i18n": "node scripts/audit-i18n-hardcoded.mjs"
+    "audit:i18n": "node scripts/audit-i18n-hardcoded.mjs",
+    "dev:vieneu": "node scripts/start-vieneu.mjs",
+    "vieneu:serve": "node scripts/start-vieneu.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

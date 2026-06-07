@@ -178,7 +178,9 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
           <div className="rounded-lg border border-border bg-background/40 p-3 text-xs text-muted-foreground">
             <div className="grid gap-1">
               <span>{uiText("Applio server:")} <strong className={s.rvcApplioConfig?.serverOk ? "text-emerald-300" : "text-rose-300"}>{s.rvcApplioConfig?.serverOk ? "đã kết nối" : "chưa chạy"}</strong></span>
+              <span>{uiText("gradio_client:")} <strong className={s.rvcApplioConfig?.gradioClientInstalled ? "text-emerald-300" : "text-rose-300"}>{s.rvcApplioConfig?.gradioClientInstalled ? "OK" : "thiếu package"}</strong></span>
               <span>{uiText("TTS templates:")} <strong>{applioTtsTemplates.length}</strong></span>
+              {!s.rvcApplioConfig?.gradioClientInstalled ? <span className="break-all text-yellow-300">{s.rvcApplioConfig?.gradioClientInstallCommand || "npm run applio:install"}</span> : null}
               {s.rvcApplioConfig?.error ? <span className="text-yellow-300">{s.rvcApplioConfig.error}</span> : null}
             </div>
             <Button type="button" size="sm" variant="outline" className="mt-3" onClick={s.refreshPiperRuntime}><RefreshCcw className="mr-2 h-3.5 w-3.5" /> {uiText("Kiểm tra")}</Button>
@@ -188,7 +190,7 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
 
       <NumberSlider label={uiText("Tốc độ đọc")} value={s.narrationRate} min={0.7} max={1.2} suffix="x" step={0.05} onChange={s.setNarrationRate} />
       <NumberSlider label={uiText("Âm lượng voice")} value={s.narrationVol} min={0} max={100} suffix="%" onChange={s.setNarrationVol} />
-      <Button className="w-full" variant={s.voiceProvider === "browser" ? "outline" : "default"} onClick={s.generateVoiceOver} disabled={s.voiceLoading || (s.voiceProvider === "vieneu" && !s.vieneuConfig?.sdkInstalled) || (s.voiceProvider === "applio" && (!s.rvcApplioConfig?.serverOk || applioTtsTemplates.length === 0))}>
+      <Button className="w-full" variant={s.voiceProvider === "browser" ? "outline" : "default"} onClick={s.generateVoiceOver} disabled={s.voiceLoading || (s.voiceProvider === "vieneu" && !s.vieneuConfig?.sdkInstalled) || (s.voiceProvider === "applio" && (!s.rvcApplioConfig?.serverOk || !s.rvcApplioConfig?.gradioClientInstalled || applioTtsTemplates.length === 0))}>
         {s.voiceLoading ? "Đang tạo voice..." : s.voiceProvider === "browser" ? "Đọc thử Browser TTS" : "Tạo voice-over cho video"}
       </Button>
       {s.voiceUrl ? (
@@ -196,6 +198,7 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
           <audio className="h-10 min-w-0 flex-1" controls src={s.voiceUrl} />
           <div className="grid gap-1 text-xs text-muted-foreground">
             <span>{uiText("Applio custom voice:")} <strong className={s.rvcApplioConfig?.serverOk ? "text-emerald-300" : "text-rose-300"}>{s.rvcApplioConfig?.serverOk ? "đã kết nối" : "chưa chạy"}</strong></span>
+            <span>{uiText("gradio_client:")} <strong className={s.rvcApplioConfig?.gradioClientInstalled ? "text-emerald-300" : "text-rose-300"}>{s.rvcApplioConfig?.gradioClientInstalled ? "OK" : "thiếu package"}</strong></span>
             <span>{uiText("Convert templates:")} <strong>{applioTemplates.length}</strong></span>
             <span>{uiText("Workflow:")} <strong>{uiText("audio đã tạo → chuyển voice bằng Applio")}</strong></span>
             {s.rvcApplioConfig?.error ? <span className="text-yellow-300">{s.rvcApplioConfig.error}</span> : null}
@@ -211,7 +214,7 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
                 {uiText("Chưa có Applio convert template. Thêm trong Settings -> Voice -> Applio.")}
               </div>
             )}
-            <Button type="button" variant="outline" onClick={() => s.convertVoiceWithApplio(applioTemplateId || undefined)} disabled={s.voiceConverting || !s.voiceRelativePath || !s.rvcApplioConfig?.serverOk || applioTemplates.length === 0}>
+            <Button type="button" variant="outline" onClick={() => s.convertVoiceWithApplio(applioTemplateId || undefined)} disabled={s.voiceConverting || !s.voiceRelativePath || !s.rvcApplioConfig?.serverOk || !s.rvcApplioConfig?.gradioClientInstalled || applioTemplates.length === 0}>
               {s.voiceConverting ? "Đang chuyển..." : "Chuyển sang custom voice"}
             </Button>
           </div>

@@ -24,6 +24,7 @@ import { resolveGeneratedResource } from "./ResourceService";
 import { resolveRuntimeExecutable } from "./RuntimeEnvService";
 import { readRvcTemplates, readRvcTtsTemplates, type RvcRuntimeTemplate } from "./RvcApplioTemplateParser";
 import { assertApplioTemplateReady } from "./RvcApplioTemplateValidation";
+import { buildPythonPackageInstallCommand, checkPythonPackage } from "./PythonPackageCheckService";
 
 const CONFIG_TIMEOUT_MS = 3500;
 const BRIDGE_PATH = path.join(PROJECT_ROOT, "scripts", "rvc-applio-gradio-bridge.py");
@@ -34,13 +35,16 @@ export async function getRvcApplioConfigStatus(envOverrides: RuntimeEnvValues = 
   try {
     config = readRvcConfig(env);
   } catch (error) {
+    const fallbackConfig = await withGradioClientStatus(readRvcConfigWithoutTemplates(env));
     return {
-      ...readRvcConfigWithoutTemplates(env),
+      ...fallbackConfig,
       enabled: false,
       serverOk: false,
       error: error instanceof Error ? error.message : "Cấu hình RVC/Applio không hợp lệ.",
     };
   }
+
+  config = await withGradioClientStatus(config);
 
   try {
     await fetchWithTimeout(config.baseUrl, { method: "GET" }, CONFIG_TIMEOUT_MS);
@@ -209,6 +213,7 @@ function readRvcConfig(env: RuntimeEnvValues): RvcRuntimeConfig {
     pythonExe,
     pythonExists: commandLooksExecutable(pythonExe),
     bridgeExists: fs.existsSync(BRIDGE_PATH),
+    ...getDefaultGradioClientStatus(pythonExe),
     argTemplateConfigured: runtimeTemplates.some((template) => template.argTemplateConfigured),
     ttsTemplateConfigured: ttsRuntimeTemplates.some((template) => template.argTemplateConfigured),
     f0Method: primaryTemplate?.f0Method || DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.f0Method,
@@ -236,6 +241,7 @@ function readRvcConfigWithoutTemplates(env: RuntimeEnvValues): RvcRuntimeConfig 
     pythonExe,
     pythonExists: commandLooksExecutable(pythonExe),
     bridgeExists: fs.existsSync(BRIDGE_PATH),
+    ...getDefaultGradioClientStatus(pythonExe),
     argTemplateConfigured: false,
     ttsTemplateConfigured: false,
     f0Method: DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.f0Method,
@@ -265,6 +271,23 @@ function selectRvcTemplate(config: RvcRuntimeConfig, templateId?: string, mode: 
 function toTemplateStatus(template: RvcRuntimeTemplate): RvcApplioTemplateStatus {
   const { argTemplate: _argTemplate, ...status } = template;
   return status;
+}
+
+function getDefaultGradioClientStatus(pythonExe: string) {
+  return {
+    gradioClientInstalled: false,
+    gradioClientInstallCommand: buildPythonPackageInstallCommand(pythonExe, "gradio_client"),
+  };
+}
+
+async function withGradioClientStatus(config: RvcRuntimeConfig): Promise<RvcRuntimeConfig> {
+  const status = await checkPythonPackage(config.pythonExe, "gradio_client", CONFIG_TIMEOUT_MS);
+  return {
+    ...config,
+    gradioClientInstalled: status.installed,
+    gradioClientInstallCommand: status.installCommand,
+    gradioClientCheckError: status.error,
+  };
 }
 
 async function readDurationOrZero(audioPath: string, envOverrides: RuntimeEnvValues) {

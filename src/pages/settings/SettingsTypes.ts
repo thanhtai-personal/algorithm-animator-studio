@@ -75,6 +75,9 @@ export type RvcApplioConfigResponse = {
   pythonExe: string;
   pythonExists: boolean;
   bridgeExists: boolean;
+  gradioClientInstalled: boolean;
+  gradioClientInstallCommand: string;
+  gradioClientCheckError?: string;
   argTemplateConfigured: boolean;
   f0Method: string;
   pitch: number;

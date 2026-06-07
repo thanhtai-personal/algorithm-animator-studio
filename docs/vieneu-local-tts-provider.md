@@ -48,7 +48,7 @@ npm run vieneu:health
 Khuyến nghị:
 
 - Python 3.10 hoặc 3.11.
-- Windows nên dùng virtualenv riêng cho VieNeu.
+- Windows nên dùng virtualenv riêng cho VieNeu; Python global chỉ dùng để bootstrap/tạo `.venv`.
 - Có mạng trong lần chạy đầu tiên để SDK tải model/cache nếu cần.
 - CPU vẫn test được với `VIENEU_MODE=turbo`; GPU/standard cho chất lượng tốt hơn.
 
@@ -66,12 +66,14 @@ Cách chuẩn là tạo virtual environment ngay trong `libs/VieNeu-TTS` và cà
 npm run vieneu:install
 ```
 
-Lệnh trên mặc định dùng:
+Lệnh trên mặc định dùng Python global để tạo `.venv`, sau đó cài SDK vào Python riêng của VieNeu:
 
 ```txt
 VIENEU_SOURCE_DIR=libs/VieNeu-TTS
 VIENEU_PYTHON=libs/VieNeu-TTS/.venv/Scripts/python.exe
 ```
+
+Nếu chưa tạo `.venv`, health check sẽ fallback sang Python global để báo đúng lỗi thiếu SDK/dependencies, thay vì báo nhầm là mất Python.
 
 Kiểm tra import SDK:
 
@@ -110,7 +112,7 @@ Giải thích nhanh:
 | Biến | Ý nghĩa |
 | --- | --- |
 | `VIENEU_SOURCE_DIR` | Source VieNeu-TTS, mặc định `libs/VieNeu-TTS`. Dùng cho `npm run vieneu:install`, `npm run vieneu:health`, `npm run dev:vieneu`. |
-| `VIENEU_PYTHON` | Python executable trong virtualenv của source VieNeu-TTS, mặc định `libs/VieNeu-TTS/.venv/Scripts/python.exe`. |
+| `VIENEU_PYTHON` | Python executable trong virtualenv của source VieNeu-TTS, mặc định `libs/VieNeu-TTS/.venv/Scripts/python.exe`. Có thể set `python` để dùng Python global nếu global đã cài SDK VieNeu. |
 | `VIENEU_START_MODE` | Chế độ process VieNeu khi `npm run dev`: `bridge` để health-check và chờ backend gọi on-demand, `gradio` để mở UI Gradio, `off` để tắt. |
 | `VIENEU_AUTO_START` | Đặt `false` nếu không muốn `npm run dev` tự chạy process VieNeu. |
 | `VIENEU_MODE` | `turbo`, `standard`, hoặc `remote`. CPU nên test bằng `turbo`. |

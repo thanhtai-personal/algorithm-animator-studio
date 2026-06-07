@@ -10,12 +10,13 @@ const EXTRA_INDEX_URL = "https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu
 
 const sourceDir = path.resolve(runtimeEnv.VIENEU_SOURCE_DIR || DEFAULT_SOURCE_DIR);
 const venvDir = path.join(sourceDir, ".venv");
-const pythonExe = path.resolve(
-  runtimeEnv.VIENEU_PYTHON ||
-  (process.platform === "win32"
-    ? path.join(venvDir, "Scripts", "python.exe")
-    : path.join(venvDir, "bin", "python")),
-);
+const venvPythonExe = process.platform === "win32"
+  ? path.join(venvDir, "Scripts", "python.exe")
+  : path.join(venvDir, "bin", "python");
+const bootstrapPython = resolveCommand(runtimeEnv.VIENEU_BOOTSTRAP_PYTHON || "python");
+const pythonExe = runtimeEnv.VIENEU_PYTHON
+  ? resolveCommand(runtimeEnv.VIENEU_PYTHON)
+  : venvPythonExe;
 
 function run(command, args, options = {}) {
   console.log(`> ${command} ${args.map((item) => (item.includes(" ") ? `"${item}"` : item)).join(" ")}`);
@@ -40,7 +41,7 @@ if (!fs.existsSync(path.join(sourceDir, "pyproject.toml")) && !fs.existsSync(pat
 }
 
 if (!fs.existsSync(pythonExe)) {
-  run("python", ["-m", "venv", venvDir]);
+  run(bootstrapPython, ["-m", "venv", venvDir]);
 }
 
 run(pythonExe, ["-m", "pip", "install", "--upgrade", "pip", "setuptools", "wheel"]);
@@ -50,6 +51,16 @@ run(pythonExe, ["-c", "import vieneu; print(getattr(vieneu, '__version__', 'dev'
 console.log("\nVieNeu-TTS source install OK.");
 console.log(`VIENEU_PYTHON=${pythonExe.replace(/\\/g, "/")}`);
 console.log("Copy giá trị VIENEU_PYTHON này vào .env hoặc Settings -> Voice -> VieNeu.");
+
+function resolveCommand(value) {
+  const trimmed = String(value || "").trim();
+  if (!trimmed || path.isAbsolute(trimmed) || !looksLikePath(trimmed)) return trimmed;
+  return path.resolve(projectRoot, trimmed);
+}
+
+function looksLikePath(value) {
+  return value.includes("/") || value.includes("\\");
+}
 
 function readDotEnv(filePath) {
   if (!fs.existsSync(filePath)) return {};

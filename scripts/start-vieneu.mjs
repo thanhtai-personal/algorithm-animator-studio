@@ -8,20 +8,14 @@ const runtimeEnv = { ...dotEnv, ...process.env };
 const DEFAULT_SOURCE_DIR = path.join(projectRoot, "libs", "VieNeu-TTS");
 const sourceDir = path.resolve(runtimeEnv.VIENEU_SOURCE_DIR || DEFAULT_SOURCE_DIR);
 const venvDir = path.join(sourceDir, ".venv");
-const pythonExe = path.resolve(
-  runtimeEnv.VIENEU_PYTHON ||
-    (process.platform === "win32"
-      ? path.join(venvDir, "Scripts", "python.exe")
-      : path.join(venvDir, "bin", "python")),
-);
+const defaultVenvPython = process.platform === "win32"
+  ? path.join(venvDir, "Scripts", "python.exe")
+  : path.join(venvDir, "bin", "python");
+const pythonExe = resolveVieneuPython(runtimeEnv.VIENEU_PYTHON || "", defaultVenvPython);
 const startMode = String(runtimeEnv.VIENEU_START_MODE || "bridge").trim().toLowerCase();
 const startCommand = String(runtimeEnv.VIENEU_START_COMMAND || "").trim();
 const healthScript = path.join(projectRoot, "scripts", "vieneu-health.py");
-const env = {
-  ...runtimeEnv,
-  VIENEU_SOURCE_DIR: sourceDir,
-  VIENEU_PYTHON: pythonExe,
-};
+const env = buildVieneuEnv(runtimeEnv, sourceDir, pythonExe);
 
 if (String(runtimeEnv.VIENEU_AUTO_START || "true").toLowerCase() === "false" || startMode === "off") {
   console.log("[vieneu] auto start disabled; skipping VieNeu dev process.");
@@ -34,9 +28,9 @@ if (!fs.existsSync(sourceDir)) {
   process.exit(0);
 }
 
-if (!fs.existsSync(pythonExe)) {
-  console.warn(`[vieneu] Python venv not found: ${pythonExe}`);
-  console.warn("[vieneu] Run npm run vieneu:install, then restart npm run dev.");
+if (!commandLooksExecutable(pythonExe)) {
+  console.warn(`[vieneu] Python not found: ${pythonExe}`);
+  console.warn("[vieneu] Run npm run vieneu:install, or set VIENEU_PYTHON=python in .env to use global Python.");
   process.exit(0);
 }
 
@@ -103,6 +97,52 @@ function keepAlive() {
   };
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
+}
+
+function resolveVieneuPython(value, defaultVenvPython) {
+  const requested = String(value || "").trim();
+  const configured = requested ? resolveCommand(requested) : defaultVenvPython;
+
+  if (commandLooksExecutable(configured)) return configured;
+
+  if (!requested || samePath(configured, defaultVenvPython)) {
+    return process.platform === "win32" ? "python" : "python3";
+  }
+
+  return configured;
+}
+
+function resolveCommand(value) {
+  if (path.isAbsolute(value) || !looksLikePath(value)) return value;
+  return path.resolve(projectRoot, value);
+}
+
+function commandLooksExecutable(command) {
+  if (["python", "python3", "py"].includes(command)) return true;
+  return fs.existsSync(command);
+}
+
+function buildVieneuEnv(baseEnv, sourceDir, pythonExe) {
+  const sourceSrcDir = path.join(sourceDir, "src");
+  const pythonPath = [
+    fs.existsSync(sourceSrcDir) ? sourceSrcDir : "",
+    baseEnv.PYTHONPATH || "",
+  ].filter(Boolean).join(path.delimiter);
+
+  return {
+    ...baseEnv,
+    VIENEU_SOURCE_DIR: sourceDir,
+    VIENEU_PYTHON: pythonExe,
+    ...(pythonPath ? { PYTHONPATH: pythonPath } : {}),
+  };
+}
+
+function looksLikePath(value) {
+  return value.includes("/") || value.includes("\\");
+}
+
+function samePath(left, right) {
+  return path.normalize(left).toLowerCase() === path.normalize(right).toLowerCase();
 }
 
 function readDotEnv(filePath) {

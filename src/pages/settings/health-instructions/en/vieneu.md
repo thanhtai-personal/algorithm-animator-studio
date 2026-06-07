@@ -14,6 +14,8 @@ npm run dev
 
 If you want to update VieNeu from your own fork, replace the source under `libs/VieNeu-TTS` or set `VIENEU_SOURCE_DIR` to your fork path before running `npm run vieneu:install`.
 
+If you want to use global Python instead of `.venv`, set `VIENEU_PYTHON=python` in `.env` or Settings -> Voice -> VieNeu. This only works when the global Python environment already has the VieNeu SDK/dependencies installed.
+
 ### Values to enter in settings
 
 1. In Settings -> Voice -> VieNeu, set `VIENEU_PYTHON` to `{{VIENEU_PYTHON}}`.

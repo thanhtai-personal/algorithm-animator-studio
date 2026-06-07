@@ -4,7 +4,8 @@ VieNeu chạy qua source local trong `libs/VieNeu-TTS`. Health kiểm tra Python
 
 1. Source VieNeu-TTS đã được đặt trong repo tại `libs/VieNeu-TTS`.
 2. Chạy lệnh cài để tạo `.venv` ngay trong thư mục đó và cài editable từ source.
-3. Sau khi cài xong, `npm run dev` sẽ tự chạy thêm process `vieneu` để kiểm tra bridge sẵn sàng.
+3. Nếu máy đã có Python global, script sẽ dùng Python global để tạo `.venv`. Không cần cài Python thêm lần nữa.
+4. Sau khi cài xong, `npm run dev` sẽ tự chạy thêm process `vieneu` để kiểm tra bridge sẵn sàng.
 
 ```bat
 npm run vieneu:install
@@ -13,6 +14,8 @@ npm run dev
 ```
 
 Nếu muốn cập nhật VieNeu từ fork riêng, thay source trong `libs/VieNeu-TTS` hoặc set `VIENEU_SOURCE_DIR` sang thư mục fork của bạn trước khi chạy `npm run vieneu:install`.
+
+Nếu muốn dùng luôn Python global thay vì `.venv`, điền `VIENEU_PYTHON=python` trong `.env` hoặc Settings -> Voice -> VieNeu. Cách này chỉ hoạt động khi Python global đã cài được SDK/dependencies VieNeu.
 
 ### Lấy thông tin điền setting
 

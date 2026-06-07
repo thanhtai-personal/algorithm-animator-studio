@@ -23,6 +23,7 @@ import { resolveRuntimeExecutable } from "./RuntimeEnvService";
 
 const HEALTH_PATH = path.join(PROJECT_ROOT, "scripts", "vieneu-health.py");
 const BRIDGE_PATH = path.join(PROJECT_ROOT, "scripts", "vieneu-generate.py");
+const DEFAULT_SOURCE_DIR = path.join(PROJECT_ROOT, "libs", "VieNeu-TTS");
 const DEFAULT_TIMEOUT_MS = 20 * 60 * 1000;
 const CONFIG_TIMEOUT_MS = 8000;
 
@@ -54,7 +55,7 @@ export async function getVieneuConfigStatus(envOverrides: RuntimeEnvValues = {})
   }
 
   try {
-    const result = await runProcess(config.pythonExe, [HEALTH_PATH], CONFIG_TIMEOUT_MS);
+    const result = await runProcess(config.pythonExe, [HEALTH_PATH], CONFIG_TIMEOUT_MS, config);
     const payload = parseJsonLine(result.stdout);
     return {
       ...baseStatus,
@@ -106,7 +107,7 @@ export async function generateVieneuAudio(body: VieneuGenerateBody, envOverrides
     remoteModel: config.remoteModel,
   }, null, 2), "utf8");
 
-  const result = await runProcess(config.pythonExe, [BRIDGE_PATH, "--payload", payloadPath], config.timeoutMs);
+  const result = await runProcess(config.pythonExe, [BRIDGE_PATH, "--payload", payloadPath], config.timeoutMs, config);
   if (!fs.existsSync(outputPath)) {
     throw new Error(JSON.stringify({
       message: "VieNeu-TTS chạy xong nhưng không tạo tệp âm thanh.",
@@ -138,6 +139,7 @@ export async function generateVieneuAudio(body: VieneuGenerateBody, envOverrides
 
 type VieneuRuntimeConfig = {
   pythonExe: string;
+  sourceDir: string;
   mode: string;
   emotion: string;
   defaultVoiceId: string;
@@ -149,8 +151,11 @@ type VieneuRuntimeConfig = {
 };
 
 function readVieneuConfig(env: RuntimeEnvValues): VieneuRuntimeConfig {
+  const sourceDir = resolveRuntimePath(env.VIENEU_SOURCE_DIR || DEFAULT_SOURCE_DIR);
+
   return {
-    pythonExe: resolveRuntimeExecutable(env.VIENEU_PYTHON || "python"),
+    sourceDir,
+    pythonExe: resolveVieneuPython(env.VIENEU_PYTHON || "", sourceDir),
     mode: normalizeMode(env.VIENEU_MODE || "turbo"),
     emotion: normalizeEmotion(env.VIENEU_EMOTION || "natural"),
     defaultVoiceId: env.VIENEU_DEFAULT_VOICE_ID || "",
@@ -179,6 +184,38 @@ function normalizeEmotion(value: string) {
   return value.trim().toLowerCase() || "natural";
 }
 
+function resolveVieneuPython(value: string, sourceDir: string) {
+  const defaultVenvPython = getDefaultVenvPython(sourceDir);
+  const requested = value.trim();
+  const configured = resolveRuntimeExecutable(requested || defaultVenvPython);
+
+  if (commandLooksExecutable(configured)) return configured;
+
+  // Khi chưa tạo .venv trong libs/VieNeu-TTS, vẫn fallback sang Python global để
+  // health-check báo đúng lỗi thiếu SDK/dependencies thay vì báo mất Python.
+  if (!requested || samePath(configured, defaultVenvPython)) {
+    return process.platform === "win32" ? "python" : "python3";
+  }
+
+  return configured;
+}
+
+function getDefaultVenvPython(sourceDir: string) {
+  return process.platform === "win32"
+    ? path.join(sourceDir, ".venv", "Scripts", "python.exe")
+    : path.join(sourceDir, ".venv", "bin", "python");
+}
+
+function resolveRuntimePath(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+  return path.isAbsolute(trimmed) ? trimmed : path.resolve(PROJECT_ROOT, trimmed);
+}
+
+function samePath(left: string, right: string) {
+  return path.normalize(left).toLowerCase() === path.normalize(right).toLowerCase();
+}
+
 function resolveReferenceAudioPath(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return "";
@@ -199,9 +236,13 @@ async function readDurationOrZero(audioPath: string, envOverrides: RuntimeEnvVal
   }
 }
 
-function runProcess(command: string, args: string[], timeoutMs: number): Promise<{ stdout: string; stderr: string }> {
+function runProcess(command: string, args: string[], timeoutMs: number, config: VieneuRuntimeConfig): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { windowsHide: true });
+    const child = spawn(command, args, {
+      cwd: PROJECT_ROOT,
+      env: buildVieneuProcessEnv(config),
+      windowsHide: true,
+    });
     const timeout = setTimeout(() => {
       child.kill();
       reject(new Error("VieNeu-TTS timeout."));
@@ -237,6 +278,20 @@ function parseJsonLine(stdout: string): Record<string, unknown> {
 
 function stringValue(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function buildVieneuProcessEnv(config: VieneuRuntimeConfig): NodeJS.ProcessEnv {
+  const sourceSrcDir = path.join(config.sourceDir, "src");
+  const pythonPath = [
+    fs.existsSync(sourceSrcDir) ? sourceSrcDir : "",
+    process.env.PYTHONPATH || "",
+  ].filter(Boolean).join(path.delimiter);
+
+  return {
+    ...process.env,
+    VIENEU_SOURCE_DIR: config.sourceDir,
+    ...(pythonPath ? { PYTHONPATH: pythonPath } : {}),
+  };
 }
 
 function commandLooksExecutable(command: string) {

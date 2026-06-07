@@ -37,11 +37,13 @@ def main() -> int:
     args = parser.parse_args()
 
     payload = json.loads(Path(args.payload).read_text(encoding="utf-8"))
+    output_path = Path(payload["outputPath"])
+    payload["gradioOutputPath"] = make_temp_audio_path(output_path)
+    payload["gradioTtsOutputPath"] = make_temp_audio_path(output_path.with_name(f"{output_path.stem}.tts{output_path.suffix}"))
     client = Client(payload["baseUrl"])
     api_name = payload.get("apiName") or "/enforce_terms"
     rendered_args = [render_template_arg(item, payload) for item in payload["argTemplate"]]
     result = client.predict(*rendered_args, api_name=api_name)
-    output_path = Path(payload["outputPath"])
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     audio_path = find_audio_path(result)
@@ -56,12 +58,12 @@ def main() -> int:
 
 def render_template_arg(value: Any, payload: dict[str, Any]) -> Any:
     if isinstance(value, str):
-        output_path = Path(payload["outputPath"])
         mapping = {
             "${input}": lambda: handle_file(payload["inputPath"]),
             "${input_path}": lambda: payload["inputPath"],
-            "${output}": lambda: payload["outputPath"],
-            "${tts_output}": lambda: str(output_path.with_name(f"{output_path.stem}.tts{output_path.suffix}")),
+            "${output}": lambda: payload["gradioOutputPath"],
+            "${tts_output}": lambda: payload["gradioTtsOutputPath"],
+            "${final_output}": lambda: payload["outputPath"],
             "${text}": lambda: payload.get("text", ""),
             "${model}": lambda: payload.get("modelName", ""),
             "${model_name}": lambda: payload.get("modelName", ""),
@@ -91,6 +93,13 @@ def render_template_arg(value: Any, payload: dict[str, Any]) -> Any:
         return {key: render_template_arg(item, payload) for key, item in value.items()}
 
     return value
+
+
+def make_temp_audio_path(output_path: Path) -> str:
+    suffix = output_path.suffix if output_path.suffix.lower() in AUDIO_EXTENSIONS else ".wav"
+    handle = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    handle.close()
+    return handle.name
 
 
 def find_audio_path(value: Any) -> str | None:

@@ -379,9 +379,7 @@ export function useLongContentStudio() {
   async function openSelectedVoiceFolder() {
     try { await parseApiResponse(await fetch(buildApiUrl("/api/system/open-directory"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: `server/data/generated/${voiceRelativePath}` }) })); } catch (error) { toast.error(error instanceof Error ? error.message : "Không mở được thư mục voice."); }
   }
-  function updateScriptScene(sceneId: string, field: ScriptSceneField, value: string) {
-    setScriptOverrides((current) => ({ ...current, [sceneId]: { ...current[sceneId], [field]: value } }));
-  }
+  function updateScriptScene(sceneId: string, field: ScriptSceneField, value: string) { setScriptOverrides((current) => ({ ...current, [sceneId]: { ...current[sceneId], [field]: value } })); }
   function resetScriptScene(sceneId: string) {
     setScriptOverrides((current) => { const next = { ...current }; delete next[sceneId]; return next; });
   }

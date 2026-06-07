@@ -348,6 +348,21 @@ function formatRvcBridgeError(command: string, code: number | null, stderr: stri
     }, null, 2);
   }
 
+  const missingApiMatch = stderr.match(/Cannot find a function with [`'"]api_name[`'"]:\s*([^\s.]+)/i);
+  if (missingApiMatch || /Cannot find a function with [`'"]api_name[`'"]/i.test(stderr)) {
+    const apiName = missingApiMatch?.[1] ?? "";
+    return JSON.stringify({
+      message: "Applio không có endpoint Gradio API đang cấu hình.",
+      code,
+      apiName,
+      hint: apiName
+        ? `Endpoint ${apiName} không tồn tại trên Applio server đang chạy. Mở Applio đúng tab, bật Use via API, rồi copy đúng api_name vào Settings -> Voice -> Applio templates.`
+        : "Mở Applio đúng tab, bật Use via API, rồi copy đúng api_name vào Settings -> Voice -> Applio templates.",
+      stderr,
+      stdout,
+    }, null, 2);
+  }
+
   return JSON.stringify({ message: "Python bridge RVC/Applio thất bại.", code, stderr, stdout }, null, 2);
 }
 

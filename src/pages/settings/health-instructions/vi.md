@@ -61,7 +61,7 @@ Applio/RVC là app Gradio local chạy riêng. Kai Studio cần URL, Python envi
 2. Chọn voice model `.pth` và index `.index`.
 3. Mở `http://127.0.0.1:6969/config` trên browser, đổi host/port nếu bạn dùng URL khác.
 4. Tìm object trong `dependencies` có input/output tương ứng khối convert voice của tab Inference.
-5. Copy giá trị `api_name` thật và điền vào `RVC_APPLIO_API_NAME`. Giá trị thường gặp là `/infer_convert`, nhưng bản Applio của bạn có thể khác hoặc không expose endpoint này.
+5. Copy giá trị `api_name` thật và điền vào `RVC_APPLIO_API_NAME`. Với config Applio hiện tại, voice-to-voice dùng `/enforce_terms`.
 6. Copy đúng thứ tự tham số từ dependency đó vào `convertTemplates[].argTemplate` trong Settings -> Voice -> Applio templates.
 
 ### Lấy api_name cho Applio TTS
@@ -81,8 +81,8 @@ Nếu endpoint trên không có trong `/config`, hãy thay bằng `api_name` th�
 
 ```txt
 RVC_APPLIO_BASE_URL={{APPLIO_BASE_URL}}
-RVC_APPLIO_API_NAME=/infer_convert
-ttsTemplates[].apiName=/infer_tts
+RVC_APPLIO_API_NAME=/enforce_terms
+ttsTemplates[].apiName=/enforce_terms_2
 ```
 
 ## supertonic

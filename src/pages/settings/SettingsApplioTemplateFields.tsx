@@ -20,23 +20,25 @@ type Props = {
 
 const APPLIO_TEMPLATES_PLACEHOLDER = `[
   {
-    "id": "voice-1",
-    "label": "Voice 1",
-    "apiName": "/infer_convert",
-    "modelName": "logs/voice_1/voice_1.pth",
-    "indexPath": "logs/voice_1/voice_1.index",
-    "argTemplate": [0, "\${input}", "\${model}", "\${index}", "\${f0_method}", "\${index_rate}", "\${filter_radius}", 0, 0.25, "\${protect}", "wav"]
+    "id": "kai-voice-v1-convert",
+    "label": "Kai voice v1 - Applio voice conversion",
+    "apiName": "/enforce_terms",
+    "modelName": "logs\\\\kai-voice-v1\\\\kai-voice-v1_100e_3400s.pth",
+    "indexPath": "logs\\\\kai-voice-v1\\\\kai-voice-v1.index",
+    "argTemplate": [true, "\${pitch}", "\${index_rate}", 1, "\${protect}", "\${f0_method}", "\${input_path}", "\${output}", "\${model}", "\${index}"]
   }
 ]`;
 
 const APPLIO_TTS_TEMPLATES_PLACEHOLDER = `[
   {
     "id": "vi-namminh-edge",
-    "label": "Vietnamese NamMinh - Applio EdgeTTS",
-    "apiName": "/infer_tts",
+    "label": "Vietnamese NamMinh - Applio EdgeTTS/RVC",
+    "apiName": "/enforce_terms_2",
     "ttsVoice": "vi-VN-NamMinhNeural",
     "ttsSpeed": 0,
-    "argTemplate": ["\${text}", "\${tts_voice}", "\${tts_speed}"]
+    "modelName": "logs\\\\kai-voice-v1\\\\kai-voice-v1_100e_3400s.pth",
+    "indexPath": "logs\\\\kai-voice-v1\\\\kai-voice-v1.index",
+    "argTemplate": [true, "", "\${text}", "\${tts_voice}", "\${tts_speed}", "\${pitch}", "\${index_rate}", 1, "\${protect}", "\${f0_method}", "\${tts_output}", "\${output}", "\${model}", "\${index}"]
   }
 ]`;
 

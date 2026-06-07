@@ -38,7 +38,7 @@ def main() -> int:
 
     payload = json.loads(Path(args.payload).read_text(encoding="utf-8"))
     client = Client(payload["baseUrl"])
-    api_name = payload.get("apiName") or "/infer_convert"
+    api_name = payload.get("apiName") or "/enforce_terms"
     rendered_args = [render_template_arg(item, payload) for item in payload["argTemplate"]]
     result = client.predict(*rendered_args, api_name=api_name)
     output_path = Path(payload["outputPath"])
@@ -56,10 +56,12 @@ def main() -> int:
 
 def render_template_arg(value: Any, payload: dict[str, Any]) -> Any:
     if isinstance(value, str):
+        output_path = Path(payload["outputPath"])
         mapping = {
             "${input}": lambda: handle_file(payload["inputPath"]),
             "${input_path}": lambda: payload["inputPath"],
             "${output}": lambda: payload["outputPath"],
+            "${tts_output}": lambda: str(output_path.with_name(f"{output_path.stem}.tts{output_path.suffix}")),
             "${text}": lambda: payload.get("text", ""),
             "${model}": lambda: payload.get("modelName", ""),
             "${model_name}": lambda: payload.get("modelName", ""),

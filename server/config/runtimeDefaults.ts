@@ -46,7 +46,7 @@ export const DEFAULT_RUNTIME_ENV_VALUES: Record<string, string> = {
   VIENEU_TIMEOUT_MS: "1200000",
   RVC_APPLIO_BASE_URL: "http://127.0.0.1:6969",
   RVC_APPLIO_START_COMMAND: "",
-  RVC_APPLIO_API_NAME: "/infer_convert",
+  RVC_APPLIO_API_NAME: "/enforce_terms",
   RVC_APPLIO_PYTHON: "python",
   PRO_PREVIEW_FAST_URL: "fast.mp3",
   PRO_PREVIEW_BALANCED_URL: "balanced.mp3",

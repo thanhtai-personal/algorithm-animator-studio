@@ -317,7 +317,7 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
                 label={t(props.lang, "settingsRvcApplioApiNameLabel")}
                 description={t(props.lang, "settingsRvcApplioApiNameDescription")}
                 value={props.form.RVC_APPLIO_API_NAME}
-                placeholder="/infer_convert"
+                placeholder="/enforce_terms"
                 type="text"
                 onChange={(value) => props.onUpdateField("RVC_APPLIO_API_NAME", value)}
               />

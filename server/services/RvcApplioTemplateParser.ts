@@ -30,7 +30,7 @@ function normalizeTemplateItem(item: unknown, index: number, env: RuntimeEnvValu
   return {
     id: sanitizeTemplateId(rawId, index),
     label,
-    apiName: stringValue(record.apiName) || env.RVC_APPLIO_API_NAME || "/infer_convert",
+    apiName: stringValue(record.apiName) || env.RVC_APPLIO_API_NAME || "/enforce_terms",
     modelName,
     indexPath: stringValue(record.indexPath) || stringValue(record.index) || DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.indexPath,
     argTemplate: readTemplateArgs(record),

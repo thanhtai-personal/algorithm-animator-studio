@@ -183,8 +183,8 @@ export const STRINGS = {
     vi: "URL của server Gradio Applio/RVC local, ví dụ http://127.0.0.1:6969.",
   },
   settingsRvcApplioApiNameDescription: {
-    en: "Endpoint copied from the Gradio /config dependencies, for example /infer_convert.",
-    vi: "Endpoint copy từ dependencies trong Gradio /config, ví dụ /infer_convert.",
+    en: "Endpoint copied from the Gradio /config dependencies, for example /enforce_terms.",
+    vi: "Endpoint copy từ dependencies trong Gradio /config, ví dụ /enforce_terms.",
   },
   settingsRvcApplioArgTemplateDescription: {
     en: "JSON array of Gradio arguments. Use placeholders like ${input}, ${model}, ${index}, ${pitch}, ${f0_method}.",

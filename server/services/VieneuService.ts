@@ -296,6 +296,9 @@ function buildVieneuProcessEnv(config: VieneuRuntimeConfig): NodeJS.ProcessEnv {
   return {
     ...process.env,
     VIENEU_SOURCE_DIR: config.sourceDir,
+    VIENEU_PYTHON: config.pythonExe,
+    PYTHONIOENCODING: "utf-8",
+    PYTHONUTF8: "1",
     ...(pythonPath ? { PYTHONPATH: pythonPath } : {}),
   };
 }

@@ -24,6 +24,23 @@ from pathlib import Path
 from typing import Any, Dict
 
 
+def configure_stdio() -> None:
+    for stream_name in ("stdout", "stderr"):
+        stream = getattr(sys, stream_name, None)
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except Exception:
+                pass
+
+
+def json_text(payload: dict) -> str:
+    return json.dumps(payload, ensure_ascii=True)
+
+
+configure_stdio()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate speech with VieNeu-TTS SDK")
     parser.add_argument("--payload", required=True, help="Path to JSON payload")
@@ -71,7 +88,7 @@ def main() -> int:
     if not output_path.exists() or output_path.stat().st_size == 0:
         raise RuntimeError(f"VieNeu-TTS finished but did not create audio: {output_path}")
 
-    print(json.dumps({
+    print(json_text({
         "ok": True,
         "outputPath": str(output_path),
         "sizeBytes": output_path.stat().st_size,
@@ -79,7 +96,7 @@ def main() -> int:
         "emotion": emotion,
         "voiceId": voice_id,
         "referenceAudioPath": reference_audio,
-    }, ensure_ascii=False))
+    }))
     return 0
 
 
@@ -153,5 +170,5 @@ if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except Exception as error:
-        print(json.dumps({"ok": False, "error": str(error)}, ensure_ascii=False), file=sys.stderr)
-        raise
+        print(json_text({"ok": False, "error": str(error)}), file=sys.stderr)
+        raise SystemExit(1) from error

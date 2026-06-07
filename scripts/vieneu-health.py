@@ -6,6 +6,23 @@ import json
 import os
 import sys
 
+
+def configure_stdio() -> None:
+    for stream_name in ("stdout", "stderr"):
+        stream = getattr(sys, stream_name, None)
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except Exception:
+                pass
+
+
+def print_json(payload: dict) -> None:
+    print(json.dumps(payload, ensure_ascii=True))
+
+
+configure_stdio()
+
 BASE_REQUIRED_MODULES = [
     ("sea_g2p", "sea-g2p"),
     ("numpy", "numpy"),
@@ -38,12 +55,12 @@ def main() -> int:
         import vieneu  # type: ignore
         version = getattr(vieneu, "__version__", "unknown")
     except Exception as exc:
-        print(json.dumps({
+        print_json({
             "ok": False,
             "sdkInstalled": False,
             "error": f"Không import được package vieneu: {exc}",
             "installCommand": "npm run vieneu:install",
-        }, ensure_ascii=False))
+        })
         return 1
 
     mode = str(os.environ.get("VIENEU_MODE") or "turbo").strip().lower()
@@ -51,7 +68,7 @@ def main() -> int:
     if missing:
         packages = ", ".join(item["package"] for item in missing)
         modules = ", ".join(item["module"] for item in missing)
-        print(json.dumps({
+        print_json({
             "ok": False,
             "sdkInstalled": False,
             "version": version,
@@ -61,16 +78,16 @@ def main() -> int:
             "installCommand": "npm run vieneu:install",
             "pipHint": f"{sys.executable} -m pip install -e libs/VieNeu-TTS --extra-index-url https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu/",
             "packages": packages,
-        }, ensure_ascii=False))
+        })
         return 1
 
-    print(json.dumps({
+    print_json({
         "ok": True,
         "sdkInstalled": True,
         "version": version,
         "mode": mode,
         "python": sys.executable,
-    }, ensure_ascii=False))
+    })
     return 0
 
 

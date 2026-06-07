@@ -65,6 +65,8 @@ function buildVieneuHealthEnv(baseEnv, sourceDir, pythonExe) {
     ...baseEnv,
     VIENEU_SOURCE_DIR: sourceDir,
     VIENEU_PYTHON: pythonExe,
+    PYTHONIOENCODING: "utf-8",
+    PYTHONUTF8: "1",
     ...(pythonPath ? { PYTHONPATH: pythonPath } : {}),
   };
 }

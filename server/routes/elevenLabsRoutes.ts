@@ -9,8 +9,8 @@ import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
 export function createElevenLabsRouter() {
   const router = Router();
 
-  router.get("/elevenlabs/config", (req, res) => {
-    res.json(getElevenLabsConfigStatus(readRuntimeEnvFromRequest(req)));
+  router.get("/elevenlabs/config", async (req, res) => {
+    res.json(await getElevenLabsConfigStatus(readRuntimeEnvFromRequest(req)));
   });
 
   router.post(

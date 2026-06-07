@@ -7,6 +7,7 @@ import {
   getGeneratedDir,
 } from "../config/paths";
 import { DEFAULT_SUPERTONIC_LANG, DEFAULT_SUPERTONIC_TOTAL_STEPS, DEFAULT_SUPERTONIC_VOICE } from "../config/supertonicDefaults";
+import type { EndpointCheckStatus } from "../models/EndpointHealth";
 import type { SupertonicConfigStatus, SupertonicGenerateBody, SupertonicImportStyleBody, SupertonicVoice } from "../models/Supertonic";
 import { ensureDirectoryExists, getLocalDateFolderName, getUniqueOutputFileWithExtension, sanitizeFileBaseName } from "../utils/audioOutput";
 import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
@@ -30,16 +31,17 @@ export async function getSupertonicConfigStatus(envOverrides: RuntimeEnvValues =
   const env = readEnvValues(envOverrides);
   const baseUrl = getSupertonicBaseUrl(env);
   const fallbackVoice = DEFAULT_SUPERTONIC_VOICE;
+  const endpointChecks: EndpointCheckStatus[] = [];
 
   try {
-    const [health, voices] = await Promise.all([
-      fetchJson<HealthPayload>(`${baseUrl}/v1/health`, "GET"),
-      fetchJson<unknown>(`${baseUrl}/v1/styles`, "GET"),
-    ]);
+    const health = await fetchJson<HealthPayload>(`${baseUrl}/v1/health`, "GET", undefined, endpointChecks, "/v1/health");
+    const voices = await fetchJson<unknown>(`${baseUrl}/v1/styles`, "GET", undefined, endpointChecks, "/v1/styles");
 
     return {
       enabled: true,
       serverOk: true,
+      endpointChecks,
+      endpointsOk: endpointChecks.every((check) => check.ok),
       baseUrl,
       model: health.model || env.SUPERTONIC_MODEL || "supertonic-3",
       defaultVoice: fallbackVoice,
@@ -53,6 +55,8 @@ export async function getSupertonicConfigStatus(envOverrides: RuntimeEnvValues =
     return {
       enabled: false,
       serverOk: false,
+      endpointChecks,
+      endpointsOk: false,
       baseUrl,
       model: env.SUPERTONIC_MODEL || "supertonic-3",
       defaultVoice: fallbackVoice,
@@ -200,14 +204,32 @@ function clampTotalSteps(value: unknown) {
   return Math.round(Math.min(12, Math.max(5, steps)));
 }
 
-async function fetchJson<T>(url: string, method: "GET" | "POST", body?: unknown): Promise<T> {
-  const response = await fetchWithTimeout(url, {
-    method,
-    headers: body ? { "Content-Type": "application/json" } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+async function fetchJson<T>(
+  url: string,
+  method: "GET" | "POST",
+  body?: unknown,
+  endpointChecks?: EndpointCheckStatus[],
+  label?: string
+): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(url, {
+      method,
+      headers: body ? { "Content-Type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "Endpoint request failed.";
+    endpointChecks?.push({ label: label || url, method, url, ok: false, detail });
+    throw error;
+  }
 
-  if (!response.ok) throw new Error(await readSupertonicError(response));
+  if (!response.ok) {
+    const detail = await readSupertonicError(response);
+    endpointChecks?.push({ label: label || url, method, url, ok: false, detail });
+    throw new Error(detail);
+  }
+  endpointChecks?.push({ label: label || url, method, url, ok: true });
   return response.json() as Promise<T>;
 }
 

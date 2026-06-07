@@ -1,3 +1,5 @@
+import type { EndpointCheckStatus } from "./EndpointHealth";
+
 export type SupertonicVoice = {
   id: string;
   label: string;
@@ -15,6 +17,8 @@ export type SupertonicConfigStatus = {
   voices: SupertonicVoice[];
   sampleRate?: number;
   version?: string;
+  endpointChecks: EndpointCheckStatus[];
+  endpointsOk: boolean;
   error?: string;
 };
 

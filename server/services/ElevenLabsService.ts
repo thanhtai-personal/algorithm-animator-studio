@@ -8,7 +8,8 @@ import {
   getElevenLabsApiKey,
   getElevenLabsModel,
 } from "../config/elevenLabsConfig";
-import type { ElevenLabsGenerateBody } from "../models/ElevenLabs";
+import type { ElevenLabsConfigStatus, ElevenLabsGenerateBody } from "../models/ElevenLabs";
+import type { EndpointCheckStatus } from "../models/EndpointHealth";
 import {
   ensureDirectoryExists,
   getLocalDateFolderName,
@@ -17,12 +18,17 @@ import {
 } from "../utils/audioOutput";
 
 const ELEVENLABS_API_BASE_URL = "https://api.elevenlabs.io/v1";
+const ELEVENLABS_HEALTH_TIMEOUT_MS = 8000;
 
-export function getElevenLabsConfigStatus(envOverrides: RuntimeEnvValues = {}) {
+export async function getElevenLabsConfigStatus(envOverrides: RuntimeEnvValues = {}): Promise<ElevenLabsConfigStatus> {
+  const apiKey = getElevenLabsApiKey(envOverrides);
+  const endpointChecks = apiKey ? [await checkElevenLabsAccountEndpoint(apiKey)] : [];
   return {
-    hasApiKey: Boolean(getElevenLabsApiKey(envOverrides)),
+    hasApiKey: Boolean(apiKey),
     models: getConfiguredElevenLabsModels(envOverrides),
     voices: getConfiguredElevenLabsVoices(envOverrides),
+    endpointChecks,
+    endpointsOk: endpointChecks.length > 0 && endpointChecks.every((check) => check.ok),
     pricing: {
       sourceLabel: "Bảng giá API",
       sourceUrl: "https://elevenlabs.io/pricing/api",
@@ -30,6 +36,32 @@ export function getElevenLabsConfigStatus(envOverrides: RuntimeEnvValues = {}) {
         "Giá hiển thị chưa gồm thuế và có thể thay đổi theo gói sử dụng, tuỳ chọn giọng hoặc bảng giá mới.",
     },
   };
+}
+
+async function checkElevenLabsAccountEndpoint(apiKey: string): Promise<EndpointCheckStatus> {
+  const url = `${ELEVENLABS_API_BASE_URL}/user`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ELEVENLABS_HEALTH_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, { method: "GET", headers: { "xi-api-key": apiKey }, signal: controller.signal });
+    return {
+      label: "/v1/user",
+      method: "GET",
+      url,
+      ok: response.ok,
+      detail: response.ok ? "ElevenLabs API key accepted." : await response.text(),
+    };
+  } catch (error) {
+    return {
+      label: "/v1/user",
+      method: "GET",
+      url,
+      ok: false,
+      detail: error instanceof Error ? error.message : "Cannot reach ElevenLabs API.",
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export async function generateElevenLabsAudio(

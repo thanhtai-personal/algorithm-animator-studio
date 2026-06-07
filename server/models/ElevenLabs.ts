@@ -1,3 +1,5 @@
+import type { EndpointCheckStatus } from "./EndpointHealth";
+
 export type ElevenLabsModel = {
   id: string;
   label: string;
@@ -20,4 +22,13 @@ export type ElevenLabsGenerateBody = {
   modelId?: string;
   voiceId?: string;
   fileName?: string;
+};
+
+export type ElevenLabsConfigStatus = {
+  hasApiKey: boolean;
+  models: ElevenLabsModel[];
+  voices: ElevenLabsVoice[];
+  endpointChecks: EndpointCheckStatus[];
+  endpointsOk: boolean;
+  pricing: { sourceLabel: string; sourceUrl: string; disclaimer: string };
 };

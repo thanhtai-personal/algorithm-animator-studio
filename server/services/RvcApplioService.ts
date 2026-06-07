@@ -25,6 +25,7 @@ import { resolveRuntimeExecutable } from "./RuntimeEnvService";
 import { readRvcTemplates, readRvcTtsTemplates, type RvcRuntimeTemplate } from "./RvcApplioTemplateParser";
 import { assertApplioTemplateReady } from "./RvcApplioTemplateValidation";
 import { buildPythonPackageInstallCommand, checkPythonPackage } from "./PythonPackageCheckService";
+import { checkGradioApiEndpoints } from "./GradioEndpointCheckService";
 
 const CONFIG_TIMEOUT_MS = 3500;
 const BRIDGE_PATH = path.join(PROJECT_ROOT, "scripts", "rvc-applio-gradio-bridge.py");
@@ -48,12 +49,18 @@ export async function getRvcApplioConfigStatus(envOverrides: RuntimeEnvValues = 
 
   try {
     await fetchWithTimeout(config.baseUrl, { method: "GET" }, CONFIG_TIMEOUT_MS);
-    return { ...config, enabled: config.argTemplateConfigured || config.ttsTemplateConfigured, serverOk: true };
+    const endpointStatus = await checkGradioApiEndpoints(config.baseUrl, [
+      { label: "voice to voice", apiName: config.apiName },
+      ...config.runtimeTemplates.map((template) => ({ label: `convert · ${template.label}`, apiName: template.apiName })),
+      ...config.ttsRuntimeTemplates.map((template) => ({ label: `tts · ${template.label}`, apiName: template.apiName })),
+    ], CONFIG_TIMEOUT_MS);
+    return { ...config, enabled: config.argTemplateConfigured || config.ttsTemplateConfigured, serverOk: true, endpointChecks: endpointStatus.checks, endpointsOk: endpointStatus.ok };
   } catch (error) {
     return {
       ...config,
       enabled: config.argTemplateConfigured || config.ttsTemplateConfigured,
       serverOk: false,
+      endpointsOk: false,
       error: error instanceof Error ? error.message : "Không kết nối được RVC/Applio server.",
     };
   }
@@ -223,6 +230,8 @@ function readRvcConfig(env: RuntimeEnvValues): RvcRuntimeConfig {
     filterRadius: primaryTemplate?.filterRadius ?? DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.filterRadius,
     templates: runtimeTemplates.map(toTemplateStatus),
     ttsTemplates: ttsRuntimeTemplates.map(toTemplateStatus),
+    endpointChecks: [],
+    endpointsOk: false,
     runtimeTemplates,
     ttsRuntimeTemplates,
   };
@@ -251,6 +260,8 @@ function readRvcConfigWithoutTemplates(env: RuntimeEnvValues): RvcRuntimeConfig 
     filterRadius: DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.filterRadius,
     templates: [],
     ttsTemplates: [],
+    endpointChecks: [],
+    endpointsOk: false,
     runtimeTemplates: [],
     ttsRuntimeTemplates: [],
   };

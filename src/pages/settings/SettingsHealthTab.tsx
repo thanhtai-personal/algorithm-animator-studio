@@ -43,11 +43,12 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
     !props.rvcApplio.bridgeExists ||
     !props.rvcApplio.gradioClientInstalled ||
     !props.rvcApplio.startCommandConfigured ||
+    !props.rvcApplio.endpointsOk ||
     (!props.rvcApplio.argTemplateConfigured && !props.rvcApplio.ttsTemplateConfigured)
   ));
-  const supertonicFailed = Boolean(props.supertonic && !props.supertonic.serverOk);
+  const supertonicFailed = Boolean(props.supertonic && (!props.supertonic.serverOk || !props.supertonic.endpointsOk));
   const vieneuFailed = Boolean(props.vieneu && (!props.vieneu.sdkInstalled || !props.vieneu.pythonExists || !props.vieneu.bridgeExists));
-  const elevenLabsFailed = Boolean(props.elevenLabs && !props.elevenLabs.hasApiKey);
+  const elevenLabsFailed = Boolean(props.elevenLabs && (!props.elevenLabs.hasApiKey || !props.elevenLabs.endpointsOk));
   const sectionState = {
     system: {
       passed: Boolean(props.health?.ok && props.health?.generatedDir),
@@ -65,7 +66,7 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
       instruction: applioInstruction(props.lang, props.rvcApplio),
     },
     supertonic: {
-      passed: Boolean(props.supertonic?.serverOk),
+      passed: Boolean(props.supertonic?.serverOk && props.supertonic?.endpointsOk),
       failed: supertonicFailed,
       instruction: supertonicInstruction(props.lang, props.supertonic),
     },
@@ -75,7 +76,7 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
       instruction: vieneuInstruction(props.lang, props.vieneu),
     },
     elevenlabs: {
-      passed: Boolean(props.elevenLabs?.hasApiKey),
+      passed: Boolean(props.elevenLabs?.hasApiKey && props.elevenLabs?.endpointsOk),
       failed: elevenLabsFailed,
       instruction: elevenLabsInstruction(props.lang),
     },
@@ -200,18 +201,24 @@ function renderHealthSection(section: HealthSectionId, props: SettingsHealthTabP
         <StatusTile
           lang={props.lang}
           label={uiText("Applio API template")}
-          ok={Boolean(props.rvcApplio?.argTemplateConfigured || props.rvcApplio?.ttsTemplateConfigured)}
+          ok={Boolean((props.rvcApplio?.argTemplateConfigured || props.rvcApplio?.ttsTemplateConfigured) && props.rvcApplio?.endpointsOk)}
           value={props.rvcApplio?.argTemplateConfigured || props.rvcApplio?.ttsTemplateConfigured
             ? `${props.rvcApplio.templates.length} convert · ${props.rvcApplio.ttsTemplates.length} TTS`
             : "server/data/config/rvc-applio-templates.json"}
         />
         <StatusTile lang={props.lang} label={uiText("Applio dev startup")} ok={Boolean(props.rvcApplio?.startCommandConfigured)} value={props.rvcApplio?.startCommandConfigured ? props.rvcApplio.startCommand : "RVC_APPLIO_START_COMMAND"} />
+        {renderEndpointChecks(props.lang, props.rvcApplio?.endpointChecks)}
       </>
     );
   }
 
   if (section === "supertonic") {
-    return <StatusTile lang={props.lang} label={uiText("Supertonic")} ok={Boolean(props.supertonic?.serverOk)} value={props.supertonic?.serverOk ? `${props.supertonic.voices.length} ${t(props.lang, "settingsVoiceTab")} · ${props.supertonic.model}` : props.supertonic?.error || t(props.lang, "settingsServerNotRunning")} />;
+    return (
+      <>
+        <StatusTile lang={props.lang} label={uiText("Supertonic")} ok={Boolean(props.supertonic?.serverOk && props.supertonic?.endpointsOk)} value={props.supertonic?.serverOk ? `${props.supertonic.voices.length} ${t(props.lang, "settingsVoiceTab")} · ${props.supertonic.model}` : props.supertonic?.error || t(props.lang, "settingsServerNotRunning")} />
+        {renderEndpointChecks(props.lang, props.supertonic?.endpointChecks)}
+      </>
+    );
   }
 
   if (section === "vieneu") {
@@ -223,7 +230,31 @@ function renderHealthSection(section: HealthSectionId, props: SettingsHealthTabP
     );
   }
 
-  return <StatusTile lang={props.lang} label={uiText("ElevenLabs")} ok={Boolean(props.elevenLabs?.hasApiKey)} value={props.elevenLabs?.hasApiKey ? `${props.elevenLabs.voices.length} ${t(props.lang, "settingsVoicesConfigured")}` : t(props.lang, "settingsNoApiKey")} />;
+  return (
+    <>
+      <StatusTile lang={props.lang} label={uiText("ElevenLabs")} ok={Boolean(props.elevenLabs?.hasApiKey && props.elevenLabs?.endpointsOk)} value={props.elevenLabs?.hasApiKey ? `${props.elevenLabs.voices.length} ${t(props.lang, "settingsVoicesConfigured")}` : t(props.lang, "settingsNoApiKey")} />
+      {renderEndpointChecks(props.lang, props.elevenLabs?.endpointChecks)}
+    </>
+  );
+}
+
+function renderEndpointChecks(lang: Lang, checks?: { label: string; method: string; url: string; ok: boolean; detail?: string; apiName?: string }[]) {
+  if (!checks?.length) return null;
+  return checks.map((check) => (
+    <StatusTile
+      key={`${check.method}:${check.label}:${check.apiName || check.url}`}
+      lang={lang}
+      label={uiText(`${check.method} ${check.label}`)}
+      ok={check.ok}
+      value={formatEndpointValue(check)}
+    />
+  ));
+}
+
+function formatEndpointValue(check: { url: string; ok: boolean; detail?: string; apiName?: string }) {
+  const target = check.apiName || check.url;
+  if (check.ok) return target;
+  return check.detail ? `${target} · ${check.detail}` : target;
 }
 
 type HealthInstruction = {
@@ -294,6 +325,7 @@ function piperInstruction(lang: Lang, health: HealthResponse | null, modelCount:
 }
 
 function applioInstruction(lang: Lang, config: RvcApplioConfigResponse | null): HealthInstruction {
+  const failedApis = config?.endpointChecks?.filter((check) => !check.ok).map((check) => check.apiName || check.url).join(", ") || "";
   return {
     description: text(lang, "Applio/RVC is an external local tool. Install and run Applio separately, then connect Kai Studio to its Gradio API.", "Applio/RVC là tool local bên ngoài. Bạn cần cài và chạy Applio riêng, rồi kết nối Kai Studio tới Gradio API của nó."),
     steps: [
@@ -302,7 +334,7 @@ function applioInstruction(lang: Lang, config: RvcApplioConfigResponse | null): 
       text(lang, "In Kai Studio Settings -> Voice, set RVC/Applio base URL to the Applio URL, usually http://127.0.0.1:6969.", "Trong Kai Studio Settings -> Voice, cấu hình RVC/Applio base URL tới URL Applio, thường là http://127.0.0.1:6969."),
       text(lang, "Set RVC bridge Python to the Python executable inside the Applio environment, not a random system Python.", "Cấu hình RVC bridge Python tới Python executable nằm trong environment của Applio, không dùng Python hệ thống bất kỳ."),
       text(lang, "Install gradio_client into that same Python environment.", "Cài gradio_client vào đúng Python environment đó."),
-      text(lang, "In Applio, choose your TTS voice/model or RVC model, open Use via API, then copy the argument order into server/data/config/rvc-applio-templates.json.", "Trong Applio, chọn TTS voice/model hoặc RVC model, mở Use via API, rồi copy đúng thứ tự argument vào server/data/config/rvc-applio-templates.json."),
+      failedApis ? text(lang, `Failed Gradio endpoints: ${failedApis}. In Applio open the matching tab, click Use via API, copy the real api_name, then update RVC_APPLIO_API_NAME for voice-to-voice or server/data/config/rvc-applio-templates.json for TTS templates. If Applio does not expose that API, disable/remove that template.`, `Endpoint Gradio đang lỗi: ${failedApis}. Trong Applio mở đúng tab, bấm Use via API, copy api_name thật, rồi cập nhật RVC_APPLIO_API_NAME cho voice-to-voice hoặc server/data/config/rvc-applio-templates.json cho TTS templates. Nếu Applio không expose API đó thì tắt/xoá template tương ứng.`) : text(lang, "In Applio, choose your TTS voice/model or RVC model, open Use via API, then copy the argument order into server/data/config/rvc-applio-templates.json.", "Trong Applio, chọn TTS voice/model hoặc RVC model, mở Use via API, rồi copy đúng thứ tự argument vào server/data/config/rvc-applio-templates.json."),
       text(lang, "Optionally set RVC_APPLIO_START_COMMAND to the .bat file that starts Applio, so Kai Studio can show/run the same startup command.", "Tuỳ chọn cấu hình RVC_APPLIO_START_COMMAND tới file .bat khởi động Applio, để Kai Studio hiển thị/chạy đúng lệnh startup."),
       text(lang, "Save settings, restart Kai Studio if needed, then click Check again.", "Lưu settings, restart Kai Studio nếu cần, rồi bấm Kiểm tra lại."),
     ],

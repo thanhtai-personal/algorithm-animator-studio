@@ -19,9 +19,20 @@ export type PiperModel = {
 
 export type SelectPathResponse = { ok: boolean; path: string };
 
+export type EndpointCheckResponse = {
+  label: string;
+  method: string;
+  url: string;
+  ok: boolean;
+  detail?: string;
+  apiName?: string;
+};
+
 export type ElevenLabsConfigResponse = {
   hasApiKey: boolean;
   voices: { id: string; label: string }[];
+  endpointChecks?: EndpointCheckResponse[];
+  endpointsOk?: boolean;
 };
 
 export type SupertonicConfigResponse = {
@@ -30,6 +41,8 @@ export type SupertonicConfigResponse = {
   model: string;
   defaultVoice: string;
   voices: { id: string; label: string }[];
+  endpointChecks?: EndpointCheckResponse[];
+  endpointsOk?: boolean;
   error?: string;
 };
 
@@ -87,6 +100,8 @@ export type RvcApplioConfigResponse = {
   templates: RvcApplioTemplateResponse[];
   ttsTemplates: RvcApplioTemplateResponse[];
   ttsTemplateConfigured: boolean;
+  endpointChecks?: EndpointCheckResponse[];
+  endpointsOk?: boolean;
   error?: string;
 };
 

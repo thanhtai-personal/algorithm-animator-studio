@@ -45,6 +45,15 @@ export type ElevenLabsVoice = { id: string; label: string };
 
 export type SupertonicVoice = { id: string; label: string; description?: string };
 
+export type EndpointCheck = {
+  label: string;
+  method: string;
+  url: string;
+  ok: boolean;
+  detail?: string;
+  apiName?: string;
+};
+
 export type RvcApplioTemplate = {
   id: string;
   label: string;
@@ -85,6 +94,8 @@ export type RvcApplioConfig = {
   templates: RvcApplioTemplate[];
   ttsTemplates: RvcApplioTemplate[];
   ttsTemplateConfigured: boolean;
+  endpointChecks: EndpointCheck[];
+  endpointsOk: boolean;
   error?: string;
 };
 
@@ -119,6 +130,8 @@ export type SupertonicConfig = {
   voices: SupertonicVoice[];
   sampleRate?: number;
   version?: string;
+  endpointChecks: EndpointCheck[];
+  endpointsOk: boolean;
   error?: string;
 };
 
@@ -126,6 +139,8 @@ export type ElevenLabsConfig = {
   hasApiKey: boolean;
   models: ElevenLabsModel[];
   voices: ElevenLabsVoice[];
+  endpointChecks: EndpointCheck[];
+  endpointsOk: boolean;
   pricing: { sourceLabel: string; sourceUrl: string; disclaimer: string };
 };
 

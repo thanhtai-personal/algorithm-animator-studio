@@ -45,10 +45,8 @@ def main() -> int:
         from vieneu import Vieneu  # type: ignore
     except Exception as exc:  # pragma: no cover - runtime dependency check
         raise RuntimeError(
-            "Không import được SDK vieneu. Hãy fork/clone VieNeu-TTS về "
-            "C:/DATA/working/sources/VieNeu-TTS, tạo .venv trong source đó, "
-            "rồi chạy: python -m pip install -e . --extra-index-url "
-            "https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu/"
+            "Không import được SDK vieneu. VieNeu source hiện nên nằm ở libs/VieNeu-TTS. "
+            "Chạy: npm run vieneu:install rồi thử lại."
         ) from exc
 
     mode = str(payload.get("mode") or "turbo").strip().lower()
@@ -59,7 +57,14 @@ def main() -> int:
     remote_api_base = str(payload.get("remoteApiBase") or "").strip()
     remote_model = str(payload.get("remoteModel") or "").strip()
 
-    tts = create_tts(Vieneu, mode, emotion, remote_api_base, remote_model)
+    try:
+        tts = create_tts(Vieneu, mode, emotion, remote_api_base, remote_model)
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            f"VieNeu-TTS thiếu Python dependency: {exc.name}. "
+            "Chạy: npm run vieneu:install rồi thử lại."
+        ) from exc
+
     audio = infer_audio(tts, text, voice_id, reference_audio, reference_text)
     tts.save(audio, str(output_path))
 

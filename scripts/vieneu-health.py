@@ -1,19 +1,89 @@
 #!/usr/bin/env python
 from __future__ import annotations
 
+import importlib.util
 import json
+import os
 import sys
+
+BASE_REQUIRED_MODULES = [
+    ("sea_g2p", "sea-g2p"),
+    ("numpy", "numpy"),
+    ("soundfile", "soundfile"),
+    ("yaml", "PyYAML"),
+    ("requests", "requests"),
+    ("tqdm", "tqdm"),
+]
+
+MODE_REQUIRED_MODULES = {
+    "standard": [
+        ("llama_cpp", "llama-cpp-python"),
+        ("onnxruntime", "onnxruntime"),
+        ("huggingface_hub", "huggingface-hub"),
+    ],
+    "turbo": [
+        ("llama_cpp", "llama-cpp-python"),
+        ("onnxruntime", "onnxruntime"),
+        ("huggingface_hub", "huggingface-hub"),
+    ],
+    "remote": [
+        ("onnxruntime", "onnxruntime"),
+        ("huggingface_hub", "huggingface-hub"),
+    ],
+}
 
 
 def main() -> int:
     try:
         import vieneu  # type: ignore
         version = getattr(vieneu, "__version__", "unknown")
-        print(json.dumps({"ok": True, "sdkInstalled": True, "version": version}, ensure_ascii=False))
-        return 0
     except Exception as exc:
-        print(json.dumps({"ok": False, "sdkInstalled": False, "error": str(exc)}, ensure_ascii=False))
+        print(json.dumps({
+            "ok": False,
+            "sdkInstalled": False,
+            "error": f"Không import được package vieneu: {exc}",
+            "installCommand": "npm run vieneu:install",
+        }, ensure_ascii=False))
         return 1
+
+    mode = str(os.environ.get("VIENEU_MODE") or "turbo").strip().lower()
+    missing = find_missing_modules(BASE_REQUIRED_MODULES + MODE_REQUIRED_MODULES.get(mode, []))
+    if missing:
+        packages = ", ".join(item["package"] for item in missing)
+        modules = ", ".join(item["module"] for item in missing)
+        print(json.dumps({
+            "ok": False,
+            "sdkInstalled": False,
+            "version": version,
+            "mode": mode,
+            "missingModules": missing,
+            "error": f"VieNeu SDK import được nhưng thiếu dependency Python: {modules}. Hãy cài lại VieNeu deps: npm run vieneu:install",
+            "installCommand": "npm run vieneu:install",
+            "pipHint": f"{sys.executable} -m pip install -e libs/VieNeu-TTS --extra-index-url https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu/",
+            "packages": packages,
+        }, ensure_ascii=False))
+        return 1
+
+    print(json.dumps({
+        "ok": True,
+        "sdkInstalled": True,
+        "version": version,
+        "mode": mode,
+        "python": sys.executable,
+    }, ensure_ascii=False))
+    return 0
+
+
+def find_missing_modules(modules: list[tuple[str, str]]) -> list[dict[str, str]]:
+    seen = set()
+    missing: list[dict[str, str]] = []
+    for module, package in modules:
+        if module in seen:
+            continue
+        seen.add(module)
+        if importlib.util.find_spec(module) is None:
+            missing.append({"module": module, "package": package})
+    return missing
 
 
 if __name__ == "__main__":

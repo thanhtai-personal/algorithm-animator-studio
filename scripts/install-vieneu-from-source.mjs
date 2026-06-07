@@ -46,11 +46,28 @@ if (!fs.existsSync(pythonExe)) {
 
 run(pythonExe, ["-m", "pip", "install", "--upgrade", "pip", "setuptools", "wheel"]);
 run(pythonExe, ["-m", "pip", "install", "-e", sourceDir, "--extra-index-url", EXTRA_INDEX_URL]);
-run(pythonExe, ["-c", "import vieneu; print(getattr(vieneu, '__version__', 'dev'))"]);
+run(pythonExe, [path.join(projectRoot, "scripts", "vieneu-health.py")], {
+  env: buildVieneuHealthEnv(runtimeEnv, sourceDir, pythonExe),
+});
 
 console.log("\nVieNeu-TTS source install OK.");
 console.log(`VIENEU_PYTHON=${pythonExe.replace(/\\/g, "/")}`);
 console.log("Copy giá trị VIENEU_PYTHON này vào .env hoặc Settings -> Voice -> VieNeu.");
+
+function buildVieneuHealthEnv(baseEnv, sourceDir, pythonExe) {
+  const sourceSrcDir = path.join(sourceDir, "src");
+  const pythonPath = [
+    fs.existsSync(sourceSrcDir) ? sourceSrcDir : "",
+    baseEnv.PYTHONPATH || "",
+  ].filter(Boolean).join(path.delimiter);
+
+  return {
+    ...baseEnv,
+    VIENEU_SOURCE_DIR: sourceDir,
+    VIENEU_PYTHON: pythonExe,
+    ...(pythonPath ? { PYTHONPATH: pythonPath } : {}),
+  };
+}
 
 function resolveCommand(value) {
   const trimmed = String(value || "").trim();

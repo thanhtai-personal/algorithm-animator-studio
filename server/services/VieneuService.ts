@@ -257,7 +257,13 @@ function runProcess(command: string, args: string[], timeoutMs: number, config: 
       const cleanStdout = stripAnsi(stdout);
       const cleanStderr = stripAnsi(stderr);
       if (code !== 0) {
-        reject(new Error(JSON.stringify({ message: "Python bridge VieNeu-TTS thất bại.", code, stderr: cleanStderr, stdout: cleanStdout }, null, 2)));
+        reject(new Error(JSON.stringify({
+          message: "Python bridge VieNeu-TTS thất bại.",
+          code,
+          stderr: cleanStderr,
+          stdout: cleanStdout,
+          hint: buildVieneuFailureHint(cleanStdout, cleanStderr),
+        }, null, 2)));
         return;
       }
       resolve({ stdout: cleanStdout, stderr: cleanStderr });
@@ -292,6 +298,18 @@ function buildVieneuProcessEnv(config: VieneuRuntimeConfig): NodeJS.ProcessEnv {
     VIENEU_SOURCE_DIR: config.sourceDir,
     ...(pythonPath ? { PYTHONPATH: pythonPath } : {}),
   };
+}
+
+function buildVieneuFailureHint(stdout: string, stderr: string) {
+  const output = `${stdout}
+${stderr}`;
+  if (/No module named|thiếu Python dependency|missingModules/i.test(output)) {
+    return "VieNeu import được source nhưng thiếu dependency trong Python/.venv. Chạy npm run vieneu:install rồi thử lại.";
+  }
+  if (/llama_cpp|llama-cpp-python/i.test(output)) {
+    return "VieNeu Turbo/Standard cần llama-cpp-python. Chạy npm run vieneu:install để cài wheel phù hợp.";
+  }
+  return "Chạy npm run vieneu:health để xem dependency VieNeu đang thiếu.";
 }
 
 function commandLooksExecutable(command: string) {

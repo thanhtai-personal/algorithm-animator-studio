@@ -24,6 +24,8 @@ dist-ssr
 *.sw?
 
 .env
+.env.*
+!.env.example
 .certs/
 # Desktop/runtime builds
 release/

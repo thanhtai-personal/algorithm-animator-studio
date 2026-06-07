@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import {uiText, t, type Lang} from "@/lib/i18n";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {text, uiText, t, type Lang} from "@/lib/i18n";
 import { StatusTile } from "./SettingsFields";
 import type { ElevenLabsConfigResponse, HealthResponse, PiperModel, RvcApplioConfigResponse, SupertonicConfigResponse, VieneuConfigResponse } from "./SettingsTypes";
 
@@ -48,12 +48,12 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
-        <HealthSection title="System" failed={systemFailed} instruction={systemInstruction(props.health)}>
+        <HealthSection lang={props.lang} title="System" failed={systemFailed} instruction={systemInstruction(props.lang, props.health)}>
           <StatusTile lang={props.lang} label={uiText("Backend")} ok={Boolean(props.health?.ok)} value={props.health ? t(props.lang, "settingsConnected") : t(props.lang, "settingsNotChecked")} />
           <StatusTile lang={props.lang} label={t(props.lang, "settingsGeneratedData")} ok={Boolean(props.health?.generatedDir)} value={props.health?.generatedDir || "-"} />
         </HealthSection>
 
-        <HealthSection title="Piper" failed={piperFailed} instruction={piperInstruction(props.health, props.models.length)}>
+        <HealthSection lang={props.lang} title="Piper" failed={piperFailed} instruction={piperInstruction(props.lang, props.health, props.models.length)}>
           <StatusTile lang={props.lang} label={uiText("Piper exe")} ok={Boolean(props.health?.piperExists)} value={props.health?.piperExe || "-"} />
           <StatusTile lang={props.lang} label={uiText("Models")} ok={props.availableModels > 0} value={`${props.availableModels}/${props.models.length} ${t(props.lang, "settingsModelsReady")}`} />
           <div className="grid gap-3 md:col-span-3 md:grid-cols-2">
@@ -78,7 +78,7 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
           </div>
         </HealthSection>
 
-        <HealthSection title="Applio" failed={applioFailed} instruction={applioInstruction(props.rvcApplio)}>
+        <HealthSection lang={props.lang} title="Applio" failed={applioFailed} instruction={applioInstruction(props.lang, props.rvcApplio)}>
           <StatusTile lang={props.lang} label={uiText("Applio server")} ok={Boolean(props.rvcApplio?.serverOk)} value={props.rvcApplio?.serverOk ? props.rvcApplio.baseUrl : props.rvcApplio?.error || t(props.lang, "settingsServerNotRunning")} />
           <StatusTile lang={props.lang} label={uiText("Applio Python")} ok={Boolean(props.rvcApplio?.pythonExists && props.rvcApplio?.bridgeExists)} value={`${props.rvcApplio?.pythonExe || "-"} · bridge ${props.rvcApplio?.bridgeExists ? "OK" : t(props.lang, "settingsMissing")}`} />
           <StatusTile
@@ -98,16 +98,16 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
           <StatusTile lang={props.lang} label={uiText("Applio dev startup")} ok={Boolean(props.rvcApplio?.startCommandConfigured)} value={props.rvcApplio?.startCommandConfigured ? props.rvcApplio.startCommand : "RVC_APPLIO_START_COMMAND"} />
         </HealthSection>
 
-        <HealthSection title="Supertonic" failed={supertonicFailed} instruction={supertonicInstruction(props.supertonic)}>
+        <HealthSection lang={props.lang} title="Supertonic" failed={supertonicFailed} instruction={supertonicInstruction(props.lang, props.supertonic)}>
           <StatusTile lang={props.lang} label={uiText("Supertonic")} ok={Boolean(props.supertonic?.serverOk)} value={props.supertonic?.serverOk ? `${props.supertonic.voices.length} ${t(props.lang, "settingsVoiceTab")} · ${props.supertonic.model}` : props.supertonic?.error || t(props.lang, "settingsServerNotRunning")} />
         </HealthSection>
 
-        <HealthSection title="VieNeu" failed={vieneuFailed} instruction={vieneuInstruction(props.vieneu)}>
+        <HealthSection lang={props.lang} title="VieNeu" failed={vieneuFailed} instruction={vieneuInstruction(props.lang, props.vieneu)}>
           <StatusTile lang={props.lang} label={uiText("VieNeu SDK")} ok={Boolean(props.vieneu?.sdkInstalled)} value={props.vieneu?.sdkInstalled ? `${props.vieneu.mode} · ${props.vieneu.emotion} · ${props.vieneu.version || "SDK OK"}` : props.vieneu?.error || t(props.lang, "settingsMissing")} />
           <StatusTile lang={props.lang} label={uiText("VieNeu Python")} ok={Boolean(props.vieneu?.pythonExists && props.vieneu?.bridgeExists)} value={`${props.vieneu?.pythonExe || "-"} · bridge ${props.vieneu?.bridgeExists ? "OK" : t(props.lang, "settingsMissing")}`} />
         </HealthSection>
 
-        <HealthSection title="ElevenLabs" failed={elevenLabsFailed} instruction={elevenLabsInstruction()}>
+        <HealthSection lang={props.lang} title="ElevenLabs" failed={elevenLabsFailed} instruction={elevenLabsInstruction(props.lang)}>
           <StatusTile lang={props.lang} label={uiText("ElevenLabs")} ok={Boolean(props.elevenLabs?.hasApiKey)} value={props.elevenLabs?.hasApiKey ? `${props.elevenLabs.voices.length} ${t(props.lang, "settingsVoicesConfigured")}` : t(props.lang, "settingsNoApiKey")} />
         </HealthSection>
       </CardContent>
@@ -121,79 +121,91 @@ type HealthInstruction = {
   commands?: string[];
 };
 
-function HealthSection(props: { title: string; failed: boolean; instruction: HealthInstruction; children: ReactNode }) {
+function HealthSection(props: { lang: Lang; title: string; failed: boolean; instruction: HealthInstruction; children: ReactNode }) {
   return (
     <section className="space-y-3 rounded-lg border border-border/70 p-3">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{props.title}</h3>
-        <InstructionDialog title={props.title} failed={props.failed} instruction={props.instruction} />
+        <InstructionDialog lang={props.lang} title={props.title} failed={props.failed} instruction={props.instruction} />
       </div>
       <div className="grid gap-3 md:grid-cols-3">{props.children}</div>
     </section>
   );
 }
 
-function InstructionDialog(props: { title: string; failed: boolean; instruction: HealthInstruction }) {
+function InstructionDialog(props: { lang: Lang; title: string; failed: boolean; instruction: HealthInstruction }) {
   const pulseClass = props.failed ? "animate-pulse border-amber-400 bg-amber-400/10 text-amber-100 shadow-[0_0_18px_rgba(251,191,36,0.25)]" : "";
   return (
-    <Dialog>
-      <DialogTrigger asChild>
+    <Sheet>
+      <SheetTrigger asChild>
         <Button type="button" size="sm" variant="outline" className={pulseClass}>
-          <BookOpen className="h-4 w-4" /> Instruction
+          <BookOpen className="h-4 w-4" /> {t(props.lang, "settingsInstructionButton")}
         </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{props.title} setup instruction</DialogTitle>
-          <DialogDescription>{props.instruction.description}</DialogDescription>
-        </DialogHeader>
-        <ol className="grid gap-2 text-sm text-muted-foreground">
-          {props.instruction.steps.map((step, index) => <li key={step}>{index + 1}. {step}</li>)}
-        </ol>
-        {props.instruction.commands?.length ? (
-          <div className="grid gap-2">
-            {props.instruction.commands.map((command) => (
-              <code key={command} className="block rounded-md border bg-muted/50 p-3 text-xs text-foreground">{command}</code>
-            ))}
-          </div>
-        ) : null}
-      </DialogContent>
-    </Dialog>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-[92vw] overflow-y-auto sm:max-w-none md:w-[75vw]">
+        <SheetHeader>
+          <SheetTitle>{props.title} · {t(props.lang, "settingsSetupInstructionTitle")}</SheetTitle>
+          <SheetDescription>{props.instruction.description}</SheetDescription>
+        </SheetHeader>
+        <div className="mt-5 grid gap-5">
+          <ol className="grid gap-3 text-sm text-muted-foreground">
+            {props.instruction.steps.map((step, index) => <li key={step}>{index + 1}. {step}</li>)}
+          </ol>
+          {props.instruction.commands?.length ? (
+            <div className="grid gap-2">
+              <p className="text-sm font-medium">{t(props.lang, "settingsInstructionCommandsLabel")}</p>
+              {props.instruction.commands.map((command) => (
+                <code key={command} className="block break-all rounded-md border bg-muted/50 p-3 text-xs text-foreground">{command}</code>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
-function systemInstruction(health: HealthResponse | null): HealthInstruction {
+function systemInstruction(lang: Lang, health: HealthResponse | null): HealthInstruction {
   return {
-    description: "Backend và thư mục generated data là nền để các service voice ghi file audio/video.",
+    description: text(lang, "After installing the desktop app, this checks whether Kai Studio can run its bundled local backend and write generated files.", "Sau khi cài app bằng file .exe, mục này kiểm tra Kai Studio có chạy được backend local đi kèm và ghi được file generated hay không."),
     steps: [
-      "Chạy app bằng npm run dev hoặc mở bản desktop đã build.",
-      "Kiểm tra server local còn chạy và tab Settings có thể gọi được /api/health.",
-      `Đảm bảo thư mục generated data có quyền ghi: ${health?.generatedDir || "SERVER_DATA_DIR/generated"}.`,
+      text(lang, "Close Kai Studio and open it again from the installed desktop shortcut.", "Đóng Kai Studio và mở lại từ shortcut desktop đã cài."),
+      text(lang, "If Windows Firewall asks for permission, allow the app to run on localhost/private network.", "Nếu Windows Firewall hỏi quyền, cho phép app chạy trên localhost/private network."),
+      text(lang, "Open Settings -> Data and choose a generated data folder that your Windows user can write to.", "Mở Settings -> Data và chọn thư mục generated data mà user Windows của bạn có quyền ghi."),
+      text(lang, `Avoid protected folders such as Program Files. Current folder: ${health?.generatedDir || "SERVER_DATA_DIR/generated"}.`, `Tránh các thư mục bị bảo vệ như Program Files. Thư mục hiện tại: ${health?.generatedDir || "SERVER_DATA_DIR/generated"}.`),
+      text(lang, "Click Save settings, restart the app, then click Check again.", "Bấm Lưu settings, khởi động lại app, rồi bấm Kiểm tra lại."),
     ],
-    commands: ["npm run dev"],
   };
 }
 
-function piperInstruction(health: HealthResponse | null, modelCount: number): HealthInstruction {
+function piperInstruction(lang: Lang, health: HealthResponse | null, modelCount: number): HealthInstruction {
   return {
-    description: "Piper cần file piper.exe và cặp model .onnx/.json trong thư mục model local.",
+    description: text(lang, "The desktop app does not install Piper voices for you. Install Piper and its voice models, then point Kai Studio to those files.", "App desktop không tự cài Piper voices. Bạn cần cài Piper và tải voice models, rồi trỏ Kai Studio tới các file đó."),
     steps: [
-      "Cấu hình PIPER_EXE trỏ tới piper.exe trong Settings -> Voice.",
-      "Đặt các model .onnx và .onnx.json vào MODEL_DIR.",
-      `Kiểm tra lại đủ ${modelCount} model đang khai báo trong app.`,
+      text(lang, "Download or install Piper for Windows. You need a real piper.exe on the machine.", "Tải hoặc cài Piper cho Windows. Máy cần có tệp piper.exe thật."),
+      text(lang, "Create a normal writable folder for voice models, for example C:\\KAI-STUDIO\\models.", "Tạo thư mục thường có quyền ghi để chứa voice models, ví dụ C:\\KAI-STUDIO\\models."),
+      text(lang, "Download each required Piper voice as a pair of files: .onnx and .onnx.json.", "Tải mỗi voice Piper cần dùng thành đủ một cặp file: .onnx và .onnx.json."),
+      text(lang, "In Kai Studio, open Settings -> Voice and set Piper executable to piper.exe.", "Trong Kai Studio, mở Settings -> Voice và chọn Piper executable là piper.exe."),
+      text(lang, "Open Settings -> Data/Voice and set Model directory to the folder that contains the model files.", "Mở Settings -> Data/Voice và cấu hình Model directory tới thư mục chứa model files."),
+      text(lang, "Save settings, then click Check again. The Models tile should show all required models ready.", "Lưu settings rồi bấm Kiểm tra lại. Tile Models cần báo đủ model sẵn sàng."),
+      text(lang, `Verify all ${modelCount} declared models are ready.`, `Kiểm tra đủ ${modelCount} model đang khai báo trong app.`),
     ],
     commands: [health?.piperExe || "models/.venv/Scripts/piper.exe"],
   };
 }
 
-function applioInstruction(config: RvcApplioConfigResponse | null): HealthInstruction {
+function applioInstruction(lang: Lang, config: RvcApplioConfigResponse | null): HealthInstruction {
   return {
-    description: "Applio cần server Gradio đang chạy, Python bridge có gradio_client, và template API trong JSON.",
+    description: text(lang, "Applio/RVC is an external local tool. Install and run Applio separately, then connect Kai Studio to its Gradio API.", "Applio/RVC là tool local bên ngoài. Bạn cần cài và chạy Applio riêng, rồi kết nối Kai Studio tới Gradio API của nó."),
     steps: [
-      "Chạy Applio local rồi kiểm tra base URL mở được trên trình duyệt.",
-      "Cài gradio_client vào đúng Python env đang cấu hình cho RVC_APPLIO_PYTHON.",
-      "Vào Applio Use via API, copy argument order vào server/data/config/rvc-applio-templates.json.",
-      "Cấu hình RVC_APPLIO_START_COMMAND nếu muốn app tự khởi động Applio khi dev.",
+      text(lang, "Install Applio on Windows in a stable folder, for example C:\\TOOLS\\Applio.", "Cài Applio trên Windows vào một thư mục ổn định, ví dụ C:\\TOOLS\\Applio."),
+      text(lang, "Run Applio and keep the Gradio web UI open. Confirm it opens in the browser.", "Chạy Applio và giữ Gradio web UI đang mở. Xác nhận mở được trên trình duyệt."),
+      text(lang, "In Kai Studio Settings -> Voice, set RVC/Applio base URL to the Applio URL, usually http://127.0.0.1:6969.", "Trong Kai Studio Settings -> Voice, cấu hình RVC/Applio base URL tới URL Applio, thường là http://127.0.0.1:6969."),
+      text(lang, "Set RVC bridge Python to the Python executable inside the Applio environment, not a random system Python.", "Cấu hình RVC bridge Python tới Python executable nằm trong environment của Applio, không dùng Python hệ thống bất kỳ."),
+      text(lang, "Install gradio_client into that same Python environment.", "Cài gradio_client vào đúng Python environment đó."),
+      text(lang, "In Applio, choose your TTS voice/model or RVC model, open Use via API, then copy the argument order into server/data/config/rvc-applio-templates.json.", "Trong Applio, chọn TTS voice/model hoặc RVC model, mở Use via API, rồi copy đúng thứ tự argument vào server/data/config/rvc-applio-templates.json."),
+      text(lang, "Optionally set RVC_APPLIO_START_COMMAND to the .bat file that starts Applio, so Kai Studio can show/run the same startup command.", "Tuỳ chọn cấu hình RVC_APPLIO_START_COMMAND tới file .bat khởi động Applio, để Kai Studio hiển thị/chạy đúng lệnh startup."),
+      text(lang, "Save settings, restart Kai Studio if needed, then click Check again.", "Lưu settings, restart Kai Studio nếu cần, rồi bấm Kiểm tra lại."),
     ],
     commands: [
       config?.startCommand || "C:/TOOLS/ApplioV3.6.2/run-applio.bat",
@@ -202,37 +214,44 @@ function applioInstruction(config: RvcApplioConfigResponse | null): HealthInstru
   };
 }
 
-function supertonicInstruction(config: SupertonicConfigResponse | null): HealthInstruction {
+function supertonicInstruction(lang: Lang, config: SupertonicConfigResponse | null): HealthInstruction {
   return {
-    description: "Supertonic local cần server TTS chạy trước khi Kai Studio gọi tạo voice.",
+    description: text(lang, "Supertonic is an external local TTS server. Install and start it before generating voice from Kai Studio.", "Supertonic là TTS server local bên ngoài. Bạn cần cài và chạy nó trước khi tạo voice từ Kai Studio."),
     steps: [
-      "Khởi động Supertonic local server.",
-      "Kiểm tra SUPERTONIC_BASE_URL trỏ đúng host/port.",
-      "Đảm bảo model và voice/style đã load trong Supertonic server.",
+      text(lang, "Install the Supertonic local package/server on this machine.", "Cài package/server Supertonic local lên máy này."),
+      text(lang, "Start Supertonic and wait until the selected model is fully loaded.", "Khởi động Supertonic và đợi model được load xong."),
+      text(lang, "Open its base URL in a browser to confirm the server is alive.", "Mở base URL của nó trên trình duyệt để xác nhận server đang chạy."),
+      text(lang, "In Kai Studio Settings -> Voice, set SUPERTONIC_BASE_URL to the running server URL, usually http://127.0.0.1:6688.", "Trong Kai Studio Settings -> Voice, cấu hình SUPERTONIC_BASE_URL tới server đang chạy, thường là http://127.0.0.1:6688."),
+      text(lang, "Import or select the voice/style in Kai Studio, save settings, then click Check again.", "Import hoặc chọn voice/style trong Kai Studio, lưu settings, rồi bấm Kiểm tra lại."),
     ],
     commands: [config?.baseUrl || "http://127.0.0.1:6688"],
   };
 }
 
-function vieneuInstruction(config: VieneuConfigResponse | null): HealthInstruction {
+function vieneuInstruction(lang: Lang, config: VieneuConfigResponse | null): HealthInstruction {
   return {
-    description: "VieNeu cần Python bridge, SDK/package VieNeu, và Python exe đúng môi trường.",
+    description: text(lang, "VieNeu is installed as a Python-based local TTS tool. Kai Studio can call it only after the correct Python environment is configured.", "VieNeu là tool TTS local chạy bằng Python. Kai Studio chỉ gọi được sau khi cấu hình đúng Python environment."),
     steps: [
-      "Cài SDK/package VieNeu vào Python env được cấu hình.",
-      "Kiểm tra script bridge tồn tại trong repo.",
-      "Nếu dùng clone giọng, cấu hình reference audio/text trong Settings -> Voice.",
+      text(lang, "Install Python if the machine does not already have the version required by VieNeu.", "Cài Python nếu máy chưa có đúng version mà VieNeu yêu cầu."),
+      text(lang, "Create a dedicated Python environment for VieNeu to avoid mixing packages with other tools.", "Tạo Python environment riêng cho VieNeu để tránh lẫn package với tool khác."),
+      text(lang, "Install VieNeu SDK/package and its model dependencies into that environment.", "Cài VieNeu SDK/package và các dependency model vào environment đó."),
+      text(lang, "In Kai Studio Settings -> Voice, set VIENEU_PYTHON to the python.exe inside that environment.", "Trong Kai Studio Settings -> Voice, cấu hình VIENEU_PYTHON tới python.exe nằm trong environment đó."),
+      text(lang, "If using voice clone, select reference audio and fill reference text in Settings -> Voice.", "Nếu dùng clone giọng, chọn reference audio và nhập reference text trong Settings -> Voice."),
+      text(lang, "Save settings, then click Check again. The VieNeu SDK tile should become ready.", "Lưu settings rồi bấm Kiểm tra lại. Tile VieNeu SDK cần chuyển sang sẵn sàng."),
     ],
     commands: [`${config?.pythonExe || "python"} -m pip install -U vieneu`],
   };
 }
 
-function elevenLabsInstruction(): HealthInstruction {
+function elevenLabsInstruction(lang: Lang): HealthInstruction {
   return {
-    description: "ElevenLabs cần API key để gọi cloud TTS.",
+    description: text(lang, "ElevenLabs is not installed locally, but the desktop app needs your ElevenLabs API key to call the cloud TTS service.", "ElevenLabs không cài local, nhưng app desktop cần API key của bạn để gọi cloud TTS service."),
     steps: [
-      "Tạo hoặc mở API key trong tài khoản ElevenLabs.",
-      "Dán key vào Settings -> Voice -> ELEVENLABS_API_KEY.",
-      "Cấu hình danh sách voice ID nếu muốn dùng voice riêng.",
+      text(lang, "Create or open your API key from the ElevenLabs dashboard.", "Tạo hoặc mở API key trong dashboard ElevenLabs."),
+      text(lang, "In Kai Studio, open Settings -> API Key or Settings -> Voice.", "Trong Kai Studio, mở Settings -> API Key hoặc Settings -> Voice."),
+      text(lang, "Paste the key into ELEVENLABS_API_KEY. This key stays on your machine/runtime settings.", "Dán key vào ELEVENLABS_API_KEY. Key này nằm trên máy/runtime settings của bạn."),
+      text(lang, "Add one or more ElevenLabs voice IDs if you want specific voices in the dropdown.", "Thêm một hoặc nhiều ElevenLabs voice ID nếu muốn voice cụ thể xuất hiện trong dropdown."),
+      text(lang, "Save settings, then click Check again before generating voice.", "Lưu settings, rồi bấm Kiểm tra lại trước khi tạo voice."),
     ],
   };
 }

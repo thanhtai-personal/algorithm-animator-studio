@@ -15,6 +15,7 @@
     "dev:server": "tsx watch server/index.ts",
     "dev:supertonic": "npm run supertonic:serve",
     "dev:applio": "node scripts/start-applio.mjs",
+    "applio:install": "python -m pip install -U gradio_client",
     "supertonic:install": "python -m pip install \"supertonic[serve]\"",
     "vieneu:install": "python -m pip install vieneu --extra-index-url https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu/",
     "vieneu:health": "python scripts/vieneu-health.py",

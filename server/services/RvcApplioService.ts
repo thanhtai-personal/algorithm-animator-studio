@@ -305,12 +305,27 @@ function runProcess(command: string, args: string[], timeoutMs: number): Promise
       const cleanStdout = stripAnsi(stdout);
       const cleanStderr = stripAnsi(stderr);
       if (code !== 0) {
-        reject(new Error(JSON.stringify({ message: "Python bridge RVC/Applio thất bại.", code, stderr: cleanStderr, stdout: cleanStdout }, null, 2)));
+        reject(new Error(formatRvcBridgeError(command, code, cleanStderr, cleanStdout)));
         return;
       }
       resolve({ stdout: cleanStdout, stderr: cleanStderr });
     });
   });
+}
+
+function formatRvcBridgeError(command: string, code: number | null, stderr: string, stdout: string) {
+  if (/No module named ['"]gradio_client['"]|Missing gradio_client/i.test(stderr)) {
+    return JSON.stringify({
+      message: "Python bridge RVC/Applio thiếu package gradio_client.",
+      code,
+      installCommand: `${command} -m pip install -U gradio_client`,
+      hint: "Cài gradio_client vào đúng Python đang cấu hình trong RVC_APPLIO_PYTHON, hoặc trỏ RVC_APPLIO_PYTHON tới Python env của Applio.",
+      stderr,
+      stdout,
+    }, null, 2);
+  }
+
+  return JSON.stringify({ message: "Python bridge RVC/Applio thất bại.", code, stderr, stdout }, null, 2);
 }
 
 function clampPitch(value: unknown) { return clampInteger(value ?? 0, -24, 24); }

@@ -22,7 +22,8 @@ try:
     from gradio_client import Client, handle_file
 except Exception as exc:  # pragma: no cover - user environment issue
     print(
-        "Missing gradio_client. Install with: python -m pip install -U gradio_client",
+        f'Missing gradio_client in Python: {sys.executable}. '
+        f'Install with: "{sys.executable}" -m pip install -U gradio_client',
         file=sys.stderr,
     )
     raise exc

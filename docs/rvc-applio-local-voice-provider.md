@@ -188,6 +188,12 @@ server/data/generated/rvc-applio/YYYY-MM-DD/
 Cài lại:
 
 ```bash
+npm run applio:install
+```
+
+Hoặc cài trực tiếp vào đúng Python đang cấu hình:
+
+```bash
 python -m pip install -U gradio_client
 ```
 

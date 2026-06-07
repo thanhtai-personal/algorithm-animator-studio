@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCcw, Upload, Volume2 } from "lucide-react";
+import { Check, FolderOpen, RefreshCcw, Upload, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -196,6 +196,27 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
       {s.voiceUrl ? (
         <div className="grid gap-3 rounded-lg border border-border bg-background/40 p-3">
           <audio className="h-10 min-w-0 flex-1" controls src={s.voiceUrl} />
+          <div className="grid gap-2">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <VoiceAssetButton
+                active={s.activeVoiceKind === "original"}
+                disabled={!s.originalVoice}
+                fileName={s.originalVoice?.fileName || ""}
+                label={uiText("Voice gốc")}
+                onClick={() => s.selectGeneratedVoice("original")}
+              />
+              <VoiceAssetButton
+                active={s.activeVoiceKind === "custom"}
+                disabled={!s.customVoice}
+                fileName={s.customVoice?.fileName || ""}
+                label={uiText("Voice custom model")}
+                onClick={() => s.selectGeneratedVoice("custom")}
+              />
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={s.openSelectedVoiceFolder} disabled={!s.voiceRelativePath}>
+              <FolderOpen className="mr-2 h-4 w-4" /> {uiText("Mở thư mục voice đang chọn")}
+            </Button>
+          </div>
           <div className="grid gap-1 text-xs text-muted-foreground">
             <span>{uiText("Applio custom voice:")} <strong className={s.rvcApplioConfig?.serverOk ? "text-emerald-300" : "text-rose-300"}>{s.rvcApplioConfig?.serverOk ? "đã kết nối" : "chưa chạy"}</strong></span>
             <span>{uiText("gradio_client:")} <strong className={s.rvcApplioConfig?.gradioClientInstalled ? "text-emerald-300" : "text-rose-300"}>{s.rvcApplioConfig?.gradioClientInstalled ? "OK" : "thiếu package"}</strong></span>
@@ -237,5 +258,23 @@ function NumberSlider(props: { label: string; value: number; min: number; max: n
       </div>
       <Slider value={[props.value]} min={props.min} max={props.max} step={props.step ?? 1} onValueChange={([value]) => props.onChange(value)} />
     </div>
+  );
+}
+
+function VoiceAssetButton(props: { active: boolean; disabled: boolean; fileName: string; label: string; onClick: () => void }) {
+  return (
+    <Button
+      type="button"
+      variant={props.active ? "default" : "outline"}
+      className="h-auto min-h-12 justify-start gap-2 px-3 py-2 text-left"
+      disabled={props.disabled}
+      onClick={props.onClick}
+    >
+      {props.active ? <Check className="h-4 w-4 shrink-0" /> : <Volume2 className="h-4 w-4 shrink-0" />}
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold">{props.label}</span>
+        <span className="block truncate text-xs opacity-80">{props.fileName || uiText("Chưa có file")}</span>
+      </span>
+    </Button>
   );
 }

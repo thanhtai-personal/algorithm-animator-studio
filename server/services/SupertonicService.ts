@@ -30,12 +30,13 @@ type HealthPayload = {
 export async function getSupertonicConfigStatus(envOverrides: RuntimeEnvValues = {}): Promise<SupertonicConfigStatus> {
   const env = readEnvValues(envOverrides);
   const baseUrl = getSupertonicBaseUrl(env);
+  const endpoints = getSupertonicEndpoints(env);
   const fallbackVoice = DEFAULT_SUPERTONIC_VOICE;
   const endpointChecks: EndpointCheckStatus[] = [];
 
   try {
-    const health = await fetchJson<HealthPayload>(`${baseUrl}/v1/health`, "GET", undefined, endpointChecks, "/v1/health");
-    const voices = await fetchJson<unknown>(`${baseUrl}/v1/styles`, "GET", undefined, endpointChecks, "/v1/styles");
+    const health = await fetchJson<HealthPayload>(buildEndpointUrl(baseUrl, endpoints.health), "GET", undefined, endpointChecks, endpoints.health);
+    const voices = await fetchJson<unknown>(buildEndpointUrl(baseUrl, endpoints.styles), "GET", undefined, endpointChecks, endpoints.styles);
 
     return {
       enabled: true,
@@ -43,6 +44,7 @@ export async function getSupertonicConfigStatus(envOverrides: RuntimeEnvValues =
       endpointChecks,
       endpointsOk: endpointChecks.every((check) => check.ok),
       baseUrl,
+      endpoints,
       model: health.model || env.SUPERTONIC_MODEL || "supertonic-3",
       defaultVoice: fallbackVoice,
       defaultLang: DEFAULT_SUPERTONIC_LANG,
@@ -58,6 +60,7 @@ export async function getSupertonicConfigStatus(envOverrides: RuntimeEnvValues =
       endpointChecks,
       endpointsOk: false,
       baseUrl,
+      endpoints,
       model: env.SUPERTONIC_MODEL || "supertonic-3",
       defaultVoice: fallbackVoice,
       defaultLang: DEFAULT_SUPERTONIC_LANG,
@@ -71,9 +74,10 @@ export async function getSupertonicConfigStatus(envOverrides: RuntimeEnvValues =
 export async function importSupertonicStyle(body: SupertonicImportStyleBody, envOverrides: RuntimeEnvValues = {}) {
   const env = readEnvValues(envOverrides);
   const baseUrl = getSupertonicBaseUrl(env);
+  const endpoints = getSupertonicEndpoints(env);
   const styleJson = normalizeStyleJson(body.styleJson);
 
-  const response = await fetchWithTimeout(`${baseUrl}/v1/styles/import`, {
+  const response = await fetchWithTimeout(buildEndpointUrl(baseUrl, endpoints.importStyle), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(styleJson),
@@ -101,12 +105,13 @@ export async function generateSupertonicAudio(body: SupertonicGenerateBody, envO
 
   const responseFormat = normalizeFormat(body.responseFormat);
   const baseUrl = getSupertonicBaseUrl(env);
+  const endpoints = getSupertonicEndpoints(env);
   const voice = body.voice?.trim() || DEFAULT_SUPERTONIC_VOICE;
   const lang = normalizeLang(body.lang || DEFAULT_SUPERTONIC_LANG);
   const speed = clampSpeed(body.speed);
   const totalSteps = clampTotalSteps(body.totalSteps ?? DEFAULT_SUPERTONIC_TOTAL_STEPS);
 
-  const response = await fetchWithTimeout(`${baseUrl}/v1/tts`, {
+  const response = await fetchWithTimeout(buildEndpointUrl(baseUrl, endpoints.tts), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -173,6 +178,24 @@ function normalizeStyleJson(value: unknown) {
 
 function getSupertonicBaseUrl(env: RuntimeEnvValues) {
   return (env.SUPERTONIC_BASE_URL || "http://127.0.0.1:6688").replace(/\/+$/g, "");
+}
+
+function getSupertonicEndpoints(env: RuntimeEnvValues) {
+  return {
+    health: normalizeEndpoint(env.SUPERTONIC_HEALTH_ENDPOINT || "/v1/health"),
+    styles: normalizeEndpoint(env.SUPERTONIC_STYLES_ENDPOINT || "/v1/styles"),
+    importStyle: normalizeEndpoint(env.SUPERTONIC_IMPORT_STYLE_ENDPOINT || "/v1/styles/import"),
+    tts: normalizeEndpoint(env.SUPERTONIC_TTS_ENDPOINT || "/v1/tts"),
+  };
+}
+
+function buildEndpointUrl(baseUrl: string, endpoint: string) {
+  return `${baseUrl}${endpoint}`;
+}
+
+function normalizeEndpoint(value: string) {
+  const trimmed = value.trim() || "/";
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }
 
 function normalizeText(body: SupertonicGenerateBody) {

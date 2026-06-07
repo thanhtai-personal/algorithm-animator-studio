@@ -367,8 +367,8 @@ function formatRvcBridgeError(command: string, code: number | null, stderr: stri
       code,
       apiName,
       hint: apiName
-        ? `Endpoint ${apiName} không tồn tại trên Applio server đang chạy. Mở Applio đúng tab, bật Use via API, rồi copy đúng api_name vào Settings -> Voice -> Applio templates.`
-        : "Mở Applio đúng tab, bật Use via API, rồi copy đúng api_name vào Settings -> Voice -> Applio templates.",
+        ? `Endpoint ${apiName} không tồn tại trên Applio server đang chạy. Mở ${stdout.match(/Loaded as API:\s*(\S+)/)?.[1] || "Applio base URL"}/config, tìm api_name thật trong dependencies, rồi cập nhật Settings -> Voice -> Applio templates.`
+        : "Mở Applio base URL + /config, tìm api_name thật trong dependencies, rồi cập nhật Settings -> Voice -> Applio templates.",
       stderr,
       stdout,
     }, null, 2);

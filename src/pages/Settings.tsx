@@ -1,6 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { parseVoiceRows, serializeVoiceRows, type VoiceRow } from "./settings/SettingsFields";
@@ -158,7 +169,26 @@ export default function Settings() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={handleSave}><Save className="mr-2 h-4 w-4" /> {t(lang, "settingsSave")}</Button>
-            <Button variant="ghost" onClick={handleReset}><Trash2 className="mr-2 h-4 w-4" /> {t(lang, "settingsClearOverrides")}</Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost"><Trash2 className="mr-2 h-4 w-4" /> {t(lang, "settingsClearOverrides")}</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t(lang, "settingsResetConfirmTitle")}</AlertDialogTitle>
+                  <AlertDialogDescription>{t(lang, "settingsResetConfirmDescription")}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t(lang, "settingsCancel")}</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => void handleReset()}
+                  >
+                    {t(lang, "settingsResetConfirmAction")}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
 

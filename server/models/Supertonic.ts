@@ -6,10 +6,18 @@ export type SupertonicVoice = {
   description?: string;
 };
 
+export type SupertonicEndpoints = {
+  health: string;
+  styles: string;
+  importStyle: string;
+  tts: string;
+};
+
 export type SupertonicConfigStatus = {
   enabled: boolean;
   serverOk: boolean;
   baseUrl: string;
+  endpoints: SupertonicEndpoints;
   model: string;
   defaultVoice: string;
   defaultLang: string;

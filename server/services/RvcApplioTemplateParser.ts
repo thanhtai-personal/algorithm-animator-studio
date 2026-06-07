@@ -52,7 +52,7 @@ function readTemplateArgs(record: Record<string, unknown>) {
 }
 
 function parseArgTemplate(value?: string): unknown[] {
-  if (!value?.trim()) throw new Error("Chưa cấu hình Applio arg template. Cập nhật server/data/config/rvc-applio-templates.json từ Use via API.");
+  if (!value?.trim()) throw new Error("Chưa cấu hình Applio arg template. Cập nhật server/data/config/rvc-applio-templates.json từ Gradio /config dependencies.");
   try {
     const parsed = JSON.parse(value) as unknown;
     if (Array.isArray(parsed)) return parsed;

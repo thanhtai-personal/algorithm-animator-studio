@@ -123,6 +123,7 @@ export type SupertonicConfig = {
   enabled: boolean;
   serverOk: boolean;
   baseUrl: string;
+  endpoints: { health: string; styles: string; importStyle: string; tts: string };
   model: string;
   defaultVoice: string;
   defaultLang: string;

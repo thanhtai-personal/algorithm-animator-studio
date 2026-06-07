@@ -98,7 +98,14 @@ export const STRINGS = {
   settingsTitle: { en: "Settings", vi: "Cài đặt" },
   settingsSave: { en: "Save settings", vi: "Lưu settings" },
   settingsCheckAgain: { en: "Check again", vi: "Kiểm tra lại" },
+  settingsCancel: { en: "Cancel", vi: "Hủy" },
   settingsClearOverrides: { en: "Reset", vi: "Đặt lại" },
+  settingsResetConfirmTitle: { en: "Reset local runtime settings?", vi: "Đặt lại cấu hình runtime local?" },
+  settingsResetConfirmDescription: {
+    en: "This clears local overrides stored in this browser. The app will use configured defaults again, and generated files will not be deleted.",
+    vi: "Thao tác này sẽ xóa cấu hình override đang lưu trong trình duyệt. App sẽ dùng lại cấu hình mặc định, và không xóa file đã tạo.",
+  },
+  settingsResetConfirmAction: { en: "Reset settings", vi: "Đặt lại settings" },
   settingsVoiceTab: { en: "Voice", vi: "Voice" },
   settingsDataTab: { en: "Data", vi: "Data" },
   settingsApiKeyTab: { en: "API Key", vi: "API Key" },
@@ -176,8 +183,8 @@ export const STRINGS = {
     vi: "URL của server Gradio Applio/RVC local, ví dụ http://127.0.0.1:6969.",
   },
   settingsRvcApplioApiNameDescription: {
-    en: "Endpoint copied from Gradio Use via API, for example /infer_convert.",
-    vi: "Endpoint copy từ Gradio Use via API, ví dụ /infer_convert.",
+    en: "Endpoint copied from the Gradio /config dependencies, for example /infer_convert.",
+    vi: "Endpoint copy từ dependencies trong Gradio /config, ví dụ /infer_convert.",
   },
   settingsRvcApplioArgTemplateDescription: {
     en: "JSON array of Gradio arguments. Use placeholders like ${input}, ${model}, ${index}, ${pitch}, ${f0_method}.",

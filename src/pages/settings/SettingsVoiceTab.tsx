@@ -144,6 +144,44 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               type="text"
               onChange={(value) => props.onUpdateField("SUPERTONIC_MODEL", value)}
             />
+            <div className="grid gap-3 md:grid-cols-2">
+              <SecretInput
+                id="supertonic-health-endpoint"
+                label={text(props.lang, "Health endpoint", "Endpoint health")}
+                description={text(props.lang, "GET endpoint used by health check.", "Endpoint GET dùng cho health check.")}
+                value={props.form.SUPERTONIC_HEALTH_ENDPOINT}
+                placeholder="/v1/health"
+                type="text"
+                onChange={(value) => props.onUpdateField("SUPERTONIC_HEALTH_ENDPOINT", value)}
+              />
+              <SecretInput
+                id="supertonic-styles-endpoint"
+                label={text(props.lang, "Styles endpoint", "Endpoint styles")}
+                description={text(props.lang, "GET endpoint used to list Supertonic voices/styles.", "Endpoint GET dùng để lấy danh sách voice/style Supertonic.")}
+                value={props.form.SUPERTONIC_STYLES_ENDPOINT}
+                placeholder="/v1/styles"
+                type="text"
+                onChange={(value) => props.onUpdateField("SUPERTONIC_STYLES_ENDPOINT", value)}
+              />
+              <SecretInput
+                id="supertonic-import-style-endpoint"
+                label={text(props.lang, "Import style endpoint", "Endpoint import style")}
+                description={text(props.lang, "POST endpoint used when importing a voice/style JSON.", "Endpoint POST dùng khi import voice/style JSON.")}
+                value={props.form.SUPERTONIC_IMPORT_STYLE_ENDPOINT}
+                placeholder="/v1/styles/import"
+                type="text"
+                onChange={(value) => props.onUpdateField("SUPERTONIC_IMPORT_STYLE_ENDPOINT", value)}
+              />
+              <SecretInput
+                id="supertonic-tts-endpoint"
+                label={text(props.lang, "TTS endpoint", "Endpoint TTS")}
+                description={text(props.lang, "POST endpoint used to generate Supertonic audio.", "Endpoint POST dùng để tạo audio Supertonic.")}
+                value={props.form.SUPERTONIC_TTS_ENDPOINT}
+                placeholder="/v1/tts"
+                type="text"
+                onChange={(value) => props.onUpdateField("SUPERTONIC_TTS_ENDPOINT", value)}
+              />
+            </div>
             </div>
             ) : null}
 

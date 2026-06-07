@@ -38,6 +38,7 @@ export type ElevenLabsConfigResponse = {
 export type SupertonicConfigResponse = {
   serverOk: boolean;
   baseUrl: string;
+  endpoints?: { health: string; styles: string; importStyle: string; tts: string };
   model: string;
   defaultVoice: string;
   voices: { id: string; label: string }[];
@@ -121,6 +122,10 @@ export type SettingsForm = Required<Pick<
   | "ELEVENLABS_VOICES"
   | "SUPERTONIC_BASE_URL"
   | "SUPERTONIC_MODEL"
+  | "SUPERTONIC_HEALTH_ENDPOINT"
+  | "SUPERTONIC_STYLES_ENDPOINT"
+  | "SUPERTONIC_IMPORT_STYLE_ENDPOINT"
+  | "SUPERTONIC_TTS_ENDPOINT"
   | "VIENEU_PYTHON"
   | "VIENEU_MODE"
   | "VIENEU_EMOTION"
@@ -145,6 +150,10 @@ export const EMPTY_FORM: SettingsForm = {
   ELEVENLABS_VOICES: "",
   SUPERTONIC_BASE_URL: "",
   SUPERTONIC_MODEL: "",
+  SUPERTONIC_HEALTH_ENDPOINT: "",
+  SUPERTONIC_STYLES_ENDPOINT: "",
+  SUPERTONIC_IMPORT_STYLE_ENDPOINT: "",
+  SUPERTONIC_TTS_ENDPOINT: "",
   VIENEU_PYTHON: "",
   VIENEU_MODE: "",
   VIENEU_EMOTION: "",

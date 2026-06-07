@@ -1,5 +1,5 @@
 import path from "node:path";
-import { APP_ROOT, PROJECT_ROOT } from "../config/paths";
+import { APP_ROOT, KATA_STUDIO_HOME, PROJECT_ROOT } from "../config/paths";
 import { pickKnownEnv, type RuntimeEnvValues } from "./EnvFileService";
 
 type HeaderReader = {
@@ -46,7 +46,7 @@ function normalizeRuntimePaths(env: RuntimeEnvValues): RuntimeEnvValues {
 
   for (const key of ["MODEL_DIR", "SERVER_DATA_DIR", "MUSIC_LIBRARY_DIR"]) {
     if (normalized[key]) {
-      normalized[key] = resolveRuntimePath(normalized[key], APP_ROOT);
+      normalized[key] = resolveRuntimePath(normalized[key], getWritableRelativeRoot());
     }
   }
 
@@ -57,10 +57,14 @@ function normalizeRuntimePaths(env: RuntimeEnvValues): RuntimeEnvValues {
   }
 
   if (normalized.VIENEU_REFERENCE_AUDIO && looksLikePath(normalized.VIENEU_REFERENCE_AUDIO)) {
-    normalized.VIENEU_REFERENCE_AUDIO = resolveRuntimePath(normalized.VIENEU_REFERENCE_AUDIO, APP_ROOT);
+    normalized.VIENEU_REFERENCE_AUDIO = resolveRuntimePath(normalized.VIENEU_REFERENCE_AUDIO, getWritableRelativeRoot());
   }
 
   return normalized;
+}
+
+function getWritableRelativeRoot(): string {
+  return process.env.KATA_DESKTOP_RUNTIME === "true" ? KATA_STUDIO_HOME : APP_ROOT;
 }
 
 function resolveRuntimePath(value: string, rootPath: string): string {

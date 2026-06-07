@@ -9,7 +9,8 @@ const __dirname = path.dirname(__filename);
 
 export const SERVER_ROOT = path.resolve(__dirname, "..");
 export const APP_ROOT = path.resolve(SERVER_ROOT, "..");
-export const PROJECT_ROOT = APP_ROOT;
+export const DESKTOP_RESOURCE_ROOT = resolveDesktopResourceRoot();
+export const PROJECT_ROOT = resolveProjectRoot();
 export const KATA_STUDIO_HOME = resolveKataStudioHome();
 export const RUNTIME_TOOLS_DIR = path.join(KATA_STUDIO_HOME, "tools");
 export const MODEL_DIR = resolveDefaultModelDir();
@@ -58,7 +59,11 @@ export function resolveConfiguredDataDir(serverDataDir?: string): string {
     return DEFAULT_SERVER_DATA_DIR;
   }
 
-  return path.isAbsolute(trimmed) ? trimmed : path.resolve(APP_ROOT, trimmed);
+  return path.isAbsolute(trimmed) ? trimmed : path.resolve(getWritableRelativeRoot(), trimmed);
+}
+
+function getWritableRelativeRoot() {
+  return process.env.KATA_DESKTOP_RUNTIME === "true" ? KATA_STUDIO_HOME : APP_ROOT;
 }
 
 export function getGeneratedDir(serverDataDir?: string): string {
@@ -80,6 +85,24 @@ export function getGeneratedBackgroundMusicDir(serverDataDir?: string): string {
 export function buildGeneratedFileUrl(publicBasePath: string, relativePath: string, serverOrigin = SERVER_ORIGIN): string {
   const encodedRelativePath = relativePath.split(/[\\/]+/).map((part) => encodeURIComponent(part)).join("/");
   return `${serverOrigin}/${publicBasePath}/${encodedRelativePath}`;
+}
+
+function resolveDesktopResourceRoot() {
+  const configured = process.env.KATA_DESKTOP_RESOURCE_ROOT?.trim();
+  return configured ? path.resolve(configured) : "";
+}
+
+function resolveProjectRoot() {
+  const configured = process.env.KATA_PROJECT_ROOT?.trim();
+  if (configured) {
+    return path.resolve(configured);
+  }
+
+  if (process.env.KATA_DESKTOP_RUNTIME === "true" && DESKTOP_RESOURCE_ROOT) {
+    return DESKTOP_RESOURCE_ROOT;
+  }
+
+  return APP_ROOT;
 }
 
 function resolveKataStudioHome() {

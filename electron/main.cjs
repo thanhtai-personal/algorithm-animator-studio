@@ -10,17 +10,34 @@ let mainWindow;
 let setupWindow;
 let clientServer;
 
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+}
+
 const DEFAULT_CLIENT_PORT = 6868;
 const DEFAULT_SERVER_PORT = 8888;
 
 function getAppRoot() {
-  return app.isPackaged ? path.join(process.resourcesPath, "app.asar") : path.resolve(__dirname, "..");
+  if (!app.isPackaged) return path.resolve(__dirname, "..");
+
+  const asarRoot = path.join(process.resourcesPath, "app.asar");
+  return fs.existsSync(asarRoot) ? asarRoot : path.join(process.resourcesPath, "app");
 }
 
+function getDesktopRuntimeResourceRoot() {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, "electron-runtime")
+    : path.resolve(__dirname, "..");
+}
 
 function getWindowIconPath() {
-  const iconPath = path.join(getAppRoot(), "assets", "app-icon.png");
-  return fs.existsSync(iconPath) ? iconPath : undefined;
+  const candidates = [
+    path.join(getAppRoot(), "assets", "app-icon.png"),
+    path.join(getAppRoot(), "public", "favicon.ico"),
+    path.join(process.resourcesPath || "", "favicon.ico"),
+  ];
+  return candidates.find((candidate) => candidate && fs.existsSync(candidate));
 }
 
 function getDesktopClientDir() {
@@ -212,21 +229,37 @@ function sendSetupStatus(payload) {
   }
 }
 
+function focusMainWindow() {
+  const target = mainWindow || setupWindow;
+  if (!target || target.isDestroyed()) return;
+  if (target.isMinimized()) target.restore();
+  target.focus();
+}
+
 async function startBackend(runtime) {
   const userData = app.getPath("userData");
   const serverDataDir = path.join(userData, "server-data");
   fs.mkdirSync(serverDataDir, { recursive: true });
 
+  const desktopRuntimeResourceRoot = getDesktopRuntimeResourceRoot();
+
   await waitUntilPortFree(DEFAULT_SERVER_PORT, "Backend");
 
   process.env.KATA_DESKTOP_RUNTIME = "true";
   process.env.KATA_STUDIO_HOME = runtime.runtimeHome;
+  process.env.KATA_DESKTOP_RESOURCE_ROOT = desktopRuntimeResourceRoot;
+  process.env.KATA_PROJECT_ROOT = desktopRuntimeResourceRoot;
   process.env.PORT = String(DEFAULT_SERVER_PORT);
   process.env.SERVER_ORIGIN = `http://127.0.0.1:${DEFAULT_SERVER_PORT}`;
   process.env.CLIENT_ORIGIN = `http://127.0.0.1:${DEFAULT_CLIENT_PORT}`;
   process.env.SERVER_DATA_DIR = process.env.SERVER_DATA_DIR || serverDataDir;
   process.env.MODEL_DIR = process.env.MODEL_DIR || runtime.modelDir;
   process.env.PIPER_EXE = process.env.PIPER_EXE || runtime.piperExe;
+
+  const bundledVieneuSource = path.join(desktopRuntimeResourceRoot, "libs", "VieNeu-TTS");
+  if (fs.existsSync(bundledVieneuSource)) {
+    process.env.VIENEU_SOURCE_DIR = process.env.VIENEU_SOURCE_DIR || bundledVieneuSource;
+  }
 
   if (runtime.ffmpegExe) process.env.FFMPEG_EXE = process.env.FFMPEG_EXE || runtime.ffmpegExe;
   if (runtime.ffprobeExe) process.env.FFPROBE_EXE = process.env.FFPROBE_EXE || runtime.ffprobeExe;
@@ -276,6 +309,12 @@ function createMainWindow() {
 
   mainWindow.loadURL(`http://127.0.0.1:${DEFAULT_CLIENT_PORT}`);
 }
+
+app.setAppUserModelId("vn.kaistudio.app");
+
+app.on("second-instance", () => {
+  focusMainWindow();
+});
 
 app.whenReady().then(async () => {
   try {

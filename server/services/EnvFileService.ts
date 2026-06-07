@@ -1,11 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parse } from "dotenv";
-import { SERVER_ROOT } from "../config/paths";
+import { KATA_STUDIO_HOME, PROJECT_ROOT, SERVER_ROOT } from "../config/paths";
 import { DEFAULT_RUNTIME_ENV_VALUES, KNOWN_RUNTIME_ENV_KEYS } from "../config/runtimeDefaults";
 
 const ENV_PATH = path.resolve(SERVER_ROOT, "..", ".env");
 const SERVER_ENV_PATH = path.resolve(SERVER_ROOT, ".env");
+const DESKTOP_ENV_PATH = path.join(KATA_STUDIO_HOME, ".env");
+const PROJECT_ENV_PATH = path.join(PROJECT_ROOT, ".env");
 
 const LEGACY_LOCAL_ENV_VALUES: Record<string, Record<string, string>> = {
 
@@ -19,6 +21,8 @@ export function readEnvValues(overrides: RuntimeEnvValues = {}): RuntimeEnvValue
     ...pickKnownEnv(process.env),
     ...readDotEnvValues(ENV_PATH),
     ...readDotEnvValues(SERVER_ENV_PATH),
+    ...readDotEnvValues(PROJECT_ENV_PATH),
+    ...readDotEnvValues(DESKTOP_ENV_PATH),
     ...pickKnownEnv(overrides),
   });
 }

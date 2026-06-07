@@ -29,3 +29,7 @@ npm run build:public
 ```
 
 Link tải Desktop app nằm trong `src/lib/publicWebDefaults.ts`.
+
+## Ghi chú build Windows EXE
+
+Xem checklist chi tiết tại `docs/electron-windows-build.md`. Bản desktop đóng gói thêm `electron-runtime/scripts` và `electron-runtime/libs/VieNeu-TTS` ngoài `app.asar` để Python bridge/VieNeu có thể chạy được trong file EXE.

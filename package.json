@@ -22,8 +22,8 @@
     "supertonic:serve": "node scripts/start-supertonic.mjs",
     "dev:full": "npm run dev",
     "start:server": "tsx server/index.ts",
-    "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --outfile=dist-electron/server/index.js",
-    "build:desktop": "cross-env DESKTOP_BUILD=true VITE_PUBLIC_WEB=false VITE_API_URL=http://127.0.0.1:8888 npm run build && npm run build:server",
+    "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --packages=external --outfile=dist-electron/server/index.js",
+    "build:desktop": "cross-env DESKTOP_BUILD=true VITE_PUBLIC_WEB=false VITE_API_URL=http://127.0.0.1:8888 npm run build && npm run build:server && npm run build:desktop:verify",
     "electron:dev": "cross-env ELECTRON_DEV_URL=http://localhost:3000 npx electron .",
     "dist:win": "npm run build:desktop && electron-builder --win --x64 --config.directories.output=release/win",
     "dist:win:nsis": "npm run build:desktop && electron-builder --win nsis --x64 --config.directories.output=release/win",
@@ -35,7 +35,9 @@
     "supertonic:serve:v1": "cross-env SUPERTONIC_MODEL=supertonic npm run supertonic:serve",
     "audit:i18n": "node scripts/audit-i18n-hardcoded.mjs",
     "dev:vieneu": "node scripts/start-vieneu.mjs",
-    "vieneu:serve": "node scripts/start-vieneu.mjs"
+    "vieneu:serve": "node scripts/start-vieneu.mjs",
+    "build:desktop:verify": "node scripts/verify-electron-build.mjs",
+    "electron:preview": "npm run build:desktop && npx electron ."
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -150,6 +152,33 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "scripts",
+        "to": "electron-runtime/scripts",
+        "filter": [
+          "vieneu-*.py",
+          "*.mjs",
+          "!**/__pycache__/**",
+          "!**/*.pyc"
+        ]
+      },
+      {
+        "from": "libs/VieNeu-TTS",
+        "to": "electron-runtime/libs/VieNeu-TTS",
+        "filter": [
+          "**/*",
+          "!**/.git/**",
+          "!**/.venv/**",
+          "!**/__pycache__/**",
+          "!**/*.pyc",
+          "!**/.mypy_cache/**",
+          "!**/.pytest_cache/**"
+        ]
+      },
+      {
+        "from": ".env.example",
+        "to": "electron-runtime/.env.example"
       }
     ],
     "asarUnpack": [

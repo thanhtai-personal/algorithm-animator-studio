@@ -6,6 +6,7 @@ import {
   buildGeneratedFileUrl,
   getGeneratedDir,
 } from "../config/paths";
+import { DEFAULT_SUPERTONIC_LANG, DEFAULT_SUPERTONIC_TOTAL_STEPS, DEFAULT_SUPERTONIC_VOICE } from "../config/supertonicDefaults";
 import type { SupertonicConfigStatus, SupertonicGenerateBody, SupertonicImportStyleBody, SupertonicVoice } from "../models/Supertonic";
 import { ensureDirectoryExists, getLocalDateFolderName, getUniqueOutputFileWithExtension, sanitizeFileBaseName } from "../utils/audioOutput";
 import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
@@ -28,7 +29,7 @@ type HealthPayload = {
 export async function getSupertonicConfigStatus(envOverrides: RuntimeEnvValues = {}): Promise<SupertonicConfigStatus> {
   const env = readEnvValues(envOverrides);
   const baseUrl = getSupertonicBaseUrl(env);
-  const fallbackVoice = env.SUPERTONIC_DEFAULT_VOICE || "M1";
+  const fallbackVoice = DEFAULT_SUPERTONIC_VOICE;
 
   try {
     const [health, voices] = await Promise.all([
@@ -42,8 +43,8 @@ export async function getSupertonicConfigStatus(envOverrides: RuntimeEnvValues =
       baseUrl,
       model: health.model || env.SUPERTONIC_MODEL || "supertonic-3",
       defaultVoice: fallbackVoice,
-      defaultLang: env.SUPERTONIC_DEFAULT_LANG || "en",
-      defaultTotalSteps: clampTotalSteps(Number(env.SUPERTONIC_TOTAL_STEPS || 8)),
+      defaultLang: DEFAULT_SUPERTONIC_LANG,
+      defaultTotalSteps: DEFAULT_SUPERTONIC_TOTAL_STEPS,
       voices: normalizeVoices(voices, fallbackVoice),
       sampleRate: health.sample_rate,
       version: health.version,
@@ -55,8 +56,8 @@ export async function getSupertonicConfigStatus(envOverrides: RuntimeEnvValues =
       baseUrl,
       model: env.SUPERTONIC_MODEL || "supertonic-3",
       defaultVoice: fallbackVoice,
-      defaultLang: env.SUPERTONIC_DEFAULT_LANG || "en",
-      defaultTotalSteps: clampTotalSteps(Number(env.SUPERTONIC_TOTAL_STEPS || 8)),
+      defaultLang: DEFAULT_SUPERTONIC_LANG,
+      defaultTotalSteps: DEFAULT_SUPERTONIC_TOTAL_STEPS,
       voices: defaultVoices(),
       error: error instanceof Error ? error.message : "Không kết nối được Supertonic server.",
     };
@@ -96,10 +97,10 @@ export async function generateSupertonicAudio(body: SupertonicGenerateBody, envO
 
   const responseFormat = normalizeFormat(body.responseFormat);
   const baseUrl = getSupertonicBaseUrl(env);
-  const voice = body.voice?.trim() || env.SUPERTONIC_DEFAULT_VOICE || "M1";
-  const lang = normalizeLang(body.lang || env.SUPERTONIC_DEFAULT_LANG || "en");
+  const voice = body.voice?.trim() || DEFAULT_SUPERTONIC_VOICE;
+  const lang = normalizeLang(body.lang || DEFAULT_SUPERTONIC_LANG);
   const speed = clampSpeed(body.speed);
-  const totalSteps = clampTotalSteps(body.totalSteps ?? Number(env.SUPERTONIC_TOTAL_STEPS || 8));
+  const totalSteps = clampTotalSteps(body.totalSteps ?? DEFAULT_SUPERTONIC_TOTAL_STEPS);
 
   const response = await fetchWithTimeout(`${baseUrl}/v1/tts`, {
     method: "POST",
@@ -237,26 +238,65 @@ async function readSupertonicError(response: Response) {
 }
 
 function normalizeVoices(payload: unknown, fallbackVoice: string): SupertonicVoice[] {
-  const candidates = Array.isArray(payload)
-    ? payload
-    : Array.isArray((payload as { voices?: unknown[] })?.voices)
-      ? (payload as { voices: unknown[] }).voices
-      : Array.isArray((payload as { styles?: unknown[] })?.styles)
-        ? (payload as { styles: unknown[] }).styles
-        : [];
+  const candidates = extractVoiceCandidates(payload, 0);
 
-  const voices = candidates.map((item) => {
-    const record = item as Record<string, unknown>;
-    const id = String(record.id || record.name || record.voice || record.style || "").trim();
+  const voices = candidates.map(({ id: fallbackId, value }) => {
+    if (typeof value === "string") {
+      const id = value.trim() || fallbackId;
+      return id ? { id, label: id } satisfies SupertonicVoice : null;
+    }
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return fallbackId ? { id: fallbackId, label: fallbackId } satisfies SupertonicVoice : null;
+    }
+    const record = value as Record<string, unknown>;
+    const id = String(record.id || record.key || record.name || record.voice || record.style || fallbackId || "").trim();
     if (!id) return null;
     return {
       id,
-      label: String(record.label || record.display_name || record.name || id),
+      label: String(record.label || record.display_name || record.displayName || record.name || id),
       description: typeof record.description === "string" ? record.description : undefined,
     } satisfies SupertonicVoice;
   }).filter(Boolean) as SupertonicVoice[];
 
-  return voices.length ? voices : defaultVoices(fallbackVoice);
+  return dedupeVoices(voices).length ? dedupeVoices(voices) : defaultVoices(fallbackVoice);
+}
+
+function extractVoiceCandidates(payload: unknown, depth: number): Array<{ id?: string; value: unknown }> {
+  if (Array.isArray(payload)) return payload.map((value) => ({ value }));
+  if (!payload || typeof payload !== "object") return [];
+
+  const record = payload as Record<string, unknown>;
+  for (const key of ["voices", "styles", "data", "items", "models"]) {
+    const value = record[key];
+    if (Array.isArray(value)) return value.map((item) => ({ value: item }));
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      if (key === "voices" || key === "styles") return objectMapCandidates(value);
+      const nested = extractVoiceCandidates(value, depth + 1);
+      if (nested.length) return nested;
+    }
+  }
+
+  if (depth < 2) {
+    for (const value of Object.values(record)) {
+      const nested = extractVoiceCandidates(value, depth + 1);
+      if (nested.length) return nested;
+    }
+  }
+
+  return objectMapCandidates(record);
+}
+
+function objectMapCandidates(value: object): Array<{ id?: string; value: unknown }> {
+  return Object.entries(value).map(([id, item]) => ({ id, value: item }));
+}
+
+function dedupeVoices(voices: SupertonicVoice[]) {
+  const seen = new Set<string>();
+  return voices.filter((voice) => {
+    if (seen.has(voice.id)) return false;
+    seen.add(voice.id);
+    return true;
+  });
 }
 
 function defaultVoices(firstVoice = "M1") {

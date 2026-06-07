@@ -118,15 +118,15 @@ Chuyển thành JSON array:
 | `${input_path}` | Đường dẫn file audio nguồn dạng text. Chỉ dùng nếu API Applio của bạn yêu cầu string path thay vì file upload. |
 | `${output}` | Đường dẫn output mong muốn. Chỉ dùng nếu API của bạn có tham số output path. |
 | `${text}` | Text kịch bản gửi vào tab Text to Speech của Applio. |
-| `${model}` | Giá trị `RVC_APPLIO_MODEL_NAME`. |
+| `${model}` | Giá trị `modelName` trong template JSON. |
 | `${model_name}` | Giống `${model}`. |
-| `${index}` | Giá trị `RVC_APPLIO_INDEX_PATH`. |
+| `${index}` | Giá trị `indexPath` trong template JSON. |
 | `${index_path}` | Giống `${index}`. |
-| `${pitch}` | Giá trị `RVC_APPLIO_PITCH`. |
-| `${f0_method}` | Giá trị `RVC_APPLIO_F0_METHOD`, thường là `rmvpe`. |
-| `${index_rate}` | Giá trị `RVC_APPLIO_INDEX_RATE`, thường 0.5-0.8. |
-| `${protect}` | Giá trị `RVC_APPLIO_PROTECT`, thường 0.33-0.5. |
-| `${filter_radius}` | Giá trị `RVC_APPLIO_FILTER_RADIUS`, thường là 3. |
+| `${pitch}` | Giá trị `pitch` trong template JSON. |
+| `${f0_method}` | Giá trị `f0Method` trong template JSON, thường là `rmvpe`. |
+| `${index_rate}` | Giá trị `indexRate` trong template JSON, thường 0.5-0.8. |
+| `${protect}` | Giá trị `protect` trong template JSON, thường 0.33-0.5. |
+| `${filter_radius}` | Giá trị `filterRadius` trong template JSON, thường là 3. |
 | `${tts_voice}` | Voice nguồn EdgeTTS trong Applio, ví dụ `en-US-SteffanNeural`. |
 | `${tts_speed}` | Tốc độ TTS của Applio, thường từ `-100` đến `100`. |
 | `${speed}` | Giống `${tts_speed}` nếu API của Applio đặt tên tham số là speed. |

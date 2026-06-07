@@ -2,11 +2,12 @@ import { Download, MonitorSpeaker } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { text } from "@/lib/i18n";
+import { DESKTOP_DOWNLOAD_URL } from "@/lib/publicWebDefaults";
 
 export function PublicWebBanner() {
   const lang = useSystemLang();
   const isPublicWeb = import.meta.env.VITE_PUBLIC_WEB === "true";
-  const downloadUrl = String(import.meta.env.VITE_DESKTOP_DOWNLOAD_URL || "").trim();
+  const downloadUrl = DESKTOP_DOWNLOAD_URL.trim();
 
   if (!isPublicWeb) return null;
 

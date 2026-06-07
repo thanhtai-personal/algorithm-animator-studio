@@ -1,0 +1,3 @@
+export const DEFAULT_SUPERTONIC_VOICE = "M1";
+export const DEFAULT_SUPERTONIC_LANG = "en";
+export const DEFAULT_SUPERTONIC_TOTAL_STEPS = 8;

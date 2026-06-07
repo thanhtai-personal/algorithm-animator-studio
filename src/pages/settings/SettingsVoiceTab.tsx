@@ -135,35 +135,15 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               type="text"
               onChange={(value) => props.onUpdateField("SUPERTONIC_BASE_URL", value)}
             />
-            <div className="grid gap-3 md:grid-cols-3">
-              <SecretInput
-                id="supertonic-model-voice"
-                label={t(props.lang, "settingsSupertonicModelLabel")}
-                description={t(props.lang, "settingsSupertonicModelDescription")}
-                value={props.form.SUPERTONIC_MODEL}
-                placeholder="supertonic-3"
-                type="text"
-                onChange={(value) => props.onUpdateField("SUPERTONIC_MODEL", value)}
-              />
-              <SecretInput
-                id="supertonic-default-voice"
-                label={t(props.lang, "settingsSupertonicDefaultVoiceLabel")}
-                description={t(props.lang, "settingsDefaultVoiceDescription")}
-                value={props.form.SUPERTONIC_DEFAULT_VOICE}
-                placeholder="M1"
-                type="text"
-                onChange={(value) => props.onUpdateField("SUPERTONIC_DEFAULT_VOICE", value)}
-              />
-              <SecretInput
-                id="supertonic-total-steps"
-                label={t(props.lang, "settingsSupertonicTotalStepsLabel")}
-                description={t(props.lang, "settingsTotalStepsDescription")}
-                value={props.form.SUPERTONIC_TOTAL_STEPS}
-                placeholder="8"
-                type="text"
-                onChange={(value) => props.onUpdateField("SUPERTONIC_TOTAL_STEPS", value)}
-              />
-            </div>
+            <SecretInput
+              id="supertonic-model-voice"
+              label={t(props.lang, "settingsSupertonicModelLabel")}
+              description={t(props.lang, "settingsSupertonicModelDescription")}
+              value={props.form.SUPERTONIC_MODEL}
+              placeholder="supertonic-3"
+              type="text"
+              onChange={(value) => props.onUpdateField("SUPERTONIC_MODEL", value)}
+            />
             </div>
             ) : null}
 
@@ -317,34 +297,6 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               />
             </div>
             <SettingsApplioTemplateFields lang={props.lang} templates={props.applioTemplates} onUpdate={props.onUpdateApplioTemplate} />
-            <div className="grid gap-3 md:grid-cols-2">
-              <SecretInput
-                id="rvc-applio-model-name"
-                label={t(props.lang, "settingsRvcApplioModelNameLabel")}
-                description={text(props.lang, "Target .pth/model name expected by the Gradio endpoint.", "Tên .pth/model đích đúng với endpoint Gradio.")}
-                value={props.form.RVC_APPLIO_MODEL_NAME}
-                placeholder="my_voice.pth"
-                type="text"
-                onChange={(value) => props.onUpdateField("RVC_APPLIO_MODEL_NAME", value)}
-              />
-              <PathInput
-                id="rvc-applio-index-path"
-                label={t(props.lang, "settingsRvcApplioIndexPathLabel")}
-                description={text(props.lang, "Optional .index file for the RVC model.", "File .index tùy chọn của model RVC.")}
-                lang={props.lang}
-                value={props.form.RVC_APPLIO_INDEX_PATH}
-                placeholder="C:/Applio/logs/my_voice/added_...index"
-                busy={props.selecting === "RVC_APPLIO_INDEX_PATH"}
-                onChange={(value) => props.onUpdateField("RVC_APPLIO_INDEX_PATH", value)}
-                onSelect={() => props.onSelectPath("file", "RVC_APPLIO_INDEX_PATH", "Select RVC index file")}
-                onOpen={() => props.onOpenPath(props.form.RVC_APPLIO_INDEX_PATH)}
-              />
-              <SecretInput id="rvc-applio-pitch" label={t(props.lang, "settingsRvcApplioPitchLabel")} description="Semitone pitch shift." value={props.form.RVC_APPLIO_PITCH} placeholder="0" type="text" onChange={(value) => props.onUpdateField("RVC_APPLIO_PITCH", value)} />
-              <SecretInput id="rvc-applio-f0" label={t(props.lang, "settingsRvcApplioF0MethodLabel")} description="rmvpe is usually best for speech." value={props.form.RVC_APPLIO_F0_METHOD} placeholder="rmvpe" type="text" onChange={(value) => props.onUpdateField("RVC_APPLIO_F0_METHOD", value)} />
-              <SecretInput id="rvc-applio-index-rate" label="RVC index rate" description="0.5-0.8 is a practical range for speech." value={props.form.RVC_APPLIO_INDEX_RATE} placeholder="0.75" type="text" onChange={(value) => props.onUpdateField("RVC_APPLIO_INDEX_RATE", value)} />
-              <SecretInput id="rvc-applio-protect" label="RVC protect" description="Higher values preserve consonants and reduce artifacts." value={props.form.RVC_APPLIO_PROTECT} placeholder="0.33" type="text" onChange={(value) => props.onUpdateField("RVC_APPLIO_PROTECT", value)} />
-              <SecretInput id="rvc-applio-filter-radius" label="RVC filter radius" description="F0 smoothing radius, default 3." value={props.form.RVC_APPLIO_FILTER_RADIUS} placeholder="3" type="text" onChange={(value) => props.onUpdateField("RVC_APPLIO_FILTER_RADIUS", value)} />
-            </div>
             </div>
             ) : null}
           </div>

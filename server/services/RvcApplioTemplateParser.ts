@@ -1,4 +1,5 @@
 import type { RvcApplioTemplateStatus } from "../models/RvcApplio";
+import { DEFAULT_RVC_APPLIO_TEMPLATE_VALUES } from "../config/rvcApplioDefaults";
 import type { RuntimeEnvValues } from "./EnvFileService";
 import { readRvcApplioTemplateFile } from "./RvcApplioTemplateFileService";
 
@@ -24,27 +25,27 @@ function normalizeTemplateItem(item: unknown, index: number, env: RuntimeEnvValu
   }
   const record = item as Record<string, unknown>;
   const rawId = stringValue(record.id) || stringValue(record.name) || `template-${index + 1}`;
-  const modelName = stringValue(record.modelName) || stringValue(record.model) || env.RVC_APPLIO_MODEL_NAME || "";
+  const modelName = stringValue(record.modelName) || stringValue(record.model) || DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.modelName;
   const label = stringValue(record.label) || stringValue(record.name) || modelName || `Applio template ${index + 1}`;
   return {
     id: sanitizeTemplateId(rawId, index),
     label,
     apiName: stringValue(record.apiName) || env.RVC_APPLIO_API_NAME || "/infer_convert",
     modelName,
-    indexPath: stringValue(record.indexPath) || stringValue(record.index) || env.RVC_APPLIO_INDEX_PATH || "",
-    argTemplate: readTemplateArgs(record, env),
+    indexPath: stringValue(record.indexPath) || stringValue(record.index) || DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.indexPath,
+    argTemplate: readTemplateArgs(record),
     argTemplateConfigured: true,
-    f0Method: normalizeF0Method(stringValue(record.f0Method) || env.RVC_APPLIO_F0_METHOD || "rmvpe"),
-    pitch: clampPitch(record.pitch ?? env.RVC_APPLIO_PITCH),
-    indexRate: clampRatio(record.indexRate ?? env.RVC_APPLIO_INDEX_RATE ?? 0.75),
-    protect: clampRatio(record.protect ?? env.RVC_APPLIO_PROTECT ?? 0.33),
-    filterRadius: clampInteger(record.filterRadius ?? env.RVC_APPLIO_FILTER_RADIUS ?? 3, 0, 7),
+    f0Method: normalizeF0Method(stringValue(record.f0Method) || DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.f0Method),
+    pitch: clampPitch(record.pitch ?? DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.pitch),
+    indexRate: clampRatio(record.indexRate ?? DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.indexRate),
+    protect: clampRatio(record.protect ?? DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.protect),
+    filterRadius: clampInteger(record.filterRadius ?? DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.filterRadius, 0, 7),
     ttsVoice: stringValue(record.ttsVoice) || stringValue(record.voice) || "",
     ttsSpeed: clampInteger(record.ttsSpeed ?? record.speed ?? 0, -100, 100),
   };
 }
 
-function readTemplateArgs(record: Record<string, unknown>, env: RuntimeEnvValues) {
+function readTemplateArgs(record: Record<string, unknown>) {
   if (Array.isArray(record.argTemplate)) return record.argTemplate;
   if (typeof record.argTemplateJson === "string") return parseArgTemplate(record.argTemplateJson);
   throw new Error("Mỗi Applio template phải có argTemplate array.");

@@ -117,7 +117,7 @@ export async function generateAudioFile(
   const baseFileName = sanitizeFileBaseName(params.fileName || `audio-${crypto.randomUUID()}`);
   const finalSentenceSilence = clampSentenceSilence(params.sentenceSilence);
   const finalSpeechRate = clampSpeechRate(params.speechRate);
-  const piperExe = resolveRuntimeExecutable(env.PIPER_EXE || process.env.PIPER_EXE || PIPER_EXE);
+  const piperExe = resolveRuntimeExecutable(env.PIPER_EXE || PIPER_EXE);
 
   ensureDirectoryExists(dateOutputDir);
 
@@ -183,7 +183,7 @@ export async function generateAudioPreviewFile(
   );
   const finalSentenceSilence = clampSentenceSilence(params.sentenceSilence);
   const finalSpeechRate = clampSpeechRate(params.speechRate);
-  const piperExe = resolveRuntimeExecutable(env.PIPER_EXE || process.env.PIPER_EXE || PIPER_EXE);
+  const piperExe = resolveRuntimeExecutable(env.PIPER_EXE || PIPER_EXE);
   const { outputFileName, outputPath } = getUniqueOutputFile({
     baseName: baseFileName,
     outputDir: generatedPreviewDir,
@@ -254,7 +254,7 @@ function cleanupPreviewFiles(generatedPreviewDir: string) {
 
 function validateModelFiles(selectedModel: PiperModel, envOverrides: RuntimeEnvValues = {}) {
   const env = readEnvValues(envOverrides);
-  const piperExe = resolveRuntimeExecutable(env.PIPER_EXE || process.env.PIPER_EXE || PIPER_EXE);
+  const piperExe = resolveRuntimeExecutable(env.PIPER_EXE || PIPER_EXE);
 
   if (!fs.existsSync(piperExe)) {
     return serverFileError("Không tìm thấy piper.exe.", { piperExe });

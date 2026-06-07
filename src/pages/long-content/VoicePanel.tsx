@@ -17,18 +17,12 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
   const applioTemplates = useMemo(() => s.rvcApplioConfig?.templates ?? [], [s.rvcApplioConfig?.templates]);
   const applioTtsTemplates = useMemo(() => s.rvcApplioConfig?.ttsTemplates ?? [], [s.rvcApplioConfig?.ttsTemplates]);
   const [applioTemplateId, setApplioTemplateId] = useState("");
-  const [applioTtsTemplateId, setApplioTtsTemplateId] = useState("");
 
   useEffect(() => {
     if (!applioTemplates.some((template) => template.id === applioTemplateId)) {
       setApplioTemplateId(applioTemplates[0]?.id || "");
     }
   }, [applioTemplateId, applioTemplates]);
-  useEffect(() => {
-    if (!applioTtsTemplates.some((template) => template.id === applioTtsTemplateId)) {
-      setApplioTtsTemplateId(applioTtsTemplates[0]?.id || "");
-    }
-  }, [applioTtsTemplateId, applioTtsTemplates]);
   return (
     <Card className="space-y-4 border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.34),0_0_28px_rgba(16,185,129,0.05)]">
       <div>
@@ -52,7 +46,7 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
             <SelectItem value="elevenlabs">{uiText("ElevenLabs PRO · tạo file và nhúng vào video")}</SelectItem>
             <SelectItem value="supertonic">{uiText("Supertonic local · 44.1kHz WAV")}</SelectItem>
             <SelectItem value="vieneu">{uiText("VieNeu-TTS local · tiếng Việt/clone giọng")}</SelectItem>
-            <SelectItem value="applio">{uiText("Applio TTS/RVC · EdgeTTS sang custom voice")}</SelectItem>
+            <SelectItem value="applio">{uiText("Applio TTS · EdgeTTS voices")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -104,7 +98,7 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
         <div className="grid gap-3">
           <div>
             <div className="flex items-center justify-between gap-2">
-              <Label>{uiText("Supertonic voice/style")}</Label>
+              <Label>{uiText("Supertonic TTS voice model/style")}</Label>
               <Button type="button" size="sm" variant="outline" disabled={s.supertonicImporting} asChild>
                 <label className="cursor-pointer" htmlFor="supertonic-voice-json">
                   <Upload className="mr-2 h-3.5 w-3.5" /> {s.supertonicImporting ? "Đang import..." : "Import voice JSON"}
@@ -123,10 +117,10 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
               />
             </div>
             <Select value={s.supertonicVoice} onValueChange={s.setSupertonicVoice}>
-              <SelectTrigger className="mt-2"><SelectValue placeholder={uiText("Chọn voice Supertonic")} /></SelectTrigger>
+              <SelectTrigger className="mt-2"><SelectValue placeholder={uiText("Chọn TTS voice model/style")} /></SelectTrigger>
               <SelectContent>{(s.supertonicConfig?.voices ?? []).map((voice) => <SelectItem key={voice.id} value={voice.id}>{voice.label}</SelectItem>)}</SelectContent>
             </Select>
-            <p className="mt-2 text-xs text-muted-foreground">{uiText("Model được chọn khi start server; dropdown này dùng nhiều voice/style trong model đang chạy.")}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{uiText("Supertonic dùng dropdown này cho TTS voice/style. Custom voice bằng Applio nằm sau bước tạo audio.")}</p>
           </div>
           <div className="rounded-lg border border-border bg-background/40 p-3 text-xs text-muted-foreground">
             <div className="grid gap-1">
@@ -171,44 +165,60 @@ export function VoicePanel({ studio: s }: { studio: LongContentStudio }) {
         </div>
       ) : null}
 
-      <div className="rounded-lg border border-border bg-background/40 p-3 text-xs text-muted-foreground">
-        <div className="grid gap-1">
-          <span>{uiText("Applio custom voice:")} <strong className={s.rvcApplioConfig?.serverOk ? "text-emerald-300" : "text-rose-300"}>{s.rvcApplioConfig?.serverOk ? "đã kết nối" : "chưa chạy"}</strong></span>
-          <span>{uiText("Templates:")} <strong>{applioTemplates.length} convert · {applioTtsTemplates.length} TTS</strong></span>
-          <span>{uiText("Workflow:")} <strong>{uiText("tạo audio bằng provider ở trên → chuyển voice bằng Applio")}</strong></span>
-          {s.rvcApplioConfig?.error ? <span className="text-yellow-300">{s.rvcApplioConfig.error}</span> : null}
-        </div>
-        {s.voiceProvider === "applio" ? (
-          <div className="mt-3">
-            <Label>{uiText("Applio TTS template")}</Label>
-            <Select value={applioTtsTemplateId} onValueChange={setApplioTtsTemplateId}>
-              <SelectTrigger className="mt-2"><SelectValue placeholder={uiText("Chọn Applio TTS template")} /></SelectTrigger>
-              <SelectContent>{applioTtsTemplates.map((template) => <SelectItem key={template.id} value={template.id}>{template.label}</SelectItem>)}</SelectContent>
+      {s.voiceProvider === "applio" ? (
+        <div className="grid gap-3">
+          <div>
+            <Label>{uiText("Applio TTS voice/model")}</Label>
+            <Select value={s.applioTtsTemplateId} onValueChange={s.setApplioTtsTemplateId}>
+              <SelectTrigger className="mt-2"><SelectValue placeholder={uiText("Chọn Applio TTS voice")} /></SelectTrigger>
+              <SelectContent>{applioTtsTemplates.map((template) => <SelectItem key={template.id} value={template.id}>{template.label || template.ttsVoice || template.id}</SelectItem>)}</SelectContent>
             </Select>
+            <p className="mt-2 text-xs text-muted-foreground">{uiText("Danh sách này lấy từ Applio ttsTemplates, ví dụ vi-VN-HoaiMyNeural hoặc vi-VN-NamMinhNeural.")}</p>
           </div>
-        ) : null}
-      </div>
+          <div className="rounded-lg border border-border bg-background/40 p-3 text-xs text-muted-foreground">
+            <div className="grid gap-1">
+              <span>{uiText("Applio server:")} <strong className={s.rvcApplioConfig?.serverOk ? "text-emerald-300" : "text-rose-300"}>{s.rvcApplioConfig?.serverOk ? "đã kết nối" : "chưa chạy"}</strong></span>
+              <span>{uiText("TTS templates:")} <strong>{applioTtsTemplates.length}</strong></span>
+              {s.rvcApplioConfig?.error ? <span className="text-yellow-300">{s.rvcApplioConfig.error}</span> : null}
+            </div>
+            <Button type="button" size="sm" variant="outline" className="mt-3" onClick={s.refreshPiperRuntime}><RefreshCcw className="mr-2 h-3.5 w-3.5" /> {uiText("Kiểm tra")}</Button>
+          </div>
+        </div>
+      ) : null}
+
       <NumberSlider label={uiText("Tốc độ đọc")} value={s.narrationRate} min={0.7} max={1.2} suffix="x" step={0.05} onChange={s.setNarrationRate} />
       <NumberSlider label={uiText("Âm lượng voice")} value={s.narrationVol} min={0} max={100} suffix="%" onChange={s.setNarrationVol} />
-      <Button className="w-full" variant={s.voiceProvider === "browser" ? "outline" : "default"} onClick={() => s.generateVoiceOver(applioTtsTemplateId || undefined)} disabled={s.voiceLoading || (s.voiceProvider === "vieneu" && !s.vieneuConfig?.sdkInstalled) || (s.voiceProvider === "applio" && (!s.rvcApplioConfig?.serverOk || applioTtsTemplates.length === 0))}>
+      <Button className="w-full" variant={s.voiceProvider === "browser" ? "outline" : "default"} onClick={s.generateVoiceOver} disabled={s.voiceLoading || (s.voiceProvider === "vieneu" && !s.vieneuConfig?.sdkInstalled) || (s.voiceProvider === "applio" && (!s.rvcApplioConfig?.serverOk || applioTtsTemplates.length === 0))}>
         {s.voiceLoading ? "Đang tạo voice..." : s.voiceProvider === "browser" ? "Đọc thử Browser TTS" : "Tạo voice-over cho video"}
       </Button>
       {s.voiceUrl ? (
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="grid gap-3 rounded-lg border border-border bg-background/40 p-3">
           <audio className="h-10 min-w-0 flex-1" controls src={s.voiceUrl} />
-          {applioTemplates.length > 0 ? (
-            <Select value={applioTemplateId} onValueChange={setApplioTemplateId}>
-              <SelectTrigger className="sm:w-56"><SelectValue placeholder={uiText("Chọn custom voice")} /></SelectTrigger>
-              <SelectContent>{applioTemplates.map((template) => <SelectItem key={template.id} value={template.id}>{template.label}</SelectItem>)}</SelectContent>
-            </Select>
-          ) : null}
-          <Button type="button" variant="outline" onClick={() => s.convertVoiceWithApplio(applioTemplateId || undefined)} disabled={s.voiceConverting || !s.voiceRelativePath || !s.rvcApplioConfig?.serverOk}>
-            {s.voiceConverting ? "Đang chuyển..." : "Chuyển sang custom voice"}
-          </Button>
+          <div className="grid gap-1 text-xs text-muted-foreground">
+            <span>{uiText("Applio custom voice:")} <strong className={s.rvcApplioConfig?.serverOk ? "text-emerald-300" : "text-rose-300"}>{s.rvcApplioConfig?.serverOk ? "đã kết nối" : "chưa chạy"}</strong></span>
+            <span>{uiText("Convert templates:")} <strong>{applioTemplates.length}</strong></span>
+            <span>{uiText("Workflow:")} <strong>{uiText("audio đã tạo → chuyển voice bằng Applio")}</strong></span>
+            {s.rvcApplioConfig?.error ? <span className="text-yellow-300">{s.rvcApplioConfig.error}</span> : null}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+            {applioTemplates.length > 0 ? (
+              <Select value={applioTemplateId} onValueChange={setApplioTemplateId}>
+                <SelectTrigger><SelectValue placeholder={uiText("Chọn custom voice Applio")} /></SelectTrigger>
+                <SelectContent>{applioTemplates.map((template) => <SelectItem key={template.id} value={template.id}>{template.label}</SelectItem>)}</SelectContent>
+              </Select>
+            ) : (
+              <div className="rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">
+                {uiText("Chưa có Applio convert template. Thêm trong Settings -> Voice -> Applio.")}
+              </div>
+            )}
+            <Button type="button" variant="outline" onClick={() => s.convertVoiceWithApplio(applioTemplateId || undefined)} disabled={s.voiceConverting || !s.voiceRelativePath || !s.rvcApplioConfig?.serverOk || applioTemplates.length === 0}>
+              {s.voiceConverting ? "Đang chuyển..." : "Chuyển sang custom voice"}
+            </Button>
+          </div>
         </div>
       ) : null}
       <p className="text-xs text-muted-foreground">
-        Browser TTS chỉ dùng để nghe thử. Muốn video export có voice, hãy chọn Piper, ElevenLabs, Supertonic hoặc VieNeu. Applio dùng để chuyển file audio đã tạo sang custom voice.
+        Browser TTS chỉ dùng để nghe thử. Muốn video export có voice, hãy chọn Piper, ElevenLabs, Supertonic, VieNeu hoặc Applio TTS. Applio custom voice dùng để chuyển file audio đã tạo sang giọng RVC.
         {s.voiceFileName ? ` File hiện tại: ${s.voiceFileName}` : ""}
       </p>
     </Card>

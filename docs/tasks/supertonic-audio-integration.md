@@ -24,9 +24,9 @@ Lần chạy đầu Supertonic sẽ tự tải model từ Hugging Face nếu dù
 ```env
 SUPERTONIC_BASE_URL=http://127.0.0.1:6688
 SUPERTONIC_MODEL=supertonic-3
-SUPERTONIC_DEFAULT_VOICE=M1
-SUPERTONIC_TOTAL_STEPS=8
 ```
+
+Default voice, language và total steps nằm trong `server/config/supertonicDefaults.ts`.
 
 ## Ngôn ngữ TTS
 

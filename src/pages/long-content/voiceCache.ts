@@ -27,7 +27,7 @@ type VoiceScriptKeyParts = {
   elevenVoiceId: string;
   supertonicVoice: string;
   supertonicTotalSteps: number;
-  rvcApplioKey?: string;
+  rvcApplioTtsKey?: string;
   vieneuVoiceId?: string;
   vieneuMode?: string;
   vieneuEmotion?: string;
@@ -72,7 +72,7 @@ export function useRestoreGeneratedVoiceCache(params: VoiceRestoreParams) {
     params.piperModelKey,
     params.supertonicTotalSteps,
     params.supertonicVoice,
-    params.rvcApplioKey,
+    params.rvcApplioTtsKey,
     params.vieneuVoiceId,
     params.vieneuMode,
     params.vieneuEmotion,
@@ -91,7 +91,7 @@ export function buildGeneratedVoiceScriptKey(parts: VoiceScriptKeyParts) {
       parts.piperModelKey,
       parts.supertonicVoice,
       parts.supertonicTotalSteps,
-      parts.rvcApplioKey || "",
+      parts.rvcApplioTtsKey || "",
       parts.vieneuVoiceId || "",
       parts.vieneuMode || "",
       parts.vieneuEmotion || "",
@@ -117,7 +117,7 @@ function readCachedGeneratedVoice(): CachedGeneratedVoice | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<CachedGeneratedVoice>;
     if (
-      (parsed.provider !== "piper" && parsed.provider !== "elevenlabs" && parsed.provider !== "supertonic" && parsed.provider !== "applio" && parsed.provider !== "vieneu")
+      (parsed.provider !== "piper" && parsed.provider !== "elevenlabs" && parsed.provider !== "supertonic" && parsed.provider !== "vieneu" && parsed.provider !== "applio")
       || !parsed.scriptKey
       || !parsed.audioUrl
       || !parsed.fileName

@@ -9,6 +9,7 @@ import {
   getGeneratedDir,
   PROJECT_ROOT,
 } from "../config/paths";
+import { DEFAULT_RVC_APPLIO_TEMPLATE_VALUES, DEFAULT_RVC_APPLIO_TIMEOUT_MS } from "../config/rvcApplioDefaults";
 import type { RvcApplioConfigStatus, RvcApplioConvertBody, RvcApplioTemplateStatus, RvcApplioTextToSpeechBody } from "../models/RvcApplio";
 import {
   ensureDirectoryExists,
@@ -25,7 +26,6 @@ import { readRvcTemplates, readRvcTtsTemplates, type RvcRuntimeTemplate } from "
 import { assertApplioTemplateReady } from "./RvcApplioTemplateValidation";
 
 const CONFIG_TIMEOUT_MS = 3500;
-const DEFAULT_TIMEOUT_MS = 20 * 60 * 1000;
 const BRIDGE_PATH = path.join(PROJECT_ROOT, "scripts", "rvc-applio-gradio-bridge.py");
 
 export async function getRvcApplioConfigStatus(envOverrides: RuntimeEnvValues = {}): Promise<RvcApplioConfigStatus> {
@@ -86,7 +86,7 @@ export async function convertRvcApplioAudio(body: RvcApplioConvertBody, envOverr
     indexRate: clampRatio(body.indexRate ?? template.indexRate),
     protect: clampRatio(body.protect ?? template.protect),
     filterRadius: clampInteger(body.filterRadius ?? template.filterRadius, 0, 7),
-    timeoutMs: Number(env.RVC_APPLIO_TIMEOUT_MS || DEFAULT_TIMEOUT_MS),
+    timeoutMs: DEFAULT_RVC_APPLIO_TIMEOUT_MS,
   });
 
   const relativePath = `rvc-applio/${dateFolderName}/${outputFileName}`;
@@ -125,7 +125,7 @@ export async function generateRvcApplioSpeech(body: RvcApplioTextToSpeechBody, e
     text,
     ttsVoice: body.ttsVoice || template.ttsVoice || "",
     ttsSpeed: clampInteger(body.ttsSpeed ?? template.ttsSpeed ?? 0, -100, 100),
-    timeoutMs: Number(env.RVC_APPLIO_TIMEOUT_MS || DEFAULT_TIMEOUT_MS),
+    timeoutMs: DEFAULT_RVC_APPLIO_TIMEOUT_MS,
   });
 
   const relativePath = `rvc-applio-tts/${dateFolderName}/${outputFileName}`;
@@ -204,18 +204,18 @@ function readRvcConfig(env: RuntimeEnvValues): RvcRuntimeConfig {
     startCommand,
     startCommandConfigured: Boolean(startCommand.trim()),
     apiName: primaryTemplate?.apiName || env.RVC_APPLIO_API_NAME || "/infer_convert",
-    modelName: primaryTemplate?.modelName || env.RVC_APPLIO_MODEL_NAME || "",
-    indexPath: primaryTemplate?.indexPath || env.RVC_APPLIO_INDEX_PATH || "",
+    modelName: primaryTemplate?.modelName || DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.modelName,
+    indexPath: primaryTemplate?.indexPath || DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.indexPath,
     pythonExe,
     pythonExists: commandLooksExecutable(pythonExe),
     bridgeExists: fs.existsSync(BRIDGE_PATH),
     argTemplateConfigured: runtimeTemplates.some((template) => template.argTemplateConfigured),
     ttsTemplateConfigured: ttsRuntimeTemplates.some((template) => template.argTemplateConfigured),
-    f0Method: primaryTemplate?.f0Method || normalizeF0Method(env.RVC_APPLIO_F0_METHOD || "rmvpe"),
-    pitch: primaryTemplate?.pitch ?? clampPitch(env.RVC_APPLIO_PITCH),
-    indexRate: primaryTemplate?.indexRate ?? clampRatio(env.RVC_APPLIO_INDEX_RATE || 0.75),
-    protect: primaryTemplate?.protect ?? clampRatio(env.RVC_APPLIO_PROTECT || 0.33),
-    filterRadius: primaryTemplate?.filterRadius ?? clampInteger(env.RVC_APPLIO_FILTER_RADIUS || 3, 0, 7),
+    f0Method: primaryTemplate?.f0Method || DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.f0Method,
+    pitch: primaryTemplate?.pitch ?? DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.pitch,
+    indexRate: primaryTemplate?.indexRate ?? DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.indexRate,
+    protect: primaryTemplate?.protect ?? DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.protect,
+    filterRadius: primaryTemplate?.filterRadius ?? DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.filterRadius,
     templates: runtimeTemplates.map(toTemplateStatus),
     ttsTemplates: ttsRuntimeTemplates.map(toTemplateStatus),
     runtimeTemplates,
@@ -231,18 +231,18 @@ function readRvcConfigWithoutTemplates(env: RuntimeEnvValues): RvcRuntimeConfig 
     startCommand,
     startCommandConfigured: Boolean(startCommand.trim()),
     apiName: env.RVC_APPLIO_API_NAME || "/infer_convert",
-    modelName: env.RVC_APPLIO_MODEL_NAME || "",
-    indexPath: env.RVC_APPLIO_INDEX_PATH || "",
+    modelName: DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.modelName,
+    indexPath: DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.indexPath,
     pythonExe,
     pythonExists: commandLooksExecutable(pythonExe),
     bridgeExists: fs.existsSync(BRIDGE_PATH),
     argTemplateConfigured: false,
     ttsTemplateConfigured: false,
-    f0Method: normalizeF0Method(env.RVC_APPLIO_F0_METHOD || "rmvpe"),
-    pitch: clampPitch(env.RVC_APPLIO_PITCH),
-    indexRate: clampRatio(env.RVC_APPLIO_INDEX_RATE || 0.75),
-    protect: clampRatio(env.RVC_APPLIO_PROTECT || 0.33),
-    filterRadius: clampInteger(env.RVC_APPLIO_FILTER_RADIUS || 3, 0, 7),
+    f0Method: DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.f0Method,
+    pitch: DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.pitch,
+    indexRate: DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.indexRate,
+    protect: DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.protect,
+    filterRadius: DEFAULT_RVC_APPLIO_TEMPLATE_VALUES.filterRadius,
     templates: [],
     ttsTemplates: [],
     runtimeTemplates: [],

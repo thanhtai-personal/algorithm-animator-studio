@@ -111,15 +111,15 @@ Các placeholder hỗ trợ:
 ${input}         Upload file audio nguồn bằng gradio_client.handle_file
 ${input_path}    Đường dẫn file audio nguồn dạng text
 ${output}        Đường dẫn file output mong muốn
-${model}         RVC_APPLIO_MODEL_NAME
-${model_name}    RVC_APPLIO_MODEL_NAME
-${index}         RVC_APPLIO_INDEX_PATH
-${index_path}    RVC_APPLIO_INDEX_PATH
-${pitch}         RVC_APPLIO_PITCH
-${f0_method}     RVC_APPLIO_F0_METHOD
-${index_rate}    RVC_APPLIO_INDEX_RATE
-${protect}       RVC_APPLIO_PROTECT
-${filter_radius} RVC_APPLIO_FILTER_RADIUS
+${model}         modelName trong template JSON
+${model_name}    modelName trong template JSON
+${index}         indexPath trong template JSON
+${index_path}    indexPath trong template JSON
+${pitch}         pitch trong template JSON
+${f0_method}     f0Method trong template JSON
+${index_rate}    indexRate trong template JSON
+${protect}       protect trong template JSON
+${filter_radius} filterRadius trong template JSON
 ```
 
 Ví dụ template **minh họa**. Applio/RVC mỗi bản có thể khác tham số, nên hãy ưu tiên template copy từ **Use via API** của máy bạn:
@@ -134,26 +134,17 @@ Nếu API của bạn yêu cầu model đã chọn sẵn trong UI và không nh�
 
 ## 5. Cấu hình `.env`
 
-Thêm hoặc sửa các biến sau:
+Chỉ thêm hoặc sửa các biến runtime sau:
 
 ```env
 # RVC/Applio local voice conversion provider
 RVC_APPLIO_BASE_URL=http://127.0.0.1:6969
 RVC_APPLIO_START_COMMAND=C:/Applio/run-applio.bat
 RVC_APPLIO_API_NAME=/infer_convert
-RVC_APPLIO_ARG_TEMPLATE_JSON=[0,"${input}","${model}","${index}","${f0_method}","${index_rate}","${filter_radius}",0,0.25,"${protect}","wav"]
 RVC_APPLIO_PYTHON=python
-RVC_APPLIO_MODEL_NAME=my_voice.pth
-RVC_APPLIO_INDEX_PATH=C:/Applio/logs/my_voice/added_IVFxxx.index
-RVC_APPLIO_PITCH=0
-RVC_APPLIO_F0_METHOD=rmvpe
-RVC_APPLIO_INDEX_RATE=0.75
-RVC_APPLIO_PROTECT=0.33
-RVC_APPLIO_FILTER_RADIUS=3
-RVC_APPLIO_TIMEOUT_MS=1200000
 ```
 
-Có thể cấu hình các field này trong màn **Settings** của app. Runtime settings trong UI sẽ override `.env`.
+Model, index, pitch, f0 method, index rate, protect, filter radius và `argTemplate` nằm trong `server/data/config/rvc-applio-templates.json`. Có thể chỉnh các template này trong màn **Settings -> Voice -> Applio**.
 
 `RVC_APPLIO_START_COMMAND` là lệnh tùy chọn được `npm run dev` chạy cùng frontend/backend/Supertonic. Nếu để trống, app không tự start Applio và bạn cần chạy Applio thủ công.
 

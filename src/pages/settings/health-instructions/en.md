@@ -121,17 +121,25 @@ VieNeu runs through a configured Python environment. Health checks Python, the b
 
 ### Install
 
-1. Install a Python version supported by VieNeu.
-2. Create a dedicated virtual environment, for example `C:\KAI-STUDIO\vieneu\.venv`.
-3. Install VieNeu into that environment with that environment's `python.exe`.
+1. Fork the VieNeu-TTS repo to your GitHub account.
+2. Clone the source locally. This project now expects `C:\DATA\working\sources\VieNeu-TTS` by default.
+3. Create the virtual environment inside the VieNeu source and install it in editable mode, so local VieNeu source edits are picked up by KAI Studio.
 
 ```bat
-{{VIENEU_PYTHON}} -m pip install vieneu --extra-index-url https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu/
+cd /d C:\DATA\working\sources
+git clone https://github.com/<your-github-user>/VieNeu-TTS.git VieNeu-TTS
+cd VieNeu-TTS
+python -m venv .venv
+.venv\Scripts\activate
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install -e . --extra-index-url https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu/
 ```
+
+If the source already exists at `C:\DATA\working\sources\VieNeu-TTS`, skip `git clone` and start from `cd VieNeu-TTS`.
 
 ### Values to enter in settings
 
-1. In Settings -> Voice -> VieNeu, set `VIENEU_PYTHON` to `.venv\Scripts\python.exe`.
+1. In Settings -> Voice -> VieNeu, set `VIENEU_PYTHON` to `C:/DATA/working/sources/VieNeu-TTS/.venv/Scripts/python.exe`.
 2. Choose `VIENEU_MODE`: use `turbo` or `standard` for the local SDK.
 3. Use `remote` only if you have an OpenAI-compatible VieNeu endpoint.
 4. For voice clone, choose `VIENEU_REFERENCE_AUDIO` and fill `VIENEU_REFERENCE_TEXT` with the reference audio transcript.

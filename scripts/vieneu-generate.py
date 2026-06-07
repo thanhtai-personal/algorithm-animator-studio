@@ -45,8 +45,10 @@ def main() -> int:
         from vieneu import Vieneu  # type: ignore
     except Exception as exc:  # pragma: no cover - runtime dependency check
         raise RuntimeError(
-            "Không import được SDK vieneu. Hãy cài: pip install vieneu "
-            "hoặc pip install vieneu --extra-index-url https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu/"
+            "Không import được SDK vieneu. Hãy fork/clone VieNeu-TTS về "
+            "C:/DATA/working/sources/VieNeu-TTS, tạo .venv trong source đó, "
+            "rồi chạy: python -m pip install -e . --extra-index-url "
+            "https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu/"
         ) from exc
 
     mode = str(payload.get("mode") or "turbo").strip().lower()

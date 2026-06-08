@@ -9,6 +9,7 @@ import {text, uiText, t, type Lang} from "@/lib/i18n";
 import { StatusTile } from "./SettingsFields";
 import { applioInstruction, elevenLabsInstruction, piperInstruction, supertonicInstruction, systemInstruction, vieneuInstruction, type HealthInstruction } from "./SettingsHealthInstructions";
 import { SettingsMarkdown } from "./SettingsMarkdown";
+import { SettingsSetupInstaller } from "./SettingsSetupInstaller";
 import type { ElevenLabsConfigResponse, HealthResponse, PiperModel, RvcApplioConfigResponse, SupertonicConfigResponse, VieneuConfigResponse } from "./SettingsTypes";
 
 type SettingsHealthTabProps = {
@@ -164,6 +165,10 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
             </div>
           </div>
         </div>
+
+        <div className="mt-4">
+          <SettingsSetupInstaller lang={props.lang} onAfterTask={props.onRefreshHealth} />
+        </div>
       </CardContent>
     </Card>
   );
@@ -183,7 +188,7 @@ function renderHealthSection(section: HealthSectionId, props: SettingsHealthTabP
     return (
       <>
         <StatusTile lang={props.lang} label={uiText("Piper exe")} ok={Boolean(props.health?.piperExists)} value={props.health?.piperExe || "-"} />
-        <StatusTile lang={props.lang} label={uiText("Models")} ok={props.availableModels > 0} value={`${props.availableModels}/${props.models.length} ${t(props.lang, "settingsModelsReady")}`} />
+        <StatusTile lang={props.lang} label={uiText("Models")} ok={props.availableModels === props.models.length && props.models.length > 0} value={`${props.availableModels}/${props.models.length} ${t(props.lang, "settingsModelsReady")}`} />
         <div className="grid gap-3 md:col-span-3 md:grid-cols-2">
           {props.models.map((model) => (
             <div key={model.key} className="rounded-lg border p-3">

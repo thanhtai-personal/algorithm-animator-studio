@@ -192,7 +192,7 @@ export default function Settings() {
           </div>
         </div>
 
-        <Tabs defaultValue="voice" className="space-y-4">
+        <Tabs defaultValue={getDefaultSettingsTab()} className="space-y-4">
           <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/40 p-1 md:grid-cols-4">
             <TabsTrigger value="voice">{t(lang, "settingsVoiceTab")}</TabsTrigger>
             <TabsTrigger value="data">{t(lang, "settingsDataTab")}</TabsTrigger>
@@ -244,4 +244,11 @@ export default function Settings() {
       </main>
     </div>
   );
+}
+
+
+function getDefaultSettingsTab() {
+  if (typeof window === "undefined") return "voice";
+  const tab = new URLSearchParams(window.location.search).get("tab") || "voice";
+  return ["voice", "data", "api-key", "health"].includes(tab) ? tab : "voice";
 }

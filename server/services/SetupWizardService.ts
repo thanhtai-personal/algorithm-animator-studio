@@ -65,7 +65,7 @@ export async function getSetupWizardStatus(envOverrides: RuntimeEnvValues = {}):
 
   const generatedReady = fs.existsSync(generatedDir);
   const piperRuntimeReady = piper.piperExists;
-  const piperModelsReady = piper.availableCount > 0;
+  const piperModelsReady = piper.models.length > 0 && piper.availableCount >= piper.models.length;
   const applioConfigured = Boolean(
     applio.startCommandConfigured ||
     applio.argTemplateConfigured ||
@@ -106,7 +106,9 @@ export async function getSetupWizardStatus(envOverrides: RuntimeEnvValues = {}):
         ready: piperModelsReady,
         optional: false,
         canAutoFix: true,
-        detail: `${piper.availableCount}/${piper.models.length} model sẵn sàng.`,
+        detail: piperModelsReady
+          ? `${piper.availableCount}/${piper.models.length} model sẵn sàng.`
+          : `${piper.availableCount}/${piper.models.length} model sẵn sàng. Cần tải thêm model còn thiếu.`,
       },
       {
         id: "supertonic",

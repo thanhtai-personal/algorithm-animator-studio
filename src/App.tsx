@@ -22,7 +22,6 @@ const LongContent = lazy(() => import("./pages/LongContent.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const MuNewsStudio = lazy(() => import("./pages/MuNewsStudio.tsx"));
 const Settings = lazy(() => import("./pages/Settings.tsx"));
-const RuntimeSetup = lazy(() => import("./pages/RuntimeSetup.tsx"));
 const StoryAuthorStudio = lazy(() => import("./pages/StoryAuthorStudio.tsx"));
 const StoryReviewStudio = lazy(() => import("./pages/StoryReviewStudio.tsx"));
 const StoryVideoStudio = lazy(() => import("./pages/StoryVideoStudio.tsx"));
@@ -91,7 +90,7 @@ const App = () => (
                 <Route path="/youtube-publishing" element={<LegacyChannelRedirect />} />
                 <Route path="/youtube" element={<LegacyChannelRedirect />} />
                 <Route path="/settings" element={<Settings />} />
-                <Route path="/setup" element={<RuntimeSetup />} />
+                <Route path="/setup" element={<Navigate replace to="/settings?tab=health" />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </Suspense>

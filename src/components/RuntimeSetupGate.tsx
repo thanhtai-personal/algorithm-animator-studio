@@ -20,7 +20,7 @@ export function RuntimeSetupGate({ children }: PropsWithChildren) {
   const path = location.pathname;
 
   useEffect(() => {
-    if (IS_PUBLIC_WEB || isFreePath(path) || window.localStorage.getItem(SKIP_KEY) === "true") {
+    if (IS_PUBLIC_WEB || isFreePath(path)) {
       setState("ready");
       return;
     }
@@ -41,7 +41,7 @@ export function RuntimeSetupGate({ children }: PropsWithChildren) {
   }, [path]);
 
   if (IS_PUBLIC_WEB || isFreePath(path) || state === "ready") return <>{children}</>;
-  if (state === "needs-setup") return <Navigate replace to="/setup" state={{ from: location }} />;
+  if (state === "needs-setup") return <Navigate replace to="/settings?tab=health" state={{ from: location }} />;
 
   return (
     <main className="grid min-h-[60vh] place-items-center px-4 text-sm font-medium text-muted-foreground">
@@ -51,5 +51,5 @@ export function RuntimeSetupGate({ children }: PropsWithChildren) {
 }
 
 function isFreePath(pathname: string) {
-  return ["/setup", "/auth", "/privacy", "/term", "/terms"].includes(pathname);
+  return ["/setup", "/settings", "/auth", "/privacy", "/term", "/terms"].includes(pathname);
 }

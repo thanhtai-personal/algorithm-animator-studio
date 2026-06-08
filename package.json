@@ -24,7 +24,6 @@
     "start:server": "tsx server/index.ts",
     "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --packages=external --outfile=dist-electron/server/index.js",
     "build:desktop": "cross-env DESKTOP_BUILD=true VITE_PUBLIC_WEB=false VITE_API_URL=http://127.0.0.1:8888 npm run build && npm run build:server && npm run build:desktop:verify",
-    "electron:dev": "cross-env ELECTRON_DEV_URL=http://localhost:3000 npm run electron:install && npx electron .",
     "dist:win": "npm run build:desktop && npm run electron:install && electron-builder --win --x64 --config.directories.output=release/win",
     "dist:win:nsis": "npm run build:desktop && npm run electron:install && electron-builder --win nsis --x64 --config.directories.output=release/win",
     "dist:win:unpacked": "npm run build:desktop && npm run electron:install && electron-builder --win --x64 --dir --config.directories.output=release/win",
@@ -38,7 +37,12 @@
     "vieneu:serve": "node scripts/start-vieneu.mjs",
     "build:desktop:verify": "node scripts/verify-electron-build.mjs",
     "electron:preview": "npm run build:desktop && npm run electron:install && npx electron .",
-    "electron:install": "node scripts/ensure-electron-binary.mjs"
+    "electron:install": "npm install electron electron-builder --save-dev --ignore-scripts=false --foreground-scripts",
+    "electron:dev": "npm run build && electron .",
+    "electron:pack": "npm run build && electron-builder --win --dir",
+    "electron:dist": "npm run build && electron-builder --win nsis",
+    "electron:dist:x64": "npm run build && electron-builder --win nsis --x64",
+    "electron:dist:portable": "npm run build && electron-builder --win portable --x64"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -131,7 +135,7 @@
     "vitest": "^4.1.8"
   },
   "main": "electron/main.cjs",
-  "description": "Algorithm animation, voice-over and YouTube publishing studio.",
+  "description": "Social videos publishing studio.",
   "author": "KAI STUDIO",
   "build": {
     "appId": "vn.kaistudio.app",

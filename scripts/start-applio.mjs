@@ -3,7 +3,14 @@ import fs from "node:fs";
 import path from "node:path";
 
 const envFile = readDotEnv(path.resolve(process.cwd(), ".env"));
-const env = { ...envFile, ...process.env };
+const env = {
+  ...envFile,
+  ...process.env,
+  BROWSER: process.env.BROWSER || "none",
+  NO_BROWSER: process.env.NO_BROWSER || "1",
+  APPLIO_NO_BROWSER: process.env.APPLIO_NO_BROWSER || "1",
+  GRADIO_ANALYTICS_ENABLED: process.env.GRADIO_ANALYTICS_ENABLED || "False",
+};
 const command = String(env.RVC_APPLIO_START_COMMAND || "").trim();
 
 if (!command) {
@@ -19,6 +26,7 @@ const child = spawn(command, {
   shell: true,
   env,
   cwd: commandCwd,
+  windowsHide: true,
 });
 
 child.on("error", (error) => {

@@ -449,6 +449,10 @@ function buildProcessEnv(env: RuntimeEnvValues) {
     PYTHONUTF8: "1",
     PYTHONIOENCODING: "utf-8",
     ELECTRON_RUN_AS_NODE: "1",
+    BROWSER: process.env.BROWSER || "none",
+    NO_BROWSER: process.env.NO_BROWSER || "1",
+    APPLIO_NO_BROWSER: process.env.APPLIO_NO_BROWSER || "1",
+    GRADIO_ANALYTICS_ENABLED: process.env.GRADIO_ANALYTICS_ENABLED || "False",
   };
 }
 

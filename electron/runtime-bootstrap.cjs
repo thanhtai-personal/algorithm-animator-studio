@@ -17,8 +17,12 @@ const isWindows = process.platform === "win32";
 const isMac = process.platform === "darwin";
 
 async function ensureDesktopRuntime({ appDataDir, onStatus }) {
-  const runtimeHome = getRuntimeHome(appDataDir);
-  const modelDir = path.join(runtimeHome, "models");
+  const runtimeHome = process.env.KATA_STUDIO_HOME?.trim()
+    ? path.resolve(process.env.KATA_STUDIO_HOME)
+    : getRuntimeHome(appDataDir);
+  const modelDir = process.env.MODEL_DIR?.trim()
+    ? path.resolve(process.env.MODEL_DIR)
+    : path.join(runtimeHome, "models");
   const toolsDir = path.join(runtimeHome, "tools");
   const venvDir = path.join(modelDir, ".venv");
   const binDir = getVenvBinDir(venvDir);

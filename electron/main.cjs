@@ -23,8 +23,16 @@ const RUNTIME_ENV_KEYS = [
   "PORT",
   "SERVER_ORIGIN",
   "CLIENT_ORIGIN",
+  "VITE_CLIENT_ORIGIN",
   "VITE_API_URL",
   "VITE_PUBLIC_WEB",
+  "KATA_STUDIO_HOME",
+  "MODEL_DIR",
+  "PIPER_EXE",
+  "SERVER_DATA_DIR",
+  "MUSIC_LIBRARY_DIR",
+  "FFMPEG_EXE",
+  "FFPROBE_EXE",
   "VITE_NEST_API_BASE_URL",
   "SUPERTONIC_BASE_URL",
   "SUPERTONIC_MODEL",
@@ -146,6 +154,97 @@ function getServerPort() {
 
 function getClientPort() {
   return getPortFromUrl(getClientOrigin(), DEFAULT_CLIENT_PORT);
+}
+
+function getDefaultRuntimeHome() {
+  const configured = process.env.KATA_STUDIO_HOME?.trim();
+  if (configured) return path.resolve(configured);
+  if (process.platform === "win32" && process.env.LOCALAPPDATA) return path.join(process.env.LOCALAPPDATA, "KAI STUDIO");
+  return path.join(app.getPath("userData"), "runtime");
+}
+
+function getDefaultModelDir() {
+  return path.resolve(process.env.MODEL_DIR || path.join(getDefaultRuntimeHome(), "models"));
+}
+
+function getDefaultServerDataDir() {
+  return path.resolve(process.env.SERVER_DATA_DIR || path.join(getDefaultRuntimeHome(), "server-data"));
+}
+
+function derivePiperExe(modelDir) {
+  const scriptsDir = process.platform === "win32" ? "Scripts" : "bin";
+  const executableName = process.platform === "win32" ? "piper.exe" : "piper";
+  return path.join(path.resolve(modelDir || getDefaultModelDir()), ".venv", scriptsDir, executableName);
+}
+
+function getSetupInitialConfig() {
+  const modelDir = getDefaultModelDir();
+  const serverDataDir = getDefaultServerDataDir();
+  return {
+    KATA_STUDIO_HOME: getDefaultRuntimeHome(),
+    MODEL_DIR: modelDir,
+    PIPER_EXE: process.env.PIPER_EXE || derivePiperExe(modelDir),
+    SERVER_DATA_DIR: serverDataDir,
+    SERVER_ORIGIN: getServerOrigin(),
+    CLIENT_ORIGIN: getClientOrigin(),
+    VITE_API_URL: process.env.VITE_API_URL || getServerOrigin(),
+    VITE_PUBLIC_WEB: process.env.VITE_PUBLIC_WEB || "false",
+    SUPERTONIC_BASE_URL: process.env.SUPERTONIC_BASE_URL || "http://127.0.0.1:6688",
+    SUPERTONIC_MODEL: process.env.SUPERTONIC_MODEL || "supertonic-3",
+    RVC_APPLIO_BASE_URL: process.env.RVC_APPLIO_BASE_URL || "http://127.0.0.1:6969",
+    RVC_APPLIO_START_COMMAND: process.env.RVC_APPLIO_START_COMMAND || "",
+    RVC_APPLIO_API_NAME: process.env.RVC_APPLIO_API_NAME || "/infer_convert",
+    RVC_APPLIO_PYTHON: process.env.RVC_APPLIO_PYTHON || ".venv/Scripts/python.exe",
+    VIENEU_SOURCE_DIR: process.env.VIENEU_SOURCE_DIR || "libs/VieNeu-TTS",
+    VIENEU_PYTHON: process.env.VIENEU_PYTHON || ".venv/Scripts/python.exe",
+    VIENEU_START_MODE: process.env.VIENEU_START_MODE || "bridge",
+    VIENEU_AUTO_START: process.env.VIENEU_AUTO_START || "true",
+    VIENEU_MODE: process.env.VIENEU_MODE || "turbo",
+    VIENEU_EMOTION: process.env.VIENEU_EMOTION || "natural",
+    VIENEU_REMOTE_API_BASE: process.env.VIENEU_REMOTE_API_BASE || "http://127.0.0.1:23333/v1",
+    VIENEU_REMOTE_MODEL: process.env.VIENEU_REMOTE_MODEL || "pnnbao-ump/VieNeu-TTS-v2",
+    VIENEU_TIMEOUT_MS: process.env.VIENEU_TIMEOUT_MS || "1200000",
+  };
+}
+
+function normalizeSetupConfig(values = {}) {
+  const defaults = getSetupInitialConfig();
+  const output = { ...defaults };
+  for (const key of RUNTIME_ENV_KEYS) {
+    if (values[key] !== undefined && values[key] !== null && String(values[key]).trim() !== "") {
+      output[key] = String(values[key]).trim();
+    }
+  }
+  output.MODEL_DIR = path.resolve(output.MODEL_DIR || defaults.MODEL_DIR);
+  output.SERVER_DATA_DIR = path.resolve(output.SERVER_DATA_DIR || defaults.SERVER_DATA_DIR);
+  output.KATA_STUDIO_HOME = path.resolve(output.KATA_STUDIO_HOME || path.dirname(output.MODEL_DIR));
+  output.PIPER_EXE = output.PIPER_EXE || derivePiperExe(output.MODEL_DIR);
+  output.SERVER_ORIGIN = normalizeBaseUrl(output.SERVER_ORIGIN || output.VITE_API_URL, `http://127.0.0.1:${DEFAULT_SERVER_PORT}`);
+  output.VITE_API_URL = normalizeBaseUrl(output.VITE_API_URL || output.SERVER_ORIGIN, output.SERVER_ORIGIN);
+  output.CLIENT_ORIGIN = normalizeBaseUrl(output.CLIENT_ORIGIN, `http://127.0.0.1:${DEFAULT_CLIENT_PORT}`);
+  output.VITE_CLIENT_ORIGIN = output.CLIENT_ORIGIN;
+  return output;
+}
+
+function serializeEnv(values) {
+  return `${Object.entries(values)
+    .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== "")
+    .map(([key, value]) => `${key}=${String(value).replace(/\r?\n/g, " ")}`)
+    .join("\n")}\n`;
+}
+
+function persistSetupConfig(values) {
+  const normalized = normalizeSetupConfig(values);
+  fs.mkdirSync(app.getPath("userData"), { recursive: true });
+  fs.mkdirSync(normalized.KATA_STUDIO_HOME, { recursive: true });
+  fs.mkdirSync(normalized.MODEL_DIR, { recursive: true });
+  fs.mkdirSync(normalized.SERVER_DATA_DIR, { recursive: true });
+
+  const envText = serializeEnv(normalized);
+  fs.writeFileSync(path.join(app.getPath("userData"), ".env"), envText, "utf8");
+  fs.writeFileSync(path.join(normalized.KATA_STUDIO_HOME, ".env"), envText, "utf8");
+  applyRuntimeEnv(normalized, "first-run setup", { override: true });
+  return normalized;
 }
 
 function getAppRoot() {
@@ -369,6 +468,37 @@ function sendSetupStatus(payload) {
   }
 }
 
+
+function registerSetupIpcHandlers() {
+  ipcMain.handle("runtime-setup-initial-config", () => getSetupInitialConfig());
+  ipcMain.handle("runtime-setup-select-directory", async (_event, currentPath) => {
+    const result = await dialog.showOpenDialog(setupWindow || undefined, {
+      title: "Chọn thư mục",
+      defaultPath: String(currentPath || getDefaultRuntimeHome()),
+      properties: ["openDirectory", "createDirectory"],
+    });
+    return result.canceled ? "" : result.filePaths[0] || "";
+  });
+}
+
+function waitForSetupConfig() {
+  return new Promise((resolve) => {
+    const done = (_event, values) => {
+      ipcMain.removeListener("runtime-setup-save-config", done);
+      try {
+        const normalized = persistSetupConfig(values || {});
+        sendSetupStatus({ kind: "config-saved", message: "Đã lưu cấu hình. Bắt đầu cài đặt service local...", config: normalized });
+        resolve(normalized);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        sendSetupStatus({ kind: "config-error", message });
+        ipcMain.once("runtime-setup-save-config", done);
+      }
+    };
+    ipcMain.once("runtime-setup-save-config", done);
+  });
+}
+
 function waitForSetupContinue() {
   return new Promise((resolve) => {
     if (!setupWindow || setupWindow.isDestroyed()) {
@@ -439,58 +569,118 @@ async function runBackendSetupWizard(baseUrl) {
     kind: "section",
     step: "health-setup",
     status: "running",
-    message: "Đang kiểm tra và tự khởi động các service local đã có sẵn...",
+    message: "Đang kiểm tra danh sách service cần cài đặt...",
   });
 
-  try {
-    const autostart = await requestJson("POST", baseUrl, "/api/setup/autostart");
-    const started = autostart.started?.length || 0;
-    const skipped = autostart.skipped?.length || 0;
-    const failed = autostart.failed?.length || 0;
-    sendSetupStatus({
-      kind: "section",
-      step: "autostart",
-      status: failed ? "warning" : "done",
-      message: `Autostart: ${started} started · ${skipped} skipped · ${failed} failed.`,
-    });
-  } catch (error) {
-    sendSetupStatus({
-      kind: "section",
-      step: "autostart",
-      status: "warning",
-      message: `Không chạy được autostart service local: ${error instanceof Error ? error.message : String(error)}`,
-    });
-  }
-
-  const status = await requestJson("GET", baseUrl, "/api/setup/status");
-  const taskCards = (status.tasks || [])
+  const firstStatus = await requestJson("GET", baseUrl, "/api/setup/status");
+  const initialTasks = (firstStatus.tasks || [])
     .filter((task) => task.id !== "elevenlabs")
     .map((task) => summarizeSetupTask(task, task.ready ? "success" : task.canAutoFix ? "pending" : "skipped"));
-
-  const missingAutoFix = taskCards.filter((task) => task.state === "pending").length;
-  const skipped = taskCards.filter((task) => task.state === "skipped").length;
 
   sendSetupStatus({
     kind: "task-list",
     step: "health-setup",
-    status: status.coreReady ? "done" : "warning",
-    message: missingAutoFix
-      ? `Còn ${missingAutoFix} mục chưa sẵn sàng. App không tự cài thêm khi mở; vào Health Check và bấm Tự cài đặt nếu muốn cài.`
-      : "Các service tự động đã sẵn sàng hoặc được bỏ qua theo cấu hình.",
-    tasks: taskCards,
+    status: "running",
+    message: "Đang cài đặt các service/model còn thiếu. Task nào đã sẵn sàng sẽ được bỏ qua.",
+    tasks: initialTasks,
   });
+
+  const results = [];
+
+  for (const task of firstStatus.tasks || []) {
+    if (task.id === "elevenlabs") continue;
+
+    if (task.ready) {
+      const skippedReady = summarizeSetupTask(task, "success", { message: "Đã sẵn sàng, bỏ qua cài đặt." });
+      results.push(skippedReady);
+      sendSetupStatus({ kind: "task-update", task: skippedReady });
+      continue;
+    }
+
+    if (!task.canAutoFix) {
+      const skipped = summarizeSetupTask(task, "skipped", { message: task.detail || "Chưa đủ cấu hình để tự cài." });
+      results.push(skipped);
+      sendSetupStatus({ kind: "task-update", task: skipped });
+      continue;
+    }
+
+    sendSetupStatus({
+      kind: "task-update",
+      task: summarizeSetupTask(task, "running", { message: "Đang chạy lệnh cài đặt..." }),
+    });
+
+    try {
+      const response = await requestJson("POST", baseUrl, `/api/setup/tasks/${task.id}/run`);
+      const doneTask = summarizeSetupTask(task, "success", {
+        message: response.message || "Hoàn tất.",
+        output: response.output || "",
+        command: response.command || task.command || "",
+      });
+      results.push(doneTask);
+      sendSetupStatus({ kind: "task-update", task: doneTask });
+    } catch (error) {
+      const failedTask = summarizeSetupTask(task, "failed", {
+        message: error instanceof Error ? error.message : String(error),
+        command: task.command || "",
+      });
+      results.push(failedTask);
+      sendSetupStatus({ kind: "task-update", task: failedTask });
+    }
+  }
+
+  sendSetupStatus({
+    kind: "section",
+    step: "autostart",
+    status: "running",
+    message: "Đang tự khởi động các service đã cài sẵn...",
+  });
+
+  try {
+    const autostart = await requestJson("POST", baseUrl, "/api/setup/autostart");
+    const autostartItems = [
+      ...(autostart.started || []).map((item) => ({ ...item, state: "success" })),
+      ...(autostart.skipped || []).map((item) => ({ ...item, state: "skipped" })),
+      ...(autostart.failed || []).map((item) => ({ ...item, state: "failed" })),
+    ];
+    for (const item of autostartItems) {
+      sendSetupStatus({
+        kind: "task-update",
+        task: {
+          id: `autostart-${item.id}`,
+          label: `Autostart · ${item.label || item.id}`,
+          state: item.state,
+          detail: item.message || "",
+        },
+      });
+    }
+  } catch (error) {
+    sendSetupStatus({
+      kind: "task-update",
+      task: {
+        id: "autostart-error",
+        label: "Autostart services",
+        state: "failed",
+        detail: error instanceof Error ? error.message : String(error),
+      },
+    });
+  }
+
+  const finalStatus = await requestJson("GET", baseUrl, "/api/setup/status");
+  const failedCount = results.filter((task) => task.state === "failed").length;
+  const successCount = results.filter((task) => task.state === "success").length;
+  const skippedCount = results.filter((task) => task.state === "skipped").length;
 
   sendSetupStatus({
     kind: "summary",
     step: "health-setup",
-    status: status.coreReady ? "done" : "warning",
-    message: status.coreReady
-      ? "Hoàn tất kiểm tra runtime. Bạn có thể vào Studio."
-      : "Runtime core còn thiếu. Vào Studio sẽ được đưa tới Health Check để bấm Tự cài đặt hoặc xem lỗi chi tiết.",
+    status: finalStatus.coreReady && failedCount === 0 ? "done" : "warning",
+    message: finalStatus.coreReady
+      ? `Cài đặt hoàn tất. Success: ${successCount}, Failed: ${failedCount}, Skipped: ${skippedCount}.`
+      : `Cài đặt xong nhưng core runtime chưa pass. Success: ${successCount}, Failed: ${failedCount}, Skipped: ${skippedCount}.`,
     summary: {
-      success: taskCards.filter((task) => task.state === "success").length,
-      failed: 0,
-      skipped,
+      success: successCount,
+      failed: failedCount,
+      skipped: skippedCount,
     },
   });
 }
@@ -602,9 +792,13 @@ app.whenReady().then(async () => {
     console.warn("[desktop] Không thể xóa cache/service worker cũ:", error);
   }
 
+  registerSetupIpcHandlers();
   const setup = createSetupWindow();
 
   try {
+    sendSetupStatus({ kind: "step", step: "config", status: "running", message: "Vui lòng kiểm tra cấu hình cài đặt trước khi chạy setup." });
+    await waitForSetupConfig();
+
     const runtime = await ensureDesktopRuntime({
       appDataDir: app.getPath("userData"),
       onStatus: sendSetupStatus,

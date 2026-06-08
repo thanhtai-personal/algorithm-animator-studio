@@ -9,6 +9,7 @@ const requiredFiles = [
   "electron/main.cjs",
   "electron/runtime-bootstrap.cjs",
   "electron/setup.html",
+  "scripts/ensure-electron-binary.mjs",
   "scripts/vieneu-health.py",
   "scripts/vieneu-generate.py",
   "libs/VieNeu-TTS/pyproject.toml",
@@ -30,6 +31,7 @@ for (const file of requiredFiles) {
 
 runNodeCheck("electron/main.cjs");
 runNodeCheck("electron/runtime-bootstrap.cjs");
+runNodeCheck("scripts/ensure-electron-binary.mjs");
 
 const packageJson = readJson(path.join(root, "package.json"));
 if (packageJson) {

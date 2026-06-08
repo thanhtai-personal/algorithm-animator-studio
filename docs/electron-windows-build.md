@@ -133,3 +133,30 @@ Kiểm tra source VieNeu đã nằm trong:
 ```txt
 libs/VieNeu-TTS
 ```
+
+### Electron preview báo thiếu `node_modules/electron/path.txt`
+
+Lỗi thường gặp:
+
+```txt
+Error: ENOENT: no such file or directory, open '...\\node_modules\\electron\\path.txt'
+```
+
+Nghĩa là package `electron` đã nằm trong `node_modules`, nhưng binary Electron chưa tải xong hoặc postinstall bị skip. Chạy:
+
+```bat
+npm run electron:install
+```
+
+Sau đó mở lại preview:
+
+```bat
+npm run electron:preview
+```
+
+Nếu vẫn lỗi, cài lại package Electron:
+
+```bat
+npm rebuild electron
+node node_modules\electron\install.js
+```

@@ -39,18 +39,25 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
   const [menuCollapsed, setMenuCollapsed] = useState(false);
   const systemFailed = Boolean(props.health && (!props.health.ok || !props.health.generatedDir));
   const piperFailed = Boolean(props.health && (!props.health.piperExists || props.availableModels < props.models.length));
-  const applioFailed = Boolean(props.rvcApplio && (
+  const applioConfigured = Boolean(
+    props.rvcApplio?.enabled ||
+    props.rvcApplio?.startCommandConfigured ||
+    props.rvcApplio?.argTemplateConfigured ||
+    props.rvcApplio?.ttsTemplateConfigured ||
+    props.rvcApplio?.serverOk
+  );
+  const applioFailed = Boolean(props.rvcApplio && applioConfigured && (
     !props.rvcApplio.serverOk ||
     !props.rvcApplio.pythonExists ||
     !props.rvcApplio.bridgeExists ||
     !props.rvcApplio.gradioClientInstalled ||
-    !props.rvcApplio.startCommandConfigured ||
     !props.rvcApplio.endpointsOk ||
     (!props.rvcApplio.argTemplateConfigured && !props.rvcApplio.ttsTemplateConfigured)
   ));
   const supertonicFailed = Boolean(props.supertonic && (!props.supertonic.serverOk || !props.supertonic.endpointsOk));
   const vieneuFailed = Boolean(props.vieneu && (!props.vieneu.sdkInstalled || !props.vieneu.pythonExists || !props.vieneu.bridgeExists));
-  const elevenLabsFailed = Boolean(props.elevenLabs && (!props.elevenLabs.hasApiKey || !props.elevenLabs.endpointsOk));
+  const elevenLabsConfigured = Boolean(props.elevenLabs?.hasApiKey);
+  const elevenLabsFailed = Boolean(props.elevenLabs && elevenLabsConfigured && !props.elevenLabs.endpointsOk);
   const sectionState = {
     system: {
       passed: Boolean(props.health?.ok && props.health?.generatedDir),
@@ -63,7 +70,7 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
       instruction: piperInstruction(props.lang, props.health, props.models.length),
     },
     applio: {
-      passed: Boolean(props.rvcApplio && !applioFailed),
+      passed: Boolean(props.rvcApplio && applioConfigured && !applioFailed),
       failed: applioFailed,
       instruction: applioInstruction(props.lang, props.rvcApplio),
     },

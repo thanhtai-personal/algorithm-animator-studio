@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AppLayout } from "@/components/AppLayout";
+import { RuntimeSetupGate } from "@/components/RuntimeSetupGate";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +22,7 @@ const LongContent = lazy(() => import("./pages/LongContent.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const MuNewsStudio = lazy(() => import("./pages/MuNewsStudio.tsx"));
 const Settings = lazy(() => import("./pages/Settings.tsx"));
+const RuntimeSetup = lazy(() => import("./pages/RuntimeSetup.tsx"));
 const StoryAuthorStudio = lazy(() => import("./pages/StoryAuthorStudio.tsx"));
 const StoryReviewStudio = lazy(() => import("./pages/StoryReviewStudio.tsx"));
 const StoryVideoStudio = lazy(() => import("./pages/StoryVideoStudio.tsx"));
@@ -67,8 +69,9 @@ const App = () => (
         <BrowserRouter>
           <AnalyticsTracker />
           <PublicWebBanner />
-          <AppLayout>
-            <Suspense fallback={<RouteFallback />}>
+          <RuntimeSetupGate>
+            <AppLayout>
+              <Suspense fallback={<RouteFallback />}>
               <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/privacy" element={<LegalPage type="privacy" />} />
@@ -88,10 +91,12 @@ const App = () => (
                 <Route path="/youtube-publishing" element={<LegacyChannelRedirect />} />
                 <Route path="/youtube" element={<LegacyChannelRedirect />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/setup" element={<RuntimeSetup />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </Suspense>
-          </AppLayout>
+              </Suspense>
+            </AppLayout>
+          </RuntimeSetupGate>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>

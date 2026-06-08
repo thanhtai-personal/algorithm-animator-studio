@@ -6,6 +6,7 @@ import {
   Newspaper,
   PenLine,
   Settings,
+  Wrench,
   Sparkles,
   Video,
   Youtube,
@@ -114,6 +115,13 @@ export const APP_NAVIGATION_GROUPS: AppNavigationGroup[] = [
         icon: Files,
         label: { en: "Files Management", vi: "Quản lý file" },
         matchPaths: ["/assets"],
+      },
+      {
+        id: "setup",
+        to: "/setup",
+        icon: Wrench,
+        label: { en: "Setup Wizard", vi: "Trình cài đặt" },
+        matchPaths: ["/setup"],
       },
       {
         id: "settings",

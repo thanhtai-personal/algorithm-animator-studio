@@ -15,8 +15,138 @@ if (!gotSingleInstanceLock) {
   app.quit();
 }
 
-const DEFAULT_CLIENT_PORT = 6868;
-const DEFAULT_SERVER_PORT = 8888;
+const DEFAULT_CLIENT_PORT = 3000;
+const DEFAULT_SERVER_PORT = 5050;
+const DESKTOP_ENV_JSON = "desktop-env.json";
+
+const RUNTIME_ENV_KEYS = [
+  "PORT",
+  "SERVER_ORIGIN",
+  "CLIENT_ORIGIN",
+  "VITE_API_URL",
+  "VITE_PUBLIC_WEB",
+  "VITE_NEST_API_BASE_URL",
+  "SUPERTONIC_BASE_URL",
+  "SUPERTONIC_MODEL",
+  "SUPERTONIC_HEALTH_ENDPOINT",
+  "SUPERTONIC_STYLES_ENDPOINT",
+  "SUPERTONIC_IMPORT_STYLE_ENDPOINT",
+  "SUPERTONIC_TTS_ENDPOINT",
+  "RVC_APPLIO_BASE_URL",
+  "RVC_APPLIO_START_COMMAND",
+  "RVC_APPLIO_API_NAME",
+  "RVC_APPLIO_PYTHON",
+  "VIENEU_SOURCE_DIR",
+  "VIENEU_PYTHON",
+  "VIENEU_START_MODE",
+  "VIENEU_AUTO_START",
+  "VIENEU_MODE",
+  "VIENEU_EMOTION",
+  "VIENEU_DEFAULT_VOICE_ID",
+  "VIENEU_REFERENCE_AUDIO",
+  "VIENEU_REFERENCE_TEXT",
+  "VIENEU_REMOTE_API_BASE",
+  "VIENEU_REMOTE_MODEL",
+  "VIENEU_TIMEOUT_MS",
+];
+
+function normalizeBaseUrl(value, fallback) {
+  const trimmed = String(value || "").trim().replace(/\/+$/, "");
+  return trimmed || fallback;
+}
+
+function parseEnvText(raw) {
+  const env = {};
+  for (const line of String(raw || "").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const equalIndex = trimmed.indexOf("=");
+    if (equalIndex <= 0) continue;
+    const key = trimmed.slice(0, equalIndex).trim();
+    let value = trimmed.slice(equalIndex + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    env[key] = value;
+  }
+  return env;
+}
+
+function applyRuntimeEnv(values, sourceLabel, options = {}) {
+  let applied = 0;
+  for (const [key, value] of Object.entries(values || {})) {
+    if (!RUNTIME_ENV_KEYS.includes(key)) continue;
+    if (value === undefined || value === null || String(value).trim() === "") continue;
+    if (!options.override && process.env[key] !== undefined && process.env[key] !== "") continue;
+    process.env[key] = String(value);
+    applied += 1;
+  }
+  if (applied) console.log(`[desktop] Loaded ${applied} runtime env values from ${sourceLabel}`);
+}
+
+function loadEnvFileIfExists(filePath, options = {}) {
+  if (!filePath || !fs.existsSync(filePath)) return;
+  try {
+    applyRuntimeEnv(parseEnvText(fs.readFileSync(filePath, "utf8")), filePath, options);
+  } catch (error) {
+    console.warn(`[desktop] Không đọc được env file ${filePath}:`, error);
+  }
+}
+
+function loadDesktopEnvJsonIfExists(filePath, options = {}) {
+  if (!filePath || !fs.existsSync(filePath)) return;
+  try {
+    applyRuntimeEnv(JSON.parse(fs.readFileSync(filePath, "utf8")), filePath, options);
+  } catch (error) {
+    console.warn(`[desktop] Không đọc được ${DESKTOP_ENV_JSON} tại ${filePath}:`, error);
+  }
+}
+
+function loadDesktopRuntimeEnv() {
+  const appRoot = getAppRoot();
+  const resourceRoot = getDesktopRuntimeResourceRoot();
+
+  loadEnvFileIfExists(path.resolve(process.cwd(), ".env"));
+  loadEnvFileIfExists(path.join(appRoot, ".env"));
+  loadEnvFileIfExists(path.join(resourceRoot, ".env"));
+  loadDesktopEnvJsonIfExists(path.join(appRoot, "dist-electron", DESKTOP_ENV_JSON));
+  loadDesktopEnvJsonIfExists(path.join(resourceRoot, DESKTOP_ENV_JSON));
+  loadEnvFileIfExists(path.join(app.getPath("userData"), ".env"), { override: true });
+}
+
+function getServerOrigin() {
+  return normalizeBaseUrl(
+    process.env.SERVER_ORIGIN || process.env.VITE_API_URL,
+    `http://127.0.0.1:${process.env.PORT || DEFAULT_SERVER_PORT}`
+  );
+}
+
+function getClientOrigin() {
+  return normalizeBaseUrl(
+    process.env.CLIENT_ORIGIN || process.env.VITE_CLIENT_ORIGIN,
+    `http://127.0.0.1:${DEFAULT_CLIENT_PORT}`
+  );
+}
+
+function getPortFromUrl(origin, fallback) {
+  try {
+    const url = new URL(origin);
+    if (url.port) return Number(url.port);
+    if (url.protocol === "https:") return 443;
+    if (url.protocol === "http:") return 80;
+  } catch {
+    // fall through
+  }
+  return fallback;
+}
+
+function getServerPort() {
+  return Number(process.env.PORT || getPortFromUrl(getServerOrigin(), DEFAULT_SERVER_PORT));
+}
+
+function getClientPort() {
+  return getPortFromUrl(getClientOrigin(), DEFAULT_CLIENT_PORT);
+}
 
 function getAppRoot() {
   if (!app.isPackaged) return path.resolve(__dirname, "..");
@@ -119,10 +249,11 @@ async function startClientServer() {
     throw new Error(`Không tìm thấy Vite desktop build tại ${indexHtml}. Hãy chạy npm run build:desktop trước khi mở Electron.`);
   }
 
-  await waitUntilPortFree(DEFAULT_CLIENT_PORT, "Client");
+  const clientPort = getClientPort();
+  await waitUntilPortFree(clientPort, "Client");
 
   clientServer = http.createServer((req, res) => {
-    const requestUrl = new URL(req.url || "/", `http://127.0.0.1:${DEFAULT_CLIENT_PORT}`);
+    const requestUrl = new URL(req.url || "/", `http://127.0.0.1:${clientPort}`);
     let pathname = decodeURIComponent(requestUrl.pathname);
 
     // Một số build cũ từng tạo lỗi /assets/assets/*.js. Không redirect, trả 404 rõ ràng để dễ bắt lỗi.
@@ -158,9 +289,9 @@ async function startClientServer() {
 
   await new Promise((resolve, reject) => {
     clientServer.once("error", reject);
-    clientServer.listen(DEFAULT_CLIENT_PORT, "127.0.0.1", () => {
+    clientServer.listen(clientPort, "127.0.0.1", () => {
       clientServer?.off("error", reject);
-      console.log(`[desktop] Client running at http://127.0.0.1:${DEFAULT_CLIENT_PORT}`);
+      console.log(`[desktop] Client running at ${getClientOrigin()}`);
       console.log(`[desktop] Client dir: ${clientDir}`);
       resolve();
     });
@@ -199,6 +330,15 @@ function waitForBackendReady(baseUrl, timeoutMs = 12000) {
 
     ping();
   });
+}
+
+async function isBackendReady(baseUrl, timeoutMs = 2200) {
+  try {
+    await waitForBackendReady(baseUrl, timeoutMs);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function createSetupWindow() {
@@ -390,15 +530,25 @@ async function startBackend(runtime) {
 
   const desktopRuntimeResourceRoot = getDesktopRuntimeResourceRoot();
 
-  await waitUntilPortFree(DEFAULT_SERVER_PORT, "Backend");
+  const serverOrigin = getServerOrigin();
+  const serverPort = getPortFromUrl(serverOrigin, getServerPort());
+  const clientOrigin = getClientOrigin();
+
+  if (!(await isPortFree(serverPort))) {
+    if (await isBackendReady(serverOrigin, 2200)) {
+      console.log(`[desktop] Reusing existing local app-server at ${serverOrigin}`);
+      return;
+    }
+    throw new Error(`Backend port ${serverPort} đang bị chiếm nhưng /api/health không phản hồi. Hãy đóng process đang chiếm port này rồi mở lại app.`);
+  }
 
   process.env.KATA_DESKTOP_RUNTIME = "true";
   process.env.KATA_STUDIO_HOME = runtime.runtimeHome;
   process.env.KATA_DESKTOP_RESOURCE_ROOT = desktopRuntimeResourceRoot;
   process.env.KATA_PROJECT_ROOT = desktopRuntimeResourceRoot;
-  process.env.PORT = String(DEFAULT_SERVER_PORT);
-  process.env.SERVER_ORIGIN = `http://127.0.0.1:${DEFAULT_SERVER_PORT}`;
-  process.env.CLIENT_ORIGIN = `http://127.0.0.1:${DEFAULT_CLIENT_PORT}`;
+  process.env.PORT = String(serverPort);
+  process.env.SERVER_ORIGIN = serverOrigin;
+  process.env.CLIENT_ORIGIN = clientOrigin;
   process.env.SERVER_DATA_DIR = process.env.SERVER_DATA_DIR || serverDataDir;
   process.env.MODEL_DIR = process.env.MODEL_DIR || runtime.modelDir;
   process.env.PIPER_EXE = process.env.PIPER_EXE || runtime.piperExe;
@@ -454,7 +604,7 @@ function createMainWindow() {
     console.log(`[desktop] UI đã load: ${mainWindow?.webContents.getURL()}`);
   });
 
-  mainWindow.loadURL(`http://127.0.0.1:${DEFAULT_CLIENT_PORT}`);
+  mainWindow.loadURL(getClientOrigin());
 }
 
 app.setAppUserModelId("vn.kaistudio.app");
@@ -464,6 +614,8 @@ app.on("second-instance", () => {
 });
 
 app.whenReady().then(async () => {
+  loadDesktopRuntimeEnv();
+
   try {
     const { session } = require("electron");
     await session.defaultSession.clearStorageData({ storages: ["serviceworkers", "cachestorage"] });
@@ -482,7 +634,7 @@ app.whenReady().then(async () => {
     sendSetupStatus({ step: "backend", status: "running", message: "Đang khởi động app-server local..." });
     await startBackend(runtime);
     await runBackendSetupWizard(process.env.SERVER_ORIGIN);
-    sendSetupStatus({ step: "client", status: "running", message: "Đang khởi động client local ở port 6868..." });
+    sendSetupStatus({ step: "client", status: "running", message: `Đang khởi động client local ở ${getClientOrigin()}...` });
     await startClientServer();
     sendSetupStatus({ kind: "ready", step: "ready", status: "done", message: "Sẵn sàng. Bấm Vào Studio để bắt đầu làm việc." });
 

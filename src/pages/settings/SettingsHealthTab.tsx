@@ -1,6 +1,5 @@
-import { BookOpen, Bot, CheckCircle2, ChevronsLeft, ChevronsRight, Cloud, Mic2, Radio, RefreshCw, Server, Waves, Wrench } from "lucide-react";
+import { BookOpen, Bot, CheckCircle2, ChevronsLeft, ChevronsRight, Cloud, Mic2, Radio, RefreshCw, Server, Waves } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import {text, uiText, t, type Lang} from "@/lib/i18n";
 import { StatusTile } from "./SettingsFields";
 import { applioInstruction, elevenLabsInstruction, piperInstruction, supertonicInstruction, systemInstruction, vieneuInstruction, type HealthInstruction } from "./SettingsHealthInstructions";
 import { SettingsMarkdown } from "./SettingsMarkdown";
-import { SettingsSetupInstaller } from "./SettingsSetupInstaller";
+import { HealthAutoInstallDialog } from "./HealthAutoInstallDialog";
 import type { ElevenLabsConfigResponse, HealthResponse, PiperModel, RvcApplioConfigResponse, SupertonicConfigResponse, VieneuConfigResponse } from "./SettingsTypes";
 
 type SettingsHealthTabProps = {
@@ -37,7 +36,6 @@ const HEALTH_SECTIONS: { id: HealthSectionId; label: string; shortLabel: string;
 ];
 
 export function SettingsHealthTab(props: SettingsHealthTabProps) {
-  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<HealthSectionId>("system");
   const [menuCollapsed, setMenuCollapsed] = useState(false);
   const systemFailed = Boolean(props.health && (!props.health.ok || !props.health.generatedDir));
@@ -104,9 +102,7 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
           <CardDescription>{t(props.lang, "settingsHealthDescription")}</CardDescription>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => navigate("/setup")}>
-            <Wrench className="mr-2 h-4 w-4" /> {text(props.lang, "Setup Wizard", "Trình cài đặt")}
-          </Button>
+          <HealthAutoInstallDialog lang={props.lang} onAfterTask={props.onRefreshHealth} />
           <Button variant="outline" onClick={props.onRefreshHealth} disabled={props.loading}>
             <RefreshCw className="mr-2 h-4 w-4" /> {t(props.lang, "settingsCheckAgain")}
           </Button>
@@ -166,9 +162,6 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
           </div>
         </div>
 
-        <div className="mt-4">
-          <SettingsSetupInstaller lang={props.lang} onAfterTask={props.onRefreshHealth} />
-        </div>
       </CardContent>
     </Card>
   );

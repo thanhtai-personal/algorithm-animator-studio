@@ -3,15 +3,12 @@ import { Navigate, useLocation } from "react-router-dom";
 import { getSetupWizardStatus } from "@/lib/setupWizardApi";
 import { IS_PUBLIC_WEB } from "@/lib/runtimeApi";
 
-const SKIP_KEY = "kai-studio.setup.skip-gate";
-const VISITED_KEY = "kai-studio.setup.visited";
-
 export function markRuntimeSetupGateSkipped() {
-  window.localStorage.setItem(SKIP_KEY, "true");
+  window.localStorage.setItem("kai-studio.setup.skip-gate", "true");
 }
 
 export function markRuntimeSetupGateVisited() {
-  window.localStorage.setItem(VISITED_KEY, "true");
+  window.localStorage.setItem("kai-studio.setup.visited", "true");
 }
 
 export function RuntimeSetupGate({ children }: PropsWithChildren) {
@@ -29,9 +26,7 @@ export function RuntimeSetupGate({ children }: PropsWithChildren) {
     setState("checking");
     getSetupWizardStatus()
       .then((status) => {
-        const visited = window.localStorage.getItem(VISITED_KEY) === "true";
-        const autoFixPending = status.tasks.some((task) => task.canAutoFix && !task.ready && task.id !== "elevenlabs");
-        if (active) setState(status.coreReady && (visited || !autoFixPending) ? "ready" : "needs-setup");
+        if (active) setState(status.coreReady ? "ready" : "needs-setup");
       })
       .catch(() => {
         if (active) setState("needs-setup");

@@ -18,6 +18,7 @@ export type SetupTaskStatus = {
   optional: boolean;
   canAutoFix: boolean;
   detail: string;
+  command?: string;
 };
 
 export type SetupWizardStatus = {
@@ -33,6 +34,7 @@ export type SetupTaskResult = {
   taskId: SetupTaskId;
   message: string;
   output?: string;
+  command?: string;
   status: SetupWizardStatus;
 };
 

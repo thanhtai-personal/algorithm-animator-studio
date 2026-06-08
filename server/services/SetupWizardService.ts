@@ -33,6 +33,7 @@ type SetupTaskStatus = {
   optional: boolean;
   canAutoFix: boolean;
   detail: string;
+  command?: string;
 };
 
 export type SetupWizardStatus = {
@@ -48,6 +49,7 @@ type SetupTaskResult = {
   taskId: SetupTaskId;
   message: string;
   output?: string;
+  command?: string;
   status: SetupWizardStatus;
 };
 
@@ -89,6 +91,7 @@ export async function getSetupWizardStatus(envOverrides: RuntimeEnvValues = {}):
         optional: false,
         canAutoFix: true,
         detail: generatedReady ? generatedDir : "Chưa có thư mục generated data.",
+        command: describeSetupTaskCommand("generated-data", env),
       },
       {
         id: "piper-runtime",
@@ -98,6 +101,7 @@ export async function getSetupWizardStatus(envOverrides: RuntimeEnvValues = {}):
         optional: false,
         canAutoFix: true,
         detail: piperRuntimeReady ? piper.piperExe : "Chưa tìm thấy piper.exe.",
+        command: describeSetupTaskCommand("piper-runtime", env),
       },
       {
         id: "piper-models",
@@ -109,6 +113,7 @@ export async function getSetupWizardStatus(envOverrides: RuntimeEnvValues = {}):
         detail: piperModelsReady
           ? `${piper.availableCount}/${piper.models.length} model sẵn sàng.`
           : `${piper.availableCount}/${piper.models.length} model sẵn sàng. Cần tải thêm model còn thiếu.`,
+        command: describeSetupTaskCommand("piper-models", env),
       },
       {
         id: "supertonic",
@@ -118,6 +123,7 @@ export async function getSetupWizardStatus(envOverrides: RuntimeEnvValues = {}):
         optional: true,
         canAutoFix: true,
         detail: supertonic.serverOk ? `${supertonic.voices.length} voice · ${supertonic.baseUrl}` : supertonic.error || "Server chưa chạy.",
+        command: describeSetupTaskCommand("supertonic", env),
       },
       {
         id: "applio-client",
@@ -127,6 +133,7 @@ export async function getSetupWizardStatus(envOverrides: RuntimeEnvValues = {}):
         optional: true,
         canAutoFix: true,
         detail: applioClientReady ? "gradio_client OK" : applio.gradioClientCheckError || "Thiếu gradio_client hoặc Python.",
+        command: describeSetupTaskCommand("applio-client", env),
       },
       {
         id: "applio-start",
@@ -138,6 +145,7 @@ export async function getSetupWizardStatus(envOverrides: RuntimeEnvValues = {}):
         detail: applioConfigured
           ? (applioReady ? applio.baseUrl : applio.error || "Applio chưa sẵn sàng.")
           : "Chưa cấu hình Applio model/start command, bỏ qua khi setup lần đầu.",
+        command: describeSetupTaskCommand("applio-start", env),
       },
       {
         id: "vieneu",
@@ -147,6 +155,7 @@ export async function getSetupWizardStatus(envOverrides: RuntimeEnvValues = {}):
         optional: true,
         canAutoFix: true,
         detail: vieneu.sdkInstalled ? `${vieneu.mode} · ${vieneu.version || "SDK OK"}` : vieneu.error || "SDK chưa cài.",
+        command: describeSetupTaskCommand("vieneu", env),
       },
       {
         id: "elevenlabs",
@@ -165,6 +174,7 @@ export async function runSetupWizardTask(taskId: SetupTaskId, envOverrides: Runt
   const env = readEnvValues(envOverrides);
   let message = "Đã thực hiện.";
   let output = "";
+  const command = describeSetupTaskCommand(taskId, env);
 
   if (taskId === "generated-data") {
     await ensureGeneratedDirectories(env);
@@ -197,8 +207,49 @@ export async function runSetupWizardTask(taskId: SetupTaskId, envOverrides: Runt
     taskId,
     message,
     output: outputTail(output),
+    command,
     status: await getSetupWizardStatus(envOverrides),
   };
+}
+
+function describeSetupTaskCommand(taskId: SetupTaskId, env: RuntimeEnvValues) {
+  if (taskId === "generated-data") {
+    return `mkdir "${getGeneratedDir(env.SERVER_DATA_DIR)}"`;
+  }
+
+  if (taskId === "piper-runtime") {
+    const piperExe = resolveRuntimeExecutable(env.PIPER_EXE || "models/.venv/Scripts/piper.exe");
+    const venvScriptsDir = path.dirname(piperExe);
+    const venvDir = path.dirname(venvScriptsDir);
+    const venvPython = process.platform === "win32"
+      ? path.join(venvScriptsDir, "python.exe")
+      : path.join(venvScriptsDir, "python");
+    const bootstrapPython = process.platform === "win32" ? "python" : "python3";
+    return `${bootstrapPython} -m venv "${venvDir}" && "${venvPython}" -m pip install --upgrade pip setuptools wheel && "${venvPython}" -m pip install piper-tts`;
+  }
+
+  if (taskId === "piper-models") {
+    return "download missing Piper ONNX + JSON models into MODEL_DIR";
+  }
+
+  if (taskId === "supertonic") {
+    const python = process.platform === "win32" ? "python" : "python3";
+    return `${python} -m pip install supertonic[serve] && node scripts/start-supertonic.mjs`;
+  }
+
+  if (taskId === "applio-client") {
+    return `${env.RVC_APPLIO_PYTHON || "python"} -m pip install -U gradio_client`;
+  }
+
+  if (taskId === "applio-start") {
+    return env.RVC_APPLIO_START_COMMAND || "node scripts/start-applio.mjs";
+  }
+
+  if (taskId === "vieneu") {
+    return "node scripts/install-vieneu-from-source.mjs";
+  }
+
+  return "";
 }
 
 async function ensureGeneratedDirectories(env: RuntimeEnvValues) {

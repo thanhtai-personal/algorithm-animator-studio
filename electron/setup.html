@@ -3,30 +3,172 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Đang chuẩn bị KAI STUDIO</title>
+    <title>Thiết lập KAI STUDIO</title>
     <style>
       :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: radial-gradient(circle at 20% 0%, rgba(139, 92, 246, .25), transparent 34%), #070717; color: #f8fafc; }
-      main { width: min(440px, calc(100vw - 48px)); border: 1px solid rgba(148, 163, 184, .24); border-radius: 24px; padding: 28px; background: rgba(15, 23, 42, .82); box-shadow: 0 24px 80px rgba(0,0,0,.38); }
-      .spinner { width: 34px; height: 34px; border-radius: 999px; border: 3px solid rgba(148, 163, 184, .35); border-top-color: #a78bfa; animation: spin 1s linear infinite; margin-bottom: 18px; }
-      h1 { margin: 0 0 10px; font-size: 20px; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(circle at 16% 0%, rgba(139, 92, 246, .26), transparent 34%), #070717;
+        color: #f8fafc;
+      }
+      main { width: min(760px, calc(100vw - 40px)); margin: 24px auto; }
+      .panel {
+        border: 1px solid rgba(148, 163, 184, .24);
+        border-radius: 26px;
+        padding: 24px;
+        background: rgba(15, 23, 42, .86);
+        box-shadow: 0 24px 80px rgba(0,0,0,.38);
+      }
+      .top { display: flex; gap: 16px; align-items: flex-start; }
+      .spinner { width: 36px; height: 36px; flex: 0 0 auto; border-radius: 999px; border: 3px solid rgba(148, 163, 184, .35); border-top-color: #a78bfa; animation: spin 1s linear infinite; }
+      .spinner.done { animation: none; border-color: rgba(34,197,94,.45); border-top-color: #22c55e; }
+      .spinner.error { animation: none; border-color: rgba(248,113,113,.45); border-top-color: #f87171; }
+      h1 { margin: 0 0 8px; font-size: 22px; letter-spacing: -.02em; }
       p { margin: 0; color: #cbd5e1; line-height: 1.55; }
-      .log { margin-top: 18px; padding: 14px; border-radius: 16px; background: rgba(15, 23, 42, .88); color: #dbeafe; font-size: 13px; min-height: 56px; white-space: pre-wrap; }
+      .progress-wrap { margin: 20px 0 14px; height: 10px; overflow: hidden; border-radius: 999px; background: rgba(51,65,85,.9); }
+      .progress { width: 5%; height: 100%; background: linear-gradient(90deg, #8b5cf6, #22c55e); transition: width .25s ease; }
+      .message { margin-top: 14px; padding: 14px 16px; border-radius: 16px; background: rgba(2, 6, 23, .52); color: #dbeafe; font-size: 13px; line-height: 1.55; white-space: pre-wrap; }
+      .list { display: grid; gap: 10px; margin-top: 18px; max-height: 330px; overflow: auto; padding-right: 4px; }
+      .task { border: 1px solid rgba(148, 163, 184, .16); border-radius: 16px; padding: 12px 14px; background: rgba(15, 23, 42, .72); }
+      .task-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .task-title { font-size: 14px; font-weight: 700; }
+      .badge { border-radius: 999px; padding: 4px 9px; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #cbd5e1; background: rgba(148,163,184,.16); }
+      .success { color: #bbf7d0; background: rgba(34,197,94,.16); }
+      .failed { color: #fecaca; background: rgba(239,68,68,.16); }
+      .running { color: #bfdbfe; background: rgba(59,130,246,.16); }
+      .skipped { color: #fde68a; background: rgba(245,158,11,.16); }
+      .pending { color: #ddd6fe; background: rgba(139,92,246,.16); }
+      .task-detail, .command, .output { margin-top: 8px; color: #cbd5e1; font-size: 12px; line-height: 1.45; word-break: break-word; }
+      .command { color: #a5b4fc; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; }
+      .output { max-height: 96px; overflow: auto; padding: 10px; border-radius: 12px; background: rgba(2,6,23,.72); color: #e2e8f0; white-space: pre-wrap; }
+      .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+      button { border: 0; border-radius: 14px; padding: 11px 16px; font-weight: 800; color: #0f172a; background: #f8fafc; cursor: pointer; }
+      button[disabled] { cursor: not-allowed; opacity: .48; }
+      .secondary { color: #f8fafc; background: rgba(148,163,184,.16); }
       @keyframes spin { to { transform: rotate(360deg); } }
     </style>
   </head>
   <body>
     <main>
-      <div class="spinner"></div>
-      <h1>Đang chuẩn bị môi trường local</h1>
-      <p>KAI STUDIO sẽ tự kiểm tra và cài những phần còn thiếu như Piper, model giọng đọc và FFmpeg.</p>
-      <div id="log" class="log">Đang khởi động...</div>
+      <section class="panel">
+        <div class="top">
+          <div id="spinner" class="spinner"></div>
+          <div>
+            <h1>Thiết lập môi trường KAI STUDIO</h1>
+            <p>App sẽ tự kiểm tra, cài các service local cần thiết và báo rõ mục nào thành công hoặc thất bại trước khi mở Studio.</p>
+          </div>
+        </div>
+        <div class="progress-wrap"><div id="progress" class="progress"></div></div>
+        <div id="message" class="message">Đang khởi động trình cài đặt...</div>
+        <div id="tasks" class="list"></div>
+        <div class="actions">
+          <button id="continueBtn" disabled>Vào Studio</button>
+        </div>
+      </section>
     </main>
     <script>
       const { ipcRenderer } = require("electron");
-      const log = document.getElementById("log");
+      const message = document.getElementById("message");
+      const tasksEl = document.getElementById("tasks");
+      const progress = document.getElementById("progress");
+      const spinner = document.getElementById("spinner");
+      const continueBtn = document.getElementById("continueBtn");
+      const tasks = new Map();
+      let total = 8;
+
+      continueBtn.addEventListener("click", () => ipcRenderer.send("runtime-setup-continue"));
+
+      function normalizeState(value) {
+        if (value === "done") return "success";
+        if (value === "error") return "failed";
+        return value || "running";
+      }
+
+      function upsertTask(task) {
+        if (!task || !task.id) return;
+        tasks.set(task.id, { ...(tasks.get(task.id) || {}), ...task, state: normalizeState(task.state || task.status) });
+        renderTasks();
+        updateProgress();
+      }
+
+      function renderTasks() {
+        tasksEl.innerHTML = "";
+        for (const task of tasks.values()) {
+          const state = normalizeState(task.state);
+          const row = document.createElement("article");
+          row.className = "task";
+          row.innerHTML = `
+            <div class="task-head">
+              <div class="task-title">${escapeHtml(task.label || task.id)}</div>
+              <div class="badge ${state}">${labelForState(state)}</div>
+            </div>
+            ${task.detail ? `<div class="task-detail">${escapeHtml(task.detail)}</div>` : ""}
+            ${task.command ? `<div class="command">$ ${escapeHtml(task.command)}</div>` : ""}
+            ${task.message ? `<div class="task-detail">${escapeHtml(task.message)}</div>` : ""}
+            ${task.output ? `<div class="output">${escapeHtml(task.output)}</div>` : ""}
+          `;
+          tasksEl.appendChild(row);
+        }
+      }
+
+      function updateProgress() {
+        const values = [...tasks.values()];
+        const finished = values.filter((task) => ["success", "failed", "skipped"].includes(normalizeState(task.state))).length;
+        const denominator = Math.max(total, values.length, 1);
+        progress.style.width = `${Math.min(100, Math.max(5, Math.round((finished / denominator) * 100)))}%`;
+      }
+
+      function finish(payload) {
+        const failed = payload?.summary?.failed || [...tasks.values()].filter((task) => normalizeState(task.state) === "failed").length;
+        progress.style.width = "100%";
+        spinner.classList.add(failed ? "error" : "done");
+        continueBtn.disabled = false;
+      }
+
+      function labelForState(state) {
+        if (state === "success") return "Success";
+        if (state === "failed") return "Failed";
+        if (state === "skipped") return "Skipped";
+        if (state === "pending") return "Pending";
+        return "Running";
+      }
+
+      function escapeHtml(value) {
+        return String(value || "").replace(/[&<>'"]/g, (char) => ({
+          "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
+        }[char]));
+      }
+
       ipcRenderer.on("runtime-setup-status", (_event, payload) => {
-        log.textContent = payload?.message || "Đang xử lý...";
+        message.textContent = payload?.message || "Đang xử lý...";
+
+        if (payload?.kind === "task-list") {
+          tasks.clear();
+          total = Math.max(payload.tasks?.length || 0, 1);
+          for (const task of payload.tasks || []) upsertTask(task);
+          return;
+        }
+
+        if (payload?.kind === "task-update") {
+          upsertTask(payload.task);
+          return;
+        }
+
+        if (payload?.kind === "summary" || payload?.kind === "ready") {
+          finish(payload);
+          return;
+        }
+
+        if (payload?.step) {
+          upsertTask({
+            id: `runtime-${payload.step}`,
+            label: payload.step === "ready" ? "Runtime bootstrap" : payload.step,
+            state: normalizeState(payload.status),
+            detail: payload.message,
+          });
+        }
       });
     </script>
   </body>

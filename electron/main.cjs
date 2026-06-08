@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, shell } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, shell } = require("electron");
 const fs = require("node:fs");
 const http = require("node:http");
 const net = require("node:net");
@@ -203,11 +203,11 @@ function waitForBackendReady(baseUrl, timeoutMs = 12000) {
 
 function createSetupWindow() {
   setupWindow = new BrowserWindow({
-    width: 560,
-    height: 420,
-    minWidth: 520,
-    minHeight: 360,
-    resizable: false,
+    width: 860,
+    height: 760,
+    minWidth: 720,
+    minHeight: 620,
+    resizable: true,
     autoHideMenuBar: true,
     show: false,
     backgroundColor: "#070717",
@@ -227,6 +227,153 @@ function sendSetupStatus(payload) {
   if (setupWindow && !setupWindow.isDestroyed()) {
     setupWindow.webContents.send("runtime-setup-status", payload);
   }
+}
+
+function waitForSetupContinue() {
+  return new Promise((resolve) => {
+    if (!setupWindow || setupWindow.isDestroyed()) {
+      resolve();
+      return;
+    }
+
+    const done = () => {
+      ipcMain.removeListener("runtime-setup-continue", done);
+      resolve();
+    };
+
+    ipcMain.once("runtime-setup-continue", done);
+    setupWindow.once("closed", done);
+  });
+}
+
+function requestJson(method, baseUrl, pathname) {
+  const target = new URL(pathname, baseUrl);
+
+  return new Promise((resolve, reject) => {
+    const request = http.request(target, { method, headers: { "Content-Type": "application/json" } }, (response) => {
+      let raw = "";
+      response.setEncoding("utf8");
+      response.on("data", (chunk) => { raw += chunk; });
+      response.on("end", () => {
+        let payload = {};
+        if (raw.trim()) {
+          try {
+            payload = JSON.parse(raw);
+          } catch (error) {
+            reject(new Error(`Phản hồi setup không phải JSON: ${raw.slice(0, 300)}`));
+            return;
+          }
+        }
+
+        if (response.statusCode && response.statusCode >= 200 && response.statusCode < 300) {
+          resolve(payload);
+          return;
+        }
+
+        reject(new Error(payload.error || `HTTP ${response.statusCode || 500}: ${raw.slice(0, 300)}`));
+      });
+    });
+
+    request.on("error", reject);
+    request.setTimeout(90 * 60 * 1000, () => {
+      request.destroy(new Error(`Setup request timeout: ${method} ${pathname}`));
+    });
+    request.end();
+  });
+}
+
+function summarizeSetupTask(task, state, extra = {}) {
+  return {
+    id: task.id,
+    label: task.label,
+    optional: Boolean(task.optional),
+    command: task.command || "",
+    detail: task.detail || "",
+    state,
+    ...extra,
+  };
+}
+
+async function runBackendSetupWizard(baseUrl) {
+  sendSetupStatus({
+    kind: "section",
+    step: "health-setup",
+    status: "running",
+    message: "Đang kiểm tra các service local trước khi mở Studio...",
+  });
+
+  const status = await requestJson("GET", baseUrl, "/api/setup/status");
+  const installableTasks = (status.tasks || []).filter((task) => task.id !== "elevenlabs" && !task.ready && task.canAutoFix);
+  const taskCards = (status.tasks || [])
+    .filter((task) => task.id !== "elevenlabs")
+    .map((task) => summarizeSetupTask(task, task.ready ? "success" : task.canAutoFix ? "pending" : "skipped"));
+
+  sendSetupStatus({
+    kind: "task-list",
+    step: "health-setup",
+    status: "running",
+    message: installableTasks.length
+      ? `Cần tự cài ${installableTasks.length} mục còn thiếu.`
+      : "Các service tự động đã sẵn sàng hoặc không cần cài.",
+    tasks: taskCards,
+  });
+
+  const results = [];
+  for (const task of installableTasks) {
+    sendSetupStatus({
+      kind: "task-update",
+      step: "health-setup",
+      status: "running",
+      message: `Đang chạy: ${task.label}`,
+      task: summarizeSetupTask(task, "running"),
+    });
+
+    try {
+      const result = await requestJson("POST", baseUrl, `/api/setup/tasks/${task.id}/run`);
+      const nextTask = (result.status?.tasks || []).find((candidate) => candidate.id === task.id) || task;
+      const taskResult = summarizeSetupTask(nextTask, "success", {
+        message: result.message || "Hoàn tất.",
+        output: result.output || "",
+      });
+      results.push(taskResult);
+      sendSetupStatus({
+        kind: "task-update",
+        step: "health-setup",
+        status: "done",
+        message: `${task.label}: thành công`,
+        task: taskResult,
+      });
+    } catch (error) {
+      const taskResult = summarizeSetupTask(task, "failed", { message: error instanceof Error ? error.message : String(error) });
+      results.push(taskResult);
+      sendSetupStatus({
+        kind: "task-update",
+        step: "health-setup",
+        status: "error",
+        message: `${task.label}: thất bại`,
+        task: taskResult,
+      });
+    }
+  }
+
+  const finalStatus = await requestJson("GET", baseUrl, "/api/setup/status").catch(() => status);
+  const failed = results.filter((result) => result.state === "failed");
+  const success = results.filter((result) => result.state === "success");
+  const skipped = (finalStatus.tasks || []).filter((task) => task.id !== "elevenlabs" && !task.ready && !task.canAutoFix);
+
+  sendSetupStatus({
+    kind: "summary",
+    step: "health-setup",
+    status: failed.length ? "error" : "done",
+    message: failed.length
+      ? `Hoàn tất với ${failed.length} lỗi. Bạn vẫn có thể vào Studio và xem Health Check để sửa tiếp.`
+      : "Hoàn tất cài đặt service local. Bạn có thể vào Studio.",
+    summary: {
+      success: success.length,
+      failed: failed.length,
+      skipped: skipped.length,
+    },
+  });
 }
 
 function focusMainWindow() {
@@ -334,10 +481,12 @@ app.whenReady().then(async () => {
 
     sendSetupStatus({ step: "backend", status: "running", message: "Đang khởi động app-server local..." });
     await startBackend(runtime);
+    await runBackendSetupWizard(process.env.SERVER_ORIGIN);
     sendSetupStatus({ step: "client", status: "running", message: "Đang khởi động client local ở port 6868..." });
     await startClientServer();
-    sendSetupStatus({ step: "ready", status: "done", message: "Hoàn tất. Đang mở KAI STUDIO..." });
+    sendSetupStatus({ kind: "ready", step: "ready", status: "done", message: "Sẵn sàng. Bấm Vào Studio để bắt đầu làm việc." });
 
+    await waitForSetupContinue();
     createMainWindow();
     setTimeout(() => {
       if (setup && !setup.isDestroyed()) setup.close();

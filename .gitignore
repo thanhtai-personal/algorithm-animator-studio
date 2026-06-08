@@ -33,6 +33,10 @@ dist-electron/
 runtime/
 
 server/data
-models/
+# Piper models are allowed so desktop installer can bundle offline voices.
+# Runtime venv/download temp files are still ignored.
+models/.venv/
+models/**/*.download
+models/**/*.tmp
 src/assets/audios/bg-audio/
 server/.env.temp

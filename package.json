@@ -182,6 +182,16 @@
         ]
       },
       {
+        "from": "models",
+        "to": "electron-runtime/bundled-models",
+        "filter": [
+          "**/*.onnx",
+          "**/*.onnx.json",
+          "!**/*.download",
+          "!**/.gitkeep"
+        ]
+      },
+      {
         "from": ".env.example",
         "to": "electron-runtime/.env.example"
       }

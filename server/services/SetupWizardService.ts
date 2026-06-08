@@ -121,7 +121,7 @@ export async function getSetupWizardStatus(envOverrides: RuntimeEnvValues = {}):
       {
         id: "piper-models",
         label: "Piper voice models",
-        description: "Tải các model Piper còn thiếu vào MODEL_DIR.",
+        description: "Copy model Piper bundled từ installer vào MODEL_DIR; nếu thiếu bundled mới tải online.",
         ready: piperModelsReady,
         optional: false,
         canAutoFix: true,
@@ -303,7 +303,7 @@ function describeSetupTaskCommand(taskId: SetupTaskId, env: RuntimeEnvValues) {
   }
 
   if (taskId === "piper-models") {
-    return "download missing Piper ONNX + JSON models into MODEL_DIR";
+    return "copy bundled Piper models into MODEL_DIR; download only when bundled files are missing";
   }
 
   if (taskId === "supertonic") {
@@ -362,13 +362,67 @@ async function ensurePiperRuntime(env: RuntimeEnvValues) {
 async function installMissingPiperModels(envOverrides: RuntimeEnvValues) {
   const status = await getPiperRuntimeStatus(envOverrides);
   const output: string[] = [];
+
+  await fsp.mkdir(status.modelDir, { recursive: true });
+
   for (const model of status.models) {
-    if (!model.available) {
-      await installPiperModel(model.key, envOverrides);
-      output.push(`Installed ${model.key}`);
+    if (fs.existsSync(model.modelPath) && fs.existsSync(model.jsonPath)) {
+      output.push(`SKIP ${model.key}: đã có trong MODEL_DIR.`);
+      continue;
+    }
+
+    const copied = await copyBundledPiperModel(model);
+    if (copied) {
+      output.push(`COPIED ${model.key}: ${copied}`);
+      continue;
+    }
+
+    await installPiperModel(model.key, envOverrides);
+    output.push(`DOWNLOADED ${model.key}: không có bundled model, đã tải online.`);
+  }
+
+  const finalStatus = await getPiperRuntimeStatus(envOverrides);
+  if (finalStatus.availableCount < finalStatus.models.length) {
+    const missing = finalStatus.models.filter((model) => !model.available).map((model) => model.key).join(", ");
+    throw new Error(`Piper models chưa đủ (${finalStatus.availableCount}/${finalStatus.models.length}). Thiếu: ${missing}`);
+  }
+
+  return output.length ? output.join("\n") : "Tất cả Piper model đã có sẵn.";
+}
+
+async function copyBundledPiperModel(model: { key: string; modelPath: string; jsonPath: string }) {
+  const modelFileName = path.basename(model.modelPath);
+  const jsonFileName = path.basename(model.jsonPath);
+  const bundledDir = findBundledPiperModelDir(modelFileName, jsonFileName);
+
+  if (!bundledDir) return "";
+
+  await fsp.mkdir(path.dirname(model.modelPath), { recursive: true });
+  await copyFileIfMissing(path.join(bundledDir, modelFileName), model.modelPath);
+  await copyFileIfMissing(path.join(bundledDir, jsonFileName), model.jsonPath);
+  return bundledDir;
+}
+
+function findBundledPiperModelDir(modelFileName: string, jsonFileName: string) {
+  for (const dir of getBundledPiperModelDirs()) {
+    if (fs.existsSync(path.join(dir, modelFileName)) && fs.existsSync(path.join(dir, jsonFileName))) {
+      return dir;
     }
   }
-  return output.length ? output.join("\n") : "Tất cả Piper model đã có sẵn.";
+  return "";
+}
+
+function getBundledPiperModelDirs() {
+  return Array.from(new Set([
+    path.join(PROJECT_ROOT, "bundled-models"),
+    path.join(PROJECT_ROOT, "models"),
+    path.resolve(process.cwd(), "models"),
+  ]));
+}
+
+async function copyFileIfMissing(sourcePath: string, targetPath: string) {
+  if (fs.existsSync(targetPath)) return;
+  await fsp.copyFile(sourcePath, targetPath);
 }
 
 async function installSupertonic(env: RuntimeEnvValues) {
@@ -449,6 +503,7 @@ function buildProcessEnv(env: RuntimeEnvValues) {
     PYTHONUTF8: "1",
     PYTHONIOENCODING: "utf-8",
     ELECTRON_RUN_AS_NODE: "1",
+    KAI_STUDIO_MANAGED_SERVICE: "1",
     BROWSER: process.env.BROWSER || "none",
     NO_BROWSER: process.env.NO_BROWSER || "1",
     APPLIO_NO_BROWSER: process.env.APPLIO_NO_BROWSER || "1",

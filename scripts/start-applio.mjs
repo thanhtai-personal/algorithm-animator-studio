@@ -12,6 +12,7 @@ const env = {
   GRADIO_ANALYTICS_ENABLED: process.env.GRADIO_ANALYTICS_ENABLED || "False",
 };
 const command = String(env.RVC_APPLIO_START_COMMAND || "").trim();
+const managed = String(env.KAI_STUDIO_MANAGED_SERVICE || "").trim() === "1";
 
 if (!command) {
   console.log("[applio] RVC_APPLIO_START_COMMAND is empty; skipping Applio startup.");
@@ -22,12 +23,18 @@ const commandCwd = getCommandCwd(command) || process.cwd();
 console.log(`[applio] starting: ${command}`);
 if (commandCwd !== process.cwd()) console.log(`[applio] cwd: ${commandCwd}`);
 const child = spawn(command, {
-  stdio: "inherit",
+  stdio: managed ? "ignore" : "inherit",
   shell: true,
   env,
   cwd: commandCwd,
   windowsHide: true,
+  detached: managed,
 });
+
+if (managed) {
+  child.unref();
+  setTimeout(() => process.exit(0), 1800);
+}
 
 child.on("error", (error) => {
   console.error("[applio] failed to start:", error.message);

@@ -16,6 +16,7 @@ const startMode = String(runtimeEnv.VIENEU_START_MODE || "bridge").trim().toLowe
 const startCommand = String(runtimeEnv.VIENEU_START_COMMAND || "").trim();
 const healthScript = path.join(projectRoot, "scripts", "vieneu-health.py");
 const env = buildVieneuEnv(runtimeEnv, sourceDir, pythonExe);
+const managed = String(runtimeEnv.KAI_STUDIO_MANAGED_SERVICE || "").trim() === "1";
 
 if (String(runtimeEnv.VIENEU_AUTO_START || "true").toLowerCase() === "false" || startMode === "off") {
   console.log("[vieneu] auto start disabled; skipping VieNeu dev process.");
@@ -74,9 +75,16 @@ function startProcess(command, args, cwd, shell = false) {
   const child = spawn(command, args, {
     cwd,
     env,
-    stdio: "inherit",
+    stdio: managed ? "ignore" : "inherit",
     shell,
+    windowsHide: true,
+    detached: managed,
   });
+
+  if (managed) {
+    child.unref();
+    setTimeout(() => process.exit(0), 1800);
+  }
 
   child.on("error", (error) => {
     console.error("[vieneu] failed to start:", error.message);

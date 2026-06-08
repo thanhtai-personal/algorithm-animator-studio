@@ -4,6 +4,7 @@ import path from "node:path";
 
 const envFile = readDotEnv(path.resolve(process.cwd(), ".env"));
 const env = { ...envFile, ...process.env };
+const managed = String(env.KAI_STUDIO_MANAGED_SERVICE || "").trim() === "1";
 
 const baseUrl = env.SUPERTONIC_BASE_URL || "http://127.0.0.1:6688";
 const url = new URL(baseUrl);
@@ -17,15 +18,23 @@ console.log(`[supertonic] starting ${model} at http://${host}:${port}`);
 
 const child = process.platform === "win32"
   ? spawn("cmd.exe", ["/d", "/s", "/c", buildCommandLine(["supertonic", ...args])], {
-    stdio: "inherit",
+    stdio: managed ? "ignore" : "inherit",
     shell: false,
-    env: process.env,
+    env,
+    windowsHide: true,
+    detached: managed,
   })
   : spawn("supertonic", args, {
-  stdio: "inherit",
-  shell: false,
-  env: process.env,
+    stdio: managed ? "ignore" : "inherit",
+    shell: false,
+    env,
+    detached: managed,
   });
+
+if (managed) {
+  child.unref();
+  setTimeout(() => process.exit(0), 1800);
+}
 
 child.on("error", (error) => {
   console.error("[supertonic] failed to start:", error.message);

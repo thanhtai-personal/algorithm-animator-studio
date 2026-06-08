@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { markRuntimeSetupGateSkipped } from "@/components/RuntimeSetupGate";
+import { markRuntimeSetupGateSkipped, markRuntimeSetupGateVisited } from "@/components/RuntimeSetupGate";
 import { getSetupWizardStatus, runSetupWizardTask, type SetupTaskId, type SetupTaskStatus, type SetupWizardStatus } from "@/lib/setupWizardApi";
 import { readSystemLang, t, text, type Lang } from "@/lib/i18n";
 
@@ -40,6 +40,7 @@ export default function RuntimeSetup() {
     : (location.state as LocationState)?.from?.pathname || "/";
 
   useEffect(() => {
+    markRuntimeSetupGateVisited();
     void refreshStatus();
   }, []);
 
@@ -82,6 +83,7 @@ export default function RuntimeSetup() {
   }
 
   function enterStudio(skipGate = false) {
+    markRuntimeSetupGateVisited();
     if (skipGate) markRuntimeSetupGateSkipped();
     navigate(from || "/", { replace: true });
   }

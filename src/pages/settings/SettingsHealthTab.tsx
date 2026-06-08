@@ -1,5 +1,6 @@
-import { BookOpen, Bot, CheckCircle2, ChevronsLeft, ChevronsRight, Cloud, Mic2, Radio, RefreshCw, Server, Waves } from "lucide-react";
+import { BookOpen, Bot, CheckCircle2, ChevronsLeft, ChevronsRight, Cloud, Mic2, Radio, RefreshCw, Server, Waves, Wrench } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +36,7 @@ const HEALTH_SECTIONS: { id: HealthSectionId; label: string; shortLabel: string;
 ];
 
 export function SettingsHealthTab(props: SettingsHealthTabProps) {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<HealthSectionId>("system");
   const [menuCollapsed, setMenuCollapsed] = useState(false);
   const systemFailed = Boolean(props.health && (!props.health.ok || !props.health.generatedDir));
@@ -100,9 +102,14 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
           <CardTitle>{t(props.lang, "settingsHealthCheckTab")}</CardTitle>
           <CardDescription>{t(props.lang, "settingsHealthDescription")}</CardDescription>
         </div>
-        <Button variant="outline" onClick={props.onRefreshHealth} disabled={props.loading}>
-          <RefreshCw className="mr-2 h-4 w-4" /> {t(props.lang, "settingsCheckAgain")}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => navigate("/setup")}>
+            <Wrench className="mr-2 h-4 w-4" /> {text(props.lang, "Setup Wizard", "Trình cài đặt")}
+          </Button>
+          <Button variant="outline" onClick={props.onRefreshHealth} disabled={props.loading}>
+            <RefreshCw className="mr-2 h-4 w-4" /> {t(props.lang, "settingsCheckAgain")}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 lg:grid-cols-[auto_minmax(0,1fr)]">

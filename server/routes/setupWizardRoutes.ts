@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
-import { getSetupWizardStatus, runSetupWizardTask, type SetupTaskId } from "../services/SetupWizardService";
+import { getSetupWizardStatus, runSetupAutostart, runSetupWizardTask, type SetupTaskId } from "../services/SetupWizardService";
 
 const SETUP_TASKS = new Set<SetupTaskId>([
   "generated-data",
@@ -20,6 +20,14 @@ export function createSetupWizardRouter() {
       res.json(await getSetupWizardStatus(readRuntimeEnvFromRequest(req)));
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : "Không kiểm tra được setup status." });
+    }
+  });
+
+  router.post("/setup/autostart", async (req, res) => {
+    try {
+      res.json(await runSetupAutostart(readRuntimeEnvFromRequest(req)));
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Không tự khởi động được service local." });
     }
   });
 

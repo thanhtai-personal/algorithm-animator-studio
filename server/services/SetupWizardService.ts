@@ -53,6 +53,21 @@ type SetupTaskResult = {
   status: SetupWizardStatus;
 };
 
+type SetupAutostartItem = {
+  id: string;
+  label: string;
+  message: string;
+};
+
+type SetupAutostartResult = {
+  ok: boolean;
+  message: string;
+  started: SetupAutostartItem[];
+  skipped: SetupAutostartItem[];
+  failed: SetupAutostartItem[];
+  status: SetupWizardStatus;
+};
+
 const backgroundProcesses = new Map<string, ReturnType<typeof spawn>>();
 
 export async function getSetupWizardStatus(envOverrides: RuntimeEnvValues = {}): Promise<SetupWizardStatus> {
@@ -167,6 +182,65 @@ export async function getSetupWizardStatus(envOverrides: RuntimeEnvValues = {}):
         detail: env.ELEVENLABS_API_KEY ? "Đã cấu hình API key." : "Chưa cấu hình API key, bỏ qua khi dùng local TTS.",
       },
     ],
+  };
+}
+
+export async function runSetupAutostart(envOverrides: RuntimeEnvValues = {}): Promise<SetupAutostartResult> {
+  const env = readEnvValues(envOverrides);
+  const started: SetupAutostartItem[] = [];
+  const skipped: SetupAutostartItem[] = [];
+  const failed: SetupAutostartItem[] = [];
+
+  const supertonic = await getSupertonicConfigStatus(envOverrides);
+  if (supertonic.serverOk && supertonic.endpointsOk) {
+    skipped.push({ id: "supertonic", label: "Supertonic local TTS", message: "Supertonic đã chạy." });
+  } else if (await commandAvailable("supertonic", ["--help"])) {
+    try {
+      await startManagedScript("supertonic", "scripts/start-supertonic.mjs", env);
+      started.push({ id: "supertonic", label: "Supertonic local TTS", message: `Đã gửi lệnh start Supertonic tại ${supertonic.baseUrl}.` });
+    } catch (error) {
+      failed.push({ id: "supertonic", label: "Supertonic local TTS", message: getErrorMessage(error) });
+    }
+  } else {
+    skipped.push({ id: "supertonic", label: "Supertonic local TTS", message: "Chưa thấy CLI Supertonic, không tự cài khi mở app." });
+  }
+
+  const applio = await getRvcApplioConfigStatus(envOverrides);
+  if (applio.serverOk) {
+    skipped.push({ id: "applio-start", label: "Applio server", message: "Applio đã chạy." });
+  } else if (applio.startCommandConfigured) {
+    try {
+      await startManagedScript("applio", "scripts/start-applio.mjs", env);
+      started.push({ id: "applio-start", label: "Applio server", message: `Đã gửi lệnh start Applio: ${applio.startCommand}` });
+    } catch (error) {
+      failed.push({ id: "applio-start", label: "Applio server", message: getErrorMessage(error) });
+    }
+  } else {
+    skipped.push({ id: "applio-start", label: "Applio server", message: "Chưa cấu hình RVC_APPLIO_START_COMMAND, bỏ qua autostart." });
+  }
+
+  const vieneu = await getVieneuConfigStatus(envOverrides);
+  const vieneuAutoStart = String(env.VIENEU_AUTO_START ?? "true").toLowerCase() !== "false";
+  if (!vieneuAutoStart) {
+    skipped.push({ id: "vieneu", label: "VieNeu-TTS SDK", message: "VIENEU_AUTO_START=false, bỏ qua." });
+  } else if (vieneu.sdkInstalled && vieneu.pythonExists && vieneu.bridgeExists) {
+    try {
+      await startManagedScript("vieneu", "scripts/start-vieneu.mjs", env);
+      started.push({ id: "vieneu", label: "VieNeu-TTS SDK", message: "Đã kiểm tra/start VieNeu bridge process." });
+    } catch (error) {
+      failed.push({ id: "vieneu", label: "VieNeu-TTS SDK", message: getErrorMessage(error) });
+    }
+  } else {
+    skipped.push({ id: "vieneu", label: "VieNeu-TTS SDK", message: "VieNeu chưa đủ SDK/Python/bridge, không tự cài khi mở app." });
+  }
+
+  return {
+    ok: failed.length === 0,
+    message: `Autostart hoàn tất: ${started.length} started, ${skipped.length} skipped, ${failed.length} failed.`,
+    started,
+    skipped,
+    failed,
+    status: await getSetupWizardStatus(envOverrides),
   };
 }
 
@@ -376,6 +450,24 @@ function buildProcessEnv(env: RuntimeEnvValues) {
     PYTHONIOENCODING: "utf-8",
     ELECTRON_RUN_AS_NODE: "1",
   };
+}
+
+async function commandAvailable(command: string, args: string[] = ["--version"]) {
+  const commandLine = [command, ...args].map(quoteCommandPart).join(" ");
+  const result = process.platform === "win32"
+    ? await runCommand("cmd.exe", ["/d", "/s", "/c", commandLine], {}, 30 * 1000).then(() => true).catch(() => false)
+    : await runCommand(command, args, {}, 30 * 1000).then(() => true).catch(() => false);
+  return result;
+}
+
+function quoteCommandPart(value: string) {
+  const text = String(value);
+  if (!/[ \t"&|<>^]/.test(text)) return text;
+  return `"${text.replace(/"/g, '\\"')}"`;
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function outputTail(value: string) {

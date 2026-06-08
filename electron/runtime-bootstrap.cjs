@@ -75,59 +75,31 @@ async function ensureDesktopRuntime({ appDataDir, onStatus }) {
   return runtime;
 }
 
-async function ensurePiper({ onStatus, python, venvDir, binDir, piperExe }) {
-  if (fs.existsSync(piperExe)) {
-    const canRunDirectly = await commandWorks(piperExe, ["--help"]);
-    status(
-      onStatus,
-      "piper",
-      "done",
-      canRunDirectly
-        ? `Piper đã sẵn sàng: ${piperExe}`
-        : `Đã có piper.exe, sẽ dùng trực tiếp: ${piperExe}`
-    );
-    return;
-  }
-
-  if (!fs.existsSync(path.join(binDir, isWindows ? "python.exe" : "python"))) {
-    status(onStatus, "piper", "running", "Đang tạo môi trường ảo Piper...");
-    await runPython(python, ["-m", "venv", venvDir], { timeout: 20 * 60 * 1000 });
-  }
-
-  const venvPython = path.join(binDir, isWindows ? "python.exe" : "python");
-  status(onStatus, "piper", "running", "Đang cập nhật pip...");
-  await runCommand(venvPython, ["-m", "pip", "install", "--upgrade", "pip"], { timeout: 20 * 60 * 1000 });
-
-  status(onStatus, "piper", "running", "Đang cài piper-tts...");
-  await runCommand(venvPython, ["-m", "pip", "install", "piper-tts"], { timeout: 45 * 60 * 1000 });
-
+async function ensurePiper({ onStatus, piperExe }) {
   if (!fs.existsSync(piperExe)) {
-    throw new Error(`Đã cài piper-tts nhưng chưa tìm thấy piper.exe tại ${piperExe}.`);
+    warn(onStatus, "piper", `Chưa có Piper tại ${piperExe}. App không tự cài khi mở; vào Health Check và bấm Tự cài đặt nếu cần.`);
+    return;
   }
 
   const canRunDirectly = await commandWorks(piperExe, ["--help"]);
   status(
     onStatus,
     "piper",
-    "done",
+    canRunDirectly ? "done" : "warning",
     canRunDirectly
       ? `Piper đã sẵn sàng: ${piperExe}`
-      : `Đã có piper.exe, sẽ dùng trực tiếp: ${piperExe}`
+      : `Đã thấy piper.exe nhưng chưa chạy được --help: ${piperExe}`
   );
 }
 
 async function ensureDefaultModelFiles({ onStatus, modelDir }) {
-  const modelFiles = [
-    { file: DEFAULT_MODEL.onnx, url: DEFAULT_MODEL.onnxUrl },
-    { file: DEFAULT_MODEL.json, url: DEFAULT_MODEL.jsonUrl },
-  ];
+  const missing = [DEFAULT_MODEL.onnx, DEFAULT_MODEL.json]
+    .map((file) => path.join(modelDir, file))
+    .filter((filePath) => !fs.existsSync(filePath));
 
-  for (const item of modelFiles) {
-    const target = path.join(modelDir, item.file);
-    if (!fs.existsSync(target)) {
-      status(onStatus, "models", "running", `Đang tải ${item.file}...`);
-      await downloadFile(item.url, target);
-    }
+  if (missing.length) {
+    warn(onStatus, "models", `Thiếu ${missing.length} file model Piper mặc định. App không tự tải khi mở; vào Health Check và bấm Tự cài đặt nếu cần.`);
+    return;
   }
 
   status(onStatus, "models", "done", "Model tiếng Việt đã sẵn sàng.");
@@ -150,28 +122,10 @@ function getVenvBinDir(venvDir) {
   return path.join(venvDir, isWindows ? "Scripts" : "bin");
 }
 
-async function ensurePython(onStatus) {
+async function ensurePython() {
   const existing = await resolvePythonCandidate();
-  if (existing) {
-    status(onStatus, "python", "done", `Đã tìm thấy Python: ${existing.label}`);
-    return existing;
-  }
-
-  if (isWindows) {
-    await installWithWinget(PYTHON_INSTALL_ID, onStatus, "python", "Chưa có Python. Đang thử cài Python 3.12 bằng winget...");
-  } else if (isMac) {
-    await installWithBrew("python@3.12", onStatus, "python", "Chưa có Python. Đang thử cài python@3.12 bằng Homebrew...");
-  } else {
-    throw new Error("Chưa có Python. Hãy cài Python 3 rồi mở lại KAI STUDIO.");
-  }
-
-  const installed = await resolvePythonCandidate();
-  if (installed) {
-    status(onStatus, "python", "done", `Đã nhận Python: ${installed.label}`);
-    return installed;
-  }
-
-  throw new Error("Không tìm thấy Python sau khi chạy trình cài. Hãy mở lại app, hoặc cài Python 3 thủ công rồi mở lại.");
+  if (existing) return existing;
+  throw new Error("Chưa có Python. App không tự cài khi mở; vào Health Check và bấm Tự cài đặt nếu cần.");
 }
 
 async function resolvePythonCandidate() {
@@ -202,21 +156,8 @@ async function ensureFfmpeg({ onStatus, runtimeHome }) {
     return existingPair;
   }
 
-  if (isWindows) {
-    await installWithWinget(FFMPEG_INSTALL_ID, onStatus, "ffmpeg", "Chưa có FFmpeg. Đang thử cài/kiểm tra Gyan.FFmpeg bằng winget...");
-  } else if (isMac) {
-    await installWithBrew("ffmpeg", onStatus, "ffmpeg", "Chưa có FFmpeg. Đang thử cài FFmpeg bằng Homebrew...");
-  } else {
-    throw new Error("Chưa có FFmpeg. Hãy cài FFmpeg rồi mở lại KAI STUDIO.");
-  }
-
-  const installedPair = await resolveFfmpegPair(runtimeHome);
-  if (installedPair) {
-    status(onStatus, "ffmpeg", "done", `FFmpeg đã sẵn sàng: ${installedPair.ffmpegExe}`);
-    return installedPair;
-  }
-
-  throw new Error("Đã chạy trình cài FFmpeg nhưng app chưa tìm thấy ffmpeg/ffprobe. Hãy đóng mở lại app hoặc cài FFmpeg thủ công.");
+  warn(onStatus, "ffmpeg", "Chưa có FFmpeg/FFprobe. App không tự cài khi mở; vào Health Check và bấm Tự cài đặt hoặc cấu hình FFMPEG_EXE/FFPROBE_EXE nếu cần export video/audio nâng cao.");
+  return null;
 }
 
 async function installWithWinget(id, onStatus, step, message) {

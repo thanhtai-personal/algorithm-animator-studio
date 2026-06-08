@@ -439,79 +439,58 @@ async function runBackendSetupWizard(baseUrl) {
     kind: "section",
     step: "health-setup",
     status: "running",
-    message: "Đang kiểm tra các service local trước khi mở Studio...",
+    message: "Đang kiểm tra và tự khởi động các service local đã có sẵn...",
   });
 
+  try {
+    const autostart = await requestJson("POST", baseUrl, "/api/setup/autostart");
+    const started = autostart.started?.length || 0;
+    const skipped = autostart.skipped?.length || 0;
+    const failed = autostart.failed?.length || 0;
+    sendSetupStatus({
+      kind: "section",
+      step: "autostart",
+      status: failed ? "warning" : "done",
+      message: `Autostart: ${started} started · ${skipped} skipped · ${failed} failed.`,
+    });
+  } catch (error) {
+    sendSetupStatus({
+      kind: "section",
+      step: "autostart",
+      status: "warning",
+      message: `Không chạy được autostart service local: ${error instanceof Error ? error.message : String(error)}`,
+    });
+  }
+
   const status = await requestJson("GET", baseUrl, "/api/setup/status");
-  const installableTasks = (status.tasks || []).filter((task) => task.id !== "elevenlabs" && !task.ready && task.canAutoFix);
   const taskCards = (status.tasks || [])
     .filter((task) => task.id !== "elevenlabs")
     .map((task) => summarizeSetupTask(task, task.ready ? "success" : task.canAutoFix ? "pending" : "skipped"));
 
+  const missingAutoFix = taskCards.filter((task) => task.state === "pending").length;
+  const skipped = taskCards.filter((task) => task.state === "skipped").length;
+
   sendSetupStatus({
     kind: "task-list",
     step: "health-setup",
-    status: "running",
-    message: installableTasks.length
-      ? `Cần tự cài ${installableTasks.length} mục còn thiếu.`
-      : "Các service tự động đã sẵn sàng hoặc không cần cài.",
+    status: status.coreReady ? "done" : "warning",
+    message: missingAutoFix
+      ? `Còn ${missingAutoFix} mục chưa sẵn sàng. App không tự cài thêm khi mở; vào Health Check và bấm Tự cài đặt nếu muốn cài.`
+      : "Các service tự động đã sẵn sàng hoặc được bỏ qua theo cấu hình.",
     tasks: taskCards,
   });
-
-  const results = [];
-  for (const task of installableTasks) {
-    sendSetupStatus({
-      kind: "task-update",
-      step: "health-setup",
-      status: "running",
-      message: `Đang chạy: ${task.label}`,
-      task: summarizeSetupTask(task, "running"),
-    });
-
-    try {
-      const result = await requestJson("POST", baseUrl, `/api/setup/tasks/${task.id}/run`);
-      const nextTask = (result.status?.tasks || []).find((candidate) => candidate.id === task.id) || task;
-      const taskResult = summarizeSetupTask(nextTask, "success", {
-        message: result.message || "Hoàn tất.",
-        output: result.output || "",
-      });
-      results.push(taskResult);
-      sendSetupStatus({
-        kind: "task-update",
-        step: "health-setup",
-        status: "done",
-        message: `${task.label}: thành công`,
-        task: taskResult,
-      });
-    } catch (error) {
-      const taskResult = summarizeSetupTask(task, "failed", { message: error instanceof Error ? error.message : String(error) });
-      results.push(taskResult);
-      sendSetupStatus({
-        kind: "task-update",
-        step: "health-setup",
-        status: "error",
-        message: `${task.label}: thất bại`,
-        task: taskResult,
-      });
-    }
-  }
-
-  const finalStatus = await requestJson("GET", baseUrl, "/api/setup/status").catch(() => status);
-  const failed = results.filter((result) => result.state === "failed");
-  const success = results.filter((result) => result.state === "success");
-  const skipped = (finalStatus.tasks || []).filter((task) => task.id !== "elevenlabs" && !task.ready && !task.canAutoFix);
 
   sendSetupStatus({
     kind: "summary",
     step: "health-setup",
-    status: failed.length ? "error" : "done",
-    message: failed.length
-      ? `Hoàn tất với ${failed.length} lỗi. Bạn vẫn có thể vào Studio và xem Health Check để sửa tiếp.`
-      : "Hoàn tất cài đặt service local. Bạn có thể vào Studio.",
+    status: status.coreReady ? "done" : "warning",
+    message: status.coreReady
+      ? "Hoàn tất kiểm tra runtime. Bạn có thể vào Studio."
+      : "Runtime core còn thiếu. Vào Studio sẽ được đưa tới Health Check để bấm Tự cài đặt hoặc xem lỗi chi tiết.",
     summary: {
-      success: success.length,
-      failed: failed.length,
-      skipped: skipped.length,
+      success: taskCards.filter((task) => task.state === "success").length,
+      failed: 0,
+      skipped,
     },
   });
 }

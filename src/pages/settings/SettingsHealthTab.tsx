@@ -55,7 +55,7 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
     !props.rvcApplio.endpointsOk ||
     (!props.rvcApplio.argTemplateConfigured && !props.rvcApplio.ttsTemplateConfigured)
   ));
-  const supertonicFailed = Boolean(props.supertonic && (!props.supertonic.serverOk || !props.supertonic.endpointsOk));
+  const supertonicFailed = Boolean(props.supertonic && !props.supertonic.serverOk);
   const vieneuFailed = Boolean(props.vieneu && (!props.vieneu.sdkInstalled || !props.vieneu.pythonExists || !props.vieneu.bridgeExists));
   const elevenLabsConfigured = Boolean(props.elevenLabs?.hasApiKey);
   const elevenLabsFailed = Boolean(props.elevenLabs && elevenLabsConfigured && !props.elevenLabs.endpointsOk);
@@ -76,7 +76,7 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
       instruction: applioInstruction(props.lang, props.rvcApplio),
     },
     supertonic: {
-      passed: Boolean(props.supertonic?.serverOk && props.supertonic?.endpointsOk),
+      passed: Boolean(props.supertonic?.serverOk),
       failed: supertonicFailed,
       instruction: supertonicInstruction(props.lang, props.supertonic),
     },
@@ -229,7 +229,14 @@ function renderHealthSection(section: HealthSectionId, props: SettingsHealthTabP
   if (section === "supertonic") {
     return (
       <>
-        <StatusTile lang={props.lang} label={uiText("Supertonic")} ok={Boolean(props.supertonic?.serverOk && props.supertonic?.endpointsOk)} value={props.supertonic?.serverOk ? `${props.supertonic.voices.length} ${t(props.lang, "settingsVoiceTab")} · ${props.supertonic.model}` : props.supertonic?.error || t(props.lang, "settingsServerNotRunning")} />
+        <StatusTile
+          lang={props.lang}
+          label={uiText("Supertonic")}
+          ok={Boolean(props.supertonic?.serverOk)}
+          value={props.supertonic?.serverOk
+            ? `${props.supertonic.voices.length} ${t(props.lang, "settingsVoiceTab")} · ${props.supertonic.model}${props.supertonic.endpointsOk ? "" : " · endpoint styles cần kiểm tra"}`
+            : props.supertonic?.error || t(props.lang, "settingsServerNotRunning")}
+        />
         {renderEndpointChecks(props.lang, props.supertonic?.endpointChecks)}
       </>
     );

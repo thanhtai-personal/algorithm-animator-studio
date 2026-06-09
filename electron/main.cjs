@@ -340,6 +340,53 @@ function sendFile(res, filePath) {
   });
 }
 
+function shouldProxyToBackend(pathname) {
+  return pathname === "/api"
+    || pathname.startsWith("/api/")
+    || pathname === "/generated"
+    || pathname.startsWith("/generated/")
+    || pathname === "/generated-previews"
+    || pathname.startsWith("/generated-previews/")
+    || pathname === "/generated-videos"
+    || pathname.startsWith("/generated-videos/")
+    || pathname === "/background-music"
+    || pathname.startsWith("/background-music/");
+}
+
+function proxyToBackend(req, res, requestUrl) {
+  const target = new URL(`${requestUrl.pathname}${requestUrl.search}`, getServerOrigin());
+  const headers = { ...req.headers, host: target.host };
+  delete headers.connection;
+  delete headers["proxy-connection"];
+  delete headers["transfer-encoding"];
+
+  const proxyReq = http.request(target, {
+    method: req.method || "GET",
+    headers,
+  }, (proxyRes) => {
+    const responseHeaders = { ...proxyRes.headers };
+    delete responseHeaders["transfer-encoding"];
+    res.writeHead(proxyRes.statusCode || 502, responseHeaders);
+    proxyRes.pipe(res);
+  });
+
+  proxyReq.on("error", (error) => {
+    if (res.headersSent) {
+      res.destroy(error);
+      return;
+    }
+
+    res.writeHead(502, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+    res.end(JSON.stringify({
+      error: "Desktop backend proxy failed",
+      detail: error.message,
+      target: target.toString(),
+    }));
+  });
+
+  req.pipe(proxyReq);
+}
+
 async function startClientServer() {
   const clientDir = getDesktopClientDir();
   const indexHtml = path.join(clientDir, "index.html");
@@ -354,6 +401,13 @@ async function startClientServer() {
   clientServer = http.createServer((req, res) => {
     const requestUrl = new URL(req.url || "/", `http://127.0.0.1:${clientPort}`);
     let pathname = decodeURIComponent(requestUrl.pathname);
+
+    // API và generated assets luôn thuộc backend local. Khi desktop client chạy ở localhost:3000
+    // mà frontend dùng URL tương đối (/api/...), cần proxy sang backend thật (mặc định 5050).
+    if (shouldProxyToBackend(pathname)) {
+      proxyToBackend(req, res, requestUrl);
+      return;
+    }
 
     // Một số build cũ từng tạo lỗi /assets/assets/*.js. Không redirect, trả 404 rõ ràng để dễ bắt lỗi.
     if (pathname.startsWith("/assets/assets/")) {

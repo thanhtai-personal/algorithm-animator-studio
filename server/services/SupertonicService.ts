@@ -34,25 +34,9 @@ export async function getSupertonicConfigStatus(envOverrides: RuntimeEnvValues =
   const fallbackVoice = DEFAULT_SUPERTONIC_VOICE;
   const endpointChecks: EndpointCheckStatus[] = [];
 
+  let health: HealthPayload;
   try {
-    const health = await fetchJson<HealthPayload>(buildEndpointUrl(baseUrl, endpoints.health), "GET", undefined, endpointChecks, endpoints.health);
-    const voices = await fetchJson<unknown>(buildEndpointUrl(baseUrl, endpoints.styles), "GET", undefined, endpointChecks, endpoints.styles);
-
-    return {
-      enabled: true,
-      serverOk: true,
-      endpointChecks,
-      endpointsOk: endpointChecks.every((check) => check.ok),
-      baseUrl,
-      endpoints,
-      model: health.model || env.SUPERTONIC_MODEL || "supertonic-3",
-      defaultVoice: fallbackVoice,
-      defaultLang: DEFAULT_SUPERTONIC_LANG,
-      defaultTotalSteps: DEFAULT_SUPERTONIC_TOTAL_STEPS,
-      voices: normalizeVoices(voices, fallbackVoice),
-      sampleRate: health.sample_rate,
-      version: health.version,
-    };
+    health = await fetchJson<HealthPayload>(buildEndpointUrl(baseUrl, endpoints.health), "GET", undefined, endpointChecks, endpoints.health);
   } catch (error) {
     return {
       enabled: false,
@@ -69,6 +53,31 @@ export async function getSupertonicConfigStatus(envOverrides: RuntimeEnvValues =
       error: error instanceof Error ? error.message : "Không kết nối được Supertonic server.",
     };
   }
+
+  let voices: unknown = [];
+  let stylesError = "";
+  try {
+    voices = await fetchJson<unknown>(buildEndpointUrl(baseUrl, endpoints.styles), "GET", undefined, endpointChecks, endpoints.styles);
+  } catch (error) {
+    stylesError = error instanceof Error ? error.message : "Không kiểm tra được endpoint styles.";
+  }
+
+  return {
+    enabled: true,
+    serverOk: true,
+    endpointChecks,
+    endpointsOk: endpointChecks.every((check) => check.ok),
+    baseUrl,
+    endpoints,
+    model: health.model || env.SUPERTONIC_MODEL || "supertonic-3",
+    defaultVoice: fallbackVoice,
+    defaultLang: DEFAULT_SUPERTONIC_LANG,
+    defaultTotalSteps: DEFAULT_SUPERTONIC_TOTAL_STEPS,
+    voices: normalizeVoices(voices, fallbackVoice),
+    sampleRate: health.sample_rate,
+    version: health.version,
+    error: stylesError || undefined,
+  };
 }
 
 export async function importSupertonicStyle(body: SupertonicImportStyleBody, envOverrides: RuntimeEnvValues = {}) {

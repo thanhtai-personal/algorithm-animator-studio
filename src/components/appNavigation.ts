@@ -114,7 +114,6 @@ export const APP_NAVIGATION_GROUPS: AppNavigationGroup[] = [
     items: [
       {
         id: "channel",
-        featureId: "channel",
         to: "/channel",
         icon: Youtube,
         label: { en: "Channel Manager", vi: "Quản lý kênh" },

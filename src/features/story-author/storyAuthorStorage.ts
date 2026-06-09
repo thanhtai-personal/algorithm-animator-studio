@@ -5,8 +5,8 @@ const STORAGE_KEY = "kata.story-author.projects.v1";
 export function readStoryProjects() {
   if (typeof window === "undefined") return [];
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "[]") as StoryProject[];
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "[]") as Partial<StoryProject>[];
+    return Array.isArray(parsed) ? parsed.map(normalizeStoryProject) : [];
   } catch {
     return [];
   }
@@ -28,6 +28,7 @@ export function createEmptyStoryProject(): StoryProject {
     characters: "",
     worldNotes: "",
     outline: "",
+    documentLinks: "",
     chapters: [{
       id: crypto.randomUUID(),
       title: "Chương 1",
@@ -37,5 +38,15 @@ export function createEmptyStoryProject(): StoryProject {
     }],
     createdAt: now,
     updatedAt: now,
+  };
+}
+
+function normalizeStoryProject(project: Partial<StoryProject>): StoryProject {
+  return {
+    ...createEmptyStoryProject(),
+    ...project,
+    tags: Array.isArray(project.tags) ? project.tags : [],
+    documentLinks: project.documentLinks || "",
+    chapters: Array.isArray(project.chapters) ? project.chapters : [],
   };
 }

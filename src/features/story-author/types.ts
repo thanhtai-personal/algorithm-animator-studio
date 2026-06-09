@@ -18,6 +18,7 @@ export type StoryProject = {
   characters: string;
   worldNotes: string;
   outline: string;
+  documentLinks: string;
   chapters: StoryChapter[];
   createdAt: string;
   updatedAt: string;

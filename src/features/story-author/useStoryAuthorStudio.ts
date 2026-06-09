@@ -101,7 +101,14 @@ export function useStoryAuthorStudio() {
 function filterProjects(projects: StoryProject[], filters: StoryAuthorFilters) {
   const query = filters.query.trim().toLowerCase();
   return projects.filter((project) => {
-    const haystack = [project.title, project.genre, project.premise, project.outline, ...project.tags].join(" ").toLowerCase();
+    const haystack = [
+      project.title,
+      project.genre,
+      project.premise,
+      project.outline,
+      project.documentLinks,
+      ...project.tags,
+    ].join(" ").toLowerCase();
     if (query && !haystack.includes(query)) return false;
     if (filters.status !== "all" && project.status !== filters.status) return false;
     if (filters.genre !== "all" && project.genre !== filters.genre) return false;

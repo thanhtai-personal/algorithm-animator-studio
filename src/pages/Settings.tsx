@@ -18,9 +18,10 @@ import { parseVoiceRows, serializeVoiceRows, type VoiceRow } from "./settings/Se
 import { SettingsApiKeyTab } from "./settings/SettingsApiKeyTab";
 import { SettingsDataTab } from "./settings/SettingsDataTab";
 import { SettingsHealthTab } from "./settings/SettingsHealthTab";
+import { SettingsModulesTab } from "./settings/SettingsModulesTab";
 import { EMPTY_FORM, type ElevenLabsConfigResponse, type HealthResponse, type PiperModel, type RvcApplioConfigResponse, type RvcApplioTemplateFileResponse, type SelectPathResponse, type SettingsForm, type SettingsFormKey, type SupertonicConfigResponse, type VieneuConfigResponse } from "./settings/SettingsTypes";
 import { SettingsVoiceTab } from "./settings/SettingsVoiceTab";
-import { readSystemLang, subscribeSystemLang, t, type Lang } from "@/lib/i18n";
+import { readSystemLang, subscribeSystemLang, t, text, type Lang } from "@/lib/i18n";
 import { buildApiUrl, parseApiResponse } from "@/lib/runtimeApi";
 import {
   buildRuntimeSettingsHeaders,
@@ -28,9 +29,17 @@ import {
   getRuntimeSettings,
   saveRuntimeSettings,
 } from "@/lib/runtimeSettings";
+import {
+  clearMenuFeatureSettings,
+  DEFAULT_MENU_FEATURE_SETTINGS,
+  getMenuFeatureSettings,
+  saveMenuFeatureSettings,
+  type MenuFeatureSettings,
+} from "@/lib/menuFeatureSettings";
 
 export default function Settings() {
   const [form, setForm] = useState<SettingsForm>(() => ({ ...EMPTY_FORM, ...getRuntimeSettings() }));
+  const [menuFeatures, setMenuFeatures] = useState<MenuFeatureSettings>(() => getMenuFeatureSettings());
   const [applioTemplates, setApplioTemplates] = useState<RvcApplioTemplateFileResponse>({
     filePath: "",
     convertTemplatesJson: "[]",
@@ -109,6 +118,7 @@ export default function Settings() {
 
   async function handleSave() {
     saveRuntimeSettings(form);
+    saveMenuFeatureSettings(menuFeatures);
     const savedTemplates = await parseApiResponse<RvcApplioTemplateFileResponse>(await fetch(buildApiUrl("/api/rvc-applio/templates"), {
       method: "PUT",
       headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
@@ -124,7 +134,9 @@ export default function Settings() {
 
   async function handleReset() {
     clearRuntimeSettings();
+    clearMenuFeatureSettings();
     setForm(EMPTY_FORM);
+    setMenuFeatures({ ...DEFAULT_MENU_FEATURE_SETTINGS });
     setVoiceRows([]);
     toast.success(t(lang, "settingsOverridesCleared"));
     await refreshHealth();
@@ -193,9 +205,10 @@ export default function Settings() {
         </div>
 
         <Tabs defaultValue={getDefaultSettingsTab()} className="space-y-4">
-          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/40 p-1 md:grid-cols-4">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/40 p-1 md:grid-cols-5">
             <TabsTrigger value="voice">{t(lang, "settingsVoiceTab")}</TabsTrigger>
             <TabsTrigger value="data">{t(lang, "settingsDataTab")}</TabsTrigger>
+            <TabsTrigger value="modules">{text(lang, "Screens", "Màn hình")}</TabsTrigger>
             <TabsTrigger value="api-key">{t(lang, "settingsApiKeyTab")}</TabsTrigger>
             <TabsTrigger value="health">{t(lang, "settingsHealthCheckTab")}</TabsTrigger>
           </TabsList>
@@ -219,6 +232,10 @@ export default function Settings() {
 
           <TabsContent value="data" className="mt-0">
             <SettingsDataTab form={form} lang={lang} selecting={selecting} onOpenPath={openPath} onSelectPath={selectPath} onUpdateField={updateField} />
+          </TabsContent>
+
+          <TabsContent value="modules" className="mt-0">
+            <SettingsModulesTab lang={lang} settings={menuFeatures} onChange={setMenuFeatures} />
           </TabsContent>
 
           <TabsContent value="api-key" className="mt-0">
@@ -250,5 +267,5 @@ export default function Settings() {
 function getDefaultSettingsTab() {
   if (typeof window === "undefined") return "voice";
   const tab = new URLSearchParams(window.location.search).get("tab") || "voice";
-  return ["voice", "data", "api-key", "health"].includes(tab) ? tab : "voice";
+  return ["voice", "data", "modules", "api-key", "health"].includes(tab) ? tab : "voice";
 }

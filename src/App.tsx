@@ -22,10 +22,12 @@ const LongContent = lazy(() => import("./pages/LongContent.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const MuNewsStudio = lazy(() => import("./pages/MuNewsStudio.tsx"));
 const Settings = lazy(() => import("./pages/Settings.tsx"));
+const TextToSpeech = lazy(() => import("./pages/TextToSpeech.tsx"));
 const StoryAuthorStudio = lazy(() => import("./pages/StoryAuthorStudio.tsx"));
 const StoryReviewStudio = lazy(() => import("./pages/StoryReviewStudio.tsx"));
 const StoryVideoStudio = lazy(() => import("./pages/StoryVideoStudio.tsx"));
 const YoutubePublishing = lazy(() => import("./pages/YoutubePublishing.tsx"));
+const VideoCreate = lazy(() => import("./pages/VideoCreate.tsx"));
 
 function shouldUseVercelAnalytics() {
   const configured = String(import.meta.env.VITE_VERCEL_ANALYTICS || "").toLowerCase();
@@ -85,6 +87,8 @@ const App = () => (
                 <Route path="/story-review" element={<StoryReviewStudio />} />
                 <Route path="/story-video" element={<StoryVideoStudio />} />
                 <Route path="/assets" element={<GeneratedAssets />} />
+                <Route path="/text-to-speech" element={<TextToSpeech />} />
+                <Route path="/video-create" element={<VideoCreate />} />
                 <Route path="/channel" element={<YoutubePublishing />} />
                 <Route path="/social-publishing" element={<LegacyChannelRedirect />} />
                 <Route path="/youtube-publishing" element={<LegacyChannelRedirect />} />

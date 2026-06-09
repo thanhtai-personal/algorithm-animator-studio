@@ -1,11 +1,13 @@
 import { ChevronLeft, ChevronRight, PanelLeftClose, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { APP_NAVIGATION_GROUPS, APP_TITLE } from "@/components/appNavigation";
+import { APP_NAVIGATION_GROUPS, APP_TITLE, filterNavigationGroupsByFeatures } from "@/components/appNavigation";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { text, type Lang } from "@/lib/i18n";
+import { getMenuFeatureSettings, subscribeMenuFeatureSettings } from "@/lib/menuFeatureSettings";
 import { cn } from "@/lib/utils";
 
 export type SidebarMode = "expanded" | "collapsed" | "hidden";
@@ -22,6 +24,10 @@ export function AppSidebar({ lang, mode, onClose, onCollapse, onExpand }: AppSid
   const location = useLocation();
   const isHidden = mode === "hidden";
   const isCollapsed = mode === "collapsed";
+  const [menuFeatures, setMenuFeatures] = useState(() => getMenuFeatureSettings());
+  const visibleGroups = useMemo(() => filterNavigationGroupsByFeatures(APP_NAVIGATION_GROUPS, menuFeatures), [menuFeatures]);
+
+  useEffect(() => subscribeMenuFeatureSettings(setMenuFeatures), []);
 
   return (
     <>
@@ -57,7 +63,7 @@ export function AppSidebar({ lang, mode, onClose, onCollapse, onExpand }: AppSid
 
           <ScrollArea className="flex-1">
             <nav className="space-y-5 p-3">
-              {APP_NAVIGATION_GROUPS.map((group) => (
+              {visibleGroups.map((group) => (
                 <div key={group.id} className="space-y-1.5">
                   {!isCollapsed ? (
                     <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">

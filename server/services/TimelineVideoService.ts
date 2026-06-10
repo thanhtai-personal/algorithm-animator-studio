@@ -88,6 +88,7 @@ function normalizeTimelineProject(raw: TimelineVideoRenderProject): NormalizedTi
     title: sanitizeText(raw.title, "timeline-video", 96),
     aspectRatio: raw.aspectRatio === "9:16" ? "9:16" : "16:9",
     fps: clampNumber(raw.fps, 24, 60, 30),
+    renderEngine: raw.renderEngine === "remotion" ? "remotion" : "ffmpeg",
     clips: normalizedClips,
   };
 }

@@ -10,13 +10,14 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { readSystemLang, subscribeSystemLang, text, type Lang } from "@/lib/i18n";
 import { renderTimelineVideo } from "../lib/videoEditorApi";
-import type { TimelineRenderResponse, VideoEditorAsset, VideoEditorAspectRatio, VideoEditorClip, VideoEditorFitMode, VideoEditorTransition } from "../lib/videoEditorTypes";
+import type { TimelineRenderResponse, VideoEditorAsset, VideoEditorAspectRatio, VideoEditorClip, VideoEditorFitMode, VideoEditorRenderEngine, VideoEditorTransition } from "../lib/videoEditorTypes";
 
 type Props = {
+  renderEngine: VideoEditorRenderEngine;
   onVideoCreated: () => Promise<void> | void;
 };
 
-export function ProShowVideoEditor({ onVideoCreated }: Props) {
+export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
   const [assets, setAssets] = useState<VideoEditorAsset[]>([]);
   const [clips, setClips] = useState<VideoEditorClip[]>([]);
@@ -118,9 +119,12 @@ export function ProShowVideoEditor({ onVideoCreated }: Props) {
       return;
     }
     setRendering(true);
-    const toastId = toast.loading(text(lang, "Exporting MP4 timeline...", "Đang export timeline MP4..."));
+    const toastId = toast.loading(renderEngine === "remotion"
+      ? text(lang, "Rendering ProShow timeline with Remotion...", "Đang render timeline ProShow bằng Remotion...")
+      : text(lang, "Exporting MP4 timeline...", "Đang export timeline MP4...")
+    );
     try {
-      const result = await renderTimelineVideo({ title, aspectRatio, fps, clips: clips.map(toRenderClip) }, assets);
+      const result = await renderTimelineVideo({ title, aspectRatio, fps, renderEngine, clips: clips.map(toRenderClip) }, assets);
       setLastVideo(result);
       toast.success(text(lang, "Video exported to library.", "Đã export video vào thư viện."), { id: toastId });
       await onVideoCreated();
@@ -136,7 +140,9 @@ export function ProShowVideoEditor({ onVideoCreated }: Props) {
       <CardHeader className="gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <CardTitle className="flex items-center gap-2 text-xl"><Scissors className="h-5 w-5 text-cyan-300" /> {text(lang, "Common video editor", "Trình ghép video chung")}</CardTitle>
-          <CardDescription>{text(lang, "Upload images, audio and videos, arrange a basic timeline, preview, then export MP4 like a lightweight ProShow workflow.", "Upload ảnh, âm thanh, video; sắp xếp timeline cơ bản, preview rồi export MP4 giống workflow ProShow rút gọn.")}</CardDescription>
+          <CardDescription>{renderEngine === "remotion"
+            ? text(lang, "Upload images, audio and videos, arrange the same ProShow-style timeline, then render MP4 with Remotion.", "Upload ảnh, âm thanh, video; sắp xếp cùng timeline kiểu ProShow rồi render MP4 bằng Remotion.")
+            : text(lang, "Upload images, audio and videos, arrange a basic timeline, preview, then export MP4 like a lightweight ProShow workflow.", "Upload ảnh, âm thanh, video; sắp xếp timeline cơ bản, preview rồi export MP4 giống workflow ProShow rút gọn.")}</CardDescription>
         </div>
         <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted/40">
           <Upload className="h-4 w-4" /> {text(lang, "Upload media", "Upload media")}
@@ -155,6 +161,7 @@ export function ProShowVideoEditor({ onVideoCreated }: Props) {
             <Badge variant="secondary"><ImagePlus className="mr-1 h-3.5 w-3.5" /> {timelineStats.image} ảnh</Badge>
             <Badge variant="secondary"><Video className="mr-1 h-3.5 w-3.5" /> {timelineStats.video} video</Badge>
             <Badge variant="secondary"><Music2 className="mr-1 h-3.5 w-3.5" /> {timelineStats.audio} audio</Badge>
+            <Badge variant="outline">{renderEngine === "remotion" ? "Remotion" : "FFmpeg"}</Badge>
             <Badge variant="outline">{totalDuration.toFixed(1)}s</Badge>
           </div>
 
@@ -170,7 +177,7 @@ export function ProShowVideoEditor({ onVideoCreated }: Props) {
 
           <Button onClick={() => void handleRender()} disabled={rendering || !visualClips.length}>
             {rendering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}
-            {text(lang, "Export MP4", "Export MP4")}
+            {renderEngine === "remotion" ? text(lang, "Render MP4 with Remotion", "Render MP4 bằng Remotion") : text(lang, "Export MP4 with FFmpeg", "Export MP4 bằng FFmpeg")}
           </Button>
         </div>
 

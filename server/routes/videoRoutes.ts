@@ -19,6 +19,7 @@ import { resolveGeneratedResource } from "../services/ResourceService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
 import { getRemotionHealth, renderRemotionVideo } from "../services/RemotionRenderService";
 import { renderTimelineVideo } from "../services/TimelineVideoService";
+import { renderRemotionTimelineVideo } from "../services/RemotionTimelineRenderService";
 import { BACKGROUND_LIMITS, generateNarrationAudio, resolveOptionalBackgroundMusic, saveUploadedAudio, sendError, validateBackgroundFile } from "./videoRouteHelpers";
 
 const uploadDirectory = path.join(os.tmpdir(), "piper-react-video-backgrounds");
@@ -66,11 +67,10 @@ export function createVideoRouter() {
           .filter((file) => file.fieldname.startsWith("asset:"))
           .map((file) => [file.fieldname.slice("asset:".length), file])
       );
-      const video = await renderTimelineVideo({
-        project: rawProject,
-        assetFiles,
-        envOverrides: readRuntimeEnvFromRequest(req),
-      });
+      const envOverrides = readRuntimeEnvFromRequest(req);
+      const video = rawProject.renderEngine === "remotion"
+        ? await renderRemotionTimelineVideo({ project: rawProject, assetFiles, envOverrides })
+        : await renderTimelineVideo({ project: rawProject, assetFiles, envOverrides });
       return res.json(video);
     } catch (error) {
       return sendError(res, error);

@@ -2,6 +2,7 @@ export type VideoEditorAssetType = "image" | "audio" | "video";
 export type VideoEditorAspectRatio = "16:9" | "9:16";
 export type VideoEditorFitMode = "cover" | "contain";
 export type VideoEditorTransition = "none" | "fade" | "zoom";
+export type VideoEditorRenderEngine = "ffmpeg" | "remotion";
 
 export type VideoEditorAsset = {
   id: string;
@@ -25,6 +26,7 @@ export type TimelineRenderProject = {
   title: string;
   aspectRatio: VideoEditorAspectRatio;
   fps: number;
+  renderEngine?: VideoEditorRenderEngine;
   clips: Array<{
     id: string;
     assetId: string;
@@ -37,7 +39,7 @@ export type TimelineRenderProject = {
 
 export type TimelineRenderResponse = {
   ok: boolean;
-  engine: "ffmpeg-timeline";
+  engine: "ffmpeg-timeline" | "remotion-timeline";
   fileName: string;
   relativePath: string;
   videoUrl: string;

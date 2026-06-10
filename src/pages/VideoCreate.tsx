@@ -10,7 +10,6 @@ import { readSystemLang, subscribeSystemLang, text, type Lang } from "@/lib/i18n
 import { buildApiUrl, parseApiResponse } from "@/lib/runtimeApi";
 import { buildRuntimeSettingsHeaders } from "@/lib/runtimeSettings";
 import { ProShowVideoEditor } from "@/features/video-editor/components/ProShowVideoEditor";
-import { RemotionVideoGenerator } from "@/features/remotion-video/components/RemotionVideoGenerator";
 
 type GeneratedResource = {
   kind: "video";
@@ -86,28 +85,20 @@ export default function VideoCreate() {
           <div>
             <h2 className="font-semibold">{text(lang, "Render library", "Thư viện render")}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {text(lang, "Choose FFmpeg for ProShow-style media timeline, or Remotion for React template videos.", "Chọn FFmpeg để ghép timeline ảnh/âm thanh/video kiểu ProShow, hoặc Remotion để render video template React.")}
+              {text(lang, "Use one ProShow-style timeline editor, then choose whether MP4 export runs through FFmpeg or Remotion.", "Dùng một editor timeline kiểu ProShow, sau đó chọn export MP4 bằng FFmpeg hoặc Remotion.")}
             </p>
           </div>
           <Select value={renderLibrary} onValueChange={(value) => setRenderLibrary(value as RenderLibrary)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="ffmpeg">FFmpeg — ProShow timeline</SelectItem>
-              <SelectItem value="remotion">Remotion — React template</SelectItem>
+              <SelectItem value="remotion">Remotion — ProShow timeline</SelectItem>
             </SelectContent>
           </Select>
         </CardContent>
       </Card>
 
-      {renderLibrary === "ffmpeg" ? (
-        <ProShowVideoEditor onVideoCreated={refreshVideos} />
-      ) : (
-        <RemotionVideoGenerator
-          heading={text(lang, "Remotion template video", "Video template Remotion")}
-          description={text(lang, "Create a React-template video here. Use the selector above to switch back to the FFmpeg ProShow editor.", "Tạo video template bằng React tại đây. Dùng lựa chọn phía trên để quay lại editor FFmpeg kiểu ProShow.")}
-          onVideoCreated={refreshVideos}
-        />
-      )}
+      <ProShowVideoEditor renderEngine={renderLibrary} onVideoCreated={refreshVideos} />
 
       <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
         <Card>

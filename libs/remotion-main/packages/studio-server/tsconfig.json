@@ -1,0 +1,34 @@
+{
+	"extends": "../tsconfig.settings.json",
+	"compilerOptions": {
+		"composite": true,
+		"rootDir": "./src",
+		"outDir": "dist",
+		"skipLibCheck": true
+	},
+	"include": ["src"],
+	"exclude": ["src/test/snapshots"],
+	"references": [
+		{
+			"path": "../bundler"
+		},
+		{
+			"path": "../core"
+		},
+		{
+			"path": "../media-utils"
+		},
+		{
+			"path": "../zod-types"
+		},
+		{
+			"path": "../studio-shared"
+		},
+		{
+			"path": "../renderer"
+		},
+		{
+			"path": "../player"
+		}
+	]
+}

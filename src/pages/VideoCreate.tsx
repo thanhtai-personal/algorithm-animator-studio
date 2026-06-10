@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { readSystemLang, subscribeSystemLang, text, type Lang } from "@/lib/i18n";
 import { buildApiUrl, parseApiResponse } from "@/lib/runtimeApi";
 import { buildRuntimeSettingsHeaders } from "@/lib/runtimeSettings";
+import { RemotionVideoGenerator } from "@/features/remotion-video/components/RemotionVideoGenerator";
 
 type GeneratedResource = {
   kind: "video";
@@ -74,6 +75,8 @@ export default function VideoCreate() {
           {text(lang, "Upload an existing video into the local studio library so you can continue editing, publishing, or reusing it in other workflows.", "Upload video có sẵn vào thư viện local studio để tiếp tục chỉnh sửa, đăng tải hoặc tái sử dụng trong workflow khác.")}
         </p>
       </header>
+
+      <RemotionVideoGenerator onVideoCreated={refreshVideos} />
 
       <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
         <Card>

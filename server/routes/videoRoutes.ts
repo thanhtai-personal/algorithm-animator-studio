@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { Router, type Request, type Response } from "express";
 import type { GenerateVideoFromAudioBody, GenerateVideoFromTextBody } from "../models/Video";
+import type { RemotionVideoRenderBody } from "../models/RemotionVideo";
 import multer from "multer";
 import { GENERATED_PUBLIC_PATH, SERVER_ORIGIN, buildGeneratedFileUrl } from "../config/paths";
 import {
@@ -15,6 +16,7 @@ import { listGeneratedVideos } from "../utils/videoOutput";
 import { readEnvValues } from "../services/EnvFileService";
 import { resolveGeneratedResource } from "../services/ResourceService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
+import { getRemotionHealth, renderRemotionVideo } from "../services/RemotionRenderService";
 import { BACKGROUND_LIMITS, generateNarrationAudio, resolveOptionalBackgroundMusic, saveUploadedAudio, sendError, validateBackgroundFile } from "./videoRouteHelpers";
 
 const uploadDirectory = path.join(os.tmpdir(), "piper-react-video-backgrounds");
@@ -35,6 +37,22 @@ export function createVideoRouter() {
 
   router.get("/video/generated", (req, res) => {
     res.json({ videos: listGeneratedVideos(readRuntimeEnvFromRequest(req)) });
+  });
+
+  router.get("/video/remotion/health", (req, res) => {
+    res.json(getRemotionHealth(readRuntimeEnvFromRequest(req)));
+  });
+
+  router.post("/video/render-remotion", async (req: Request<unknown, unknown, RemotionVideoRenderBody>, res: Response) => {
+    try {
+      const video = await renderRemotionVideo({
+        input: req.body || {},
+        envOverrides: readRuntimeEnvFromRequest(req),
+      });
+      return res.json(video);
+    } catch (error) {
+      return sendError(res, error);
+    }
   });
 
   router.post(

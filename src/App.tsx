@@ -78,14 +78,21 @@ const App = () => (
                 <Route path="/privacy" element={<LegalPage type="privacy" />} />
                 <Route path="/term" element={<LegalPage type="terms" />} />
                 <Route path="/terms" element={<LegalPage type="terms" />} />
-                <Route path="/" element={<Index />} />
-                <Route path="/maze-pathfinding" element={<AlgorithmWorld />} />
-                <Route path="/algorithm-world" element={<AlgorithmWorld />} />
-                <Route path="/long-content" element={<LongContent />} />
-                <Route path="/mu-news" element={<MuNewsStudio />} />
-                <Route path="/story-author" element={<StoryAuthorStudio />} />
-                <Route path="/story-review" element={<StoryReviewStudio />} />
-                <Route path="/story-video" element={<StoryVideoStudio />} />
+                <Route path="/" element={<Navigate replace to="/algorithms/short" />} />
+                <Route path="/algorithms/short" element={<Index />} />
+                <Route path="/algorithms/maze" element={<AlgorithmWorld />} />
+                <Route path="/algorithms/video-long" element={<LongContent />} />
+                <Route path="/stories/video" element={<StoryVideoStudio />} />
+                <Route path="/stories/create" element={<StoryAuthorStudio />} />
+                <Route path="/stories/review" element={<StoryReviewStudio />} />
+                <Route path="/football/mu-news" element={<MuNewsStudio />} />
+                <Route path="/maze-pathfinding" element={<Navigate replace to="/algorithms/maze" />} />
+                <Route path="/algorithm-world" element={<Navigate replace to="/algorithms/maze" />} />
+                <Route path="/long-content" element={<Navigate replace to="/algorithms/video-long" />} />
+                <Route path="/mu-news" element={<Navigate replace to="/football/mu-news" />} />
+                <Route path="/story-author" element={<Navigate replace to="/stories/create" />} />
+                <Route path="/story-review" element={<Navigate replace to="/stories/review" />} />
+                <Route path="/story-video" element={<Navigate replace to="/stories/video" />} />
                 <Route path="/assets" element={<GeneratedAssets />} />
                 <Route path="/text-to-speech" element={<TextToSpeech />} />
                 <Route path="/video-create" element={<VideoCreate />} />

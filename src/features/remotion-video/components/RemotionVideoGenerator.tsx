@@ -24,18 +24,31 @@ import {
 
 type Props = {
   onVideoCreated: () => Promise<void> | void;
+  preset?: Partial<RemotionVideoInputProps>;
+  fixedTemplate?: RemotionVideoTemplate;
+  heading?: string;
+  description?: string;
 };
 
-export function RemotionVideoGenerator({ onVideoCreated }: Props) {
+export function RemotionVideoGenerator({ onVideoCreated, preset, fixedTemplate, heading, description }: Props) {
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
-  const [form, setForm] = useState<RemotionVideoInputProps>(() => DEFAULT_REMOTION_VIDEO);
-  const [dataText, setDataText] = useState(() => DEFAULT_REMOTION_VIDEO.data.join(", "));
+  const presetKey = JSON.stringify(preset || {});
+  const initialForm = useMemo(() => {
+    const parsedPreset = JSON.parse(presetKey) as Partial<RemotionVideoInputProps>;
+    return normalizeRemotionVideoInput({ ...DEFAULT_REMOTION_VIDEO, ...parsedPreset, template: fixedTemplate || parsedPreset.template || DEFAULT_REMOTION_VIDEO.template });
+  }, [presetKey, fixedTemplate]);
+  const [form, setForm] = useState<RemotionVideoInputProps>(() => initialForm);
+  const [dataText, setDataText] = useState(() => initialForm.data.join(", "));
   const [health, setHealth] = useState<RemotionHealthResponse | null>(null);
   const [rendering, setRendering] = useState(false);
   const [checking, setChecking] = useState(false);
   const [lastVideoUrl, setLastVideoUrl] = useState("");
 
   useEffect(() => subscribeSystemLang(setLang), []);
+  useEffect(() => {
+    setForm(initialForm);
+    setDataText(initialForm.data.join(", "));
+  }, [initialForm]);
   useEffect(() => {
     void refreshHealth();
   }, []);
@@ -76,9 +89,9 @@ export function RemotionVideoGenerator({ onVideoCreated }: Props) {
     <Card className="border-sky-500/20 bg-sky-500/[0.03]">
       <CardHeader className="gap-3 md:flex-row md:items-start md:justify-between">
         <div className="space-y-1.5">
-          <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-sky-300" /> {text(lang, "Remotion video generator", "Trình tạo video Remotion")}</CardTitle>
+          <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-sky-300" /> {heading || text(lang, "Remotion video generator", "Trình tạo video Remotion")}</CardTitle>
           <CardDescription>
-            {text(lang, "Create template videos with React scenes, subtitles, and stable server-side MP4 rendering.", "Tạo video template bằng React scene, phụ đề, và render MP4 ổn định ở backend.")}
+            {description || text(lang, "Create template videos with React scenes, subtitles, and stable server-side MP4 rendering.", "Tạo video template bằng React scene, phụ đề, và render MP4 ổn định ở backend.")}
           </CardDescription>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -98,7 +111,7 @@ export function RemotionVideoGenerator({ onVideoCreated }: Props) {
           </div>
 
           <div className="grid gap-3 md:grid-cols-4">
-            <SelectField label="Template" value={form.template} items={["algorithm-explainer", "news-card", "story-card"]} onChange={(template) => setForm((current) => ({ ...current, template: template as RemotionVideoTemplate }))} />
+            {fixedTemplate ? <div className="space-y-2"><Label>Template</Label><div className="rounded-md border bg-muted/30 px-3 py-2 text-sm font-medium">{fixedTemplate}</div></div> : <SelectField label="Template" value={form.template} items={["algorithm-explainer", "news-card", "story-card"]} onChange={(template) => setForm((current) => ({ ...current, template: template as RemotionVideoTemplate }))} />}
             <SelectField label="Aspect" value={form.aspectRatio} items={["16:9", "9:16"]} onChange={(aspectRatio) => setForm((current) => ({ ...current, aspectRatio: aspectRatio as RemotionVideoAspectRatio }))} />
             <TextField label="Seconds" type="number" value={String(form.durationSeconds)} onChange={(value) => setForm((current) => ({ ...current, durationSeconds: Number(value) }))} />
             <SelectField label="FPS" value={String(form.fps)} items={["24", "30", "60"]} onChange={(fps) => setForm((current) => ({ ...current, fps: Number(fps) }))} />

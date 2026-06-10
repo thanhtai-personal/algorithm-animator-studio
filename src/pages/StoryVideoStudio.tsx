@@ -10,6 +10,7 @@ import { StoryVoicePanel } from "@/features/story-video/components/StoryVoicePan
 import { useStoryVideoStudio } from "@/features/story-video/useStoryVideoStudio";
 import { AuthProfile, getCurrentProfile, isSuperAdminProfile } from "@/lib/auth";
 import { uiText } from "@/lib/i18n";
+import { RemotionVideoGenerator } from "@/features/remotion-video/components/RemotionVideoGenerator";
 
 export default function StoryVideoStudio() {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ export default function StoryVideoStudio() {
 
   function requireVideoGenerationAccess() {
     if (canGenerateVideo) return true;
-    navigate("/auth", { replace: false, state: { from: "/story-video" } });
+    navigate("/auth", { replace: false, state: { from: "/stories/video" } });
     return false;
   }
 
@@ -50,6 +51,21 @@ export default function StoryVideoStudio() {
           <StoryExtractPanel studio={studio} />
           <StoryVoicePanel studio={studio} />
           <StoryVideoPanel studio={studio} />
+          <RemotionVideoGenerator
+            fixedTemplate="story-card"
+            heading="Remotion video truyện"
+            description="Render template kể chuyện đúng màn Video truyện: title card, narration/subtitle và MP4 backend."
+            preset={{
+              template: "story-card",
+              title: studio.topic.defaultTitle || studio.topic.title || "Story narration video",
+              subtitle: "Story card rendered with Remotion",
+              algorithmLabel: "Story timeline",
+              narration: studio.text || "Dán hoặc trích xuất nội dung truyện, tạo voice rồi render story card.",
+              aspectRatio: "9:16",
+              durationSeconds: 30,
+            }}
+            onVideoCreated={() => undefined}
+          />
         </section>
       </main>
     </div>

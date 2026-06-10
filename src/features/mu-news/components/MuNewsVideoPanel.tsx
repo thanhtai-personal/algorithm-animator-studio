@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import type { VideoAspectRatio, VideoBackgroundType, VideoFitMode } from "@/features/story-video/types";
 import type { useMuNewsStudio } from "../useMuNewsStudio";
 import { uiText } from "@/lib/i18n";
+import { RemotionVideoGenerator } from "@/features/remotion-video/components/RemotionVideoGenerator";
 
 type MuNewsStudio = ReturnType<typeof useMuNewsStudio>;
 
@@ -107,6 +108,23 @@ export function MuNewsVideoPanel({ studio }: { studio: MuNewsStudio }) {
             <video src={studio.videoResult.video.videoUrl} controls className="w-full rounded-lg bg-slate-950" />
           </div>
         ) : null}
+        <RemotionVideoGenerator
+          fixedTemplate="news-card"
+          heading="Remotion tin tức MU"
+          description="Render template tin tức đúng màn Tin tức MU: headline, ticker/subtitle, watermark và MP4 backend."
+          preset={{
+            template: "news-card",
+            title: studio.selectedItems[0]?.title || "Manchester United news update",
+            subtitle: "Fan Việt update · KAI STUDIO",
+            algorithmLabel: "MU NEWS",
+            narration: studio.script || "Tạo kịch bản bản tin, voice nhiều đoạn rồi render news card bằng Remotion.",
+            aspectRatio: "16:9",
+            primaryColor: "#130202",
+            accentColor: "#ef4444",
+            durationSeconds: 24,
+          }}
+          onVideoCreated={() => undefined}
+        />
       </CardContent>
     </Card>
   );

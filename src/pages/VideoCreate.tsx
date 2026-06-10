@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { readSystemLang, subscribeSystemLang, text, type Lang } from "@/lib/i18n";
 import { buildApiUrl, parseApiResponse } from "@/lib/runtimeApi";
 import { buildRuntimeSettingsHeaders } from "@/lib/runtimeSettings";
-import { RemotionVideoGenerator } from "@/features/remotion-video/components/RemotionVideoGenerator";
+import { ProShowVideoEditor } from "@/features/video-editor/components/ProShowVideoEditor";
 
 type GeneratedResource = {
   kind: "video";
@@ -72,11 +72,11 @@ export default function VideoCreate() {
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">{text(lang, "Video Create", "Tạo/chỉnh video")}</h1>
         <p className="text-sm text-muted-foreground">
-          {text(lang, "Upload an existing video into the local studio library so you can continue editing, publishing, or reusing it in other workflows.", "Upload video có sẵn vào thư viện local studio để tiếp tục chỉnh sửa, đăng tải hoặc tái sử dụng trong workflow khác.")}
+          {text(lang, "Upload media, build a lightweight ProShow-style timeline, export MP4, or save existing videos into the local studio library.", "Upload ảnh/âm thanh/video, dựng timeline kiểu ProShow cơ bản, export MP4 hoặc lưu video có sẵn vào thư viện local studio.")}
         </p>
       </header>
 
-      <RemotionVideoGenerator onVideoCreated={refreshVideos} />
+      <ProShowVideoEditor onVideoCreated={refreshVideos} />
 
       <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
         <Card>

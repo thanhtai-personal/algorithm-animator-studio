@@ -19,6 +19,7 @@ import { LongContentTabs } from "./long-content/LongContentTabs";
 import { MusicPanel } from "./long-content/MusicPanel";
 import { LongContentStudio, useLongContentStudio } from "./long-content/useLongContentStudio";
 import { uiText } from "@/lib/i18n";
+import { RemotionVideoGenerator } from "@/features/remotion-video/components/RemotionVideoGenerator";
 
 export default function LongContent() {
   const navigate = useNavigate();
@@ -42,7 +43,7 @@ export default function LongContent() {
 
   function requestExport() {
     if (!canExport) {
-      navigate("/auth", { replace: false, state: { from: "/long-content" } });
+      navigate("/auth", { replace: false, state: { from: "/algorithms/video-long" } });
       return;
     }
     void studio.exportVideo();
@@ -56,6 +57,21 @@ export default function LongContent() {
           <PreviewPanel studio={studio} />
           <BackgroundImagePanel studio={studio} />
           <MusicPanel studio={studio} />
+          <RemotionVideoGenerator
+            fixedTemplate="algorithm-explainer"
+            heading="Remotion thuật toán dài"
+            description="Render template thuật toán đúng màn Video thuật toán dài: intro, bars, narration/subtitle và MP4 backend."
+            preset={{
+              template: "algorithm-explainer",
+              title: `${studio.algo.name} Explained Visually`,
+              subtitle: "Long-form algorithm explainer rendered with Remotion",
+              algorithmLabel: studio.algo.name,
+              data: [18, 42, 27, 64, 33, 75, 52, 91, 46, 68],
+              aspectRatio: "16:9",
+              durationSeconds: Math.max(12, studio.introSeconds + studio.animationSeconds),
+            }}
+            onVideoCreated={() => undefined}
+          />
         </div>
         <LongContentTabs studio={studio} />
       </main>

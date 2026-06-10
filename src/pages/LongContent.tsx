@@ -21,11 +21,14 @@ import { LongContentStudio, useLongContentStudio } from "./long-content/useLongC
 import { uiText } from "@/lib/i18n";
 import { RemotionVideoGenerator } from "@/features/remotion-video/components/RemotionVideoGenerator";
 
+type RenderLibrary = "ffmpeg" | "remotion";
+
 export default function LongContent() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<AuthProfile | null>(null);
   const studio = useLongContentStudio();
   const canExport = isSuperAdminProfile(profile);
+  const [renderLibrary, setRenderLibrary] = useState<RenderLibrary>("ffmpeg");
 
   useEffect(() => {
     let cancelled = false;
@@ -54,28 +57,54 @@ export default function LongContent() {
       <main className="grid grid-cols-1 gap-4 p-4 xl:grid-cols-[340px_minmax(0,1fr)_380px]">
         <LeftControls studio={studio} onExport={requestExport} />
         <div className="space-y-4">
-          <PreviewPanel studio={studio} />
-          <BackgroundImagePanel studio={studio} />
-          <MusicPanel studio={studio} />
-          <RemotionVideoGenerator
-            fixedTemplate="algorithm-explainer"
-            heading="Remotion thuật toán dài"
-            description="Render template thuật toán đúng màn Video thuật toán dài: intro, bars, narration/subtitle và MP4 backend."
-            preset={{
-              template: "algorithm-explainer",
-              title: `${studio.algo.name} Explained Visually`,
-              subtitle: "Long-form algorithm explainer rendered with Remotion",
-              algorithmLabel: studio.algo.name,
-              data: [18, 42, 27, 64, 33, 75, 52, 91, 46, 68],
-              aspectRatio: "16:9",
-              durationSeconds: Math.max(12, studio.introSeconds + studio.animationSeconds),
-            }}
-            onVideoCreated={() => undefined}
-          />
+          <RenderLibrarySelect value={renderLibrary} onChange={setRenderLibrary} />
+          {renderLibrary === "ffmpeg" ? (
+            <>
+              <PreviewPanel studio={studio} />
+              <BackgroundImagePanel studio={studio} />
+              <MusicPanel studio={studio} />
+            </>
+          ) : (
+            <RemotionVideoGenerator
+              fixedTemplate="algorithm-explainer"
+              heading="Remotion thuật toán dài"
+              description="Render template thuật toán đúng màn Video thuật toán dài: intro, bars, narration/subtitle và MP4 backend."
+              preset={{
+                template: "algorithm-explainer",
+                title: `${studio.algo.name} Explained Visually`,
+                subtitle: "Long-form algorithm explainer rendered with Remotion",
+                algorithmLabel: studio.algo.name,
+                data: [18, 42, 27, 64, 33, 75, 52, 91, 46, 68],
+                aspectRatio: "16:9",
+                durationSeconds: Math.max(12, studio.introSeconds + studio.animationSeconds),
+              }}
+              onVideoCreated={() => undefined}
+            />
+          )}
         </div>
         <LongContentTabs studio={studio} />
       </main>
     </div>
+  );
+}
+
+function RenderLibrarySelect({ value, onChange }: { value: RenderLibrary; onChange: (value: RenderLibrary) => void }) {
+  return (
+    <Card className="border-border/70 p-4">
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_240px] md:items-center">
+        <div>
+          <h2 className="font-semibold">{uiText("Thư viện render")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{uiText("Chọn FFmpeg/Canvas cho workflow cũ hoặc Remotion cho video template React.")}</p>
+        </div>
+        <Select value={value} onValueChange={(next) => onChange(next as RenderLibrary)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ffmpeg">FFmpeg / Canvas</SelectItem>
+            <SelectItem value="remotion">Remotion</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </Card>
   );
 }
 

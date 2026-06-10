@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StoryExtractPanel } from "@/features/story-video/components/StoryExtractPanel";
 import { StoryTopicPanel } from "@/features/story-video/components/StoryTopicPanel";
 import { StoryVideoPanel } from "@/features/story-video/components/StoryVideoPanel";
@@ -12,9 +13,12 @@ import { AuthProfile, getCurrentProfile, isSuperAdminProfile } from "@/lib/auth"
 import { uiText } from "@/lib/i18n";
 import { RemotionVideoGenerator } from "@/features/remotion-video/components/RemotionVideoGenerator";
 
+type RenderLibrary = "ffmpeg" | "remotion";
+
 export default function StoryVideoStudio() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<AuthProfile | null>(null);
+  const [renderLibrary, setRenderLibrary] = useState<RenderLibrary>("ffmpeg");
   const canGenerateVideo = isSuperAdminProfile(profile);
 
   useEffect(() => {
@@ -50,25 +54,49 @@ export default function StoryVideoStudio() {
         <section className="space-y-4">
           <StoryExtractPanel studio={studio} />
           <StoryVoicePanel studio={studio} />
-          <StoryVideoPanel studio={studio} />
-          <RemotionVideoGenerator
-            fixedTemplate="story-card"
-            heading="Remotion video truyện"
-            description="Render template kể chuyện đúng màn Video truyện: title card, narration/subtitle và MP4 backend."
-            preset={{
-              template: "story-card",
-              title: studio.topic.defaultTitle || studio.topic.title || "Story narration video",
-              subtitle: "Story card rendered with Remotion",
-              algorithmLabel: "Story timeline",
-              narration: studio.text || "Dán hoặc trích xuất nội dung truyện, tạo voice rồi render story card.",
-              aspectRatio: "9:16",
-              durationSeconds: 30,
-            }}
-            onVideoCreated={() => undefined}
-          />
+          <RenderLibrarySelect value={renderLibrary} onChange={setRenderLibrary} />
+          {renderLibrary === "ffmpeg" ? (
+            <StoryVideoPanel studio={studio} />
+          ) : (
+            <RemotionVideoGenerator
+              fixedTemplate="story-card"
+              heading="Remotion video truyện"
+              description="Render template kể chuyện đúng màn Video truyện: title card, narration/subtitle và MP4 backend."
+              preset={{
+                template: "story-card",
+                title: studio.topic.defaultTitle || studio.topic.title || "Story narration video",
+                subtitle: "Story card rendered with Remotion",
+                algorithmLabel: "Story timeline",
+                narration: studio.text || "Dán hoặc trích xuất nội dung truyện, tạo voice rồi render story card.",
+                aspectRatio: "9:16",
+                durationSeconds: 30,
+              }}
+              onVideoCreated={() => undefined}
+            />
+          )}
         </section>
       </main>
     </div>
+  );
+}
+
+function RenderLibrarySelect({ value, onChange }: { value: RenderLibrary; onChange: (value: RenderLibrary) => void }) {
+  return (
+    <Card className="border-border/70 p-4">
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_240px] md:items-center">
+        <div>
+          <h2 className="font-semibold">{uiText("Thư viện render")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{uiText("Chọn FFmpeg để ghép voice/nền hoặc Remotion để render template truyện.")}</p>
+        </div>
+        <Select value={value} onValueChange={(next) => onChange(next as RenderLibrary)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ffmpeg">FFmpeg</SelectItem>
+            <SelectItem value="remotion">Remotion</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </Card>
   );
 }
 

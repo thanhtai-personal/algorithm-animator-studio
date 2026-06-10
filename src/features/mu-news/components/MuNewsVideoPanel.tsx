@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Film, Loader2, Music2, Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,11 @@ import { RemotionVideoGenerator } from "@/features/remotion-video/components/Rem
 
 type MuNewsStudio = ReturnType<typeof useMuNewsStudio>;
 
+type RenderLibrary = "ffmpeg" | "remotion";
+
 export function MuNewsVideoPanel({ studio }: { studio: MuNewsStudio }) {
+  const [renderLibrary, setRenderLibrary] = useState<RenderLibrary>("ffmpeg");
+
   return (
     <Card className="min-w-0 overflow-hidden border-border/70 shadow-[0_16px_40px_rgba(15,23,42,0.22)]">
       <CardHeader className="p-4 sm:p-6">
@@ -29,13 +34,31 @@ export function MuNewsVideoPanel({ studio }: { studio: MuNewsStudio }) {
               Ghép voice đã chọn với nhiều ảnh nền, nhạc nền và xuất video theo tỉ lệ mong muốn.
             </p>
           </div>
-          <Button className="w-full sm:w-auto" onClick={studio.createVideo} disabled={!studio.canGenerateVideo}>
-            {studio.loading.video ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}
-            Render video
-          </Button>
+          {renderLibrary === "ffmpeg" ? (
+            <Button className="w-full sm:w-auto" onClick={studio.createVideo} disabled={!studio.canGenerateVideo}>
+              {studio.loading.video ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}
+              Render video
+            </Button>
+          ) : null}
         </div>
       </CardHeader>
       <CardContent className="grid min-w-0 gap-4 p-4 pt-0 sm:p-6 sm:pt-0">
+        <div className="grid min-w-0 gap-3 rounded-xl border border-border bg-muted/20 p-3 md:grid-cols-[minmax(0,1fr)_240px] md:items-center">
+          <div>
+            <h3 className="font-semibold">{uiText("Thư viện render")}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{uiText("Chọn FFmpeg để ghép voice/nhiều ảnh hoặc Remotion để render template bản tin.")}</p>
+          </div>
+          <Select value={renderLibrary} onValueChange={(value) => setRenderLibrary(value as RenderLibrary)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ffmpeg">FFmpeg</SelectItem>
+              <SelectItem value="remotion">Remotion</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {renderLibrary === "ffmpeg" ? (
+          <>
         <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_150px_150px_150px]">
           <div className="grid min-w-0 gap-2">
             <Label>{uiText("Tên file video")}</Label>
@@ -108,23 +131,26 @@ export function MuNewsVideoPanel({ studio }: { studio: MuNewsStudio }) {
             <video src={studio.videoResult.video.videoUrl} controls className="w-full rounded-lg bg-slate-950" />
           </div>
         ) : null}
-        <RemotionVideoGenerator
-          fixedTemplate="news-card"
-          heading="Remotion tin tức MU"
-          description="Render template tin tức đúng màn Tin tức MU: headline, ticker/subtitle, watermark và MP4 backend."
-          preset={{
-            template: "news-card",
-            title: studio.selectedItems[0]?.title || "Manchester United news update",
-            subtitle: "Fan Việt update · KAI STUDIO",
-            algorithmLabel: "MU NEWS",
-            narration: studio.script || "Tạo kịch bản bản tin, voice nhiều đoạn rồi render news card bằng Remotion.",
-            aspectRatio: "16:9",
-            primaryColor: "#130202",
-            accentColor: "#ef4444",
-            durationSeconds: 24,
-          }}
-          onVideoCreated={() => undefined}
-        />
+          </>
+        ) : (
+          <RemotionVideoGenerator
+            fixedTemplate="news-card"
+            heading="Remotion tin tức MU"
+            description="Render template tin tức đúng màn Tin tức MU: headline, ticker/subtitle, watermark và MP4 backend."
+            preset={{
+              template: "news-card",
+              title: studio.selectedItems[0]?.title || "Manchester United news update",
+              subtitle: "Fan Việt update · KAI STUDIO",
+              algorithmLabel: "MU NEWS",
+              narration: studio.script || "Tạo kịch bản bản tin, voice nhiều đoạn rồi render news card bằng Remotion.",
+              aspectRatio: "16:9",
+              primaryColor: "#130202",
+              accentColor: "#ef4444",
+              durationSeconds: 24,
+            }}
+            onVideoCreated={() => undefined}
+          />
+        )}
       </CardContent>
     </Card>
   );

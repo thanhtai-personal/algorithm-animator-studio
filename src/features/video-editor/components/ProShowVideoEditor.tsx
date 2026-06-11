@@ -174,24 +174,22 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
         </label>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-4 lg:grid-cols-[minmax(260px,0.85fr)_minmax(360px,1.15fr)]">
-          <div className="space-y-3">
-            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_120px_110px]">
-              <Field label={text(lang, "Output name", "Tên video")}><Input value={title} onChange={(event) => setTitle(event.target.value)} /></Field>
-              <Field label={text(lang, "Aspect", "Tỉ lệ")}><Select value={aspectRatio} onValueChange={(value) => setAspectRatio(value as VideoEditorAspectRatio)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="16:9">16:9</SelectItem><SelectItem value="9:16">9:16</SelectItem></SelectContent></Select></Field>
-              <Field label="FPS"><Select value={String(fps)} onValueChange={(value) => setFps(Number(value))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="24">24</SelectItem><SelectItem value="30">30</SelectItem><SelectItem value="60">60</SelectItem></SelectContent></Select></Field>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary"><ImagePlus className="mr-1 h-3.5 w-3.5" /> {timelineStats.image} ảnh</Badge>
-              <Badge variant="secondary"><Video className="mr-1 h-3.5 w-3.5" /> {timelineStats.video} video</Badge>
-              <Badge variant="secondary"><Music2 className="mr-1 h-3.5 w-3.5" /> {timelineStats.audio} audio</Badge>
-              <Badge variant="outline">{renderEngine === "remotion" ? "Remotion" : "FFmpeg"}</Badge>
-              <Badge variant="outline">{totalDuration.toFixed(1)}s</Badge>
-            </div>
-            <Button onClick={() => void handleRender()} disabled={rendering || !visualClips.length}>
+        <div className="space-y-4">
+          <div className="grid gap-3 xl:grid-cols-[minmax(260px,1fr)_120px_110px_auto] xl:items-end">
+            <Field label={text(lang, "Output name", "Tên video")}><Input value={title} onChange={(event) => setTitle(event.target.value)} /></Field>
+            <Field label={text(lang, "Aspect", "Tỉ lệ")}><Select value={aspectRatio} onValueChange={(value) => setAspectRatio(value as VideoEditorAspectRatio)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="16:9">16:9</SelectItem><SelectItem value="9:16">9:16</SelectItem></SelectContent></Select></Field>
+            <Field label="FPS"><Select value={String(fps)} onValueChange={(value) => setFps(Number(value))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="24">24</SelectItem><SelectItem value="30">30</SelectItem><SelectItem value="60">60</SelectItem></SelectContent></Select></Field>
+            <Button className="xl:min-w-64" onClick={() => void handleRender()} disabled={rendering || !visualClips.length}>
               {rendering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}
               {renderEngine === "remotion" ? text(lang, "Render MP4 with Remotion", "Render MP4 bằng Remotion") : text(lang, "Export MP4 with FFmpeg", "Export MP4 bằng FFmpeg")}
             </Button>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Badge variant="secondary"><ImagePlus className="mr-1 h-3.5 w-3.5" /> {timelineStats.image} ảnh</Badge>
+            <Badge variant="secondary"><Video className="mr-1 h-3.5 w-3.5" /> {timelineStats.video} video</Badge>
+            <Badge variant="secondary"><Music2 className="mr-1 h-3.5 w-3.5" /> {timelineStats.audio} audio</Badge>
+            <Badge variant="outline">{renderEngine === "remotion" ? "Remotion" : "FFmpeg"}</Badge>
+            <Badge variant="outline">{totalDuration.toFixed(1)}s</Badge>
           </div>
           <PreviewPanel asset={currentAsset} clip={preview?.clip} aspectRatio={aspectRatio} progress={progress} elapsed={elapsed} totalDuration={totalDuration} playing={playing} onReset={() => setElapsed(0)} onPlay={() => setPlaying((value) => !value)} />
         </div>
@@ -221,8 +219,8 @@ function Field(props: { label: string; children: ReactNode }) {
 
 function PreviewPanel(props: { asset?: VideoEditorAsset; clip?: VideoEditorClip; aspectRatio: VideoEditorAspectRatio; progress: number; elapsed: number; totalDuration: number; playing: boolean; onReset: () => void; onPlay: () => void }) {
   return (
-    <div className="space-y-3">
-      <div className="overflow-hidden rounded-lg border bg-black" style={{ aspectRatio: props.aspectRatio === "9:16" ? "9 / 16" : "16 / 9" }}>
+    <div className="mx-auto w-full max-w-6xl space-y-3">
+      <div className="overflow-hidden rounded-lg border bg-black shadow-2xl shadow-black/30" style={{ aspectRatio: props.aspectRatio === "9:16" ? "9 / 16" : "16 / 9" }}>
         {props.asset ? <PreviewAsset asset={props.asset} clip={props.clip} /> : <div className="grid h-full place-items-center text-sm text-muted-foreground">Preview timeline</div>}
       </div>
       <Progress value={props.progress} />

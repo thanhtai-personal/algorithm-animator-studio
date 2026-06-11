@@ -32,15 +32,22 @@ export function TimelineComposition(rawProps: Partial<RemotionTimelineInputProps
           </Sequence>
         ) : null;
       })}
-      <TimelineChrome title={props.title} watermark={props.watermark} durationSeconds={getTimelineDurationSeconds(props)} />
+      <TimelineChrome
+        title={props.title}
+        watermark={props.watermark}
+        watermarkAsset={props.watermarkLogoAssetId ? props.assets.find((asset) => asset.id === props.watermarkLogoAssetId) : undefined}
+        showWatermark={props.showWatermark}
+        durationSeconds={getTimelineDurationSeconds(props)}
+      />
     </AbsoluteFill>
   );
 }
 
 function TimelineVisual({ clip, src, index, total, clipDurationInFrames }: { clip: RemotionTimelineClip; src: string; index: number; total: number; clipDurationInFrames: number }) {
   const frame = useCurrentFrame();
-  const fadeFrames = Math.min(18, Math.max(0, Math.floor(clipDurationInFrames / 5)));
-  const motion = getTransitionStyle(clip.transition, frame, clipDurationInFrames, fadeFrames);
+  const { fps } = useVideoConfig();
+  const transitionFrames = Math.min(Math.floor(clipDurationInFrames / 2), Math.max(1, Math.round(clip.transitionSeconds * fps)));
+  const motion = getTransitionStyle(clip.transition, frame, clipDurationInFrames, transitionFrames);
   const objectFit = clip.fitMode === "contain" ? "contain" : "cover";
 
   return (
@@ -80,15 +87,15 @@ function getTransitionStyle(transition: RemotionTimelineClip["transition"], fram
   return base;
 }
 
-function TimelineChrome({ title, watermark, durationSeconds }: { title: string; watermark: string; durationSeconds: number }) {
+function TimelineChrome({ title, watermark, watermarkAsset, showWatermark, durationSeconds }: { title: string; watermark: string; watermarkAsset?: { src: string }; showWatermark: boolean; durationSeconds: number }) {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
   const progress = Math.min(1, frame / Math.max(1, durationInFrames - 1));
   const time = Math.min(durationSeconds, frame / fps);
   return (
     <>
-      <div style={{ position: "absolute", top: 32, left: 40, right: 40, display: "flex", justifyContent: "space-between", gap: 24, color: "rgba(226,232,240,0.86)", fontSize: 26, fontWeight: 900, textShadow: "0 3px 18px rgba(0,0,0,0.65)" }}>
-        <span>{watermark}</span>
+      <div style={{ position: "absolute", top: 32, left: 40, right: 40, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 24, color: "rgba(226,232,240,0.86)", fontSize: 26, fontWeight: 900, textShadow: "0 3px 18px rgba(0,0,0,0.65)" }}>
+        <span>{showWatermark ? (watermarkAsset ? <Img src={staticFile(watermarkAsset.src)} style={{ maxWidth: 260, maxHeight: 74, objectFit: "contain", filter: "drop-shadow(0 3px 18px rgba(0,0,0,0.65))" }} /> : watermark) : ""}</span>
         <span>{title}</span>
       </div>
       <div style={{ position: "absolute", left: 40, right: 40, bottom: 26, height: 12, borderRadius: 999, background: "rgba(226,232,240,0.28)", overflow: "hidden" }}>

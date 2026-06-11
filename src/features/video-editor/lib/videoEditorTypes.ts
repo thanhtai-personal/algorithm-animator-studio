@@ -31,6 +31,7 @@ export type VideoEditorClip = {
   durationSeconds: number;
   fitMode: VideoEditorFitMode;
   transition: VideoEditorTransition;
+  transitionSeconds: number;
   keepOriginalAudio?: boolean;
 };
 
@@ -46,8 +47,12 @@ export type TimelineRenderProject = {
     durationSeconds: number;
     fitMode: VideoEditorFitMode;
     transition: VideoEditorTransition;
+    transitionSeconds: number;
     keepOriginalAudio?: boolean;
   }>;
+  showWatermark?: boolean;
+  watermarkText?: string;
+  watermarkLogoAssetId?: string;
 };
 
 export type TimelineRenderResponse = {

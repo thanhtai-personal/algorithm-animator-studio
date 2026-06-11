@@ -1,25 +1,26 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react";
-import { Film, ImagePlus, Loader2, Music2, Play, Scissors, Trash2, Upload, Video } from "lucide-react";
+import { Download, Film, ImagePlus, Loader2, Music2, Scissors, Upload, Video } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { readSystemLang, subscribeSystemLang, text, type Lang } from "@/lib/i18n";
-import { VIDEO_EDITOR_TRANSITIONS } from "../lib/videoEditorConstants";
+import type { MusicLibraryTrack } from "@/lib/musicLibrary";
+import { VideoEditorMusicPicker } from "./VideoEditorMusicPicker";
+import { VideoEditorPreview } from "./VideoEditorPreview";
+import { MediaBin, TimelineTrack, type TrackKind } from "./VideoEditorTimeline";
+import { fromDraftAsset, loadVideoEditorDraft, saveVideoEditorDraft, toDraftAsset } from "../lib/videoEditorDraftStore";
 import { renderTimelineVideo } from "../lib/videoEditorApi";
-import type { TimelineRenderResponse, VideoEditorAsset, VideoEditorAspectRatio, VideoEditorClip, VideoEditorFitMode, VideoEditorRenderEngine, VideoEditorTransition } from "../lib/videoEditorTypes";
+import type { TimelineRenderResponse, VideoEditorAsset, VideoEditorAspectRatio, VideoEditorClip, VideoEditorRenderEngine } from "../lib/videoEditorTypes";
 
 type Props = {
   renderEngine: VideoEditorRenderEngine;
   onVideoCreated: () => Promise<void> | void;
 };
-
-type TrackKind = "visual" | "audio";
 
 export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
@@ -28,18 +29,48 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
   const [title, setTitle] = useState("proshow-style-video");
   const [aspectRatio, setAspectRatio] = useState<VideoEditorAspectRatio>("16:9");
   const [fps, setFps] = useState(30);
+  const [showWatermark, setShowWatermark] = useState(true);
+  const [watermarkText, setWatermarkText] = useState("KAI STUDIO");
+  const [watermarkLogoAssetId, setWatermarkLogoAssetId] = useState("");
   const [playing, setPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [rendering, setRendering] = useState(false);
   const [lastVideo, setLastVideo] = useState<TimelineRenderResponse | null>(null);
+  const [draftLoaded, setDraftLoaded] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const assetUrlsRef = useRef<string[]>([]);
 
   useEffect(() => subscribeSystemLang(setLang), []);
   useEffect(() => {
+    loadVideoEditorDraft()
+      .then((draft) => {
+        if (!draft) return;
+        setTitle(draft.title);
+        setAspectRatio(draft.aspectRatio);
+        setFps(draft.fps);
+        setShowWatermark(draft.showWatermark !== false);
+        setWatermarkText(draft.watermarkText || "KAI STUDIO");
+        setWatermarkLogoAssetId(draft.watermarkLogoAssetId || "");
+        setAssets(draft.assets.map(fromDraftAsset));
+        setClips(draft.clips.map((clip) => ({ ...clip, transitionSeconds: clip.transitionSeconds || 1.5 })));
+      })
+      .finally(() => setDraftLoaded(true));
+  }, []);
+
+  useEffect(() => {
     assetUrlsRef.current = assets.map((asset) => asset.url);
   }, [assets]);
   useEffect(() => () => assetUrlsRef.current.forEach((url) => URL.revokeObjectURL(url)), []);
+  useEffect(() => {
+    if (!draftLoaded) return;
+    const timer = window.setTimeout(() => {
+      void saveVideoEditorDraft({
+        title, aspectRatio, fps, showWatermark, watermarkText, watermarkLogoAssetId, clips,
+        assets: assets.map(toDraftAsset),
+      }).catch(() => undefined);
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [assets, aspectRatio, clips, draftLoaded, fps, showWatermark, title, watermarkLogoAssetId, watermarkText]);
 
   const visualClips = clips.filter((clip) => clip.type !== "audio");
   const audioClips = clips.filter((clip) => clip.type === "audio");
@@ -81,14 +112,16 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
       void audio.play().catch(() => undefined);
     } else {
       audio.pause();
+      if (elapsed === 0) audio.currentTime = 0;
     }
-  }, [playing]);
+  }, [elapsed, playing]);
 
   const timelineStats = useMemo(() => ({
     image: clips.filter((clip) => clip.type === "image").length,
     video: clips.filter((clip) => clip.type === "video").length,
     audio: clips.filter((clip) => clip.type === "audio").length,
   }), [clips]);
+  const imageAssets = assets.filter((asset) => asset.type === "image");
 
   function addFiles(fileList: FileList | null, targetTrack?: TrackKind) {
     const newAssets = Array.from(fileList || []).map(createAsset).filter(Boolean) as VideoEditorAsset[];
@@ -97,6 +130,25 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
     if (targetTrack) {
       setClips((current) => [...current, ...newAssets.filter((asset) => canUseOnTrack(asset, targetTrack)).map(createClipFromAsset)]);
     }
+  }
+
+  async function addLibraryMusic(track: MusicLibraryTrack) {
+    const response = await fetch(track.audioUrl);
+    if (!response.ok) throw new Error("Không tải được nhạc nền đã chọn.");
+    const blob = await response.blob();
+    const fileName = track.fileName || `${track.title}.mp3`;
+    const asset = createAssetFromFile(new File([blob], fileName, { type: blob.type || "audio/mpeg" }), track.title);
+    setAssets((current) => [...current, asset]);
+    setClips((current) => [...current, createClipFromAsset(asset)]);
+  }
+
+  function addLogoFile(fileList: FileList | null) {
+    const file = fileList?.[0];
+    if (!file) return;
+    const asset = createAsset(file);
+    if (!asset || asset.type !== "image") return;
+    setAssets((current) => [...current, asset]);
+    setWatermarkLogoAssetId(asset.id);
   }
 
   function handleEditorDrop(event: DragEvent<HTMLElement>) {
@@ -150,8 +202,9 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
       : text(lang, "Exporting MP4 timeline...", "Đang export timeline MP4...")
     );
     try {
-      const result = await renderTimelineVideo({ title, aspectRatio, fps, renderEngine, clips: clips.map(toRenderClip) }, assets);
+      const result = await renderTimelineVideo({ title, aspectRatio, fps, renderEngine, showWatermark, watermarkText, watermarkLogoAssetId, clips: clips.map(toRenderClip) }, assets);
       setLastVideo(result);
+      downloadVideo(result.videoUrl, result.fileName);
       toast.success(text(lang, "Video exported to library.", "Đã export video vào thư viện."), { id: toastId });
       await onVideoCreated();
     } catch (error) {
@@ -184,6 +237,26 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
               {renderEngine === "remotion" ? text(lang, "Render MP4 with Remotion", "Render MP4 bằng Remotion") : text(lang, "Export MP4 with FFmpeg", "Export MP4 bằng FFmpeg")}
             </Button>
           </div>
+          <div className="grid gap-3 rounded-lg border bg-background/40 p-3 lg:grid-cols-[auto_minmax(180px,280px)_minmax(180px,280px)_auto] lg:items-end">
+            <label className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2 text-sm lg:self-end">
+              <span>Hiện header KAI</span>
+              <Switch checked={showWatermark} onCheckedChange={setShowWatermark} />
+            </label>
+            <Field label="Text header"><Input value={watermarkText} onChange={(event) => setWatermarkText(event.target.value)} disabled={!showWatermark || Boolean(watermarkLogoAssetId)} /></Field>
+            <Field label="Logo thay text">
+              <Select value={watermarkLogoAssetId || "text"} onValueChange={(value) => setWatermarkLogoAssetId(value === "text" ? "" : value)} disabled={!showWatermark}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="text">Dùng text</SelectItem>
+                  {imageAssets.map((asset) => <SelectItem key={asset.id} value={asset.id}>{asset.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
+            <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted/40">
+              <ImagePlus className="h-4 w-4" /> Upload logo
+              <input type="file" accept="image/*" className="hidden" onChange={(event) => addLogoFile(event.target.files)} />
+            </label>
+          </div>
           <div className="flex flex-wrap justify-center gap-2">
             <Badge variant="secondary"><ImagePlus className="mr-1 h-3.5 w-3.5" /> {timelineStats.image} ảnh</Badge>
             <Badge variant="secondary"><Video className="mr-1 h-3.5 w-3.5" /> {timelineStats.video} video</Badge>
@@ -191,7 +264,7 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
             <Badge variant="outline">{renderEngine === "remotion" ? "Remotion" : "FFmpeg"}</Badge>
             <Badge variant="outline">{totalDuration.toFixed(1)}s</Badge>
           </div>
-          <PreviewPanel asset={currentAsset} clip={preview?.clip} aspectRatio={aspectRatio} progress={progress} elapsed={elapsed} totalDuration={totalDuration} playing={playing} onReset={() => setElapsed(0)} onPlay={() => setPlaying((value) => !value)} />
+          <VideoEditorPreview asset={currentAsset} clip={preview?.clip} aspectRatio={aspectRatio} progress={progress} elapsed={elapsed} totalDuration={totalDuration} playing={playing} onReset={() => setElapsed(0)} onPlay={() => setPlaying((value) => !value)} />
         </div>
 
         <div className="space-y-2 rounded-lg border bg-muted/10 p-3">
@@ -199,12 +272,13 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
           <TimelineTrack title="Track 2: Voice / nhạc" icon={<Music2 className="h-4 w-4" />} clips={audioClips} assets={assets} track="audio" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
         </div>
 
+        <VideoEditorMusicPicker onPick={addLibraryMusic} />
         <MediaBin assets={assets} onFiles={addFiles} />
         <audio ref={audioRef} />
         {lastVideo ? (
           <div className="space-y-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
             <p className="break-words text-sm font-semibold text-emerald-100">{lastVideo.fileName}</p>
-            <video src={lastVideo.videoUrl} controls className="w-full rounded-lg bg-black" />
+            <Button variant="outline" onClick={() => downloadVideo(lastVideo.videoUrl, lastVideo.fileName)}><Download className="mr-2 h-4 w-4" /> Tải video MP4</Button>
             {lastVideo.warning ? <p className="text-xs text-amber-100">{lastVideo.warning}</p> : null}
           </div>
         ) : null}
@@ -217,107 +291,19 @@ function Field(props: { label: string; children: ReactNode }) {
   return <div className="space-y-2"><Label>{props.label}</Label>{props.children}</div>;
 }
 
-function PreviewPanel(props: { asset?: VideoEditorAsset; clip?: VideoEditorClip; aspectRatio: VideoEditorAspectRatio; progress: number; elapsed: number; totalDuration: number; playing: boolean; onReset: () => void; onPlay: () => void }) {
-  return (
-    <div className="mx-auto w-full max-w-6xl space-y-3">
-      <div className="overflow-hidden rounded-lg border bg-black shadow-2xl shadow-black/30" style={{ aspectRatio: props.aspectRatio === "9:16" ? "9 / 16" : "16 / 9" }}>
-        {props.asset ? <PreviewAsset asset={props.asset} clip={props.clip} /> : <div className="grid h-full place-items-center text-sm text-muted-foreground">Preview timeline</div>}
-      </div>
-      <Progress value={props.progress} />
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/20 p-3 text-sm">
-        <span>{props.elapsed.toFixed(1)}s / {props.totalDuration.toFixed(1)}s</span>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={props.onReset}>0:00</Button>
-          <Button size="sm" onClick={props.onPlay}><Play className="mr-2 h-4 w-4" />{props.playing ? "Pause" : "Play"}</Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TimelineTrack(props: { title: string; icon: ReactNode; clips: VideoEditorClip[]; assets: VideoEditorAsset[]; track: TrackKind; onDrop: (event: DragEvent<HTMLElement>, track: TrackKind, beforeClipId?: string) => void; onRemove: (id: string) => void; onUpdate: (id: string, patch: Partial<VideoEditorClip>) => void }) {
-  return (
-    <section className="grid gap-2 md:grid-cols-[160px_minmax(0,1fr)]">
-      <div className="flex items-center gap-2 text-sm font-semibold text-cyan-100">{props.icon}{props.title}</div>
-      <div className="flex min-h-28 gap-2 overflow-x-auto rounded-md border border-dashed border-border/80 bg-background/50 p-2" onDragOver={(event) => event.preventDefault()} onDrop={(event) => props.onDrop(event, props.track)}>
-        {props.clips.length ? props.clips.map((clip) => (
-          <TimelineClip key={clip.id} clip={clip} asset={props.assets.find((asset) => asset.id === clip.assetId)} track={props.track} onDrop={props.onDrop} onRemove={props.onRemove} onUpdate={props.onUpdate} />
-        )) : <div className="grid min-w-full place-items-center text-sm text-muted-foreground">Drop media here</div>}
-      </div>
-    </section>
-  );
-}
-
-function TimelineClip(props: { clip: VideoEditorClip; asset?: VideoEditorAsset; track: TrackKind; onDrop: (event: DragEvent<HTMLElement>, track: TrackKind, beforeClipId?: string) => void; onRemove: (id: string) => void; onUpdate: (id: string, patch: Partial<VideoEditorClip>) => void }) {
-  const { clip } = props;
-  return (
-    <article draggable onDragStart={(event) => event.dataTransfer.setData("clip-id", clip.id)} onDragOver={(event) => event.preventDefault()} onDrop={(event) => props.onDrop(event, props.track, clip.id)} className="grid w-72 shrink-0 gap-2 rounded-md border bg-card p-2">
-      <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-sm font-medium">{props.asset?.name || clip.label}</span>
-        <Button size="icon" variant="ghost" onClick={() => props.onRemove(clip.id)}><Trash2 className="h-4 w-4" /></Button>
-      </div>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <Field label="Duration"><Input type="number" min={1} max={180} value={clip.durationSeconds} onChange={(event) => props.onUpdate(clip.id, { durationSeconds: Number(event.target.value) })} /></Field>
-        {clip.type !== "audio" ? <Field label="Fit"><Select value={clip.fitMode} onValueChange={(value) => props.onUpdate(clip.id, { fitMode: value as VideoEditorFitMode })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="cover">cover</SelectItem><SelectItem value="contain">contain</SelectItem></SelectContent></Select></Field> : null}
-      </div>
-      {clip.type !== "audio" ? (
-        <Field label="Animation chuyển slide">
-          <Select value={clip.transition} onValueChange={(value) => props.onUpdate(clip.id, { transition: value as VideoEditorTransition })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>{VIDEO_EDITOR_TRANSITIONS.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent>
-          </Select>
-        </Field>
-      ) : null}
-      {clip.type === "video" ? (
-        <label className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2 text-sm">
-          <span>Âm thanh gốc video</span>
-          <Switch checked={clip.keepOriginalAudio === true} onCheckedChange={(checked) => props.onUpdate(clip.id, { keepOriginalAudio: checked })} />
-        </label>
-      ) : null}
-    </article>
-  );
-}
-
-function MediaBin(props: { assets: VideoEditorAsset[]; onFiles: (files: FileList | null) => void }) {
-  return (
-    <section className="space-y-3 rounded-lg border bg-background/40 p-3">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold">Kho media</h3>
-        <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted/40"><Upload className="h-4 w-4" /> Upload<input type="file" multiple accept="image/*,audio/*,video/*" className="hidden" onChange={(event) => props.onFiles(event.target.files)} /></label>
-      </div>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {props.assets.length ? props.assets.map((asset) => <MediaAsset key={asset.id} asset={asset} />) : <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground sm:col-span-2 lg:col-span-4">Drop ảnh, video hoặc audio từ máy tính vào editor</div>}
-      </div>
-    </section>
-  );
-}
-
-function MediaAsset({ asset }: { asset: VideoEditorAsset }) {
-  return (
-    <article draggable onDragStart={(event) => event.dataTransfer.setData("asset-id", asset.id)} className="grid gap-2 rounded-md border bg-card p-2">
-      <div className="grid aspect-video place-items-center overflow-hidden rounded bg-slate-950 text-muted-foreground">
-        {asset.type === "image" ? <img src={asset.url} className="h-full w-full object-cover" alt="" /> : asset.type === "video" ? <video src={asset.url} muted className="h-full w-full object-cover" /> : <Music2 className="h-7 w-7" />}
-      </div>
-      <div className="flex items-center gap-2 text-xs"><Badge variant="outline">{asset.type}</Badge><span className="truncate">{asset.name}</span></div>
-    </article>
-  );
-}
-
-function PreviewAsset({ asset, clip }: { asset: VideoEditorAsset; clip?: VideoEditorClip }) {
-  const effect = clip?.transition === "blurry" ? "scale-105 blur-sm opacity-90" : clip?.transition === "fade" ? "opacity-90" : clip?.transition === "zoom-in" ? "scale-105" : "";
-  if (asset.type === "image") return <img src={asset.url} alt="" className={`h-full w-full object-cover transition-all duration-500 ${effect}`} />;
-  if (asset.type === "video") return <video key={asset.id} src={asset.url} muted={clip?.keepOriginalAudio !== true} autoPlay loop className={`h-full w-full object-cover ${effect}`} />;
-  return <div className="grid h-full place-items-center text-muted-foreground"><Music2 className="h-8 w-8" /></div>;
-}
-
 function createAsset(file: File): VideoEditorAsset | null {
   const type = file.type.startsWith("image/") ? "image" : file.type.startsWith("audio/") ? "audio" : file.type.startsWith("video/") ? "video" : null;
   if (!type) return null;
-  return { id: makeId(), type, file, name: file.name, url: URL.createObjectURL(file) };
+  return createAssetFromFile(file);
+}
+
+function createAssetFromFile(file: File, label?: string): VideoEditorAsset {
+  const type = file.type.startsWith("image/") ? "image" : file.type.startsWith("audio/") ? "audio" : "video";
+  return { id: makeId(), type, file, name: label || file.name, url: URL.createObjectURL(file) };
 }
 
 function createClipFromAsset(asset: VideoEditorAsset): VideoEditorClip {
-  return { id: makeId(), assetId: asset.id, type: asset.type, label: asset.name, durationSeconds: asset.type === "image" ? 4 : asset.type === "video" ? 6 : 12, fitMode: "cover", transition: asset.type === "audio" ? "none" : "blurry", keepOriginalAudio: false };
+  return { id: makeId(), assetId: asset.id, type: asset.type, label: asset.name, durationSeconds: asset.type === "image" ? 4 : asset.type === "video" ? 6 : 12, fitMode: "contain", transition: asset.type === "audio" ? "none" : "blurry", transitionSeconds: 1.5, keepOriginalAudio: false };
 }
 
 function getPreviewClip(clips: VideoEditorClip[], elapsed: number) {
@@ -331,7 +317,7 @@ function getPreviewClip(clips: VideoEditorClip[], elapsed: number) {
 }
 
 function toRenderClip(clip: VideoEditorClip) {
-  return { id: clip.id, assetId: clip.assetId, type: clip.type, durationSeconds: clip.durationSeconds, fitMode: clip.fitMode, transition: clip.transition, keepOriginalAudio: clip.keepOriginalAudio === true };
+  return { id: clip.id, assetId: clip.assetId, type: clip.type, durationSeconds: clip.durationSeconds, fitMode: clip.fitMode, transition: clip.transition, transitionSeconds: clip.transitionSeconds, keepOriginalAudio: clip.keepOriginalAudio === true };
 }
 
 function canUseOnTrack(asset: VideoEditorAsset, track: TrackKind) {
@@ -350,4 +336,13 @@ function insertBefore(clips: VideoEditorClip[], clip: VideoEditorClip, beforeCli
 
 function makeId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function downloadVideo(url: string, fileName: string) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }

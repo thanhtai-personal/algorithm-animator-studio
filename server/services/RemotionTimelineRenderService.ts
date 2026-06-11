@@ -24,7 +24,7 @@ export async function renderRemotionTimelineVideo(params: {
   fs.mkdirSync(assetDir, { recursive: true });
 
   try {
-    const assets = copyAssetsToPublicDir(project.clips, params.assetFiles, assetDir);
+    const assets = copyAssetsToPublicDir(project.clips, params.assetFiles, assetDir, project.watermarkLogoAssetId);
     const inputProps = {
       title: project.title,
       aspectRatio: project.aspectRatio,
@@ -32,7 +32,9 @@ export async function renderRemotionTimelineVideo(params: {
       clips: project.clips,
       assets,
       backgroundColor: "#020617",
-      watermark: "KAI STUDIO",
+      watermark: project.watermarkText,
+      showWatermark: project.showWatermark,
+      watermarkLogoAssetId: project.watermarkLogoAssetId,
     };
 
     const { bundle } = await import("@remotion/bundler");
@@ -48,6 +50,7 @@ export async function renderRemotionTimelineVideo(params: {
 
     await renderMedia({
       codec: "h264",
+      crf: 18,
       composition,
       serveUrl,
       inputProps,
@@ -71,8 +74,8 @@ export async function renderRemotionTimelineVideo(params: {
   }
 }
 
-function copyAssetsToPublicDir(clips: NormalizedTimelineVideoClip[], files: Record<string, Express.Multer.File>, assetDir: string) {
-  const usedAssetIds = Array.from(new Set(clips.map((clip) => clip.assetId)));
+function copyAssetsToPublicDir(clips: NormalizedTimelineVideoClip[], files: Record<string, Express.Multer.File>, assetDir: string, logoAssetId: string) {
+  const usedAssetIds = Array.from(new Set([...clips.map((clip) => clip.assetId), logoAssetId].filter(Boolean)));
   return usedAssetIds.map((assetId) => {
     const file = files[assetId];
     if (!file?.path || !fs.existsSync(file.path)) throw new Error(`Không tìm thấy file timeline: ${assetId}`);
@@ -99,6 +102,7 @@ function normalizeTimelineProject(raw: TimelineVideoRenderProject): NormalizedTi
       durationSeconds: clampNumber(clip.durationSeconds, 1, 180, 4),
       fitMode: clip.fitMode === "contain" ? "contain" : "cover",
       transition: normalizeTransition(clip.transition),
+      transitionSeconds: clampNumber(clip.transitionSeconds, 0.2, 8, 1.5),
       keepOriginalAudio: clip.keepOriginalAudio === true,
     }))
     .filter((clip): clip is NormalizedTimelineVideoClip => Boolean(clip.assetId));
@@ -109,6 +113,9 @@ function normalizeTimelineProject(raw: TimelineVideoRenderProject): NormalizedTi
     fps: clampNumber(raw.fps, 24, 60, 30),
     renderEngine: "remotion",
     clips: normalizedClips,
+    showWatermark: raw.showWatermark !== false,
+    watermarkText: sanitizeText(raw.watermarkText, "KAI STUDIO", 40),
+    watermarkLogoAssetId: sanitizeText(raw.watermarkLogoAssetId, "", 120),
   };
 }
 

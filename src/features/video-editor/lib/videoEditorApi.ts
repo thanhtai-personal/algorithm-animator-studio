@@ -7,7 +7,7 @@ export async function renderTimelineVideo(project: TimelineRenderProject, assets
   formData.append("project", JSON.stringify(project));
 
   for (const asset of assets) {
-    if (project.clips.some((clip) => clip.assetId === asset.id)) {
+    if (project.clips.some((clip) => clip.assetId === asset.id) || project.watermarkLogoAssetId === asset.id) {
       formData.append(`asset:${asset.id}`, asset.file, asset.name);
     }
   }

@@ -16,6 +16,7 @@ export type RemotionTimelineClip = {
   durationSeconds: number;
   fitMode: VideoEditorFitMode;
   transition: VideoEditorTransition;
+  transitionSeconds: number;
   keepOriginalAudio?: boolean;
 };
 
@@ -27,6 +28,8 @@ export type RemotionTimelineInputProps = {
   assets: RemotionTimelineAsset[];
   backgroundColor: string;
   watermark: string;
+  showWatermark: boolean;
+  watermarkLogoAssetId: string;
 };
 
 export const DEFAULT_REMOTION_TIMELINE: RemotionTimelineInputProps = {
@@ -37,6 +40,8 @@ export const DEFAULT_REMOTION_TIMELINE: RemotionTimelineInputProps = {
   assets: [],
   backgroundColor: "#020617",
   watermark: "KAI STUDIO",
+  showWatermark: true,
+  watermarkLogoAssetId: "",
 };
 
 export function getTimelineDurationSeconds(props: Pick<RemotionTimelineInputProps, "clips">) {
@@ -51,6 +56,8 @@ export function normalizeRemotionTimelineInput(raw: Partial<RemotionTimelineInpu
     ...raw,
     title: sanitizeText(raw.title, DEFAULT_REMOTION_TIMELINE.title, 96),
     watermark: sanitizeText(raw.watermark, DEFAULT_REMOTION_TIMELINE.watermark, 40),
+    showWatermark: raw.showWatermark !== false,
+    watermarkLogoAssetId: sanitizeText(raw.watermarkLogoAssetId, "", 120),
     aspectRatio: raw.aspectRatio === "9:16" ? "9:16" : "16:9",
     fps: clampNumber(raw.fps, 24, 60, 30),
     backgroundColor: sanitizeColor(raw.backgroundColor, DEFAULT_REMOTION_TIMELINE.backgroundColor),
@@ -67,6 +74,7 @@ export function normalizeRemotionTimelineInput(raw: Partial<RemotionTimelineInpu
       durationSeconds: clampNumber(clip.durationSeconds, 1, 180, 4),
       fitMode: clip.fitMode === "contain" ? "contain" : "cover",
       transition: isVideoEditorTransition(clip.transition) ? clip.transition : "blurry",
+      transitionSeconds: clampNumber(clip.transitionSeconds, 0.2, 8, 1.5),
       keepOriginalAudio: clip.keepOriginalAudio === true,
     })).filter((clip) => clip.assetId),
   };

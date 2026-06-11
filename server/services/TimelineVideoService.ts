@@ -81,6 +81,7 @@ function normalizeTimelineProject(raw: TimelineVideoRenderProject): NormalizedTi
       durationSeconds: clampNumber(clip.durationSeconds, 1, 180, 4),
       fitMode: clip.fitMode === "contain" ? "contain" : "cover",
       transition: normalizeTransition(clip.transition),
+      transitionSeconds: clampNumber(clip.transitionSeconds, 0.2, 8, 1.5),
       keepOriginalAudio: clip.keepOriginalAudio === true,
     }))
     .filter((clip): clip is NormalizedTimelineVideoClip => Boolean(clip.assetId));
@@ -91,6 +92,9 @@ function normalizeTimelineProject(raw: TimelineVideoRenderProject): NormalizedTi
     fps: clampNumber(raw.fps, 24, 60, 30),
     renderEngine: raw.renderEngine === "remotion" ? "remotion" : "ffmpeg",
     clips: normalizedClips,
+    showWatermark: raw.showWatermark !== false,
+    watermarkText: sanitizeText(raw.watermarkText, "KAI STUDIO", 40),
+    watermarkLogoAssetId: sanitizeText(raw.watermarkLogoAssetId, "", 120),
   };
 }
 
@@ -112,11 +116,15 @@ function renderVisualSegment(params: {
     ...inputArgs,
     "-an",
     "-vf",
-    buildSegmentFilter({ width: size.width, height: size.height, fitMode: params.clip.fitMode, durationSeconds: params.clip.durationSeconds, transition: params.clip.transition, fps: params.project.fps }),
+    buildSegmentFilter({ width: size.width, height: size.height, fitMode: params.clip.fitMode, durationSeconds: params.clip.durationSeconds, transition: params.clip.transition, transitionSeconds: params.clip.transitionSeconds, fps: params.project.fps }),
     "-r",
     String(params.project.fps),
     "-c:v",
     "libx264",
+    "-crf",
+    "18",
+    "-preset",
+    "medium",
     "-pix_fmt",
     "yuv420p",
     "-movflags",
@@ -159,10 +167,10 @@ function addAudioTrack(params: { videoPath: string; audioPath: string; outputPat
   ], params.envOverrides);
 }
 
-function buildSegmentFilter(params: { width: number; height: number; fitMode: TimelineVideoFitMode; durationSeconds: number; transition: TimelineVideoTransition; fps: number }) {
+function buildSegmentFilter(params: { width: number; height: number; fitMode: TimelineVideoFitMode; durationSeconds: number; transition: TimelineVideoTransition; transitionSeconds: number; fps: number }) {
   const filters = [buildScaleFilter(params.width, params.height, params.fitMode), `fps=${params.fps}`, "format=yuv420p"];
   if (params.transition !== "none") {
-    const fade = Math.min(0.45, Math.max(0, params.durationSeconds / 3));
+    const fade = Math.min(params.transitionSeconds, Math.max(0, params.durationSeconds / 2));
     if (fade > 0.05) {
       if (params.transition === "blurry") {
         filters.push(`boxblur=luma_radius=8:luma_power=1:enable='lt(t,${fade.toFixed(3)})+gt(t,${Math.max(0, params.durationSeconds - fade).toFixed(3)})'`);

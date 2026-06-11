@@ -22,6 +22,7 @@ export type TimelineVideoClip = {
   durationSeconds?: number;
   fitMode?: TimelineVideoFitMode;
   transition?: TimelineVideoTransition;
+  transitionSeconds?: number;
   keepOriginalAudio?: boolean;
 };
 
@@ -31,6 +32,9 @@ export type TimelineVideoRenderProject = {
   fps?: number;
   renderEngine?: TimelineVideoRenderEngine;
   clips?: TimelineVideoClip[];
+  showWatermark?: boolean;
+  watermarkText?: string;
+  watermarkLogoAssetId?: string;
 };
 
 export type NormalizedTimelineVideoClip = Required<TimelineVideoClip>;
@@ -41,4 +45,7 @@ export type NormalizedTimelineVideoProject = {
   fps: number;
   renderEngine: TimelineVideoRenderEngine;
   clips: NormalizedTimelineVideoClip[];
+  showWatermark: boolean;
+  watermarkText: string;
+  watermarkLogoAssetId: string;
 };

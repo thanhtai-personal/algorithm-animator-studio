@@ -64,7 +64,7 @@ export async function renderTimelineVideo(params: {
       relativePath: output.relativePath,
       videoUrl: output.videoUrl,
       durationSeconds: totalDuration,
-      warning: audioClips.length > 1 ? "MVP hiện dùng audio đầu tiên làm nhạc/voice nền; audio còn lại để dành cho bản mixer nâng cao." : undefined,
+      warning: buildFallbackWarning(project.clips, audioClips.length),
     };
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
@@ -81,6 +81,7 @@ function normalizeTimelineProject(raw: TimelineVideoRenderProject): NormalizedTi
       durationSeconds: clampNumber(clip.durationSeconds, 1, 180, 4),
       fitMode: clip.fitMode === "contain" ? "contain" : "cover",
       transition: normalizeTransition(clip.transition),
+      keepOriginalAudio: clip.keepOriginalAudio === true,
     }))
     .filter((clip): clip is NormalizedTimelineVideoClip => Boolean(clip.assetId));
 
@@ -160,9 +161,12 @@ function addAudioTrack(params: { videoPath: string; audioPath: string; outputPat
 
 function buildSegmentFilter(params: { width: number; height: number; fitMode: TimelineVideoFitMode; durationSeconds: number; transition: TimelineVideoTransition; fps: number }) {
   const filters = [buildScaleFilter(params.width, params.height, params.fitMode), `fps=${params.fps}`, "format=yuv420p"];
-  if (params.transition === "fade" || params.transition === "zoom") {
+  if (params.transition !== "none") {
     const fade = Math.min(0.45, Math.max(0, params.durationSeconds / 3));
     if (fade > 0.05) {
+      if (params.transition === "blurry") {
+        filters.push(`boxblur=luma_radius=8:luma_power=1:enable='lt(t,${fade.toFixed(3)})+gt(t,${Math.max(0, params.durationSeconds - fade).toFixed(3)})'`);
+      }
       filters.push(`fade=t=in:st=0:d=${fade.toFixed(3)}`);
       filters.push(`fade=t=out:st=${Math.max(0, params.durationSeconds - fade).toFixed(3)}:d=${fade.toFixed(3)}`);
     }
@@ -178,8 +182,29 @@ function buildScaleFilter(width: number, height: number, fitMode: TimelineVideoF
 }
 
 function normalizeTransition(value: unknown): TimelineVideoTransition {
-  if (value === "fade" || value === "zoom") return value;
-  return "none";
+  if (
+    value === "blurry" ||
+    value === "fade" ||
+    value === "zoom-in" ||
+    value === "zoom-out" ||
+    value === "slide-left" ||
+    value === "slide-right" ||
+    value === "slide-up" ||
+    value === "slide-down" ||
+    value === "push-left" ||
+    value === "push-right" ||
+    value === "none"
+  ) return value;
+  return "blurry";
+}
+
+function buildFallbackWarning(clips: NormalizedTimelineVideoClip[], audioClipCount: number) {
+  const warnings: string[] = [];
+  if (audioClipCount > 1) warnings.push("FFmpeg fallback hiện dùng audio đầu tiên làm nhạc/voice nền.");
+  if (clips.some((clip) => clip.type === "video" && clip.keepOriginalAudio)) {
+    warnings.push("Âm thanh gốc video được hỗ trợ đầy đủ khi render bằng Remotion; FFmpeg fallback vẫn tắt âm thanh gốc để tránh lẫn tiếng.");
+  }
+  return warnings.length ? warnings.join(" ") : undefined;
 }
 
 function sanitizeText(value: unknown, fallback: string, maxLength: number) {

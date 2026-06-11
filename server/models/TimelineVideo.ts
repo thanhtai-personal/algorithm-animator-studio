@@ -1,6 +1,17 @@
 export type TimelineVideoAspectRatio = "16:9" | "9:16";
 export type TimelineVideoFitMode = "cover" | "contain";
-export type TimelineVideoTransition = "none" | "fade" | "zoom";
+export type TimelineVideoTransition =
+  | "blurry"
+  | "fade"
+  | "zoom-in"
+  | "zoom-out"
+  | "slide-left"
+  | "slide-right"
+  | "slide-up"
+  | "slide-down"
+  | "push-left"
+  | "push-right"
+  | "none";
 export type TimelineVideoAssetType = "image" | "audio" | "video";
 export type TimelineVideoRenderEngine = "ffmpeg" | "remotion";
 
@@ -11,6 +22,7 @@ export type TimelineVideoClip = {
   durationSeconds?: number;
   fitMode?: TimelineVideoFitMode;
   transition?: TimelineVideoTransition;
+  keepOriginalAudio?: boolean;
 };
 
 export type TimelineVideoRenderProject = {

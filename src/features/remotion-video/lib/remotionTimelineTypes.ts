@@ -1,4 +1,5 @@
 import type { RemotionVideoAspectRatio } from "./remotionVideoTypes";
+import { isVideoEditorTransition } from "../../video-editor/lib/videoEditorConstants";
 import type { VideoEditorAssetType, VideoEditorFitMode, VideoEditorTransition } from "../../video-editor/lib/videoEditorTypes";
 
 export type RemotionTimelineAsset = {
@@ -15,6 +16,7 @@ export type RemotionTimelineClip = {
   durationSeconds: number;
   fitMode: VideoEditorFitMode;
   transition: VideoEditorTransition;
+  keepOriginalAudio?: boolean;
 };
 
 export type RemotionTimelineInputProps = {
@@ -64,7 +66,8 @@ export function normalizeRemotionTimelineInput(raw: Partial<RemotionTimelineInpu
       type: clip.type === "audio" || clip.type === "video" ? clip.type : "image",
       durationSeconds: clampNumber(clip.durationSeconds, 1, 180, 4),
       fitMode: clip.fitMode === "contain" ? "contain" : "cover",
-      transition: clip.transition === "fade" || clip.transition === "zoom" ? clip.transition : "none",
+      transition: isVideoEditorTransition(clip.transition) ? clip.transition : "blurry",
+      keepOriginalAudio: clip.keepOriginalAudio === true,
     })).filter((clip) => clip.assetId),
   };
 }

@@ -98,7 +98,8 @@ function normalizeTimelineProject(raw: TimelineVideoRenderProject): NormalizedTi
       type: clip.type === "audio" || clip.type === "video" ? clip.type : "image",
       durationSeconds: clampNumber(clip.durationSeconds, 1, 180, 4),
       fitMode: clip.fitMode === "contain" ? "contain" : "cover",
-      transition: clip.transition === "fade" || clip.transition === "zoom" ? clip.transition : "none",
+      transition: normalizeTransition(clip.transition),
+      keepOriginalAudio: clip.keepOriginalAudio === true,
     }))
     .filter((clip): clip is NormalizedTimelineVideoClip => Boolean(clip.assetId));
 
@@ -121,6 +122,23 @@ function clampNumber(value: unknown, min: number, max: number, fallback: number)
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.min(max, Math.max(min, parsed));
+}
+
+function normalizeTransition(value: unknown) {
+  if (
+    value === "blurry" ||
+    value === "fade" ||
+    value === "zoom-in" ||
+    value === "zoom-out" ||
+    value === "slide-left" ||
+    value === "slide-right" ||
+    value === "slide-up" ||
+    value === "slide-down" ||
+    value === "push-left" ||
+    value === "push-right" ||
+    value === "none"
+  ) return value;
+  return "blurry";
 }
 
 function safeFileStem(value: string) {

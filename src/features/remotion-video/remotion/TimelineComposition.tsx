@@ -5,9 +5,8 @@ export function TimelineComposition(rawProps: Partial<RemotionTimelineInputProps
   const props = normalizeRemotionTimelineInput(rawProps);
   const { fps } = useVideoConfig();
   const visualClips = props.clips.filter((clip) => clip.type !== "audio");
-  const audioClip = props.clips.find((clip) => clip.type === "audio");
-  const audioAsset = audioClip ? props.assets.find((asset) => asset.id === audioClip.assetId) : undefined;
   let cursor = 0;
+  let audioCursor = 0;
 
   return (
     <AbsoluteFill style={{ backgroundColor: props.backgroundColor, color: "white", fontFamily: "Inter, Arial, sans-serif" }}>
@@ -22,7 +21,17 @@ export function TimelineComposition(rawProps: Partial<RemotionTimelineInputProps
           </Sequence>
         ) : null;
       }) : <EmptyTimeline />}
-      {audioAsset ? <Audio src={staticFile(audioAsset.src)} volume={0.92} /> : null}
+      {props.clips.filter((clip) => clip.type === "audio").map((clip) => {
+        const asset = props.assets.find((item) => item.id === clip.assetId);
+        const from = Math.round(audioCursor * fps);
+        const durationInFrames = Math.max(1, Math.round(clip.durationSeconds * fps));
+        audioCursor += clip.durationSeconds;
+        return asset ? (
+          <Sequence key={clip.id} from={from} durationInFrames={durationInFrames}>
+            <Audio src={staticFile(asset.src)} volume={0.92} />
+          </Sequence>
+        ) : null;
+      })}
       <TimelineChrome title={props.title} watermark={props.watermark} durationSeconds={getTimelineDurationSeconds(props)} />
     </AbsoluteFill>
   );
@@ -31,26 +40,44 @@ export function TimelineComposition(rawProps: Partial<RemotionTimelineInputProps
 function TimelineVisual({ clip, src, index, total, clipDurationInFrames }: { clip: RemotionTimelineClip; src: string; index: number; total: number; clipDurationInFrames: number }) {
   const frame = useCurrentFrame();
   const fadeFrames = Math.min(18, Math.max(0, Math.floor(clipDurationInFrames / 5)));
-  const opacity = clip.transition === "fade"
-    ? interpolate(frame, [0, fadeFrames, Math.max(fadeFrames + 1, clipDurationInFrames - fadeFrames), clipDurationInFrames], [0, 1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
-    : 1;
-  const scale = clip.transition === "zoom"
-    ? interpolate(frame, [0, clipDurationInFrames], [1, 1.08], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
-    : 1;
+  const motion = getTransitionStyle(clip.transition, frame, clipDurationInFrames, fadeFrames);
   const objectFit = clip.fitMode === "contain" ? "contain" : "cover";
 
   return (
-    <AbsoluteFill style={{ opacity, overflow: "hidden", backgroundColor: "black" }}>
+    <AbsoluteFill style={{ opacity: motion.opacity, overflow: "hidden", backgroundColor: "black", filter: motion.filter, transform: motion.containerTransform }}>
       {clip.type === "video" ? (
-        <OffthreadVideo src={src} muted style={{ width: "100%", height: "100%", objectFit, transform: `scale(${scale})` }} />
+        <OffthreadVideo src={src} muted={!clip.keepOriginalAudio} style={{ width: "100%", height: "100%", objectFit, transform: motion.mediaTransform }} />
       ) : (
-        <Img src={src} style={{ width: "100%", height: "100%", objectFit, transform: `scale(${scale})` }} />
+        <Img src={src} style={{ width: "100%", height: "100%", objectFit, transform: motion.mediaTransform }} />
       )}
       <div style={{ position: "absolute", right: 42, bottom: 34, borderRadius: 999, padding: "10px 18px", background: "rgba(2,6,23,0.58)", color: "rgba(226,232,240,0.86)", fontSize: 24, fontWeight: 800 }}>
         {index + 1} / {total}
       </div>
     </AbsoluteFill>
   );
+}
+
+function getTransitionStyle(transition: RemotionTimelineClip["transition"], frame: number, duration: number, fadeFrames: number) {
+  const endStart = Math.max(fadeFrames + 1, duration - fadeFrames);
+  const edgeOpacity = interpolate(frame, [0, fadeFrames, endStart, duration], [0, 1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const enter = interpolate(frame, [0, fadeFrames || 1], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const exit = interpolate(frame, [endStart, duration], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const edge = Math.max(enter, exit);
+  const progress = interpolate(frame, [0, duration], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const base = { opacity: 1, filter: "none", containerTransform: "none", mediaTransform: "scale(1)" };
+
+  if (transition === "none") return base;
+  if (transition === "fade") return { ...base, opacity: edgeOpacity };
+  if (transition === "blurry") return { ...base, opacity: edgeOpacity, filter: `blur(${edge * 18}px)`, mediaTransform: `scale(${1.04 + edge * 0.03})` };
+  if (transition === "zoom-in") return { ...base, opacity: edgeOpacity, mediaTransform: `scale(${interpolate(progress, [0, 1], [1, 1.12])})` };
+  if (transition === "zoom-out") return { ...base, opacity: edgeOpacity, mediaTransform: `scale(${interpolate(progress, [0, 1], [1.12, 1])})` };
+  if (transition === "slide-left") return { ...base, opacity: edgeOpacity, containerTransform: `translateX(${enter * 24 - exit * 24}%)` };
+  if (transition === "slide-right") return { ...base, opacity: edgeOpacity, containerTransform: `translateX(${-enter * 24 + exit * 24}%)` };
+  if (transition === "slide-up") return { ...base, opacity: edgeOpacity, containerTransform: `translateY(${enter * 24 - exit * 24}%)` };
+  if (transition === "slide-down") return { ...base, opacity: edgeOpacity, containerTransform: `translateY(${-enter * 24 + exit * 24}%)` };
+  if (transition === "push-left") return { ...base, containerTransform: `translateX(${enter * 100 - exit * 100}%)` };
+  if (transition === "push-right") return { ...base, containerTransform: `translateX(${-enter * 100 + exit * 100}%)` };
+  return base;
 }
 
 function TimelineChrome({ title, watermark, durationSeconds }: { title: string; watermark: string; durationSeconds: number }) {

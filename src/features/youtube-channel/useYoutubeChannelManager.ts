@@ -209,7 +209,7 @@ export function useYoutubeChannelManager() {
         normalizeForm({
           ...form,
           description: displayedDescription,
-          musicLicenseText: selectedMusicLicense,
+          musicLicenseText: "",
           channelId: activeChannel?.youtubeChannelId,
           channelTitle: activeChannel?.title,
         })

@@ -175,7 +175,7 @@ export async function uploadYoutubeVideo(params: {
     requestBody: {
       snippet: {
         title: params.body.title || defaults.title || params.originalFileName,
-        description: appendMusicLicense(params.body.description || defaults.description, params.body.musicLicenseText),
+        description: params.body.description || defaults.description,
         categoryId: params.body.categoryId || defaults.categoryId,
         tags: splitCsv(params.body.tags || defaults.tags),
       },
@@ -354,13 +354,6 @@ function normalizePublishAt(value: string | undefined) {
   if (!Number.isFinite(timestamp)) throw new Error("Lịch đăng YouTube không hợp lệ.");
   if (timestamp <= Date.now() + 5 * 60 * 1000) throw new Error("Lịch đăng YouTube phải ở tương lai ít nhất 5 phút.");
   return new Date(timestamp).toISOString();
-}
-
-function appendMusicLicense(description: string, licenseText: string | undefined) {
-  const license = licenseText?.trim();
-  if (!license || description.includes(license)) return description;
-  const separator = description.trim() ? "\n\n" : "";
-  return `${description.trim()}${separator}Music license:\n${license}`;
 }
 
 function readBooleanEnv(

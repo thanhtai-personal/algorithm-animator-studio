@@ -21,7 +21,7 @@ type Props = Pick<Manager,
   lang: Lang;
 };
 
-const PAGE_SIZE = 80;
+const PAGE_SIZE = 12;
 const ROW_HEIGHT = 78;
 const LIST_HEIGHT = 390;
 const OVERSCAN = 4;
@@ -34,10 +34,13 @@ export function YoutubeUploadCard({ canUpload, displayedDescription, form, lang,
   const [generatedMetadataApplied, setGeneratedMetadataApplied] = useState(false);
   const [selectedGeneratedPath, setSelectedGeneratedPath] = useState("");
   const [page, setPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
   const [listScrollTop, setListScrollTop] = useState(0);
-  const pageCount = Math.max(1, Math.ceil(generatedVideos.length / PAGE_SIZE));
-  const pageItems = useMemo(() => generatedVideos.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), [generatedVideos, page]);
+  const filteredVideos = useMemo(() => filterGeneratedVideos(generatedVideos, searchQuery), [generatedVideos, searchQuery]);
+  const pageCount = Math.max(1, Math.ceil(filteredVideos.length / PAGE_SIZE));
+  const pageItems = useMemo(() => filteredVideos.slice(0, (page + 1) * PAGE_SIZE), [filteredVideos, page]);
   const virtualState = useMemo(() => getVirtualState(pageItems.length, listScrollTop), [pageItems.length, listScrollTop]);
+  const selectedGeneratedVideo = useMemo(() => generatedVideos.find((item) => item.relativePath === selectedGeneratedPath) || null, [generatedVideos, selectedGeneratedPath]);
 
   useEffect(() => {
     void refreshGeneratedVideos();
@@ -46,6 +49,11 @@ export function YoutubeUploadCard({ canUpload, displayedDescription, form, lang,
   useEffect(() => {
     setPage((current) => Math.min(current, pageCount - 1));
   }, [pageCount]);
+
+  useEffect(() => {
+    setPage(0);
+    setListScrollTop(0);
+  }, [searchQuery]);
 
   async function refreshGeneratedVideos() {
     setLoadingGenerated(true);
@@ -131,17 +139,24 @@ export function YoutubeUploadCard({ canUpload, displayedDescription, form, lang,
           </div>
         </div>
         <p className="text-xs text-muted-foreground">{txt(vi, "Video upload từ máy sẽ được lưu và hiển thị ngay trong danh sách video đã tạo bên dưới.", "Uploaded videos are saved and shown immediately in the generated video list below.")}</p>
+        {selectedGeneratedVideo ? <GeneratedVideoPreview asset={selectedGeneratedVideo} vi={vi} /> : null}
+        <Input
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder={txt(vi, "Tìm video đã tạo...", "Search generated videos...")}
+        />
         <GeneratedVideoList
-          key={page}
+          key={searchQuery}
           items={pageItems}
           selectedPath={selectedGeneratedPath}
           virtualState={virtualState}
           onScrollTopChange={setListScrollTop}
+          onReachEnd={() => setPage((value) => Math.min(pageCount - 1, value + 1))}
           onSelect={selectGeneratedVideo}
           vi={vi}
         />
         <div className="flex flex-col gap-2 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">
-          <span>{txt(vi, "Tổng video:", "Total videos:")} {generatedVideos.length}</span>
+          <span>{txt(vi, "Đã hiển thị:", "Shown:")} {pageItems.length}/{filteredVideos.length} · {txt(vi, "Tổng video:", "Total videos:")} {generatedVideos.length}</span>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" disabled={page === 0} onClick={() => { setPage((value) => Math.max(0, value - 1)); setListScrollTop(0); }}><ChevronLeft className="h-4 w-4" /></Button>
             <span>{page + 1}/{pageCount}</span>
@@ -167,7 +182,7 @@ export function YoutubeUploadCard({ canUpload, displayedDescription, form, lang,
           <Field label={txt(vi, "Category ID", "Category ID")} value={form.categoryId} onChange={(value) => setForm({ ...form, categoryId: value })} />
           <div>
             <Label>{txt(vi, "Quyền riêng tư", "Privacy")}</Label>
-            <Select value={form.privacyStatus} onValueChange={(value) => setForm({ ...form, privacyStatus: value })}>
+            <Select value={form.privacyStatus} onValueChange={(value) => setForm({ ...form, privacyStatus: value, publishAt: value === "private" ? form.publishAt : "" })}>
               <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="private">{txt(vi, "Riêng tư", "Private")}</SelectItem>
@@ -176,7 +191,7 @@ export function YoutubeUploadCard({ canUpload, displayedDescription, form, lang,
               </SelectContent>
             </Select>
           </div>
-          <Field label={txt(vi, "Lịch đăng", "Publish at")} type="datetime-local" value={form.publishAt || ""} onChange={(value) => setForm({ ...form, publishAt: value })} />
+          <Field label={txt(vi, "Lịch đăng", "Publish at")} type="datetime-local" value={form.publishAt || ""} onChange={(value) => setForm({ ...form, publishAt: value, privacyStatus: value ? "private" : form.privacyStatus })} />
         </div>
         <div>
           <Label>{txt(vi, "Playlist", "Playlist")}</Label>
@@ -222,6 +237,7 @@ function GeneratedVideoList(props: {
   virtualState: ReturnType<typeof getVirtualState>;
   vi: boolean;
   onScrollTopChange: (value: number) => void;
+  onReachEnd: () => void;
   onSelect: (relativePath: string) => void;
 }) {
   if (!props.items.length) {
@@ -237,7 +253,11 @@ function GeneratedVideoList(props: {
     <div
       className="overflow-auto rounded-lg border border-border"
       style={{ height: Math.min(LIST_HEIGHT, props.items.length * ROW_HEIGHT) }}
-      onScroll={(event) => props.onScrollTopChange(event.currentTarget.scrollTop)}
+      onScroll={(event) => {
+        const target = event.currentTarget;
+        props.onScrollTopChange(target.scrollTop);
+        if (target.scrollTop + target.clientHeight >= target.scrollHeight - ROW_HEIGHT) props.onReachEnd();
+      }}
     >
       <div className="relative" style={{ height: props.items.length * ROW_HEIGHT }}>
         <div className="absolute inset-x-0" style={{ transform: `translateY(${props.virtualState.start * ROW_HEIGHT}px)` }}>
@@ -268,6 +288,19 @@ function GeneratedVideoList(props: {
   );
 }
 
+function GeneratedVideoPreview({ asset, vi }: { asset: GeneratedAsset; vi: boolean }) {
+  return (
+    <div className="grid gap-3 rounded-lg border border-border bg-background/50 p-3 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-start">
+      <div className="min-w-0 space-y-1">
+        <p className="truncate text-sm font-semibold">{txt(vi, "Preview video đang chọn", "Selected video preview")}</p>
+        <p className="truncate text-xs text-muted-foreground">{asset.fileName}</p>
+        <p className="truncate text-xs text-muted-foreground">{formatSize(asset.sizeBytes)} · {formatDate(asset.createdAtMs)}</p>
+      </div>
+      <video key={asset.relativePath} src={asset.url} controls preload="metadata" className="w-full rounded-md border bg-black" />
+    </div>
+  );
+}
+
 function sourceTabClass(active: boolean) {
   return `rounded-md px-3 py-2 text-sm font-medium transition ${active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:bg-background/60 hover:text-foreground"}`;
 }
@@ -277,6 +310,12 @@ function getVirtualState(itemCount: number, scrollTop: number) {
   const start = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
   const end = Math.min(itemCount, start + visibleCount + OVERSCAN * 2);
   return { start, end };
+}
+
+function filterGeneratedVideos(items: GeneratedAsset[], query: string) {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return items;
+  return items.filter((item) => `${item.fileName} ${item.relativePath}`.toLowerCase().includes(needle));
 }
 
 function formatSize(sizeBytes: number) {

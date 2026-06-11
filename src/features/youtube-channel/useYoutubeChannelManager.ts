@@ -338,7 +338,7 @@ export function useYoutubeChannelManager() {
 }
 
 function normalizeForm(form: YoutubeUploadForm): YoutubeUploadForm {
-  return { ...form, publishAt: form.publishAt ? new Date(form.publishAt).toISOString() : "" };
+  return { ...form, privacyStatus: form.publishAt ? "private" : form.privacyStatus, publishAt: form.publishAt ? new Date(form.publishAt).toISOString() : "" };
 }
 
 function applyExportMetadata(form: YoutubeUploadForm, asset: ExportedVideoAsset | null): YoutubeUploadForm {

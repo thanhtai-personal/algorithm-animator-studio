@@ -167,6 +167,8 @@ export async function uploadYoutubeVideo(params: {
 }) {
   const defaults = getYoutubeConfigStatus(params.envOverrides).defaults;
   const youtube = createAuthorizedYoutubeClient(params.body.refreshToken, params.envOverrides);
+  const publishAt = normalizePublishAt(params.body.publishAt);
+  const privacyStatus = publishAt ? "private" : params.body.privacyStatus || defaults.privacyStatus;
   const response = await youtube.videos.insert({
     part: ["snippet", "status"],
     notifySubscribers: readBooleanInput(params.body.notifySubscribers, defaults.notifySubscribers),
@@ -178,9 +180,9 @@ export async function uploadYoutubeVideo(params: {
         tags: splitCsv(params.body.tags || defaults.tags),
       },
       status: {
-        privacyStatus: params.body.privacyStatus || defaults.privacyStatus,
+        privacyStatus,
         selfDeclaredMadeForKids: readBooleanInput(params.body.madeForKids, defaults.madeForKids),
-        publishAt: params.body.publishAt || undefined,
+        publishAt,
         containsSyntheticMedia: readBooleanInput(
           params.body.containsSyntheticMedia,
           defaults.containsSyntheticMedia
@@ -343,6 +345,15 @@ function splitCsv(value: string): string[] | undefined {
     .filter(Boolean);
 
   return items.length ? items : undefined;
+}
+
+function normalizePublishAt(value: string | undefined) {
+  const raw = value?.trim();
+  if (!raw) return undefined;
+  const timestamp = Date.parse(raw);
+  if (!Number.isFinite(timestamp)) throw new Error("Lịch đăng YouTube không hợp lệ.");
+  if (timestamp <= Date.now() + 5 * 60 * 1000) throw new Error("Lịch đăng YouTube phải ở tương lai ít nhất 5 phút.");
+  return new Date(timestamp).toISOString();
 }
 
 function appendMusicLicense(description: string, licenseText: string | undefined) {

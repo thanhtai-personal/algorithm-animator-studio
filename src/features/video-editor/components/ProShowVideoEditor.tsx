@@ -304,12 +304,15 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
           />
         </div>
 
-        <div className="space-y-2 rounded-lg border bg-muted/10 p-3">
-          <TimelineTrack title="Track 1: Hình ảnh / video" icon={<Film className="h-4 w-4" />} clips={visualClips} assets={assets} track="visual" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
-          <TimelineTrack title="Track 2: Voice / nhạc" icon={<Music2 className="h-4 w-4" />} clips={audioClips} assets={assets} track="audio" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
+          <div className="space-y-2 rounded-lg border bg-muted/10 p-3">
+            <TimelineTrack title="Track 1: Hình ảnh / video" icon={<Film className="h-4 w-4" />} clips={visualClips} assets={assets} track="visual" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
+            <TimelineTrack title="Track 2: Voice / nhạc" icon={<Music2 className="h-4 w-4" />} clips={audioClips} assets={assets} track="audio" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
+          </div>
+          <div className="xl:sticky xl:top-20">
+            <MediaBin assets={assets} onFiles={addFiles} />
+          </div>
         </div>
-
-        <MediaBin assets={assets} onFiles={addFiles} />
         <audio ref={audioRef} />
         {lastVideo ? (
           <div className="space-y-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">

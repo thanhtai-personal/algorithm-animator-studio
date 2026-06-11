@@ -32,8 +32,8 @@ const FEATURE_GROUPS: Array<{
   {
     titleEn: "Publishing screens",
     titleVi: "Màn hình publishing",
-    descriptionEn: "Turn these on only when that publishing workflow is configured. Channel Manager is always visible in the system menu.",
-    descriptionVi: "Chỉ bật khi workflow publishing đó đã được cấu hình. Quản lý kênh luôn hiển thị trong menu hệ thống.",
+    descriptionEn: "Turn these on only when that publishing workflow is configured. Channel Manager is always visible in Manage.",
+    descriptionVi: "Chỉ bật khi workflow publishing đó đã được cấu hình. Quản lý kênh luôn hiển thị trong nhóm Quản lý.",
     items: ["mu-news"],
   },
 ];
@@ -57,8 +57,8 @@ export function SettingsModulesTab({ lang, settings, onChange }: SettingsModules
           <p className="text-sm text-muted-foreground">
             {text(
               lang,
-              "Channel-specific builder screens are hidden by default. System tools like Channel Manager, Text to Speech, Video Create, Files, and Settings stay visible.",
-              "Các màn hình build kênh cụ thể được tắt mặc định. Công cụ hệ thống như Quản lý kênh, Text to Speech, Tạo/chỉnh video, Quản lý file và Cài đặt vẫn luôn hiển thị.",
+              "Channel-specific builder screens are hidden by default. Common tools and Manage items stay visible.",
+              "Các màn hình build kênh cụ thể được tắt mặc định. Nhóm Công cụ chung và Quản lý vẫn luôn hiển thị.",
             )}
           </p>
         </CardHeader>

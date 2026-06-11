@@ -109,16 +109,9 @@ export const APP_NAVIGATION_GROUPS: AppNavigationGroup[] = [
     ],
   },
   {
-    id: "system",
-    label: { en: "System", vi: "Hệ thống" },
+    id: "common-tools",
+    label: { en: "Common tools", vi: "Công cụ chung" },
     items: [
-      {
-        id: "channel",
-        to: "/channel",
-        icon: Youtube,
-        label: { en: "Channel Manager", vi: "Quản lý kênh" },
-        matchPaths: ["/channel", "/youtube", "/youtube-publishing", "/social-publishing"],
-      },
       {
         id: "text-to-speech",
         to: "/text-to-speech",
@@ -132,6 +125,19 @@ export const APP_NAVIGATION_GROUPS: AppNavigationGroup[] = [
         icon: Film,
         label: { en: "Video Create", vi: "Tạo/chỉnh video" },
         matchPaths: ["/video-create"],
+      },
+    ],
+  },
+  {
+    id: "manage",
+    label: { en: "Manage", vi: "Quản lý" },
+    items: [
+      {
+        id: "channel",
+        to: "/channel",
+        icon: Youtube,
+        label: { en: "Channel Manager", vi: "Quản lý kênh" },
+        matchPaths: ["/channel", "/youtube", "/youtube-publishing", "/social-publishing"],
       },
       {
         id: "assets",

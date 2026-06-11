@@ -30,7 +30,7 @@ export default function VideoCreate() {
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
   const [videos, setVideos] = useState<GeneratedResource[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [renderLibrary, setRenderLibrary] = useState<RenderLibrary>("ffmpeg");
+  const [renderLibrary, setRenderLibrary] = useState<RenderLibrary>("remotion");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => subscribeSystemLang(setLang), []);

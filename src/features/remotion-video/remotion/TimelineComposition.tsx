@@ -28,7 +28,7 @@ export function TimelineComposition(rawProps: Partial<RemotionTimelineInputProps
         audioCursor += clip.durationSeconds;
         return asset ? (
           <Sequence key={clip.id} from={from} durationInFrames={durationInFrames}>
-            <Audio src={staticFile(asset.src)} volume={0.92} />
+            <Audio src={staticFile(asset.src)} volume={clip.volume ?? 1} />
           </Sequence>
         ) : null;
       })}
@@ -53,7 +53,7 @@ function TimelineVisual({ clip, src, index, total, clipDurationInFrames }: { cli
   return (
     <AbsoluteFill style={{ opacity: motion.opacity, overflow: "hidden", backgroundColor: "black", filter: motion.filter, transform: motion.containerTransform }}>
       {clip.type === "video" ? (
-        <OffthreadVideo src={src} muted={!clip.keepOriginalAudio} style={{ width: "100%", height: "100%", objectFit, transform: motion.mediaTransform }} />
+        <OffthreadVideo src={src} muted={!clip.keepOriginalAudio} volume={clip.volume ?? 1} style={{ width: "100%", height: "100%", objectFit, transform: motion.mediaTransform }} />
       ) : (
         <Img src={src} style={{ width: "100%", height: "100%", objectFit, transform: motion.mediaTransform }} />
       )}

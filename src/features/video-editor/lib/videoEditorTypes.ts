@@ -21,6 +21,8 @@ export type VideoEditorAsset = {
   file: File;
   name: string;
   url: string;
+  source?: "upload" | "system-music" | "silent";
+  libraryTrackId?: string;
 };
 
 export type VideoEditorClip = {
@@ -33,6 +35,7 @@ export type VideoEditorClip = {
   transition: VideoEditorTransition;
   transitionSeconds: number;
   keepOriginalAudio?: boolean;
+  volume?: number;
 };
 
 export type TimelineRenderProject = {
@@ -49,6 +52,7 @@ export type TimelineRenderProject = {
     transition: VideoEditorTransition;
     transitionSeconds: number;
     keepOriginalAudio?: boolean;
+    volume?: number;
   }>;
   showWatermark?: boolean;
   watermarkText?: string;

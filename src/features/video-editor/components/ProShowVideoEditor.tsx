@@ -9,10 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { readSystemLang, subscribeSystemLang, text, type Lang } from "@/lib/i18n";
-import type { MusicLibraryTrack } from "@/lib/musicLibrary";
-import { VideoEditorMusicPicker } from "./VideoEditorMusicPicker";
+import { getMusicLibraryTracks } from "@/lib/musicLibrary";
 import { VideoEditorPreview } from "./VideoEditorPreview";
 import { MediaBin, TimelineTrack, type TrackKind } from "./VideoEditorTimeline";
+import { createAsset, createAssetFromFile, createAssetFromLibraryTrack, createClipFromAsset, mergeLibraryAssets } from "../lib/videoEditorAssetHelpers";
 import { fromDraftAsset, loadVideoEditorDraft, saveVideoEditorDraft, toDraftAsset } from "../lib/videoEditorDraftStore";
 import { renderTimelineVideo } from "../lib/videoEditorApi";
 import type { TimelineRenderResponse, VideoEditorAsset, VideoEditorAspectRatio, VideoEditorClip, VideoEditorRenderEngine } from "../lib/videoEditorTypes";
@@ -51,10 +51,24 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
         setShowWatermark(draft.showWatermark !== false);
         setWatermarkText(draft.watermarkText || "KAI STUDIO");
         setWatermarkLogoAssetId(draft.watermarkLogoAssetId || "");
-        setAssets(draft.assets.map(fromDraftAsset));
-        setClips(draft.clips.map((clip) => ({ ...clip, transitionSeconds: clip.transitionSeconds || 1.5 })));
+        setAssets(mergeLibraryAssets(draft.assets.map(fromDraftAsset), []));
+        setClips(draft.clips.map((clip) => ({ ...clip, transitionSeconds: clip.transitionSeconds || 1.5, volume: clampVolume(clip.volume) })));
       })
       .finally(() => setDraftLoaded(true));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setAssets((current) => mergeLibraryAssets(current, []));
+    getMusicLibraryTracks()
+      .then(async (tracks) => {
+        const libraryAssets = await Promise.all(tracks.map(createAssetFromLibraryTrack));
+        if (!cancelled) {
+          setAssets((current) => mergeLibraryAssets(current, libraryAssets.filter(Boolean) as VideoEditorAsset[]));
+        }
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -66,7 +80,7 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
     const timer = window.setTimeout(() => {
       void saveVideoEditorDraft({
         title, aspectRatio, fps, showWatermark, watermarkText, watermarkLogoAssetId, clips,
-        assets: assets.map(toDraftAsset),
+        assets: assets.filter((asset) => asset.source !== "system-music" && asset.source !== "silent").map(toDraftAsset),
       }).catch(() => undefined);
     }, 500);
     return () => window.clearTimeout(timer);
@@ -96,25 +110,28 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
   }, [playing, elapsed, totalDuration]);
 
   useEffect(() => {
-    const asset = audioClips[0] ? assets.find((item) => item.id === audioClips[0].assetId) : undefined;
-    const audio = audioRef.current;
-    if (!asset || !audio) return;
-    audio.src = asset.url;
-    audio.loop = true;
-    audio.volume = 0.9;
-  }, [audioClips[0]?.assetId, assets]);
-
-  useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    const audioPreview = getActiveTimelineClip(audioClips, elapsed);
+    const asset = audioPreview?.clip ? assets.find((item) => item.id === audioPreview.clip.assetId) : undefined;
+    audio.volume = clampVolume(audioPreview?.clip.volume);
+    if (!audioPreview || !asset || asset.source === "silent") {
+      audio.pause();
+      return;
+    }
+    if (audio.dataset.assetId !== asset.id) {
+      audio.src = asset.url;
+      audio.loop = false;
+      audio.dataset.assetId = asset.id;
+    }
     if (playing) {
-      audio.currentTime = elapsed;
+      audio.currentTime = audioPreview.localTime;
       void audio.play().catch(() => undefined);
     } else {
       audio.pause();
-      if (elapsed === 0) audio.currentTime = 0;
+      audio.currentTime = audioPreview.localTime;
     }
-  }, [elapsed, playing]);
+  }, [assets, audioClips, elapsed, playing]);
 
   const timelineStats = useMemo(() => ({
     image: clips.filter((clip) => clip.type === "image").length,
@@ -130,16 +147,6 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
     if (targetTrack) {
       setClips((current) => [...current, ...newAssets.filter((asset) => canUseOnTrack(asset, targetTrack)).map(createClipFromAsset)]);
     }
-  }
-
-  async function addLibraryMusic(track: MusicLibraryTrack) {
-    const response = await fetch(track.audioUrl);
-    if (!response.ok) throw new Error("Không tải được nhạc nền đã chọn.");
-    const blob = await response.blob();
-    const fileName = track.fileName || `${track.title}.mp3`;
-    const asset = createAssetFromFile(new File([blob], fileName, { type: blob.type || "audio/mpeg" }), track.title);
-    setAssets((current) => [...current, asset]);
-    setClips((current) => [...current, createClipFromAsset(asset)]);
   }
 
   function addLogoFile(fileList: FileList | null) {
@@ -205,6 +212,8 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
       const result = await renderTimelineVideo({ title, aspectRatio, fps, renderEngine, showWatermark, watermarkText, watermarkLogoAssetId, clips: clips.map(toRenderClip) }, assets);
       setLastVideo(result);
       downloadVideo(result.videoUrl, result.fileName);
+      const renderedAsset = await createRenderedVideoAsset(result);
+      setAssets((current) => [...current, renderedAsset]);
       toast.success(text(lang, "Video exported to library.", "Đã export video vào thư viện."), { id: toastId });
       await onVideoCreated();
     } catch (error) {
@@ -264,7 +273,23 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
             <Badge variant="outline">{renderEngine === "remotion" ? "Remotion" : "FFmpeg"}</Badge>
             <Badge variant="outline">{totalDuration.toFixed(1)}s</Badge>
           </div>
-          <VideoEditorPreview asset={currentAsset} clip={preview?.clip} aspectRatio={aspectRatio} progress={progress} elapsed={elapsed} totalDuration={totalDuration} playing={playing} onReset={() => setElapsed(0)} onPlay={() => setPlaying((value) => !value)} />
+          <VideoEditorPreview
+            asset={currentAsset}
+            clip={preview?.clip}
+            localTime={preview?.localTime}
+            aspectRatio={aspectRatio}
+            progress={progress}
+            elapsed={elapsed}
+            totalDuration={totalDuration}
+            playing={playing}
+            title={title}
+            showWatermark={showWatermark}
+            watermarkText={watermarkText}
+            watermarkLogoAsset={assets.find((asset) => asset.id === watermarkLogoAssetId)}
+            onReset={() => setElapsed(0)}
+            onPlay={() => setPlaying((value) => !value)}
+            onSeek={(value) => { setPlaying(false); setElapsed(value); }}
+          />
         </div>
 
         <div className="space-y-2 rounded-lg border bg-muted/10 p-3">
@@ -272,7 +297,6 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
           <TimelineTrack title="Track 2: Voice / nhạc" icon={<Music2 className="h-4 w-4" />} clips={audioClips} assets={assets} track="audio" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
         </div>
 
-        <VideoEditorMusicPicker onPick={addLibraryMusic} />
         <MediaBin assets={assets} onFiles={addFiles} />
         <audio ref={audioRef} />
         {lastVideo ? (
@@ -291,21 +315,6 @@ function Field(props: { label: string; children: ReactNode }) {
   return <div className="space-y-2"><Label>{props.label}</Label>{props.children}</div>;
 }
 
-function createAsset(file: File): VideoEditorAsset | null {
-  const type = file.type.startsWith("image/") ? "image" : file.type.startsWith("audio/") ? "audio" : file.type.startsWith("video/") ? "video" : null;
-  if (!type) return null;
-  return createAssetFromFile(file);
-}
-
-function createAssetFromFile(file: File, label?: string): VideoEditorAsset {
-  const type = file.type.startsWith("image/") ? "image" : file.type.startsWith("audio/") ? "audio" : "video";
-  return { id: makeId(), type, file, name: label || file.name, url: URL.createObjectURL(file) };
-}
-
-function createClipFromAsset(asset: VideoEditorAsset): VideoEditorClip {
-  return { id: makeId(), assetId: asset.id, type: asset.type, label: asset.name, durationSeconds: asset.type === "image" ? 4 : asset.type === "video" ? 6 : 12, fitMode: "contain", transition: asset.type === "audio" ? "none" : "blurry", transitionSeconds: 1.5, keepOriginalAudio: false };
-}
-
 function getPreviewClip(clips: VideoEditorClip[], elapsed: number) {
   let cursor = 0;
   for (const clip of clips) {
@@ -317,7 +326,22 @@ function getPreviewClip(clips: VideoEditorClip[], elapsed: number) {
 }
 
 function toRenderClip(clip: VideoEditorClip) {
-  return { id: clip.id, assetId: clip.assetId, type: clip.type, durationSeconds: clip.durationSeconds, fitMode: clip.fitMode, transition: clip.transition, transitionSeconds: clip.transitionSeconds, keepOriginalAudio: clip.keepOriginalAudio === true };
+  return { id: clip.id, assetId: clip.assetId, type: clip.type, durationSeconds: clip.durationSeconds, fitMode: clip.fitMode, transition: clip.transition, transitionSeconds: clip.transitionSeconds, keepOriginalAudio: clip.keepOriginalAudio === true, volume: clampVolume(clip.volume) };
+}
+
+function getActiveTimelineClip(clips: VideoEditorClip[], elapsed: number) {
+  let cursor = 0;
+  for (const clip of clips) {
+    const end = cursor + clip.durationSeconds;
+    if (elapsed >= cursor && elapsed < end) return { clip, localTime: elapsed - cursor };
+    cursor = end;
+  }
+  return null;
+}
+
+function clampVolume(value: unknown) {
+  const parsed = Number(value ?? 1);
+  return Number.isFinite(parsed) ? Math.min(2, Math.max(0, parsed)) : 1;
 }
 
 function canUseOnTrack(asset: VideoEditorAsset, track: TrackKind) {
@@ -334,10 +358,6 @@ function insertBefore(clips: VideoEditorClip[], clip: VideoEditorClip, beforeCli
   return [...clips.slice(0, index), clip, ...clips.slice(index)];
 }
 
-function makeId() {
-  return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
 function downloadVideo(url: string, fileName: string) {
   const link = document.createElement("a");
   link.href = url;
@@ -345,4 +365,12 @@ function downloadVideo(url: string, fileName: string) {
   document.body.appendChild(link);
   link.click();
   link.remove();
+}
+
+async function createRenderedVideoAsset(video: TimelineRenderResponse) {
+  const response = await fetch(video.videoUrl);
+  if (!response.ok) throw new Error("Đã render xong nhưng không tải lại được video vào kho media.");
+  const blob = await response.blob();
+  const file = new File([blob], video.fileName, { type: blob.type || "video/mp4" });
+  return createAssetFromFile(file, video.fileName);
 }

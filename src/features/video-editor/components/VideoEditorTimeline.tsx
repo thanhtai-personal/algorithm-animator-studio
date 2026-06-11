@@ -1,4 +1,4 @@
-import type { DragEvent, ReactNode } from "react";
+import { useEffect, useMemo, useState, type DragEvent, type ReactNode, type UIEvent } from "react";
 import { Music2, Trash2, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { VIDEO_EDITOR_TRANSITIONS } from "../lib/videoEditorConstants";
 import type { VideoEditorAsset, VideoEditorClip, VideoEditorFitMode, VideoEditorTransition } from "../lib/videoEditorTypes";
 
 export type TrackKind = "visual" | "audio";
+const MEDIA_PAGE_SIZE = 12;
 
 type TimelineTrackProps = {
   title: string;
@@ -36,16 +37,54 @@ export function TimelineTrack(props: TimelineTrackProps) {
 }
 
 export function MediaBin(props: { assets: VideoEditorAsset[]; onFiles: (files: FileList | null) => void }) {
+  const [query, setQuery] = useState("");
+  const filteredAssets = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) return props.assets;
+    return props.assets.filter((asset) => `${asset.name} ${asset.type} ${getAssetBadge(asset)}`.toLowerCase().includes(term));
+  }, [props.assets, query]);
+  const visualAssets = useMemo(() => filteredAssets.filter((asset) => asset.type !== "audio"), [filteredAssets]);
+  const audioAssets = useMemo(() => filteredAssets.filter((asset) => asset.type === "audio"), [filteredAssets]);
+
   return (
     <section className="space-y-3 rounded-lg border bg-background/40 p-3">
-      <div className="flex items-center justify-between gap-3">
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
         <h3 className="text-sm font-semibold">Kho media</h3>
         <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted/40"><Upload className="h-4 w-4" /> Upload<input type="file" multiple accept="image/*,audio/*,video/*" className="hidden" onChange={(event) => props.onFiles(event.target.files)} /></label>
       </div>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {props.assets.length ? props.assets.map((asset) => <MediaAsset key={asset.id} asset={asset} />) : <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground sm:col-span-2 lg:col-span-4">Drop ảnh, video hoặc audio từ máy tính vào editor</div>}
-      </div>
+      <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm media, nhạc nền, audio..." />
+      <MediaGroup title="Ảnh / video" empty="Không có ảnh/video phù hợp" assets={visualAssets} />
+      <MediaGroup title="Nhạc nền / audio" empty="Không có nhạc/audio phù hợp" assets={audioAssets} />
     </section>
+  );
+}
+
+function MediaGroup(props: { title: string; empty: string; assets: VideoEditorAsset[] }) {
+  const [visibleCount, setVisibleCount] = useState(MEDIA_PAGE_SIZE);
+  const visibleAssets = props.assets.slice(0, visibleCount);
+  const hasMore = visibleCount < props.assets.length;
+
+  useEffect(() => setVisibleCount(MEDIA_PAGE_SIZE), [props.assets]);
+
+  function handleScroll(event: UIEvent<HTMLDivElement>) {
+    const target = event.currentTarget;
+    const nearBottom = target.scrollTop + target.clientHeight >= target.scrollHeight - 48;
+    if (nearBottom && hasMore) setVisibleCount((count) => Math.min(props.assets.length, count + MEDIA_PAGE_SIZE));
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-3">
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{props.title}</h4>
+        <span className="text-xs text-muted-foreground">{Math.min(visibleCount, props.assets.length)} / {props.assets.length}</span>
+      </div>
+      <div className="max-h-[460px] overflow-y-auto pr-1" onScroll={handleScroll}>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {props.assets.length ? visibleAssets.map((asset) => <MediaAsset key={asset.id} asset={asset} />) : <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground sm:col-span-2 lg:col-span-4">{props.empty}</div>}
+        </div>
+        {hasMore ? <div className="py-3 text-center text-xs text-muted-foreground">Kéo xuống để load thêm 12 media</div> : null}
+      </div>
+    </div>
   );
 }
 
@@ -80,12 +119,33 @@ function TimelineClip(props: {
         </div>
       ) : null}
       {clip.type === "video" ? (
-        <label className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2 text-sm">
-          <span>Âm thanh gốc video</span>
-          <Switch checked={clip.keepOriginalAudio === true} onCheckedChange={(checked) => props.onUpdate(clip.id, { keepOriginalAudio: checked })} />
-        </label>
+        <div className="grid gap-2">
+          <label className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2 text-sm">
+            <span>Âm thanh gốc video</span>
+            <Switch checked={clip.keepOriginalAudio === true} onCheckedChange={(checked) => props.onUpdate(clip.id, { keepOriginalAudio: checked })} />
+          </label>
+          {clip.keepOriginalAudio ? <VolumeField clip={clip} onUpdate={props.onUpdate} label="Volume video" /> : null}
+        </div>
+      ) : null}
+      {clip.type === "audio" ? (
+        <VolumeField clip={clip} onUpdate={props.onUpdate} label={props.asset?.source === "silent" ? "Volume" : "Volume audio / voice"} />
       ) : null}
     </article>
+  );
+}
+
+function VolumeField(props: { clip: VideoEditorClip; label: string; onUpdate: TimelineTrackProps["onUpdate"] }) {
+  return (
+    <Field label={props.label}>
+      <Input
+        type="number"
+        min={0}
+        max={200}
+        step={5}
+        value={Math.round((props.clip.volume ?? 1) * 100)}
+        onChange={(event) => props.onUpdate(props.clip.id, { volume: Number(event.target.value) / 100 })}
+      />
+    </Field>
   );
 }
 
@@ -95,9 +155,15 @@ function MediaAsset({ asset }: { asset: VideoEditorAsset }) {
       <div className="grid aspect-video place-items-center overflow-hidden rounded bg-slate-950 text-muted-foreground">
         {asset.type === "image" ? <img src={asset.url} className="h-full w-full object-cover" alt="" /> : asset.type === "video" ? <video src={asset.url} muted className="h-full w-full object-cover" /> : <Music2 className="h-7 w-7" />}
       </div>
-      <div className="flex items-center gap-2 text-xs"><Badge variant="outline">{asset.type}</Badge><span className="truncate">{asset.name}</span></div>
+      <div className="flex items-center gap-2 text-xs"><Badge variant="outline">{getAssetBadge(asset)}</Badge><span className="truncate">{asset.name}</span></div>
     </article>
   );
+}
+
+function getAssetBadge(asset: VideoEditorAsset) {
+  if (asset.source === "silent") return "im lặng";
+  if (asset.source === "system-music") return "nhạc nền";
+  return asset.type;
 }
 
 function Field(props: { label: string; children: ReactNode }) {

@@ -18,6 +18,7 @@ export type RemotionTimelineClip = {
   transition: VideoEditorTransition;
   transitionSeconds: number;
   keepOriginalAudio?: boolean;
+  volume?: number;
 };
 
 export type RemotionTimelineInputProps = {
@@ -76,6 +77,7 @@ export function normalizeRemotionTimelineInput(raw: Partial<RemotionTimelineInpu
       transition: isVideoEditorTransition(clip.transition) ? clip.transition : "blurry",
       transitionSeconds: clampNumber(clip.transitionSeconds, 0.2, 8, 1.5),
       keepOriginalAudio: clip.keepOriginalAudio === true,
+      volume: clampNumber(clip.volume, 0, 2, 1),
     })).filter((clip) => clip.assetId),
   };
 }

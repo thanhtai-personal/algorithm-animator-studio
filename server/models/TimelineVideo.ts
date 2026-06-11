@@ -24,6 +24,7 @@ export type TimelineVideoClip = {
   transition?: TimelineVideoTransition;
   transitionSeconds?: number;
   keepOriginalAudio?: boolean;
+  volume?: number;
 };
 
 export type TimelineVideoRenderProject = {

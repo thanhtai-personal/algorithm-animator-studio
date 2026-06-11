@@ -104,6 +104,7 @@ function normalizeTimelineProject(raw: TimelineVideoRenderProject): NormalizedTi
       transition: normalizeTransition(clip.transition),
       transitionSeconds: clampNumber(clip.transitionSeconds, 0.2, 8, 1.5),
       keepOriginalAudio: clip.keepOriginalAudio === true,
+      volume: clampNumber(clip.volume, 0, 2, 1),
     }))
     .filter((clip): clip is NormalizedTimelineVideoClip => Boolean(clip.assetId));
 

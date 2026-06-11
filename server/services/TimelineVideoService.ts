@@ -47,10 +47,14 @@ export async function renderTimelineVideo(params: {
     await concatenateSegments(segments, silentVideoPath, tempDir, params.envOverrides);
 
     const totalDuration = visualClips.reduce((sum, clip) => sum + clip.durationSeconds, 0);
-    const firstAudio = audioClips.map((clip) => assets[clip.assetId]).find((file) => file?.path && fs.existsSync(file.path));
+    const firstAudioClip = audioClips.find((clip) => {
+      const file = assets[clip.assetId];
+      return file?.path && fs.existsSync(file.path);
+    });
+    const firstAudio = firstAudioClip ? assets[firstAudioClip.assetId] : undefined;
 
     if (firstAudio?.path) {
-      await addAudioTrack({ videoPath: silentVideoPath, audioPath: firstAudio.path, outputPath: output.outputPath, durationSeconds: totalDuration, envOverrides: params.envOverrides });
+      await addAudioTrack({ videoPath: silentVideoPath, audioPath: firstAudio.path, outputPath: output.outputPath, durationSeconds: totalDuration, volume: firstAudioClip?.volume ?? 1, envOverrides: params.envOverrides });
     } else {
       fs.copyFileSync(silentVideoPath, output.outputPath);
     }
@@ -83,6 +87,7 @@ function normalizeTimelineProject(raw: TimelineVideoRenderProject): NormalizedTi
       transition: normalizeTransition(clip.transition),
       transitionSeconds: clampNumber(clip.transitionSeconds, 0.2, 8, 1.5),
       keepOriginalAudio: clip.keepOriginalAudio === true,
+      volume: clampNumber(clip.volume, 0, 2, 1),
     }))
     .filter((clip): clip is NormalizedTimelineVideoClip => Boolean(clip.assetId));
 
@@ -139,7 +144,7 @@ async function concatenateSegments(segments: string[], outputPath: string, tempD
   await runFfmpeg(["-y", "-f", "concat", "-safe", "0", "-i", listPath, "-c", "copy", outputPath], envOverrides);
 }
 
-function addAudioTrack(params: { videoPath: string; audioPath: string; outputPath: string; durationSeconds: number; envOverrides?: RuntimeEnvValues }) {
+function addAudioTrack(params: { videoPath: string; audioPath: string; outputPath: string; durationSeconds: number; volume: number; envOverrides?: RuntimeEnvValues }) {
   return runFfmpeg([
     "-y",
     "-stream_loop",
@@ -148,6 +153,8 @@ function addAudioTrack(params: { videoPath: string; audioPath: string; outputPat
     params.audioPath,
     "-i",
     params.videoPath,
+    "-filter:a:0",
+    `volume=${params.volume.toFixed(3)}`,
     "-t",
     params.durationSeconds.toFixed(3),
     "-map",

@@ -78,7 +78,7 @@ const App = () => (
                 <Route path="/privacy" element={<LegalPage type="privacy" />} />
                 <Route path="/term" element={<LegalPage type="terms" />} />
                 <Route path="/terms" element={<LegalPage type="terms" />} />
-                <Route path="/" element={<Navigate replace to="/algorithms/short" />} />
+                <Route path="/" element={<Navigate replace to="/text-to-speech" />} />
                 <Route path="/algorithms/short" element={<Index />} />
                 <Route path="/algorithms/maze" element={<AlgorithmWorld />} />
                 <Route path="/algorithms/video-long" element={<LongContent />} />

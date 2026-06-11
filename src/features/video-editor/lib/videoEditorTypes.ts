@@ -23,6 +23,7 @@ export type VideoEditorAsset = {
   url: string;
   source?: "upload" | "system-music" | "silent";
   libraryTrackId?: string;
+  durationSeconds?: number;
 };
 
 export type VideoEditorClip = {

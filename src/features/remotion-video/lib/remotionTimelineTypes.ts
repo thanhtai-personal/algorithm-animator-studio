@@ -72,7 +72,7 @@ export function normalizeRemotionTimelineInput(raw: Partial<RemotionTimelineInpu
       id: sanitizeText(clip.id, `clip-${index}`, 80),
       assetId: sanitizeText(clip.assetId, "", 120),
       type: clip.type === "audio" || clip.type === "video" ? clip.type : "image",
-      durationSeconds: clampNumber(clip.durationSeconds, 1, 180, 4),
+      durationSeconds: clampNumber(clip.durationSeconds, 1, 7200, 4),
       fitMode: clip.fitMode === "contain" ? "contain" : "cover",
       transition: isVideoEditorTransition(clip.transition) ? clip.transition : "blurry",
       transitionSeconds: clampNumber(clip.transitionSeconds, 0.2, 8, 1.5),

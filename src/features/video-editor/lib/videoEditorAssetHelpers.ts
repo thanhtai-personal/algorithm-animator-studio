@@ -35,7 +35,23 @@ export function mergeLibraryAssets(current: VideoEditorAsset[], libraryAssets: V
 }
 
 export function createClipFromAsset(asset: VideoEditorAsset): VideoEditorClip {
-  return { id: makeId(), assetId: asset.id, type: asset.type, label: asset.name, durationSeconds: asset.type === "image" ? 4 : asset.type === "video" ? 6 : 12, fitMode: "contain", transition: asset.type === "audio" ? "none" : "blurry", transitionSeconds: 1.5, keepOriginalAudio: false, volume: 1 };
+  return { id: makeId(), assetId: asset.id, type: asset.type, label: asset.name, durationSeconds: getDefaultClipDuration(asset), fitMode: "contain", transition: asset.type === "audio" ? "none" : "blurry", transitionSeconds: 1.5, keepOriginalAudio: false, volume: 1 };
+}
+
+export function readVideoDurationSeconds(url: string) {
+  return new Promise<number>((resolve, reject) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.onloadedmetadata = () => resolve(Number.isFinite(video.duration) ? video.duration : 0);
+    video.onerror = () => reject(new Error("Không đọc được duration của video."));
+    video.src = url;
+  });
+}
+
+function getDefaultClipDuration(asset: VideoEditorAsset) {
+  if (asset.type === "image") return 4;
+  if (asset.type === "video") return Math.max(1, Math.min(7200, asset.durationSeconds || 6));
+  return 12;
 }
 
 function createSilentWavBlob() {

@@ -12,7 +12,7 @@ import { readSystemLang, subscribeSystemLang, text, type Lang } from "@/lib/i18n
 import { getMusicLibraryTracks } from "@/lib/musicLibrary";
 import { VideoEditorPreview } from "./VideoEditorPreview";
 import { MediaBin, TimelineTrack, type TrackKind } from "./VideoEditorTimeline";
-import { createAsset, createAssetFromFile, createAssetFromLibraryTrack, createClipFromAsset, mergeLibraryAssets } from "../lib/videoEditorAssetHelpers";
+import { createAsset, createAssetFromFile, createAssetFromLibraryTrack, createClipFromAsset, mergeLibraryAssets, readVideoDurationSeconds } from "../lib/videoEditorAssetHelpers";
 import { fromDraftAsset, loadVideoEditorDraft, saveVideoEditorDraft, toDraftAsset } from "../lib/videoEditorDraftStore";
 import { renderTimelineVideo } from "../lib/videoEditorApi";
 import type { TimelineRenderResponse, VideoEditorAsset, VideoEditorAspectRatio, VideoEditorClip, VideoEditorRenderEngine } from "../lib/videoEditorTypes";
@@ -75,6 +75,18 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
     assetUrlsRef.current = assets.map((asset) => asset.url);
   }, [assets]);
   useEffect(() => () => assetUrlsRef.current.forEach((url) => URL.revokeObjectURL(url)), []);
+  useEffect(() => {
+    const pending = assets.filter((asset) => asset.type === "video" && !asset.durationSeconds);
+    if (!pending.length) return;
+    let cancelled = false;
+    Promise.all(pending.map(async (asset) => ({ id: asset.id, duration: await readVideoDurationSeconds(asset.url).catch(() => 0) }))).then((items) => {
+      if (cancelled) return;
+      const durations = new Map(items.filter((item) => item.duration > 0).map((item) => [item.id, item.duration]));
+      setAssets((current) => current.map((asset) => durations.has(asset.id) ? { ...asset, durationSeconds: durations.get(asset.id) } : asset));
+      setClips((current) => current.map((clip) => clip.type === "video" && clip.durationSeconds === 6 && durations.has(clip.assetId) ? { ...clip, durationSeconds: Math.min(7200, Math.max(1, durations.get(clip.assetId)!)) } : clip));
+    });
+    return () => { cancelled = true; };
+  }, [assets]);
   useEffect(() => {
     if (!draftLoaded) return;
     const timer = window.setTimeout(() => {
@@ -372,5 +384,5 @@ async function createRenderedVideoAsset(video: TimelineRenderResponse) {
   if (!response.ok) throw new Error("Đã render xong nhưng không tải lại được video vào kho media.");
   const blob = await response.blob();
   const file = new File([blob], video.fileName, { type: blob.type || "video/mp4" });
-  return createAssetFromFile(file, video.fileName);
+  return { ...createAssetFromFile(file, video.fileName), durationSeconds: video.durationSeconds };
 }

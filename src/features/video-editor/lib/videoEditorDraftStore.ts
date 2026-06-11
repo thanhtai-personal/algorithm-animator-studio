@@ -20,6 +20,7 @@ export type VideoEditorDraft = {
     mimeType: string;
     lastModified: number;
     blob: Blob;
+    durationSeconds?: number;
   }>;
 };
 
@@ -45,12 +46,13 @@ export function toDraftAsset(asset: VideoEditorAsset): VideoEditorDraft["assets"
     mimeType: asset.file.type,
     lastModified: asset.file.lastModified,
     blob: asset.file,
+    durationSeconds: asset.durationSeconds,
   };
 }
 
 export function fromDraftAsset(asset: VideoEditorDraft["assets"][number]): VideoEditorAsset {
   const file = new File([asset.blob], asset.fileName || asset.name, { type: asset.mimeType, lastModified: asset.lastModified });
-  return { id: asset.id, type: asset.type, name: asset.name, file, url: URL.createObjectURL(file) };
+  return { id: asset.id, type: asset.type, name: asset.name, file, url: URL.createObjectURL(file), durationSeconds: asset.durationSeconds };
 }
 
 function openDraftDb() {

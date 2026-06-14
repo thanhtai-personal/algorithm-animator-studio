@@ -13,6 +13,7 @@ import { useSystemLang } from "@/hooks/use-system-lang";
 import { text } from "@/lib/i18n";
 
 const queryClient = new QueryClient();
+const AiVideoAgent = lazy(() => import("./pages/AiVideoAgent.tsx"));
 const AlgorithmWorld = lazy(() => import("./pages/AlgorithmWorld.tsx"));
 const Auth = lazy(() => import("./pages/Auth.tsx"));
 const GeneratedAssets = lazy(() => import("./pages/GeneratedAssets.tsx"));
@@ -95,6 +96,7 @@ const App = () => (
                 <Route path="/story-video" element={<Navigate replace to="/stories/video" />} />
                 <Route path="/assets" element={<GeneratedAssets />} />
                 <Route path="/text-to-speech" element={<TextToSpeech />} />
+                <Route path="/ai-video-agent" element={<AiVideoAgent />} />
                 <Route path="/video-create" element={<VideoCreate />} />
                 <Route path="/channel" element={<YoutubePublishing />} />
                 <Route path="/social-publishing" element={<LegacyChannelRedirect />} />

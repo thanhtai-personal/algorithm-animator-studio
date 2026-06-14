@@ -37,6 +37,7 @@ import { createVideoRouter } from "./routes/videoRoutes";
 import { createWebExtractRouter } from "./routes/webExtractRoutes";
 import { createResourceRouter } from "./routes/resourceRoutes";
 import { createYoutubeRouter } from "./routes/youtubeRoutes";
+import { createAiVideoAgentRouter } from "./routes/aiVideoAgentRoutes";
 import { createPublishQueueRouter } from "./routes/publishQueueRoutes";
 import { startLocalPublishWorker } from "./services/PublishWorkerService";
 import { readRuntimeEnvFromRequest } from "./services/RuntimeEnvService";
@@ -55,7 +56,7 @@ app.use(`/${GENERATED_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedD
 app.use(`/${GENERATED_PREVIEW_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedPreviewDir));
 app.use(`/${GENERATED_VIDEO_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedVideoDir));
 app.use(`/${GENERATED_BACKGROUND_MUSIC_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedBackgroundMusicDir));
-app.use("/api", createHealthRouter(), createModelRouter(), createMusicLibraryRouter(), createMuNewsRouter(), createPiperRuntimeRouter(), createSystemRouter(), createSetupWizardRouter(), createResourceRouter(), createStoryReviewRouter(), createWebExtractRouter(), createGenerateRouter(), createChannelProviderRouter(), createElevenLabsRouter(), createSupertonicRouter(), createRvcApplioRouter(), createVieneuRouter(), createVideoRouter(), createYoutubeRouter(), createPublishQueueRouter());
+app.use("/api", createHealthRouter(), createModelRouter(), createMusicLibraryRouter(), createMuNewsRouter(), createPiperRuntimeRouter(), createSystemRouter(), createSetupWizardRouter(), createResourceRouter(), createStoryReviewRouter(), createWebExtractRouter(), createGenerateRouter(), createAiVideoAgentRouter(), createChannelProviderRouter(), createElevenLabsRouter(), createSupertonicRouter(), createRvcApplioRouter(), createVieneuRouter(), createVideoRouter(), createYoutubeRouter(), createPublishQueueRouter());
 
 startLocalPublishWorker();
 

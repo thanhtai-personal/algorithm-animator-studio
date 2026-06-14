@@ -11,6 +11,7 @@ import {
   Sparkles,
   Video,
   Youtube,
+  Bot,
   type LucideIcon,
 } from "lucide-react";
 import type { Lang } from "@/lib/i18n";
@@ -112,6 +113,13 @@ export const APP_NAVIGATION_GROUPS: AppNavigationGroup[] = [
     id: "common-tools",
     label: { en: "Common tools", vi: "Công cụ chung" },
     items: [
+      {
+        id: "ai-video-agent",
+        to: "/ai-video-agent",
+        icon: Bot,
+        label: { en: "AI Video Agent", vi: "AI tạo video" },
+        matchPaths: ["/ai-video-agent"],
+      },
       {
         id: "text-to-speech",
         to: "/text-to-speech",

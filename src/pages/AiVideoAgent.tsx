@@ -355,9 +355,6 @@ function PublishOptions({
         <Checkbox checked={Boolean(form.autoCreatePublishJobs)} onCheckedChange={(value) => update("autoCreatePublishJobs", Boolean(value))} />
         {text(lang, "Create publish queue jobs after render", "Tạo publish job sau khi render")}
       </label>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {text(lang, "This does not hide the upload: the created queue jobs are shown in /channel → Queue and in the Publish node logs.", "Không đăng âm thầm: job upload sẽ hiện ở /channel → Queue và trong log node Publish.")}
-      </p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         {targets.map((target) => <label key={target} className="flex items-center gap-2 text-sm"><Checkbox checked={selectedPlatforms.includes(target)} onCheckedChange={(value) => toggleTarget(target, Boolean(value))} />{target}</label>)}
       </div>

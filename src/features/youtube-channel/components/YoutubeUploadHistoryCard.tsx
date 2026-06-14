@@ -59,7 +59,7 @@ export function YoutubeUploadHistoryCard({ history, lang, pageSize = 6, refreshH
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="font-semibold">{title || txt(vi, "Lịch sử upload", "Upload history")}</h2>
-          <p className="text-xs text-muted-foreground">{subtitle || txt(vi, "Theo dõi video đăng từ file upload hoặc video đã tạo trong app.", "Track videos published from uploaded files or videos generated in the app.")}</p>
+          {subtitle ? <p className="text-xs text-muted-foreground">{subtitle}</p> : null}
         </div>
         <Button size="sm" variant="outline" onClick={() => void refreshAll()}>
           <RefreshCcw className="mr-2 h-4 w-4" />{txt(vi, "Tải lại", "Refresh")}

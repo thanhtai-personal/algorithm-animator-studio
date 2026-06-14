@@ -28,7 +28,7 @@ export function AgentSelectedChannelVideos({ channels, lang }: Props) {
   if (!channels.length) {
     return (
       <Card className="border-dashed p-6 text-center text-sm text-muted-foreground">
-        {text(lang, "Select publish channels to preview their videos here.", "Chọn kênh sẽ đăng để xem video của kênh tại đây.")}
+        {text(lang, "No selected channels.", "Chưa chọn kênh.")}
       </Card>
     );
   }
@@ -36,7 +36,7 @@ export function AgentSelectedChannelVideos({ channels, lang }: Props) {
   if (!youtubeChannels.length) {
     return (
       <Card className="border-dashed p-6 text-center text-sm text-muted-foreground">
-        {text(lang, "Channel video preview currently supports selected YouTube channels only.", "Phần xem video hiện chỉ hỗ trợ các kênh YouTube đã chọn.")}
+        {text(lang, "YouTube only.", "Chỉ hỗ trợ YouTube.")}
       </Card>
     );
   }
@@ -47,9 +47,6 @@ export function AgentSelectedChannelVideos({ channels, lang }: Props) {
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="font-semibold">{text(lang, "Selected channel videos", "Video của kênh sẽ đăng")}</h2>
-            <p className="text-xs text-muted-foreground">
-              {text(lang, "Left: selected publish channels. Right: videos from the active channel.", "Bên trái là kênh sẽ đăng đã chọn. Bên phải là danh sách video của kênh đang chọn.")}
-            </p>
           </div>
           <Badge variant="secondary">{youtubeChannels.length} {text(lang, "YouTube channels", "kênh YouTube")}</Badge>
         </div>
@@ -91,7 +88,6 @@ export function AgentSelectedChannelVideos({ channels, lang }: Props) {
               refreshHistory={async () => undefined}
               refreshToken={activeChannel.youtubeRefreshToken}
               showUploadHistory={false}
-              subtitle={text(lang, "Videos loaded from the selected YouTube channel.", "Video được tải từ kênh YouTube đang chọn.")}
               title={vi ? `Video của ${activeChannel.title}` : `${activeChannel.title} videos`}
               uploadsPlaylistId={activeChannel.youtubePlaylistId}
             />

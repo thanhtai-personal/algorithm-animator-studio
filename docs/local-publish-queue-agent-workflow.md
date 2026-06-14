@@ -11,6 +11,14 @@ Bản này học hướng vận hành của AiToEarn nhưng giữ đúng triết
 - Facebook/TikTok có adapter local ở backend; quyền API vẫn phụ thuộc app Facebook/TikTok của bạn.
 - Instagram hiện dùng manual fallback vì Graph API thường cần `media_url` public, không phù hợp khi video chỉ nằm local.
 
+## Hướng dẫn API key/OAuth config
+
+App desktop/local hiện dùng fake host `https://kai-studio.pro:3000`; khi cấu hình YouTube/Facebook/TikTok/Instagram phải khai báo redirect URI chính xác là `https://kai-studio.pro:3000/channel`. Xem chi tiết tại:
+
+```txt
+docs/local-social-api-keys-and-fake-host-config.md
+```
+
 ## File dữ liệu local
 
 Trong `SERVER_DATA_DIR` sẽ có thêm:

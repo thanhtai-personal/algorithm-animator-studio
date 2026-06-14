@@ -38,8 +38,9 @@ notifyOAuthOpener({
 
 Trang cha sẽ nhận message cùng origin qua `window.postMessage`. Vì vậy redirect/callback URL nên quay về cùng origin với app, ví dụ:
 
-- `http://localhost:3000/channel`
-- `https://algorithm-animator-studio.vercel.app/channel`
+- `https://kai-studio.pro:3000/channel` cho desktop/local fake host hiện tại
+- `http://localhost:3000/channel` nếu chạy dev không dùng fake host
+- `https://algorithm-animator-studio.vercel.app/channel` nếu chạy bản public web
 
 ## API Contract Để Thêm Provider
 
@@ -102,7 +103,7 @@ TikTok:
 ```txt
 TIKTOK_CLIENT_KEY=
 TIKTOK_CLIENT_SECRET=
-TIKTOK_REDIRECT_URI=http://localhost:3000/channel
+TIKTOK_REDIRECT_URI=https://kai-studio.pro:3000/channel
 ```
 
 Facebook:
@@ -110,7 +111,7 @@ Facebook:
 ```txt
 FACEBOOK_APP_ID=
 FACEBOOK_APP_SECRET=
-FACEBOOK_REDIRECT_URI=http://localhost:3000/channel
+FACEBOOK_REDIRECT_URI=https://kai-studio.pro:3000/channel
 ```
 
 Instagram:
@@ -118,7 +119,7 @@ Instagram:
 ```txt
 INSTAGRAM_APP_ID=
 INSTAGRAM_APP_SECRET=
-INSTAGRAM_REDIRECT_URI=http://localhost:3000/channel
+INSTAGRAM_REDIRECT_URI=https://kai-studio.pro:3000/channel
 ```
 
 Không enable provider nếu thiếu bất kỳ biến bắt buộc nào.
@@ -171,3 +172,18 @@ Sau khi backend provider sẵn sàng:
 - OAuth success: popup đóng, channel mới xuất hiện trong shared channel menu.
 - OAuth error/close: không tạo channel.
 - Delete channel: gọi disconnect provider và xóa channel khỏi workspace.
+
+
+## Ghi chú cho local fake host
+
+Nếu app đang mở bằng `https://kai-studio.pro:3000`, không khai báo OAuth redirect bằng `http://localhost:3000`. Provider thường so khớp redirect URI tuyệt đối, nên URL trong dashboard phải là:
+
+```txt
+https://kai-studio.pro:3000/channel
+```
+
+Chi tiết cách lấy key, scope và cấu hình từng provider nằm ở:
+
+```txt
+docs/local-social-api-keys-and-fake-host-config.md
+```

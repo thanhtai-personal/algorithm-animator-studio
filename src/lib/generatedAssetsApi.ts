@@ -39,9 +39,10 @@ export async function deleteGeneratedAsset(kind: GeneratedAssetKind, relativePat
   }));
 }
 
-export async function deleteGeneratedAssets(kind: GeneratedAssetKind) {
+export async function deleteGeneratedAssets(kind: GeneratedAssetKind, excludeRelativePaths: string[] = []) {
   return parseApiResponse<{ ok: boolean; deleted: number; kind: GeneratedAssetKind }>(await fetch(buildApiUrl(`/api/resources/${kind}/all`), {
     method: "DELETE",
-    headers: buildRuntimeSettingsHeaders(),
+    headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ excludeRelativePaths }),
   }));
 }

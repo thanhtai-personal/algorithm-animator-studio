@@ -1,8 +1,9 @@
-import { Check, ChevronLeft, ChevronRight, ExternalLink, RefreshCcw, Upload } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ExternalLink, Play, RefreshCcw, Upload } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -36,6 +37,7 @@ export function YoutubeUploadCard({ canUpload, displayedDescription, form, lang,
   const [page, setPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [listScrollTop, setListScrollTop] = useState(0);
+  const [previewAsset, setPreviewAsset] = useState<GeneratedAsset | null>(null);
   const filteredVideos = useMemo(() => filterGeneratedVideos(generatedVideos, searchQuery), [generatedVideos, searchQuery]);
   const pageCount = Math.max(1, Math.ceil(filteredVideos.length / PAGE_SIZE));
   const pageItems = useMemo(() => filteredVideos.slice(0, (page + 1) * PAGE_SIZE), [filteredVideos, page]);
@@ -152,6 +154,7 @@ export function YoutubeUploadCard({ canUpload, displayedDescription, form, lang,
           virtualState={virtualState}
           onScrollTopChange={setListScrollTop}
           onReachEnd={() => setPage((value) => Math.min(pageCount - 1, value + 1))}
+          onPreview={setPreviewAsset}
           onSelect={selectGeneratedVideo}
           vi={vi}
         />
@@ -219,6 +222,8 @@ export function YoutubeUploadCard({ canUpload, displayedDescription, form, lang,
           {result.playlistWarning ? <p className="text-xs text-yellow-300">{result.playlistWarning}</p> : null}
         </Card>
       ) : null}
+
+      <GeneratedVideoPreviewDialog asset={previewAsset} vi={vi} onOpenChange={(open) => { if (!open) setPreviewAsset(null); }} />
     </div>
   );
 }
@@ -238,6 +243,7 @@ function GeneratedVideoList(props: {
   vi: boolean;
   onScrollTopChange: (value: number) => void;
   onReachEnd: () => void;
+  onPreview: (asset: GeneratedAsset) => void;
   onSelect: (relativePath: string) => void;
 }) {
   if (!props.items.length) {
@@ -264,27 +270,56 @@ function GeneratedVideoList(props: {
           {visibleItems.map((asset) => {
             const selected = asset.relativePath === props.selectedPath;
             return (
-              <button
+              <div
                 key={asset.relativePath}
-                type="button"
-                className={`flex h-[78px] w-full items-center gap-3 border-b border-border px-3 text-left transition hover:bg-muted/30 ${selected ? "bg-muted/40" : ""}`}
-                onClick={() => props.onSelect(asset.relativePath)}
+                className={`flex h-[78px] w-full items-center gap-2 border-b border-border px-3 transition hover:bg-muted/30 ${selected ? "bg-muted/40" : ""}`}
               >
-                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${selected ? "border-emerald-400 text-emerald-300" : "border-border text-muted-foreground"}`}>
-                  {selected ? <Check className="h-4 w-4" /> : <Upload className="h-4 w-4" />}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-foreground">{asset.fileName}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{asset.relativePath}</span>
-                  <span className="block text-xs text-muted-foreground">{formatSize(asset.sizeBytes)} · {formatDate(asset.createdAtMs)}</span>
-                </span>
+                <button type="button" className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => props.onSelect(asset.relativePath)}>
+                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${selected ? "border-emerald-400 text-emerald-300" : "border-border text-muted-foreground"}`}>
+                    {selected ? <Check className="h-4 w-4" /> : <Upload className="h-4 w-4" />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-foreground">{asset.fileName}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{asset.relativePath}</span>
+                    <span className="block text-xs text-muted-foreground">{formatSize(asset.sizeBytes)} · {formatDate(asset.createdAtMs)}</span>
+                  </span>
+                </button>
                 {asset.youtubeMetadata ? <span className="rounded-full border border-emerald-400/40 px-2 py-0.5 text-xs text-emerald-300">{txt(props.vi, "Metadata", "Metadata")}</span> : null}
-              </button>
+                <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1" onClick={() => props.onPreview(asset)}>
+                  <Play className="h-3.5 w-3.5" /> {txt(props.vi, "Xem", "Play")}
+                </Button>
+              </div>
             );
           })}
         </div>
       </div>
     </div>
+  );
+}
+
+function GeneratedVideoPreviewDialog({ asset, vi, onOpenChange }: { asset: GeneratedAsset | null; vi: boolean; onOpenChange: (open: boolean) => void }) {
+  return (
+    <Dialog open={Boolean(asset)} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] max-w-5xl overflow-hidden p-0">
+        {asset ? (
+          <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_280px]">
+            <div className="bg-black">
+              <video key={asset.relativePath} src={asset.url} controls autoPlay preload="metadata" className="max-h-[82vh] w-full bg-black" />
+            </div>
+            <div className="space-y-3 border-l border-border p-5">
+              <DialogHeader>
+                <DialogTitle className="leading-6">{txt(vi, "Preview video", "Video preview")}</DialogTitle>
+                <DialogDescription className="break-all">{asset.fileName}</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-2 text-xs text-muted-foreground">
+                <p className="break-all">{asset.relativePath}</p>
+                <p>{formatSize(asset.sizeBytes)} · {formatDate(asset.createdAtMs)}</p>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </DialogContent>
+    </Dialog>
   );
 }
 

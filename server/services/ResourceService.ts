@@ -98,7 +98,7 @@ export function deleteGeneratedResource(
   return { ok: true, deleted: 1, relativePath: resolved.relativePath };
 }
 
-export function deleteGeneratedResourcesByKind(kind: GeneratedResourceKind, envOverrides: RuntimeEnvValues = {}) {
+export function deleteGeneratedResourcesByKind(kind: GeneratedResourceKind, envOverrides: RuntimeEnvValues = {}, excludeRelativePaths: string[] = []) {
   if (kind === "music") {
     throw new Error("Không hỗ trợ xóa nhạc nền từ màn hình quản lý này.");
   }
@@ -106,9 +106,10 @@ export function deleteGeneratedResourcesByKind(kind: GeneratedResourceKind, envO
   const env = readEnvValues(envOverrides);
   const rootPath = path.resolve(getResourceRootPath(kind, env.SERVER_DATA_DIR));
   const extensions = getResourceExtensions(kind);
+  const excluded = new Set(excludeRelativePaths.map((item) => path.normalize(item).replaceAll(path.sep, "/")));
   if (!fs.existsSync(rootPath)) return { ok: true, deleted: 0, kind };
 
-  const deleted = deleteFilesByExtension(rootPath, rootPath, extensions);
+  const deleted = deleteFilesByExtension(rootPath, rootPath, extensions, excluded);
   removeEmptyParents(rootPath, rootPath);
   return { ok: true, deleted, kind };
 }
@@ -264,14 +265,16 @@ function getResourceExtensions(kind: GeneratedResourceKind) {
   return kind === "video" ? VIDEO_EXTENSIONS : AUDIO_EXTENSIONS;
 }
 
-function deleteFilesByExtension(rootPath: string, currentDirectory: string, extensions: Set<string>) {
+function deleteFilesByExtension(rootPath: string, currentDirectory: string, extensions: Set<string>, excluded: Set<string>) {
   let deleted = 0;
   for (const entry of fs.readdirSync(currentDirectory, { withFileTypes: true })) {
     const entryPath = path.join(currentDirectory, entry.name);
     if (entry.isDirectory()) {
-      deleted += deleteFilesByExtension(rootPath, entryPath, extensions);
+      deleted += deleteFilesByExtension(rootPath, entryPath, extensions, excluded);
       removeEmptyParents(entryPath, rootPath);
     } else if (entry.isFile() && extensions.has(path.extname(entry.name).toLowerCase())) {
+      const relativePath = path.relative(rootPath, entryPath).replaceAll(path.sep, "/");
+      if (excluded.has(relativePath)) continue;
       fs.rmSync(entryPath, { force: true });
       removeMetadataSidecars(entryPath);
       deleted += 1;

@@ -1,4 +1,4 @@
-import { Download, FileAudio, FileVideo, RefreshCcw, Trash2 } from "lucide-react";
+import { Download, FileAudio, FileVideo, Lock, LockOpen, RefreshCcw, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -16,12 +16,15 @@ import {
 } from "@/lib/generatedAssetsApi";
 import { text, type Lang } from "@/lib/i18n";
 
+const LOCKED_ASSETS_KEY = "kai-studio.generated-assets.locked";
+
 export default function GeneratedAssets() {
   const lang = useSystemLang();
   const [audio, setAudio] = useState<GeneratedAsset[]>([]);
   const [video, setVideo] = useState<GeneratedAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyKey, setBusyKey] = useState("");
+  const [lockedKeys, setLockedKeys] = useState<Set<string>>(() => readLockedKeys());
   const totals = useMemo(() => ({
     audioSize: audio.reduce((sum, item) => sum + item.sizeBytes, 0),
     videoSize: video.reduce((sum, item) => sum + item.sizeBytes, 0),
@@ -58,15 +61,30 @@ export default function GeneratedAssets() {
     }
   }
 
+  function toggleLocked(kind: GeneratedAssetKind, item: GeneratedAsset) {
+    setLockedKeys((current) => {
+      const next = new Set(current);
+      const key = assetLockKey(kind, item.relativePath);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      writeLockedKeys(next);
+      return next;
+    });
+  }
+
   async function removeAll(kind: GeneratedAssetKind) {
     const label = assetKindLabel(lang, kind);
+    const lockedPaths = (kind === "audio" ? audio : video)
+      .filter((item) => lockedKeys.has(assetLockKey(kind, item.relativePath)))
+      .map((item) => item.relativePath);
     if (!window.confirm(text(lang, `Delete all generated ${label} files?`, `Xóa toàn bộ file ${label} đã tạo?`))) return;
     setBusyKey(`${kind}:all`);
     try {
-      const result = await deleteGeneratedAssets(kind);
-      if (kind === "audio") setAudio([]);
-      else setVideo([]);
-      toast.success(text(lang, `Deleted ${result.deleted} ${label} file(s).`, `Đã xóa ${result.deleted} file ${label}.`));
+      const result = await deleteGeneratedAssets(kind, lockedPaths);
+      if (kind === "audio") setAudio((current) => current.filter((item) => lockedPaths.includes(item.relativePath)));
+      else setVideo((current) => current.filter((item) => lockedPaths.includes(item.relativePath)));
+      const lockedText = lockedPaths.length ? text(lang, ` ${lockedPaths.length} locked file(s) were kept.`, ` Đã giữ lại ${lockedPaths.length} file đang khóa.`) : "";
+      toast.success(text(lang, `Deleted ${result.deleted} ${label} file(s).`, `Đã xóa ${result.deleted} file ${label}.`) + lockedText);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : text(lang, `Could not delete all ${label} files.`, `Xóa toàn bộ ${label} thất bại.`));
     } finally {
@@ -98,10 +116,10 @@ export default function GeneratedAssets() {
             <TabsTrigger value="audio">{text(lang, "Voice", "Voice")} ({audio.length})</TabsTrigger>
           </TabsList>
           <TabsContent value="video">
-            <AssetList lang={lang} kind="video" items={video} loading={loading} busyKey={busyKey} onDelete={removeOne} onDeleteAll={removeAll} />
+            <AssetList lang={lang} kind="video" items={video} loading={loading} busyKey={busyKey} lockedKeys={lockedKeys} onDelete={removeOne} onDeleteAll={removeAll} onToggleLocked={toggleLocked} />
           </TabsContent>
           <TabsContent value="audio">
-            <AssetList lang={lang} kind="audio" items={audio} loading={loading} busyKey={busyKey} onDelete={removeOne} onDeleteAll={removeAll} />
+            <AssetList lang={lang} kind="audio" items={audio} loading={loading} busyKey={busyKey} lockedKeys={lockedKeys} onDelete={removeOne} onDeleteAll={removeAll} onToggleLocked={toggleLocked} />
           </TabsContent>
         </Tabs>
       </section>
@@ -129,8 +147,10 @@ function AssetList(props: {
   items: GeneratedAsset[];
   loading: boolean;
   busyKey: string;
+  lockedKeys: Set<string>;
   onDelete: (kind: GeneratedAssetKind, item: GeneratedAsset) => void;
   onDeleteAll: (kind: GeneratedAssetKind) => void;
+  onToggleLocked: (kind: GeneratedAssetKind, item: GeneratedAsset) => void;
 }) {
   const label = assetKindLabel(props.lang, props.kind);
   return (
@@ -147,8 +167,19 @@ function AssetList(props: {
 
       <div className="grid gap-3">
         {!props.loading && !props.items.length ? <EmptyState lang={props.lang} label={label} /> : null}
-        {props.items.map((item) => (
-          <div key={item.relativePath} className="grid gap-3 rounded-lg border border-border bg-muted/10 p-3 md:grid-cols-[1fr_auto] md:items-center">
+        {props.items.map((item) => {
+          const locked = props.lockedKeys.has(assetLockKey(props.kind, item.relativePath));
+          return (
+          <div key={item.relativePath} className="grid gap-3 rounded-lg border border-border bg-muted/10 p-3 md:grid-cols-[auto_1fr_auto] md:items-center">
+            <Button
+              variant="outline"
+              size="icon"
+              className={locked ? "border-yellow-500/60 text-yellow-400 hover:text-yellow-300" : "border-red-500/50 text-red-400 hover:text-red-300"}
+              title={locked ? text(props.lang, "Locked: kept when deleting all", "Đã khóa: giữ lại khi xóa toàn bộ") : text(props.lang, "Unlocked: can be deleted by delete all", "Chưa khóa: sẽ bị xóa khi xóa toàn bộ")}
+              onClick={() => props.onToggleLocked(props.kind, item)}
+            >
+              {locked ? <Lock className="h-4 w-4" /> : <LockOpen className="h-4 w-4" />}
+            </Button>
             <div className="min-w-0 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="min-w-0 truncate font-medium">{item.fileName}</p>
@@ -168,10 +199,27 @@ function AssetList(props: {
               </Button>
             </div>
           </div>
-        ))}
+        );})}
       </div>
     </Card>
   );
+}
+
+function assetLockKey(kind: GeneratedAssetKind, relativePath: string) {
+  return `${kind}:${relativePath}`;
+}
+
+function readLockedKeys() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LOCKED_ASSETS_KEY) || "[]");
+    return new Set(Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : []);
+  } catch {
+    return new Set<string>();
+  }
+}
+
+function writeLockedKeys(keys: Set<string>) {
+  localStorage.setItem(LOCKED_ASSETS_KEY, JSON.stringify([...keys]));
 }
 
 function EmptyState({ label, lang }: { label: string; lang: Lang }) {

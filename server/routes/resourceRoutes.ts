@@ -37,7 +37,8 @@ export function createResourceRouter() {
   router.delete("/resources/:kind/all", (req, res) => {
     try {
       const kind = normalizeKind(req.params.kind);
-      res.json(deleteGeneratedResourcesByKind(kind, readRuntimeEnvFromRequest(req)));
+      const excludeRelativePaths = Array.isArray(req.body?.excludeRelativePaths) ? req.body.excludeRelativePaths.map(String) : [];
+      res.json(deleteGeneratedResourcesByKind(kind, readRuntimeEnvFromRequest(req), excludeRelativePaths));
     } catch (error) {
       res.status(400).json({ error: error instanceof Error ? error.message : "Không xóa được tài nguyên." });
     }

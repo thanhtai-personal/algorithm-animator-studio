@@ -11,12 +11,14 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { CheckCircle2, Circle, Clock3, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, Circle, Clock3, GitBranch, Loader2, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AgentVideoJob, AgentWorkflowStageId } from "@/lib/aiVideoAgentApi";
 import { text, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+
+type FlowNodeKind = "stage" | "condition" | "branch";
 
 type StageNodeData = {
   label: string;
@@ -25,7 +27,25 @@ type StageNodeData = {
   message?: string;
   selected: boolean;
   logCount: number;
+  kind: FlowNodeKind;
+  stageId?: AgentWorkflowStageId;
 };
+
+type AgentStep = NonNullable<AgentVideoJob["steps"]>[number];
+
+type FlowSpecNode = {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  kind?: FlowNodeKind;
+  stageId?: AgentWorkflowStageId;
+  status?: string;
+  progress?: number;
+  message?: string;
+};
+
+type FlowSpecEdge = { source: string; target: string; active?: boolean; skipped?: boolean; label?: string };
 
 const nodeTypes = { stageNode: StageNode };
 
@@ -42,30 +62,37 @@ export function AgentFlowGraph({
 }) {
   const steps = job?.steps?.length ? job.steps : fallbackSteps();
   const logs = job?.logs || [];
-  const runningIndex = steps.findIndex((step) => step.status === "running");
-  const nodes = useMemo<Node<StageNodeData>[]>(() => steps.map((step, index) => ({
-    id: step.id,
-    type: "stageNode",
-    position: { x: index * 250, y: index % 2 === 0 ? 20 : 180 },
-    data: {
-      label: step.label,
-      status: step.status,
-      progress: step.progress,
-      message: step.message,
-      selected: selectedStageId === step.id,
-      logCount: logs.filter((log) => log.stageId === step.id).length,
-    },
-  })), [steps, selectedStageId, logs]);
-  const edges = useMemo<Edge[]>(() => steps.slice(0, -1).map((step, index) => ({
-    id: `${step.id}-${steps[index + 1].id}`,
-    source: step.id,
-    target: steps[index + 1].id,
-    animated: index === runningIndex || index === runningIndex - 1,
-    className: index === runningIndex || index === runningIndex - 1 ? "kai-agent-running-edge" : undefined,
-    markerEnd: { type: MarkerType.ArrowClosed, color: index === runningIndex || index === runningIndex - 1 ? "var(--kai-agent-active)" : undefined },
+  const flow = useMemo(() => buildAgentFlow(job, steps, lang), [job, steps, lang]);
+  const nodes = useMemo<Node<StageNodeData>[]>(() => flow.nodes.map((node) => {
+    const step = node.stageId ? steps.find((item) => item.id === node.stageId) : undefined;
+    const status = node.status || step?.status || "pending";
+    return {
+      id: node.id,
+      type: "stageNode",
+      position: { x: node.x, y: node.y },
+      data: {
+        label: node.label,
+        status,
+        progress: node.progress ?? step?.progress ?? 0,
+        message: node.message ?? step?.message,
+        selected: Boolean(node.stageId && selectedStageId === node.stageId),
+        logCount: node.stageId ? logs.filter((log) => log.stageId === node.stageId).length : 0,
+        kind: node.kind || "stage",
+        stageId: node.stageId,
+      },
+    };
+  }), [flow.nodes, steps, selectedStageId, logs]);
+  const edges = useMemo<Edge[]>(() => flow.edges.map((edge) => ({
+    id: `${edge.source}-${edge.target}`,
+    source: edge.source,
+    target: edge.target,
+    animated: edge.active,
+    className: edge.active ? "kai-agent-running-edge" : edge.skipped ? "kai-agent-skipped-edge" : undefined,
+    label: edge.label,
+    markerEnd: { type: MarkerType.ArrowClosed, color: edge.active ? "var(--kai-agent-active)" : undefined },
     type: "smoothstep",
-    style: index === runningIndex || index === runningIndex - 1 ? { strokeWidth: 4, stroke: "var(--kai-agent-active)" } : { strokeWidth: 1.5 },
-  })), [steps, runningIndex]);
+    style: edge.active ? { strokeWidth: 4, stroke: "var(--kai-agent-active)" } : edge.skipped ? { strokeWidth: 1.2, opacity: 0.35 } : { strokeWidth: 1.5 },
+  })), [flow.edges]);
   const runningStep = steps.find((step) => step.status === "running");
 
   return (
@@ -82,44 +109,30 @@ export function AgentFlowGraph({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="kai-agent-flow-shell h-[520px] overflow-hidden rounded-xl border bg-muted/20">
+        <div className="kai-agent-flow-shell h-[560px] overflow-hidden rounded-xl border bg-muted/20">
           <style>{`
-            .kai-agent-flow-card {
-              --kai-agent-active: #0284c7;
-              --kai-agent-active-soft: rgba(2, 132, 199, 0.2);
-              --kai-agent-active-glow: rgba(2, 132, 199, 0.65);
-            }
-
-            .dark .kai-agent-flow-card {
-              --kai-agent-active: #fb923c;
-              --kai-agent-active-soft: rgba(251, 146, 60, 0.18);
-              --kai-agent-active-glow: rgba(251, 146, 60, 0.8);
-            }
-
-            .kai-agent-running-edge .react-flow__edge-path {
-              stroke-dasharray: 12 8;
-              animation: kai-agent-flow-dash 0.7s linear infinite;
-              filter: drop-shadow(0 0 7px var(--kai-agent-active-glow));
-            }
-
-            @keyframes kai-agent-flow-dash {
-              from { stroke-dashoffset: 20; }
-              to { stroke-dashoffset: 0; }
-            }
+            .kai-agent-flow-card { --kai-agent-active: #0284c7; --kai-agent-active-soft: rgba(2, 132, 199, 0.2); --kai-agent-active-glow: rgba(2, 132, 199, 0.65); }
+            .dark .kai-agent-flow-card { --kai-agent-active: #fb923c; --kai-agent-active-soft: rgba(251, 146, 60, 0.18); --kai-agent-active-glow: rgba(251, 146, 60, 0.8); }
+            .kai-agent-running-edge .react-flow__edge-path { stroke-dasharray: 12 8; animation: kai-agent-flow-dash 0.7s linear infinite; filter: drop-shadow(0 0 7px var(--kai-agent-active-glow)); }
+            .kai-agent-skipped-edge .react-flow__edge-path { stroke-dasharray: 4 8; }
+            @keyframes kai-agent-flow-dash { from { stroke-dashoffset: 20; } to { stroke-dashoffset: 0; } }
           `}</style>
           <ReactFlow
-            key={`${job?.id || "empty"}-${job?.updatedAtMs || 0}-${runningStep?.id || "idle"}`}
+            key={`${job?.id || "empty"}-${job?.updatedAtMs || 0}-${runningStep?.id || "idle"}-${job?.input?.agentPreset || "custom"}`}
             nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
             fitView
             fitViewOptions={{ padding: 0.18 }}
-            minZoom={0.25}
+            minZoom={0.2}
             maxZoom={1.4}
             nodesDraggable={false}
             nodesConnectable={false}
             elementsSelectable
-            onNodeClick={(_event, node) => onSelectStage(node.id as AgentWorkflowStageId)}
+            onNodeClick={(_event, node) => {
+              const stageId = node.data.stageId;
+              if (stageId) onSelectStage(stageId);
+            }}
           >
             <Background gap={18} size={1} />
             <Controls showInteractive={false} />
@@ -130,14 +143,111 @@ export function AgentFlowGraph({
   );
 }
 
+function buildAgentFlow(job: AgentVideoJob | undefined, steps: AgentStep[], lang: Lang) {
+  const vi = lang === "vi";
+  const labels = getAgentLabels(job?.input?.agentPreset || "custom", vi);
+  const hasPlan = Boolean(job?.plan);
+  const fallback = Boolean(job?.plan?.warning);
+  const hasApiKeyPath = hasPlan && !fallback;
+  const publishStep = steps.find((step) => step.id === "publish");
+  const autoPublish = Boolean(job?.input?.autoCreatePublishJobs);
+  const runningId = steps.find((step) => step.status === "running")?.id;
+  const node = (id: string, label: string, x: number, y: number, stageId?: AgentWorkflowStageId, extra?: Partial<FlowSpecNode>): FlowSpecNode => ({ id, label, x, y, stageId, ...extra });
+  const nodes: FlowSpecNode[] = [
+    node("research", labels.research, 0, 170, "research"),
+    node("api-check", vi ? "Có API key?" : "API key?", 250, 170, "research", { kind: "condition", status: conditionStatus(steps, "research"), progress: hasPlan ? 100 : 0, message: apiMessage(job, vi) }),
+    node("ai-plan", vi ? "AI plan" : "AI plan", 500, 55, "research", { kind: "branch", status: branchStatus(hasApiKeyPath, fallback, runningId === "research"), progress: hasApiKeyPath ? 100 : 0, message: labels.aiPlan }),
+    node("fallback-plan", vi ? "Fallback local" : "Local fallback", 500, 285, "research", { kind: "branch", status: branchStatus(fallback, hasApiKeyPath, runningId === "research"), progress: fallback ? 100 : 0, message: job?.plan?.warning || labels.fallback }),
+    node("strategy", labels.strategy, 770, 170, "strategy"),
+    node("script", labels.script, 1030, 170, "script"),
+    node("visuals", labels.visuals, 1290, 70, "visuals"),
+    node("voice", labels.voice, 1290, 285, "voice"),
+    node("render", labels.render, 1550, 170, "render"),
+    node("metadata", labels.metadata, 1810, 95, "metadata"),
+    node("publish-check", vi ? "Auto publish?" : "Auto publish?", 2060, 170, "publish", { kind: "condition", status: conditionStatus(steps, "metadata"), progress: publishStep?.progress || 0, message: autoPublish ? labels.publishYes : labels.publishNo }),
+    node("publish", labels.publish, 2310, 55, "publish"),
+    node("local-output", vi ? "Lưu local" : "Local output", 2310, 285, "publish", { kind: "branch", status: publishStep?.status === "skipped" ? "done" : autoPublish ? "skipped" : publishStep?.status || "pending", progress: publishStep?.status === "skipped" ? 100 : 0, message: labels.publishNo }),
+    node("engage", labels.engage, 2570, 95, "engage"),
+    node("monetize", labels.monetize, 2830, 210, "monetize"),
+  ];
+  const active = (source: AgentWorkflowStageId, target?: AgentWorkflowStageId) => runningId === source || runningId === target;
+  const edges: FlowSpecEdge[] = [
+    { source: "research", target: "api-check", active: runningId === "research" },
+    { source: "api-check", target: "ai-plan", active: runningId === "research" && !fallback, skipped: fallback, label: vi ? "có" : "yes" },
+    { source: "api-check", target: "fallback-plan", active: runningId === "research" && fallback, skipped: hasApiKeyPath, label: vi ? "không" : "no" },
+    { source: "ai-plan", target: "strategy", active: hasApiKeyPath && active("research", "strategy"), skipped: fallback },
+    { source: "fallback-plan", target: "strategy", active: fallback && active("research", "strategy"), skipped: hasApiKeyPath },
+    { source: "strategy", target: "script", active: active("strategy", "script") },
+    { source: "script", target: "visuals", active: active("script", "visuals") },
+    { source: "visuals", target: "voice", active: active("visuals", "voice") },
+    { source: "voice", target: "render", active: active("voice", "render") },
+    { source: "render", target: "metadata", active: active("render", "metadata") },
+    { source: "metadata", target: "publish-check", active: active("metadata", "publish") },
+    { source: "publish-check", target: "publish", active: autoPublish && runningId === "publish", skipped: !autoPublish, label: vi ? "bật" : "on" },
+    { source: "publish-check", target: "local-output", active: !autoPublish && runningId === "publish", skipped: autoPublish, label: vi ? "tắt" : "off" },
+    { source: "publish", target: "engage", active: autoPublish && active("publish", "engage"), skipped: !autoPublish },
+    { source: "local-output", target: "engage", active: !autoPublish && active("publish", "engage"), skipped: autoPublish },
+    { source: "engage", target: "monetize", active: active("engage", "monetize") },
+  ];
+  return { nodes, edges };
+}
+
+function conditionStatus(steps: AgentStep[], waitFor: AgentWorkflowStageId) {
+  const step = steps.find((item) => item.id === waitFor);
+  if (step?.status === "running") return "running";
+  if (step?.status === "done" || step?.status === "skipped") return "done";
+  if (step?.status === "failed") return "failed";
+  return "pending";
+}
+
+function branchStatus(activeBranch: boolean, skippedBranch: boolean, parentRunning: boolean) {
+  if (activeBranch) return "done";
+  if (skippedBranch) return "skipped";
+  return parentRunning ? "pending" : "pending";
+}
+
+function apiMessage(job: AgentVideoJob | undefined, vi: boolean) {
+  if (job?.plan?.warning) return job.plan.warning;
+  if (job?.plan) return vi ? "Dùng provider AI để tạo plan." : "AI provider created the plan.";
+  return vi ? "Chờ kiểm tra provider/API key." : "Waiting for provider/API key check.";
+}
+
+function getAgentLabels(preset: string, vi: boolean) {
+  const base = {
+    research: vi ? "Research" : "Research",
+    aiPlan: vi ? "Có API key: gọi AI provider." : "API key found: call AI provider.",
+    fallback: vi ? "Không có API key: dùng dữ liệu local của agent." : "No API key: use local agent fallback.",
+    strategy: vi ? "Strategy" : "Strategy",
+    script: vi ? "Script" : "Script",
+    visuals: vi ? "Visual plan" : "Visual plan",
+    voice: vi ? "Voice-over" : "Voice-over",
+    render: vi ? "Render" : "Render",
+    metadata: vi ? "Metadata" : "Metadata",
+    publish: vi ? "Publish queue" : "Publish queue",
+    publishYes: vi ? "Tạo publish job cho kênh đã chọn." : "Create publish jobs for selected channels.",
+    publishNo: vi ? "Không tạo queue, chỉ giữ output local." : "No queue, keep output local only.",
+    engage: vi ? "Engage" : "Engage",
+    monetize: vi ? "Monetize" : "Monetize",
+  };
+  if (preset === "mu-news") return { ...base, research: vi ? "Nguồn tin MU" : "MU sources", strategy: vi ? "Kiểm chứng tin" : "Verify news", script: vi ? "Bản tin ngắn" : "News script", visuals: vi ? "Ảnh/clip bóng đá" : "Football visuals", metadata: vi ? "Headline SEO" : "SEO headline" };
+  if (preset === "story-author") return { ...base, research: vi ? "Premise" : "Premise", strategy: vi ? "Outline chương" : "Chapter outline", script: vi ? "Đoạn mở đầu" : "Opening prose", visuals: vi ? "Mood/setting" : "Mood/setting", engage: vi ? "Gợi ý chương sau" : "Next chapter prompts" };
+  if (preset === "story-review") return { ...base, research: vi ? "Tóm tắt truyện" : "Story recap", strategy: vi ? "Góc review" : "Review angle", script: vi ? "Script review" : "Review script", visuals: vi ? "Cảnh review" : "Review visuals" };
+  if (preset === "story-video") return { ...base, research: vi ? "Mạch truyện" : "Story arc", strategy: vi ? "Nhịp cảm xúc" : "Emotional pacing", script: vi ? "Narration" : "Narration", visuals: vi ? "Cảnh nền truyện" : "Story backgrounds" };
+  if (preset === "algorithm-long") return { ...base, research: vi ? "Concept thuật toán" : "Algorithm concept", strategy: vi ? "Chapter plan" : "Chapter plan", script: vi ? "Script dài" : "Long script", visuals: vi ? "Ví dụ/chapter" : "Examples/chapters", metadata: vi ? "SEO video dài" : "Long-form SEO" };
+  if (preset === "maze-pathfinding") return { ...base, research: vi ? "Mê cung & thuật toán" : "Maze algorithms", strategy: vi ? "Luật trận đua" : "Race rules", script: vi ? "Commentary" : "Commentary", visuals: vi ? "Maze visualizer" : "Maze visualizer", render: vi ? "Render đua mê cung" : "Render maze race" };
+  if (preset === "algorithm-shorts") return { ...base, research: vi ? "Hook thuật toán" : "Algorithm hook", strategy: vi ? "Format Shorts" : "Shorts format", script: vi ? "Script ngắn" : "Short script", visuals: vi ? "Animation thuật toán" : "Algorithm animation" };
+  return base;
+}
+
 function StageNode({ data }: NodeProps<Node<StageNodeData>>) {
   const running = data.status === "running";
+  const condition = data.kind === "condition";
   return (
-    <div className={cn("relative w-56 overflow-hidden rounded-xl border bg-background p-3 shadow-sm transition", data.selected && "border-primary ring-2 ring-primary/20", running && "border-[var(--kai-agent-active)] bg-[var(--kai-agent-active-soft)] shadow-[0_0_24px_var(--kai-agent-active-glow)] ring-2 ring-[var(--kai-agent-active)]/30")}>
+    <div className={cn("relative w-56 overflow-hidden rounded-xl border bg-background p-3 shadow-sm transition", condition && "border-dashed", data.selected && "border-primary ring-2 ring-primary/20", running && "border-[var(--kai-agent-active)] bg-[var(--kai-agent-active-soft)] shadow-[0_0_24px_var(--kai-agent-active-glow)] ring-2 ring-[var(--kai-agent-active)]/30")}>
       {running ? <div className="absolute inset-x-0 top-0 h-1 animate-pulse bg-[var(--kai-agent-active)] shadow-[0_0_14px_var(--kai-agent-active)]" /> : null}
       <Handle type="target" position={Position.Left} className="!h-2 !w-2" />
       <div className="flex items-start gap-2">
-        <StatusIcon status={data.status} />
+        {condition ? <GitBranch className="mt-0.5 h-4 w-4 text-[var(--kai-agent-active)]" /> : <StatusIcon status={data.status} />}
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">{data.label}</p>
           <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{data.message || "Waiting"}</p>

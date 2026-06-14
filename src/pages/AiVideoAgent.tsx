@@ -1,14 +1,16 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { Bot, Loader2, Play, RefreshCcw, Wand2 } from "lucide-react";
+import { Bot, Loader2, PanelRightClose, PanelRightOpen, Play, RefreshCcw, Terminal, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,6 +33,7 @@ import { text, type Lang } from "@/lib/i18n";
 import { getPiperModels, type PiperModel } from "@/lib/voiceApi";
 import { getPublishJobs, type PublishJob } from "@/lib/publishQueueApi";
 import { AgentFlowGraph } from "@/features/ai-video-agent/components/AgentFlowGraph";
+import { AgentSelectedChannelVideos } from "@/features/ai-video-agent/components/AgentSelectedChannelVideos";
 import { channelsFromKeys, getAgentPublishChannelOptions, getPreferredChannelKeys, type AgentPublishChannelOption } from "@/features/ai-video-agent/lib/publishChannelOptions";
 
 const DEFAULT_FORM: AgentVideoForm = {
@@ -54,7 +57,6 @@ const DEFAULT_FORM: AgentVideoForm = {
 
 export default function AiVideoAgent() {
   const lang = useSystemLang();
-  const vi = lang === "vi";
   const [form, setForm] = useState<AgentVideoForm>(DEFAULT_FORM);
   const [plan, setPlan] = useState<AgentVideoPlan | null>(null);
   const [jobs, setJobs] = useState<AgentVideoJob[]>([]);
@@ -64,6 +66,7 @@ export default function AiVideoAgent() {
   const [publishOptions, setPublishOptions] = useState<AgentPublishChannelOption[]>([]);
   const [selectedPublishChannelKeys, setSelectedPublishChannelKeys] = useState<string[]>([]);
   const [selectedStageId, setSelectedStageId] = useState<AgentWorkflowStageId | "all">("all");
+  const [settingsOpen, setSettingsOpen] = useState(true);
   const [loadingPlan, setLoadingPlan] = useState(false);
   const [running, setRunning] = useState(false);
   const [busyJobId, setBusyJobId] = useState("");
@@ -88,7 +91,7 @@ export default function AiVideoAgent() {
     const agentBusy = jobs.some((job) => job.status === "running" || job.status === "queued");
     const publishBusy = publishJobs.some((job) => job.status === "running" || job.status === "queued" || job.status === "scheduled");
     if (!agentBusy && !publishBusy) return;
-    const timer = window.setInterval(refresh, 1200);
+    const timer = window.setInterval(refresh, agentBusy ? 600 : 1200);
     return () => window.clearInterval(timer);
   }, [jobs, publishJobs]);
 
@@ -117,10 +120,11 @@ export default function AiVideoAgent() {
     setRunning(true);
     try {
       if (publishChannelWarning) { toast.error(publishChannelWarning); return; }
-      const job = await createAgentVideoJob({ ...form, publishChannels: selectedPublishChannels, plan: plan || undefined, runNow: true });
-      setJobs((current) => [job, ...current.filter((item) => item.id !== job.id)]);
+      const job = await createAgentVideoJob({ ...form, publishChannels: selectedPublishChannels, plan: plan || undefined });
+      const runningJob = markJobStarting(job);
+      setJobs((current) => [runningJob, ...current.filter((item) => item.id !== job.id)]);
       toast.success(text(lang, "Agent is running locally", "Agent đang chạy local"));
-      await refresh();
+      startJobInBackground(job.id);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : text(lang, "Could not run agent", "Không chạy được agent"));
     } finally {
@@ -155,14 +159,45 @@ export default function AiVideoAgent() {
   async function handleRunJob(job: AgentVideoJob) {
     setBusyJobId(job.id);
     try {
-      const result = await runAgentVideoJob(job.id);
-      setJobs((current) => [result, ...current.filter((item) => item.id !== result.id)]);
-      await refresh();
+      setJobs((current) => [markJobStarting(job), ...current.filter((item) => item.id !== job.id)]);
+      startJobInBackground(job.id, () => setBusyJobId(""));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : text(lang, "Could not run job", "Không chạy được job"));
-    } finally {
       setBusyJobId("");
     }
+  }
+
+  function startJobInBackground(jobId: string, onDone?: () => void) {
+    window.setTimeout(() => {
+      runAgentVideoJob(jobId)
+        .then((result) => setJobs((current) => [result, ...current.filter((item) => item.id !== result.id)]))
+        .catch((error) => toast.error(error instanceof Error ? error.message : text(lang, "Could not run job", "Không chạy được job")))
+        .finally(() => {
+          onDone?.();
+          refresh();
+        });
+    }, 0);
+  }
+
+  function markJobStarting(job: AgentVideoJob): AgentVideoJob {
+    const now = Date.now();
+    const firstPendingIndex = job.steps.findIndex((step) => step.status === "pending" || step.status === "running");
+    const runningIndex = firstPendingIndex >= 0 ? firstPendingIndex : 0;
+    return {
+      ...job,
+      status: "running",
+      progress: Math.max(job.progress || 0, 3),
+      currentStep: job.steps[runningIndex]?.label || "Research",
+      updatedAtMs: now,
+      steps: job.steps.map((step, index) => index === runningIndex ? {
+        ...step,
+        status: "running",
+        progress: Math.max(step.progress || 0, 8),
+        message: step.message || text(lang, "Starting...", "Đang bắt đầu..."),
+        startedAtMs: step.startedAtMs || now,
+        updatedAtMs: now,
+      } : step),
+    };
   }
 
   function applyPreset(id: string) {
@@ -191,7 +226,7 @@ export default function AiVideoAgent() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-7xl space-y-5 px-4 py-6">
+    <main className="w-full space-y-4 px-4 py-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -199,86 +234,65 @@ export default function AiVideoAgent() {
             <Badge variant="outline">Create → Publish → Engage → Monetize</Badge>
           </div>
           <h1 className="mt-3 text-3xl font-bold tracking-tight">{text(lang, "AI Video Agent Flow", "AI Video Agent Flow")}</h1>
-          <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            {text(lang, "AiToEarn-style workflow adapted for the local desktop app: research, script, voice, render, queue publish jobs and show the live pipeline.", "Workflow kiểu AiToEarn nhưng thích ứng local desktop: research, script, voice, render, đưa vào publish queue và visualize real-time luồng chạy.")}
-          </p>
         </div>
         <Button variant="outline" onClick={handleRunDue} disabled={running}>
           {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}{text(lang, "Run scheduled", "Chạy job tới lịch")}
         </Button>
       </div>
 
-      <AgentFlowGraph job={activeJob} lang={lang} selectedStageId={selectedStageId} onSelectStage={setSelectedStageId} />
-
-      <div className="grid gap-5 xl:grid-cols-[420px_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>{text(lang, "Agent control", "Điều khiển Agent")}</CardTitle>
-            <CardDescription>{text(lang, "Everything runs through the local backend; no cloud hosting is required.", "Tất cả chạy qua backend local, không cần nuôi host cloud.")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Field label={text(lang, "Agent preset", "Agent preset")}>
-              <Select value={form.agentPreset || "custom"} onValueChange={applyPreset}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {presets.map((preset) => <SelectItem key={preset.id} value={preset.id}>{preset.title}</SelectItem>)}
-                  <SelectItem value="custom">Custom</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label={text(lang, "Video topic", "Chủ đề video")}><Input value={form.topic} onChange={(event) => update("topic", event.target.value)} /></Field>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label={text(lang, "Content kind", "Loại nội dung")}>
-                <Select value={form.kind} onValueChange={(value) => update("kind", value as AgentVideoForm["kind"])}>
-                  <SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="algorithm">Algorithm</SelectItem><SelectItem value="football">Football/MU</SelectItem><SelectItem value="story">Story</SelectItem><SelectItem value="generic">Generic</SelectItem></SelectContent>
-                </Select>
-              </Field>
-              <Field label={text(lang, "Platform", "Nền tảng")}>
-                <Select value={form.platform} onValueChange={(value) => update("platform", value as AgentVideoForm["platform"])}>
-                  <SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="youtube-short">YouTube Short 9:16</SelectItem><SelectItem value="youtube-long">YouTube Long 16:9</SelectItem><SelectItem value="tiktok">TikTok 9:16</SelectItem><SelectItem value="facebook-reel">Facebook Reel 9:16</SelectItem></SelectContent>
-                </Select>
-              </Field>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label={text(lang, "Language", "Ngôn ngữ")}>
-                <Select value={form.language} onValueChange={(value) => update("language", value as AgentVideoForm["language"])}>
-                  <SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="vi">Tiếng Việt</SelectItem><SelectItem value="en">English</SelectItem></SelectContent>
-                </Select>
-              </Field>
-              <Field label={text(lang, "Target seconds", "Thời lượng giây")}><Input type="number" min={15} max={600} value={form.targetDurationSec} onChange={(event) => update("targetDurationSec", Number(event.target.value))} /></Field>
-            </div>
-            <Field label="Piper voice model">
-              <Select value={form.piperModelKey} onValueChange={(value) => update("piperModelKey", value)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{(availableModels.length ? availableModels : models).map((model) => <SelectItem key={model.key} value={model.key}>{model.label}{model.available ? "" : " (missing)"}</SelectItem>)}</SelectContent>
-              </Select>
-            </Field>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label={text(lang, "Speech rate", "Tốc độ đọc")}><Input type="number" step="0.05" value={form.speechRate} onChange={(event) => update("speechRate", Number(event.target.value))} /></Field>
-              <Field label={text(lang, "Sentence silence", "Nghỉ giữa câu")}><Input type="number" step="0.05" value={form.sentenceSilence} onChange={(event) => update("sentenceSilence", Number(event.target.value))} /></Field>
-            </div>
-            <Field label="Tone"><Input value={form.tone} onChange={(event) => update("tone", event.target.value)} /></Field>
-            <Field label={text(lang, "Extra instruction", "Yêu cầu thêm")}><Textarea value={form.extraInstruction} onChange={(event) => update("extraInstruction", event.target.value)} rows={4} /></Field>
-            <PublishOptions form={form} lang={lang} options={publishOptions} selectedKeys={selectedPublishChannelKeys} warning={publishChannelWarning} update={update} toggleTarget={togglePublishTarget} toggleChannel={togglePublishChannel} onRefreshChannels={refreshPublishChannels} />
-            <div className="grid gap-2 sm:grid-cols-3">
-              <Button onClick={handleCreatePlan} disabled={loadingPlan || running} variant="outline">{loadingPlan ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}{text(lang, "Create plan", "Tạo plan")}</Button>
-              <Button onClick={handleRunNow} disabled={running || loadingPlan || Boolean(publishChannelWarning)} className="sm:col-span-2">{running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}{text(lang, "Run full agent", "Chạy full agent")}</Button>
-            </div>
-            <Button variant="ghost" className="w-full" onClick={handleSaveDraft}>{text(lang, "Save draft job", "Lưu job nháp")}</Button>
-          </CardContent>
-        </Card>
-
-        <Tabs defaultValue="plan" className="space-y-4">
+      <div className={settingsOpen ? "grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]" : "grid gap-4 xl:grid-cols-[minmax(0,1fr)_64px]"}>
+        <section className="min-w-0 space-y-4">
+          <AgentFlowGraph job={activeJob} lang={lang} selectedStageId={selectedStageId} onSelectStage={setSelectedStageId} />
+          <Tabs defaultValue="logs" className="space-y-4">
           <TabsList className="grid w-full grid-cols-5"><TabsTrigger value="plan">Plan</TabsTrigger><TabsTrigger value="latest">Live job</TabsTrigger><TabsTrigger value="queue">Queue</TabsTrigger><TabsTrigger value="logs">Logs</TabsTrigger><TabsTrigger value="history">History</TabsTrigger></TabsList>
           <TabsContent value="plan"><PlanCard plan={plan || latestJob?.plan || null} lang={lang} /></TabsContent>
           <TabsContent value="latest"><JobCard job={latestJob} lang={lang} busy={busyJobId === latestJob?.id} onRun={handleRunJob} /></TabsContent>
           <TabsContent value="queue"><PublishJobsCard jobs={publishJobs} agentJob={latestJob} lang={lang} /></TabsContent>
           <TabsContent value="logs"><LogCard job={activeJob} lang={lang} selectedStageId={selectedStageId} /></TabsContent>
           <TabsContent value="history" className="space-y-3">{jobs.length ? jobs.map((job) => <JobCard key={job.id} job={job} lang={lang} busy={busyJobId === job.id} onRun={handleRunJob} compact />) : <Empty lang={lang} />}</TabsContent>
-        </Tabs>
+          </Tabs>
+          <AgentSelectedChannelVideos channels={selectedPublishChannels} lang={lang} />
+        </section>
+
+        <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen} className="min-w-0">
+          <Card className="sticky top-4 overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-3">
+              {settingsOpen ? <div><CardTitle className="text-base">{text(lang, "Agent settings", "Thiết lập Agent")}</CardTitle><CardDescription>{text(lang, "Local backend controls.", "Điều khiển backend local.")}</CardDescription></div> : null}
+              <Button type="button" variant="ghost" size="icon" onClick={() => setSettingsOpen((open) => !open)} aria-label={text(lang, "Toggle settings panel", "Thu gọn/mở panel thiết lập")}>
+                {settingsOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+              </Button>
+            </CardHeader>
+            <CollapsibleContent>
+              <ScrollArea className="h-[calc(100vh-130px)]">
+                <CardContent className="space-y-4 p-3 pt-0">
+                  <AgentSettingsForm form={form} lang={lang} presets={presets} models={models} availableModels={availableModels} publishOptions={publishOptions} selectedPublishChannelKeys={selectedPublishChannelKeys} publishChannelWarning={publishChannelWarning} loadingPlan={loadingPlan} running={running} applyPreset={applyPreset} update={update} togglePublishTarget={togglePublishTarget} togglePublishChannel={togglePublishChannel} refreshPublishChannels={refreshPublishChannels} handleCreatePlan={handleCreatePlan} handleRunNow={handleRunNow} handleSaveDraft={handleSaveDraft} />
+                </CardContent>
+              </ScrollArea>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
       </div>
     </main>
   );
+}
+
+function AgentSettingsForm({ form, lang, presets, models, availableModels, publishOptions, selectedPublishChannelKeys, publishChannelWarning, loadingPlan, running, applyPreset, update, togglePublishTarget, togglePublishChannel, refreshPublishChannels, handleCreatePlan, handleRunNow, handleSaveDraft }: {
+  form: AgentVideoForm; lang: Lang; presets: AgentPreset[]; models: PiperModel[]; availableModels: PiperModel[]; publishOptions: AgentPublishChannelOption[]; selectedPublishChannelKeys: string[]; publishChannelWarning: string; loadingPlan: boolean; running: boolean;
+  applyPreset: (id: string) => void; update: <K extends keyof AgentVideoForm>(key: K, value: AgentVideoForm[K]) => void; togglePublishTarget: (target: AgentVideoPublishTarget, enabled: boolean) => void; togglePublishChannel: (key: string, enabled: boolean) => void; refreshPublishChannels: () => void; handleCreatePlan: () => void; handleRunNow: () => void; handleSaveDraft: () => void;
+}) {
+  return <>
+    <Field label={text(lang, "Agent preset", "Agent preset")}><Select value={form.agentPreset || "custom"} onValueChange={applyPreset}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="custom">Custom</SelectItem>{presets.map((preset) => <SelectItem key={preset.id} value={preset.id}>{preset.title}</SelectItem>)}</SelectContent></Select></Field>
+    <Field label={text(lang, "Video topic", "Chủ đề video")}><Input value={form.topic} onChange={(event) => update("topic", event.target.value)} /></Field>
+    <div className="grid gap-3 sm:grid-cols-2"><Field label={text(lang, "Content kind", "Loại nội dung")}><Select value={form.kind} onValueChange={(value) => update("kind", value as AgentVideoForm["kind"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="algorithm">Algorithm</SelectItem><SelectItem value="football">Football/MU</SelectItem><SelectItem value="story">Story</SelectItem><SelectItem value="generic">Generic</SelectItem></SelectContent></Select></Field><Field label={text(lang, "Platform", "Nền tảng")}><Select value={form.platform} onValueChange={(value) => update("platform", value as AgentVideoForm["platform"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="youtube-short">YouTube Short 9:16</SelectItem><SelectItem value="youtube-long">YouTube Long 16:9</SelectItem><SelectItem value="tiktok">TikTok 9:16</SelectItem><SelectItem value="facebook-reel">Facebook Reel 9:16</SelectItem></SelectContent></Select></Field></div>
+    <div className="grid gap-3 sm:grid-cols-2"><Field label={text(lang, "Language", "Ngôn ngữ")}><Select value={form.language} onValueChange={(value) => update("language", value as AgentVideoForm["language"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="vi">Tiếng Việt</SelectItem><SelectItem value="en">English</SelectItem></SelectContent></Select></Field><Field label={text(lang, "Target seconds", "Thời lượng giây")}><Input type="number" min={15} max={600} value={form.targetDurationSec} onChange={(event) => update("targetDurationSec", Number(event.target.value))} /></Field></div>
+    <Field label="Piper voice model"><Select value={form.piperModelKey} onValueChange={(value) => update("piperModelKey", value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{(availableModels.length ? availableModels : models).map((model) => <SelectItem key={model.key} value={model.key}>{model.label}{model.available ? "" : " (missing)"}</SelectItem>)}</SelectContent></Select></Field>
+    <div className="grid gap-3 sm:grid-cols-2"><Field label={text(lang, "Speech rate", "Tốc độ đọc")}><Input type="number" step="0.05" value={form.speechRate} onChange={(event) => update("speechRate", Number(event.target.value))} /></Field><Field label={text(lang, "Sentence silence", "Nghỉ giữa câu")}><Input type="number" step="0.05" value={form.sentenceSilence} onChange={(event) => update("sentenceSilence", Number(event.target.value))} /></Field></div>
+    <Field label="Tone"><Input value={form.tone} onChange={(event) => update("tone", event.target.value)} /></Field>
+    <Field label={text(lang, "Extra instruction", "Yêu cầu thêm")}><Textarea value={form.extraInstruction} onChange={(event) => update("extraInstruction", event.target.value)} rows={4} /></Field>
+    <PublishOptions form={form} lang={lang} options={publishOptions} selectedKeys={selectedPublishChannelKeys} warning={publishChannelWarning} update={update} toggleTarget={togglePublishTarget} toggleChannel={togglePublishChannel} onRefreshChannels={refreshPublishChannels} />
+    <div className="grid gap-2 sm:grid-cols-3"><Button onClick={handleCreatePlan} disabled={loadingPlan || running} variant="outline">{loadingPlan ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}{text(lang, "Create plan", "Tạo plan")}</Button><Button onClick={handleRunNow} disabled={running || loadingPlan || Boolean(publishChannelWarning)} className="sm:col-span-2">{running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}{text(lang, "Run full agent", "Chạy full agent")}</Button></div>
+    <Button variant="ghost" className="w-full" onClick={handleSaveDraft}>{text(lang, "Save draft job", "Lưu job nháp")}</Button>
+  </>;
 }
 
 function PlanCard({ plan, lang }: { plan: AgentVideoPlan | null; lang: Lang }) {
@@ -301,7 +315,14 @@ function PublishJobsCard({ jobs, agentJob, lang }: { jobs: PublishJob[]; agentJo
 function LogCard({ job, lang, selectedStageId }: { job?: AgentVideoJob; lang: Lang; selectedStageId: AgentWorkflowStageId | "all" }) {
   if (!job) return <Empty lang={lang} />;
   const logs = selectedStageId === "all" ? job.logs || [] : (job.logs || []).filter((log) => log.stageId === selectedStageId);
-  return <Card><CardContent className="space-y-2 pt-6">{logs.length ? logs.map((log) => <div key={log.id} className="rounded-md border p-3 text-sm"><div className="flex items-center justify-between gap-3"><Badge variant={log.level === "error" ? "destructive" : log.level === "success" ? "default" : "outline"}>{log.level}</Badge><span className="text-xs text-muted-foreground">{new Date(log.atMs).toLocaleTimeString()}</span></div><p className="mt-2 text-muted-foreground">{log.message}</p></div>) : <p className="text-sm text-muted-foreground">{text(lang, "No logs yet.", "Chưa có log.")}</p>}</CardContent></Card>;
+  return <Card className="overflow-hidden"><CardHeader className="border-b bg-muted/40 py-3"><CardTitle className="flex items-center gap-2 text-base"><Terminal className="h-4 w-4" />{selectedStageId === "all" ? text(lang, "All job commands", "Tất cả lệnh của job") : text(lang, "Stage commands", "Lệnh của bước")}</CardTitle></CardHeader><CardContent className="bg-zinc-950 p-0 text-zinc-100"><ScrollArea className="h-[280px] p-4 font-mono text-xs">{logs.length ? logs.map((log) => <div key={log.id} className="mb-3"><div className="flex flex-wrap items-center gap-2"><span className="text-zinc-500">{new Date(log.atMs).toLocaleTimeString()}</span><span className={log.level === "error" ? "text-red-400" : log.level === "success" ? "text-emerald-400" : log.level === "warning" ? "text-amber-300" : "text-sky-300"}>{log.level}</span><span className="text-zinc-400">$</span><span>{commandForLog(log.stageId, log.level)}</span></div><p className="mt-1 pl-4 text-zinc-400">status: {log.message}</p></div>) : <p className="text-zinc-500">{text(lang, "No commands yet.", "Chưa có lệnh.")}</p>}</ScrollArea></CardContent></Card>;
+}
+
+function commandForLog(stageId: AgentWorkflowStageId | undefined, level: string) {
+  const stage = stageId || "agent";
+  const verbs: Record<string, string> = { research: "research", strategy: "plan-strategy", script: "lock-script", visuals: "prepare-visuals", voice: "generate-voice", render: "render-video", metadata: "pack-metadata", publish: "queue-publish", engage: "prepare-engagement", monetize: "prepare-monetize", agent: "run" };
+  const status = level === "success" ? "success" : level === "error" ? "failed" : level === "warning" ? "warning" : "running";
+  return `kai-agent ${verbs[stage] || stage} --status ${status}`;
 }
 
 function PublishOptions({
@@ -328,7 +349,36 @@ function PublishOptions({
   const targets: AgentVideoPublishTarget[] = ["youtube", "facebook", "tiktok", "instagram"];
   const selectedPlatforms = form.publishTargets || [];
   const visibleOptions = options.filter((option) => !selectedPlatforms.length || selectedPlatforms.includes(option.platform));
-  return <div className="rounded-lg border p-3"><label className="flex items-center gap-2 text-sm font-medium"><Checkbox checked={Boolean(form.autoCreatePublishJobs)} onCheckedChange={(value) => update("autoCreatePublishJobs", Boolean(value))} />{text(lang, "Create publish queue jobs after render", "Tạo publish job sau khi render")}</label><p className="mt-1 text-xs text-muted-foreground">{text(lang, "This does not hide the upload: the created queue jobs are shown in /channel → Queue and in the Publish node logs.", "Không đăng âm thầm: job upload sẽ hiện ở /channel → Queue và trong log node Publish.")}</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{targets.map((target) => <label key={target} className="flex items-center gap-2 text-sm"><Checkbox checked={selectedPlatforms.includes(target)} onCheckedChange={(value) => toggleTarget(target, Boolean(value))} />{target}</label>)}</div><div className="mt-4 flex items-center justify-between gap-3"><Label>{text(lang, "Publish channels", "Kênh sẽ đăng")}</Label><Button type="button" size="sm" variant="outline" onClick={onRefreshChannels}>{text(lang, "Refresh channels", "Tải lại kênh")}</Button></div><div className="mt-2 max-h-48 space-y-2 overflow-y-auto rounded-md border p-2">{visibleOptions.length ? visibleOptions.map((option) => <label key={option.key} className={`flex items-start gap-2 rounded-md p-2 text-sm ${option.disabled ? "opacity-55" : "hover:bg-muted"}`} title={option.disabled ? option.disabledReason : option.subtitle}><Checkbox disabled={option.disabled} checked={selectedKeys.includes(option.key)} onCheckedChange={(value) => toggleChannel(option.key, Boolean(value))} /><span><span className="font-medium">{option.title}</span><span className="block text-xs text-muted-foreground">{option.subtitle}</span></span></label>) : <p className="p-2 text-xs text-muted-foreground">{text(lang, "No connected channel for the selected platform. Connect one in /channel first.", "Chưa có kênh đã kết nối cho nền tảng đã chọn. Hãy kết nối trong /channel trước.")}</p>}</div>{warning ? <p className="mt-2 rounded-md bg-destructive/10 p-2 text-xs text-destructive">{warning}</p> : null}<div className="mt-3 grid gap-3 sm:grid-cols-2"><Input placeholder="Publish scheduled at" value={form.publishScheduledAt || ""} onChange={(event) => update("publishScheduledAt", event.target.value)} /><Input placeholder="YouTube privacy" value={form.publishPrivacyStatus || "private"} onChange={(event) => update("publishPrivacyStatus", event.target.value)} /></div></div>;
+  return (
+    <div className="rounded-lg border p-3">
+      <label className="flex items-center gap-2 text-sm font-medium">
+        <Checkbox checked={Boolean(form.autoCreatePublishJobs)} onCheckedChange={(value) => update("autoCreatePublishJobs", Boolean(value))} />
+        {text(lang, "Create publish queue jobs after render", "Tạo publish job sau khi render")}
+      </label>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {text(lang, "This does not hide the upload: the created queue jobs are shown in /channel → Queue and in the Publish node logs.", "Không đăng âm thầm: job upload sẽ hiện ở /channel → Queue và trong log node Publish.")}
+      </p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        {targets.map((target) => <label key={target} className="flex items-center gap-2 text-sm"><Checkbox checked={selectedPlatforms.includes(target)} onCheckedChange={(value) => toggleTarget(target, Boolean(value))} />{target}</label>)}
+      </div>
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <Label>{text(lang, "Publish channels", "Kênh sẽ đăng")}</Label>
+        <Button type="button" size="sm" variant="outline" onClick={onRefreshChannels}>{text(lang, "Refresh channels", "Tải lại kênh")}</Button>
+      </div>
+      <div className="mt-2 max-h-48 space-y-2 overflow-y-auto rounded-md border p-2">
+        {visibleOptions.length ? visibleOptions.map((option) => <label key={option.key} className={`flex items-start gap-2 rounded-md p-2 text-sm ${option.disabled ? "opacity-55" : "hover:bg-muted"}`} title={option.disabled ? option.disabledReason : option.subtitle}><Checkbox disabled={option.disabled} checked={selectedKeys.includes(option.key)} onCheckedChange={(value) => toggleChannel(option.key, Boolean(value))} /><span><span className="font-medium">{option.title}</span><span className="block text-xs text-muted-foreground">{option.subtitle}</span></span></label>) : <p className="p-2 text-xs text-muted-foreground">{text(lang, "No connected channel for the selected platform. Connect one in /channel first.", "Chưa có kênh đã kết nối cho nền tảng đã chọn. Hãy kết nối trong /channel trước.")}</p>}
+      </div>
+      {warning ? <p className="mt-2 rounded-md bg-destructive/10 p-2 text-xs text-destructive">{warning}</p> : null}
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <Field label={text(lang, "Publish scheduled at", "Lịch đăng")}>
+          <Input type="datetime-local" value={form.publishScheduledAt || ""} onChange={(event) => update("publishScheduledAt", event.target.value)} />
+        </Field>
+        <Field label={text(lang, "YouTube privacy", "Quyền riêng tư YouTube")}>
+          <Input value={form.publishPrivacyStatus || "private"} onChange={(event) => update("publishPrivacyStatus", event.target.value)} />
+        </Field>
+      </div>
+    </div>
+  );
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) { return <div className="space-y-2"><Label>{label}</Label>{children}</div>; }

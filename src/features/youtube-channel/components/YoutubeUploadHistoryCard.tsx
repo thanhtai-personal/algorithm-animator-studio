@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { Lang } from "@/lib/i18n";
 import { getYoutubeChannelVideos, type YoutubeChannelVideo, type YoutubeUploadHistoryItem } from "@/lib/youtubeApi";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 type Props = {
@@ -15,16 +15,24 @@ type Props = {
   subtitle?: string;
   uploadsPlaylistId?: string;
   lang: Lang;
+  pageSize?: number;
+  showUploadHistory?: boolean;
 };
 
-export function YoutubeUploadHistoryCard({ history, lang, refreshHistory, refreshToken, subtitle, title, uploadsPlaylistId }: Props) {
+export function YoutubeUploadHistoryCard({ history, lang, pageSize = 6, refreshHistory, refreshToken, showUploadHistory = true, subtitle, title, uploadsPlaylistId }: Props) {
   const vi = lang === "vi";
   const [videos, setVideos] = useState<YoutubeChannelVideo[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageCount = Math.max(1, Math.ceil(videos.length / pageSize));
+  const pageVideos = useMemo(() => videos.slice((page - 1) * pageSize, page * pageSize), [page, pageSize, videos]);
 
   useEffect(() => {
     void refreshVideos();
   }, [refreshToken, uploadsPlaylistId]);
+  useEffect(() => {
+    setPage(1);
+  }, [refreshToken, uploadsPlaylistId, videos.length]);
 
   async function refreshAll() {
     await Promise.all([refreshHistory(), refreshVideos()]);
@@ -63,7 +71,7 @@ export function YoutubeUploadHistoryCard({ history, lang, refreshHistory, refres
         {!loadingVideos && !videos.length ? <p className="text-sm text-muted-foreground">{txt(vi, "Chưa tải được video nào từ kênh.", "No channel videos loaded.")}</p> : null}
         {videos.length ? (
           <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-            {videos.map((video) => (
+            {pageVideos.map((video) => (
               <a key={video.id} className="rounded-lg border border-border p-3 hover:bg-muted/40" href={video.url} target="_blank" rel="noreferrer">
                 {video.thumbnailUrl ? <img src={video.thumbnailUrl} alt="" className="mb-2 aspect-video w-full rounded-md object-cover" /> : null}
                 <p className="line-clamp-2 text-sm font-medium">{video.title}</p>
@@ -72,8 +80,17 @@ export function YoutubeUploadHistoryCard({ history, lang, refreshHistory, refres
             ))}
           </div>
         ) : null}
+        {videos.length > pageSize ? (
+          <div className="flex flex-col gap-2 pt-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+            <span>{txt(vi, "Trang", "Page")} {page}/{pageCount} · {txt(vi, "Tổng video", "Total videos")}: {videos.length}</span>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>{txt(vi, "Trước", "Prev")}</Button>
+              <Button size="sm" variant="outline" disabled={page >= pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))}>{txt(vi, "Sau", "Next")}</Button>
+            </div>
+          </div>
+        ) : null}
       </section>
-      {history.length ? (
+      {showUploadHistory && history.length ? (
         <div className="space-y-2">
           {history.slice(0, 20).map((item) => (
             <div key={item.id} className="rounded-lg border border-border p-3">
@@ -92,7 +109,8 @@ export function YoutubeUploadHistoryCard({ history, lang, refreshHistory, refres
             </div>
           ))}
         </div>
-      ) : <p className="text-sm text-muted-foreground">{txt(vi, "Chưa có lịch sử upload.", "No upload history yet.")}</p>}
+      ) : null}
+      {showUploadHistory && !history.length ? <p className="text-sm text-muted-foreground">{txt(vi, "Chưa có lịch sử upload.", "No upload history yet.")}</p> : null}
     </Card>
   );
 }

@@ -32,8 +32,8 @@ const MAX_LOGS = 120;
 export const AGENT_PRESETS: AgentPreset[] = [
   {
     id: "algorithm-shorts",
-    title: "Algorithm Shorts Agent",
-    description: "Tạo Shorts giải thích thuật toán: hook mạnh, scene ngắn, metadata YouTube/TikTok.",
+    title: "Short thuật toán Agent",
+    description: "Agent cho màn hình Short thuật toán: hook mạnh, scene ngắn, metadata YouTube/TikTok.",
     kind: "algorithm",
     platform: "youtube-short",
     language: "vi",
@@ -42,20 +42,31 @@ export const AGENT_PRESETS: AgentPreset[] = [
     extraInstruction: "Ưu tiên hình ảnh trực quan, code mapping ngắn, tránh nói quá học thuật.",
   },
   {
-    id: "mu-news-shorts",
-    title: "MU News Agent",
-    description: "Tạo video tin Manchester United ngắn: headline, bối cảnh, bình luận, CTA.",
-    kind: "football",
+    id: "maze-pathfinding",
+    title: "Tìm đường mê cung Agent",
+    description: "Agent cho màn hình tìm đường mê cung: dựng nội dung đua pathfinding và giải thích thuật toán.",
+    kind: "algorithm",
     platform: "youtube-short",
     language: "vi",
-    tone: "Nhiệt, gãy gọn, hơi bình luận bóng đá, không giật tít quá đà.",
+    tone: "Kịch tính, trực quan, nhịp nhanh, giải thích dễ hiểu như một trận đua thuật toán.",
     targetDurationSec: 55,
-    extraInstruction: "Không bịa số liệu chuyển nhượng. Nếu thiếu nguồn thì ghi cần kiểm chứng.",
+    extraInstruction: "Tập trung vào mê cung, đường đi, so sánh chiến thuật tìm đường và kết quả thắng/thua.",
   },
   {
-    id: "story-recap",
-    title: "Story Video Agent",
-    description: "Tạo video kể chuyện/truyện audio ngắn có hook, nhịp cảm xúc và cảnh nền.",
+    id: "algorithm-long",
+    title: "Video thuật toán dài Agent",
+    description: "Agent cho màn hình Video thuật toán dài: outline chapter, script dài, voice và metadata.",
+    kind: "algorithm",
+    platform: "youtube-long",
+    language: "vi",
+    tone: "Rõ ràng, có cấu trúc, phù hợp video dài YouTube.",
+    targetDurationSec: 240,
+    extraInstruction: "Chia scene có chapter, recap và ý tưởng cắt ra Shorts.",
+  },
+  {
+    id: "story-video",
+    title: "Video truyện Agent",
+    description: "Agent cho màn hình Video truyện: narration, nhịp cảm xúc, cảnh nền và voice-over.",
     kind: "story",
     platform: "youtube-short",
     language: "vi",
@@ -64,15 +75,37 @@ export const AGENT_PRESETS: AgentPreset[] = [
     extraInstruction: "Tạo narration tự nhiên để đọc voice-over, tránh câu quá dài.",
   },
   {
-    id: "long-explainer",
-    title: "Long Explainer Agent",
-    description: "Tạo outline video dài 16:9: research, script, voice, metadata, repurpose Shorts.",
-    kind: "algorithm",
+    id: "story-author",
+    title: "Sáng tác truyện Agent",
+    description: "Agent cho màn hình Sáng tác truyện: premise, outline, chương và hướng phát triển.",
+    kind: "story",
     platform: "youtube-long",
     language: "vi",
-    tone: "Rõ ràng, có cấu trúc, phù hợp video dài YouTube.",
-    targetDurationSec: 240,
-    extraInstruction: "Chia scene có chapter, recap và ý tưởng cắt ra Shorts.",
+    tone: "Giàu hình ảnh, có cao trào, mạch truyện rõ và giữ được giọng kể nhất quán.",
+    targetDurationSec: 300,
+    extraInstruction: "Tập trung vào cấu trúc truyện, nhân vật, xung đột, outline chương và đoạn mở đầu có sức hút.",
+  },
+  {
+    id: "story-review",
+    title: "Review truyện Agent",
+    description: "Agent cho màn hình Review truyện: tóm tắt, đánh giá, script review và CTA.",
+    kind: "story",
+    platform: "youtube-short",
+    language: "vi",
+    tone: "Review lôi cuốn, rõ ý, có nhận xét cá nhân nhưng tránh spoil quá đà.",
+    targetDurationSec: 60,
+    extraInstruction: "Tạo hook review, tóm tắt không spoil nặng, điểm đáng xem và câu hỏi kéo tương tác.",
+  },
+  {
+    id: "mu-news",
+    title: "Tin tức MU Agent",
+    description: "Agent cho màn hình Tin tức MU: headline, bối cảnh, bình luận, CTA.",
+    kind: "football",
+    platform: "youtube-short",
+    language: "vi",
+    tone: "Nhiệt, gãy gọn, hơi bình luận bóng đá, không giật tít quá đà.",
+    targetDurationSec: 55,
+    extraInstruction: "Không bịa số liệu chuyển nhượng. Nếu thiếu nguồn thì ghi cần kiểm chứng.",
   },
 ];
 
@@ -83,6 +116,9 @@ export function listAgentPresets() {
 export async function createAgentVideoPlan(body: CreateAgentVideoPlanBody, envOverrides: RuntimeEnvValues = {}) {
   const input = normalizePlanInput(body);
   const aiPlan = await tryCreatePlanWithConfiguredProvider(input, envOverrides);
+  if (!aiPlan && input.agentPreset === "custom") {
+    throw new Error("Custom agent cần AI API key hợp lệ. Custom không dùng fallback local.");
+  }
   return aiPlan || createLocalFallbackPlan(input, "Chưa cấu hình AI hoặc AI trả kết quả không hợp lệ, đã dùng plan local.");
 }
 
@@ -363,29 +399,30 @@ function normalizePlan(plan: Partial<AgentVideoPlan> | null, input: ReturnType<t
 function createLocalFallbackPlan(input: ReturnType<typeof normalizePlanInput>, warning?: string): AgentVideoPlan {
   const vi = input.language === "vi";
   const topic = input.topic;
+  const context = fallbackContext(input.agentPreset, vi);
   const scenes = [
-    [vi ? "Mở đầu" : "Hook", vi ? `Bạn từng thắc mắc ${topic} thực sự hoạt động thế nào chưa? Trong video này, mình sẽ biến nó thành hình ảnh thật dễ hiểu.` : `Ever wondered how ${topic} really works? In this video, we turn it into a simple visual story.`],
-    [vi ? "Vấn đề" : "Problem", vi ? `Trước khi đi vào chi tiết, hãy nhìn vấn đề cốt lõi: dữ liệu đi vào, từng bước biến đổi, rồi tạo ra kết quả cuối cùng.` : `Before the details, look at the core problem: data comes in, changes step by step, then becomes the final result.`],
-    [vi ? "Giải thích trực quan" : "Visual explanation", vi ? `Hãy theo dõi từng chuyển động. Mỗi lần highlight là một quyết định, mỗi lần đổi vị trí là một bước tiến gần hơn đến lời giải.` : `Watch each movement. Every highlight is a decision, and every change moves us closer to the solution.`],
-    [vi ? "Tóm tắt" : "Recap", vi ? `Tóm lại, điểm quan trọng nhất của ${topic} là hiểu được luồng xử lý, không chỉ nhớ công thức. Lưu video này nếu bạn muốn xem lại nhanh.` : `In short, the key to ${topic} is understanding the flow, not memorizing formulas. Save this video for a quick review.`],
+    [context.hookTitle, context.hook(topic)],
+    [context.problemTitle, context.problem(topic)],
+    [context.bodyTitle, context.body(topic)],
+    [context.recapTitle, context.recap(topic)],
   ];
   return {
-    title: vi ? `${topic} giải thích bằng hình ảnh` : `${topic} explained visually`,
-    description: vi ? `Video được tạo bằng AI Video Agent local của KAI STUDIO. Chủ đề: ${topic}.` : `Generated by KAI STUDIO local AI Video Agent. Topic: ${topic}.`,
+    title: context.title(topic),
+    description: context.description(topic),
     tags: defaultTags(input),
     hook: scenes[0][1],
-    researchSummary: vi ? `Plan fallback local cho chủ đề ${topic}. Nên kiểm tra lại dữ kiện nếu đây là tin tức.` : `Local fallback plan for ${topic}. Verify facts if this is news content.`,
-    contentAngles: [vi ? "Giải thích bằng hình ảnh" : "Visual explanation", vi ? "Dễ hiểu cho người mới" : "Beginner-friendly"],
-    audiencePersona: vi ? "Người xem muốn hiểu nhanh bằng hình ảnh." : "Viewers who want a quick visual explanation.",
+    researchSummary: context.research(topic),
+    contentAngles: context.angles,
+    audiencePersona: context.audience,
     thumbnailPrompt: vi ? `Thumbnail rõ ràng, tương phản cao, chủ đề ${topic}` : `Clean high contrast thumbnail about ${topic}`,
     scenes: scenes.map(([title, narration], index) => ({
       id: `scene-${index + 1}`,
       title,
       narration,
       onScreenText: title,
-      visualPrompt: vi ? `Nền công nghệ tối, chữ lớn, nhấn mạnh ${topic}` : `Dark tech background, large text, focus on ${topic}`,
-      brollPrompt: vi ? "Animation đơn giản, chữ nổi bật, chuyển cảnh nhanh." : "Simple animation, strong text, fast cuts.",
-      editInstruction: vi ? "Giữ nhịp nhanh, subtitle rõ." : "Keep pacing fast and subtitles clear.",
+      visualPrompt: context.visual(topic),
+      brollPrompt: context.broll,
+      editInstruction: context.edit,
       durationSec: Math.max(8, Math.round(input.targetDurationSec / scenes.length)),
     })),
     publishNotes: [vi ? "Plan local fallback: nên duyệt lại script trước khi đăng." : "Local fallback plan: review script before publishing."],
@@ -394,6 +431,34 @@ function createLocalFallbackPlan(input: ReturnType<typeof normalizePlanInput>, w
     repurposeIdeas: [vi ? "Cắt riêng cảnh hook làm Shorts phụ." : "Cut the hook as a separate Short."],
     warning,
   };
+}
+
+function fallbackContext(agentPreset: string, vi: boolean) {
+  const generic = {
+    title: (topic: string) => vi ? `${topic} giải thích bằng hình ảnh` : `${topic} explained visually`,
+    description: (topic: string) => vi ? `Video được tạo bằng AI Video Agent local của KAI STUDIO. Chủ đề: ${topic}.` : `Generated by KAI STUDIO local AI Video Agent. Topic: ${topic}.`,
+    research: (topic: string) => vi ? `Plan fallback local cho chủ đề ${topic}. Nên kiểm tra lại dữ kiện nếu đây là tin tức.` : `Local fallback plan for ${topic}. Verify facts if this is news content.`,
+    hookTitle: vi ? "Mở đầu" : "Hook",
+    problemTitle: vi ? "Vấn đề" : "Problem",
+    bodyTitle: vi ? "Giải thích trực quan" : "Visual explanation",
+    recapTitle: vi ? "Tóm tắt" : "Recap",
+    hook: (topic: string) => vi ? `Bạn từng thắc mắc ${topic} thực sự hoạt động thế nào chưa? Trong video này, mình sẽ biến nó thành hình ảnh thật dễ hiểu.` : `Ever wondered how ${topic} really works? In this video, we turn it into a simple visual story.`,
+    problem: () => vi ? "Trước khi đi vào chi tiết, hãy nhìn vấn đề cốt lõi: dữ liệu đi vào, từng bước biến đổi, rồi tạo ra kết quả cuối cùng." : "Before the details, look at the core problem: data comes in, changes step by step, then becomes the final result.",
+    body: () => vi ? "Hãy theo dõi từng chuyển động. Mỗi lần highlight là một quyết định, mỗi lần đổi vị trí là một bước tiến gần hơn đến lời giải." : "Watch each movement. Every highlight is a decision, and every change moves us closer to the solution.",
+    recap: (topic: string) => vi ? `Tóm lại, điểm quan trọng nhất của ${topic} là hiểu được luồng xử lý, không chỉ nhớ công thức. Lưu video này nếu bạn muốn xem lại nhanh.` : `In short, the key to ${topic} is understanding the flow, not memorizing formulas. Save this video for a quick review.`,
+    angles: [vi ? "Giải thích bằng hình ảnh" : "Visual explanation", vi ? "Dễ hiểu cho người mới" : "Beginner-friendly"],
+    audience: vi ? "Người xem muốn hiểu nhanh bằng hình ảnh." : "Viewers who want a quick visual explanation.",
+    visual: (topic: string) => vi ? `Nền công nghệ tối, chữ lớn, nhấn mạnh ${topic}` : `Dark tech background, large text, focus on ${topic}`,
+    broll: vi ? "Animation đơn giản, chữ nổi bật, chuyển cảnh nhanh." : "Simple animation, strong text, fast cuts.",
+    edit: vi ? "Giữ nhịp nhanh, subtitle rõ." : "Keep pacing fast and subtitles clear.",
+  };
+  if (agentPreset === "maze-pathfinding") return { ...generic, title: (topic: string) => vi ? `${topic} - cuộc đua tìm đường mê cung` : `${topic} maze pathfinding race`, angles: [vi ? "Đua thuật toán" : "Algorithm race", vi ? "So sánh đường đi" : "Path comparison"] };
+  if (agentPreset === "story-author") return { ...generic, title: (topic: string) => vi ? `Khung truyện: ${topic}` : `Story outline: ${topic}`, bodyTitle: vi ? "Khung chương" : "Chapter outline", angles: [vi ? "Xây dựng nhân vật" : "Character building", vi ? "Xung đột và cao trào" : "Conflict and climax"] };
+  if (agentPreset === "story-review") return { ...generic, title: (topic: string) => vi ? `Review truyện: ${topic}` : `Story review: ${topic}`, angles: [vi ? "Tóm tắt không spoil nặng" : "Low-spoiler recap", vi ? "Điểm đáng xem" : "Why it is worth watching"] };
+  if (agentPreset === "mu-news") return { ...generic, title: (topic: string) => vi ? `Tin MU: ${topic}` : `MU news: ${topic}`, angles: [vi ? "Headline bóng đá" : "Football headline", vi ? "Bối cảnh cần kiểm chứng" : "Context to verify"] };
+  if (agentPreset === "story-video") return { ...generic, angles: [vi ? "Kể chuyện cảm xúc" : "Emotional narration", vi ? "Cảnh nền điện ảnh" : "Cinematic background"] };
+  if (agentPreset === "algorithm-long") return { ...generic, title: (topic: string) => vi ? `${topic} - video dài có chapter` : `${topic} long-form chaptered explainer`, angles: [vi ? "Chapter rõ ràng" : "Clear chapters", vi ? "Có recap và ví dụ" : "Recap and examples"] };
+  return generic;
 }
 
 function defaultTags(input: ReturnType<typeof normalizePlanInput>) {

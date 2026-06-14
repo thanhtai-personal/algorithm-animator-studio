@@ -47,7 +47,7 @@ export default function RuntimeSetup() {
   async function refreshStatus() {
     setLoading(true);
     try {
-      setStatus(await getSetupWizardStatus());
+      setStatus(await getSetupWizardStatus({ force: true }));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không kiểm tra được setup status.");
     } finally {
@@ -74,7 +74,7 @@ export default function RuntimeSetup() {
 
   async function runAutoSetup() {
     if (!status) await refreshStatus();
-    const current = status || await getSetupWizardStatus();
+    const current = status || await getSetupWizardStatus({ force: true });
     for (const task of current.tasks) {
       if (!AUTO_TASKS.includes(task.id as SetupTaskId) || task.ready || !task.canAutoFix) continue;
       await runTask(task.id as SetupTaskId);

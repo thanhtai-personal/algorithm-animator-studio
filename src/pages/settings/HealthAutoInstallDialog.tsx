@@ -70,7 +70,7 @@ export function HealthAutoInstallDialog({ lang, onAfterTask }: HealthAutoInstall
   async function refreshStatus(refreshHealth = true) {
     setLoading(true);
     try {
-      const nextStatus = await getSetupWizardStatus();
+      const nextStatus = await getSetupWizardStatus({ force: true });
       setStatus(nextStatus);
       if (refreshHealth) await onAfterTask();
     } catch (error) {
@@ -84,7 +84,7 @@ export function HealthAutoInstallDialog({ lang, onAfterTask }: HealthAutoInstall
     setOpen(true);
     setDone(false);
     setResults([]);
-    const initialStatus = status || await getSetupWizardStatus();
+    const initialStatus = status || await getSetupWizardStatus({ force: true });
     setStatus(initialStatus);
 
     const planned = initialStatus.tasks

@@ -119,7 +119,7 @@ export async function createAgentVideoPlan(body: CreateAgentVideoPlanBody, envOv
   if (!aiPlan && input.agentPreset === "custom") {
     throw new Error("Custom agent cần AI API key hợp lệ. Custom không dùng fallback local.");
   }
-  return aiPlan || createLocalFallbackPlan(input, "Chưa cấu hình AI hoặc AI trả kết quả không hợp lệ, đã dùng plan local.");
+  return aiPlan || createLocalFallbackPlan(input, createFallbackWarning(input, envOverrides));
 }
 
 export function listAgentVideoJobs(envOverrides: RuntimeEnvValues = {}) {
@@ -251,7 +251,9 @@ async function runStage(job: AgentVideoJob, id: AgentWorkflowStageId, envOverrid
   const result = await action(job);
   const stage = result.steps?.find((step) => step.id === id);
   if (stage?.status === "skipped" || stage?.status === "failed") return result;
-  const done = markStage(result, id, "done", envOverrides, progress, "Hoàn tất.");
+  const fallbackWarning = id === "research" ? result.plan?.warning : "";
+  const done = markStage(result, id, "done", envOverrides, progress, fallbackWarning || "Hoàn tất.");
+  if (fallbackWarning) return addAndPersistLog(done, envOverrides, "warning", fallbackWarning, id);
   return addAndPersistLog(done, envOverrides, "success", `${stage?.label || id} hoàn tất.`, id);
 }
 
@@ -292,9 +294,26 @@ function normalizeJobInput(body: CreateAgentVideoJobBody, envOverrides: RuntimeE
 
 async function tryCreatePlanWithConfiguredProvider(input: ReturnType<typeof normalizePlanInput>, envOverrides: RuntimeEnvValues) {
   const env = readEnvValues(envOverrides);
-  const provider = (env.AI_AGENT_PROVIDER || "gemini").toLowerCase();
+  const provider = getAgentAiProvider(env);
   if (provider === "openai" || provider === "openai-compatible") return tryCreatePlanWithOpenAiCompatible(input, env);
   return tryCreatePlanWithGemini(input, env);
+}
+
+function getAgentAiProvider(env: RuntimeEnvValues) {
+  return (env.AI_AGENT_PROVIDER || "gemini").toLowerCase();
+}
+
+function hasConfiguredAgentApiKey(env: RuntimeEnvValues) {
+  const provider = getAgentAiProvider(env);
+  if (provider === "openai" || provider === "openai-compatible") return Boolean(env.OPENAI_API_KEY);
+  return Boolean(env.AI_SHORTS_API_KEY);
+}
+
+function createFallbackWarning(input: ReturnType<typeof normalizePlanInput>, envOverrides: RuntimeEnvValues) {
+  const env = readEnvValues(envOverrides);
+  const presetTitle = AGENT_PRESETS.find((item) => item.id === input.agentPreset)?.title || input.agentPreset || "agent";
+  if (!hasConfiguredAgentApiKey(env)) return `Không có API key, đang dùng fallback dữ liệu của ${presetTitle}.`;
+  return `AI không tạo được plan hợp lệ, đang dùng fallback dữ liệu của ${presetTitle}.`;
 }
 
 async function tryCreatePlanWithGemini(input: ReturnType<typeof normalizePlanInput>, env: RuntimeEnvValues) {

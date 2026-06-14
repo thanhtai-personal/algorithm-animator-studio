@@ -2,10 +2,12 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import "dotenv/config";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
 
 export const SERVER_ROOT = path.resolve(__dirname, "..");
 export const APP_ROOT = path.resolve(SERVER_ROOT, "..");
@@ -36,8 +38,8 @@ export const CLIENT_ORIGIN = normalizeLegacyLocalUrl(
 );
 
 export const PIPER_EXE = process.env.PIPER_EXE || getDefaultPiperExe();
-export const FFMPEG_EXE = process.env.FFMPEG_EXE || "ffmpeg";
-export const FFPROBE_EXE = process.env.FFPROBE_EXE || "ffprobe";
+export const FFMPEG_EXE = process.env.FFMPEG_EXE || resolvePackagedExecutable("@ffmpeg-installer/ffmpeg") || "ffmpeg";
+export const FFPROBE_EXE = process.env.FFPROBE_EXE || resolvePackagedExecutable("@ffprobe-installer/ffprobe") || "ffprobe";
 
 export const DEFAULT_SERVER_DATA_DIR = path.join(SERVER_ROOT, "data");
 export const GENERATED_PUBLIC_PATH = "generated";
@@ -137,4 +139,13 @@ function getDefaultPiperExe() {
   const scriptsDir = process.platform === "win32" ? "Scripts" : "bin";
   const executableName = process.platform === "win32" ? "piper.exe" : "piper";
   return path.join(MODEL_DIR, ".venv", scriptsDir, executableName);
+}
+
+function resolvePackagedExecutable(packageName: string) {
+  try {
+    const mod = require(packageName) as { path?: string };
+    return mod.path && fs.existsSync(mod.path) ? mod.path : "";
+  } catch {
+    return "";
+  }
 }

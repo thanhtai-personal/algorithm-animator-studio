@@ -78,6 +78,8 @@ function normalizeChannel(channel: Partial<SocialChannel>): SocialChannel {
     name: channel.name || `${platformName(platform)} channel`,
     handle: channel.handle || "",
     url: channel.url || "",
+    providerAccountId: channel.providerAccountId || channel.id || "",
+    remoteId: channel.remoteId || "",
     ownerName: channel.ownerName || "",
     status,
     contentRole: channel.contentRole || defaults.contentRole,

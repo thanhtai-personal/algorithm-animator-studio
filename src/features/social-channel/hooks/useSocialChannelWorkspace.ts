@@ -79,13 +79,15 @@ export function useSocialChannelWorkspace() {
   }
 
   function upsertConnectedChannel(profile: ConnectedSocialProviderChannel) {
-    let savedId = profile.id;
+    let savedId = profile.providerAccountId || profile.id;
     setWorkspace((current) => {
       const now = Date.now();
-      const existing = current.channels.find((channel) => channel.platform === profile.platform && (channel.id === profile.id || channel.url === profile.url || channel.handle === profile.handle));
+      const existing = current.channels.find((channel) => channel.platform === profile.platform && (channel.id === profile.id || channel.providerAccountId === profile.providerAccountId || channel.remoteId === profile.remoteId || channel.url === profile.url || channel.handle === profile.handle));
       const nextChannel: SocialChannel = {
         ...(existing || createSocialChannel(profile.platform, current.channels.filter((channel) => channel.platform === profile.platform).length + 1)),
-        id: existing?.id || profile.id,
+        id: existing?.id || profile.providerAccountId || profile.id,
+        providerAccountId: profile.providerAccountId || profile.id,
+        remoteId: profile.remoteId || profile.id,
         platform: profile.platform,
         name: profile.name,
         handle: profile.handle,

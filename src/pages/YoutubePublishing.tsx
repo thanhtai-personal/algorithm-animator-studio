@@ -13,6 +13,7 @@ import { exchangeSocialProviderCode, getSocialProviderAuthUrl, getSocialProvider
 import { isOAuthPopupWindow, notifyOAuthOpener, openOAuthPopup } from "@/lib/oauthPopup";
 import { createPkcePair, savePkceVerifier, takePkceVerifier } from "@/lib/oauthPkce";
 import { SocialChannelManagerCard } from "@/features/social-channel/components/SocialChannelManagerCard";
+import { PublishingOpsCard } from "@/features/publishing-ops/components/PublishingOpsCard";
 import { useSocialChannelWorkspace } from "@/features/social-channel/hooks/useSocialChannelWorkspace";
 import type { SocialChannel, SocialPlatform } from "@/features/social-channel/types";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +22,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { readSystemLang, subscribeSystemLang, type Lang } from "@/lib/i18n";
 import { toast } from "sonner";
 
-type ChannelTab = "channels" | "plan" | "upload" | "history";
+type ChannelTab = "channels" | "plan" | "upload" | "ops" | "history";
 
 export default function YoutubePublishing() {
   const manager = useYoutubeChannelManager();
@@ -45,6 +46,15 @@ export default function YoutubePublishing() {
   );
   const activeSharedChannel = sharedChannels.find((channel) => channelKey(channel) === activeKey) || sharedChannels[0] || null;
   const activeIsYoutube = activeSharedChannel?.provider === "youtube";
+  const activePublishChannel = activeSharedChannel ? {
+    provider: activeSharedChannel.provider,
+    id: activeIsYoutube
+      ? manager.activeChannel?.youtubeChannelId || manager.activeChannel?.localId || activeSharedChannel.id
+      : activeSharedChannel.id,
+    title: activeSharedChannel.title,
+    youtubeRefreshToken: activeIsYoutube ? manager.activeChannel?.refreshToken : undefined,
+    youtubePlaylistId: activeIsYoutube ? manager.form.playlistId || manager.activeChannel?.uploadsPlaylistId : undefined,
+  } : null;
   const channelGridStyle = {
     "--channel-panel-width": channelMenuCollapsed ? "88px" : "340px",
   } as CSSProperties;
@@ -190,10 +200,11 @@ export default function YoutubePublishing() {
 
           <div className="min-w-0 space-y-4">
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ChannelTab)}>
-              <TabsList className="grid h-9 w-full grid-cols-4 gap-1 bg-muted/40 p-1">
+              <TabsList className="grid h-9 w-full grid-cols-5 gap-1 bg-muted/40 p-1">
                 <TabsTrigger value="channels" className="h-7 px-2 text-xs sm:text-sm">{txt(vi, "Chung", "General")}</TabsTrigger>
                 <TabsTrigger value="plan" className="h-7 px-2 text-xs sm:text-sm">{txt(vi, "Kế hoạch", "Plan")}</TabsTrigger>
                 <TabsTrigger value="upload" className="h-7 px-2 text-xs sm:text-sm">{txt(vi, "Chọn video", "Select Video")}</TabsTrigger>
+                <TabsTrigger value="ops" className="h-7 px-2 text-xs sm:text-sm">{txt(vi, "Queue", "Queue")}</TabsTrigger>
                 <TabsTrigger value="history" className="h-7 px-2 text-xs sm:text-sm">{txt(vi, "Video", "Videos")}</TabsTrigger>
               </TabsList>
             </Tabs>
@@ -242,6 +253,10 @@ export default function YoutubePublishing() {
                   lang={lang}
                 />
               ) : <ProviderNotice channel={activeSharedChannel} lang={lang} />
+            ) : null}
+
+            {activeTab === "ops" ? (
+              <PublishingOpsCard activeChannel={activePublishChannel} lang={lang} />
             ) : null}
 
             {activeTab === "history" ? (

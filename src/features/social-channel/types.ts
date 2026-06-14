@@ -8,6 +8,8 @@ export type SocialChannel = {
   name: string;
   handle: string;
   url: string;
+  providerAccountId?: string;
+  remoteId?: string;
   ownerName: string;
   status: SocialChannelStatus;
   contentRole: string;

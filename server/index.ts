@@ -37,6 +37,8 @@ import { createVideoRouter } from "./routes/videoRoutes";
 import { createWebExtractRouter } from "./routes/webExtractRoutes";
 import { createResourceRouter } from "./routes/resourceRoutes";
 import { createYoutubeRouter } from "./routes/youtubeRoutes";
+import { createPublishQueueRouter } from "./routes/publishQueueRoutes";
+import { startLocalPublishWorker } from "./services/PublishWorkerService";
 import { readRuntimeEnvFromRequest } from "./services/RuntimeEnvService";
 import { readEnvValues } from "./services/EnvFileService";
 
@@ -53,7 +55,9 @@ app.use(`/${GENERATED_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedD
 app.use(`/${GENERATED_PREVIEW_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedPreviewDir));
 app.use(`/${GENERATED_VIDEO_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedVideoDir));
 app.use(`/${GENERATED_BACKGROUND_MUSIC_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedBackgroundMusicDir));
-app.use("/api", createHealthRouter(), createModelRouter(), createMusicLibraryRouter(), createMuNewsRouter(), createPiperRuntimeRouter(), createSystemRouter(), createSetupWizardRouter(), createResourceRouter(), createStoryReviewRouter(), createWebExtractRouter(), createGenerateRouter(), createChannelProviderRouter(), createElevenLabsRouter(), createSupertonicRouter(), createRvcApplioRouter(), createVieneuRouter(), createVideoRouter(), createYoutubeRouter());
+app.use("/api", createHealthRouter(), createModelRouter(), createMusicLibraryRouter(), createMuNewsRouter(), createPiperRuntimeRouter(), createSystemRouter(), createSetupWizardRouter(), createResourceRouter(), createStoryReviewRouter(), createWebExtractRouter(), createGenerateRouter(), createChannelProviderRouter(), createElevenLabsRouter(), createSupertonicRouter(), createRvcApplioRouter(), createVieneuRouter(), createVideoRouter(), createYoutubeRouter(), createPublishQueueRouter());
+
+startLocalPublishWorker();
 
 app.listen(PORT, () => {
   console.log(`KAI STUDIO backend running at http://localhost:${PORT}`);

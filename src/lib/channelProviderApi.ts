@@ -19,6 +19,8 @@ export type ConnectedSocialProviderChannel = {
   handle: string;
   url: string;
   thumbnailUrl?: string;
+  providerAccountId?: string;
+  remoteId?: string;
 };
 
 export async function getSocialProviderConfig() {

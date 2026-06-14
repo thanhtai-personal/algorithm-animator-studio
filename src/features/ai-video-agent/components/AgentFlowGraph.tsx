@@ -113,7 +113,7 @@ export function AgentFlowGraph({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="kai-agent-flow-shell h-[560px] overflow-hidden rounded-xl border bg-muted/20">
+        <div className="kai-agent-flow-shell h-[680px] overflow-hidden rounded-xl border bg-muted/20 xl:h-[720px]">
           <style>{`
             .kai-agent-flow-card {
               --kai-agent-active: #0284c7;
@@ -145,7 +145,7 @@ export function AgentFlowGraph({
             edges={edges}
             nodeTypes={nodeTypes}
             fitView
-            fitViewOptions={{ padding: 0.18 }}
+            fitViewOptions={{ padding: 0.14 }}
             minZoom={0.2}
             maxZoom={1.4}
             nodesDraggable={false}
@@ -176,21 +176,21 @@ function buildAgentFlow(job: AgentVideoJob | undefined, steps: AgentStep[], lang
   const runningId = steps.find((step) => step.status === "running")?.id;
   const node = (id: string, label: string, x: number, y: number, stageId?: AgentWorkflowStageId, extra?: Partial<FlowSpecNode>): FlowSpecNode => ({ id, label, x, y, stageId, ...extra });
   const nodes: FlowSpecNode[] = [
-    node("research", labels.research, 0, 170, "research"),
-    node("api-check", vi ? "Có API key?" : "API key?", 250, 170, "research", { kind: "condition", status: conditionStatus(steps, "research"), progress: hasPlan ? 100 : 0, message: apiMessage(job, vi) }),
-    node("ai-plan", vi ? "AI plan" : "AI plan", 500, 55, "research", { kind: "branch", status: branchStatus(hasApiKeyPath, fallback, runningId === "research"), progress: hasApiKeyPath ? 100 : 0, message: labels.aiPlan }),
-    node("fallback-plan", vi ? "Fallback local" : "Local fallback", 500, 285, "research", { kind: "branch", status: branchStatus(fallback, hasApiKeyPath, runningId === "research"), progress: fallback ? 100 : 0, message: job?.plan?.warning || labels.fallback }),
-    node("strategy", labels.strategy, 770, 170, "strategy"),
-    node("script", labels.script, 1030, 170, "script"),
-    node("visuals", labels.visuals, 1290, 70, "visuals"),
-    node("voice", labels.voice, 1290, 285, "voice"),
-    node("render", labels.render, 1550, 170, "render"),
-    node("metadata", labels.metadata, 1810, 95, "metadata"),
-    node("publish-check", vi ? "Auto publish?" : "Auto publish?", 2060, 170, "publish", { kind: "condition", status: conditionStatus(steps, "metadata"), progress: publishStep?.progress || 0, message: autoPublish ? labels.publishYes : labels.publishNo }),
-    node("publish", labels.publish, 2310, 55, "publish"),
-    node("local-output", vi ? "Lưu local" : "Local output", 2310, 285, "publish", { kind: "branch", status: publishStep?.status === "skipped" ? "done" : autoPublish ? "skipped" : publishStep?.status || "pending", progress: publishStep?.status === "skipped" ? 100 : 0, message: labels.publishNo }),
-    node("engage", labels.engage, 2570, 95, "engage"),
-    node("monetize", labels.monetize, 2830, 210, "monetize"),
+    node("research", labels.research, 0, 220, "research"),
+    node("api-check", vi ? "Có API key?" : "API key?", 250, 220, "research", { kind: "condition", status: conditionStatus(steps, "research"), progress: hasPlan ? 100 : 0, message: apiMessage(job, vi) }),
+    node("ai-plan", vi ? "AI plan" : "AI plan", 500, 40, "research", { kind: "branch", status: branchStatus(hasApiKeyPath, fallback, runningId === "research"), progress: hasApiKeyPath ? 100 : 0, message: labels.aiPlan }),
+    node("fallback-plan", vi ? "Fallback local" : "Local fallback", 500, 400, "research", { kind: "branch", status: branchStatus(fallback, hasApiKeyPath, runningId === "research"), progress: fallback ? 100 : 0, message: job?.plan?.warning || labels.fallback }),
+    node("strategy", labels.strategy, 770, 220, "strategy"),
+    node("script", labels.script, 1030, 220, "script"),
+    node("visuals", labels.visuals, 1290, 55, "visuals"),
+    node("voice", labels.voice, 1290, 390, "voice"),
+    node("render", labels.render, 1550, 220, "render"),
+    node("metadata", labels.metadata, 1810, 105, "metadata"),
+    node("publish-check", vi ? "Auto publish?" : "Auto publish?", 2060, 220, "publish", { kind: "condition", status: conditionStatus(steps, "metadata"), progress: publishStep?.progress || 0, message: autoPublish ? labels.publishYes : labels.publishNo }),
+    node("publish", labels.publish, 2310, 40, "publish"),
+    node("local-output", vi ? "Lưu local" : "Local output", 2310, 400, "publish", { kind: "branch", status: publishStep?.status === "skipped" ? "done" : autoPublish ? "skipped" : publishStep?.status || "pending", progress: publishStep?.status === "skipped" ? 100 : 0, message: labels.publishNo }),
+    node("engage", labels.engage, 2570, 105, "engage"),
+    node("monetize", labels.monetize, 2830, 285, "monetize"),
   ];
   const active = (source: AgentWorkflowStageId, target?: AgentWorkflowStageId) => runningId === source || runningId === target;
   const edges: FlowSpecEdge[] = [

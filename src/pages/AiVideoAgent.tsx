@@ -72,8 +72,13 @@ export default function AiVideoAgent() {
   const [busyJobId, setBusyJobId] = useState("");
   const latestJob = jobs[0];
   const activeJob = jobs.find((job) => job.status === "running") || latestJob;
+  const agentJobBusy = jobs.some((job) => job.status === "running" || job.status === "queued");
+  const fullAgentRunning = running || agentJobBusy;
   const availableModels = useMemo(() => models.filter((model) => model.lang === form.language), [models, form.language]);
-  const selectedPublishChannels = useMemo(() => channelsFromKeys(publishOptions, selectedPublishChannelKeys), [publishOptions, selectedPublishChannelKeys]);
+  const selectedPublishChannels = useMemo(() => {
+    const targets = form.publishTargets || [];
+    return channelsFromKeys(publishOptions, selectedPublishChannelKeys).filter((channel) => targets.includes(channel.platform));
+  }, [publishOptions, selectedPublishChannelKeys, form.publishTargets]);
   const publishChannelWarning = form.autoCreatePublishJobs && !selectedPublishChannels.length
     ? text(lang, "Select at least one channel before queueing publish jobs.", "Hãy chọn ít nhất một kênh trước khi tạo publish job.")
     : "";
@@ -118,24 +123,26 @@ export default function AiVideoAgent() {
 
   async function handleRunNow() {
     setRunning(true);
+    let started = false;
     try {
       if (publishChannelWarning) { toast.error(publishChannelWarning); return; }
-      const job = await createAgentVideoJob({ ...form, publishChannels: selectedPublishChannels, plan: plan || undefined });
+      const job = await createAgentVideoJob({ ...form, publishChannels: form.autoCreatePublishJobs ? selectedPublishChannels : [], plan: plan || undefined });
       const runningJob = markJobStarting(job);
       setJobs((current) => [runningJob, ...current.filter((item) => item.id !== job.id)]);
       toast.success(text(lang, "Agent is running locally", "Agent đang chạy local"));
-      startJobInBackground(job.id);
+      started = true;
+      startJobInBackground(job.id, () => setRunning(false));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : text(lang, "Could not run agent", "Không chạy được agent"));
     } finally {
-      setRunning(false);
+      if (!started) setRunning(false);
     }
   }
 
   async function handleSaveDraft() {
     try {
       if (publishChannelWarning) { toast.error(publishChannelWarning); return; }
-      const job = await createAgentVideoJob({ ...form, publishChannels: selectedPublishChannels, plan: plan || undefined });
+      const job = await createAgentVideoJob({ ...form, publishChannels: form.autoCreatePublishJobs ? selectedPublishChannels : [], plan: plan || undefined });
       setJobs((current) => [job, ...current]);
       toast.success(text(lang, "Draft job saved", "Đã lưu job nháp"));
     } catch (error) {
@@ -223,6 +230,7 @@ export default function AiVideoAgent() {
   function togglePublishTarget(target: AgentVideoPublishTarget, enabled: boolean) {
     const current = form.publishTargets || [];
     update("publishTargets", enabled ? Array.from(new Set([...current, target])) : current.filter((item) => item !== target));
+    if (!enabled) setSelectedPublishChannelKeys((currentKeys) => currentKeys.filter((key) => publishOptions.find((option) => option.key === key)?.platform !== target));
   }
 
   return (
@@ -235,8 +243,8 @@ export default function AiVideoAgent() {
           </div>
           <h1 className="mt-3 text-3xl font-bold tracking-tight">{text(lang, "AI Video Agent Flow", "AI Video Agent Flow")}</h1>
         </div>
-        <Button variant="outline" onClick={handleRunDue} disabled={running}>
-          {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}{text(lang, "Run scheduled", "Chạy job tới lịch")}
+        <Button variant="outline" onClick={handleRunDue} disabled={fullAgentRunning}>
+          {fullAgentRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}{text(lang, "Run scheduled", "Chạy job tới lịch")}
         </Button>
       </div>
 
@@ -265,7 +273,7 @@ export default function AiVideoAgent() {
             <CollapsibleContent>
               <ScrollArea className="h-[calc(100vh-130px)]">
                 <CardContent className="space-y-4 p-3 pt-0">
-                  <AgentSettingsForm form={form} lang={lang} presets={presets} models={models} availableModels={availableModels} publishOptions={publishOptions} selectedPublishChannelKeys={selectedPublishChannelKeys} publishChannelWarning={publishChannelWarning} loadingPlan={loadingPlan} running={running} applyPreset={applyPreset} update={update} togglePublishTarget={togglePublishTarget} togglePublishChannel={togglePublishChannel} refreshPublishChannels={refreshPublishChannels} handleCreatePlan={handleCreatePlan} handleRunNow={handleRunNow} handleSaveDraft={handleSaveDraft} />
+                  <AgentSettingsForm form={form} lang={lang} presets={presets} models={models} availableModels={availableModels} publishOptions={publishOptions} selectedPublishChannelKeys={selectedPublishChannelKeys} publishChannelWarning={publishChannelWarning} loadingPlan={loadingPlan} running={fullAgentRunning} applyPreset={applyPreset} update={update} togglePublishTarget={togglePublishTarget} togglePublishChannel={togglePublishChannel} refreshPublishChannels={refreshPublishChannels} handleCreatePlan={handleCreatePlan} handleRunNow={handleRunNow} handleSaveDraft={handleSaveDraft} />
                 </CardContent>
               </ScrollArea>
             </CollapsibleContent>
@@ -307,7 +315,7 @@ function JobCard({ job, lang, busy, onRun, compact }: { job?: AgentVideoJob; lan
 
 function PublishJobsCard({ jobs, agentJob, lang }: { jobs: PublishJob[]; agentJob?: AgentVideoJob; lang: Lang }) {
   const ids = new Set(agentJob?.artifacts?.publishJobIds || []);
-  const related = ids.size ? jobs.filter((job) => ids.has(job.id)) : jobs.slice(0, 8);
+  const related = jobs.filter((job) => ids.has(job.id));
   if (!related.length) return <Card className="border-dashed p-8 text-center text-sm text-muted-foreground">{text(lang, "No publish queue jobs yet. Render with publish channels selected to create queue jobs.", "Chưa có publish job. Hãy render với kênh đăng đã chọn để tạo job upload.")}</Card>;
   return <Card><CardContent className="space-y-3 pt-6">{related.map((job) => <div key={job.id} className="rounded-lg border p-3"><div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between"><div><p className="font-medium">{job.title}</p><p className="text-xs text-muted-foreground">{job.platform} · {job.channelTitle || job.channelId || text(lang, "No channel", "Chưa có kênh")} · {new Date(job.updatedAtMs).toLocaleString()}</p>{job.message ? <p className="mt-1 text-xs text-muted-foreground">{job.message}</p> : null}</div><Badge variant={job.status === "success" ? "default" : job.status === "failed" ? "destructive" : "secondary"}>{job.status}</Badge></div><Progress value={job.progress || 0} className="mt-3" />{job.resultUrl ? <a className="mt-2 inline-block text-xs text-primary underline" href={job.resultUrl} target="_blank" rel="noreferrer">{text(lang, "Open published video", "Mở video đã đăng")}</a> : null}</div>)}</CardContent></Card>;
 }
@@ -348,7 +356,7 @@ function PublishOptions({
 }) {
   const targets: AgentVideoPublishTarget[] = ["youtube", "facebook", "tiktok", "instagram"];
   const selectedPlatforms = form.publishTargets || [];
-  const visibleOptions = options.filter((option) => !selectedPlatforms.length || selectedPlatforms.includes(option.platform));
+  const visibleOptions = options.filter((option) => selectedPlatforms.includes(option.platform));
   return (
     <div className="rounded-lg border p-3">
       <label className="flex items-center gap-2 text-sm font-medium">

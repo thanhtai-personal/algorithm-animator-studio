@@ -89,9 +89,13 @@ export function AgentFlowGraph({
     animated: edge.active,
     className: edge.active ? "kai-agent-running-edge" : edge.skipped ? "kai-agent-skipped-edge" : undefined,
     label: edge.label,
-    markerEnd: { type: MarkerType.ArrowClosed, color: edge.active ? "var(--kai-agent-active)" : undefined },
+    markerEnd: { type: MarkerType.ArrowClosed, color: edge.active ? "var(--kai-agent-active)" : edge.skipped ? "var(--kai-agent-skip)" : "var(--kai-agent-done)" },
     type: "smoothstep",
-    style: edge.active ? { strokeWidth: 4, stroke: "var(--kai-agent-active)" } : edge.skipped ? { strokeWidth: 1.2, opacity: 0.35 } : { strokeWidth: 1.5 },
+    style: edge.active
+      ? { strokeWidth: 4.5, stroke: "var(--kai-agent-active)" }
+      : edge.skipped
+        ? { strokeWidth: 1.5, stroke: "var(--kai-agent-skip)", opacity: 0.42 }
+        : { strokeWidth: 2, stroke: "var(--kai-agent-done)", opacity: 0.82 },
   })), [flow.edges]);
   const runningStep = steps.find((step) => step.status === "running");
 
@@ -111,10 +115,28 @@ export function AgentFlowGraph({
       <CardContent>
         <div className="kai-agent-flow-shell h-[560px] overflow-hidden rounded-xl border bg-muted/20">
           <style>{`
-            .kai-agent-flow-card { --kai-agent-active: #0284c7; --kai-agent-active-soft: rgba(2, 132, 199, 0.2); --kai-agent-active-glow: rgba(2, 132, 199, 0.65); }
-            .dark .kai-agent-flow-card { --kai-agent-active: #fb923c; --kai-agent-active-soft: rgba(251, 146, 60, 0.18); --kai-agent-active-glow: rgba(251, 146, 60, 0.8); }
+            .kai-agent-flow-card {
+              --kai-agent-active: #0284c7;
+              --kai-agent-active-soft: rgba(2, 132, 199, 0.2);
+              --kai-agent-active-glow: rgba(2, 132, 199, 0.65);
+              --kai-agent-done: #059669;
+              --kai-agent-done-soft: rgba(5, 150, 105, 0.14);
+              --kai-agent-skip: #64748b;
+              --kai-agent-skip-soft: rgba(100, 116, 139, 0.12);
+            }
+            .dark .kai-agent-flow-card {
+              --kai-agent-active: #fb923c;
+              --kai-agent-active-soft: rgba(251, 146, 60, 0.18);
+              --kai-agent-active-glow: rgba(251, 146, 60, 0.8);
+              --kai-agent-done: #22c55e;
+              --kai-agent-done-soft: rgba(34, 197, 94, 0.13);
+              --kai-agent-skip: #475569;
+              --kai-agent-skip-soft: rgba(71, 85, 105, 0.2);
+            }
             .kai-agent-running-edge .react-flow__edge-path { stroke-dasharray: 12 8; animation: kai-agent-flow-dash 0.7s linear infinite; filter: drop-shadow(0 0 7px var(--kai-agent-active-glow)); }
-            .kai-agent-skipped-edge .react-flow__edge-path { stroke-dasharray: 4 8; }
+            .kai-agent-skipped-edge .react-flow__edge-path { stroke-dasharray: 4 8; filter: grayscale(1); }
+            .kai-agent-skipped-edge .react-flow__edge-text,
+            .kai-agent-skipped-edge .react-flow__edge-textbg { opacity: 0.55; }
             @keyframes kai-agent-flow-dash { from { stroke-dashoffset: 20; } to { stroke-dashoffset: 0; } }
           `}</style>
           <ReactFlow
@@ -242,12 +264,21 @@ function getAgentLabels(preset: string, vi: boolean) {
 function StageNode({ data }: NodeProps<Node<StageNodeData>>) {
   const running = data.status === "running";
   const condition = data.kind === "condition";
+  const skipped = data.status === "skipped";
+  const done = data.status === "done";
   return (
-    <div className={cn("relative w-56 overflow-hidden rounded-xl border bg-background p-3 shadow-sm transition", condition && "border-dashed", data.selected && "border-primary ring-2 ring-primary/20", running && "border-[var(--kai-agent-active)] bg-[var(--kai-agent-active-soft)] shadow-[0_0_24px_var(--kai-agent-active-glow)] ring-2 ring-[var(--kai-agent-active)]/30")}>
+    <div className={cn(
+      "relative w-56 overflow-hidden rounded-xl border bg-background p-3 shadow-sm transition",
+      condition && "border-dashed",
+      done && !running && "border-[var(--kai-agent-done)] bg-[var(--kai-agent-done-soft)]",
+      skipped && "border-[var(--kai-agent-skip)] bg-[var(--kai-agent-skip-soft)] opacity-55 grayscale",
+      data.selected && "border-primary ring-2 ring-primary/20",
+      running && "border-[var(--kai-agent-active)] bg-[var(--kai-agent-active-soft)] shadow-[0_0_24px_var(--kai-agent-active-glow)] ring-2 ring-[var(--kai-agent-active)]/30"
+    )}>
       {running ? <div className="absolute inset-x-0 top-0 h-1 animate-pulse bg-[var(--kai-agent-active)] shadow-[0_0_14px_var(--kai-agent-active)]" /> : null}
       <Handle type="target" position={Position.Left} className="!h-2 !w-2" />
       <div className="flex items-start gap-2">
-        {condition ? <GitBranch className="mt-0.5 h-4 w-4 text-[var(--kai-agent-active)]" /> : <StatusIcon status={data.status} />}
+        {condition ? <GitBranch className={cn("mt-0.5 h-4 w-4", skipped ? "text-[var(--kai-agent-skip)]" : "text-[var(--kai-agent-active)]")} /> : <StatusIcon status={data.status} />}
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">{data.label}</p>
           <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{data.message || "Waiting"}</p>
@@ -255,7 +286,7 @@ function StageNode({ data }: NodeProps<Node<StageNodeData>>) {
       </div>
       {running ? <div className="mt-3 flex items-center gap-2 text-[11px] font-medium text-[var(--kai-agent-active)]"><span className="h-2 w-2 animate-ping rounded-full bg-[var(--kai-agent-active)]" />Live signal</div> : null}
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
-        <div className={cn("h-full rounded-full", data.status === "failed" ? "bg-destructive" : data.status === "done" ? "bg-primary" : running ? "animate-pulse bg-[var(--kai-agent-active)] shadow-[0_0_10px_var(--kai-agent-active)]" : "bg-muted-foreground")} style={{ width: `${Math.max(0, Math.min(100, data.progress || 0))}%` }} />
+        <div className={cn("h-full rounded-full", data.status === "failed" ? "bg-destructive" : done ? "bg-[var(--kai-agent-done)]" : running ? "animate-pulse bg-[var(--kai-agent-active)] shadow-[0_0_10px_var(--kai-agent-active)]" : skipped ? "bg-[var(--kai-agent-skip)]" : "bg-muted-foreground")} style={{ width: `${Math.max(0, Math.min(100, data.progress || 0))}%` }} />
       </div>
       <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
         <span>{data.status}</span>

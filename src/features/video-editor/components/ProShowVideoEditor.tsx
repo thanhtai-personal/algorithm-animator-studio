@@ -285,33 +285,31 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
             <Badge variant="outline">{renderEngine === "remotion" ? "Remotion" : "FFmpeg"}</Badge>
             <Badge variant="outline">{totalDuration.toFixed(1)}s</Badge>
           </div>
-          <VideoEditorPreview
-            asset={currentAsset}
-            clip={preview?.clip}
-            localTime={preview?.localTime}
-            aspectRatio={aspectRatio}
-            progress={progress}
-            elapsed={elapsed}
-            totalDuration={totalDuration}
-            playing={playing}
-            title={title}
-            showWatermark={showWatermark}
-            watermarkText={watermarkText}
-            watermarkLogoAsset={assets.find((asset) => asset.id === watermarkLogoAssetId)}
-            onReset={() => setElapsed(0)}
-            onPlay={() => setPlaying((value) => !value)}
-            onSeek={(value) => { setPlaying(false); setElapsed(value); }}
-          />
-        </div>
-
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
-          <div className="space-y-2 rounded-lg border bg-muted/10 p-3">
-            <TimelineTrack title="Track 1: Hình ảnh / video" icon={<Film className="h-4 w-4" />} clips={visualClips} assets={assets} track="visual" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
-            <TimelineTrack title="Track 2: Voice / nhạc" icon={<Music2 className="h-4 w-4" />} clips={audioClips} assets={assets} track="audio" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
-          </div>
-          <div className="xl:sticky xl:top-20">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
+            <VideoEditorPreview
+              asset={currentAsset}
+              clip={preview?.clip}
+              localTime={preview?.localTime}
+              aspectRatio={aspectRatio}
+              progress={progress}
+              elapsed={elapsed}
+              totalDuration={totalDuration}
+              playing={playing}
+              title={title}
+              showWatermark={showWatermark}
+              watermarkText={watermarkText}
+              watermarkLogoAsset={assets.find((asset) => asset.id === watermarkLogoAssetId)}
+              onReset={() => setElapsed(0)}
+              onPlay={() => setPlaying((value) => !value)}
+              onSeek={(value) => { setPlaying(false); setElapsed(value); }}
+            />
             <MediaBin assets={assets} onFiles={addFiles} />
           </div>
+        </div>
+
+        <div className="space-y-2 rounded-lg border bg-muted/10 p-3">
+          <TimelineTrack title="Track 1: Hình ảnh / video" icon={<Film className="h-4 w-4" />} clips={visualClips} assets={assets} track="visual" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
+          <TimelineTrack title="Track 2: Voice / nhạc" icon={<Music2 className="h-4 w-4" />} clips={audioClips} assets={assets} track="audio" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
         </div>
         <audio ref={audioRef} />
         {lastVideo ? (

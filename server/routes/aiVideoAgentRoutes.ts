@@ -5,6 +5,7 @@ import {
   createAgentVideoJob,
   createAgentVideoPlan,
   getAgentVideoJob,
+  listAgentPresets,
   listAgentVideoJobs,
   runAgentVideoJob,
   runDueAgentVideoJobs,
@@ -13,6 +14,10 @@ import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
 
 export function createAiVideoAgentRouter() {
   const router = Router();
+
+  router.get("/ai-video-agent/presets", (_req, res) => {
+    res.json({ presets: listAgentPresets() });
+  });
 
   router.get("/ai-video-agent/jobs", (req, res) => {
     res.json({ jobs: listAgentVideoJobs(readRuntimeEnvFromRequest(req)) });

@@ -4,7 +4,10 @@ import { buildRuntimeSettingsHeaders } from "./runtimeSettings";
 export type AgentVideoKind = "algorithm" | "football" | "story" | "generic";
 export type AgentVideoPlatform = "youtube-short" | "youtube-long" | "tiktok" | "facebook-reel";
 export type AgentVideoLanguage = "vi" | "en";
-export type AgentVideoJobStatus = "draft" | "queued" | "running" | "success" | "failed" | "cancelled";
+export type AgentVideoJobStatus = "draft" | "queued" | "running" | "review_ready" | "success" | "failed" | "cancelled";
+export type AgentVideoPublishTarget = "youtube" | "facebook" | "tiktok" | "instagram";
+export type AgentWorkflowStageId = "research" | "strategy" | "script" | "visuals" | "voice" | "render" | "metadata" | "publish" | "engage" | "monetize";
+export type AgentWorkflowStageStatus = "pending" | "running" | "done" | "failed" | "skipped";
 
 export type AgentVideoScene = {
   id: string;
@@ -13,6 +16,8 @@ export type AgentVideoScene = {
   onScreenText: string;
   visualPrompt: string;
   durationSec: number;
+  brollPrompt?: string;
+  editInstruction?: string;
 };
 
 export type AgentVideoPlan = {
@@ -23,7 +28,21 @@ export type AgentVideoPlan = {
   thumbnailPrompt: string;
   scenes: AgentVideoScene[];
   publishNotes: string[];
+  researchSummary?: string;
+  contentAngles?: string[];
+  audiencePersona?: string;
+  engagementPrompts?: string[];
+  monetizationIdeas?: string[];
+  repurposeIdeas?: string[];
   warning?: string;
+};
+
+export type AgentVideoJobLog = {
+  id: string;
+  atMs: number;
+  stageId?: AgentWorkflowStageId;
+  level: "info" | "success" | "warning" | "error";
+  message: string;
 };
 
 export type AgentVideoJob = {
@@ -32,21 +51,17 @@ export type AgentVideoJob = {
   createdAtMs: number;
   updatedAtMs: number;
   scheduledAtMs?: number;
-  input: {
-    topic: string;
-    kind: AgentVideoKind;
-    platform: AgentVideoPlatform;
-    language: AgentVideoLanguage;
-    tone: string;
-    targetDurationSec: number;
-    extraInstruction: string;
-    piperModelKey: string;
-    speechRate: number;
-    sentenceSilence: number;
+  input: AgentVideoForm & {
+    agentPreset: string;
+    autoCreatePublishJobs: boolean;
+    publishTargets: AgentVideoPublishTarget[];
+    publishScheduledAt: string;
+    publishPrivacyStatus: string;
   };
   progress: number;
   currentStep?: string;
-  steps: Array<{ id: string; label: string; status: "pending" | "running" | "done" | "failed"; message?: string }>;
+  steps: Array<{ id: AgentWorkflowStageId; label: string; status: AgentWorkflowStageStatus; progress: number; message?: string; startedAtMs?: number; completedAtMs?: number; updatedAtMs?: number }>;
+  logs: AgentVideoJobLog[];
   plan?: AgentVideoPlan;
   artifacts?: {
     audioRelativePath?: string;
@@ -54,6 +69,7 @@ export type AgentVideoJob = {
     videoRelativePath?: string;
     videoUrl?: string;
     metadata?: { title: string; description: string; tags: string };
+    publishJobIds?: string[];
   };
   error?: string;
 };
@@ -69,7 +85,31 @@ export type AgentVideoForm = {
   piperModelKey: string;
   speechRate: number;
   sentenceSilence: number;
+  agentPreset?: string;
+  autoCreatePublishJobs?: boolean;
+  publishTargets?: AgentVideoPublishTarget[];
+  publishScheduledAt?: string;
+  publishPrivacyStatus?: string;
 };
+
+export type AgentPreset = {
+  id: string;
+  title: string;
+  description: string;
+  kind: AgentVideoKind;
+  platform: AgentVideoPlatform;
+  language: AgentVideoLanguage;
+  tone: string;
+  targetDurationSec: number;
+  extraInstruction: string;
+};
+
+export async function getAgentPresets() {
+  const data = await parseApiResponse<{ presets: AgentPreset[] }>(await fetch(buildApiUrl("/api/ai-video-agent/presets"), {
+    headers: buildRuntimeSettingsHeaders(),
+  }));
+  return data.presets;
+}
 
 export async function createAgentVideoPlan(payload: Partial<AgentVideoForm>) {
   return parseApiResponse<AgentVideoPlan>(await fetch(buildApiUrl("/api/ai-video-agent/plan"), {

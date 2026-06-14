@@ -1,7 +1,22 @@
 export type AgentVideoKind = "algorithm" | "football" | "story" | "generic";
 export type AgentVideoPlatform = "youtube-short" | "youtube-long" | "tiktok" | "facebook-reel";
 export type AgentVideoLanguage = "vi" | "en";
-export type AgentVideoJobStatus = "draft" | "queued" | "running" | "success" | "failed" | "cancelled";
+export type AgentVideoJobStatus = "draft" | "queued" | "running" | "review_ready" | "success" | "failed" | "cancelled";
+export type AgentVideoPublishTarget = "youtube" | "facebook" | "tiktok" | "instagram";
+
+export type AgentWorkflowStageId =
+  | "research"
+  | "strategy"
+  | "script"
+  | "visuals"
+  | "voice"
+  | "render"
+  | "metadata"
+  | "publish"
+  | "engage"
+  | "monetize";
+
+export type AgentWorkflowStageStatus = "pending" | "running" | "done" | "failed" | "skipped";
 
 export type AgentVideoScene = {
   id: string;
@@ -10,6 +25,8 @@ export type AgentVideoScene = {
   onScreenText: string;
   visualPrompt: string;
   durationSec: number;
+  brollPrompt?: string;
+  editInstruction?: string;
 };
 
 export type AgentVideoPlan = {
@@ -20,6 +37,12 @@ export type AgentVideoPlan = {
   thumbnailPrompt: string;
   scenes: AgentVideoScene[];
   publishNotes: string[];
+  researchSummary?: string;
+  contentAngles?: string[];
+  audiencePersona?: string;
+  engagementPrompts?: string[];
+  monetizationIdeas?: string[];
+  repurposeIdeas?: string[];
   warning?: string;
 };
 
@@ -31,6 +54,7 @@ export type CreateAgentVideoPlanBody = {
   tone?: string;
   targetDurationSec?: number;
   extraInstruction?: string;
+  agentPreset?: string;
 };
 
 export type CreateAgentVideoJobBody = CreateAgentVideoPlanBody & {
@@ -40,14 +64,29 @@ export type CreateAgentVideoJobBody = CreateAgentVideoPlanBody & {
   sentenceSilence?: number;
   runNow?: boolean;
   scheduledAt?: string;
+  autoCreatePublishJobs?: boolean;
+  publishTargets?: AgentVideoPublishTarget[];
+  publishScheduledAt?: string;
+  publishPrivacyStatus?: string;
 };
 
 export type AgentVideoJobStep = {
-  id: "plan" | "voice" | "background" | "render" | "metadata";
+  id: AgentWorkflowStageId;
   label: string;
-  status: "pending" | "running" | "done" | "failed";
+  status: AgentWorkflowStageStatus;
+  progress: number;
   message?: string;
+  startedAtMs?: number;
   updatedAtMs?: number;
+  completedAtMs?: number;
+};
+
+export type AgentVideoJobLog = {
+  id: string;
+  atMs: number;
+  stageId?: AgentWorkflowStageId;
+  level: "info" | "success" | "warning" | "error";
+  message: string;
 };
 
 export type AgentVideoJob = {
@@ -60,13 +99,19 @@ export type AgentVideoJob = {
     tone: string;
     targetDurationSec: number;
     extraInstruction: string;
+    agentPreset: string;
     piperModelKey: string;
     speechRate: number;
     sentenceSilence: number;
+    autoCreatePublishJobs: boolean;
+    publishTargets: AgentVideoPublishTarget[];
+    publishScheduledAt: string;
+    publishPrivacyStatus: string;
   };
   progress: number;
   currentStep?: string;
   steps: AgentVideoJobStep[];
+  logs: AgentVideoJobLog[];
   plan?: AgentVideoPlan;
   artifacts?: {
     audioRelativePath?: string;
@@ -78,6 +123,19 @@ export type AgentVideoJob = {
       description: string;
       tags: string;
     };
+    publishJobIds?: string[];
   };
   error?: string;
+};
+
+export type AgentPreset = {
+  id: string;
+  title: string;
+  description: string;
+  kind: AgentVideoKind;
+  platform: AgentVideoPlatform;
+  language: AgentVideoLanguage;
+  tone: string;
+  targetDurationSec: number;
+  extraInstruction: string;
 };

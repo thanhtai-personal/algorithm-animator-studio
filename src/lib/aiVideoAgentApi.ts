@@ -6,6 +6,15 @@ export type AgentVideoPlatform = "youtube-short" | "youtube-long" | "tiktok" | "
 export type AgentVideoLanguage = "vi" | "en";
 export type AgentVideoJobStatus = "draft" | "queued" | "running" | "review_ready" | "success" | "failed" | "cancelled";
 export type AgentVideoPublishTarget = "youtube" | "facebook" | "tiktok" | "instagram";
+
+export type AgentVideoPublishChannel = {
+  id: string;
+  platform: AgentVideoPublishTarget;
+  title: string;
+  providerAccountId?: string;
+  youtubeRefreshToken?: string;
+  youtubePlaylistId?: string;
+};
 export type AgentWorkflowStageId = "research" | "strategy" | "script" | "visuals" | "voice" | "render" | "metadata" | "publish" | "engage" | "monetize";
 export type AgentWorkflowStageStatus = "pending" | "running" | "done" | "failed" | "skipped";
 
@@ -55,6 +64,7 @@ export type AgentVideoJob = {
     agentPreset: string;
     autoCreatePublishJobs: boolean;
     publishTargets: AgentVideoPublishTarget[];
+    publishChannels: AgentVideoPublishChannel[];
     publishScheduledAt: string;
     publishPrivacyStatus: string;
   };
@@ -88,6 +98,7 @@ export type AgentVideoForm = {
   agentPreset?: string;
   autoCreatePublishJobs?: boolean;
   publishTargets?: AgentVideoPublishTarget[];
+  publishChannels?: AgentVideoPublishChannel[];
   publishScheduledAt?: string;
   publishPrivacyStatus?: string;
 };

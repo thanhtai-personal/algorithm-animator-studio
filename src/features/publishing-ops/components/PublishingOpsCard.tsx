@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { CalendarClock, ExternalLink, Play, RefreshCcw, RotateCcw, Wand2, XCircle } from "lucide-react";
+import { CalendarClock, ExternalLink, Loader2, Play, RefreshCcw, RotateCcw, Wand2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getGeneratedAssets, type GeneratedAsset } from "@/lib/generatedAssetsApi";
@@ -61,6 +62,12 @@ export function PublishingOpsCard({ activeChannel, lang }: Props) {
   }, []);
 
   useEffect(() => {
+    if (!jobs.some((job) => job.status === "running" || job.status === "queued" || job.status === "scheduled")) return;
+    const timer = window.setInterval(() => void refreshAll(false), 1200);
+    return () => window.clearInterval(timer);
+  }, [jobs]);
+
+  useEffect(() => {
     if (!selectedAsset) return;
     const metadata = selectedAsset.youtubeMetadata;
     setTitle(metadata?.title || selectedAsset.fileName.replace(/\.[^.]+$/, ""));
@@ -68,8 +75,8 @@ export function PublishingOpsCard({ activeChannel, lang }: Props) {
     setTags(metadata?.tags || "");
   }, [selectedAsset]);
 
-  async function refreshAll() {
-    setLoading(true);
+  async function refreshAll(showLoading = true) {
+    if (showLoading) setLoading(true);
     try {
       const [assets, nextJobs, nextHistory, nextSuggestions] = await Promise.all([
         getGeneratedAssets(),
@@ -85,7 +92,7 @@ export function PublishingOpsCard({ activeChannel, lang }: Props) {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : txt(vi, "Không tải được publishing ops.", "Could not load publishing ops."));
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }
 
@@ -185,6 +192,7 @@ export function PublishingOpsCard({ activeChannel, lang }: Props) {
               <Field label={txt(vi, "Tags / hashtags", "Tags / hashtags")}><Input value={tags} onChange={(event) => setTags(event.target.value)} /></Field>
               <Field label={txt(vi, "Lịch chạy local", "Local schedule")}><Input type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} /></Field>
             </div>
+            {!activeChannel ? <p className="rounded-md bg-yellow-500/10 p-2 text-xs text-yellow-300">{txt(vi, "Bước bắt buộc: chọn kênh ở panel bên trái trước khi tạo job đăng.", "Required step: select a channel in the left panel before creating a publish job.")}</p> : null}
             <Button className="w-full" onClick={() => void queueJob()} disabled={loading || !selectedAsset || !activeChannel}><CalendarClock className="mr-2 h-4 w-4" />{scheduledAt ? txt(vi, "Lên lịch publish", "Schedule publish") : txt(vi, "Đưa vào upload queue", "Add to queue")}</Button>
           </div>
 
@@ -209,16 +217,24 @@ export function PublishingOpsCard({ activeChannel, lang }: Props) {
             <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
               <div className="min-w-0">
                 <p className="truncate font-medium">{job.title || job.sourceFileName}</p>
-                <p className="text-xs text-muted-foreground">{PLATFORM_LABEL[job.platform]} · {job.channelTitle || job.channelId || "No channel"} · {job.scheduledAtMs ? new Date(job.scheduledAtMs).toLocaleString() : new Date(job.createdAtMs).toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">{PLATFORM_LABEL[job.platform]} · {job.channelTitle || job.channelId || txt(vi, "Chưa chọn kênh", "No channel")} · {job.scheduledAtMs ? new Date(job.scheduledAtMs).toLocaleString() : new Date(job.createdAtMs).toLocaleString()}</p>
+                <p className="mt-1 text-xs text-muted-foreground">ID: {job.id.slice(0, 8)} · attempts {job.attempts}/{job.maxAttempts}</p>
                 {job.message ? <p className="mt-1 text-xs text-yellow-300">{job.message}</p> : null}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant={STATUS_VARIANT[job.status] || "secondary"}>{job.status}</Badge>
+                {job.status === "running" ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : null}
                 {job.resultUrl ? <a className="inline-flex items-center gap-1 text-xs text-blue-300 underline" href={job.resultUrl} target="_blank" rel="noreferrer">Open <ExternalLink className="h-3 w-3" /></a> : null}
                 <Button size="sm" variant="outline" onClick={() => void actionJob("run", job)} disabled={loading || job.status === "running"}><Play className="h-3.5 w-3.5" /></Button>
                 {job.status === "failed" || job.status === "manual_required" ? <Button size="sm" variant="outline" onClick={() => void actionJob("retry", job)} disabled={loading}><RotateCcw className="h-3.5 w-3.5" /></Button> : null}
                 {job.status === "queued" || job.status === "scheduled" ? <Button size="sm" variant="ghost" onClick={() => void actionJob("cancel", job)} disabled={loading}><XCircle className="h-3.5 w-3.5" /></Button> : null}
               </div>
+            </div>
+            <Progress value={job.progress || 0} className="mt-3" />
+            <div className="mt-2 grid gap-1 text-xs text-muted-foreground md:grid-cols-3">
+              <span>{txt(vi, "Tạo:", "Created:")} {new Date(job.createdAtMs).toLocaleTimeString()}</span>
+              <span>{job.startedAtMs ? `${txt(vi, "Bắt đầu:", "Started:")} ${new Date(job.startedAtMs).toLocaleTimeString()}` : txt(vi, "Chưa bắt đầu", "Not started")}</span>
+              <span>{job.completedAtMs ? `${txt(vi, "Xong:", "Done:")} ${new Date(job.completedAtMs).toLocaleTimeString()}` : txt(vi, "Chưa hoàn tất", "Not completed")}</span>
             </div>
           </div>
         ))}

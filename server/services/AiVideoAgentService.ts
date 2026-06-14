@@ -10,6 +10,7 @@ import type {
   AgentVideoJobStep,
   AgentVideoPlan,
   AgentVideoPlatform,
+  AgentVideoPublishChannel,
   AgentVideoPublishTarget,
   AgentWorkflowStageId,
   AgentWorkflowStageStatus,
@@ -214,7 +215,8 @@ async function runStage(job: AgentVideoJob, id: AgentWorkflowStageId, envOverrid
   const result = await action(job);
   const stage = result.steps?.find((step) => step.id === id);
   if (stage?.status === "skipped" || stage?.status === "failed") return result;
-  return markStage(result, id, "done", envOverrides, progress, "Hoàn tất.");
+  const done = markStage(result, id, "done", envOverrides, progress, "Hoàn tất.");
+  return addAndPersistLog(done, envOverrides, "success", `${stage?.label || id} hoàn tất.`, id);
 }
 
 function normalizePlanInput(body: CreateAgentVideoPlanBody) {
@@ -246,6 +248,7 @@ function normalizeJobInput(body: CreateAgentVideoJobBody, envOverrides: RuntimeE
     sentenceSilence: clampNumber(Number(body.sentenceSilence), 0.25, 0, 2),
     autoCreatePublishJobs: Boolean(body.autoCreatePublishJobs),
     publishTargets: normalizePublishTargets(body.publishTargets),
+    publishChannels: normalizePublishChannels(body.publishChannels),
     publishScheduledAt: String(body.publishScheduledAt || body.scheduledAt || ""),
     publishPrivacyStatus: String(body.publishPrivacyStatus || env.YOUTUBE_PRIVACY_STATUS || "private"),
   };
@@ -436,20 +439,34 @@ function createPublishJobsForAgent(job: AgentVideoJob, envOverrides: RuntimeEnvV
   }
   const relativePath = job.artifacts?.videoRelativePath;
   if (!relativePath) throw new Error("Không có video để tạo publish job.");
-  const targets = job.input.publishTargets.length ? job.input.publishTargets : platformToPublishTargets(job.input.platform);
-  const created = targets.map((platform) => createPublishJob({
-    platform,
+
+  const selectedChannels = job.input.publishChannels || [];
+  if (!selectedChannels.length) {
+    throw new Error("Chưa chọn kênh để tạo publish job. Hãy chọn ít nhất một kênh trong bước Publish channels.");
+  }
+
+  const created = selectedChannels.map((channel) => createPublishJob({
+    platform: channel.platform,
     source: "generated-video",
     videoRelativePath: relativePath,
     title: job.artifacts?.metadata?.title || job.plan?.title || job.input.topic,
     description: job.artifacts?.metadata?.description || job.plan?.description || "",
     tags: job.artifacts?.metadata?.tags || job.plan?.tags?.join(", ") || "",
-    privacyStatus: platform === "youtube" ? job.input.publishPrivacyStatus : undefined,
+    privacyStatus: channel.platform === "youtube" ? job.input.publishPrivacyStatus : undefined,
     scheduledAt: job.input.publishScheduledAt,
+    publishAt: job.input.publishScheduledAt,
+    channelId: channel.platform === "youtube" ? channel.id : channel.providerAccountId || channel.id,
+    channelTitle: channel.title,
+    providerAccountId: channel.providerAccountId || channel.id,
+    youtubeRefreshToken: channel.youtubeRefreshToken,
+    youtubePlaylistId: channel.youtubePlaylistId,
     containsSyntheticMedia: true,
   }, envOverrides));
   const next = updateJob(job.id, envOverrides, { artifacts: { ...job.artifacts, publishJobIds: created.map((item) => item.id) } });
-  return addAndPersistLog(next, envOverrides, "success", `Đã tạo ${created.length} publish job local.`, "publish");
+  return created.reduce(
+    (current, item) => addAndPersistLog(current, envOverrides, "success", `Đã tạo publish job ${item.id.slice(0, 8)} cho ${item.platform} · ${item.channelTitle || item.channelId || "chưa rõ kênh"}.`, "publish"),
+    next
+  );
 }
 
 function createWorkflowSteps(): AgentVideoJobStep[] {
@@ -550,15 +567,27 @@ function normalizePlatform(value?: AgentVideoPlatform) {
   return value === "youtube-long" || value === "tiktok" || value === "facebook-reel" ? value : "youtube-short";
 }
 
-function normalizePublishTargets(values?: AgentVideoPublishTarget[]) {
-  const allowed: AgentVideoPublishTarget[] = ["youtube", "facebook", "tiktok", "instagram"];
-  return (values || []).filter((value): value is AgentVideoPublishTarget => allowed.includes(value));
+function normalizePublishChannels(value: unknown): AgentVideoPublishChannel[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => item as Partial<AgentVideoPublishChannel>)
+    .filter((item) => item && isPublishTarget(item.platform) && String(item.id || item.providerAccountId || "").trim())
+    .map((item) => ({
+      id: String(item.id || item.providerAccountId || "").trim(),
+      platform: item.platform as AgentVideoPublishTarget,
+      title: String(item.title || item.id || item.providerAccountId || "Kênh chưa đặt tên").trim(),
+      providerAccountId: String(item.providerAccountId || item.id || "").trim(),
+      youtubeRefreshToken: String(item.youtubeRefreshToken || ""),
+      youtubePlaylistId: String(item.youtubePlaylistId || ""),
+    }));
 }
 
-function platformToPublishTargets(platform: AgentVideoPlatform): AgentVideoPublishTarget[] {
-  if (platform === "tiktok") return ["tiktok"];
-  if (platform === "facebook-reel") return ["facebook"];
-  return ["youtube"];
+function normalizePublishTargets(values?: AgentVideoPublishTarget[]) {
+  return (values || []).filter(isPublishTarget);
+}
+
+function isPublishTarget(value: unknown): value is AgentVideoPublishTarget {
+  return value === "youtube" || value === "facebook" || value === "tiktok" || value === "instagram";
 }
 
 function toStringArray(value: unknown) {

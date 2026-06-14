@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { Bot, CheckCircle2, Circle, Clock3, Loader2, Play, RefreshCcw, Sparkles, Wand2, XCircle } from "lucide-react";
+import { Bot, Loader2, Play, RefreshCcw, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,9 +25,13 @@ import {
   type AgentVideoJob,
   type AgentVideoPlan,
   type AgentVideoPublishTarget,
+  type AgentWorkflowStageId,
 } from "@/lib/aiVideoAgentApi";
 import { text, type Lang } from "@/lib/i18n";
 import { getPiperModels, type PiperModel } from "@/lib/voiceApi";
+import { getPublishJobs, type PublishJob } from "@/lib/publishQueueApi";
+import { AgentFlowGraph } from "@/features/ai-video-agent/components/AgentFlowGraph";
+import { channelsFromKeys, getAgentPublishChannelOptions, getPreferredChannelKeys, type AgentPublishChannelOption } from "@/features/ai-video-agent/lib/publishChannelOptions";
 
 const DEFAULT_FORM: AgentVideoForm = {
   topic: "Bubble Sort explained visually",
@@ -43,6 +47,7 @@ const DEFAULT_FORM: AgentVideoForm = {
   agentPreset: "algorithm-shorts",
   autoCreatePublishJobs: false,
   publishTargets: ["youtube"],
+  publishChannels: [],
   publishPrivacyStatus: "private",
   publishScheduledAt: "",
 };
@@ -53,29 +58,46 @@ export default function AiVideoAgent() {
   const [form, setForm] = useState<AgentVideoForm>(DEFAULT_FORM);
   const [plan, setPlan] = useState<AgentVideoPlan | null>(null);
   const [jobs, setJobs] = useState<AgentVideoJob[]>([]);
+  const [publishJobs, setPublishJobs] = useState<PublishJob[]>([]);
   const [models, setModels] = useState<PiperModel[]>([]);
   const [presets, setPresets] = useState<AgentPreset[]>([]);
+  const [publishOptions, setPublishOptions] = useState<AgentPublishChannelOption[]>([]);
+  const [selectedPublishChannelKeys, setSelectedPublishChannelKeys] = useState<string[]>([]);
+  const [selectedStageId, setSelectedStageId] = useState<AgentWorkflowStageId | "all">("all");
   const [loadingPlan, setLoadingPlan] = useState(false);
   const [running, setRunning] = useState(false);
   const [busyJobId, setBusyJobId] = useState("");
   const latestJob = jobs[0];
   const activeJob = jobs.find((job) => job.status === "running") || latestJob;
   const availableModels = useMemo(() => models.filter((model) => model.lang === form.language), [models, form.language]);
+  const selectedPublishChannels = useMemo(() => channelsFromKeys(publishOptions, selectedPublishChannelKeys), [publishOptions, selectedPublishChannelKeys]);
+  const publishChannelWarning = form.autoCreatePublishJobs && !selectedPublishChannels.length
+    ? text(lang, "Select at least one channel before queueing publish jobs.", "Hãy chọn ít nhất một kênh trước khi tạo publish job.")
+    : "";
 
   useEffect(() => {
     refresh();
     getPiperModels().then(setModels).catch(() => undefined);
     getAgentPresets().then(setPresets).catch(() => undefined);
+    const options = getAgentPublishChannelOptions();
+    setPublishOptions(options);
+    setSelectedPublishChannelKeys((current) => current.length ? current : getPreferredChannelKeys(options, form.publishTargets || ["youtube"]));
   }, []);
 
   useEffect(() => {
-    if (!jobs.some((job) => job.status === "running" || job.status === "queued")) return;
+    const agentBusy = jobs.some((job) => job.status === "running" || job.status === "queued");
+    const publishBusy = publishJobs.some((job) => job.status === "running" || job.status === "queued" || job.status === "scheduled");
+    if (!agentBusy && !publishBusy) return;
     const timer = window.setInterval(refresh, 1200);
     return () => window.clearInterval(timer);
-  }, [jobs]);
+  }, [jobs, publishJobs]);
 
   async function refresh() {
-    try { setJobs(await listAgentVideoJobs()); } catch { /* ignore polling noise */ }
+    try {
+      const [nextJobs, nextPublishJobs] = await Promise.all([listAgentVideoJobs(), getPublishJobs()]);
+      setJobs(nextJobs);
+      setPublishJobs(nextPublishJobs);
+    } catch { /* ignore polling noise */ }
   }
 
   async function handleCreatePlan() {
@@ -94,7 +116,8 @@ export default function AiVideoAgent() {
   async function handleRunNow() {
     setRunning(true);
     try {
-      const job = await createAgentVideoJob({ ...form, plan: plan || undefined, runNow: true });
+      if (publishChannelWarning) { toast.error(publishChannelWarning); return; }
+      const job = await createAgentVideoJob({ ...form, publishChannels: selectedPublishChannels, plan: plan || undefined, runNow: true });
       setJobs((current) => [job, ...current.filter((item) => item.id !== job.id)]);
       toast.success(text(lang, "Agent is running locally", "Agent đang chạy local"));
       await refresh();
@@ -107,7 +130,8 @@ export default function AiVideoAgent() {
 
   async function handleSaveDraft() {
     try {
-      const job = await createAgentVideoJob({ ...form, plan: plan || undefined });
+      if (publishChannelWarning) { toast.error(publishChannelWarning); return; }
+      const job = await createAgentVideoJob({ ...form, publishChannels: selectedPublishChannels, plan: plan || undefined });
       setJobs((current) => [job, ...current]);
       toast.success(text(lang, "Draft job saved", "Đã lưu job nháp"));
     } catch (error) {
@@ -150,6 +174,17 @@ export default function AiVideoAgent() {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
+  function refreshPublishChannels() {
+    const options = getAgentPublishChannelOptions();
+    setPublishOptions(options);
+    setSelectedPublishChannelKeys((current) => current.filter((key) => options.some((option) => option.key === key && !option.disabled)));
+    toast.success(text(lang, "Channel list refreshed", "Đã tải lại danh sách kênh"));
+  }
+
+  function togglePublishChannel(key: string, enabled: boolean) {
+    setSelectedPublishChannelKeys((current) => enabled ? Array.from(new Set([...current, key])) : current.filter((item) => item !== key));
+  }
+
   function togglePublishTarget(target: AgentVideoPublishTarget, enabled: boolean) {
     const current = form.publishTargets || [];
     update("publishTargets", enabled ? Array.from(new Set([...current, target])) : current.filter((item) => item !== target));
@@ -173,7 +208,7 @@ export default function AiVideoAgent() {
         </Button>
       </div>
 
-      <WorkflowVisualizer job={activeJob} lang={lang} />
+      <AgentFlowGraph job={activeJob} lang={lang} selectedStageId={selectedStageId} onSelectStage={setSelectedStageId} />
 
       <div className="grid gap-5 xl:grid-cols-[420px_1fr]">
         <Card>
@@ -224,41 +259,25 @@ export default function AiVideoAgent() {
             </div>
             <Field label="Tone"><Input value={form.tone} onChange={(event) => update("tone", event.target.value)} /></Field>
             <Field label={text(lang, "Extra instruction", "Yêu cầu thêm")}><Textarea value={form.extraInstruction} onChange={(event) => update("extraInstruction", event.target.value)} rows={4} /></Field>
-            <PublishOptions form={form} lang={lang} update={update} toggleTarget={togglePublishTarget} />
+            <PublishOptions form={form} lang={lang} options={publishOptions} selectedKeys={selectedPublishChannelKeys} warning={publishChannelWarning} update={update} toggleTarget={togglePublishTarget} toggleChannel={togglePublishChannel} onRefreshChannels={refreshPublishChannels} />
             <div className="grid gap-2 sm:grid-cols-3">
               <Button onClick={handleCreatePlan} disabled={loadingPlan || running} variant="outline">{loadingPlan ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}{text(lang, "Create plan", "Tạo plan")}</Button>
-              <Button onClick={handleRunNow} disabled={running || loadingPlan} className="sm:col-span-2">{running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}{text(lang, "Run full agent", "Chạy full agent")}</Button>
+              <Button onClick={handleRunNow} disabled={running || loadingPlan || Boolean(publishChannelWarning)} className="sm:col-span-2">{running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}{text(lang, "Run full agent", "Chạy full agent")}</Button>
             </div>
             <Button variant="ghost" className="w-full" onClick={handleSaveDraft}>{text(lang, "Save draft job", "Lưu job nháp")}</Button>
           </CardContent>
         </Card>
 
         <Tabs defaultValue="plan" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4"><TabsTrigger value="plan">Plan</TabsTrigger><TabsTrigger value="latest">Live job</TabsTrigger><TabsTrigger value="logs">Logs</TabsTrigger><TabsTrigger value="history">History</TabsTrigger></TabsList>
+          <TabsList className="grid w-full grid-cols-5"><TabsTrigger value="plan">Plan</TabsTrigger><TabsTrigger value="latest">Live job</TabsTrigger><TabsTrigger value="queue">Queue</TabsTrigger><TabsTrigger value="logs">Logs</TabsTrigger><TabsTrigger value="history">History</TabsTrigger></TabsList>
           <TabsContent value="plan"><PlanCard plan={plan || latestJob?.plan || null} lang={lang} /></TabsContent>
           <TabsContent value="latest"><JobCard job={latestJob} lang={lang} busy={busyJobId === latestJob?.id} onRun={handleRunJob} /></TabsContent>
-          <TabsContent value="logs"><LogCard job={activeJob} lang={lang} /></TabsContent>
+          <TabsContent value="queue"><PublishJobsCard jobs={publishJobs} agentJob={latestJob} lang={lang} /></TabsContent>
+          <TabsContent value="logs"><LogCard job={activeJob} lang={lang} selectedStageId={selectedStageId} /></TabsContent>
           <TabsContent value="history" className="space-y-3">{jobs.length ? jobs.map((job) => <JobCard key={job.id} job={job} lang={lang} busy={busyJobId === job.id} onRun={handleRunJob} compact />) : <Empty lang={lang} />}</TabsContent>
         </Tabs>
       </div>
     </main>
-  );
-}
-
-function WorkflowVisualizer({ job, lang }: { job?: AgentVideoJob; lang: Lang }) {
-  const vi = lang === "vi";
-  const steps = job?.steps || [];
-  return (
-    <Card className="overflow-hidden">
-      <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Sparkles className="h-4 w-4" />{text(lang, "Live workflow visualization", "Visualize luồng chạy real-time")}</CardTitle></CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center gap-3"><Progress value={job?.progress || 0} className="h-2" /><span className="w-12 text-right text-xs text-muted-foreground">{Math.round(job?.progress || 0)}%</span></div>
-        <div className="grid gap-2 md:grid-cols-5">
-          {(steps.length ? steps : fallbackSteps()).map((step) => <div key={step.id} className="rounded-lg border bg-card p-3"><div className="flex items-center gap-2 text-sm font-medium"><StatusIcon status={step.status} />{step.label}</div><p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{step.message || text(lang, "Waiting", "Đang chờ")}</p></div>)}
-        </div>
-        {!job ? <p className="text-xs text-muted-foreground">{text(lang, "Create a job to see the pipeline move in real time.", "Tạo job để xem pipeline chạy real-time.")}</p> : <p className="text-xs text-muted-foreground">{vi ? "Job" : "Job"}: {job.id.slice(0, 8)} · {job.status} · {job.currentStep || "idle"}</p>}
-      </CardContent>
-    </Card>
   );
 }
 
@@ -272,18 +291,46 @@ function JobCard({ job, lang, busy, onRun, compact }: { job?: AgentVideoJob; lan
   return <Card><CardHeader className="pb-3"><div className="flex items-start justify-between gap-3"><div><CardTitle className="text-base">{job.plan?.title || job.input.topic}</CardTitle><CardDescription>{new Date(job.createdAtMs).toLocaleString()} · {job.status}</CardDescription></div><Badge variant={job.status === "success" ? "default" : job.status === "failed" ? "destructive" : "secondary"}>{job.status}</Badge></div></CardHeader><CardContent className="space-y-3"><Progress value={job.progress} /><p className="text-sm text-muted-foreground">{job.currentStep || job.error || "Idle"}</p>{job.error ? <p className="rounded-md bg-destructive/10 p-2 text-sm text-destructive">{job.error}</p> : null}{job.artifacts?.videoUrl ? <video src={job.artifacts.videoUrl} controls className="max-h-[360px] w-full rounded-lg border bg-black" /> : null}{job.artifacts?.publishJobIds?.length ? <p className="text-xs text-muted-foreground">Publish jobs: {job.artifacts.publishJobIds.length}</p> : null}{!compact && <Button onClick={() => onRun(job)} disabled={busy || job.status === "running"}>{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}{text(lang, "Run / rerun", "Chạy / chạy lại")}</Button>}</CardContent></Card>;
 }
 
-function LogCard({ job, lang }: { job?: AgentVideoJob; lang: Lang }) {
-  if (!job) return <Empty lang={lang} />;
-  return <Card><CardContent className="space-y-2 pt-6">{(job.logs || []).length ? job.logs.map((log) => <div key={log.id} className="rounded-md border p-3 text-sm"><div className="flex items-center justify-between gap-3"><Badge variant={log.level === "error" ? "destructive" : "outline"}>{log.level}</Badge><span className="text-xs text-muted-foreground">{new Date(log.atMs).toLocaleTimeString()}</span></div><p className="mt-2 text-muted-foreground">{log.message}</p></div>) : <p className="text-sm text-muted-foreground">{text(lang, "No logs yet.", "Chưa có log.")}</p>}</CardContent></Card>;
+function PublishJobsCard({ jobs, agentJob, lang }: { jobs: PublishJob[]; agentJob?: AgentVideoJob; lang: Lang }) {
+  const ids = new Set(agentJob?.artifacts?.publishJobIds || []);
+  const related = ids.size ? jobs.filter((job) => ids.has(job.id)) : jobs.slice(0, 8);
+  if (!related.length) return <Card className="border-dashed p-8 text-center text-sm text-muted-foreground">{text(lang, "No publish queue jobs yet. Render with publish channels selected to create queue jobs.", "Chưa có publish job. Hãy render với kênh đăng đã chọn để tạo job upload.")}</Card>;
+  return <Card><CardContent className="space-y-3 pt-6">{related.map((job) => <div key={job.id} className="rounded-lg border p-3"><div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between"><div><p className="font-medium">{job.title}</p><p className="text-xs text-muted-foreground">{job.platform} · {job.channelTitle || job.channelId || text(lang, "No channel", "Chưa có kênh")} · {new Date(job.updatedAtMs).toLocaleString()}</p>{job.message ? <p className="mt-1 text-xs text-muted-foreground">{job.message}</p> : null}</div><Badge variant={job.status === "success" ? "default" : job.status === "failed" ? "destructive" : "secondary"}>{job.status}</Badge></div><Progress value={job.progress || 0} className="mt-3" />{job.resultUrl ? <a className="mt-2 inline-block text-xs text-primary underline" href={job.resultUrl} target="_blank" rel="noreferrer">{text(lang, "Open published video", "Mở video đã đăng")}</a> : null}</div>)}</CardContent></Card>;
 }
 
-function PublishOptions({ form, lang, update, toggleTarget }: { form: AgentVideoForm; lang: Lang; update: <K extends keyof AgentVideoForm>(key: K, value: AgentVideoForm[K]) => void; toggleTarget: (target: AgentVideoPublishTarget, enabled: boolean) => void }) {
+function LogCard({ job, lang, selectedStageId }: { job?: AgentVideoJob; lang: Lang; selectedStageId: AgentWorkflowStageId | "all" }) {
+  if (!job) return <Empty lang={lang} />;
+  const logs = selectedStageId === "all" ? job.logs || [] : (job.logs || []).filter((log) => log.stageId === selectedStageId);
+  return <Card><CardContent className="space-y-2 pt-6">{logs.length ? logs.map((log) => <div key={log.id} className="rounded-md border p-3 text-sm"><div className="flex items-center justify-between gap-3"><Badge variant={log.level === "error" ? "destructive" : log.level === "success" ? "default" : "outline"}>{log.level}</Badge><span className="text-xs text-muted-foreground">{new Date(log.atMs).toLocaleTimeString()}</span></div><p className="mt-2 text-muted-foreground">{log.message}</p></div>) : <p className="text-sm text-muted-foreground">{text(lang, "No logs yet.", "Chưa có log.")}</p>}</CardContent></Card>;
+}
+
+function PublishOptions({
+  form,
+  lang,
+  options,
+  selectedKeys,
+  warning,
+  update,
+  toggleTarget,
+  toggleChannel,
+  onRefreshChannels,
+}: {
+  form: AgentVideoForm;
+  lang: Lang;
+  options: AgentPublishChannelOption[];
+  selectedKeys: string[];
+  warning: string;
+  update: <K extends keyof AgentVideoForm>(key: K, value: AgentVideoForm[K]) => void;
+  toggleTarget: (target: AgentVideoPublishTarget, enabled: boolean) => void;
+  toggleChannel: (key: string, enabled: boolean) => void;
+  onRefreshChannels: () => void;
+}) {
   const targets: AgentVideoPublishTarget[] = ["youtube", "facebook", "tiktok", "instagram"];
-  return <div className="rounded-lg border p-3"><label className="flex items-center gap-2 text-sm font-medium"><Checkbox checked={Boolean(form.autoCreatePublishJobs)} onCheckedChange={(value) => update("autoCreatePublishJobs", Boolean(value))} />{text(lang, "Auto-create publish jobs after render", "Tự tạo publish job sau khi render")}</label><div className="mt-3 grid gap-2 sm:grid-cols-2">{targets.map((target) => <label key={target} className="flex items-center gap-2 text-sm"><Checkbox checked={(form.publishTargets || []).includes(target)} onCheckedChange={(value) => toggleTarget(target, Boolean(value))} />{target}</label>)}</div><div className="mt-3 grid gap-3 sm:grid-cols-2"><Input placeholder="Publish scheduled at" value={form.publishScheduledAt || ""} onChange={(event) => update("publishScheduledAt", event.target.value)} /><Input placeholder="YouTube privacy" value={form.publishPrivacyStatus || "private"} onChange={(event) => update("publishPrivacyStatus", event.target.value)} /></div></div>;
+  const selectedPlatforms = form.publishTargets || [];
+  const visibleOptions = options.filter((option) => !selectedPlatforms.length || selectedPlatforms.includes(option.platform));
+  return <div className="rounded-lg border p-3"><label className="flex items-center gap-2 text-sm font-medium"><Checkbox checked={Boolean(form.autoCreatePublishJobs)} onCheckedChange={(value) => update("autoCreatePublishJobs", Boolean(value))} />{text(lang, "Create publish queue jobs after render", "Tạo publish job sau khi render")}</label><p className="mt-1 text-xs text-muted-foreground">{text(lang, "This does not hide the upload: the created queue jobs are shown in /channel → Queue and in the Publish node logs.", "Không đăng âm thầm: job upload sẽ hiện ở /channel → Queue và trong log node Publish.")}</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{targets.map((target) => <label key={target} className="flex items-center gap-2 text-sm"><Checkbox checked={selectedPlatforms.includes(target)} onCheckedChange={(value) => toggleTarget(target, Boolean(value))} />{target}</label>)}</div><div className="mt-4 flex items-center justify-between gap-3"><Label>{text(lang, "Publish channels", "Kênh sẽ đăng")}</Label><Button type="button" size="sm" variant="outline" onClick={onRefreshChannels}>{text(lang, "Refresh channels", "Tải lại kênh")}</Button></div><div className="mt-2 max-h-48 space-y-2 overflow-y-auto rounded-md border p-2">{visibleOptions.length ? visibleOptions.map((option) => <label key={option.key} className={`flex items-start gap-2 rounded-md p-2 text-sm ${option.disabled ? "opacity-55" : "hover:bg-muted"}`} title={option.disabled ? option.disabledReason : option.subtitle}><Checkbox disabled={option.disabled} checked={selectedKeys.includes(option.key)} onCheckedChange={(value) => toggleChannel(option.key, Boolean(value))} /><span><span className="font-medium">{option.title}</span><span className="block text-xs text-muted-foreground">{option.subtitle}</span></span></label>) : <p className="p-2 text-xs text-muted-foreground">{text(lang, "No connected channel for the selected platform. Connect one in /channel first.", "Chưa có kênh đã kết nối cho nền tảng đã chọn. Hãy kết nối trong /channel trước.")}</p>}</div>{warning ? <p className="mt-2 rounded-md bg-destructive/10 p-2 text-xs text-destructive">{warning}</p> : null}<div className="mt-3 grid gap-3 sm:grid-cols-2"><Input placeholder="Publish scheduled at" value={form.publishScheduledAt || ""} onChange={(event) => update("publishScheduledAt", event.target.value)} /><Input placeholder="YouTube privacy" value={form.publishPrivacyStatus || "private"} onChange={(event) => update("publishPrivacyStatus", event.target.value)} /></div></div>;
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) { return <div className="space-y-2"><Label>{label}</Label>{children}</div>; }
 function InfoList({ title, items }: { title: string; items: string[] }) { const filtered = items.filter(Boolean); if (!filtered.length) return null; return <div><h3 className="mb-2 text-sm font-semibold">{title}</h3><div className="space-y-2">{filtered.map((item, index) => <p key={`${title}-${index}`} className="rounded-md bg-muted p-3 text-sm text-muted-foreground">{item}</p>)}</div></div>; }
 function Empty({ lang }: { lang: Lang }) { return <Card className="border-dashed p-8 text-center text-sm text-muted-foreground">{text(lang, "No data yet.", "Chưa có dữ liệu.")}</Card>; }
-function StatusIcon({ status }: { status: string }) { if (status === "running") return <Loader2 className="h-4 w-4 animate-spin" />; if (status === "done") return <CheckCircle2 className="h-4 w-4" />; if (status === "failed") return <XCircle className="h-4 w-4" />; if (status === "skipped") return <Clock3 className="h-4 w-4" />; return <Circle className="h-4 w-4" />; }
-function fallbackSteps() { return ["Research", "Strategy", "Script", "Visual", "Voice", "Render", "Metadata", "Publish", "Engage", "Monetize"].map((label, index) => ({ id: String(index), label, status: "pending", message: "" })); }

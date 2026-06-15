@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import fs from "node:fs";
+import { createServer } from "node:http";
 import path from "node:path";
 import {
   GENERATED_DIR,
@@ -43,8 +44,12 @@ import { createPublishQueueRouter } from "./routes/publishQueueRoutes";
 import { startLocalPublishWorker } from "./services/PublishWorkerService";
 import { readRuntimeEnvFromRequest } from "./services/RuntimeEnvService";
 import { readEnvValues } from "./services/EnvFileService";
+import { attachBackgroundJobsWebSocket } from "./services/BackgroundJobsRealtimeService";
+import { listYoutubeToolsJobs } from "./services/YoutubeToolsJobService";
+import { listAgentVideoJobs } from "./services/AiVideoAgentService";
 
 const app = express();
+const httpServer = createServer(app);
 
 app.use(cors());
 app.use(express.json({ limit: "20mb" }));
@@ -60,8 +65,13 @@ app.use(`/${GENERATED_BACKGROUND_MUSIC_PUBLIC_PATH}`, createDynamicStaticMiddlew
 app.use("/api", createHealthRouter(), createModelRouter(), createMusicLibraryRouter(), createMuNewsRouter(), createPiperRuntimeRouter(), createSystemRouter(), createSetupWizardRouter(), createResourceRouter(), createStoryReviewRouter(), createWebExtractRouter(), createGenerateRouter(), createAiVideoAgentRouter(), createChannelProviderRouter(), createElevenLabsRouter(), createSupertonicRouter(), createRvcApplioRouter(), createVieneuRouter(), createVideoRouter(), createYoutubeRouter(), createYoutubeToolRouter(), createPublishQueueRouter());
 
 startLocalPublishWorker();
+attachBackgroundJobsWebSocket(httpServer, () => ({
+  atMs: Date.now(),
+  youtubeJobs: listYoutubeToolsJobs(),
+  agentJobs: listAgentVideoJobs(),
+}));
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`KAI STUDIO backend running at http://localhost:${PORT}`);
   console.log(`Piper exe: ${PIPER_EXE}`);
   console.log(`Model dir: ${MODEL_DIR}`);

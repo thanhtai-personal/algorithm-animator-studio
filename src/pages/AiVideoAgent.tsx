@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bot, Loader2, PanelRightClose, PanelRightOpen, Play, RefreshCcw, Terminal } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSystemLang } from "@/hooks/use-system-lang";
+import { openBackgroundJobsSocket } from "@/lib/backgroundJobsRealtime";
 import {
   createAgentVideoJob,
   createAgentVideoPlan,
@@ -117,6 +118,7 @@ export default function AiVideoAgent() {
   const [loadingPlan, setLoadingPlan] = useState(false);
   const [running, setRunning] = useState(false);
   const [busyJobId, setBusyJobId] = useState("");
+  const refreshInFlightRef = useRef(false);
   const latestJob = jobs[0];
   const activeJob = jobs.find((job) => job.status === "running") || latestJob;
   const agentJobBusy = jobs.some((job) => job.status === "running" || job.status === "queued");
@@ -155,19 +157,34 @@ export default function AiVideoAgent() {
     setSelectedPublishChannelKeys((current) => current.length ? current : getPreferredChannelKeys(options, form.publishTargets || ["youtube"]));
   }, []);
 
+  useEffect(() => openBackgroundJobsSocket((snapshot) => {
+    setJobs(snapshot.agentJobs);
+  }), []);
+
   useEffect(() => {
     const agentBusy = jobs.some((job) => job.status === "running" || job.status === "queued");
     const publishBusy = publishJobs.some((job) => job.status === "running" || job.status === "queued" || job.status === "scheduled");
     if (!agentBusy && !publishBusy) return;
-    const timer = window.setInterval(refresh, agentBusy ? 600 : 1200);
+    const timer = window.setInterval(agentBusy ? refresh : refreshPublishJobs, agentBusy ? 30000 : 15000);
     return () => window.clearInterval(timer);
   }, [jobs, publishJobs]);
 
   async function refresh() {
+    if (refreshInFlightRef.current) return;
+    refreshInFlightRef.current = true;
     try {
       const [nextJobs, nextPublishJobs] = await Promise.all([listAgentVideoJobs(), getPublishJobs()]);
       setJobs(nextJobs);
       setPublishJobs(nextPublishJobs);
+    } catch { /* ignore polling noise */ }
+    finally {
+      refreshInFlightRef.current = false;
+    }
+  }
+
+  async function refreshPublishJobs() {
+    try {
+      setPublishJobs(await getPublishJobs());
     } catch { /* ignore polling noise */ }
   }
 

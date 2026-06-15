@@ -1,9 +1,10 @@
 import { ChevronDown, ChevronUp, ExternalLink, Loader2, Terminal } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { openBackgroundJobsSocket, type BackgroundJobsSnapshot } from "@/lib/backgroundJobsRealtime";
 import { listAgentVideoJobs, type AgentVideoJob } from "@/lib/aiVideoAgentApi";
 import { listYoutubeToolsJobs, type YoutubeToolsJob } from "@/lib/youtubeToolsApi";
 
@@ -24,33 +25,58 @@ export function BackgroundJobsNotifier() {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const [jobs, setJobs] = useState<BackgroundJob[]>([]);
+  const refreshInFlightRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
+    let fallbackTimer: number | undefined;
+
+    function applySnapshot(snapshot: BackgroundJobsSnapshot) {
+      const next = [
+        ...snapshot.youtubeJobs.map(fromYoutubeJob),
+        ...snapshot.agentJobs.map(fromAgentJob),
+      ]
+        .filter((job) => ACTIVE_STATUSES.has(job.status))
+        .sort((a, b) => b.updatedAtMs - a.updatedAtMs);
+      setJobs(next);
+    }
+
     async function refresh() {
+      if (refreshInFlightRef.current) return;
+      refreshInFlightRef.current = true;
       try {
         const [youtubeJobs, agentJobs] = await Promise.allSettled([
           listYoutubeToolsJobs(),
           listAgentVideoJobs(),
         ]);
         if (cancelled) return;
-        const next = [
-          ...(youtubeJobs.status === "fulfilled" ? youtubeJobs.value.map(fromYoutubeJob) : []),
-          ...(agentJobs.status === "fulfilled" ? agentJobs.value.map(fromAgentJob) : []),
-        ]
-          .filter((job) => ACTIVE_STATUSES.has(job.status))
-          .sort((a, b) => b.updatedAtMs - a.updatedAtMs);
-        setJobs(next);
+        applySnapshot({
+          atMs: Date.now(),
+          youtubeJobs: youtubeJobs.status === "fulfilled" ? youtubeJobs.value : [],
+          agentJobs: agentJobs.status === "fulfilled" ? agentJobs.value : [],
+        });
       } catch {
         if (!cancelled) setJobs([]);
+      } finally {
+        refreshInFlightRef.current = false;
       }
     }
 
-    void refresh();
-    const timer = window.setInterval(refresh, 2500);
+    const closeSocket = openBackgroundJobsSocket(
+      (snapshot) => {
+        if (!cancelled) applySnapshot(snapshot);
+      },
+      () => {
+        if (!cancelled && fallbackTimer === undefined) {
+          void refresh();
+          fallbackTimer = window.setInterval(refresh, 30000);
+        }
+      }
+    );
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
+      closeSocket();
+      if (fallbackTimer !== undefined) window.clearInterval(fallbackTimer);
     };
   }, []);
 

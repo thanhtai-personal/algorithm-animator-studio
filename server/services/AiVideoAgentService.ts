@@ -29,6 +29,7 @@ import { generateRvcApplioSpeech } from "./RvcApplioService";
 import { generateVideoFromAudio } from "./VideoService";
 import { createGradientPng } from "../utils/simplePng";
 import { createPublishJob } from "./PublishQueueService";
+import { notifyBackgroundJobsChanged } from "./BackgroundJobsRealtimeService";
 
 const JOBS_FILE_NAME = "ai-video-agent-jobs.json";
 const MAX_JOBS = 200;
@@ -705,6 +706,7 @@ function writeJobs(jobs: AgentVideoJob[], envOverrides: RuntimeEnvValues = {}) {
   const dataDir = getServerDataDir(envOverrides);
   ensureDirectoryExists(dataDir);
   fs.writeFileSync(path.join(dataDir, JOBS_FILE_NAME), JSON.stringify(jobs, null, 2), "utf8");
+  notifyBackgroundJobsChanged();
 }
 
 function getJobsFile(envOverrides: RuntimeEnvValues = {}) {

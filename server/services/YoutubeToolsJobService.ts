@@ -6,6 +6,7 @@ import type {
   YoutubeTranscriptRequest,
 } from "../models/YoutubeTools";
 import type { RuntimeEnvValues } from "./EnvFileService";
+import { notifyBackgroundJobsChanged } from "./BackgroundJobsRealtimeService";
 import { downloadYoutubeVideo, transcribeYoutubeVideo } from "./YoutubeToolsService";
 
 const MAX_JOBS = 80;
@@ -88,6 +89,7 @@ async function runJob(id: string, envOverrides: RuntimeEnvValues) {
 function updateJob(id: string, patch: Partial<YoutubeToolsJob>) {
   const current = getRequiredJob(id);
   jobs.set(id, { ...current, ...patch, updatedAtMs: Date.now() });
+  notifyBackgroundJobsChanged();
 }
 
 function appendLog(id: string, line: string) {
@@ -97,6 +99,7 @@ function appendLog(id: string, line: string) {
     logs: [...current.logs, line].slice(-MAX_LOGS),
     updatedAtMs: Date.now(),
   });
+  notifyBackgroundJobsChanged();
 }
 
 function inferProgress(kind: YoutubeToolsJobKind, line: string, current: number) {

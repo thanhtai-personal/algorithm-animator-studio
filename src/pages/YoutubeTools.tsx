@@ -1,5 +1,5 @@
 import { Clipboard, Download, FileAudio, FileText, FileVideo, RefreshCcw, Settings2, Terminal, Youtube } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { useSystemLang } from "@/hooks/use-system-lang";
+import { openBackgroundJobsSocket, type BackgroundJobsSnapshot } from "@/lib/backgroundJobsRealtime";
 import { text, type Lang } from "@/lib/i18n";
 import {
   getYoutubeToolsHealth,
@@ -39,6 +40,7 @@ export default function YoutubeTools() {
   const [jobs, setJobs] = useState<YoutubeToolsJob[]>([]);
   const [downloadResult, setDownloadResult] = useState<YoutubeDownloadResult | null>(null);
   const [transcriptResult, setTranscriptResult] = useState<YoutubeTranscriptResult | null>(null);
+  const refreshJobsInFlightRef = useRef(false);
   const ready = Boolean(health?.ytDlp.ok && health?.whisper.ok && health?.ffmpeg.ok);
 
   useEffect(() => {
@@ -46,10 +48,14 @@ export default function YoutubeTools() {
     void refreshJobs();
   }, []);
 
+  useEffect(() => openBackgroundJobsSocket((snapshot) => {
+    applyJobsSnapshot(snapshot);
+  }), []);
+
   useEffect(() => {
     const hasActiveJob = jobs.some((job) => job.status === "queued" || job.status === "running");
     if (!hasActiveJob) return undefined;
-    const timer = window.setInterval(() => { void refreshJobs(); }, 2000);
+    const timer = window.setInterval(() => { void refreshJobs(); }, 30000);
     return () => window.clearInterval(timer);
   }, [jobs]);
 
@@ -72,16 +78,28 @@ export default function YoutubeTools() {
   }
 
   async function refreshJobs() {
+    if (refreshJobsInFlightRef.current) return;
+    refreshJobsInFlightRef.current = true;
     try {
       const nextJobs = await listYoutubeToolsJobs();
-      setJobs(nextJobs);
-      const latestDownload = nextJobs.find((job) => job.kind === "download" && job.status === "success" && job.result)?.result;
-      const latestTranscript = nextJobs.find((job) => job.kind === "transcript" && job.status === "success" && job.result)?.result;
-      if (latestDownload && "relativePath" in latestDownload) setDownloadResult(latestDownload);
-      if (latestTranscript && "transcriptText" in latestTranscript) setTranscriptResult(latestTranscript);
+      applyYoutubeJobs(nextJobs);
     } catch {
       // The global notifier will surface active-job failures; avoid noisy polling toasts here.
+    } finally {
+      refreshJobsInFlightRef.current = false;
     }
+  }
+
+  function applyJobsSnapshot(snapshot: BackgroundJobsSnapshot) {
+    applyYoutubeJobs(snapshot.youtubeJobs);
+  }
+
+  function applyYoutubeJobs(nextJobs: YoutubeToolsJob[]) {
+    setJobs(nextJobs);
+    const latestDownload = nextJobs.find((job) => job.kind === "download" && job.status === "success" && job.result)?.result;
+    const latestTranscript = nextJobs.find((job) => job.kind === "transcript" && job.status === "success" && job.result)?.result;
+    if (latestDownload && "relativePath" in latestDownload) setDownloadResult(latestDownload);
+    if (latestTranscript && "transcriptText" in latestTranscript) setTranscriptResult(latestTranscript);
   }
 
   async function handleDownload(mode: YoutubeDownloadMode) {

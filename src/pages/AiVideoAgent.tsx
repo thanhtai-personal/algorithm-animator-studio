@@ -14,7 +14,7 @@ import {
   createAgentVideoPlan,
   getAgentPresets,
   listAgentVideoJobs,
-  runAgentVideoJob,
+  runAgentVideoJobInBackground,
   runDueAgentVideoJobs,
   type AgentPreset,
   type AgentVideoForm,
@@ -239,7 +239,7 @@ export default function AiVideoAgent() {
 
   function startJobInBackground(jobId: string, onDone?: () => void) {
     window.setTimeout(() => {
-      runAgentVideoJob(jobId)
+      runAgentVideoJobInBackground(jobId)
         .then((result) => setJobs((current) => [result, ...current.filter((item) => item.id !== result.id)]))
         .catch((error) => toast.error(error instanceof Error ? error.message : text(lang, "Could not run job", "Không chạy được job")))
         .finally(() => {

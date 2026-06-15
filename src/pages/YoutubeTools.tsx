@@ -1,4 +1,4 @@
-import { Clipboard, Download, FileAudio, FileText, FileVideo, RefreshCcw, Settings2, Youtube } from "lucide-react";
+import { Clipboard, Download, FileAudio, FileText, FileVideo, RefreshCcw, Settings2, Terminal, Youtube } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -8,15 +8,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { text, type Lang } from "@/lib/i18n";
 import {
-  downloadYoutube,
   getYoutubeToolsHealth,
-  transcribeYoutube,
+  listYoutubeToolsJobs,
+  startYoutubeDownloadJob,
+  startYoutubeTranscriptJob,
   type YoutubeDownloadMode,
   type YoutubeDownloadResult,
+  type YoutubeToolsJob,
   type YoutubeToolsHealth,
   type YoutubeTranscriptResult,
 } from "@/lib/youtubeToolsApi";
@@ -33,11 +36,22 @@ export default function YoutubeTools() {
   const [task, setTask] = useState<"transcribe" | "translate">("transcribe");
   const [busy, setBusy] = useState<BusyAction>("");
   const [health, setHealth] = useState<YoutubeToolsHealth | null>(null);
+  const [jobs, setJobs] = useState<YoutubeToolsJob[]>([]);
   const [downloadResult, setDownloadResult] = useState<YoutubeDownloadResult | null>(null);
   const [transcriptResult, setTranscriptResult] = useState<YoutubeTranscriptResult | null>(null);
   const ready = Boolean(health?.ytDlp.ok && health?.whisper.ok && health?.ffmpeg.ok);
 
-  useEffect(() => { void refreshHealth(); }, []);
+  useEffect(() => {
+    void refreshHealth();
+    void refreshJobs();
+  }, []);
+
+  useEffect(() => {
+    const hasActiveJob = jobs.some((job) => job.status === "queued" || job.status === "running");
+    if (!hasActiveJob) return undefined;
+    const timer = window.setInterval(() => { void refreshJobs(); }, 2000);
+    return () => window.clearInterval(timer);
+  }, [jobs]);
 
   const healthItems = useMemo(() => health ? [
     { label: "yt-dlp", status: health.ytDlp },
@@ -57,13 +71,26 @@ export default function YoutubeTools() {
     }
   }
 
+  async function refreshJobs() {
+    try {
+      const nextJobs = await listYoutubeToolsJobs();
+      setJobs(nextJobs);
+      const latestDownload = nextJobs.find((job) => job.kind === "download" && job.status === "success" && job.result)?.result;
+      const latestTranscript = nextJobs.find((job) => job.kind === "transcript" && job.status === "success" && job.result)?.result;
+      if (latestDownload && "relativePath" in latestDownload) setDownloadResult(latestDownload);
+      if (latestTranscript && "transcriptText" in latestTranscript) setTranscriptResult(latestTranscript);
+    } catch {
+      // The global notifier will surface active-job failures; avoid noisy polling toasts here.
+    }
+  }
+
   async function handleDownload(mode: YoutubeDownloadMode) {
     const action: BusyAction = mode === "audio" ? "download-audio" : "download-video";
     setBusy(action);
     try {
-      const result = await downloadYoutube({ url: videoUrl, mode, maxHeight: Number(maxHeight), fileName });
-      setDownloadResult(result);
-      toast.success(mode === "audio" ? text(lang, "Audio downloaded.", "Đã tải audio.") : text(lang, "Video downloaded.", "Đã tải video."));
+      const job = await startYoutubeDownloadJob({ url: videoUrl, mode, maxHeight: Number(maxHeight), fileName });
+      setJobs((current) => [job, ...current.filter((item) => item.id !== job.id)]);
+      toast.success(text(lang, "Download job is running in background.", "Job tải YouTube đang chạy nền."));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : text(lang, "Download failed.", "Tải thất bại."));
     } finally {
@@ -74,14 +101,14 @@ export default function YoutubeTools() {
   async function handleTranscript(source: "url" | "file") {
     setBusy(source === "file" ? "transcript-file" : "transcript-url");
     try {
-      const result = await transcribeYoutube({
+      const job = await startYoutubeTranscriptJob({
         ...(source === "file" && downloadResult ? { sourceRelativePath: downloadResult.relativePath } : { url: videoUrl }),
         model,
         language,
         task,
       });
-      setTranscriptResult(result);
-      toast.success(text(lang, "Transcript created.", "Đã tạo transcript."));
+      setJobs((current) => [job, ...current.filter((item) => item.id !== job.id)]);
+      toast.success(text(lang, "Transcript job is running in background.", "Job transcript đang chạy nền."));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : text(lang, "Transcript failed.", "Lấy transcript thất bại."));
     } finally {
@@ -169,7 +196,7 @@ export default function YoutubeTools() {
                   </div>
                 </div>
               </div>
-              {busy === "download-video" || busy === "download-audio" ? <p className="text-sm text-muted-foreground">{text(lang, "Downloading... backend is running yt-dlp.", "Đang tải... backend đang chạy yt-dlp.")}</p> : null}
+              {busy === "download-video" || busy === "download-audio" ? <p className="text-sm text-muted-foreground">{text(lang, "Starting background job...", "Đang tạo job chạy nền...")}</p> : null}
               {downloadResult ? <DownloadResultCard lang={lang} result={downloadResult} /> : null}
             </CardContent>
           </Card>
@@ -225,11 +252,12 @@ export default function YoutubeTools() {
                   <FileText className="mr-2 h-4 w-4" /> {text(lang, "Transcript last downloaded file", "Lấy transcript file vừa tải")}
                 </Button>
               </div>
-              {busy === "transcript-url" || busy === "transcript-file" ? <p className="text-sm text-muted-foreground">{text(lang, "Transcribing... Whisper can take a while for long videos.", "Đang nhận diện... video dài thì Whisper sẽ chạy lâu hơn.")}</p> : null}
+              {busy === "transcript-url" || busy === "transcript-file" ? <p className="text-sm text-muted-foreground">{text(lang, "Starting background job...", "Đang tạo job chạy nền...")}</p> : null}
             </CardContent>
           </Card>
         </div>
 
+        {jobs.length ? <YoutubeJobsCard jobs={jobs} /> : null}
         {transcriptResult ? <TranscriptCard lang={lang} result={transcriptResult} onCopy={copyTranscript} /> : null}
       </section>
     </main>
@@ -285,6 +313,37 @@ function TranscriptCard(props: { lang: Lang; result: YoutubeTranscriptResult; on
             </Button>
           ))}
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function YoutubeJobsCard(props: { jobs: YoutubeToolsJob[] }) {
+  return (
+    <Card className="border-border/70">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Terminal className="h-5 w-5" /> Background jobs
+        </CardTitle>
+        <CardDescription>Tiến trình và log chạy nền vẫn được giữ khi chuyển page.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {props.jobs.slice(0, 5).map((job) => (
+          <div key={job.id} className="rounded-lg border border-border/70 bg-background/60 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="line-clamp-1 font-medium">{job.title}</p>
+                <p className="text-xs text-muted-foreground">{job.kind} · {job.status}</p>
+              </div>
+              <Badge variant={job.status === "failed" ? "destructive" : "secondary"}>{job.status}</Badge>
+            </div>
+            <Progress value={Math.round(job.progress)} className="mt-3 h-2" />
+            <pre className="mt-3 max-h-32 overflow-auto rounded bg-black/80 p-3 text-xs text-slate-100">
+              {(job.logs.length ? job.logs.slice(-8) : ["Đang chờ log..."]).join("\n")}
+              {job.error ? `\n${job.error}` : ""}
+            </pre>
+          </div>
+        ))}
       </CardContent>
     </Card>
   );

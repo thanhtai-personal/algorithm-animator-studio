@@ -61,3 +61,23 @@ export type YoutubeTranscriptResult = {
   outputDir: string;
   log: string[];
 };
+
+export type YoutubeToolsJobKind = "download" | "transcript";
+export type YoutubeToolsJobStatus = "queued" | "running" | "success" | "failed";
+
+export type YoutubeToolsJob = {
+  id: string;
+  kind: YoutubeToolsJobKind;
+  status: YoutubeToolsJobStatus;
+  title: string;
+  progress: number;
+  routePath: "/youtube-tools";
+  createdAtMs: number;
+  updatedAtMs: number;
+  startedAtMs?: number;
+  finishedAtMs?: number;
+  logs: string[];
+  error?: string;
+  request: YoutubeDownloadRequest | YoutubeTranscriptRequest;
+  result?: YoutubeDownloadResult | YoutubeTranscriptResult;
+};

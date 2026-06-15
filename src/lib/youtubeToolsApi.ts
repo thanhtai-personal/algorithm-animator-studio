@@ -45,6 +45,22 @@ export type YoutubeTranscriptResult = {
   log: string[];
 };
 
+export type YoutubeToolsJob = {
+  id: string;
+  kind: "download" | "transcript";
+  status: "queued" | "running" | "success" | "failed";
+  title: string;
+  progress: number;
+  routePath: "/youtube-tools";
+  createdAtMs: number;
+  updatedAtMs: number;
+  startedAtMs?: number;
+  finishedAtMs?: number;
+  logs: string[];
+  error?: string;
+  result?: YoutubeDownloadResult | YoutubeTranscriptResult;
+};
+
 export async function getYoutubeToolsHealth() {
   return parseApiResponse<YoutubeToolsHealth>(await awaitFetch("/api/youtube-tools/health"));
 }
@@ -66,6 +82,30 @@ export async function transcribeYoutube(payload: {
   task: "transcribe" | "translate";
 }) {
   return parseApiResponse<YoutubeTranscriptResult>(await awaitFetch("/api/youtube-tools/transcript", payload));
+}
+
+export async function listYoutubeToolsJobs() {
+  const data = await parseApiResponse<{ jobs: YoutubeToolsJob[] }>(await awaitFetch("/api/youtube-tools/jobs"));
+  return data.jobs;
+}
+
+export async function startYoutubeDownloadJob(payload: {
+  url: string;
+  mode: YoutubeDownloadMode;
+  maxHeight: number;
+  fileName?: string;
+}) {
+  return parseApiResponse<YoutubeToolsJob>(await awaitFetch("/api/youtube-tools/jobs/download", payload));
+}
+
+export async function startYoutubeTranscriptJob(payload: {
+  url?: string;
+  sourceRelativePath?: string;
+  model: string;
+  language: string;
+  task: "transcribe" | "translate";
+}) {
+  return parseApiResponse<YoutubeToolsJob>(await awaitFetch("/api/youtube-tools/jobs/transcript", payload));
 }
 
 function awaitFetch(path: string, payload?: unknown) {

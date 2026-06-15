@@ -1,6 +1,7 @@
 import { type CSSProperties, type PropsWithChildren, useEffect, useMemo, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { AppSidebar, type SidebarMode } from "@/components/AppSidebar";
+import { BackgroundJobsNotifier } from "@/components/BackgroundJobsNotifier";
 import { readSystemLang, subscribeSystemLang, type Lang } from "@/lib/i18n";
 
 const SIDEBAR_STORAGE_KEY = "kai-studio.sidebar.mode";
@@ -38,6 +39,7 @@ export function AppLayout({ children }: PropsWithChildren) {
       <div className="transition-[padding] duration-300 lg:pl-[var(--app-sidebar-width)]">
         {children}
       </div>
+      <BackgroundJobsNotifier />
     </div>
   );
 }

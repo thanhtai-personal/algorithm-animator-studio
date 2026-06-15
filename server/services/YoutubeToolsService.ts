@@ -33,6 +33,7 @@ const WHISPER_CLI_BRIDGE = "import sys; from whisper.transcribe import cli; sys.
 
 type CommandSpec = { command: string; prefixArgs: string[]; label: string; ok: boolean; version?: string; detail?: string };
 type RunResult = { stdout: string; stderr: string; combined: string[] };
+export type YoutubeToolsRunHooks = { onLog?: (line: string) => void };
 
 export async function getYoutubeToolsHealth(envOverrides: RuntimeEnvValues = {}): Promise<YoutubeToolsHealth> {
   const env = readEnvValues(envOverrides);
@@ -67,7 +68,8 @@ export async function getYoutubeToolsHealth(envOverrides: RuntimeEnvValues = {})
 
 export async function downloadYoutubeVideo(
   request: YoutubeDownloadRequest,
-  envOverrides: RuntimeEnvValues = {}
+  envOverrides: RuntimeEnvValues = {},
+  hooks: YoutubeToolsRunHooks = {}
 ): Promise<YoutubeDownloadResult> {
   const env = readEnvValues(envOverrides);
   const url = normalizeYoutubeUrl(request.url);
@@ -85,7 +87,7 @@ export async function downloadYoutubeVideo(
   const baseName = sanitizeFileBaseName(request.fileName || "youtube-video");
   const outputTemplate = path.join(outputDir, `${baseName}-${Date.now()}-%(id)s.%(ext)s`);
   const args = buildYtDlpDownloadArgs({ mode, maxHeight: request.maxHeight, outputTemplate, env, url });
-  const result = await runYtDlpCommand(ytDlp.command, [...ytDlp.prefixArgs, ...args], 60 * 60 * 1000);
+  const result = await runYtDlpCommand(ytDlp.command, [...ytDlp.prefixArgs, ...args], 60 * 60 * 1000, hooks);
   const downloaded = findNewestChangedFile(outputDir, before, mode === "audio" ? AUDIO_EXTENSIONS : VIDEO_EXTENSIONS);
   if (!downloaded) throw new Error("Không tìm thấy file sau khi tải. Hãy kiểm tra log yt-dlp.");
 
@@ -105,7 +107,8 @@ export async function downloadYoutubeVideo(
 
 export async function transcribeYoutubeVideo(
   request: YoutubeTranscriptRequest,
-  envOverrides: RuntimeEnvValues = {}
+  envOverrides: RuntimeEnvValues = {},
+  hooks: YoutubeToolsRunHooks = {}
 ): Promise<YoutubeTranscriptResult> {
   const env = readEnvValues(envOverrides);
   const whisper = await resolveWhisper(env);
@@ -115,7 +118,7 @@ export async function transcribeYoutubeVideo(
   try {
     const sourcePath = request.sourceRelativePath
       ? resolveGeneratedVideoPath(request.sourceRelativePath, env)
-      : await downloadAudioForTranscript(request.url || "", tempDir, env);
+      : await downloadAudioForTranscript(request.url || "", tempDir, env, hooks);
 
     const outputRoot = getGeneratedVideoDir(env.SERVER_DATA_DIR);
     const dateFolder = getLocalDateFolderName();
@@ -135,9 +138,12 @@ export async function transcribeYoutubeVideo(
     ];
     if (language !== "auto") args.push("--language", language);
 
-    const result = await runCommand(whisper.command, args, 2 * 60 * 60 * 1000);
+    const result = await runCommand(whisper.command, args, 2 * 60 * 60 * 1000, hooks);
     const files = collectTranscriptFiles(outputDir, outputRoot, env.SERVER_ORIGIN || SERVER_ORIGIN);
     const transcriptText = readFirstTranscriptText(outputDir);
+    if (!transcriptText.trim() && Object.keys(files).length === 0) {
+      throw new Error(`Whisper không tạo được transcript. ${tail(result.combined, 12).join("\n")}`);
+    }
 
     return {
       ok: true,
@@ -152,14 +158,14 @@ export async function transcribeYoutubeVideo(
   }
 }
 
-async function downloadAudioForTranscript(urlValue: string, tempDir: string, env: RuntimeEnvValues) {
+async function downloadAudioForTranscript(urlValue: string, tempDir: string, env: RuntimeEnvValues, hooks: YoutubeToolsRunHooks) {
   const url = normalizeYoutubeUrl(urlValue);
   const ytDlp = await resolveYtDlp(env);
   if (!ytDlp.ok) throw new Error(ytDlp.detail || "Chưa cài yt-dlp để tải audio tạm.");
   const before = snapshotFiles(tempDir);
   const outputTemplate = path.join(tempDir, "audio-%(id)s.%(ext)s");
   const args = ["--no-playlist", "-x", "--audio-format", "mp3", "--audio-quality", "0", "-o", outputTemplate, ...buildYtDlpRuntimeArgs(env), ...ffmpegArgs(env), url];
-  await runYtDlpCommand(ytDlp.command, [...ytDlp.prefixArgs, ...args], 60 * 60 * 1000);
+  await runYtDlpCommand(ytDlp.command, [...ytDlp.prefixArgs, ...args], 60 * 60 * 1000, hooks);
   const audioPath = findNewestChangedFile(tempDir, before, AUDIO_EXTENSIONS);
   if (!audioPath) throw new Error("Không tải được audio tạm từ YouTube.");
   return audioPath;
@@ -233,9 +239,9 @@ async function checkCommand(command: string, args: string[]): Promise<YoutubeToo
   }
 }
 
-function runCommand(command: string, args: string[], timeoutMs: number): Promise<RunResult> {
+function runCommand(command: string, args: string[], timeoutMs: number, hooks: YoutubeToolsRunHooks = {}): Promise<RunResult> {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { windowsHide: true });
+    const child = spawn(command, args, { windowsHide: true, env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" } });
     const chunks: string[] = [];
     let stdout = "";
     let stderr = "";
@@ -247,12 +253,16 @@ function runCommand(command: string, args: string[], timeoutMs: number): Promise
     child.stdout.on("data", (data) => {
       const text = data.toString();
       stdout += text;
-      chunks.push(...text.split(/\r?\n/).filter(Boolean));
+      const lines = text.split(/\r?\n/).filter(Boolean);
+      chunks.push(...lines);
+      lines.forEach((line) => hooks.onLog?.(line));
     });
     child.stderr.on("data", (data) => {
       const text = data.toString();
       stderr += text;
-      chunks.push(...text.split(/\r?\n/).filter(Boolean));
+      const lines = text.split(/\r?\n/).filter(Boolean);
+      chunks.push(...lines);
+      lines.forEach((line) => hooks.onLog?.(line));
     });
     child.on("error", (error) => {
       clearTimeout(timer);
@@ -266,9 +276,9 @@ function runCommand(command: string, args: string[], timeoutMs: number): Promise
   });
 }
 
-async function runYtDlpCommand(command: string, args: string[], timeoutMs: number) {
+async function runYtDlpCommand(command: string, args: string[], timeoutMs: number, hooks: YoutubeToolsRunHooks = {}) {
   try {
-    return await runCommand(command, args, timeoutMs);
+    return await runCommand(command, args, timeoutMs, hooks);
   } catch (error) {
     throw new Error(toYtDlpUserMessage(toErrorMessage(error)));
   }

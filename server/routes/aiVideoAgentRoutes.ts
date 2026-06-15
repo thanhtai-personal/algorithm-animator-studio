@@ -10,6 +10,7 @@ import {
   runAgentVideoJob,
   runDueAgentVideoJobs,
 } from "../services/AiVideoAgentService";
+import { startAgentVideoJobInBackground } from "../services/AiVideoAgentBackgroundService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
 
 export function createAiVideoAgentRouter() {
@@ -56,6 +57,14 @@ export function createAiVideoAgentRouter() {
   router.post("/ai-video-agent/jobs/:id/run", async (req, res) => {
     try {
       res.json(await runAgentVideoJob(req.params.id, readRuntimeEnvFromRequest(req)));
+    } catch (error) {
+      sendError(res, error);
+    }
+  });
+
+  router.post("/ai-video-agent/jobs/:id/run-background", (req, res) => {
+    try {
+      res.json(startAgentVideoJobInBackground(req.params.id, readRuntimeEnvFromRequest(req)));
     } catch (error) {
       sendError(res, error);
     }

@@ -6,6 +6,7 @@ export type AgentVideoPlatform = "youtube-short" | "youtube-long" | "tiktok" | "
 export type AgentVideoLanguage = "vi" | "en";
 export type AgentVideoJobStatus = "draft" | "queued" | "running" | "review_ready" | "success" | "failed" | "cancelled";
 export type AgentVideoPublishTarget = "youtube" | "facebook" | "tiktok" | "instagram";
+export type AgentVoiceProvider = "piper" | "elevenlabs" | "supertonic" | "vieneu" | "applio";
 
 export type AgentVideoPublishChannel = {
   id: string;
@@ -92,7 +93,16 @@ export type AgentVideoForm = {
   tone: string;
   targetDurationSec: number;
   extraInstruction: string;
+  voiceProvider: AgentVoiceProvider;
   piperModelKey: string;
+  elevenModelId: string;
+  elevenVoiceId: string;
+  supertonicVoice: string;
+  supertonicTotalSteps: number;
+  vieneuVoiceId: string;
+  vieneuMode: string;
+  vieneuEmotion: string;
+  applioTtsTemplateId: string;
   speechRate: number;
   sentenceSilence: number;
   agentPreset?: string;

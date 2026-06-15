@@ -3,6 +3,7 @@ export type AgentVideoPlatform = "youtube-short" | "youtube-long" | "tiktok" | "
 export type AgentVideoLanguage = "vi" | "en";
 export type AgentVideoJobStatus = "draft" | "queued" | "running" | "review_ready" | "success" | "failed" | "cancelled";
 export type AgentVideoPublishTarget = "youtube" | "facebook" | "tiktok" | "instagram";
+export type AgentVoiceProvider = "piper" | "elevenlabs" | "supertonic" | "vieneu" | "applio";
 
 export type AgentVideoPublishChannel = {
   id: string;
@@ -68,7 +69,16 @@ export type CreateAgentVideoPlanBody = {
 
 export type CreateAgentVideoJobBody = CreateAgentVideoPlanBody & {
   plan?: AgentVideoPlan;
+  voiceProvider?: AgentVoiceProvider;
   piperModelKey?: string;
+  elevenModelId?: string;
+  elevenVoiceId?: string;
+  supertonicVoice?: string;
+  supertonicTotalSteps?: number;
+  vieneuVoiceId?: string;
+  vieneuMode?: string;
+  vieneuEmotion?: string;
+  applioTtsTemplateId?: string;
   speechRate?: number;
   sentenceSilence?: number;
   runNow?: boolean;
@@ -110,7 +120,16 @@ export type AgentVideoJob = {
     targetDurationSec: number;
     extraInstruction: string;
     agentPreset: string;
+    voiceProvider: AgentVoiceProvider;
     piperModelKey: string;
+    elevenModelId: string;
+    elevenVoiceId: string;
+    supertonicVoice: string;
+    supertonicTotalSteps: number;
+    vieneuVoiceId: string;
+    vieneuMode: string;
+    vieneuEmotion: string;
+    applioTtsTemplateId: string;
     speechRate: number;
     sentenceSilence: number;
     autoCreatePublishJobs: boolean;

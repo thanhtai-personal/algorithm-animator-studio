@@ -12,6 +12,7 @@ import type {
   AgentVideoPlatform,
   AgentVideoPublishChannel,
   AgentVideoPublishTarget,
+  AgentVoiceProvider,
   AgentWorkflowStageId,
   AgentWorkflowStageStatus,
   CreateAgentVideoJobBody,
@@ -21,6 +22,10 @@ import { getPiperModels } from "../config/piperModels";
 import { ensureDirectoryExists, sanitizeFileBaseName } from "../utils/audioOutput";
 import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
 import { validateGenerateRequest, generateAudioFile } from "./TtsGenerationService";
+import { generateElevenLabsAudio } from "./ElevenLabsService";
+import { generateSupertonicAudio } from "./SupertonicService";
+import { generateVieneuAudio } from "./VieneuService";
+import { generateRvcApplioSpeech } from "./RvcApplioService";
 import { generateVideoFromAudio } from "./VideoService";
 import { createGradientPng } from "../utils/simplePng";
 import { createPublishJob } from "./PublishQueueService";
@@ -176,8 +181,8 @@ export async function runAgentVideoJob(id: string, envOverrides: RuntimeEnvValue
     job = await runStage(job, "visuals", envOverrides, 40, "Đang dựng visual prompt và background local...", async (current) => current);
 
     const narration = buildNarration(job.plan);
-    job = await runStage(job, "voice", envOverrides, 55, "Đang tạo voice-over local bằng Piper...", async (current) => {
-      const audio = await createPiperNarrationAudio(current, narration, envOverrides);
+    job = await runStage(job, "voice", envOverrides, 55, `Đang tạo voice-over bằng ${voiceProviderLabel(job.input.voiceProvider)}...`, async (current) => {
+      const audio = await createNarrationAudio(current, narration, envOverrides);
       return updateJob(current.id, envOverrides, {
         artifacts: { ...current.artifacts, audioRelativePath: audio.relativePath, audioUrl: audio.audioUrl },
       });
@@ -286,7 +291,16 @@ function normalizeJobInput(body: CreateAgentVideoJobBody, envOverrides: RuntimeE
   const models = getPiperModels(env.MODEL_DIR);
   return {
     ...input,
+    voiceProvider: normalizeVoiceProvider(body.voiceProvider),
     piperModelKey: models[modelKey] ? modelKey : input.language === "vi" ? "vi_vais1000" : "en_lessac",
+    elevenModelId: String(body.elevenModelId || "eleven_flash_v2_5"),
+    elevenVoiceId: String(body.elevenVoiceId || ""),
+    supertonicVoice: String(body.supertonicVoice || "M1"),
+    supertonicTotalSteps: clampNumber(Number(body.supertonicTotalSteps), 8, 5, 12),
+    vieneuVoiceId: String(body.vieneuVoiceId || ""),
+    vieneuMode: String(body.vieneuMode || "turbo"),
+    vieneuEmotion: String(body.vieneuEmotion || "natural"),
+    applioTtsTemplateId: String(body.applioTtsTemplateId || ""),
     speechRate: clampNumber(Number(body.speechRate), 0.9, 0.5, 1.4),
     sentenceSilence: clampNumber(Number(body.sentenceSilence), 0.25, 0, 2),
     autoCreatePublishJobs: Boolean(body.autoCreatePublishJobs),
@@ -500,11 +514,43 @@ function buildFinalDescription(plan?: AgentVideoPlan) {
   return notes.join("\n\n").slice(0, 5000);
 }
 
-async function createPiperNarrationAudio(job: AgentVideoJob, text: string, envOverrides: RuntimeEnvValues) {
+async function createNarrationAudio(job: AgentVideoJob, text: string, envOverrides: RuntimeEnvValues) {
+  const fileName = sanitizeFileBaseName(`agent-${job.plan?.title || job.input.topic}`);
+  const segments = job.plan?.scenes?.map((scene) => scene.narration.trim()).filter(Boolean);
+  if (job.input.voiceProvider === "elevenlabs") return generateElevenLabsAudio({
+    text,
+    modelId: job.input.elevenModelId,
+    voiceId: job.input.elevenVoiceId,
+    fileName,
+  }, envOverrides);
+  if (job.input.voiceProvider === "supertonic") return generateSupertonicAudio({
+    text,
+    segments,
+    voice: job.input.supertonicVoice,
+    lang: job.input.language,
+    speed: job.input.speechRate,
+    totalSteps: job.input.supertonicTotalSteps,
+    fileName,
+    responseFormat: "wav",
+  }, envOverrides);
+  if (job.input.voiceProvider === "vieneu") return generateVieneuAudio({
+    text,
+    segments,
+    fileName,
+    mode: job.input.vieneuMode,
+    emotion: job.input.vieneuEmotion,
+    voiceId: job.input.vieneuVoiceId,
+  }, envOverrides);
+  if (job.input.voiceProvider === "applio") return generateRvcApplioSpeech({
+    text,
+    segments,
+    fileName,
+    templateId: job.input.applioTtsTemplateId,
+  }, envOverrides);
   const request = validateGenerateRequest({
     text,
     modelKey: job.input.piperModelKey,
-    fileName: sanitizeFileBaseName(`agent-${job.plan?.title || job.input.topic}`),
+    fileName,
     sentenceSilence: job.input.sentenceSilence,
     speechRate: job.input.speechRate,
   }, envOverrides);
@@ -701,6 +747,18 @@ function normalizePublishChannels(value: unknown): AgentVideoPublishChannel[] {
 
 function normalizePublishTargets(values?: AgentVideoPublishTarget[]) {
   return (values || []).filter(isPublishTarget);
+}
+
+function normalizeVoiceProvider(value: unknown): AgentVoiceProvider {
+  return value === "elevenlabs" || value === "supertonic" || value === "vieneu" || value === "applio" ? value : "piper";
+}
+
+function voiceProviderLabel(provider: AgentVoiceProvider) {
+  if (provider === "elevenlabs") return "ElevenLabs";
+  if (provider === "supertonic") return "Supertonic";
+  if (provider === "vieneu") return "VieNeu";
+  if (provider === "applio") return "Applio TTS";
+  return "Piper local";
 }
 
 function isPublishTarget(value: unknown): value is AgentVideoPublishTarget {

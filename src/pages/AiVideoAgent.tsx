@@ -30,10 +30,11 @@ import {
   type AgentWorkflowStageId,
 } from "@/lib/aiVideoAgentApi";
 import { text, type Lang } from "@/lib/i18n";
-import { getPiperModels, type PiperModel } from "@/lib/voiceApi";
+import { getElevenLabsConfig, getPiperModels, getRvcApplioConfig, getSupertonicConfig, getVieneuConfig, type ElevenLabsConfig, type PiperModel, type RvcApplioConfig, type SupertonicConfig, type VieneuConfig } from "@/lib/voiceApi";
 import { getPublishJobs, type PublishJob } from "@/lib/publishQueueApi";
 import { AgentFlowGraph } from "@/features/ai-video-agent/components/AgentFlowGraph";
 import { AgentSelectedChannelVideos } from "@/features/ai-video-agent/components/AgentSelectedChannelVideos";
+import { AgentVoiceSettings } from "@/features/ai-video-agent/components/AgentVoiceSettings";
 import { channelsFromKeys, getAgentPublishChannelOptions, getPreferredChannelKeys, type AgentPublishChannelOption } from "@/features/ai-video-agent/lib/publishChannelOptions";
 
 const DEFAULT_FORM: AgentVideoForm = {
@@ -44,7 +45,16 @@ const DEFAULT_FORM: AgentVideoForm = {
   tone: "Dễ hiểu, nhịp nhanh, có hook mạnh, phù hợp Shorts",
   targetDurationSec: 45,
   extraInstruction: "Tập trung vào hình ảnh trực quan, tránh nói quá học thuật.",
+  voiceProvider: "piper",
   piperModelKey: "vi_vais1000",
+  elevenModelId: "eleven_flash_v2_5",
+  elevenVoiceId: "",
+  supertonicVoice: "M1",
+  supertonicTotalSteps: 8,
+  vieneuVoiceId: "",
+  vieneuMode: "turbo",
+  vieneuEmotion: "natural",
+  applioTtsTemplateId: "",
   speechRate: 0.9,
   sentenceSilence: 0.25,
   agentPreset: "algorithm-shorts",
@@ -62,6 +72,10 @@ export default function AiVideoAgent() {
   const [jobs, setJobs] = useState<AgentVideoJob[]>([]);
   const [publishJobs, setPublishJobs] = useState<PublishJob[]>([]);
   const [models, setModels] = useState<PiperModel[]>([]);
+  const [elevenConfig, setElevenConfig] = useState<ElevenLabsConfig | null>(null);
+  const [supertonicConfig, setSupertonicConfig] = useState<SupertonicConfig | null>(null);
+  const [rvcApplioConfig, setRvcApplioConfig] = useState<RvcApplioConfig | null>(null);
+  const [vieneuConfig, setVieneuConfig] = useState<VieneuConfig | null>(null);
   const [presets, setPresets] = useState<AgentPreset[]>([]);
   const [publishOptions, setPublishOptions] = useState<AgentPublishChannelOption[]>([]);
   const [selectedPublishChannelKeys, setSelectedPublishChannelKeys] = useState<string[]>([]);
@@ -86,6 +100,22 @@ export default function AiVideoAgent() {
   useEffect(() => {
     refresh();
     getPiperModels().then(setModels).catch(() => undefined);
+    getElevenLabsConfig().then((config) => {
+      setElevenConfig(config);
+      setForm((current) => ({ ...current, elevenModelId: current.elevenModelId || config.models[0]?.id || "", elevenVoiceId: current.elevenVoiceId || config.voices[0]?.id || "" }));
+    }).catch(() => undefined);
+    getSupertonicConfig().then((config) => {
+      setSupertonicConfig(config);
+      setForm((current) => ({ ...current, supertonicVoice: current.supertonicVoice || config.defaultVoice || config.voices[0]?.id || "M1", supertonicTotalSteps: current.supertonicTotalSteps || config.defaultTotalSteps || 8 }));
+    }).catch(() => undefined);
+    getRvcApplioConfig().then((config) => {
+      setRvcApplioConfig(config);
+      setForm((current) => ({ ...current, applioTtsTemplateId: current.applioTtsTemplateId || config.ttsTemplates[0]?.id || "" }));
+    }).catch(() => undefined);
+    getVieneuConfig().then((config) => {
+      setVieneuConfig(config);
+      setForm((current) => ({ ...current, vieneuVoiceId: current.vieneuVoiceId || config.defaultVoiceId || "", vieneuMode: current.vieneuMode || config.mode || "turbo", vieneuEmotion: current.vieneuEmotion || config.emotion || "natural" }));
+    }).catch(() => undefined);
     getAgentPresets().then(setPresets).catch(() => undefined);
     const options = getAgentPublishChannelOptions();
     setPublishOptions(options);
@@ -273,7 +303,7 @@ export default function AiVideoAgent() {
             <CollapsibleContent>
               <ScrollArea className="h-[calc(100vh-130px)]">
                 <CardContent className="space-y-4 p-3 pt-0">
-                  <AgentSettingsForm form={form} lang={lang} presets={presets} models={models} availableModels={availableModels} publishOptions={publishOptions} selectedPublishChannelKeys={selectedPublishChannelKeys} publishChannelWarning={publishChannelWarning} loadingPlan={loadingPlan} running={fullAgentRunning} applyPreset={applyPreset} update={update} togglePublishTarget={togglePublishTarget} togglePublishChannel={togglePublishChannel} refreshPublishChannels={refreshPublishChannels} handleCreatePlan={handleCreatePlan} handleRunNow={handleRunNow} handleSaveDraft={handleSaveDraft} />
+                  <AgentSettingsForm form={form} lang={lang} presets={presets} models={models} availableModels={availableModels} elevenConfig={elevenConfig} supertonicConfig={supertonicConfig} rvcApplioConfig={rvcApplioConfig} vieneuConfig={vieneuConfig} publishOptions={publishOptions} selectedPublishChannelKeys={selectedPublishChannelKeys} publishChannelWarning={publishChannelWarning} loadingPlan={loadingPlan} running={fullAgentRunning} applyPreset={applyPreset} update={update} togglePublishTarget={togglePublishTarget} togglePublishChannel={togglePublishChannel} refreshPublishChannels={refreshPublishChannels} handleCreatePlan={handleCreatePlan} handleRunNow={handleRunNow} handleSaveDraft={handleSaveDraft} />
                 </CardContent>
               </ScrollArea>
             </CollapsibleContent>
@@ -284,8 +314,8 @@ export default function AiVideoAgent() {
   );
 }
 
-function AgentSettingsForm({ form, lang, presets, models, availableModels, publishOptions, selectedPublishChannelKeys, publishChannelWarning, loadingPlan, running, applyPreset, update, togglePublishTarget, togglePublishChannel, refreshPublishChannels, handleCreatePlan, handleRunNow, handleSaveDraft }: {
-  form: AgentVideoForm; lang: Lang; presets: AgentPreset[]; models: PiperModel[]; availableModels: PiperModel[]; publishOptions: AgentPublishChannelOption[]; selectedPublishChannelKeys: string[]; publishChannelWarning: string; loadingPlan: boolean; running: boolean;
+function AgentSettingsForm({ form, lang, presets, models, availableModels, elevenConfig, supertonicConfig, rvcApplioConfig, vieneuConfig, publishOptions, selectedPublishChannelKeys, publishChannelWarning, loadingPlan, running, applyPreset, update, togglePublishTarget, togglePublishChannel, refreshPublishChannels, handleCreatePlan, handleRunNow, handleSaveDraft }: {
+  form: AgentVideoForm; lang: Lang; presets: AgentPreset[]; models: PiperModel[]; availableModels: PiperModel[]; elevenConfig: ElevenLabsConfig | null; supertonicConfig: SupertonicConfig | null; rvcApplioConfig: RvcApplioConfig | null; vieneuConfig: VieneuConfig | null; publishOptions: AgentPublishChannelOption[]; selectedPublishChannelKeys: string[]; publishChannelWarning: string; loadingPlan: boolean; running: boolean;
   applyPreset: (id: string) => void; update: <K extends keyof AgentVideoForm>(key: K, value: AgentVideoForm[K]) => void; togglePublishTarget: (target: AgentVideoPublishTarget, enabled: boolean) => void; togglePublishChannel: (key: string, enabled: boolean) => void; refreshPublishChannels: () => void; handleCreatePlan: () => void; handleRunNow: () => void; handleSaveDraft: () => void;
 }) {
   return <>
@@ -293,7 +323,7 @@ function AgentSettingsForm({ form, lang, presets, models, availableModels, publi
     <Field label={text(lang, "Video topic", "Chủ đề video")}><Input value={form.topic} onChange={(event) => update("topic", event.target.value)} /></Field>
     <div className="grid gap-3 sm:grid-cols-2"><Field label={text(lang, "Content kind", "Loại nội dung")}><Select value={form.kind} onValueChange={(value) => update("kind", value as AgentVideoForm["kind"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="algorithm">Algorithm</SelectItem><SelectItem value="football">Football/MU</SelectItem><SelectItem value="story">Story</SelectItem><SelectItem value="generic">Generic</SelectItem></SelectContent></Select></Field><Field label={text(lang, "Platform", "Nền tảng")}><Select value={form.platform} onValueChange={(value) => update("platform", value as AgentVideoForm["platform"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="youtube-short">YouTube Short 9:16</SelectItem><SelectItem value="youtube-long">YouTube Long 16:9</SelectItem><SelectItem value="tiktok">TikTok 9:16</SelectItem><SelectItem value="facebook-reel">Facebook Reel 9:16</SelectItem></SelectContent></Select></Field></div>
     <div className="grid gap-3 sm:grid-cols-2"><Field label={text(lang, "Language", "Ngôn ngữ")}><Select value={form.language} onValueChange={(value) => update("language", value as AgentVideoForm["language"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="vi">Tiếng Việt</SelectItem><SelectItem value="en">English</SelectItem></SelectContent></Select></Field><Field label={text(lang, "Target seconds", "Thời lượng giây")}><Input type="number" min={15} max={600} value={form.targetDurationSec} onChange={(event) => update("targetDurationSec", Number(event.target.value))} /></Field></div>
-    <Field label="Piper voice model"><Select value={form.piperModelKey} onValueChange={(value) => update("piperModelKey", value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{(availableModels.length ? availableModels : models).map((model) => <SelectItem key={model.key} value={model.key}>{model.label}{model.available ? "" : " (missing)"}</SelectItem>)}</SelectContent></Select></Field>
+    <AgentVoiceSettings form={form} models={models} availableModels={availableModels} elevenConfig={elevenConfig} supertonicConfig={supertonicConfig} rvcApplioConfig={rvcApplioConfig} vieneuConfig={vieneuConfig} update={update} />
     <div className="grid gap-3 sm:grid-cols-2"><Field label={text(lang, "Speech rate", "Tốc độ đọc")}><Input type="number" step="0.05" value={form.speechRate} onChange={(event) => update("speechRate", Number(event.target.value))} /></Field><Field label={text(lang, "Sentence silence", "Nghỉ giữa câu")}><Input type="number" step="0.05" value={form.sentenceSilence} onChange={(event) => update("sentenceSilence", Number(event.target.value))} /></Field></div>
     <Field label="Tone"><Input value={form.tone} onChange={(event) => update("tone", event.target.value)} /></Field>
     <Field label={text(lang, "Extra instruction", "Yêu cầu thêm")}><Textarea value={form.extraInstruction} onChange={(event) => update("extraInstruction", event.target.value)} rows={4} /></Field>

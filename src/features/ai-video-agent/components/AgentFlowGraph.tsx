@@ -1,24 +1,16 @@
 import { useMemo, useState } from "react";
-import {
-  Background,
-  Controls,
-  Handle,
-  MarkerType,
-  Position,
-  ReactFlow,
-  type Edge,
-  type Node,
-  type NodeProps,
-} from "@xyflow/react";
+import { Background, Controls, Handle, MarkerType, Position, ReactFlow, type Edge, type Node, type NodeProps } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { CheckCircle2, Circle, Clock3, Loader2, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SegmentedTabs } from "@/components/ui/segmented-tabs";
+import { usePersistedFlowLayout } from "@/features/ai-video-agent/hooks/usePersistedFlowLayout";
 import type { AgentVideoJob, AgentWorkflowStageId } from "@/lib/aiVideoAgentApi";
 import { text, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-type FlowNodeKind = "stage" | "condition" | "branch" | "terminal" | "data";
+type FlowNodeKind = "stage" | "condition" | "branch" | "terminal" | "data" | "store" | "external";
 type FlowMode = "process" | "data";
 
 type StageNodeData = {
@@ -33,7 +25,6 @@ type StageNodeData = {
 };
 
 type AgentStep = NonNullable<AgentVideoJob["steps"]>[number];
-
 type FlowSpecNode = {
   id: string;
   label: string;
@@ -64,6 +55,8 @@ export function AgentFlowGraph({
   const [mode, setMode] = useState<FlowMode>("process");
   const steps = job?.steps?.length ? job.steps : fallbackSteps();
   const logs = job?.logs || [];
+  const layoutKey = `${job?.input?.agentPreset || "custom"}:${mode}`;
+  const { dirty, positions, resetLayout, saveLayout, setNodePosition } = usePersistedFlowLayout(layoutKey);
   const flow = useMemo(() => buildAgentFlow(job, steps, lang, mode), [job, steps, lang, mode]);
   const nodes = useMemo<Node<StageNodeData>[]>(() => flow.nodes.map((node) => {
     const step = node.stageId ? steps.find((item) => item.id === node.stageId) : undefined;
@@ -71,7 +64,7 @@ export function AgentFlowGraph({
     return {
       id: node.id,
       type: "stageNode",
-      position: { x: node.x, y: node.y },
+      position: positions[node.id] || { x: node.x, y: node.y },
       data: {
         label: node.label,
         status,
@@ -83,7 +76,7 @@ export function AgentFlowGraph({
         stageId: node.stageId,
       },
     };
-  }), [flow.nodes, steps, selectedStageId, logs]);
+  }), [flow.nodes, positions, steps, selectedStageId, logs]);
   const edges = useMemo<Edge[]>(() => flow.edges.map((edge) => ({
     id: `${edge.source}-${edge.target}`,
     source: edge.source,
@@ -93,6 +86,8 @@ export function AgentFlowGraph({
     animated: edge.active,
     className: edge.active ? "kai-agent-running-edge" : edge.skipped ? "kai-agent-skipped-edge" : undefined,
     label: edge.label,
+    labelBgPadding: [8, 5], labelBgBorderRadius: 6,
+    labelBgStyle: { fill: "var(--kai-agent-label-bg)", fillOpacity: 0.96, stroke: "var(--kai-agent-label-border)", strokeWidth: 1 }, labelStyle: { fill: "var(--kai-agent-label-text)", fontSize: 12, fontWeight: 700 },
     markerEnd: { type: MarkerType.ArrowClosed, color: edge.active ? "var(--kai-agent-active)" : edge.skipped ? "var(--kai-agent-skip)" : "var(--kai-agent-done)" },
     type: "smoothstep",
     style: edge.active
@@ -112,7 +107,9 @@ export function AgentFlowGraph({
             <Badge variant={job?.status === "success" ? "default" : job?.status === "failed" ? "destructive" : "secondary"}>{job?.status || "idle"}</Badge>
             {runningStep ? <span className="flex items-center gap-1 text-[var(--kai-agent-active)]"><span className="h-2 w-2 animate-pulse rounded-full bg-[var(--kai-agent-active)] shadow-[0_0_10px_var(--kai-agent-active)]" />{runningStep.label}</span> : null}
             <span>{Math.round(job?.progress || 0)}%</span>
-            {(["process", "data"] as FlowMode[]).map((item) => <button key={item} type="button" className={cn("rounded-md border px-2 py-1", mode === item && "border-[var(--kai-agent-active)] bg-[var(--kai-agent-active-soft)] text-[var(--kai-agent-active)]")} onClick={() => setMode(item)}>{item === "process" ? text(lang, "Process flow", "Sơ đồ xử lý") : text(lang, "Data flow", "Sơ đồ dữ liệu")}</button>)}
+            <SegmentedTabs value={mode} options={[{ value: "process", label: text(lang, "Process flow", "Sơ đồ xử lý") }, { value: "data", label: text(lang, "Data flow", "Sơ đồ dữ liệu") }]} onValueChange={setMode} aria-label={text(lang, "Flow chart mode", "Chế độ sơ đồ")} className="h-9 bg-card/70" />
+            {dirty ? <button type="button" className="rounded-full border border-primary bg-primary px-3 py-1 font-medium text-primary-foreground" onClick={saveLayout}>{text(lang, "Save layout", "Lưu layout")}</button> : null}
+            <button type="button" className="rounded-full border px-3 py-1 font-medium hover:bg-muted" onClick={resetLayout}>{text(lang, "Reset layout", "Reset layout")}</button>
             <button type="button" className="underline-offset-4 hover:underline" onClick={() => onSelectStage("all")}>{text(lang, "All logs", "Tất cả log")}</button>
           </div>
         </div>
@@ -121,8 +118,7 @@ export function AgentFlowGraph({
         <div className="kai-agent-flow-shell h-[680px] overflow-hidden rounded-xl border bg-muted/20 xl:h-[720px]">
           <style>{`
             .kai-agent-flow-card {
-              --kai-agent-active: #0284c7;
-              --kai-agent-active-soft: rgba(2, 132, 199, 0.2);
+              --kai-agent-active: #0284c7; --kai-agent-active-soft: rgba(2, 132, 199, 0.2);
               --kai-agent-active-glow: rgba(2, 132, 199, 0.65);
               --kai-agent-done: #059669;
               --kai-agent-done-soft: rgba(5, 150, 105, 0.14);
@@ -135,10 +131,10 @@ export function AgentFlowGraph({
               --kai-agent-decision-glow: rgba(249, 115, 22, 0.45);
               --kai-agent-data: #2563eb;
               --kai-agent-data-soft: rgba(37, 99, 235, 0.12);
+              --kai-agent-label-bg: #ffffff; --kai-agent-label-border: rgba(15, 23, 42, 0.2); --kai-agent-label-text: #020617;
             }
             .dark .kai-agent-flow-card {
-              --kai-agent-active: #fb923c;
-              --kai-agent-active-soft: rgba(251, 146, 60, 0.18);
+              --kai-agent-active: #fb923c; --kai-agent-active-soft: rgba(251, 146, 60, 0.18);
               --kai-agent-active-glow: rgba(251, 146, 60, 0.8);
               --kai-agent-done: #22c55e;
               --kai-agent-done-soft: rgba(34, 197, 94, 0.13);
@@ -151,11 +147,11 @@ export function AgentFlowGraph({
               --kai-agent-decision-glow: rgba(251, 146, 60, 0.75);
               --kai-agent-data: #38bdf8;
               --kai-agent-data-soft: rgba(56, 189, 248, 0.14);
+              --kai-agent-label-bg: #020617; --kai-agent-label-border: rgba(148, 163, 184, 0.55); --kai-agent-label-text: #f8fafc;
             }
             .kai-agent-running-edge .react-flow__edge-path { stroke-dasharray: 12 8; animation: kai-agent-flow-dash 0.7s linear infinite; filter: drop-shadow(0 0 7px var(--kai-agent-active-glow)); }
             .kai-agent-skipped-edge .react-flow__edge-path { stroke-dasharray: 4 8; filter: grayscale(1); }
-            .kai-agent-skipped-edge .react-flow__edge-text,
-            .kai-agent-skipped-edge .react-flow__edge-textbg { opacity: 0.55; }
+            .kai-agent-skipped-edge .react-flow__edge-text, .kai-agent-skipped-edge .react-flow__edge-textbg { opacity: 0.55; }
             @keyframes kai-agent-flow-dash { from { stroke-dashoffset: 20; } to { stroke-dashoffset: 0; } }
           `}</style>
           <ReactFlow
@@ -167,9 +163,12 @@ export function AgentFlowGraph({
             fitViewOptions={{ padding: 0.14 }}
             minZoom={0.2}
             maxZoom={1.4}
-            nodesDraggable={false}
+            nodesDraggable
             nodesConnectable={false}
+            edgesReconnectable={false}
+            deleteKeyCode={null}
             elementsSelectable
+            onNodeDragStop={(_event, node) => setNodePosition(node.id, node.position)}
             onNodeClick={(_event, node) => {
               const stageId = node.data.stageId;
               if (stageId) onSelectStage(stageId);
@@ -196,23 +195,23 @@ function buildAgentFlow(job: AgentVideoJob | undefined, steps: AgentStep[], lang
   const runningId = steps.find((step) => step.status === "running")?.id;
   const node = (id: string, label: string, x: number, y: number, stageId?: AgentWorkflowStageId, extra?: Partial<FlowSpecNode>): FlowSpecNode => ({ id, label, x, y, stageId, ...extra });
   const nodes: FlowSpecNode[] = [
-    node("start", vi ? "Bắt đầu" : "Start", -260, 220, undefined, { kind: "terminal", status: job ? "done" : "pending", progress: job ? 100 : 0 }),
+    node("start", vi ? "Bắt đầu" : "Start", -360, 240, undefined, { kind: "terminal", status: job ? "done" : "pending", progress: job ? 100 : 0 }),
     node("research", labels.research, 0, 220, "research"),
-    node("api-check", vi ? "Có API key?" : "API key?", 250, 220, "research", { kind: "condition", status: conditionStatus(steps, "research"), progress: hasPlan ? 100 : 0, message: apiMessage(job, vi) }),
-    node("ai-plan", vi ? "AI plan" : "AI plan", 500, 40, "research", { kind: "branch", status: branchStatus(hasApiKeyPath, fallback, runningId === "research"), progress: hasApiKeyPath ? 100 : 0, message: labels.aiPlan }),
-    node("fallback-plan", vi ? "Fallback local" : "Local fallback", 500, 400, "research", { kind: "branch", status: branchStatus(fallback, hasApiKeyPath, runningId === "research"), progress: fallback ? 100 : 0, message: job?.plan?.warning || labels.fallback }),
-    node("strategy", labels.strategy, 770, 220, "strategy"),
-    node("script", labels.script, 1030, 220, "script"),
-    node("visuals", labels.visuals, 1290, 55, "visuals"),
-    node("voice", labels.voice, 1290, 390, "voice"),
-    node("render", labels.render, 1550, 220, "render"),
-    node("metadata", labels.metadata, 1810, 105, "metadata"),
-    node("publish-check", vi ? "Auto publish?" : "Auto publish?", 2060, 220, "publish", { kind: "condition", status: conditionStatus(steps, "metadata"), progress: publishStep?.progress || 0, message: autoPublish ? labels.publishYes : labels.publishNo }),
-    node("publish", labels.publish, 2310, 40, "publish"),
-    node("local-output", vi ? "Lưu local" : "Local output", 2310, 400, "publish", { kind: "branch", status: publishStep?.status === "skipped" ? "done" : autoPublish ? "skipped" : publishStep?.status || "pending", progress: publishStep?.status === "skipped" ? 100 : 0, message: labels.publishNo }),
-    node("engage", labels.engage, 2570, 105, "engage"),
-    node("monetize", labels.monetize, 2830, 285, "monetize"),
-    node("end", vi ? "Kết thúc" : "End", 3090, 285, undefined, { kind: "terminal", status: job?.status === "success" ? "done" : job?.status === "failed" ? "failed" : "pending", progress: job?.status === "success" ? 100 : 0, message: job?.status === "failed" ? job.error : "" }),
+    node("api-check", vi ? "Có API key?" : "API key?", 360, 220, "research", { kind: "condition", status: conditionStatus(steps, "research"), progress: hasPlan ? 100 : 0, message: apiMessage(job, vi) }),
+    node("ai-plan", vi ? "AI plan" : "AI plan", 760, 0, "research", { kind: "branch", status: branchStatus(hasApiKeyPath, fallback, runningId === "research"), progress: hasApiKeyPath ? 100 : 0, message: labels.aiPlan }),
+    node("fallback-plan", vi ? "Fallback local" : "Local fallback", 760, 470, "research", { kind: "branch", status: branchStatus(fallback, hasApiKeyPath, runningId === "research"), progress: fallback ? 100 : 0, message: job?.plan?.warning || labels.fallback }),
+    node("strategy", labels.strategy, 1140, 220, "strategy"),
+    node("script", labels.script, 1500, 220, "script"),
+    node("visuals", labels.visuals, 1860, 0, "visuals"),
+    node("voice", labels.voice, 1860, 470, "voice"),
+    node("render", labels.render, 2220, 220, "render"),
+    node("metadata", labels.metadata, 2580, 100, "metadata"),
+    node("publish-check", vi ? "Auto publish?" : "Auto publish?", 2940, 220, "publish", { kind: "condition", status: conditionStatus(steps, "metadata"), progress: publishStep?.progress || 0, message: autoPublish ? labels.publishYes : labels.publishNo }),
+    node("publish", labels.publish, 3300, 0, "publish"),
+    node("local-output", vi ? "Lưu local" : "Local output", 3300, 470, "publish", { kind: "branch", status: publishStep?.status === "skipped" ? "done" : autoPublish ? "skipped" : publishStep?.status || "pending", progress: publishStep?.status === "skipped" ? 100 : 0, message: labels.publishNo }),
+    node("engage", labels.engage, 3660, 100, "engage"),
+    node("monetize", labels.monetize, 4020, 320, "monetize"),
+    node("end", vi ? "Kết thúc" : "End", 4380, 320, undefined, { kind: "terminal", status: job?.status === "success" ? "done" : job?.status === "failed" ? "failed" : "pending", progress: job?.status === "success" ? 100 : 0, message: job?.status === "failed" ? job.error : "" }),
   ];
   const active = (source: AgentWorkflowStageId, target?: AgentWorkflowStageId) => runningId === source || runningId === target;
   const edges: FlowSpecEdge[] = [
@@ -239,53 +238,52 @@ function buildAgentFlow(job: AgentVideoJob | undefined, steps: AgentStep[], lang
 }
 
 function buildAgentDataFlow(job: AgentVideoJob | undefined, steps: AgentStep[], lang: Lang) {
-  const vi = lang === "vi";
-  const runningId = steps.find((step) => step.status === "running")?.id;
-  const fallback = Boolean(job?.plan?.warning);
-  const hasApiKeyPath = Boolean(job?.plan && !fallback);
-  const autoPublish = Boolean(job?.input?.autoCreatePublishJobs);
+  const vi = lang === "vi", runningId = steps.find((step) => step.status === "running")?.id;
+  const fallback = Boolean(job?.plan?.warning), autoPublish = Boolean(job?.input?.autoCreatePublishJobs), hasApiKeyPath = Boolean(job?.plan && !fallback);
   const n = (id: string, label: string, x: number, y: number, stageId?: AgentWorkflowStageId, extra?: Partial<FlowSpecNode>): FlowSpecNode => ({ id, label, x, y, stageId, kind: "data", ...extra });
   const active = (source: AgentWorkflowStageId, target?: AgentWorkflowStageId) => runningId === source || runningId === target;
   return {
     nodes: [
-      n("input", vi ? "Topic + Settings" : "Topic + Settings", 0, 220, "research"),
-      n("api-check", vi ? "Có API key?" : "API key?", 280, 220, "research", { kind: "condition", status: conditionStatus(steps, "research") }),
-      n("ai-data", vi ? "AI plan data" : "AI plan data", 560, 60, "research", { status: hasApiKeyPath ? "done" : fallback ? "skipped" : "pending" }),
-      n("local-data", vi ? "Local fallback data" : "Local fallback data", 560, 380, "research", { status: fallback ? "done" : hasApiKeyPath ? "skipped" : "pending" }),
-      n("plan", vi ? "Plan JSON" : "Plan JSON", 840, 220, "strategy"),
-      n("script", vi ? "Narration script" : "Narration script", 1120, 220, "script"),
-      n("voice", vi ? "Audio file" : "Audio file", 1400, 60, "voice"),
-      n("visual", vi ? "Visual assets" : "Visual assets", 1400, 380, "visuals"),
-      n("video", vi ? "MP4 video" : "MP4 video", 1680, 220, "render"),
-      n("metadata", vi ? "Metadata + tags" : "Metadata + tags", 1960, 220, "metadata"),
-      n("publish-check", vi ? "Auto publish?" : "Auto publish?", 2240, 220, "publish", { kind: "condition", status: conditionStatus(steps, "metadata") }),
-      n("queue", vi ? "Publish payload" : "Publish payload", 2520, 60, "publish", { status: autoPublish ? "done" : "skipped" }),
-      n("local", vi ? "Local output" : "Local output", 2520, 380, "publish", { status: autoPublish ? "skipped" : "done" }),
+      n("user-input", vi ? "Người dùng / Form agent" : "User / Agent form", -420, 230, "research", { kind: "external", status: job ? "done" : "pending", message: vi ? "Nguồn topic, setting, kênh đăng." : "Source of topic, settings, selected channels." }),
+      n("runtime-config", vi ? "Kho cấu hình local" : "Local config store", -60, 20, "research", { kind: "store", status: job ? "done" : "pending", message: vi ? "API key, preset, token, fallback." : "API keys, presets, tokens, fallback data." }),
+      n("plan-resolver", vi ? "Resolve plan" : "Resolve plan", 260, 230, "research", { message: fallback ? (vi ? "Thiếu API key, đọc fallback local." : "No API key, reading local fallback.") : vi ? "Chuẩn hóa input thành plan." : "Normalizes input into a plan." }),
+      n("ai-provider", vi ? "AI provider" : "AI provider", 620, 20, "research", { kind: "external", status: hasApiKeyPath ? "done" : fallback ? "skipped" : "pending", message: vi ? "Nhận prompt, trả plan." : "Receives prompt, returns plan." }),
+      n("fallback-store", vi ? "Fallback templates" : "Fallback templates", 620, 430, "research", { kind: "store", status: fallback ? "done" : hasApiKeyPath ? "skipped" : "pending", message: vi ? "Dữ liệu local của agent." : "Local agent data." }),
+      n("plan-store", vi ? "Plan JSON" : "Plan JSON", 980, 230, "strategy", { kind: "store" }),
+      n("script-process", vi ? "Tạo script" : "Script process", 1340, 110, "script"),
+      n("asset-process", vi ? "Tạo asset" : "Asset process", 1340, 350, "visuals"),
+      n("script-store", vi ? "Script + scene cues" : "Script + scene cues", 1700, 110, "script", { kind: "store" }),
+      n("asset-store", vi ? "Visual assets" : "Visual assets", 1700, 350, "visuals", { kind: "store" }),
+      n("voice-process", vi ? "Sinh voice" : "Voice process", 2060, 110, "voice"),
+      n("audio-store", vi ? "Audio file" : "Audio file", 2420, 110, "voice", { kind: "store" }),
+      n("render-process", vi ? "Render video" : "Render process", 2420, 350, "render"),
+      n("video-store", vi ? "MP4 output" : "MP4 output", 2780, 350, "render", { kind: "store" }),
+      n("metadata-store", vi ? "Metadata + thumbnail" : "Metadata + thumbnail", 3140, 210, "metadata", { kind: "store" }),
+      n("publish-sink", vi ? "Queue / Nền tảng" : "Queue / Platforms", 3500, 210, "publish", { kind: "external", status: autoPublish ? "done" : "skipped", message: autoPublish ? (vi ? "Nhận payload đăng kênh." : "Receives upload payload.") : (vi ? "Tắt auto publish." : "Auto publish disabled.") }),
     ],
     edges: [
-      { source: "input", target: "api-check", active: runningId === "research", label: vi ? "prompt + config" : "prompt + config" },
-      { source: "api-check", target: "ai-data", active: runningId === "research" && !fallback, skipped: fallback, label: vi ? "có" : "yes", sourceHandle: "source-top", targetHandle: "target-left" },
-      { source: "api-check", target: "local-data", active: runningId === "research" && fallback, skipped: hasApiKeyPath, label: vi ? "không" : "no", sourceHandle: "source-bottom", targetHandle: "target-left" },
-      { source: "ai-data", target: "plan", active: hasApiKeyPath && active("research", "strategy"), skipped: fallback }, { source: "local-data", target: "plan", active: fallback && active("research", "strategy"), skipped: hasApiKeyPath },
-      { source: "plan", target: "script", active: active("strategy", "script"), label: "scenes" }, { source: "script", target: "voice", active: active("script", "voice"), sourceHandle: "source-top", targetHandle: "target-left" }, { source: "script", target: "visual", active: active("script", "visuals"), sourceHandle: "source-bottom", targetHandle: "target-left" },
-      { source: "voice", target: "video", active: active("voice", "render"), targetHandle: "target-top" }, { source: "visual", target: "video", active: active("visuals", "render"), targetHandle: "target-bottom" }, { source: "video", target: "metadata", active: active("render", "metadata") }, { source: "metadata", target: "publish-check", active: active("metadata", "publish") },
-      { source: "publish-check", target: "queue", active: autoPublish && runningId === "publish", skipped: !autoPublish, label: vi ? "bật" : "on", sourceHandle: "source-top", targetHandle: "target-left" }, { source: "publish-check", target: "local", active: !autoPublish && runningId === "publish", skipped: autoPublish, label: vi ? "tắt" : "off", sourceHandle: "source-bottom", targetHandle: "target-left" },
+      { source: "user-input", target: "plan-resolver", active: runningId === "research", label: "topic + settings" },
+      { source: "runtime-config", target: "plan-resolver", active: runningId === "research", label: "keys + preset", sourceHandle: "source-bottom", targetHandle: "target-top" },
+      { source: "plan-resolver", target: "ai-provider", active: runningId === "research" && hasApiKeyPath, skipped: fallback, label: "prompt", sourceHandle: "source-top", targetHandle: "target-left" },
+      { source: "ai-provider", target: "plan-store", active: hasApiKeyPath && active("research", "strategy"), skipped: fallback, label: "AI plan JSON", sourceHandle: "source-right", targetHandle: "target-top" },
+      { source: "fallback-store", target: "plan-store", active: fallback && active("research", "strategy"), skipped: hasApiKeyPath, label: "local plan JSON", sourceHandle: "source-right", targetHandle: "target-bottom" },
+      { source: "plan-store", target: "script-process", active: active("strategy", "script"), label: "outline + scenes", targetHandle: "target-bottom" }, { source: "plan-store", target: "asset-process", active: active("strategy", "visuals"), label: "visual spec", targetHandle: "target-left" },
+      { source: "script-process", target: "script-store", active: active("script"), label: "script text" }, { source: "asset-process", target: "asset-store", active: active("visuals"), label: "image/video refs" },
+      { source: "script-store", target: "voice-process", active: active("script", "voice"), label: "narration text" }, { source: "voice-process", target: "audio-store", active: active("voice"), label: "wav/mp3" },
+      { source: "audio-store", target: "render-process", active: active("voice", "render"), label: "audio", sourceHandle: "source-bottom", targetHandle: "target-top" }, { source: "asset-store", target: "render-process", active: active("visuals", "render"), label: "assets" },
+      { source: "render-process", target: "video-store", active: active("render"), label: "mp4" }, { source: "video-store", target: "metadata-store", active: active("render", "metadata"), label: "video ref" },
+      { source: "script-store", target: "metadata-store", active: active("script", "metadata"), label: "title/tags seed", sourceHandle: "source-top", targetHandle: "target-left" }, { source: "metadata-store", target: "publish-sink", active: autoPublish && active("metadata", "publish"), skipped: !autoPublish, label: "upload payload" },
     ] as FlowSpecEdge[],
   };
 }
 
 function conditionStatus(steps: AgentStep[], waitFor: AgentWorkflowStageId) {
   const step = steps.find((item) => item.id === waitFor);
-  if (step?.status === "running") return "running";
-  if (step?.status === "done" || step?.status === "skipped") return "done";
-  if (step?.status === "failed") return "failed";
-  return "pending";
+  return step?.status === "running" ? "running" : step?.status === "done" || step?.status === "skipped" ? "done" : step?.status === "failed" ? "failed" : "pending";
 }
 
 function branchStatus(activeBranch: boolean, skippedBranch: boolean, parentRunning: boolean) {
-  if (activeBranch) return "done";
-  if (skippedBranch) return "skipped";
-  return parentRunning ? "pending" : "pending";
+  return activeBranch ? "done" : skippedBranch ? "skipped" : parentRunning ? "pending" : "pending";
 }
 
 function apiMessage(job: AgentVideoJob | undefined, vi: boolean) {
@@ -323,9 +321,8 @@ function getAgentLabels(preset: string, vi: boolean) {
 
 function StageNode({ data }: NodeProps<Node<StageNodeData>>) {
   const running = data.status === "running";
-  const condition = data.kind === "condition";
-  const terminal = data.kind === "terminal";
-  const dataNode = data.kind === "data";
+  const condition = data.kind === "condition", terminal = data.kind === "terminal", dataNode = data.kind === "data";
+  const store = data.kind === "store", external = data.kind === "external";
   const skipped = data.status === "skipped";
   const done = data.status === "done";
   if (condition) {
@@ -352,6 +349,8 @@ function StageNode({ data }: NodeProps<Node<StageNodeData>>) {
       "relative w-56 overflow-hidden border p-3 shadow-sm transition",
       terminal ? "rounded-full bg-[var(--kai-agent-terminal-bg)] text-center" : "rounded-xl bg-[var(--kai-agent-process-bg)]",
       dataNode && "border-[var(--kai-agent-data)] bg-[var(--kai-agent-data-soft)]",
+      store && "rounded-md border-[var(--kai-agent-data)] bg-[var(--kai-agent-data-soft)] shadow-[inset_8px_0_0_var(--kai-agent-data)]",
+      external && "border-dashed border-[var(--kai-agent-data)] bg-[var(--kai-agent-data-soft)]",
       done && !running && "border-[var(--kai-agent-done)] bg-[var(--kai-agent-done-soft)]",
       skipped && "border-[var(--kai-agent-skip)] bg-[var(--kai-agent-skip-soft)] opacity-55 grayscale",
       data.selected && "border-primary ring-2 ring-primary/20",
@@ -379,8 +378,8 @@ function StageNode({ data }: NodeProps<Node<StageNodeData>>) {
 }
 
 function NodeHandles() { return <>
-  <Handle id="target-left" type="target" position={Position.Left} className="!left-[-10px] !h-3 !w-3 !border-0 !bg-transparent" /><Handle id="target-top" type="target" position={Position.Top} className="!top-[-10px] !h-3 !w-3 !border-0 !bg-transparent" /><Handle id="target-bottom" type="target" position={Position.Bottom} className="!bottom-[-10px] !h-3 !w-3 !border-0 !bg-transparent" />
-  <Handle id="source-right" type="source" position={Position.Right} className="!right-[-10px] !h-3 !w-3 !border-0 !bg-transparent" /><Handle id="source-top" type="source" position={Position.Top} className="!top-[-10px] !h-3 !w-3 !border-0 !bg-transparent" /><Handle id="source-bottom" type="source" position={Position.Bottom} className="!bottom-[-10px] !h-3 !w-3 !border-0 !bg-transparent" />
+  <Handle id="target-left" type="target" position={Position.Left} className="!h-2 !w-2" /><Handle id="target-top" type="target" position={Position.Top} className="!h-2 !w-2" /><Handle id="target-bottom" type="target" position={Position.Bottom} className="!h-2 !w-2" />
+  <Handle id="source-right" type="source" position={Position.Right} className="!h-2 !w-2" /><Handle id="source-top" type="source" position={Position.Top} className="!h-2 !w-2" /><Handle id="source-bottom" type="source" position={Position.Bottom} className="!h-2 !w-2" />
 </>; }
 
 function StatusIcon({ status }: { status: string }) {

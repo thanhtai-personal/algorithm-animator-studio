@@ -28,6 +28,8 @@ import { createPublishJob } from "./PublishQueueService";
 const JOBS_FILE_NAME = "ai-video-agent-jobs.json";
 const MAX_JOBS = 200;
 const MAX_LOGS = 120;
+const STALE_RUNNING_JOB_MS = 2 * 60 * 60 * 1000;
+const IN_MEMORY_RUNNING_JOBS = new Set<string>();
 
 export const AGENT_PRESETS: AgentPreset[] = [
   {
@@ -123,11 +125,11 @@ export async function createAgentVideoPlan(body: CreateAgentVideoPlanBody, envOv
 }
 
 export function listAgentVideoJobs(envOverrides: RuntimeEnvValues = {}) {
-  return readJobs(envOverrides);
+  return reconcilePersistedJobs(readJobs(envOverrides), envOverrides);
 }
 
 export function getAgentVideoJob(id: string, envOverrides: RuntimeEnvValues = {}) {
-  return readJobs(envOverrides).find((job) => job.id === id) || null;
+  return listAgentVideoJobs(envOverrides).find((job) => job.id === id) || null;
 }
 
 export async function createAgentVideoJob(body: CreateAgentVideoJobBody, envOverrides: RuntimeEnvValues = {}) {
@@ -154,6 +156,7 @@ export async function createAgentVideoJob(body: CreateAgentVideoJobBody, envOver
 export async function runAgentVideoJob(id: string, envOverrides: RuntimeEnvValues = {}) {
   let job = getRequiredJob(id, envOverrides);
   if (job.status === "cancelled") return job;
+  IN_MEMORY_RUNNING_JOBS.add(job.id);
   job = updateJob(job.id, envOverrides, { status: "running", progress: 3, error: "", currentStep: "Research", logs: job.logs || [] });
   job = addAndPersistLog(job, envOverrides, "info", "Bắt đầu chạy local AI Agent pipeline.");
 
@@ -221,12 +224,14 @@ export async function runAgentVideoJob(id: string, envOverrides: RuntimeEnvValue
     job = await runStage(job, "monetize", envOverrides, 100, "Đã tạo ý tưởng CTA/monetize/repurpose cho video.", async (current) => current);
 
     job = updateJob(job.id, envOverrides, { status: "success", progress: 100, currentStep: "Hoàn tất" });
+    IN_MEMORY_RUNNING_JOBS.delete(job.id);
     return addAndPersistLog(job, envOverrides, "success", "AI Agent pipeline đã hoàn tất trên máy local.");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Agent tạo video thất bại.";
     const failedStage = findRunningStage(job)?.id;
     if (failedStage) job = markStage(job, failedStage, "failed", envOverrides, job.progress, message);
     job = updateJob(job.id, envOverrides, { status: "failed", error: message, currentStep: "Lỗi", progress: Math.max(job.progress, 1) });
+    IN_MEMORY_RUNNING_JOBS.delete(job.id);
     return addAndPersistLog(job, envOverrides, "error", message, failedStage);
   }
 }
@@ -620,6 +625,34 @@ function readJobs(envOverrides: RuntimeEnvValues = {}): AgentVideoJob[] {
   } catch {
     return [];
   }
+}
+
+function reconcilePersistedJobs(jobs: AgentVideoJob[], envOverrides: RuntimeEnvValues) {
+  const now = Date.now();
+  let changed = false;
+  const next = jobs.map((job) => {
+    if (job.status !== "running" || IN_MEMORY_RUNNING_JOBS.has(job.id) || now - (job.updatedAtMs || job.createdAtMs || 0) < STALE_RUNNING_JOB_MS) return job;
+    changed = true;
+    const runningStage = findRunningStage(job)?.id;
+    const message = "Job đang chạy bị gián đoạn hoặc stale sau khi app/server restart. Hãy chạy lại job nếu cần.";
+    return {
+      ...job,
+      status: "failed",
+      error: message,
+      currentStep: "Lỗi",
+      updatedAtMs: now,
+      steps: (job.steps?.length ? job.steps : createWorkflowSteps()).map((step) => step.status === "running" ? {
+        ...step,
+        status: "failed",
+        message,
+        updatedAtMs: now,
+        completedAtMs: now,
+      } : step),
+      logs: [{ id: crypto.randomUUID(), atMs: now, stageId: runningStage, level: "error", message }, ...(job.logs || [])].slice(0, MAX_LOGS),
+    } as AgentVideoJob;
+  });
+  if (changed) writeJobs(next, envOverrides);
+  return next;
 }
 
 function writeJobs(jobs: AgentVideoJob[], envOverrides: RuntimeEnvValues = {}) {

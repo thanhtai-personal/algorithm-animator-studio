@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
     proxy: {
-      "/api": { target: "http://localhost:5050", changeOrigin: true },
+      "/api": { target: "http://localhost:5050", changeOrigin: true, ws: true },
       "/generated": { target: "http://localhost:5050", changeOrigin: true },
       "/generated-previews": { target: "http://localhost:5050", changeOrigin: true },
       "/generated-videos": { target: "http://localhost:5050", changeOrigin: true },

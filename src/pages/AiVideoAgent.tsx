@@ -31,7 +31,6 @@ import { AgentFlowGraph } from "@/features/ai-video-agent/components/AgentFlowGr
 import { AgentSettingsForm } from "@/features/ai-video-agent/components/AgentSettingsForm";
 import { AgentSelectedChannelVideos } from "@/features/ai-video-agent/components/AgentSelectedChannelVideos";
 import { channelsFromKeys, getAgentPublishChannelOptions, getPreferredChannelKeys, type AgentPublishChannelOption } from "@/features/ai-video-agent/lib/publishChannelOptions";
-
 const DEFAULT_FORM: AgentVideoForm = {
   topic: "Bubble Sort explained visually",
   kind: "algorithm",
@@ -157,10 +156,7 @@ export default function AiVideoAgent() {
     setSelectedPublishChannelKeys((current) => current.length ? current : getPreferredChannelKeys(options, form.publishTargets || ["youtube"]));
   }, []);
 
-  useEffect(() => openBackgroundJobsSocket((snapshot) => {
-    setJobs(snapshot.agentJobs);
-  }), []);
-
+  useEffect(() => openBackgroundJobsSocket((snapshot) => setJobs(snapshot.agentJobs)), []);
   useEffect(() => {
     const agentBusy = jobs.some((job) => job.status === "running" || job.status === "queued");
     const publishBusy = publishJobs.some((job) => job.status === "running" || job.status === "queued" || job.status === "scheduled");
@@ -168,7 +164,6 @@ export default function AiVideoAgent() {
     const timer = window.setInterval(agentBusy ? refresh : refreshPublishJobs, agentBusy ? 30000 : 15000);
     return () => window.clearInterval(timer);
   }, [jobs, publishJobs]);
-
   async function refresh() {
     if (refreshInFlightRef.current) return;
     refreshInFlightRef.current = true;
@@ -176,12 +171,10 @@ export default function AiVideoAgent() {
       const [nextJobs, nextPublishJobs] = await Promise.all([listAgentVideoJobs(), getPublishJobs()]);
       setJobs(nextJobs);
       setPublishJobs(nextPublishJobs);
-    } catch { /* ignore polling noise */ }
-    finally {
+    } catch { /* ignore polling noise */ } finally {
       refreshInFlightRef.current = false;
     }
   }
-
   async function refreshPublishJobs() {
     try {
       setPublishJobs(await getPublishJobs());

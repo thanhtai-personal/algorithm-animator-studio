@@ -30,6 +30,7 @@ import { generateVideoFromAudio } from "./VideoService";
 import { createGradientPng } from "../utils/simplePng";
 import { createPublishJob } from "./PublishQueueService";
 import { notifyBackgroundJobsChanged } from "./BackgroundJobsRealtimeService";
+import { listGeneratedVideos, resolveGeneratedVideoPath } from "../utils/videoOutput";
 
 const JOBS_FILE_NAME = "ai-video-agent-jobs.json";
 const MAX_JOBS = 200;
@@ -189,16 +190,16 @@ export async function runAgentVideoJob(id: string, envOverrides: RuntimeEnvValue
       });
     });
 
-    const backgroundPath = await createAgentBackground(job);
+    const background = await createAgentBackground(job, envOverrides);
     job = await runStage(job, "render", envOverrides, 78, "Đang render MP4 bằng FFmpeg local...", async (current) => {
       if (!current.artifacts?.audioRelativePath) throw new Error("Thiếu audio để render video.");
       const audioPath = path.resolve(getGeneratedAudioPath(current.artifacts.audioRelativePath, envOverrides));
       const video = await generateVideoFromAudio({
         audioPath,
-        imagePath: backgroundPath,
+        imagePath: background.path,
         options: {
           aspectRatio: current.input.platform === "youtube-long" ? "16:9" : "9:16",
-          backgroundType: "image",
+          backgroundType: background.type,
           fitMode: "cover",
           videoFileName: sanitizeFileBaseName(current.plan?.title || current.input.topic),
           backgroundMusicVolume: 0,
@@ -208,7 +209,7 @@ export async function runAgentVideoJob(id: string, envOverrides: RuntimeEnvValue
         },
         envOverrides,
       });
-      fs.rm(backgroundPath, { force: true }, () => undefined);
+      if (background.temporary) fs.rm(background.path, { force: true }, () => undefined);
       return updateJob(current.id, envOverrides, {
         artifacts: { ...current.artifacts, videoRelativePath: video.relativePath, videoUrl: video.videoUrl },
       });
@@ -559,14 +560,44 @@ async function createNarrationAudio(job: AgentVideoJob, text: string, envOverrid
   return generateAudioFile(request, envOverrides);
 }
 
-async function createAgentBackground(job: AgentVideoJob) {
+async function createAgentBackground(job: AgentVideoJob, envOverrides: RuntimeEnvValues) {
+  const fallbackVideo = findFallbackBackgroundVideo(job, envOverrides);
+  if (fallbackVideo) return fallbackVideo;
+
   const portrait = job.input.platform !== "youtube-long";
   const width = portrait ? 1080 : 1920;
   const height = portrait ? 1920 : 1080;
   const outputPath = path.join(os.tmpdir(), `kai-agent-bg-${job.id}.png`);
   const png = createGradientPng(width, height, job.input.topic);
   await fs.promises.writeFile(outputPath, png);
-  return outputPath;
+  return { path: outputPath, type: "image" as const, temporary: true };
+}
+
+function findFallbackBackgroundVideo(job: AgentVideoJob, envOverrides: RuntimeEnvValues) {
+  const videos = listGeneratedVideos(envOverrides)
+    .filter((video) => !video.relativePath.includes(job.id))
+    .map((video) => ({ video, score: scoreFallbackVideo(video.fileName, job) }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || b.video.createdAtMs - a.video.createdAtMs);
+  const selected = videos[0]?.video;
+  if (!selected) return null;
+  const resolved = resolveGeneratedVideoPath(selected.relativePath, envOverrides);
+  if (!fs.existsSync(resolved.absolutePath)) return null;
+  return { path: resolved.absolutePath, type: "video" as const, temporary: false };
+}
+
+function scoreFallbackVideo(fileName: string, job: AgentVideoJob) {
+  const haystack = `${fileName} ${job.input.agentPreset} ${job.input.kind} ${job.input.topic}`.toLowerCase();
+  const keywords = fallbackVideoKeywords(job);
+  return keywords.reduce((score, keyword) => score + (haystack.includes(keyword) ? 1 : 0), 0);
+}
+
+function fallbackVideoKeywords(job: AgentVideoJob) {
+  if (job.input.agentPreset === "maze-pathfinding") return ["maze", "path", "pathfinding", "me-cung", "mê-cung"];
+  if (job.input.agentPreset === "mu-news" || job.input.kind === "football") return ["mu", "manchester", "football", "bong-da", "bóng-đá", "news"];
+  if (job.input.kind === "story") return ["story", "truyen", "truyện", "review", "chapter"];
+  if (job.input.kind === "algorithm") return ["algorithm", "sort", "bubble", "maze", "pathfinding", "thuat-toan", "thuật-toán"];
+  return ["agent", "video", "remotion"];
 }
 
 function createPublishJobsForAgent(job: AgentVideoJob, envOverrides: RuntimeEnvValues) {

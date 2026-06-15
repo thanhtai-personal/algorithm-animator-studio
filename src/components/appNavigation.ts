@@ -11,6 +11,7 @@ import {
   Sparkles,
   Video,
   Youtube,
+  Download,
   Bot,
   type LucideIcon,
 } from "lucide-react";
@@ -133,6 +134,13 @@ export const APP_NAVIGATION_GROUPS: AppNavigationGroup[] = [
         icon: Film,
         label: { en: "Video Create", vi: "Tạo/chỉnh video" },
         matchPaths: ["/video-create"],
+      },
+      {
+        id: "youtube-tools",
+        to: "/youtube-tools",
+        icon: Download,
+        label: { en: "YouTube Tools", vi: "Tải YouTube" },
+        matchPaths: ["/youtube-tools"],
       },
     ],
   },

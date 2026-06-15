@@ -28,6 +28,7 @@ const StoryAuthorStudio = lazy(() => import("./pages/StoryAuthorStudio.tsx"));
 const StoryReviewStudio = lazy(() => import("./pages/StoryReviewStudio.tsx"));
 const StoryVideoStudio = lazy(() => import("./pages/StoryVideoStudio.tsx"));
 const YoutubePublishing = lazy(() => import("./pages/YoutubePublishing.tsx"));
+const YoutubeTools = lazy(() => import("./pages/YoutubeTools.tsx"));
 const VideoCreate = lazy(() => import("./pages/VideoCreate.tsx"));
 
 function shouldUseVercelAnalytics() {
@@ -98,6 +99,7 @@ const App = () => (
                 <Route path="/text-to-speech" element={<TextToSpeech />} />
                 <Route path="/ai-video-agent" element={<AiVideoAgent />} />
                 <Route path="/video-create" element={<VideoCreate />} />
+                <Route path="/youtube-tools" element={<YoutubeTools />} />
                 <Route path="/channel" element={<YoutubePublishing />} />
                 <Route path="/social-publishing" element={<LegacyChannelRedirect />} />
                 <Route path="/youtube-publishing" element={<LegacyChannelRedirect />} />

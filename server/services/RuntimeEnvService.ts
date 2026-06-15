@@ -50,7 +50,7 @@ function normalizeRuntimePaths(env: RuntimeEnvValues): RuntimeEnvValues {
     }
   }
 
-  for (const key of ["PIPER_EXE", "FFMPEG_EXE", "FFPROBE_EXE", "RVC_APPLIO_PYTHON", "VIENEU_PYTHON"]) {
+  for (const key of ["PIPER_EXE", "FFMPEG_EXE", "FFPROBE_EXE", "RVC_APPLIO_PYTHON", "VIENEU_PYTHON", "YOUTUBE_TOOLS_PYTHON", "YOUTUBE_DLP_EXE", "WHISPER_EXE"]) {
     if (normalized[key]) {
       normalized[key] = resolveRuntimeExecutable(normalized[key]);
     }

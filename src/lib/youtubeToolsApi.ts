@@ -17,6 +17,10 @@ export type YoutubeToolsHealth = {
   whisper: YoutubeToolStatus;
   ffmpeg: YoutubeToolStatus;
   ffprobe: YoutubeToolStatus;
+  cookieMode: "file" | "browser" | "none";
+  cookieStatus: YoutubeToolStatus;
+  jsRuntime: YoutubeToolStatus;
+  remoteComponents: YoutubeToolStatus;
   outputDir: string;
   installHint: string[];
 };

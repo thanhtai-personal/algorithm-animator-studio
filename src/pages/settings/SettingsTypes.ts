@@ -33,6 +33,10 @@ export type YoutubeToolsHealthResponse = {
   whisper: YoutubeToolStatusResponse;
   ffmpeg: YoutubeToolStatusResponse;
   ffprobe: YoutubeToolStatusResponse;
+  cookieMode: "file" | "browser" | "none";
+  cookieStatus: YoutubeToolStatusResponse;
+  jsRuntime: YoutubeToolStatusResponse;
+  remoteComponents: YoutubeToolStatusResponse;
   outputDir: string;
   installHint: string[];
 };
@@ -170,6 +174,7 @@ export type SettingsForm = Required<Pick<
   | "YOUTUBE_COOKIES_FROM_BROWSER"
   | "YOUTUBE_COOKIES_FILE"
   | "YOUTUBE_JS_RUNTIME"
+  | "YOUTUBE_REMOTE_COMPONENTS"
   | "YOUTUBE_TRANSCRIPT_MODEL"
   | "YOUTUBE_TRANSCRIPT_LANGUAGE"
 >>;
@@ -213,6 +218,7 @@ export const EMPTY_FORM: SettingsForm = {
   YOUTUBE_COOKIES_FROM_BROWSER: "",
   YOUTUBE_COOKIES_FILE: "",
   YOUTUBE_JS_RUNTIME: "",
+  YOUTUBE_REMOTE_COMPONENTS: "",
   YOUTUBE_TRANSCRIPT_MODEL: "",
   YOUTUBE_TRANSCRIPT_LANGUAGE: "",
 };

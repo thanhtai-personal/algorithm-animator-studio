@@ -23,6 +23,7 @@ import type {
 import { ensureDirectoryExists, getLocalDateFolderName, sanitizeFileBaseName } from "../utils/audioOutput";
 import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
 import { resolveRuntimeExecutable } from "./RuntimeEnvService";
+import { buildYtDlpRuntimeArgs, getYtDlpRuntimeStatus } from "./YoutubeToolsRuntimeOptions";
 
 const execFileAsync = promisify(execFile);
 const YOUTUBE_HOSTS = new Set(["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be"]);
@@ -44,6 +45,7 @@ export async function getYoutubeToolsHealth(envOverrides: RuntimeEnvValues = {})
   ]);
 
   const outputDir = getGeneratedVideoDir(env.SERVER_DATA_DIR);
+  const ytDlpRuntime = getYtDlpRuntimeStatus(env);
   return {
     ok: ytDlp.ok && whisper.ok && ffmpeg.ok && ffprobe.ok,
     python,
@@ -51,10 +53,13 @@ export async function getYoutubeToolsHealth(envOverrides: RuntimeEnvValues = {})
     whisper: toStatus(whisper),
     ffmpeg,
     ffprobe,
+    ...ytDlpRuntime,
     outputDir,
     installHint: [
       "python -m pip install -U yt-dlp openai-whisper",
       "Kiểm tra FFmpeg: ffmpeg -version",
+      "Nếu YouTube báo bot/429: dùng YOUTUBE_COOKIES_FILE hoặc YOUTUBE_COOKIES_FROM_BROWSER",
+      "Nếu YouTube báo n challenge: đặt YOUTUBE_JS_RUNTIME=node và YOUTUBE_REMOTE_COMPONENTS=ejs:github",
       "Nếu dùng Python venv riêng: đặt YOUTUBE_TOOLS_PYTHON=đường_dẫn_python.exe trong .env",
     ],
   };
@@ -153,7 +158,7 @@ async function downloadAudioForTranscript(urlValue: string, tempDir: string, env
   if (!ytDlp.ok) throw new Error(ytDlp.detail || "Chưa cài yt-dlp để tải audio tạm.");
   const before = snapshotFiles(tempDir);
   const outputTemplate = path.join(tempDir, "audio-%(id)s.%(ext)s");
-  const args = ["--no-playlist", "-x", "--audio-format", "mp3", "--audio-quality", "0", "-o", outputTemplate, ...ytDlpAuthArgs(env), ...ffmpegArgs(env), url];
+  const args = ["--no-playlist", "-x", "--audio-format", "mp3", "--audio-quality", "0", "-o", outputTemplate, ...buildYtDlpRuntimeArgs(env), ...ffmpegArgs(env), url];
   await runYtDlpCommand(ytDlp.command, [...ytDlp.prefixArgs, ...args], 60 * 60 * 1000);
   const audioPath = findNewestChangedFile(tempDir, before, AUDIO_EXTENSIONS);
   if (!audioPath) throw new Error("Không tải được audio tạm từ YouTube.");
@@ -167,7 +172,7 @@ function buildYtDlpDownloadArgs(params: {
   env: RuntimeEnvValues;
   url: string;
 }) {
-  const args = ["--no-playlist", "--newline", "-o", params.outputTemplate, ...ytDlpAuthArgs(params.env), ...ffmpegArgs(params.env)];
+  const args = ["--no-playlist", "--newline", "-o", params.outputTemplate, ...buildYtDlpRuntimeArgs(params.env), ...ffmpegArgs(params.env)];
   if (params.mode === "audio") {
     args.push("-x", "--audio-format", "mp3", "--audio-quality", "0");
   } else {
@@ -176,22 +181,6 @@ function buildYtDlpDownloadArgs(params: {
   }
   args.push(params.url);
   return args;
-}
-
-function ytDlpAuthArgs(env: RuntimeEnvValues) {
-  const args: string[] = [];
-  const jsRuntime = sanitizeYtDlpOption(env.YOUTUBE_JS_RUNTIME || "node");
-  const cookiesFromBrowser = sanitizeYtDlpOption(env.YOUTUBE_COOKIES_FROM_BROWSER || "");
-  const cookiesFile = env.YOUTUBE_COOKIES_FILE?.trim();
-  if (jsRuntime) args.push("--js-runtimes", jsRuntime);
-  if (cookiesFromBrowser) args.push("--cookies-from-browser", cookiesFromBrowser);
-  if (cookiesFile) args.push("--cookies", resolveRuntimeExecutable(cookiesFile));
-  return args;
-}
-
-function sanitizeYtDlpOption(value: string) {
-  const trimmed = value.trim();
-  return /^[\w.+:/\\-]+$/.test(trimmed) ? trimmed : "";
 }
 
 async function resolveYtDlp(env: RuntimeEnvValues): Promise<CommandSpec> {

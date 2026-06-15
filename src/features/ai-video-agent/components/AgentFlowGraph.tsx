@@ -45,7 +45,7 @@ type FlowSpecNode = {
   message?: string;
 };
 
-type FlowSpecEdge = { source: string; target: string; active?: boolean; skipped?: boolean; label?: string };
+type FlowSpecEdge = { source: string; target: string; active?: boolean; skipped?: boolean; label?: string; sourceHandle?: string; targetHandle?: string };
 
 const nodeTypes = { stageNode: StageNode };
 
@@ -86,6 +86,8 @@ export function AgentFlowGraph({
     id: `${edge.source}-${edge.target}`,
     source: edge.source,
     target: edge.target,
+    sourceHandle: edge.sourceHandle || "source-right",
+    targetHandle: edge.targetHandle || "target-left",
     animated: edge.active,
     className: edge.active ? "kai-agent-running-edge" : edge.skipped ? "kai-agent-skipped-edge" : undefined,
     label: edge.label,
@@ -195,20 +197,20 @@ function buildAgentFlow(job: AgentVideoJob | undefined, steps: AgentStep[], lang
   const active = (source: AgentWorkflowStageId, target?: AgentWorkflowStageId) => runningId === source || runningId === target;
   const edges: FlowSpecEdge[] = [
     { source: "research", target: "api-check", active: runningId === "research" },
-    { source: "api-check", target: "ai-plan", active: runningId === "research" && !fallback, skipped: fallback, label: vi ? "có" : "yes" },
-    { source: "api-check", target: "fallback-plan", active: runningId === "research" && fallback, skipped: hasApiKeyPath, label: vi ? "không" : "no" },
+    { source: "api-check", target: "ai-plan", active: runningId === "research" && !fallback, skipped: fallback, label: vi ? "có" : "yes", sourceHandle: "source-top", targetHandle: "target-left" },
+    { source: "api-check", target: "fallback-plan", active: runningId === "research" && fallback, skipped: hasApiKeyPath, label: vi ? "không" : "no", sourceHandle: "source-bottom", targetHandle: "target-left" },
     { source: "ai-plan", target: "strategy", active: hasApiKeyPath && active("research", "strategy"), skipped: fallback },
     { source: "fallback-plan", target: "strategy", active: fallback && active("research", "strategy"), skipped: hasApiKeyPath },
     { source: "strategy", target: "script", active: active("strategy", "script") },
-    { source: "script", target: "visuals", active: active("script", "visuals") },
-    { source: "visuals", target: "voice", active: active("visuals", "voice") },
-    { source: "voice", target: "render", active: active("voice", "render") },
-    { source: "render", target: "metadata", active: active("render", "metadata") },
+    { source: "script", target: "visuals", active: active("script", "visuals"), sourceHandle: "source-top", targetHandle: "target-left" },
+    { source: "visuals", target: "voice", active: active("visuals", "voice"), sourceHandle: "source-bottom", targetHandle: "target-top" },
+    { source: "voice", target: "render", active: active("voice", "render"), sourceHandle: "source-right", targetHandle: "target-bottom" },
+    { source: "render", target: "metadata", active: active("render", "metadata"), sourceHandle: "source-top", targetHandle: "target-left" },
     { source: "metadata", target: "publish-check", active: active("metadata", "publish") },
-    { source: "publish-check", target: "publish", active: autoPublish && runningId === "publish", skipped: !autoPublish, label: vi ? "bật" : "on" },
-    { source: "publish-check", target: "local-output", active: !autoPublish && runningId === "publish", skipped: autoPublish, label: vi ? "tắt" : "off" },
-    { source: "publish", target: "engage", active: autoPublish && active("publish", "engage"), skipped: !autoPublish },
-    { source: "local-output", target: "engage", active: !autoPublish && active("publish", "engage"), skipped: autoPublish },
+    { source: "publish-check", target: "publish", active: autoPublish && runningId === "publish", skipped: !autoPublish, label: vi ? "bật" : "on", sourceHandle: "source-top", targetHandle: "target-left" },
+    { source: "publish-check", target: "local-output", active: !autoPublish && runningId === "publish", skipped: autoPublish, label: vi ? "tắt" : "off", sourceHandle: "source-bottom", targetHandle: "target-left" },
+    { source: "publish", target: "engage", active: autoPublish && active("publish", "engage"), skipped: !autoPublish, sourceHandle: "source-right", targetHandle: "target-top" },
+    { source: "local-output", target: "engage", active: !autoPublish && active("publish", "engage"), skipped: autoPublish, sourceHandle: "source-right", targetHandle: "target-bottom" },
     { source: "engage", target: "monetize", active: active("engage", "monetize") },
   ];
   return { nodes, edges };
@@ -276,7 +278,9 @@ function StageNode({ data }: NodeProps<Node<StageNodeData>>) {
       running && "border-[var(--kai-agent-active)] bg-[var(--kai-agent-active-soft)] shadow-[0_0_24px_var(--kai-agent-active-glow)] ring-2 ring-[var(--kai-agent-active)]/30"
     )}>
       {running ? <div className="absolute inset-x-0 top-0 h-1 animate-pulse bg-[var(--kai-agent-active)] shadow-[0_0_14px_var(--kai-agent-active)]" /> : null}
-      <Handle type="target" position={Position.Left} className="!h-2 !w-2" />
+      <Handle id="target-left" type="target" position={Position.Left} className="!h-2 !w-2" />
+      <Handle id="target-top" type="target" position={Position.Top} className="!h-2 !w-2" />
+      <Handle id="target-bottom" type="target" position={Position.Bottom} className="!h-2 !w-2" />
       <div className="flex items-start gap-2">
         {condition ? <GitBranch className={cn("mt-0.5 h-4 w-4", skipped ? "text-[var(--kai-agent-skip)]" : "text-[var(--kai-agent-active)]")} /> : <StatusIcon status={data.status} />}
         <div className="min-w-0 flex-1">
@@ -292,7 +296,9 @@ function StageNode({ data }: NodeProps<Node<StageNodeData>>) {
         <span>{data.status}</span>
         <span>{data.logCount} logs</span>
       </div>
-      <Handle type="source" position={Position.Right} className="!h-2 !w-2" />
+      <Handle id="source-right" type="source" position={Position.Right} className="!h-2 !w-2" />
+      <Handle id="source-top" type="source" position={Position.Top} className="!h-2 !w-2" />
+      <Handle id="source-bottom" type="source" position={Position.Bottom} className="!h-2 !w-2" />
     </div>
   );
 }

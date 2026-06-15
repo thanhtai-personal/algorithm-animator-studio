@@ -28,15 +28,15 @@ const execFileAsync = promisify(execFile);
 const YOUTUBE_HOSTS = new Set(["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be"]);
 const VIDEO_EXTENSIONS = new Set([".mp4", ".mkv", ".webm", ".mov", ".m4v"]);
 const AUDIO_EXTENSIONS = new Set([".mp3", ".m4a", ".webm", ".opus", ".wav"]);
+const WHISPER_CLI_BRIDGE = "import sys; from whisper.transcribe import cli; sys.argv=['whisper']+sys.argv[1:]; cli()";
 
 type CommandSpec = { command: string; prefixArgs: string[]; label: string; ok: boolean; version?: string; detail?: string };
 type RunResult = { stdout: string; stderr: string; combined: string[] };
 
 export async function getYoutubeToolsHealth(envOverrides: RuntimeEnvValues = {}): Promise<YoutubeToolsHealth> {
   const env = readEnvValues(envOverrides);
-  const pythonCommand = resolveRuntimeExecutable(env.YOUTUBE_TOOLS_PYTHON || "python");
   const [python, ytDlp, whisper, ffmpeg, ffprobe] = await Promise.all([
-    checkCommand(pythonCommand, ["--version"]),
+    checkFirstPython(env),
     resolveYtDlp(env),
     resolveWhisper(env),
     checkCommand(resolveRuntimeExecutable(env.FFMPEG_EXE || FFMPEG_EXE), ["-version"]),
@@ -80,7 +80,7 @@ export async function downloadYoutubeVideo(
   const baseName = sanitizeFileBaseName(request.fileName || "youtube-video");
   const outputTemplate = path.join(outputDir, `${baseName}-${Date.now()}-%(id)s.%(ext)s`);
   const args = buildYtDlpDownloadArgs({ mode, maxHeight: request.maxHeight, outputTemplate, env, url });
-  const result = await runCommand(ytDlp.command, [...ytDlp.prefixArgs, ...args], 60 * 60 * 1000);
+  const result = await runYtDlpCommand(ytDlp.command, [...ytDlp.prefixArgs, ...args], 60 * 60 * 1000);
   const downloaded = findNewestChangedFile(outputDir, before, mode === "audio" ? AUDIO_EXTENSIONS : VIDEO_EXTENSIONS);
   if (!downloaded) throw new Error("Không tìm thấy file sau khi tải. Hãy kiểm tra log yt-dlp.");
 
@@ -153,8 +153,8 @@ async function downloadAudioForTranscript(urlValue: string, tempDir: string, env
   if (!ytDlp.ok) throw new Error(ytDlp.detail || "Chưa cài yt-dlp để tải audio tạm.");
   const before = snapshotFiles(tempDir);
   const outputTemplate = path.join(tempDir, "audio-%(id)s.%(ext)s");
-  const args = ["--no-playlist", "-x", "--audio-format", "mp3", "--audio-quality", "0", "-o", outputTemplate, ...ffmpegArgs(env), url];
-  await runCommand(ytDlp.command, [...ytDlp.prefixArgs, ...args], 60 * 60 * 1000);
+  const args = ["--no-playlist", "-x", "--audio-format", "mp3", "--audio-quality", "0", "-o", outputTemplate, ...ytDlpAuthArgs(env), ...ffmpegArgs(env), url];
+  await runYtDlpCommand(ytDlp.command, [...ytDlp.prefixArgs, ...args], 60 * 60 * 1000);
   const audioPath = findNewestChangedFile(tempDir, before, AUDIO_EXTENSIONS);
   if (!audioPath) throw new Error("Không tải được audio tạm từ YouTube.");
   return audioPath;
@@ -167,7 +167,7 @@ function buildYtDlpDownloadArgs(params: {
   env: RuntimeEnvValues;
   url: string;
 }) {
-  const args = ["--no-playlist", "--newline", "-o", params.outputTemplate, ...ffmpegArgs(params.env)];
+  const args = ["--no-playlist", "--newline", "-o", params.outputTemplate, ...ytDlpAuthArgs(params.env), ...ffmpegArgs(params.env)];
   if (params.mode === "audio") {
     args.push("-x", "--audio-format", "mp3", "--audio-quality", "0");
   } else {
@@ -178,20 +178,60 @@ function buildYtDlpDownloadArgs(params: {
   return args;
 }
 
+function ytDlpAuthArgs(env: RuntimeEnvValues) {
+  const args: string[] = [];
+  const jsRuntime = sanitizeYtDlpOption(env.YOUTUBE_JS_RUNTIME || "node");
+  const cookiesFromBrowser = sanitizeYtDlpOption(env.YOUTUBE_COOKIES_FROM_BROWSER || "");
+  const cookiesFile = env.YOUTUBE_COOKIES_FILE?.trim();
+  if (jsRuntime) args.push("--js-runtimes", jsRuntime);
+  if (cookiesFromBrowser) args.push("--cookies-from-browser", cookiesFromBrowser);
+  if (cookiesFile) args.push("--cookies", resolveRuntimeExecutable(cookiesFile));
+  return args;
+}
+
+function sanitizeYtDlpOption(value: string) {
+  const trimmed = value.trim();
+  return /^[\w.+:/\\-]+$/.test(trimmed) ? trimmed : "";
+}
+
 async function resolveYtDlp(env: RuntimeEnvValues): Promise<CommandSpec> {
-  const python = resolveRuntimeExecutable(env.YOUTUBE_TOOLS_PYTHON || "python");
-  const pythonModule = await checkCommand(python, ["-m", "yt_dlp", "--version"]);
-  if (pythonModule.ok) return { command: python, prefixArgs: ["-m", "yt_dlp"], label: `${python} -m yt_dlp`, ok: true, version: pythonModule.version };
+  const pythonChecks = [];
+  for (const python of getPythonCandidates(env)) {
+    const pythonModule = await checkCommand(python, ["-m", "yt_dlp", "--version"]);
+    pythonChecks.push(pythonModule.detail);
+    if (pythonModule.ok) return { command: python, prefixArgs: ["-m", "yt_dlp"], label: `${python} -m yt_dlp`, ok: true, version: pythonModule.version };
+  }
   const binary = await checkCommand(resolveRuntimeExecutable(env.YOUTUBE_DLP_EXE || "yt-dlp"), ["--version"]);
-  return { command: resolveRuntimeExecutable(env.YOUTUBE_DLP_EXE || "yt-dlp"), prefixArgs: [], label: "yt-dlp", ok: binary.ok, version: binary.version, detail: binary.detail || pythonModule.detail };
+  return { command: resolveRuntimeExecutable(env.YOUTUBE_DLP_EXE || "yt-dlp"), prefixArgs: [], label: "yt-dlp", ok: binary.ok, version: binary.version, detail: binary.detail || pythonChecks.find(Boolean) };
 }
 
 async function resolveWhisper(env: RuntimeEnvValues): Promise<CommandSpec> {
-  const python = resolveRuntimeExecutable(env.YOUTUBE_TOOLS_PYTHON || "python");
-  const pythonModule = await checkCommand(python, ["-m", "whisper", "--help"]);
-  if (pythonModule.ok) return { command: python, prefixArgs: ["-m", "whisper"], label: `${python} -m whisper`, ok: true, version: pythonModule.version || "OK" };
+  const pythonChecks = [];
+  for (const python of getPythonCandidates(env)) {
+    const pythonModule = await checkCommand(python, ["-m", "whisper", "--help"]);
+    if (pythonModule.ok) return { command: python, prefixArgs: ["-m", "whisper"], label: `${python} -m whisper`, ok: true, version: pythonModule.version || "OK" };
+    pythonChecks.push(pythonModule.detail);
+    const pythonImport = await checkCommand(python, ["-c", "import whisper; from whisper.transcribe import cli; print(getattr(whisper, '__version__', 'OK'))"]);
+    if (pythonImport.ok) return { command: python, prefixArgs: ["-c", WHISPER_CLI_BRIDGE], label: `${python} openai-whisper`, ok: true, version: pythonImport.version || "OK" };
+    pythonChecks.push(pythonImport.detail);
+  }
   const binary = await checkCommand(resolveRuntimeExecutable(env.WHISPER_EXE || "whisper"), ["--help"]);
-  return { command: resolveRuntimeExecutable(env.WHISPER_EXE || "whisper"), prefixArgs: [], label: "whisper", ok: binary.ok, version: binary.version || "OK", detail: binary.detail || pythonModule.detail };
+  return { command: resolveRuntimeExecutable(env.WHISPER_EXE || "whisper"), prefixArgs: [], label: "whisper", ok: binary.ok, version: binary.version || "OK", detail: binary.detail || pythonChecks.find(Boolean) };
+}
+
+async function checkFirstPython(env: RuntimeEnvValues) {
+  let lastStatus: YoutubeToolStatus | undefined;
+  for (const python of getPythonCandidates(env)) {
+    const status = await checkCommand(python, ["--version"]);
+    if (status.ok) return status;
+    lastStatus = status;
+  }
+  return lastStatus || checkCommand("python", ["--version"]);
+}
+
+function getPythonCandidates(env: RuntimeEnvValues) {
+  const configured = resolveRuntimeExecutable(env.YOUTUBE_TOOLS_PYTHON || "python");
+  return configured === "python" ? ["python", "python3", "py"] : [configured];
 }
 
 async function checkCommand(command: string, args: string[]): Promise<YoutubeToolStatus> {
@@ -235,6 +275,29 @@ function runCommand(command: string, args: string[], timeoutMs: number): Promise
       else reject(new Error(tail(chunks).join("\n") || `${command} exited with code ${code}`));
     });
   });
+}
+
+async function runYtDlpCommand(command: string, args: string[], timeoutMs: number) {
+  try {
+    return await runCommand(command, args, timeoutMs);
+  } catch (error) {
+    throw new Error(toYtDlpUserMessage(toErrorMessage(error)));
+  }
+}
+
+function toYtDlpUserMessage(message: string) {
+  const normalized = message.toLowerCase();
+  if (normalized.includes("sign in to confirm") || normalized.includes("not a bot") || normalized.includes("http error 429")) {
+    return [
+      "YouTube đang chặn tải tự động hoặc yêu cầu xác thực.",
+      "Vào Settings > Data, cấu hình YOUTUBE_COOKIES_FROM_BROWSER=chrome hoặc edge/firefox, hoặc chọn file cookies.txt cho YOUTUBE_COOKIES_FILE rồi thử lại.",
+      "Nếu vẫn bị cảnh báo JavaScript runtime, giữ YOUTUBE_JS_RUNTIME=node và cài Node/Deno trong môi trường backend.",
+    ].join(" ");
+  }
+  if (normalized.includes("no supported javascript runtime")) {
+    return "yt-dlp cần JavaScript runtime để đọc YouTube. Vào Settings > Data và đặt YOUTUBE_JS_RUNTIME=node hoặc deno, sau đó thử lại.";
+  }
+  return message;
 }
 
 function normalizeYoutubeUrl(value: string) {

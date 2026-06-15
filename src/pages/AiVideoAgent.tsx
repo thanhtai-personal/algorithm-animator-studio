@@ -318,7 +318,7 @@ export default function AiVideoAgent() {
 
       <div className={settingsOpen ? "grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]" : "grid gap-4 xl:grid-cols-[minmax(0,1fr)_64px]"}>
         <section className="min-w-0 space-y-4">
-          <AgentFlowGraph job={activeJob} lang={lang} selectedStageId={selectedStageId} onSelectStage={setSelectedStageId} />
+          <AgentFlowGraph job={fullAgentRunning ? activeJob : undefined} draftInput={form} lang={lang} selectedStageId={selectedStageId} onSelectStage={setSelectedStageId} />
           <Tabs defaultValue="logs" className="space-y-4">
           <TabsList className="grid w-full grid-cols-5"><TabsTrigger value="plan">Plan</TabsTrigger><TabsTrigger value="latest">Live job</TabsTrigger><TabsTrigger value="queue">Queue</TabsTrigger><TabsTrigger value="logs">Logs</TabsTrigger><TabsTrigger value="history">History</TabsTrigger></TabsList>
           <TabsContent value="plan"><PlanCard plan={plan || latestJob?.plan || null} lang={lang} /></TabsContent>

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { usePersistedFlowLayout } from "@/features/ai-video-agent/hooks/usePersistedFlowLayout";
-import type { AgentVideoJob, AgentWorkflowStageId } from "@/lib/aiVideoAgentApi";
+import type { AgentVideoForm, AgentVideoJob, AgentWorkflowStageId } from "@/lib/aiVideoAgentApi";
 import { text, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -43,11 +43,13 @@ const nodeTypes = { stageNode: StageNode };
 
 export function AgentFlowGraph({
   job,
+  draftInput,
   lang,
   selectedStageId,
   onSelectStage,
 }: {
   job?: AgentVideoJob;
+  draftInput?: AgentVideoForm;
   lang: Lang;
   selectedStageId: AgentWorkflowStageId | "all";
   onSelectStage: (stageId: AgentWorkflowStageId | "all") => void;
@@ -55,9 +57,10 @@ export function AgentFlowGraph({
   const [mode, setMode] = useState<FlowMode>("process");
   const steps = job?.steps?.length ? job.steps : fallbackSteps();
   const logs = job?.logs || [];
-  const layoutKey = `${job?.input?.agentPreset || "custom"}:${mode}`;
+  const flowInput = job?.input || draftInput;
+  const layoutKey = `${flowInput?.agentPreset || flowInput?.kind || "custom"}:${mode}`;
   const { dirty, positions, resetLayout, saveLayout, setNodePosition } = usePersistedFlowLayout(layoutKey);
-  const flow = useMemo(() => buildAgentFlow(job, steps, lang, mode), [job, steps, lang, mode]);
+  const flow = useMemo(() => buildAgentFlow(job, steps, lang, mode, draftInput), [job, steps, lang, mode, draftInput]);
   const nodes = useMemo<Node<StageNodeData>[]>(() => flow.nodes.map((node) => {
     const step = node.stageId ? steps.find((item) => item.id === node.stageId) : undefined;
     const status = node.status || step?.status || "pending";
@@ -155,7 +158,7 @@ export function AgentFlowGraph({
             @keyframes kai-agent-flow-dash { from { stroke-dashoffset: 20; } to { stroke-dashoffset: 0; } }
           `}</style>
           <ReactFlow
-            key={`${mode}-${job?.id || "empty"}-${job?.updatedAtMs || 0}-${runningStep?.id || "idle"}-${job?.input?.agentPreset || "custom"}`}
+            key={`${mode}-${job?.id || "empty"}-${job?.updatedAtMs || 0}-${runningStep?.id || "idle"}-${flowInput?.agentPreset || flowInput?.kind || "custom"}`}
             nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
@@ -183,15 +186,16 @@ export function AgentFlowGraph({
   );
 }
 
-function buildAgentFlow(job: AgentVideoJob | undefined, steps: AgentStep[], lang: Lang, mode: FlowMode) {
-  if (mode === "data") return buildAgentDataFlow(job, steps, lang);
+function buildAgentFlow(job: AgentVideoJob | undefined, steps: AgentStep[], lang: Lang, mode: FlowMode, draftInput?: AgentVideoForm) {
+  const input = job?.input || draftInput;
+  if (mode === "data") return buildAgentDataFlow(job, steps, lang, draftInput);
   const vi = lang === "vi";
-  const labels = getAgentLabels(job?.input?.agentPreset || "custom", vi);
+  const labels = getAgentLabels(input?.agentPreset || input?.kind || "custom", vi);
   const hasPlan = Boolean(job?.plan);
   const fallback = Boolean(job?.plan?.warning);
   const hasApiKeyPath = hasPlan && !fallback;
   const publishStep = steps.find((step) => step.id === "publish");
-  const autoPublish = Boolean(job?.input?.autoCreatePublishJobs);
+  const autoPublish = Boolean(input?.autoCreatePublishJobs);
   const runningId = steps.find((step) => step.status === "running")?.id;
   const node = (id: string, label: string, x: number, y: number, stageId?: AgentWorkflowStageId, extra?: Partial<FlowSpecNode>): FlowSpecNode => ({ id, label, x, y, stageId, ...extra });
   const nodes: FlowSpecNode[] = [
@@ -237,9 +241,10 @@ function buildAgentFlow(job: AgentVideoJob | undefined, steps: AgentStep[], lang
   return { nodes, edges };
 }
 
-function buildAgentDataFlow(job: AgentVideoJob | undefined, steps: AgentStep[], lang: Lang) {
+function buildAgentDataFlow(job: AgentVideoJob | undefined, steps: AgentStep[], lang: Lang, draftInput?: AgentVideoForm) {
   const vi = lang === "vi", runningId = steps.find((step) => step.status === "running")?.id;
-  const fallback = Boolean(job?.plan?.warning), autoPublish = Boolean(job?.input?.autoCreatePublishJobs), hasApiKeyPath = Boolean(job?.plan && !fallback);
+  const fallback = Boolean(job?.plan?.warning), autoPublish = Boolean((job?.input || draftInput)?.autoCreatePublishJobs), hasApiKeyPath = Boolean(job?.plan && !fallback);
+  const labels = getAgentLabels(job?.input?.agentPreset || draftInput?.agentPreset || draftInput?.kind || "custom", vi);
   const n = (id: string, label: string, x: number, y: number, stageId?: AgentWorkflowStageId, extra?: Partial<FlowSpecNode>): FlowSpecNode => ({ id, label, x, y, stageId, kind: "data", ...extra });
   const active = (source: AgentWorkflowStageId, target?: AgentWorkflowStageId) => runningId === source || runningId === target;
   return {
@@ -250,8 +255,8 @@ function buildAgentDataFlow(job: AgentVideoJob | undefined, steps: AgentStep[], 
       n("ai-provider", vi ? "AI provider" : "AI provider", 620, 20, "research", { kind: "external", status: hasApiKeyPath ? "done" : fallback ? "skipped" : "pending", message: vi ? "Nhận prompt, trả plan." : "Receives prompt, returns plan." }),
       n("fallback-store", vi ? "Fallback templates" : "Fallback templates", 620, 430, "research", { kind: "store", status: fallback ? "done" : hasApiKeyPath ? "skipped" : "pending", message: vi ? "Dữ liệu local của agent." : "Local agent data." }),
       n("plan-store", vi ? "Plan JSON" : "Plan JSON", 980, 230, "strategy", { kind: "store" }),
-      n("script-process", vi ? "Tạo script" : "Script process", 1340, 110, "script"),
-      n("asset-process", vi ? "Tạo asset" : "Asset process", 1340, 350, "visuals"),
+      n("script-process", labels.script, 1340, 110, "script"),
+      n("asset-process", labels.visuals, 1340, 350, "visuals"),
       n("script-store", vi ? "Script + scene cues" : "Script + scene cues", 1700, 110, "script", { kind: "store" }),
       n("asset-store", vi ? "Visual assets" : "Visual assets", 1700, 350, "visuals", { kind: "store" }),
       n("voice-process", vi ? "Sinh voice" : "Voice process", 2060, 110, "voice"),
@@ -390,10 +395,6 @@ function StatusIcon({ status }: { status: string }) {
   return <Circle className="mt-0.5 h-4 w-4 text-muted-foreground" />;
 }
 
-function fallbackSteps() { return ["Research", "Strategy", "Script", "Visual", "Voice", "Render", "Metadata", "Publish", "Engage", "Monetize"].map((label, index) => ({
-    id: ["research", "strategy", "script", "visuals", "voice", "render", "metadata", "publish", "engage", "monetize"][index] as AgentWorkflowStageId,
-    label,
-    status: "pending",
-    progress: 0,
-    message: "",
-  })); }
+function fallbackSteps() { const ids = ["research", "strategy", "script", "visuals", "voice", "render", "metadata", "publish", "engage", "monetize"] as AgentWorkflowStageId[];
+  return ["Research", "Strategy", "Script", "Visual", "Voice", "Render", "Metadata", "Publish", "Engage", "Monetize"].map((label, index) => ({ id: ids[index], label, status: "pending", progress: 0, message: "" }));
+}

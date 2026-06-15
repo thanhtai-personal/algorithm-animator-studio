@@ -160,7 +160,12 @@ function AssetList(props: {
           <h2 className="font-semibold">{props.kind === "audio" ? text(props.lang, "Voice files", "File voice") : text(props.lang, "Video files", "File video")}</h2>
           <p className="text-xs text-muted-foreground">{props.loading ? text(props.lang, "Loading...", "Đang tải...") : text(props.lang, `${props.items.length} generated file(s).`, `${props.items.length} file đã tạo.`)}</p>
         </div>
-        <Button variant="destructive" disabled={!props.items.length || props.busyKey === `${props.kind}:all`} onClick={() => props.onDeleteAll(props.kind)}>
+        <Button
+          variant="destructive"
+          disabled={!props.items.length || props.busyKey === `${props.kind}:all`}
+          title={text(props.lang, "Delete all unlocked media", "Xóa tất cả các media không khóa")}
+          onClick={() => props.onDeleteAll(props.kind)}
+        >
           <Trash2 className="mr-2 h-4 w-4" /> {text(props.lang, `Delete all ${label}`, `Xóa toàn bộ ${label}`)}
         </Button>
       </div>

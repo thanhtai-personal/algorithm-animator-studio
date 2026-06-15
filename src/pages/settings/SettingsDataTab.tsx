@@ -1,5 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { t, type Lang } from "@/lib/i18n";
+import { text } from "@/lib/i18n";
 import { PathInput } from "./SettingsFields";
 import type { SettingsForm, SettingsFormKey } from "./SettingsTypes";
 
@@ -44,7 +47,38 @@ export function SettingsDataTab(props: SettingsDataTabProps) {
           onSelect={() => props.onSelectPath("directory", "MUSIC_LIBRARY_DIR", t(props.lang, "settingsSelectMusicLibraryFolder"))}
           onOpen={() => props.onOpenPath(props.form.MUSIC_LIBRARY_DIR)}
         />
+        <div className="rounded-lg border p-4">
+          <h3 className="font-semibold">{text(props.lang, "YouTube download", "Tải YouTube")}</h3>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <TextInput id="youtube-cookies-browser" label="YOUTUBE_COOKIES_FROM_BROWSER" description={text(props.lang, "Use browser cookies when YouTube asks to sign in. Example: chrome, edge, firefox.", "Dùng cookie trình duyệt khi YouTube yêu cầu đăng nhập. Ví dụ: chrome, edge, firefox.")} value={props.form.YOUTUBE_COOKIES_FROM_BROWSER} placeholder="chrome" onChange={(value) => props.onUpdateField("YOUTUBE_COOKIES_FROM_BROWSER", value)} />
+            <TextInput id="youtube-js-runtime" label="YOUTUBE_JS_RUNTIME" description={text(props.lang, "JavaScript runtime for yt-dlp extraction. Default: node.", "JavaScript runtime cho yt-dlp khi đọc YouTube. Mặc định: node.")} value={props.form.YOUTUBE_JS_RUNTIME} placeholder="node" onChange={(value) => props.onUpdateField("YOUTUBE_JS_RUNTIME", value)} />
+          </div>
+          <div className="mt-4">
+            <PathInput
+              id="youtube-cookies-file"
+              label="YOUTUBE_COOKIES_FILE"
+              description={text(props.lang, "Optional cookies.txt exported from browser when cookies-from-browser cannot be used.", "File cookies.txt export từ trình duyệt, dùng khi không dùng được cookies-from-browser.")}
+              lang={props.lang}
+              value={props.form.YOUTUBE_COOKIES_FILE}
+              placeholder="C:/Users/.../youtube-cookies.txt"
+              busy={props.selecting === "YOUTUBE_COOKIES_FILE"}
+              onChange={(value) => props.onUpdateField("YOUTUBE_COOKIES_FILE", value)}
+              onSelect={() => props.onSelectPath("file", "YOUTUBE_COOKIES_FILE", text(props.lang, "Select YouTube cookies.txt", "Chọn file cookies.txt YouTube"))}
+              onOpen={() => props.onOpenPath(props.form.YOUTUBE_COOKIES_FILE)}
+            />
+          </div>
+        </div>
       </CardContent>
     </Card>
+  );
+}
+
+function TextInput(props: { id: string; label: string; description: string; value: string; placeholder: string; onChange: (value: string) => void }) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={props.id}>{props.label}</Label>
+      <p className="text-sm text-muted-foreground">{props.description}</p>
+      <Input id={props.id} value={props.value} placeholder={props.placeholder} onChange={(event) => props.onChange(event.target.value)} />
+    </div>
   );
 }

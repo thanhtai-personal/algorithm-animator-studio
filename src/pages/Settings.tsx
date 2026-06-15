@@ -219,6 +219,7 @@ export default function Settings() {
           <TabsContent value="voice" className="mt-0">
             <SettingsVoiceTab
               applioTemplates={applioTemplates}
+              form={form}
               lang={lang}
               selecting={selecting}
               voiceRows={voiceRows}

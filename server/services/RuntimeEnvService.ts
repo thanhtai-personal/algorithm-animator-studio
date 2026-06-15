@@ -60,6 +60,10 @@ function normalizeRuntimePaths(env: RuntimeEnvValues): RuntimeEnvValues {
     normalized.VIENEU_REFERENCE_AUDIO = resolveRuntimePath(normalized.VIENEU_REFERENCE_AUDIO, getWritableRelativeRoot());
   }
 
+  if (normalized.YOUTUBE_COOKIES_FILE && looksLikePath(normalized.YOUTUBE_COOKIES_FILE)) {
+    normalized.YOUTUBE_COOKIES_FILE = resolveRuntimePath(normalized.YOUTUBE_COOKIES_FILE, getWritableRelativeRoot());
+  }
+
   return normalized;
 }
 

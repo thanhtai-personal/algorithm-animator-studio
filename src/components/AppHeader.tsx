@@ -144,7 +144,6 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
               onClick={requestChillPlayback}
             >
               <Play className="h-4 w-4" />
-              <span className="hidden lg:inline">Chill</span>
             </Button>
           </div>
           <Select value={lang} onValueChange={(value) => changeLanguage(value as Lang)}>

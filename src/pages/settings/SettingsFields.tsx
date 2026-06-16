@@ -11,7 +11,7 @@ export type VoiceRow = { id: string; label: string };
 type PathInputProps = {
   id: string;
   label: string;
-  description: string;
+  description?: string;
   value: string;
   placeholder: string;
   busy: boolean;
@@ -25,7 +25,7 @@ export function PathInput({ id, label, description, value, placeholder, busy, la
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
-      <p className="text-sm text-muted-foreground">{description}</p>
+      {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
       <div className="flex flex-col gap-2 md:flex-row">
         <Input id={id} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} />
         <Button type="button" variant="outline" onClick={onSelect} disabled={busy}>

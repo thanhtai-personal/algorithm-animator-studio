@@ -24,54 +24,38 @@ export const DEFAULT_MENU_FEATURE_SETTINGS: MenuFeatureSettings = {
   channel: false,
 };
 
-export const MENU_FEATURE_LABELS: Record<MenuFeatureId, { en: string; vi: string; descriptionEn: string; descriptionVi: string }> = {
+export const MENU_FEATURE_LABELS: Record<MenuFeatureId, { en: string; vi: string }> = {
   "algorithm-shorts": {
     en: "Algorithm Shorts",
     vi: "Short thuật toán",
-    descriptionEn: "Short-form algorithm video studio.",
-    descriptionVi: "Màn hình sản xuất video ngắn thuật toán.",
   },
   "maze-pathfinding": {
     en: "Maze Pathfinding",
     vi: "Tìm đường mê cung",
-    descriptionEn: "Maze/pathfinding race content studio.",
-    descriptionVi: "Màn hình sản xuất nội dung đua tìm đường mê cung.",
   },
   "algorithm-long": {
     en: "Algorithm Long",
     vi: "Video thuật toán dài",
-    descriptionEn: "Long-form algorithm explainer studio.",
-    descriptionVi: "Màn hình sản xuất video dài giải thích thuật toán.",
   },
   "story-video": {
     en: "Story Video",
     vi: "Video truyện",
-    descriptionEn: "Story video production workflow.",
-    descriptionVi: "Màn hình sản xuất video truyện.",
   },
   "story-author": {
     en: "Story Author",
     vi: "Sáng tác truyện",
-    descriptionEn: "Story writing and chapter drafting workflow.",
-    descriptionVi: "Màn hình sáng tác truyện và soạn chương.",
   },
   "story-review": {
     en: "Story Review",
     vi: "Review truyện",
-    descriptionEn: "Story review script and video workflow.",
-    descriptionVi: "Màn hình tạo review truyện.",
   },
   "mu-news": {
     en: "MU News",
     vi: "Tin tức MU",
-    descriptionEn: "Football news channel workflow.",
-    descriptionVi: "Màn hình build kênh tin bóng đá.",
   },
   channel: {
     en: "Channel Manager",
     vi: "Quản lý kênh",
-    descriptionEn: "Social channel publishing and account manager.",
-    descriptionVi: "Màn hình quản lý/publish kênh mạng xã hội.",
   },
 };
 

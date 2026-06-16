@@ -96,7 +96,7 @@ const App = () => (
                 <Route path="/story-review" element={<Navigate replace to="/stories/review" />} />
                 <Route path="/story-video" element={<Navigate replace to="/stories/video" />} />
                 <Route path="/assets" element={<GeneratedAssets />} />
-                <Route path="/providers" element={<Navigate replace to="/settings?tab=providers" />} />
+                <Route path="/providers" element={<Navigate replace to="/settings?tab=tools" />} />
                 <Route path="/text-to-speech" element={<TextToSpeech />} />
                 <Route path="/ai-video-agent" element={<AiVideoAgent />} />
                 <Route path="/video-create" element={<VideoCreate />} />

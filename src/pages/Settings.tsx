@@ -211,7 +211,7 @@ export default function Settings() {
           <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/40 p-1 md:grid-cols-5">
             <TabsTrigger value="voice">{t(lang, "settingsVoiceTab")}</TabsTrigger>
             <TabsTrigger value="data">{t(lang, "settingsDataTab")}</TabsTrigger>
-            <TabsTrigger value="tools">{text(lang, "Tools", "Công cụ")}</TabsTrigger>
+            <TabsTrigger value="tools">{text(lang, "Modules", "Module")}</TabsTrigger>
             <TabsTrigger value="api-key">{t(lang, "settingsApiKeyTab")}</TabsTrigger>
             <TabsTrigger value="health">{t(lang, "settingsHealthCheckTab")}</TabsTrigger>
           </TabsList>

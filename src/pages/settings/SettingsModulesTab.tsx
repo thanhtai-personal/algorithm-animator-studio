@@ -58,18 +58,18 @@ export function SettingsModulesTab({ lang, settings, onChange }: SettingsModules
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{text(lang, "Tools", "Công cụ")}</CardTitle>
+        <CardTitle>{text(lang, "Modules", "Module")}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 lg:grid-cols-[auto_minmax(0,1fr)]">
           <aside className={`rounded-lg border border-border bg-muted/30 p-2 transition-[width] duration-200 ${menuCollapsed ? "w-[68px]" : "w-full lg:w-56"}`}>
             <div className="mb-2 flex items-center justify-between gap-2">
-              {!menuCollapsed ? <span className="px-2 text-xs font-semibold text-muted-foreground">{text(lang, "Tools", "Công cụ")}</span> : null}
+              {!menuCollapsed ? <span className="px-2 text-xs font-semibold text-muted-foreground">{text(lang, "Modules", "Module")}</span> : null}
               <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setMenuCollapsed((value) => !value)}>
                 {menuCollapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
               </Button>
             </div>
-            <nav className="grid gap-1" aria-label={text(lang, "Tool settings", "Cài đặt công cụ")}>
+            <nav className="grid gap-1" aria-label={text(lang, "Module settings", "Cài đặt module")}>
               {TOOLS_SECTIONS.map((section) => {
                 const Icon = section.icon;
                 const selected = activeSection === section.id;

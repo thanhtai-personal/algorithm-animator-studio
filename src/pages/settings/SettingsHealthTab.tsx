@@ -2,7 +2,7 @@ import { BookOpen, Bot, CheckCircle2, ChevronsLeft, ChevronsRight, Cloud, Mic2, 
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {text, uiText, t, type Lang} from "@/lib/i18n";
 import { StatusTile } from "./SettingsFields";
@@ -107,7 +107,6 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
       <CardHeader className="gap-3 md:flex-row md:items-start md:justify-between">
         <div className="space-y-1.5">
           <CardTitle>{t(props.lang, "settingsHealthCheckTab")}</CardTitle>
-          <CardDescription>{t(props.lang, "settingsHealthDescription")}</CardDescription>
         </div>
         <div className="flex flex-wrap gap-2">
           <HealthAutoInstallDialog lang={props.lang} onAfterTask={props.onRefreshHealth} />
@@ -119,8 +118,7 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
       <CardContent>
         <div className="grid gap-4 lg:grid-cols-[auto_minmax(0,1fr)]">
           <aside className={`rounded-lg border border-border bg-muted/30 p-2 transition-[width] duration-200 ${menuCollapsed ? "w-[68px]" : "w-full lg:w-56"}`}>
-            <div className="mb-2 flex items-center justify-between gap-2">
-              {!menuCollapsed ? <span className="px-2 text-xs font-semibold text-muted-foreground">{text(props.lang, "Health groups", "Nhóm health")}</span> : null}
+            <div className="mb-2 flex justify-end">
               <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setMenuCollapsed((value) => !value)}>
                 {menuCollapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
               </Button>
@@ -158,9 +156,6 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{activeMeta.label}</h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {activeState.passed ? t(props.lang, "settingsReady") : activeState.failed ? t(props.lang, "settingsMissing") : t(props.lang, "settingsNotChecked")}
-                </p>
               </div>
               <InstructionDialog lang={props.lang} title={activeMeta.label} failed={activeState.failed} instruction={activeState.instruction} />
             </div>

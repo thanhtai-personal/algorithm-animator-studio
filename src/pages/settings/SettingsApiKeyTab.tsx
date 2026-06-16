@@ -1,4 +1,7 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { Bot, ChevronsLeft, ChevronsRight, KeyRound, Waves } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,72 +15,122 @@ type SettingsApiKeyTabProps = {
   onUpdateField: (key: SettingsFormKey, value: string) => void;
 };
 
+type ApiSection = "agent" | "elevenlabs";
+
+const API_SECTIONS: { id: ApiSection; label: string; icon: typeof KeyRound }[] = [
+  { id: "agent", label: "AI Agent Flow", icon: Bot },
+  { id: "elevenlabs", label: "ElevenLabs", icon: Waves },
+];
+
 export function SettingsApiKeyTab(props: SettingsApiKeyTabProps) {
+  const [activeSection, setActiveSection] = useState<ApiSection>("agent");
+  const [menuCollapsed, setMenuCollapsed] = useState(false);
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>{t(props.lang, "settingsApiKeyTab")}</CardTitle>
-        <CardDescription>{t(props.lang, "settingsApiKeyDescription")}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="rounded-lg border p-4">
-          <h3 className="font-semibold">{text(props.lang, "AI Agent Flow", "AI Agent Flow")}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {text(props.lang, "Used by the local AI Video Agent screen. The app stays local; only the selected AI provider API is called for research/script generation.", "Dùng cho màn hình AI Video Agent. App vẫn chạy local; chỉ gọi API provider AI đã chọn để tạo research/script.")}
-          </p>
-          <div className="mt-4 space-y-4">
-            <div className="space-y-2">
-              <Label>{text(props.lang, "Agent text provider", "Provider text cho Agent")}</Label>
-              <Select value={props.form.AI_AGENT_PROVIDER || "gemini"} onValueChange={(value) => props.onUpdateField("AI_AGENT_PROVIDER", value)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="gemini">Gemini</SelectItem>
-                  <SelectItem value="openai">OpenAI / OpenAI-compatible</SelectItem>
-                </SelectContent>
-              </Select>
+      <CardContent>
+        <div className="grid gap-4 lg:grid-cols-[auto_minmax(0,1fr)]">
+          <aside className={`rounded-lg border border-border bg-muted/30 p-2 transition-[width] duration-200 ${menuCollapsed ? "w-[68px]" : "w-full lg:w-56"}`}>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              {!menuCollapsed ? <span className="px-2 text-xs font-semibold text-muted-foreground">{t(props.lang, "settingsApiKeyTab")}</span> : null}
+              <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setMenuCollapsed((value) => !value)}>
+                {menuCollapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
+              </Button>
             </div>
-            <SecretInput
-              id="ai-shorts-api-key"
-              label={text(props.lang, "Gemini API key", "Gemini API key")}
-              description={text(props.lang, "Required when provider = Gemini. Used to generate the AiToEarn-style plan/script JSON.", "Bắt buộc khi provider = Gemini. Dùng để tạo plan/script JSON kiểu AiToEarn.")}
-              value={props.form.AI_SHORTS_API_KEY}
-              placeholder="AIza..."
-              onChange={(value) => props.onUpdateField("AI_SHORTS_API_KEY", value)}
-            />
-            <TextInput id="ai-agent-text-model" label={text(props.lang, "Gemini text model", "Gemini text model")} description={text(props.lang, "Default: gemini-2.0-flash.", "Mặc định: gemini-2.0-flash.")} value={props.form.AI_AGENT_TEXT_MODEL} placeholder="gemini-2.0-flash" onChange={(value) => props.onUpdateField("AI_AGENT_TEXT_MODEL", value)} />
-            <TextInput id="ai-shorts-api-url" label={text(props.lang, "Gemini API base URL", "Gemini API base URL")} description={text(props.lang, "Usually keep the default Google Generative Language API URL.", "Thường giữ mặc định URL Google Generative Language API.")} value={props.form.AI_SHORTS_API_URL} placeholder="https://generativelanguage.googleapis.com/v1beta" onChange={(value) => props.onUpdateField("AI_SHORTS_API_URL", value)} />
-            <SecretInput
-              id="openai-api-key"
-              label={text(props.lang, "OpenAI / compatible API key", "OpenAI / compatible API key")}
-              description={text(props.lang, "Required when provider = OpenAI. Compatible with OpenAI-style /chat/completions providers.", "Bắt buộc khi provider = OpenAI. Tương thích các provider có endpoint /chat/completions kiểu OpenAI.")}
-              value={props.form.OPENAI_API_KEY}
-              placeholder="sk-..."
-              onChange={(value) => props.onUpdateField("OPENAI_API_KEY", value)}
-            />
-            <div className="grid gap-3 md:grid-cols-2">
-              <TextInput id="openai-base-url" label="OPENAI_BASE_URL" description={text(props.lang, "Default: https://api.openai.com/v1", "Mặc định: https://api.openai.com/v1")} value={props.form.OPENAI_BASE_URL} placeholder="https://api.openai.com/v1" onChange={(value) => props.onUpdateField("OPENAI_BASE_URL", value)} />
-              <TextInput id="openai-chat-model" label="OPENAI_CHAT_MODEL" description={text(props.lang, "Model used for agent research/script when provider = OpenAI.", "Model dùng cho research/script khi provider = OpenAI.")} value={props.form.OPENAI_CHAT_MODEL} placeholder="gpt-4o-mini" onChange={(value) => props.onUpdateField("OPENAI_CHAT_MODEL", value)} />
-            </div>
+            <nav className="grid gap-1" aria-label={t(props.lang, "settingsApiKeyTab")}>
+              {API_SECTIONS.map((section) => {
+                const Icon = section.icon;
+                const selected = activeSection === section.id;
+                return (
+                  <button
+                    key={section.id}
+                    type="button"
+                    className={[
+                      "flex h-10 items-center gap-2 rounded-md px-2 text-sm font-medium transition-colors",
+                      selected ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+                      menuCollapsed ? "justify-center" : "justify-start",
+                    ].join(" ")}
+                    title={section.label}
+                    aria-current={selected ? "page" : undefined}
+                    onClick={() => setActiveSection(section.id)}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    {menuCollapsed ? <span className="sr-only">{section.label}</span> : <span>{section.label}</span>}
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
+
+          <div className="min-w-0">
+            {activeSection === "agent" ? <AgentApiFields {...props} /> : null}
+            {activeSection === "elevenlabs" ? <ElevenLabsApiFields {...props} /> : null}
           </div>
         </div>
-        <SecretInput
-          id="elevenlabs-api-key"
-          label={t(props.lang, "settingsElevenLabsApiKeyLabel")}
-          description={t(props.lang, "settingsElevenLabsApiKeyDescription")}
-          value={props.form.ELEVENLABS_API_KEY}
-          placeholder="sk_..."
-          onChange={(value) => props.onUpdateField("ELEVENLABS_API_KEY", value)}
-        />
       </CardContent>
     </Card>
   );
 }
 
-function TextInput(props: { id: string; label: string; description: string; value: string; placeholder: string; onChange: (value: string) => void }) {
+function AgentApiFields(props: SettingsApiKeyTabProps) {
+  return (
+    <div className="space-y-5">
+      <div className="space-y-2">
+        <Label>{text(props.lang, "Agent text provider", "Provider text cho Agent")}</Label>
+        <Select value={props.form.AI_AGENT_PROVIDER || "gemini"} onValueChange={(value) => props.onUpdateField("AI_AGENT_PROVIDER", value)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="gemini">Gemini</SelectItem>
+            <SelectItem value="openai">OpenAI / OpenAI-compatible</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <SecretInput
+        id="ai-shorts-api-key"
+        label={text(props.lang, "Gemini API key", "Gemini API key")}
+        description=""
+        value={props.form.AI_SHORTS_API_KEY}
+        placeholder="AIza..."
+        onChange={(value) => props.onUpdateField("AI_SHORTS_API_KEY", value)}
+      />
+      <TextInput id="ai-agent-text-model" label={text(props.lang, "Gemini text model", "Gemini text model")} value={props.form.AI_AGENT_TEXT_MODEL} placeholder="gemini-2.0-flash" onChange={(value) => props.onUpdateField("AI_AGENT_TEXT_MODEL", value)} />
+      <TextInput id="ai-shorts-api-url" label={text(props.lang, "Gemini API base URL", "Gemini API base URL")} value={props.form.AI_SHORTS_API_URL} placeholder="https://generativelanguage.googleapis.com/v1beta" onChange={(value) => props.onUpdateField("AI_SHORTS_API_URL", value)} />
+      <SecretInput
+        id="openai-api-key"
+        label={text(props.lang, "OpenAI / compatible API key", "OpenAI / compatible API key")}
+        description=""
+        value={props.form.OPENAI_API_KEY}
+        placeholder="sk-..."
+        onChange={(value) => props.onUpdateField("OPENAI_API_KEY", value)}
+      />
+      <div className="grid gap-3 md:grid-cols-2">
+        <TextInput id="openai-base-url" label="OPENAI_BASE_URL" value={props.form.OPENAI_BASE_URL} placeholder="https://api.openai.com/v1" onChange={(value) => props.onUpdateField("OPENAI_BASE_URL", value)} />
+        <TextInput id="openai-chat-model" label="OPENAI_CHAT_MODEL" value={props.form.OPENAI_CHAT_MODEL} placeholder="gpt-4o-mini" onChange={(value) => props.onUpdateField("OPENAI_CHAT_MODEL", value)} />
+      </div>
+    </div>
+  );
+}
+
+function ElevenLabsApiFields(props: SettingsApiKeyTabProps) {
+  return (
+    <SecretInput
+      id="elevenlabs-api-key"
+      label={t(props.lang, "settingsElevenLabsApiKeyLabel")}
+      description=""
+      value={props.form.ELEVENLABS_API_KEY}
+      placeholder="sk_..."
+      onChange={(value) => props.onUpdateField("ELEVENLABS_API_KEY", value)}
+    />
+  );
+}
+
+function TextInput(props: { id: string; label: string; value: string; placeholder: string; onChange: (value: string) => void }) {
   return (
     <div className="space-y-2">
       <Label htmlFor={props.id}>{props.label}</Label>
-      <p className="text-sm text-muted-foreground">{props.description}</p>
       <Input id={props.id} value={props.value} placeholder={props.placeholder} onChange={(event) => props.onChange(event.target.value)} />
     </div>
   );

@@ -50,9 +50,6 @@ export function SettingsApplioTemplateFields(props: Props) {
 
   return (
     <div className="grid gap-4">
-      <p className="text-xs text-muted-foreground">
-        {text(props.lang, "Saved to", "Lưu tại")} <span className="font-mono">{props.templates.filePath}</span>
-      </p>
       <TemplateJsonSection
         id="rvc-applio-templates"
         lang={props.lang}
@@ -103,7 +100,6 @@ function TemplateJsonSection(props: {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <Label htmlFor={props.id}>{props.label}</Label>
-          <p className="mt-1 text-sm text-muted-foreground">{props.description}</p>
         </div>
         <Button type="button" variant="outline" size="sm" onClick={props.onToggleEditing}>
           {showEditor ? <Rows3 className="mr-2 h-4 w-4" /> : <Pencil className="mr-2 h-4 w-4" />}

@@ -16,9 +16,6 @@ type SettingsGptSoVitsFieldsProps = {
 export function SettingsGptSoVitsFields(props: SettingsGptSoVitsFieldsProps) {
   return (
     <div className="space-y-5">
-      <p className="rounded-lg border border-yellow-400/40 bg-yellow-400/10 p-3 text-sm text-yellow-100">
-        {text(props.lang, "GPT-SoVITS is an experimental local voice cloning provider. Keep it disabled in Settings > Provider until you need it because model loading can be heavy.", "GPT-SoVITS là provider clone giọng local thử nghiệm. Nên để tắt trong Cài đặt > Provider đến khi cần dùng vì load model khá nặng.")}
-      </p>
       <div className="grid gap-3 md:grid-cols-2">
         <SecretInput id="gpt-sovits-base-url" label="GPT-SoVITS API base" description={text(props.lang, "Local API URL, usually http://127.0.0.1:9880.", "URL API local, thường là http://127.0.0.1:9880.")} value={props.form.GPT_SOVITS_BASE_URL} placeholder="http://127.0.0.1:9880" type="text" onChange={(value) => props.onUpdateField("GPT_SOVITS_BASE_URL", value)} />
         <SecretInput id="gpt-sovits-tts-endpoint" label="TTS endpoint" description={text(props.lang, "POST endpoint used by api_v2.py.", "Endpoint POST dùng bởi api_v2.py.")} value={props.form.GPT_SOVITS_TTS_ENDPOINT} placeholder="/tts" type="text" onChange={(value) => props.onUpdateField("GPT_SOVITS_TTS_ENDPOINT", value)} />
@@ -33,7 +30,6 @@ export function SettingsGptSoVitsFields(props: SettingsGptSoVitsFieldsProps) {
       </div>
       <div>
         <Label htmlFor="gpt-sovits-prompt-text">{text(props.lang, "Default prompt text", "Text khớp audio mẫu mặc định")}</Label>
-        <p className="mt-1 text-sm text-muted-foreground">{text(props.lang, "Type the exact sentence spoken in the reference audio.", "Gõ đúng câu được nói trong audio mẫu.")}</p>
         <Textarea id="gpt-sovits-prompt-text" className="mt-2 min-h-[90px]" value={props.form.GPT_SOVITS_PROMPT_TEXT} placeholder="This is my reference voice." onChange={(event) => props.onUpdateField("GPT_SOVITS_PROMPT_TEXT", event.target.value)} />
       </div>
     </div>

@@ -21,11 +21,10 @@ type PathInputProps = {
   onOpen: () => void;
 };
 
-export function PathInput({ id, label, description, value, placeholder, busy, lang, onChange, onSelect, onOpen }: PathInputProps) {
+export function PathInput({ id, label, value, placeholder, busy, lang, onChange, onSelect, onOpen }: PathInputProps) {
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
-      {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
       <div className="flex flex-col gap-2 md:flex-row">
         <Input id={id} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} />
         <Button type="button" variant="outline" onClick={onSelect} disabled={busy}>
@@ -43,7 +42,6 @@ export function SecretInput(props: { id: string; label: string; description: str
   return (
     <div className="space-y-2">
       <Label htmlFor={props.id}>{props.label}</Label>
-      <p className="text-sm text-muted-foreground">{props.description}</p>
       <Input
         id={props.id}
         type={props.type ?? "password"}
@@ -68,7 +66,6 @@ export function VoiceRowsTable(props: {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <Label>{t(props.lang, "settingsElevenLabsVoicesLabel")}</Label>
-          <p className="mt-1 text-sm text-muted-foreground">{t(props.lang, "settingsElevenLabsVoicesDescription")}</p>
         </div>
         <Button type="button" variant="outline" size="sm" onClick={props.onAdd}>
           <Plus className="mr-2 h-4 w-4" /> {t(props.lang, "settingsAddVoice")}

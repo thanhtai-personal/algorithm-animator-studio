@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
-import { Loader2, PlugZap, RefreshCw, RotateCcw } from "lucide-react";
+import { Loader2, RefreshCw, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { text, type Lang } from "@/lib/i18n";
 import {
@@ -63,9 +61,7 @@ export function SettingsProvidersTab({ lang }: SettingsProvidersTabProps) {
   return (
     <section className="space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
-          <PlugZap className="h-5 w-5" /> {text(lang, "Provider Manager", "Quản lý provider")}
-        </h2>
+        <h3 className="text-lg font-semibold">{text(lang, "Provider Manager", "Quản lý provider")}</h3>
         <Button variant="outline" onClick={refresh} disabled={loading}>
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
           {text(lang, "Refresh", "Tải lại")}
@@ -79,25 +75,18 @@ export function SettingsProvidersTab({ lang }: SettingsProvidersTabProps) {
         </Alert>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2">
         {providers.map((provider) => (
-          <Card key={provider.id} className="overflow-hidden">
-            <CardHeader className="space-y-3">
-              <div className="flex items-start justify-between gap-3">
-                <CardTitle className="text-lg">{provider.label}</CardTitle>
-                <Switch
-                  checked={provider.enabled}
-                  disabled={savingId === provider.id}
-                  onCheckedChange={(checked) => void toggleProvider(provider.id, checked)}
-                />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Badge variant={provider.enabled ? "default" : "outline"}>
-                  {provider.enabled ? text(lang, "Enabled", "Đang bật") : text(lang, "Disabled", "Đang tắt")}
-                </Badge>
-              </div>
-            </CardHeader>
-          </Card>
+          <div key={provider.id} className="flex items-start justify-between gap-4 rounded-lg border bg-card/40 p-3">
+            <div className="min-w-0">
+              <h4 className="font-medium">{provider.label}</h4>
+            </div>
+            <Switch
+              checked={provider.enabled}
+              disabled={savingId === provider.id}
+              onCheckedChange={(checked) => void toggleProvider(provider.id, checked)}
+            />
+          </div>
         ))}
       </div>
     </section>

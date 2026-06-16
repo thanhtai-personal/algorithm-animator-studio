@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Bot, ChevronsLeft, ChevronsRight, Mic2, Radio, Sparkles, Waves } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { t, text, type Lang } from "@/lib/i18n";
@@ -46,7 +46,6 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
     <Card>
       <CardHeader>
         <CardTitle>{t(props.lang, "settingsVoiceTab")}</CardTitle>
-        <CardDescription>{t(props.lang, "settingsVoiceDescription")}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 lg:grid-cols-[auto_minmax(0,1fr)]">
@@ -200,9 +199,6 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
 
             {activeSection === "vieneu" ? (
             <div className="space-y-5">
-            <p className="rounded-lg border border-emerald-400/30 bg-emerald-400/10 p-3 text-sm text-emerald-100">
-              {text(props.lang, "VieNeu-TTS is a local Vietnamese TTS SDK provider. It runs through Python, so health check must show Python, bridge and SDK as OK.", "VieNeu-TTS là provider TTS tiếng Việt local chạy qua Python SDK. Health check cần báo Python, bridge và SDK đều OK.")}
-            </p>
             <div className="grid gap-3 md:grid-cols-2">
               <PathInput
                 id="vieneu-python"
@@ -267,9 +263,6 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
             </div>
             <div>
               <Label htmlFor="vieneu-reference-text">{text(props.lang, "Reference text", "Text khớp với audio mẫu")}</Label>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {text(props.lang, "Optional but recommended for standard mode cloning. Type the exact sentence spoken in the reference audio.", "Không bắt buộc nhưng nên có khi clone giọng ở standard mode. Gõ đúng câu được nói trong audio mẫu.")}
-              </p>
               <Textarea
                 id="vieneu-reference-text"
                 className="mt-2 min-h-[90px]"
@@ -303,9 +296,6 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
 
             {activeSection === "applio" ? (
             <div className="space-y-5">
-            <p className="rounded-lg border border-yellow-400/40 bg-yellow-400/10 p-3 text-sm text-yellow-100">
-              {text(props.lang, "Applio/RVC converts generated audio from Piper, ElevenLabs, Supertonic, or VieNeu into a trained custom voice.", "Applio/RVC chuyển audio đã tạo từ Piper, ElevenLabs, Supertonic hoặc VieNeu sang custom voice đã train.")}
-            </p>
             <div className="grid gap-3 md:grid-cols-2">
               <SecretInput
                 id="rvc-applio-base-url"

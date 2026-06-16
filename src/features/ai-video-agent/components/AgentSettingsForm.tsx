@@ -52,6 +52,7 @@ export function AgentSettingsForm(props: AgentSettingsFormProps) {
       <div className="grid gap-3 sm:grid-cols-2"><Field label={text(lang, "Language", "Ngôn ngữ")}><Select value={form.language} onValueChange={(value) => update("language", value as AgentVideoForm["language"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="vi">Tiếng Việt</SelectItem><SelectItem value="en">English</SelectItem></SelectContent></Select></Field><Field label={text(lang, "Target seconds", "Thời lượng giây")}><Input type="number" min={15} max={600} value={form.targetDurationSec} onChange={(event) => update("targetDurationSec", Number(event.target.value))} /></Field></div>
       <AgentVoiceSettings form={form} models={models} availableModels={availableModels} elevenConfig={props.elevenConfig} supertonicConfig={props.supertonicConfig} rvcApplioConfig={props.rvcApplioConfig} vieneuConfig={props.vieneuConfig} update={update} />
       <div className="grid gap-3 sm:grid-cols-2"><Field label={text(lang, "Speech rate", "Tốc độ đọc")}><Input type="number" step="0.05" value={form.speechRate} onChange={(event) => update("speechRate", Number(event.target.value))} /></Field><Field label={text(lang, "Sentence silence", "Nghỉ giữa câu")}><Input type="number" step="0.05" value={form.sentenceSilence} onChange={(event) => update("sentenceSilence", Number(event.target.value))} /></Field></div>
+      <RenderOptions form={form} lang={lang} update={update} />
       <Field label="Tone"><Input value={form.tone} onChange={(event) => update("tone", event.target.value)} /></Field>
       <Field label={text(lang, "Extra instruction", "Yêu cầu thêm")}><Textarea value={form.extraInstruction} onChange={(event) => update("extraInstruction", event.target.value)} rows={4} /></Field>
       <PublishOptions {...props} />
@@ -61,6 +62,35 @@ export function AgentSettingsForm(props: AgentSettingsFormProps) {
       <Button variant="ghost" className="mt-2 w-full" onClick={props.handleSaveDraft}>{text(lang, "Save draft job", "Lưu job nháp")}</Button>
     </div>
   </div>;
+}
+
+function RenderOptions({ form, lang, update }: { form: AgentVideoForm; lang: Lang; update: UpdateForm }) {
+  return (
+    <div className="rounded-lg border p-3">
+      <div className="mb-3">
+        <Label>{text(lang, "Render module", "Render module")}</Label>
+        <p className="mt-1 text-xs text-muted-foreground">{text(lang, "Use the same Remotion export settings as module videos.", "Dùng cùng cấu hình Remotion export như các module video.")}</p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label="Template"><Select value={form.renderTemplate} onValueChange={(value) => update("renderTemplate", value as AgentVideoForm["renderTemplate"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="algorithm-explainer">Algorithm explainer</SelectItem><SelectItem value="news-card">News card</SelectItem><SelectItem value="story-card">Story card</SelectItem></SelectContent></Select></Field>
+        <Field label={text(lang, "Aspect", "Tỉ lệ")}><Select value={form.renderAspectRatio} onValueChange={(value) => update("renderAspectRatio", value as AgentVideoForm["renderAspectRatio"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="auto">Auto by platform</SelectItem><SelectItem value="16:9">16:9</SelectItem><SelectItem value="9:16">9:16</SelectItem></SelectContent></Select></Field>
+        <Field label="FPS"><Select value={String(form.renderFps)} onValueChange={(value) => update("renderFps", Number(value))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="24">24</SelectItem><SelectItem value="30">30</SelectItem><SelectItem value="60">60</SelectItem></SelectContent></Select></Field>
+        <Field label={text(lang, "Watermark", "Watermark")}><Input value={form.renderWatermark} onChange={(event) => update("renderWatermark", event.target.value)} /></Field>
+        <Field label={text(lang, "Primary color", "Màu chính")}><Input type="color" value={form.renderPrimaryColor} onChange={(event) => update("renderPrimaryColor", event.target.value)} /></Field>
+        <Field label={text(lang, "Accent color", "Màu nhấn")}><Input type="color" value={form.renderAccentColor} onChange={(event) => update("renderAccentColor", event.target.value)} /></Field>
+      </div>
+      <Field label={text(lang, "Algorithm/label", "Algorithm/nhãn")}><Input value={form.renderAlgorithmLabel} onChange={(event) => update("renderAlgorithmLabel", event.target.value)} /></Field>
+      <Field label={text(lang, "Data bars", "Data bars")}><Input value={form.renderData} onChange={(event) => update("renderData", event.target.value)} placeholder="18, 42, 27, 64, 33" /></Field>
+      <Field label={text(lang, "Title override", "Ghi đè title")}><Input value={form.renderTitle} onChange={(event) => update("renderTitle", event.target.value)} placeholder={text(lang, "Blank = use agent plan", "Để trống = dùng plan agent")} /></Field>
+      <Field label={text(lang, "Subtitle override", "Ghi đè subtitle")}><Input value={form.renderSubtitle} onChange={(event) => update("renderSubtitle", event.target.value)} placeholder={text(lang, "Blank = use hook/description", "Để trống = dùng hook/description")} /></Field>
+      <Field label={text(lang, "Narration override", "Ghi đè narration")}><Textarea value={form.renderNarration} onChange={(event) => update("renderNarration", event.target.value)} rows={3} placeholder={text(lang, "Blank = use generated script", "Để trống = dùng script đã tạo")} /></Field>
+      <Field label={text(lang, "Background music URL", "URL nhạc nền")}><Input value={form.renderBackgroundMusicUrl} onChange={(event) => update("renderBackgroundMusicUrl", event.target.value)} placeholder="/generated/... or https://..." /></Field>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label={text(lang, "Voice volume", "Âm lượng voice")}><Input type="number" min={0} max={1} step="0.05" value={form.renderVoiceVolume} onChange={(event) => update("renderVoiceVolume", Number(event.target.value))} /></Field>
+        <Field label={text(lang, "Music volume", "Âm lượng nhạc")}><Input type="number" min={0} max={1} step="0.05" value={form.renderBackgroundMusicVolume} onChange={(event) => update("renderBackgroundMusicVolume", Number(event.target.value))} /></Field>
+      </div>
+    </div>
+  );
 }
 
 function PublishOptions({ form, lang, publishOptions, selectedPublishChannelKeys, publishChannelWarning, update, togglePublishTarget, togglePublishChannel, refreshPublishChannels }: AgentSettingsFormProps) {

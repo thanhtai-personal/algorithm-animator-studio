@@ -1,11 +1,12 @@
-import { Play } from "lucide-react";
+import { Play, Terminal } from "lucide-react";
 import { SystemLoader } from "@/components/ui/system-loader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { text, type Lang } from "@/lib/i18n";
-import type { AgentVideoJob } from "@/lib/aiVideoAgentApi";
+import type { AgentVideoJob, AgentVideoPlan, AgentWorkflowStageId } from "@/lib/aiVideoAgentApi";
 import type { PublishJob } from "@/lib/publishQueueApi";
 
 export function AgentReviewCard({ job, publishJobs, lang, busy, onRun }: { job?: AgentVideoJob; publishJobs: PublishJob[]; lang: Lang; busy: boolean; onRun: (job: AgentVideoJob) => void }) {
@@ -59,6 +60,17 @@ export function Empty({ lang }: { lang: Lang }) {
   return <Card className="border-dashed p-8 text-center text-sm text-muted-foreground">{text(lang, "No data yet.", "Chưa có dữ liệu.")}</Card>;
 }
 
+export function PlanCard({ plan, lang }: { plan: AgentVideoPlan | null; lang: Lang }) {
+  if (!plan) return <Card className="border-dashed p-8 text-center text-sm text-muted-foreground">{text(lang, "No plan yet.", "Chưa có plan.")}</Card>;
+  return <Card><CardHeader><CardTitle className="flex flex-wrap items-center gap-2">{plan.title}{plan.warning ? <Badge variant="secondary">fallback</Badge> : <Badge>AI</Badge>}</CardTitle><CardDescription>{plan.description}</CardDescription></CardHeader><CardContent className="space-y-4"><InfoList title="Research" items={[plan.researchSummary || "", plan.audiencePersona || "", ...(plan.contentAngles || [])]} /><InfoList title="Scenes" items={plan.scenes.map((scene) => `${scene.title}: ${scene.narration}`)} /><InfoList title="Engage / Monetize" items={[...(plan.engagementPrompts || []), ...(plan.monetizationIdeas || []), ...(plan.repurposeIdeas || [])]} /><div className="flex flex-wrap gap-2">{plan.tags.map((tag) => <Badge key={tag} variant="outline">{tag}</Badge>)}</div></CardContent></Card>;
+}
+
+export function LogCard({ job, lang, selectedStageId }: { job?: AgentVideoJob; lang: Lang; selectedStageId: AgentWorkflowStageId | "all" }) {
+  if (!job) return <Empty lang={lang} />;
+  const logs = selectedStageId === "all" ? job.logs || [] : (job.logs || []).filter((log) => log.stageId === selectedStageId);
+  return <Card className="overflow-hidden"><CardHeader className="border-b bg-muted/40 py-3"><CardTitle className="flex items-center gap-2 text-base"><Terminal className="h-4 w-4" />{selectedStageId === "all" ? text(lang, "All job commands", "Tất cả lệnh của job") : text(lang, "Stage commands", "Lệnh của bước")}</CardTitle></CardHeader><CardContent className="bg-zinc-950 p-0 text-zinc-100"><ScrollArea className="h-[280px] p-4 font-mono text-xs">{logs.length ? logs.map((log) => <div key={log.id} className="mb-3"><div className="flex flex-wrap items-center gap-2"><span className="text-zinc-500">{new Date(log.atMs).toLocaleTimeString()}</span><span className={log.level === "error" ? "text-red-400" : log.level === "success" ? "text-emerald-400" : log.level === "warning" ? "text-amber-300" : "text-sky-300"}>{log.level}</span><span className="text-zinc-400">$</span><span>{commandForLog(log.stageId, log.level)}</span></div><p className="mt-1 pl-4 text-zinc-400">status: {log.message}</p></div>) : <p className="text-zinc-500">{text(lang, "No commands yet.", "Chưa có lệnh.")}</p>}</ScrollArea></CardContent></Card>;
+}
+
 function MetadataBlock({ job, lang }: { job: AgentVideoJob; lang: Lang }) {
   const metadata = job.artifacts?.metadata;
   if (!metadata) return null;
@@ -72,4 +84,17 @@ function PublishSummary({ jobs, lang }: { jobs: PublishJob[]; lang: Lang }) {
 function getRelatedPublishJobs(agentJob: AgentVideoJob | undefined, jobs: PublishJob[]) {
   const ids = new Set(agentJob?.artifacts?.publishJobIds || []);
   return jobs.filter((job) => ids.has(job.id));
+}
+
+function InfoList({ title, items }: { title: string; items: string[] }) {
+  const filtered = items.filter(Boolean);
+  if (!filtered.length) return null;
+  return <div><h3 className="mb-2 text-sm font-semibold">{title}</h3><div className="space-y-2">{filtered.map((item, index) => <p key={`${title}-${index}`} className="rounded-md bg-muted p-3 text-sm text-muted-foreground">{item}</p>)}</div></div>;
+}
+
+function commandForLog(stageId: AgentWorkflowStageId | undefined, level: string) {
+  const stage = stageId || "agent";
+  const verbs: Record<string, string> = { research: "research", strategy: "plan-strategy", script: "lock-script", visuals: "prepare-visuals", voice: "generate-voice", render: "render-video", metadata: "pack-metadata", publish: "queue-publish", engage: "prepare-engagement", monetize: "prepare-monetize", agent: "run" };
+  const status = level === "success" ? "success" : level === "error" ? "failed" : level === "warning" ? "warning" : "running";
+  return `kai-agent ${verbs[stage] || stage} --status ${status}`;
 }

@@ -27,6 +27,8 @@ import { generateSupertonicAudio } from "./SupertonicService";
 import { generateVieneuAudio } from "./VieneuService";
 import { generateRvcApplioSpeech } from "./RvcApplioService";
 import { generateVideoFromAudio } from "./VideoService";
+import { renderRemotionVideo } from "./RemotionRenderService";
+import { buildAgentRemotionVideoInput, normalizeAgentRenderSettings } from "./AiVideoAgentRemotionRender";
 import { createGradientPng } from "../utils/simplePng";
 import { createPublishJob } from "./PublishQueueService";
 import { notifyBackgroundJobsChanged } from "./BackgroundJobsRealtimeService";
@@ -201,26 +203,9 @@ export async function runAgentVideoJob(id: string, envOverrides: RuntimeEnvValue
       });
     });
 
-    const background = await createAgentBackground(job, envOverrides);
-    job = await runStage(job, "render", envOverrides, 78, "Đang render MP4 bằng FFmpeg local...", async (current) => {
+    job = await runStage(job, "render", envOverrides, 78, "Đang render MP4 bằng Remotion module template...", async (current) => {
       if (!current.artifacts?.audioRelativePath) throw new Error("Thiếu audio để render video.");
-      const audioPath = path.resolve(getGeneratedAudioPath(current.artifacts.audioRelativePath, envOverrides));
-      const video = await generateVideoFromAudio({
-        audioPath,
-        imagePath: background.path,
-        options: {
-          aspectRatio: current.input.platform === "youtube-long" ? "16:9" : "9:16",
-          backgroundType: background.type,
-          fitMode: "cover",
-          videoFileName: sanitizeFileBaseName(current.plan?.title || current.input.topic),
-          backgroundMusicVolume: 0,
-          backgroundMusicLoop: false,
-          backgroundMusicFadeIn: 0,
-          backgroundMusicFadeOut: 0,
-        },
-        envOverrides,
-      });
-      if (background.temporary) fs.rm(background.path, { force: true }, () => undefined);
+      const video = await renderAgentVideo(current, narration, envOverrides);
       return updateJob(current.id, envOverrides, {
         artifacts: { ...current.artifacts, videoRelativePath: video.relativePath, videoUrl: video.videoUrl },
       });
@@ -316,6 +301,7 @@ function normalizeJobInput(body: CreateAgentVideoJobBody, envOverrides: RuntimeE
     applioTtsTemplateId: String(body.applioTtsTemplateId || ""),
     speechRate: clampNumber(Number(body.speechRate), 0.9, 0.5, 1.4),
     sentenceSilence: clampNumber(Number(body.sentenceSilence), 0.25, 0, 2),
+    ...normalizeAgentRenderSettings({ ...body, ...input }),
     autoCreatePublishJobs: Boolean(body.autoCreatePublishJobs),
     publishTargets: normalizePublishTargets(body.publishTargets),
     publishChannels: normalizePublishChannels(body.publishChannels),
@@ -589,6 +575,37 @@ async function createNarrationAudio(job: AgentVideoJob, text: string, envOverrid
   }, envOverrides);
   if ("status" in request) throw new Error(String(request.body.error || "Không tạo được voice."));
   return generateAudioFile(request, envOverrides);
+}
+
+async function renderAgentVideo(job: AgentVideoJob, narration: string, envOverrides: RuntimeEnvValues) {
+  try {
+    return await renderRemotionVideo({
+      input: buildAgentRemotionVideoInput({ job, narration }),
+      envOverrides,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Remotion render thất bại.";
+    const warned = addAndPersistLog(job, envOverrides, "warning", `${message} Đang fallback sang FFmpeg local.`, "render");
+    const background = await createAgentBackground(warned, envOverrides);
+    const audioPath = path.resolve(getGeneratedAudioPath(warned.artifacts?.audioRelativePath || "", envOverrides));
+    const video = await generateVideoFromAudio({
+      audioPath,
+      imagePath: background.path,
+      options: {
+        aspectRatio: warned.input.renderAspectRatio === "16:9" || (warned.input.renderAspectRatio === "auto" && warned.input.platform === "youtube-long") ? "16:9" : "9:16",
+        backgroundType: background.type,
+        fitMode: "cover",
+        videoFileName: sanitizeFileBaseName(warned.plan?.title || warned.input.topic),
+        backgroundMusicVolume: warned.input.renderBackgroundMusicVolume,
+        backgroundMusicLoop: Boolean(warned.input.renderBackgroundMusicUrl),
+        backgroundMusicFadeIn: 0,
+        backgroundMusicFadeOut: 0,
+      },
+      envOverrides,
+    });
+    if (background.temporary) fs.rm(background.path, { force: true }, () => undefined);
+    return video;
+  }
 }
 
 async function createAgentBackground(job: AgentVideoJob, envOverrides: RuntimeEnvValues) {

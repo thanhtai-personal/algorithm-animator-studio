@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Save, Trash2 } from "lucide-react";
+import { RotateCcw, Save } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -26,13 +26,10 @@ import { readSystemLang, subscribeSystemLang, t, text, type Lang } from "@/lib/i
 import { buildApiUrl, parseApiResponse } from "@/lib/runtimeApi";
 import {
   buildRuntimeSettingsHeaders,
-  clearRuntimeSettings,
   getRuntimeSettings,
   saveRuntimeSettings,
 } from "@/lib/runtimeSettings";
 import {
-  clearMenuFeatureSettings,
-  DEFAULT_MENU_FEATURE_SETTINGS,
   getMenuFeatureSettings,
   saveMenuFeatureSettings,
   type MenuFeatureSettings,
@@ -142,13 +139,12 @@ export default function Settings() {
   }
 
   async function handleReset() {
-    clearRuntimeSettings();
-    clearMenuFeatureSettings();
-    setForm(EMPTY_FORM);
-    setMenuFeatures({ ...DEFAULT_MENU_FEATURE_SETTINGS });
-    setChillTracks([]);
-    setVoiceRows([]);
-    toast.success(t(lang, "settingsOverridesCleared"));
+    const savedSettings = { ...EMPTY_FORM, ...getRuntimeSettings() };
+    setForm(savedSettings);
+    setMenuFeatures(getMenuFeatureSettings());
+    setChillTracks(readChillTracks());
+    setVoiceRows(parseVoiceRows(savedSettings.ELEVENLABS_VOICES));
+    toast.success(text(lang, "Unsaved settings reset.", "Đã bỏ thay đổi chưa lưu."));
     await refreshHealth();
   }
 
@@ -193,21 +189,18 @@ export default function Settings() {
             <Button onClick={handleSave}><Save className="mr-2 h-4 w-4" /> {t(lang, "settingsSave")}</Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="ghost"><Trash2 className="mr-2 h-4 w-4" /> {t(lang, "settingsClearOverrides")}</Button>
+                <Button variant="ghost"><RotateCcw className="mr-2 h-4 w-4" /> {t(lang, "settingsClearOverrides")}</Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>{t(lang, "settingsResetConfirmTitle")}</AlertDialogTitle>
-                  <AlertDialogDescription>{t(lang, "settingsResetConfirmDescription")}</AlertDialogDescription>
+                  <AlertDialogTitle>{text(lang, "Reset unsaved changes?", "Đặt lại thay đổi chưa lưu?")}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {text(lang, "This only discards edits that have not been saved yet. Saved runtime settings, modules, chill tracks, and template files are kept.", "Thao tác này chỉ bỏ các chỉnh sửa chưa lưu. Settings runtime, module, chill track và template file đã lưu sẽ được giữ nguyên.")}
+                  </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>{t(lang, "settingsCancel")}</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={() => void handleReset()}
-                  >
-                    {t(lang, "settingsResetConfirmAction")}
-                  </AlertDialogAction>
+                  <AlertDialogAction onClick={() => void handleReset()}>{t(lang, "settingsResetConfirmAction")}</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

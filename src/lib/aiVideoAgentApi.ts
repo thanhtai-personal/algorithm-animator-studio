@@ -7,6 +7,8 @@ export type AgentVideoLanguage = "vi" | "en";
 export type AgentVideoJobStatus = "draft" | "queued" | "running" | "review_ready" | "success" | "failed" | "cancelled";
 export type AgentVideoPublishTarget = "youtube" | "facebook" | "tiktok" | "instagram";
 export type AgentVoiceProvider = "piper" | "elevenlabs" | "supertonic" | "vieneu" | "applio";
+export type AgentVideoRenderTemplate = "algorithm-explainer" | "news-card" | "story-card";
+export type AgentVideoRenderAspectRatio = "auto" | "16:9" | "9:16";
 
 export type AgentVideoPublishChannel = {
   id: string;
@@ -105,6 +107,20 @@ export type AgentVideoForm = {
   applioTtsTemplateId: string;
   speechRate: number;
   sentenceSilence: number;
+  renderTitle: string;
+  renderSubtitle: string;
+  renderNarration: string;
+  renderTemplate: AgentVideoRenderTemplate;
+  renderAspectRatio: AgentVideoRenderAspectRatio;
+  renderFps: number;
+  renderPrimaryColor: string;
+  renderAccentColor: string;
+  renderAlgorithmLabel: string;
+  renderData: string;
+  renderWatermark: string;
+  renderBackgroundMusicUrl: string;
+  renderVoiceVolume: number;
+  renderBackgroundMusicVolume: number;
   agentPreset?: string;
   autoCreatePublishJobs?: boolean;
   publishTargets?: AgentVideoPublishTarget[];

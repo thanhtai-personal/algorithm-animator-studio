@@ -3,6 +3,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { AppSidebar, type SidebarMode } from "@/components/AppSidebar";
 import { BackgroundJobsNotifier } from "@/components/BackgroundJobsNotifier";
 import { FantasticModeBackdrop } from "@/components/FantasticModeBackdrop";
+import { useFantasticFrameMotion } from "@/hooks/use-fantastic-frame-motion";
 import { useFantasticMode } from "@/hooks/use-fantastic-mode";
 import { readSystemLang, subscribeSystemLang, type Lang } from "@/lib/i18n";
 
@@ -20,6 +21,7 @@ export function AppLayout({ children }: PropsWithChildren) {
   const [fantasticMode] = useFantasticMode();
 
   useEffect(() => subscribeSystemLang(setLang), []);
+  useFantasticFrameMotion(fantasticMode);
 
   useEffect(() => {
     window.localStorage.setItem(SIDEBAR_STORAGE_KEY, sidebarMode);

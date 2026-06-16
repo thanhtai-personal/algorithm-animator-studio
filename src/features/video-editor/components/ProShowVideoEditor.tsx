@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react";
-import { Download, Film, ImagePlus, Loader2, Music2, Scissors, Upload, Video } from "lucide-react";
+import { Download, Film, ImagePlus, Music2, Scissors, Upload, Video } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -254,7 +255,7 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
             <Field label={text(lang, "Aspect", "Tỉ lệ")}><Select value={aspectRatio} onValueChange={(value) => setAspectRatio(value as VideoEditorAspectRatio)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="16:9">16:9</SelectItem><SelectItem value="9:16">9:16</SelectItem></SelectContent></Select></Field>
             <Field label="FPS"><Select value={String(fps)} onValueChange={(value) => setFps(Number(value))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="24">24</SelectItem><SelectItem value="30">30</SelectItem><SelectItem value="60">60</SelectItem></SelectContent></Select></Field>
             <Button className="xl:min-w-64" onClick={() => void handleRender()} disabled={rendering || !visualClips.length}>
-              {rendering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}
+              {rendering ? <SystemLoader className="mr-2 h-4 w-4" /> : <Film className="mr-2 h-4 w-4" />}
               {renderEngine === "remotion" ? text(lang, "Render MP4 with Remotion", "Render MP4 bằng Remotion") : text(lang, "Export MP4 with FFmpeg", "Export MP4 bằng FFmpeg")}
             </Button>
           </div>

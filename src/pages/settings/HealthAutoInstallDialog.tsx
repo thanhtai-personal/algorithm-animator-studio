@@ -1,4 +1,5 @@
-import { AlertTriangle, CheckCircle2, Loader2, Play, RefreshCw, Terminal, Wrench } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Play, RefreshCw, Terminal, Wrench } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -140,7 +141,7 @@ export function HealthAutoInstallDialog({ lang, onAfterTask }: HealthAutoInstall
   return (
     <>
       <Button onClick={() => void runAutoInstall()} disabled={running}>
-        {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wrench className="mr-2 h-4 w-4" />}
+        {running ? <SystemLoader className="mr-2 h-4 w-4" /> : <Wrench className="mr-2 h-4 w-4" />}
         {text(lang, "Auto install", "Tự cài đặt")}
       </Button>
 
@@ -197,7 +198,7 @@ export function HealthAutoInstallDialog({ lang, onAfterTask }: HealthAutoInstall
               <RefreshCw className="mr-2 h-4 w-4" /> {text(lang, "Refresh", "Kiểm tra lại")}
             </Button>
             <Button onClick={() => void runAutoInstall()} disabled={running}>
-              {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+              {running ? <SystemLoader className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
               {done ? text(lang, "Run again", "Chạy lại") : text(lang, "Start", "Bắt đầu")}
             </Button>
           </DialogFooter>
@@ -221,7 +222,7 @@ function InstallResultCard({ lang, result }: { lang: Lang; result: InstallResult
           </div>
           <p className="text-xs text-muted-foreground">{result.message}</p>
         </div>
-        {running ? <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" /> : success ? <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" /> : failed ? <AlertTriangle className="h-5 w-5 shrink-0 text-red-400" /> : null}
+        {running ? <SystemLoader className="h-5 w-5 shrink-0 text-primary" /> : success ? <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" /> : failed ? <AlertTriangle className="h-5 w-5 shrink-0 text-red-400" /> : null}
       </div>
 
       {result.command ? (

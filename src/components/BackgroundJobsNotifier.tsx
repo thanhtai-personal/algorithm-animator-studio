@@ -1,4 +1,5 @@
-import { ChevronDown, ChevronUp, ExternalLink, Loader2, Terminal } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink, Terminal } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -97,7 +98,7 @@ export function BackgroundJobsNotifier() {
           onClick={() => setExpanded((value) => !value)}
         >
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-400/15 text-cyan-200">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <SystemLoader className="h-4 w-4" />
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-semibold">Đang chạy nền · {jobs.length} job</span>

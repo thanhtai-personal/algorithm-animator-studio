@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Background, Controls, Handle, MarkerType, Position, ReactFlow, type Edge, type Node, type NodeProps } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { CheckCircle2, Circle, Clock3, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, Circle, Clock3, XCircle } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
@@ -10,8 +11,7 @@ import type { AgentVideoForm, AgentVideoJob, AgentWorkflowStageId } from "@/lib/
 import { text, type Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-type FlowNodeKind = "stage" | "condition" | "branch" | "terminal" | "data" | "store" | "external";
-type FlowMode = "process" | "data";
+type FlowNodeKind = "stage" | "condition" | "branch" | "terminal" | "data" | "store" | "external"; type FlowMode = "process" | "data";
 
 type StageNodeData = {
   label: string;
@@ -388,7 +388,7 @@ function NodeHandles() { return <>
 </>; }
 
 function StatusIcon({ status }: { status: string }) {
-  if (status === "running") return <Loader2 className="mt-0.5 h-4 w-4 animate-spin text-primary" />;
+  if (status === "running") return <SystemLoader className="mt-0.5 h-4 w-4 text-primary" />;
   if (status === "done") return <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />;
   if (status === "failed") return <XCircle className="mt-0.5 h-4 w-4 text-destructive" />;
   if (status === "skipped") return <Clock3 className="mt-0.5 h-4 w-4 text-muted-foreground" />;

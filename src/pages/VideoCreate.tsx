@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Film, Loader2, Upload } from "lucide-react";
+import { Film, Upload } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -114,7 +115,7 @@ export default function VideoCreate() {
               </p>
             </div>
             <Button onClick={handleUpload} disabled={uploading}>
-              {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+              {uploading ? <SystemLoader className="mr-2 h-4 w-4" /> : <Upload className="mr-2 h-4 w-4" />}
               {text(lang, "Save to library", "Lưu vào thư viện")}
             </Button>
           </CardContent>

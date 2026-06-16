@@ -1,4 +1,5 @@
-import { Loader2, Upload, Video } from "lucide-react";
+import { Upload, Video } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -58,7 +59,7 @@ export function ReviewRenderPanel({ studio }: { studio: Studio }) {
       </div>
 
       <Button onClick={studio.mergeVideo} disabled={!studio.canMerge}>
-        {studio.loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+        {studio.loading ? <SystemLoader className="mr-2 h-4 w-4" /> : <Upload className="mr-2 h-4 w-4" />}
         Ghép video review
       </Button>
 

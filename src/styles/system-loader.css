@@ -1,0 +1,89 @@
+.kai-system-loader {
+  display: inline-block;
+  width: 1.45em;
+  min-width: 1.45em;
+  height: 1em;
+  overflow: visible;
+  fill: none;
+  color: currentColor;
+  vertical-align: -0.14em;
+}
+
+.kai-system-loader-orbit {
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 4.5;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.kai-system-loader-orbit-soft {
+  opacity: 0.2;
+}
+
+.kai-system-loader-orbit-main {
+  stroke-dasharray: 0.28 0.72;
+  animation:
+    kai-loader-dash 1.45s cubic-bezier(0.65, 0, 0.35, 1) infinite,
+    kai-loader-hue 4.8s linear infinite;
+  filter: drop-shadow(0 0 5px hsl(var(--primary) / 0.38));
+}
+
+.kai-system-loader-delay {
+  animation-delay: -0.72s, -2.4s;
+}
+
+.kai-system-loader-pulse {
+  fill: currentColor;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: kai-loader-pulse 1.45s ease-in-out infinite;
+  filter: drop-shadow(0 0 5px hsl(var(--primary) / 0.42));
+}
+
+.kai-system-loader-pulse-b {
+  animation-delay: -0.72s;
+}
+
+.fantastic-mode .kai-system-loader-orbit-main,
+.fantastic-mode .kai-system-loader-pulse {
+  filter:
+    drop-shadow(0 0 6px hsl(var(--primary) / 0.65))
+    drop-shadow(0 0 12px hsl(var(--accent) / 0.28));
+}
+
+@keyframes kai-loader-dash {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.25;
+  }
+}
+
+@keyframes kai-loader-pulse {
+  0%,
+  100% {
+    opacity: 0.34;
+    transform: scale(0.72);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+}
+
+@keyframes kai-loader-hue {
+  0%,
+  100% {
+    color: hsl(var(--primary));
+  }
+  50% {
+    color: hsl(var(--accent));
+  }
+}

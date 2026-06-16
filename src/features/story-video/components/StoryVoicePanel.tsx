@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Wand2, Volume2 } from "lucide-react";
+import { Wand2, Volume2 } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -136,7 +137,7 @@ export function StoryVoicePanel({ studio }: { studio: StoryStudio }) {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <Button onClick={() => studio.generateAudio(applioTtsTemplateId || undefined)} disabled={!studio.canGenerateAudio || (studio.provider === "vieneu" && !studio.vieneuConfig?.sdkInstalled) || (studio.provider === "applio" && (!studio.rvcApplioConfig?.serverOk || applioTtsTemplates.length === 0))} className="bg-emerald-500 text-slate-950 hover:bg-emerald-600">
-          {studio.loading.audio ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
+          {studio.loading.audio ? <SystemLoader className="mr-2 h-4 w-4" /> : <Volume2 className="mr-2 h-4 w-4" />}
           Tạo audio đọc truyện
         </Button>
         {applioTemplates.length > 0 ? (
@@ -146,7 +147,7 @@ export function StoryVoicePanel({ studio }: { studio: StoryStudio }) {
           </Select>
         ) : null}
         <Button type="button" variant="outline" onClick={() => studio.convertAudioWithApplio(applioTemplateId || undefined)} disabled={studio.loading.convert || !studio.selectedAudioPath || !studio.rvcApplioConfig?.serverOk}>
-          {studio.loading.convert ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+          {studio.loading.convert ? <SystemLoader className="mr-2 h-4 w-4" /> : <Wand2 className="mr-2 h-4 w-4" />}
           Chuyển sang custom voice
         </Button>
         {studio.audioResult?.audioUrl ? <audio controls src={studio.audioResult.audioUrl} className="h-10 flex-1" /> : null}

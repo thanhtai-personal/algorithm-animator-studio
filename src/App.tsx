@@ -7,10 +7,9 @@ import { ThemeProvider } from "next-themes";
 import { AppLayout } from "@/components/AppLayout";
 import { RuntimeSetupGate } from "@/components/RuntimeSetupGate";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useSystemLang } from "@/hooks/use-system-lang";
-import { text } from "@/lib/i18n";
 
 const queryClient = new QueryClient();
 const AiVideoAgent = lazy(() => import("./pages/AiVideoAgent.tsx"));
@@ -49,14 +48,11 @@ const AnalyticsTracker = () => {
   return <Analytics mode="production" route={location.pathname} path={path} />;
 };
 
-const RouteFallback = () => {
-  const lang = useSystemLang();
-  return (
-    <main className="grid min-h-[60vh] place-items-center px-4 text-sm font-medium text-muted-foreground">
-      {text(lang, "Loading...", "Đang tải...")}
-    </main>
-  );
-};
+const RouteFallback = () => (
+  <main className="grid min-h-[60vh] place-items-center px-4 text-muted-foreground">
+    <SystemLoader className="h-36 w-72 text-primary" title="Loading" />
+  </main>
+);
 
 const LegacyChannelRedirect = () => {
   const location = useLocation();

@@ -16,6 +16,7 @@ import { SocialChannelManagerCard } from "@/features/social-channel/components/S
 import { PublishingOpsCard } from "@/features/publishing-ops/components/PublishingOpsCard";
 import { useSocialChannelWorkspace } from "@/features/social-channel/hooks/useSocialChannelWorkspace";
 import type { SocialChannel, SocialPlatform } from "@/features/social-channel/types";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -110,7 +111,7 @@ export default function YoutubePublishing() {
     if (!activeSharedChannel) setActiveKey(channelKey(sharedChannels[0]));
   }, [activeSharedChannel, sharedChannels]);
 
-  if (manager.authStatus === "loading") return <ScreenMessage text={txt(vi, "Đang kiểm tra phiên đăng nhập...", "Checking signed-in session...")} />;
+  if (manager.authStatus === "loading") return <ScreenMessage />;
   if (manager.authStatus === "denied") return <Navigate replace to="/auth" state={{ from: "/channel" }} />;
 
   function selectSharedChannel(channel: SharedChannelItem) {
@@ -169,7 +170,7 @@ export default function YoutubePublishing() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="kai-channel-page min-h-screen bg-background text-foreground">
       <main className="w-full space-y-4 px-3 py-4 sm:px-4 lg:px-6 2xl:px-8">
         <YoutubeManagerHeader
           activeChannelTitle={activeSharedChannel?.title}
@@ -371,10 +372,10 @@ function channelTitle(channels: Array<{ name: string }>, provider: SocialPlatfor
   return providerLabel(provider);
 }
 
-function ScreenMessage({ text }: { text: string }) {
+function ScreenMessage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
-      {text}
+    <main className="flex min-h-screen items-center justify-center bg-background">
+      <SystemLoader className="h-40 w-80" title="Loading" />
     </main>
   );
 }

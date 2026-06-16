@@ -1,5 +1,6 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CheckCircle2, Loader2, RadioTower, Trash2, UploadCloud } from "lucide-react";
+import { ArrowLeft, CheckCircle2, RadioTower, Trash2, UploadCloud } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -186,7 +187,7 @@ export default function SocialPublishing() {
   }
 
   if (authStatus === "loading") {
-    return <ScreenMessage text="Checking admin session..." />;
+    return <ScreenMessage />;
   }
 
   if (authStatus === "denied") {
@@ -284,7 +285,7 @@ function PlatformConfigCard(props: {
 
       <div className="flex flex-wrap gap-2">
         <Button disabled={platformBusy} onClick={props.onSave}>
-          {platformBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+          {platformBusy ? <SystemLoader className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
           Save config
         </Button>
         <Button disabled={platformBusy || config.status === "not_configured"} variant="outline" onClick={props.onTest}>
@@ -345,7 +346,7 @@ function PublishCard(props: {
           ))}
         </div>
         <Button className="w-full" disabled={props.busy} type="submit">
-          {props.busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+          {props.busy ? <SystemLoader className="h-4 w-4" /> : <UploadCloud className="h-4 w-4" />}
           Submit publish job
         </Button>
       </form>
@@ -387,8 +388,8 @@ function ToggleRow(props: { label: string; checked: boolean; onChange: (checked:
   );
 }
 
-function ScreenMessage({ text }: { text: string }) {
-  return <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">{text}</div>;
+function ScreenMessage() {
+  return <div className="flex min-h-screen items-center justify-center bg-background"><SystemLoader className="h-40 w-80" title="Loading" /></div>;
 }
 
 function errorMessage(error: unknown): string {

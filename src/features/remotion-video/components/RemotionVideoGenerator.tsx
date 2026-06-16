@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Player } from "@remotion/player";
-import { Cpu, Loader2, Play, RefreshCw, Sparkles } from "lucide-react";
+import { Cpu, Play, RefreshCw, Sparkles } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -97,7 +98,7 @@ export function RemotionVideoGenerator({ onVideoCreated, preset, fixedTemplate, 
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={health?.available ? "default" : "secondary"}>{health?.available ? "Remotion OK" : "Remotion chưa sẵn sàng"}</Badge>
           <Button type="button" variant="outline" size="sm" onClick={() => void refreshHealth()} disabled={checking}>
-            {checking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />} Health
+            {checking ? <SystemLoader className="mr-2 h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />} Health
           </Button>
         </div>
       </CardHeader>
@@ -139,7 +140,7 @@ export function RemotionVideoGenerator({ onVideoCreated, preset, fixedTemplate, 
           ) : null}
 
           <Button className="w-full md:w-auto" onClick={() => void handleRender()} disabled={rendering || Boolean(health && !health.available)}>
-            {rendering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+            {rendering ? <SystemLoader className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
             {text(lang, "Render MP4 with Remotion", "Render MP4 bằng Remotion")}
           </Button>
         </div>

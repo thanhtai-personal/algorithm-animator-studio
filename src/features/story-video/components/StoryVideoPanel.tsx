@@ -1,4 +1,5 @@
-import { Film, Loader2, Upload } from "lucide-react";
+import { Film, Upload } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -54,7 +55,7 @@ export function StoryVideoPanel({ studio }: { studio: StoryStudio }) {
       ) : null}
 
       <Button onClick={studio.generateVideo} disabled={!studio.canGenerateVideo}>
-        {studio.loading.video ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}
+        {studio.loading.video ? <SystemLoader className="mr-2 h-4 w-4" /> : <Film className="mr-2 h-4 w-4" />}
         Tạo video MP4
       </Button>
 

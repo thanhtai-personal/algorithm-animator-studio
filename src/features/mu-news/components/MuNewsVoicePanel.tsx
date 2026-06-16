@@ -1,4 +1,5 @@
-import { ArrowRight, Loader2, Mic2, Upload, Volume2 } from "lucide-react";
+import { ArrowRight, Mic2, Upload, Volume2 } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,7 +34,7 @@ export function MuNewsVoicePanel({ studio }: { studio: MuNewsStudio }) {
             </p>
           </div>
           <Button className="w-full sm:w-auto" onClick={studio.createAllAudioSegments} disabled={!studio.canGenerateAudio}>
-            {studio.loading.audio ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
+            {studio.loading.audio ? <SystemLoader className="mr-2 h-4 w-4" /> : <Volume2 className="mr-2 h-4 w-4" />}
             Tạo tất cả voice
           </Button>
         </div>
@@ -137,7 +138,7 @@ function VoiceSegmentCard({ segment, studio }: { segment: MuNewsVoiceSegment; st
           {segment.result?.audioUrl ? <audio controls src={segment.result.audioUrl} className="h-10 w-full" /> : null}
         </div>
         <Button className="w-full lg:w-auto" variant="outline" onClick={() => studio.createAudioSegment(segment.id)} disabled={studio.loading.audio || !segment.text.trim()}>
-          {studio.loading.audio ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
+          {studio.loading.audio ? <SystemLoader className="mr-2 h-4 w-4" /> : <Volume2 className="mr-2 h-4 w-4" />}
           Tạo
         </Button>
       </div>

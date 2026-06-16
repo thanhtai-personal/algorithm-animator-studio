@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Film, Loader2, Music2, Upload, X } from "lucide-react";
+import { Film, Music2, Upload, X } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +37,7 @@ export function MuNewsVideoPanel({ studio }: { studio: MuNewsStudio }) {
           </div>
           {renderLibrary === "ffmpeg" ? (
             <Button className="w-full sm:w-auto" onClick={studio.createVideo} disabled={!studio.canGenerateVideo}>
-              {studio.loading.video ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}
+              {studio.loading.video ? <SystemLoader className="mr-2 h-4 w-4" /> : <Film className="mr-2 h-4 w-4" />}
               Render video
             </Button>
           ) : null}

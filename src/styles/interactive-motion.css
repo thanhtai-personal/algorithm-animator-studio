@@ -226,6 +226,152 @@
     filter: drop-shadow(0 20px 42px hsl(var(--primary) / 0.18));
 }
 
+html:not(.dark).fantastic-mode body {
+    background:
+      radial-gradient(circle at 12% -10%, hsl(188 88% 70% / 0.34), transparent 30rem),
+      radial-gradient(circle at 92% 2%, hsl(38 96% 68% / 0.24), transparent 26rem),
+      linear-gradient(135deg, hsl(196 72% 98%), hsl(204 58% 95%) 48%, hsl(190 72% 97%));
+}
+
+html:not(.dark).fantastic-mode header {
+    border-color: hsl(190 48% 84% / 0.72);
+    background:
+      linear-gradient(180deg, hsl(0 0% 100% / 0.88), hsl(196 70% 97% / 0.76)),
+      radial-gradient(circle at 20% 0%, hsl(188 93% 54% / 0.14), transparent 18rem);
+    box-shadow: 0 18px 48px hsl(202 50% 36% / 0.14);
+}
+
+html:not(.dark).fantastic-mode .fantastic-backdrop {
+    background:
+      radial-gradient(circle at calc(13% + (var(--fantastic-scroll) * 14%)) 12%, hsl(187 92% 63% / 0.26), transparent 22rem),
+      radial-gradient(circle at calc(88% - (var(--fantastic-scroll) * 14%)) 6%, hsl(38 96% 63% / 0.18), transparent 21rem),
+      linear-gradient(145deg, hsl(196 80% 98% / 0.72), transparent 58%);
+}
+
+html:not(.dark).fantastic-mode .fantastic-orb {
+    mix-blend-mode: multiply;
+    opacity: 0.2;
+    filter: blur(76px);
+}
+
+html:not(.dark).fantastic-mode .fantastic-orb-a {
+    background: hsl(187 92% 58% / 0.78);
+}
+
+html:not(.dark).fantastic-mode .fantastic-orb-b {
+    background: hsl(38 96% 64% / 0.58);
+}
+
+html:not(.dark).fantastic-mode .fantastic-beam {
+    background: linear-gradient(90deg, transparent, hsl(187 90% 56% / 0.14), hsl(38 96% 64% / 0.12), transparent);
+    opacity: 0.24;
+    filter: blur(24px);
+}
+
+html:not(.dark).fantastic-mode .fantastic-pulse {
+    border-color: hsl(188 72% 48% / 0.2);
+    box-shadow:
+      inset 0 0 34px hsl(188 82% 58% / 0.11),
+      0 0 60px hsl(38 96% 58% / 0.1);
+}
+
+html:not(.dark).fantastic-mode .fantastic-noise {
+    opacity: 0.07;
+    background-image:
+      radial-gradient(circle at 20% 30%, hsl(194 56% 30% / 0.18) 0 1px, transparent 1px),
+      radial-gradient(circle at 70% 60%, hsl(188 86% 44% / 0.16) 0 1px, transparent 1px);
+}
+
+html:not(.dark).fantastic-mode .fantastic-toggle {
+    border-color: hsl(188 74% 44% / 0.3);
+    background:
+      linear-gradient(135deg, hsl(0 0% 100% / 0.96), hsl(190 68% 94% / 0.92)),
+      radial-gradient(circle at 12% 0%, hsl(188 93% 48% / 0.16), transparent 6rem);
+    color: hsl(196 80% 17%);
+    box-shadow: 0 12px 28px hsl(194 50% 40% / 0.14);
+}
+
+html:not(.dark).fantastic-mode .fantastic-toggle:hover {
+    border-color: hsl(188 80% 41% / 0.52);
+    background:
+      linear-gradient(135deg, hsl(0 0% 100%), hsl(188 72% 92%)),
+      radial-gradient(circle at 82% 0%, hsl(38 96% 62% / 0.18), transparent 6rem);
+}
+
+html:not(.dark).fantastic-mode .fantastic-toggle-dot.is-on {
+    background: hsl(188 86% 42%);
+    box-shadow:
+      0 0 0 3px hsl(188 88% 52% / 0.14),
+      0 0 18px hsl(188 90% 48% / 0.42);
+}
+
+html:not(.dark).fantastic-mode .kai-surface {
+    background:
+      linear-gradient(135deg, hsl(0 0% 100% / 0.86), hsl(192 62% 96% / 0.7)),
+      radial-gradient(circle at 8% 0%, hsl(188 86% 50% / 0.12), transparent 18rem);
+    border-color: hsl(190 44% 78% / 0.62);
+    box-shadow:
+      0 24px 70px hsl(202 42% 32% / 0.16),
+      0 0 0 1px hsl(0 0% 100% / 0.76);
+}
+
+html:not(.dark).fantastic-mode .kai-grid-bg {
+    background-image:
+      linear-gradient(hsl(193 46% 42% / 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(193 46% 42% / 0.07) 1px, transparent 1px);
+    background-size: 26px 26px;
+}
+
+html:not(.dark).fantastic-mode .tabs-list-animated {
+    border-color: hsl(190 48% 78% / 0.76);
+    background:
+      linear-gradient(135deg, hsl(0 0% 100% / 0.86), hsl(193 70% 95% / 0.82)),
+      radial-gradient(circle at 12% 0%, hsl(188 88% 54% / 0.12), transparent 12rem);
+    box-shadow:
+      inset 0 0 0 1px hsl(0 0% 100% / 0.72),
+      0 14px 34px hsl(202 45% 34% / 0.12);
+}
+
+html:not(.dark).fantastic-mode .tabs-list-animated::before {
+    background: linear-gradient(90deg, transparent, hsl(188 86% 48% / 0.12), hsl(38 92% 58% / 0.1), transparent);
+}
+
+html:not(.dark).fantastic-mode .tabs-active-indicator {
+    background:
+      radial-gradient(circle at 30% 18%, hsl(0 0% 100% / 0.96), transparent 0.76rem),
+      linear-gradient(135deg, hsl(188 88% 50%), hsl(184 82% 40%));
+    box-shadow:
+      0 0 0 1px hsl(0 0% 100% / 0.86),
+      0 10px 26px hsl(188 76% 42% / 0.28);
+}
+
+html:not(.dark).fantastic-mode .tabs-list-animated [role="tab"] {
+    color: hsl(200 22% 38%);
+}
+
+html:not(.dark).fantastic-mode .tabs-list-animated [role="tab"][data-state="active"] {
+    color: hsl(196 80% 11%);
+    text-shadow: 0 1px 10px hsl(0 0% 100% / 0.58);
+}
+
+html:not(.dark).fantastic-mode .kai-switch {
+    border-color: hsl(190 48% 74% / 0.62);
+    background: linear-gradient(135deg, hsl(198 54% 92%), hsl(190 56% 86%));
+    box-shadow:
+      inset 0 0 0 1px hsl(0 0% 100% / 0.64),
+      0 10px 24px hsl(202 42% 36% / 0.12);
+}
+
+html:not(.dark).fantastic-mode .kai-switch[data-state="checked"] {
+    border-color: hsl(188 82% 42% / 0.54);
+    background:
+      linear-gradient(135deg, hsl(188 88% 50%), hsl(184 84% 38%)),
+      radial-gradient(circle at 24% 0%, hsl(0 0% 100% / 0.55), transparent 5rem);
+    box-shadow:
+      0 0 0 1px hsl(0 0% 100% / 0.7),
+      0 12px 24px hsl(188 78% 36% / 0.26);
+}
+
 @keyframes fantastic-tab-scan {
     0%,
     100% {

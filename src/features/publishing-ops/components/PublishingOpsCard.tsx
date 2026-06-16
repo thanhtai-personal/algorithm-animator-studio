@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { CalendarClock, ExternalLink, Loader2, Play, RefreshCcw, RotateCcw, Wand2, XCircle } from "lucide-react";
+import { CalendarClock, ExternalLink, Play, RefreshCcw, RotateCcw, Wand2, XCircle } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -223,7 +224,7 @@ export function PublishingOpsCard({ activeChannel, lang }: Props) {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant={STATUS_VARIANT[job.status] || "secondary"}>{job.status}</Badge>
-                {job.status === "running" ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : null}
+                {job.status === "running" ? <SystemLoader className="h-4 w-4 text-primary" /> : null}
                 {job.resultUrl ? <a className="inline-flex items-center gap-1 text-xs text-blue-300 underline" href={job.resultUrl} target="_blank" rel="noreferrer">Open <ExternalLink className="h-3 w-3" /></a> : null}
                 <Button size="sm" variant="outline" onClick={() => void actionJob("run", job)} disabled={loading || job.status === "running"}><Play className="h-3.5 w-3.5" /></Button>
                 {job.status === "failed" || job.status === "manual_required" ? <Button size="sm" variant="outline" onClick={() => void actionJob("retry", job)} disabled={loading}><RotateCcw className="h-3.5 w-3.5" /></Button> : null}

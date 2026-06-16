@@ -1,0 +1,18 @@
+.fantastic-mode .runtime-loading-card {
+  border-color: hsl(var(--primary) / 0.3);
+  background:
+    linear-gradient(135deg, hsl(var(--card) / 0.78), hsl(var(--card) / 0.44)),
+    radial-gradient(circle at 30% 0%, hsl(var(--primary) / 0.18), transparent 12rem);
+  box-shadow:
+    0 28px 80px hsl(214 80% 5% / 0.38),
+    inset 0 0 0 1px hsl(0 0% 100% / 0.07);
+}
+
+html:not(.dark).fantastic-mode .runtime-loading-card {
+  background:
+    linear-gradient(135deg, hsl(0 0% 100% / 0.9), hsl(190 64% 96% / 0.68)),
+    radial-gradient(circle at 30% 0%, hsl(188 88% 54% / 0.12), transparent 12rem);
+  box-shadow:
+    0 24px 70px hsl(202 42% 32% / 0.16),
+    0 0 0 1px hsl(0 0% 100% / 0.76);
+}

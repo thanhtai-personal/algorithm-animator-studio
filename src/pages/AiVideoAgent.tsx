@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Bot, Loader2, PanelRightClose, PanelRightOpen, Play, RefreshCcw, Terminal } from "lucide-react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { Bot, PanelRightClose, PanelRightOpen, Play, RefreshCcw, Terminal } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -322,11 +322,11 @@ export default function AiVideoAgent() {
           <h1 className="mt-3 text-3xl font-bold tracking-tight">{text(lang, "AI Video Agent Flow", "AI Video Agent Flow")}</h1>
         </div>
         <Button variant="outline" onClick={handleRunDue} disabled={fullAgentRunning}>
-          {fullAgentRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}{text(lang, "Run scheduled", "Chạy job tới lịch")}
+          {fullAgentRunning ? <SystemLoader className="mr-2 h-4 w-4" /> : <RefreshCcw className="mr-2 h-4 w-4" />}{text(lang, "Run scheduled", "Chạy job tới lịch")}
         </Button>
       </div>
 
-      <div className={settingsOpen ? "grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]" : "grid gap-4 xl:grid-cols-[minmax(0,1fr)_64px]"}>
+      <div className="grid gap-4 transition-[grid-template-columns] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] xl:grid-cols-[minmax(0,1fr)_var(--agent-panel-width)]" style={{ "--agent-panel-width": settingsOpen ? "420px" : "64px" } as CSSProperties}>
         <section className="min-w-0 space-y-4">
           <AgentFlowGraph job={fullAgentRunning ? activeJob : undefined} draftInput={form} lang={lang} selectedStageId={selectedStageId} onSelectStage={setSelectedStageId} />
           <Tabs defaultValue="logs" className="space-y-4">
@@ -340,23 +340,23 @@ export default function AiVideoAgent() {
           <AgentSelectedChannelVideos channels={selectedPublishChannels} lang={lang} />
         </section>
 
-        <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen} className="min-w-0">
-          <Card className="sticky top-4 overflow-hidden">
+        <aside className="min-w-0">
+          <Card className="sticky top-4 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]">
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-3">
-              {settingsOpen ? <div><CardTitle className="text-base">{text(lang, "Agent settings", "Thiết lập Agent")}</CardTitle><CardDescription>{text(lang, "Local backend controls.", "Điều khiển backend local.")}</CardDescription></div> : null}
+              <div className={settingsOpen ? "min-w-0 transition-all duration-300" : "pointer-events-none w-0 min-w-0 -translate-x-2 overflow-hidden opacity-0 transition-all duration-300"}><CardTitle className="text-base">{text(lang, "Agent settings", "Thiết lập Agent")}</CardTitle><CardDescription>{text(lang, "Local backend controls.", "Điều khiển backend local.")}</CardDescription></div>
               <Button type="button" variant="ghost" size="icon" onClick={() => setSettingsOpen((open) => !open)} aria-label={text(lang, "Toggle settings panel", "Thu gọn/mở panel thiết lập")}>
                 {settingsOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
               </Button>
             </CardHeader>
-            <CollapsibleContent>
+            <div aria-hidden={!settingsOpen} className={settingsOpen ? "max-h-[calc(100vh-130px)] opacity-100 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]" : "pointer-events-none max-h-0 translate-x-3 overflow-hidden opacity-0 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"}>
               <ScrollArea className="h-[calc(100vh-130px)]">
                 <CardContent className="space-y-4 p-3 pt-0">
                   <AgentSettingsForm form={form} lang={lang} presets={presets} models={models} availableModels={availableModels} elevenConfig={elevenConfig} supertonicConfig={supertonicConfig} rvcApplioConfig={rvcApplioConfig} vieneuConfig={vieneuConfig} publishOptions={publishOptions} selectedPublishChannelKeys={selectedPublishChannelKeys} publishChannelWarning={publishChannelWarning} loadingPlan={loadingPlan} running={fullAgentRunning} applyPreset={applyPreset} applyContentKind={applyContentKind} update={update} togglePublishTarget={togglePublishTarget} togglePublishChannel={togglePublishChannel} refreshPublishChannels={refreshPublishChannels} handleCreatePlan={handleCreatePlan} handleRunNow={handleRunNow} handleSaveDraft={handleSaveDraft} />
                 </CardContent>
               </ScrollArea>
-            </CollapsibleContent>
+            </div>
           </Card>
-        </Collapsible>
+        </aside>
       </div>
     </main>
   );
@@ -369,7 +369,7 @@ function PlanCard({ plan, lang }: { plan: AgentVideoPlan | null; lang: Lang }) {
 
 function JobCard({ job, lang, busy, onRun, compact }: { job?: AgentVideoJob; lang: Lang; busy: boolean; onRun: (job: AgentVideoJob) => void; compact?: boolean }) {
   if (!job) return <Empty lang={lang} />;
-  return <Card><CardHeader className="pb-3"><div className="flex items-start justify-between gap-3"><div><CardTitle className="text-base">{job.plan?.title || job.input.topic}</CardTitle><CardDescription>{new Date(job.createdAtMs).toLocaleString()} · {job.status}</CardDescription></div><Badge variant={job.status === "success" ? "default" : job.status === "failed" ? "destructive" : "secondary"}>{job.status}</Badge></div></CardHeader><CardContent className="space-y-3"><Progress value={job.progress} /><p className="text-sm text-muted-foreground">{job.currentStep || job.error || "Idle"}</p>{job.error ? <p className="rounded-md bg-destructive/10 p-2 text-sm text-destructive">{job.error}</p> : null}{job.artifacts?.videoUrl ? <video src={job.artifacts.videoUrl} controls className="max-h-[360px] w-full rounded-lg border bg-black" /> : null}{job.artifacts?.publishJobIds?.length ? <p className="text-xs text-muted-foreground">Publish jobs: {job.artifacts.publishJobIds.length}</p> : null}{!compact && <Button onClick={() => onRun(job)} disabled={busy || job.status === "running"}>{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}{text(lang, "Run / rerun", "Chạy / chạy lại")}</Button>}</CardContent></Card>;
+  return <Card><CardHeader className="pb-3"><div className="flex items-start justify-between gap-3"><div><CardTitle className="text-base">{job.plan?.title || job.input.topic}</CardTitle><CardDescription>{new Date(job.createdAtMs).toLocaleString()} · {job.status}</CardDescription></div><Badge variant={job.status === "success" ? "default" : job.status === "failed" ? "destructive" : "secondary"}>{job.status}</Badge></div></CardHeader><CardContent className="space-y-3"><Progress value={job.progress} /><p className="text-sm text-muted-foreground">{job.currentStep || job.error || "Idle"}</p>{job.error ? <p className="rounded-md bg-destructive/10 p-2 text-sm text-destructive">{job.error}</p> : null}{job.artifacts?.videoUrl ? <video src={job.artifacts.videoUrl} controls className="max-h-[360px] w-full rounded-lg border bg-black" /> : null}{job.artifacts?.publishJobIds?.length ? <p className="text-xs text-muted-foreground">Publish jobs: {job.artifacts.publishJobIds.length}</p> : null}{!compact && <Button onClick={() => onRun(job)} disabled={busy || job.status === "running"}>{busy ? <SystemLoader className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}{text(lang, "Run / rerun", "Chạy / chạy lại")}</Button>}</CardContent></Card>;
 }
 
 function PublishJobsCard({ jobs, agentJob, lang }: { jobs: PublishJob[]; agentJob?: AgentVideoJob; lang: Lang }) {

@@ -1,4 +1,5 @@
-import { AlertTriangle, ArrowRight, CheckCircle2, Loader2, Play, RefreshCw, Settings, ShieldCheck, Wrench } from "lucide-react";
+import { AlertTriangle, ArrowRight, CheckCircle2, Play, RefreshCw, Settings, ShieldCheck, Wrench } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -117,7 +118,7 @@ export default function RuntimeSetup() {
             <RefreshCw className="mr-2 h-4 w-4" /> {t(lang, "settingsCheckAgain")}
           </Button>
           <Button onClick={() => void runAutoSetup()} disabled={autoDisabled}>
-            {runningTask ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+            {runningTask ? <SystemLoader className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
             {text(lang, "Auto install", "Tự cài đặt")}
           </Button>
           <Button variant={coreReady ? "default" : "secondary"} onClick={() => enterStudio(!coreReady)}>
@@ -200,7 +201,7 @@ function SetupTaskCard(props: { lang: Lang; task: SetupTaskStatus; running: bool
       <p className="min-h-10 break-words text-xs text-muted-foreground">{task.detail}</p>
       <div className="mt-3 flex justify-end">
         <Button size="sm" variant={task.ready ? "outline" : "default"} disabled={!props.onRun || !task.canAutoFix || props.running} onClick={props.onRun}>
-          {props.running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wrench className="mr-2 h-4 w-4" />}
+          {props.running ? <SystemLoader className="mr-2 h-4 w-4" /> : <Wrench className="mr-2 h-4 w-4" />}
           {task.ready ? text(lang, "Run again", "Chạy lại") : text(lang, "Fix", "Sửa")}
         </Button>
       </div>

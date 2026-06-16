@@ -1,4 +1,5 @@
-import { Link2, Loader2 } from "lucide-react";
+import { Link2 } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,7 @@ export function StoryExtractPanel({ studio }: { studio: StoryStudio }) {
       </div>
 
       <Button variant="outline" onClick={studio.discoverLinks} disabled={!studio.linkPageUrl.trim() || studio.loading.links}>
-        {studio.loading.links ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link2 className="mr-2 h-4 w-4" />}
+        {studio.loading.links ? <SystemLoader className="mr-2 h-4 w-4" /> : <Link2 className="mr-2 h-4 w-4" />}
         Lấy danh sách link chương
       </Button>
 
@@ -49,7 +50,7 @@ export function StoryExtractPanel({ studio }: { studio: StoryStudio }) {
           <Label>{uiText("Selector nội dung")}</Label>
           <Input className="mt-2" value={studio.contentSelector} onChange={(e) => studio.setContentSelector(e.target.value)} />
           <Button className="mt-3 w-full" onClick={studio.extractText} disabled={!studio.urlCount || studio.loading.extract}>
-            {studio.loading.extract ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {studio.loading.extract ? <SystemLoader className="mr-2 h-4 w-4" /> : null}
             Lấy text vào kịch bản
           </Button>
           {studio.extractResult ? <p className="mt-2 text-xs text-muted-foreground">Thành công: {studio.extractResult.results.filter((item) => item.ok).length}/{studio.extractResult.results.length} URL · {studio.extractResult.characterCount.toLocaleString("vi-VN")} ký tự.</p> : null}

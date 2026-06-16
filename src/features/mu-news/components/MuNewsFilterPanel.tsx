@@ -1,4 +1,5 @@
-import { ArrowRight, CheckCircle2, Filter, Loader2, ShieldAlert, XCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2, Filter, ShieldAlert, XCircle } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +29,7 @@ export function MuNewsFilterPanel({ studio }: { studio: MuNewsStudio }) {
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <Button className="w-full sm:w-auto" variant="outline" onClick={studio.filterSelectedNews} disabled={!studio.selectedItems.length || studio.filteringNews}>
-              {studio.filteringNews ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldAlert className="mr-2 h-4 w-4" />}
+              {studio.filteringNews ? <SystemLoader className="mr-2 h-4 w-4" /> : <ShieldAlert className="mr-2 h-4 w-4" />}
               {studio.filteringNews ? "Đang lọc..." : "Kiểm tra tin đã chọn"}
             </Button>
             <Button className="w-full sm:w-auto" onClick={studio.createScript} disabled={!studio.canGenerateScript}>
@@ -117,7 +118,7 @@ function FilterItemRow(props: {
 
 function ValidationBadge({ validation, selected }: { validation?: MuNewsItemValidation; selected: boolean }) {
   if (validation?.status === "loading") {
-    return <Badge className="w-fit shrink-0" variant="secondary"><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> {uiText("Đang kiểm tra")}</Badge>;
+    return <Badge className="w-fit shrink-0" variant="secondary"><SystemLoader className="mr-1 h-3.5 w-3.5" /> {uiText("Đang kiểm tra")}</Badge>;
   }
   if (validation?.status === "valid") {
     return <Badge className="w-fit shrink-0"><CheckCircle2 className="mr-1 h-3.5 w-3.5" /> {uiText("Hợp lệ")}</Badge>;

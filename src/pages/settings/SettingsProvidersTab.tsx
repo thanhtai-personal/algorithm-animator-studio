@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Loader2, RefreshCw, RotateCcw } from "lucide-react";
+import { RefreshCw, RotateCcw } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { toast } from "sonner";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,7 @@ export function SettingsProvidersTab({ lang }: SettingsProvidersTabProps) {
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <h3 className="text-lg font-semibold">{text(lang, "Provider Manager", "Quản lý provider")}</h3>
         <Button variant="outline" onClick={refresh} disabled={loading}>
-          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+          {loading ? <SystemLoader className="mr-2 h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
           {text(lang, "Refresh", "Tải lại")}
         </Button>
       </div>

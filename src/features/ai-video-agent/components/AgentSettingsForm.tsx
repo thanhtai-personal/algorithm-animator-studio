@@ -1,4 +1,5 @@
-import { Loader2, Play, Wand2 } from "lucide-react";
+import { Play, Wand2 } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -56,7 +57,7 @@ export function AgentSettingsForm(props: AgentSettingsFormProps) {
       <PublishOptions {...props} />
     </div>
     <div className="absolute inset-x-0 bottom-0 z-10 rounded-b-lg border-t bg-card/95 p-3 shadow-[0_-12px_30px_rgba(2,6,23,0.35)] backdrop-blur supports-[backdrop-filter]:bg-card/80">
-      <div className="grid gap-2 sm:grid-cols-3"><Button onClick={props.handleCreatePlan} disabled={loadingPlan || running} variant="outline">{loadingPlan ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}{text(lang, "Create plan", "Tạo plan")}</Button><Button onClick={props.handleRunNow} disabled={running || loadingPlan || Boolean(props.publishChannelWarning)} className="sm:col-span-2">{running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}{text(lang, "Run full agent", "Chạy full agent")}</Button></div>
+      <div className="grid gap-2 sm:grid-cols-3"><Button onClick={props.handleCreatePlan} disabled={loadingPlan || running} variant="outline">{loadingPlan ? <SystemLoader className="mr-2 h-4 w-4" /> : <Wand2 className="mr-2 h-4 w-4" />}{text(lang, "Create plan", "Tạo plan")}</Button><Button onClick={props.handleRunNow} disabled={running || loadingPlan || Boolean(props.publishChannelWarning)} className="sm:col-span-2">{running ? <SystemLoader className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}{text(lang, "Run full agent", "Chạy full agent")}</Button></div>
       <Button variant="ghost" className="mt-2 w-full" onClick={props.handleSaveDraft}>{text(lang, "Save draft job", "Lưu job nháp")}</Button>
     </div>
   </div>;

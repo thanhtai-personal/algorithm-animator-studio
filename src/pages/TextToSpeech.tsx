@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, MicVocal, WandSparkles } from "lucide-react";
+import { MicVocal, WandSparkles } from "lucide-react";
+import { SystemLoader } from "@/components/ui/system-loader";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -241,7 +242,7 @@ export default function TextToSpeech() {
             ) : null}
 
             <Button onClick={handleGenerate} disabled={loading || (provider === "piper" && !modelKey) || (provider === "gpt-sovits" && !gptSoVits?.enabled)}>
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <WandSparkles className="mr-2 h-4 w-4" />}
+              {loading ? <SystemLoader className="mr-2 h-4 w-4" /> : <WandSparkles className="mr-2 h-4 w-4" />}
               {text(lang, "Generate", "Tạo voice")}
             </Button>
           </CardContent>
@@ -265,7 +266,7 @@ export default function TextToSpeech() {
                   <Input value={sourceAudioRelativePath} onChange={(event) => setSourceAudioRelativePath(event.target.value)} placeholder="2026-06-09/voice-over.wav" />
                 </div>
                 <Button variant="secondary" onClick={handleConvert} disabled={converting || !sourceAudioRelativePath.trim()}>
-                  {converting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <WandSparkles className="mr-2 h-4 w-4" />}
+                  {converting ? <SystemLoader className="mr-2 h-4 w-4" /> : <WandSparkles className="mr-2 h-4 w-4" />}
                   {text(lang, "Convert", "Chuyển giọng")}
                 </Button>
               </div>

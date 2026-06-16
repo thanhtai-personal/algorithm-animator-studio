@@ -50,10 +50,8 @@ export function RuntimeSetupGate({ children }: PropsWithChildren) {
   if (state === "needs-setup") return <Navigate replace to="/settings?tab=health" state={{ from: location }} />;
 
   return (
-    <main className="runtime-loading-screen grid min-h-[60vh] place-items-center px-4 text-sm font-medium text-muted-foreground">
-      <div className="runtime-loading-card grid place-items-center rounded-2xl border border-border/70 bg-card/80 px-10 py-9 text-center shadow-[0_18px_60px_hsl(214_80%_5%/0.18)] backdrop-blur-xl">
-        <SystemLoader className="h-36 w-72 text-primary" title="Checking local environment" />
-      </div>
+    <main className="runtime-loading-screen grid min-h-screen place-items-center px-4">
+      <SystemLoader className="h-52 w-[26rem] text-primary" title="Loading" />
     </main>
   );
 }

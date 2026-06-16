@@ -13,6 +13,7 @@ import {
   Youtube,
   Download,
   Bot,
+  PlugZap,
   type LucideIcon,
 } from "lucide-react";
 import type { Lang } from "@/lib/i18n";
@@ -161,6 +162,13 @@ export const APP_NAVIGATION_GROUPS: AppNavigationGroup[] = [
         icon: Files,
         label: { en: "Files Management", vi: "Quản lý file" },
         matchPaths: ["/assets"],
+      },
+      {
+        id: "providers",
+        to: "/providers",
+        icon: PlugZap,
+        label: { en: "Provider Manager", vi: "Quản lý provider" },
+        matchPaths: ["/providers"],
       },
       {
         id: "settings",

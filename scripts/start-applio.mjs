@@ -14,6 +14,11 @@ const env = {
 const command = String(env.RVC_APPLIO_START_COMMAND || "").trim();
 const managed = String(env.KAI_STUDIO_MANAGED_SERVICE || "").trim() === "1";
 
+if (!providerEnabled(env.KAI_PROVIDER_APPLIO_ENABLED, true)) {
+  console.log("[applio] provider disabled by KAI_PROVIDER_APPLIO_ENABLED=false; skipping startup.");
+  process.exit(0);
+}
+
 if (!command) {
   console.log("[applio] RVC_APPLIO_START_COMMAND is empty; skipping Applio startup.");
   process.exit(0);
@@ -82,4 +87,11 @@ function getFirstCommandToken(commandValue) {
     return endIndex > 0 ? trimmed.slice(1, endIndex) : trimmed.slice(1);
   }
   return trimmed.split(/\s+/)[0];
+}
+
+function providerEnabled(value, fallback) {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (["1", "true", "yes", "on", "enabled"].includes(normalized)) return true;
+  if (["0", "false", "no", "off", "disabled"].includes(normalized)) return false;
+  return fallback;
 }

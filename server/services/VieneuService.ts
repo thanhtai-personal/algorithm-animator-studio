@@ -19,6 +19,7 @@ import {
 import { getAudioDurationSeconds } from "../utils/ffmpeg";
 import { stripAnsi } from "../utils/text";
 import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
+import { isProviderStartupEnabled } from "./ProviderStartupService";
 import { resolveRuntimeExecutable } from "./RuntimeEnvService";
 
 const HEALTH_PATH = path.join(PROJECT_ROOT, "scripts", "vieneu-health.py");
@@ -30,6 +31,7 @@ const CONFIG_TIMEOUT_MS = 8000;
 export async function getVieneuConfigStatus(envOverrides: RuntimeEnvValues = {}): Promise<VieneuConfigStatus> {
   const env = readEnvValues(envOverrides);
   const config = readVieneuConfig(env);
+  const providerEnabled = isProviderStartupEnabled("vieneu", env);
   const baseStatus: VieneuConfigStatus = {
     enabled: false,
     sdkInstalled: false,
@@ -46,6 +48,10 @@ export async function getVieneuConfigStatus(envOverrides: RuntimeEnvValues = {})
     remoteModel: config.remoteModel,
     timeoutMs: config.timeoutMs,
   };
+
+  if (!providerEnabled) {
+    return { ...baseStatus, enabled: false, sdkInstalled: false, error: "VieNeu-TTS đang tắt trong Provider Manager." };
+  }
 
   if (!baseStatus.pythonExists) {
     return { ...baseStatus, error: "Không tìm thấy Python để chạy VieNeu-TTS." };
@@ -77,6 +83,7 @@ export async function generateVieneuAudio(body: VieneuGenerateBody, envOverrides
   if (!text) throw new Error("Chưa có text để tạo voice bằng VieNeu-TTS.");
 
   const env = readEnvValues(envOverrides);
+  if (!isProviderStartupEnabled("vieneu", env)) throw new Error("VieNeu-TTS đang tắt. Bật trong Provider Manager rồi restart app/dev server.");
   const config = readVieneuConfig(env);
   if (!fs.existsSync(BRIDGE_PATH)) throw new Error("Thiếu scripts/vieneu-generate.py.");
   if (!commandLooksExecutable(config.pythonExe)) throw new Error(`Không tìm thấy Python: ${config.pythonExe}`);

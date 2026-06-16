@@ -11,16 +11,19 @@ import { readSystemLang, subscribeSystemLang, text, type Lang } from "@/lib/i18n
 import {
   convertRvcApplioVoice,
   generateElevenLabsVoice,
+  generateGptSoVitsVoice,
   generatePiperVoice,
   generateRvcApplioVoice,
   generateSupertonicVoice,
   generateVieneuVoice,
   getElevenLabsConfig,
+  getGptSoVitsConfig,
   getPiperModels,
   getRvcApplioConfig,
   getSupertonicConfig,
   getVieneuConfig,
   type ElevenLabsConfig,
+  type GptSoVitsConfig,
   type PiperModel,
   type RvcApplioConfig,
   type SupertonicConfig,
@@ -30,7 +33,7 @@ import {
 
 const DEFAULT_TEXT = "KAI Studio is ready to generate voice-over for your video workflow.";
 
-type Provider = "piper" | "supertonic" | "vieneu" | "elevenlabs" | "applio-tts";
+type Provider = "piper" | "supertonic" | "vieneu" | "gpt-sovits" | "elevenlabs" | "applio-tts";
 
 export default function TextToSpeech() {
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
@@ -42,10 +45,15 @@ export default function TextToSpeech() {
   const [supertonic, setSupertonic] = useState<SupertonicConfig | null>(null);
   const [vieneu, setVieneu] = useState<VieneuConfig | null>(null);
   const [elevenLabs, setElevenLabs] = useState<ElevenLabsConfig | null>(null);
+  const [gptSoVits, setGptSoVits] = useState<GptSoVitsConfig | null>(null);
   const [applio, setApplio] = useState<RvcApplioConfig | null>(null);
   const [elevenVoiceId, setElevenVoiceId] = useState("");
   const [elevenModelId, setElevenModelId] = useState("");
   const [applioTtsTemplateId, setApplioTtsTemplateId] = useState("");
+  const [gptReferenceAudioPath, setGptReferenceAudioPath] = useState("");
+  const [gptPromptText, setGptPromptText] = useState("");
+  const [gptTextLang, setGptTextLang] = useState("en");
+  const [gptPromptLang, setGptPromptLang] = useState("en");
   const [convertTemplateId, setConvertTemplateId] = useState("");
   const [sourceAudioRelativePath, setSourceAudioRelativePath] = useState("");
   const [result, setResult] = useState<VoiceGenerateResult | null>(null);
@@ -62,21 +70,26 @@ export default function TextToSpeech() {
   }, []);
 
   async function refreshConfig() {
-    const [nextModels, nextSupertonic, nextVieneu, nextEleven, nextApplio] = await Promise.all([
+    const [nextModels, nextSupertonic, nextVieneu, nextEleven, nextGptSoVits, nextApplio] = await Promise.all([
       getPiperModels(),
       getSupertonicConfig().catch(() => null),
       getVieneuConfig().catch(() => null),
       getElevenLabsConfig().catch(() => null),
+      getGptSoVitsConfig().catch(() => null),
       getRvcApplioConfig().catch(() => null),
     ]);
     setModels(nextModels);
     setSupertonic(nextSupertonic);
     setVieneu(nextVieneu);
     setElevenLabs(nextEleven);
+    setGptSoVits(nextGptSoVits);
     setApplio(nextApplio);
     setModelKey((current) => current || nextModels.find((model) => model.available)?.key || nextModels[0]?.key || "");
     setElevenVoiceId((current) => current || nextEleven?.voices[0]?.id || "");
     setElevenModelId((current) => current || nextEleven?.models[0]?.id || "eleven_multilingual_v2");
+    setGptReferenceAudioPath((current) => current || nextGptSoVits?.referenceAudioPath || "");
+    setGptTextLang((current) => current || nextGptSoVits?.defaultTextLang || "en");
+    setGptPromptLang((current) => current || nextGptSoVits?.defaultPromptLang || "en");
     setApplioTtsTemplateId((current) => current || nextApplio?.ttsTemplates[0]?.id || "");
     setConvertTemplateId((current) => current || nextApplio?.templates[0]?.id || "");
   }
@@ -112,6 +125,18 @@ export default function TextToSpeech() {
     }
     if (provider === "vieneu") {
       return generateVieneuVoice({ text: normalizedText, fileName: safeFileName, mode: vieneu?.mode, emotion: vieneu?.emotion, voiceId: vieneu?.defaultVoiceId });
+    }
+    if (provider === "gpt-sovits") {
+      return generateGptSoVitsVoice({
+        text: normalizedText,
+        fileName: safeFileName,
+        textLang: gptTextLang,
+        promptLang: gptPromptLang,
+        referenceAudioPath: gptReferenceAudioPath,
+        promptText: gptPromptText,
+        mediaType: gptSoVits?.mediaType || "wav",
+        textSplitMethod: gptSoVits?.textSplitMethod || "cut5",
+      });
     }
     if (provider === "elevenlabs") {
       return generateElevenLabsVoice({ text: normalizedText, modelId: elevenModelId, voiceId: elevenVoiceId, fileName: safeFileName });
@@ -169,6 +194,7 @@ export default function TextToSpeech() {
                     <SelectItem value="piper">Piper local</SelectItem>
                     <SelectItem value="supertonic">Supertonic</SelectItem>
                     <SelectItem value="vieneu">VieNeu</SelectItem>
+                    <SelectItem value="gpt-sovits">GPT-SoVITS Experimental</SelectItem>
                     <SelectItem value="elevenlabs">ElevenLabs</SelectItem>
                     <SelectItem value="applio-tts">Applio TTS custom voice</SelectItem>
                   </SelectContent>
@@ -189,11 +215,32 @@ export default function TextToSpeech() {
                 <SelectField label="ElevenLabs model" value={elevenModelId} onChange={setElevenModelId} options={(elevenLabs?.models || []).map((model) => ({ value: model.id, label: model.label }))} />
               </div>
             ) : null}
+            {provider === "gpt-sovits" ? (
+              <div className="space-y-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4">
+                <p className="text-sm text-yellow-100">
+                  {gptSoVits?.enabled
+                    ? text(lang, "GPT-SoVITS uses a local API and usually needs reference audio plus matching prompt text.", "GPT-SoVITS dùng API local và thường cần audio mẫu cùng text khớp audio mẫu.")
+                    : text(lang, "GPT-SoVITS is disabled in Provider Manager. Enable it and restart the app before generating.", "GPT-SoVITS đang tắt trong Quản lý provider. Bật rồi restart app trước khi tạo voice.")}
+                </p>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <SelectField label={text(lang, "Text language", "Ngôn ngữ text")} value={gptTextLang} onChange={setGptTextLang} options={GPT_SOVITS_LANGS} />
+                  <SelectField label={text(lang, "Prompt language", "Ngôn ngữ audio mẫu")} value={gptPromptLang} onChange={setGptPromptLang} options={GPT_SOVITS_LANGS} />
+                </div>
+                <div className="space-y-2">
+                  <Label>{text(lang, "Reference audio path", "Đường dẫn audio mẫu")}</Label>
+                  <Input value={gptReferenceAudioPath} onChange={(event) => setGptReferenceAudioPath(event.target.value)} placeholder="C:/voices/reference.wav" />
+                </div>
+                <div className="space-y-2">
+                  <Label>{text(lang, "Prompt text", "Text khớp audio mẫu")}</Label>
+                  <Textarea value={gptPromptText} onChange={(event) => setGptPromptText(event.target.value)} rows={3} placeholder="Exact sentence spoken in the reference audio" />
+                </div>
+              </div>
+            ) : null}
             {provider === "applio-tts" ? (
               <SelectField label={text(lang, "Applio TTS template", "Template Applio TTS")} value={applioTtsTemplateId} onChange={setApplioTtsTemplateId} options={(applio?.ttsTemplates || []).map((template) => ({ value: template.id, label: template.label }))} />
             ) : null}
 
-            <Button onClick={handleGenerate} disabled={loading || (provider === "piper" && !modelKey)}>
+            <Button onClick={handleGenerate} disabled={loading || (provider === "piper" && !modelKey) || (provider === "gpt-sovits" && !gptSoVits?.enabled)}>
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <WandSparkles className="mr-2 h-4 w-4" />}
               {text(lang, "Generate", "Tạo voice")}
             </Button>
@@ -230,6 +277,15 @@ export default function TextToSpeech() {
     </main>
   );
 }
+
+const GPT_SOVITS_LANGS = [
+  { value: "en", label: "English" },
+  { value: "zh", label: "Chinese" },
+  { value: "ja", label: "Japanese" },
+  { value: "ko", label: "Korean" },
+  { value: "yue", label: "Cantonese" },
+  { value: "auto", label: "Auto" },
+];
 
 function SelectField(props: { label: string; value: string; options: Array<{ value: string; label: string }>; onChange: (value: string) => void }) {
   return (

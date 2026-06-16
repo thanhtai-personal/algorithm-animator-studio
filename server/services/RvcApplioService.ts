@@ -20,6 +20,7 @@ import {
 import { getAudioDurationSeconds } from "../utils/ffmpeg";
 import { stripAnsi } from "../utils/text";
 import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
+import { isProviderStartupEnabled } from "./ProviderStartupService";
 import { resolveGeneratedResource } from "./ResourceService";
 import { resolveRuntimeExecutable } from "./RuntimeEnvService";
 import { readRvcTemplates, readRvcTtsTemplates, type RvcRuntimeTemplate } from "./RvcApplioTemplateParser";
@@ -32,6 +33,18 @@ const BRIDGE_PATH = path.join(PROJECT_ROOT, "scripts", "rvc-applio-gradio-bridge
 
 export async function getRvcApplioConfigStatus(envOverrides: RuntimeEnvValues = {}): Promise<RvcApplioConfigStatus> {
   const env = readEnvValues(envOverrides);
+  const providerEnabled = isProviderStartupEnabled("applio", env);
+  if (!providerEnabled) {
+    const fallbackConfig = await withGradioClientStatus(readRvcConfigWithoutTemplates(env));
+    return {
+      ...fallbackConfig,
+      enabled: false,
+      serverOk: false,
+      endpointsOk: false,
+      error: "RVC/Applio đang tắt trong Provider Manager.",
+    };
+  }
+
   let config: RvcRuntimeConfig;
   try {
     config = readRvcConfig(env);
@@ -68,6 +81,7 @@ export async function getRvcApplioConfigStatus(envOverrides: RuntimeEnvValues = 
 
 export async function convertRvcApplioAudio(body: RvcApplioConvertBody, envOverrides: RuntimeEnvValues = {}) {
   const env = readEnvValues(envOverrides);
+  if (!isProviderStartupEnabled("applio", env)) throw new Error("RVC/Applio đang tắt. Bật trong Provider Manager rồi restart app/dev server.");
   const config = readRvcConfig(env);
   const template = selectRvcTemplate(config, body.templateId);
   const source = resolveGeneratedResource({ kind: "audio", relativePath: body.audioRelativePath }, envOverrides);
@@ -121,6 +135,7 @@ export async function generateRvcApplioSpeech(body: RvcApplioTextToSpeechBody, e
   if (!text) throw new Error("Chưa có text để tạo voice bằng Applio.");
 
   const env = readEnvValues(envOverrides);
+  if (!isProviderStartupEnabled("applio", env)) throw new Error("RVC/Applio đang tắt. Bật trong Provider Manager rồi restart app/dev server.");
   const config = readRvcConfig(env);
   const template = selectRvcTemplate(config, body.templateId, "tts");
   const dateFolderName = getLocalDateFolderName();

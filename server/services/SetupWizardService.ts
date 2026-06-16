@@ -15,6 +15,8 @@ import { resolveRuntimeExecutable } from "./RuntimeEnvService";
 import { getRvcApplioConfigStatus } from "./RvcApplioService";
 import { getSupertonicConfigStatus } from "./SupertonicService";
 import { getVieneuConfigStatus } from "./VieneuService";
+import { getGptSoVitsConfigStatus } from "./GptSoVitsService";
+import { isProviderStartupEnabled } from "./ProviderStartupService";
 
 export type SetupTaskId =
   | "generated-data"
@@ -23,7 +25,8 @@ export type SetupTaskId =
   | "supertonic"
   | "applio-client"
   | "applio-start"
-  | "vieneu";
+  | "vieneu"
+  | "gpt-sovits-start";
 
 type SetupTaskStatus = {
   id: SetupTaskId | "elevenlabs";
@@ -73,11 +76,12 @@ const backgroundProcesses = new Map<string, ReturnType<typeof spawn>>();
 export async function getSetupWizardStatus(envOverrides: RuntimeEnvValues = {}): Promise<SetupWizardStatus> {
   const env = readEnvValues(envOverrides);
   const generatedDir = getGeneratedDir(env.SERVER_DATA_DIR);
-  const [piper, supertonic, applio, vieneu] = await Promise.all([
+  const [piper, supertonic, applio, vieneu, gptSoVits] = await Promise.all([
     getPiperRuntimeStatus(envOverrides),
     getSupertonicConfigStatus(envOverrides),
     getRvcApplioConfigStatus(envOverrides),
     getVieneuConfigStatus(envOverrides),
+    getGptSoVitsConfigStatus(envOverrides),
   ]);
 
   const generatedReady = fs.existsSync(generatedDir);
@@ -173,6 +177,20 @@ export async function getSetupWizardStatus(envOverrides: RuntimeEnvValues = {}):
         command: describeSetupTaskCommand("vieneu", env),
       },
       {
+        id: "gpt-sovits-start",
+        label: "GPT-SoVITS API",
+        description: "Provider clone giọng/few-shot TTS local. Mặc định tắt để app khởi động nhẹ hơn.",
+        ready: Boolean(gptSoVits.enabled && gptSoVits.serverOk),
+        optional: true,
+        canAutoFix: Boolean(env.GPT_SOVITS_START_COMMAND && gptSoVits.enabled),
+        detail: !gptSoVits.enabled
+          ? "Đang tắt trong Provider Manager."
+          : gptSoVits.serverOk
+            ? gptSoVits.baseUrl
+            : gptSoVits.error || "Chưa kết nối được GPT-SoVITS API.",
+        command: describeSetupTaskCommand("gpt-sovits-start", env),
+      },
+      {
         id: "elevenlabs",
         label: "ElevenLabs API",
         description: "Provider cloud, cần API key riêng nên không tự cài.",
@@ -191,8 +209,11 @@ export async function runSetupAutostart(envOverrides: RuntimeEnvValues = {}): Pr
   const skipped: SetupAutostartItem[] = [];
   const failed: SetupAutostartItem[] = [];
 
+  const supertonicProviderEnabled = isProviderStartupEnabled("supertonic", env);
   const supertonic = await getSupertonicConfigStatus(envOverrides);
-  if (supertonic.serverOk && supertonic.endpointsOk) {
+  if (!supertonicProviderEnabled) {
+    skipped.push({ id: "supertonic", label: "Supertonic local TTS", message: "Đang tắt trong Provider Manager." });
+  } else if (supertonic.serverOk && supertonic.endpointsOk) {
     skipped.push({ id: "supertonic", label: "Supertonic local TTS", message: "Supertonic đã chạy." });
   } else if (await commandAvailable("supertonic", ["--help"])) {
     try {
@@ -205,8 +226,11 @@ export async function runSetupAutostart(envOverrides: RuntimeEnvValues = {}): Pr
     skipped.push({ id: "supertonic", label: "Supertonic local TTS", message: "Chưa thấy CLI Supertonic, không tự cài khi mở app." });
   }
 
+  const applioProviderEnabled = isProviderStartupEnabled("applio", env);
   const applio = await getRvcApplioConfigStatus(envOverrides);
-  if (applio.serverOk) {
+  if (!applioProviderEnabled) {
+    skipped.push({ id: "applio-start", label: "Applio server", message: "Đang tắt trong Provider Manager." });
+  } else if (applio.serverOk) {
     skipped.push({ id: "applio-start", label: "Applio server", message: "Applio đã chạy." });
   } else if (applio.startCommandConfigured) {
     try {
@@ -219,9 +243,12 @@ export async function runSetupAutostart(envOverrides: RuntimeEnvValues = {}): Pr
     skipped.push({ id: "applio-start", label: "Applio server", message: "Chưa cấu hình RVC_APPLIO_START_COMMAND, bỏ qua autostart." });
   }
 
+  const vieneuProviderEnabled = isProviderStartupEnabled("vieneu", env);
   const vieneu = await getVieneuConfigStatus(envOverrides);
   const vieneuAutoStart = String(env.VIENEU_AUTO_START ?? "true").toLowerCase() !== "false";
-  if (!vieneuAutoStart) {
+  if (!vieneuProviderEnabled) {
+    skipped.push({ id: "vieneu", label: "VieNeu-TTS SDK", message: "Đang tắt trong Provider Manager." });
+  } else if (!vieneuAutoStart) {
     skipped.push({ id: "vieneu", label: "VieNeu-TTS SDK", message: "VIENEU_AUTO_START=false, bỏ qua." });
   } else if (vieneu.sdkInstalled && vieneu.pythonExists && vieneu.bridgeExists) {
     try {
@@ -232,6 +259,23 @@ export async function runSetupAutostart(envOverrides: RuntimeEnvValues = {}): Pr
     }
   } else {
     skipped.push({ id: "vieneu", label: "VieNeu-TTS SDK", message: "VieNeu chưa đủ SDK/Python/bridge, không tự cài khi mở app." });
+  }
+
+  const gptProviderEnabled = isProviderStartupEnabled("gpt-sovits", env);
+  const gptSoVits = await getGptSoVitsConfigStatus(envOverrides);
+  if (!gptProviderEnabled) {
+    skipped.push({ id: "gpt-sovits-start", label: "GPT-SoVITS API", message: "Đang tắt trong Provider Manager." });
+  } else if (gptSoVits.serverOk) {
+    skipped.push({ id: "gpt-sovits-start", label: "GPT-SoVITS API", message: "GPT-SoVITS API đã chạy." });
+  } else if (env.GPT_SOVITS_START_COMMAND) {
+    try {
+      await startManagedScript("gpt-sovits", "scripts/start-gpt-sovits.mjs", env);
+      started.push({ id: "gpt-sovits-start", label: "GPT-SoVITS API", message: `Đã gửi lệnh start GPT-SoVITS tại ${gptSoVits.baseUrl}.` });
+    } catch (error) {
+      failed.push({ id: "gpt-sovits-start", label: "GPT-SoVITS API", message: getErrorMessage(error) });
+    }
+  } else {
+    skipped.push({ id: "gpt-sovits-start", label: "GPT-SoVITS API", message: "Chưa cấu hình GPT_SOVITS_START_COMMAND, bỏ qua autostart." });
   }
 
   return {
@@ -274,6 +318,11 @@ export async function runSetupWizardTask(taskId: SetupTaskId, envOverrides: Runt
   } else if (taskId === "vieneu") {
     output = await runNodeScript("scripts/install-vieneu-from-source.mjs", env, 60 * 60 * 1000);
     message = "Đã cài/kiểm tra VieNeu-TTS SDK.";
+  } else if (taskId === "gpt-sovits-start") {
+    if (!isProviderStartupEnabled("gpt-sovits", env)) throw new Error("GPT-SoVITS đang tắt trong Provider Manager.");
+    if (!env.GPT_SOVITS_START_COMMAND) throw new Error("Chưa cấu hình GPT_SOVITS_START_COMMAND nên app không thể tự mở GPT-SoVITS.");
+    await startManagedScript("gpt-sovits", "scripts/start-gpt-sovits.mjs", env);
+    message = "Đã gửi lệnh khởi động GPT-SoVITS.";
   }
 
   return {
@@ -321,6 +370,10 @@ function describeSetupTaskCommand(taskId: SetupTaskId, env: RuntimeEnvValues) {
 
   if (taskId === "vieneu") {
     return "node scripts/install-vieneu-from-source.mjs";
+  }
+
+  if (taskId === "gpt-sovits-start") {
+    return env.GPT_SOVITS_START_COMMAND || "node scripts/start-gpt-sovits.mjs";
   }
 
   return "";

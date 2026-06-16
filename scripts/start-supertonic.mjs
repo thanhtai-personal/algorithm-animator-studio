@@ -6,6 +6,11 @@ const envFile = readDotEnv(path.resolve(process.cwd(), ".env"));
 const env = { ...envFile, ...process.env };
 const managed = String(env.KAI_STUDIO_MANAGED_SERVICE || "").trim() === "1";
 
+if (!providerEnabled(env.KAI_PROVIDER_SUPERTONIC_ENABLED, true)) {
+  console.log("[supertonic] provider disabled by KAI_PROVIDER_SUPERTONIC_ENABLED=false; skipping startup.");
+  process.exit(0);
+}
+
 const baseUrl = env.SUPERTONIC_BASE_URL || "http://127.0.0.1:6688";
 const url = new URL(baseUrl);
 const host = env.SUPERTONIC_HOST || url.hostname || "127.0.0.1";
@@ -72,4 +77,11 @@ function quoteCommandPart(value) {
   const text = String(value);
   if (!/[ \t"&|<>^]/.test(text)) return text;
   return `"${text.replace(/"/g, '\\"')}"`;
+}
+
+function providerEnabled(value, fallback) {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (["1", "true", "yes", "on", "enabled"].includes(normalized)) return true;
+  if (["0", "false", "no", "off", "disabled"].includes(normalized)) return false;
+  return fallback;
 }

@@ -18,6 +18,11 @@ const healthScript = path.join(projectRoot, "scripts", "vieneu-health.py");
 const env = buildVieneuEnv(runtimeEnv, sourceDir, pythonExe);
 const managed = String(runtimeEnv.KAI_STUDIO_MANAGED_SERVICE || "").trim() === "1";
 
+if (!providerEnabled(runtimeEnv.KAI_PROVIDER_VIENEU_ENABLED, true)) {
+  console.log("[vieneu] provider disabled by KAI_PROVIDER_VIENEU_ENABLED=false; skipping startup.");
+  process.exit(0);
+}
+
 if (String(runtimeEnv.VIENEU_AUTO_START || "true").toLowerCase() === "false" || startMode === "off") {
   console.log("[vieneu] auto start disabled; skipping VieNeu dev process.");
   process.exit(0);
@@ -170,4 +175,11 @@ function readDotEnv(filePath) {
         return [key, value];
       }),
   );
+}
+
+function providerEnabled(value, fallback) {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (["1", "true", "yes", "on", "enabled"].includes(normalized)) return true;
+  if (["0", "false", "no", "off", "disabled"].includes(normalized)) return false;
+  return fallback;
 }

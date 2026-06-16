@@ -24,6 +24,7 @@ import { createElevenLabsRouter } from "./routes/elevenLabsRoutes";
 import { createGenerateRouter } from "./routes/generateRoutes";
 import { createChannelProviderRouter } from "./routes/channelProviderRoutes";
 import { createHealthRouter } from "./routes/healthRoutes";
+import { createProviderStartupRouter } from "./routes/providerStartupRoutes";
 import { createMusicLibraryRouter } from "./routes/musicLibraryRoutes";
 import { createMuNewsRouter } from "./routes/muNewsRoutes";
 import { createModelRouter } from "./routes/modelRoutes";
@@ -31,6 +32,7 @@ import { createPiperRuntimeRouter } from "./routes/piperRuntimeRoutes";
 import { createSystemRouter } from "./routes/systemRoutes";
 import { createSetupWizardRouter } from "./routes/setupWizardRoutes";
 import { createSupertonicRouter } from "./routes/supertonicRoutes";
+import { createGptSoVitsRouter } from "./routes/gptSoVitsRoutes";
 import { createRvcApplioRouter } from "./routes/rvcApplioRoutes";
 import { createVieneuRouter } from "./routes/vieneuRoutes";
 import { createStoryReviewRouter } from "./routes/storyReviewRoutes";
@@ -62,7 +64,7 @@ app.use(`/${GENERATED_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedD
 app.use(`/${GENERATED_PREVIEW_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedPreviewDir));
 app.use(`/${GENERATED_VIDEO_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedVideoDir));
 app.use(`/${GENERATED_BACKGROUND_MUSIC_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedBackgroundMusicDir));
-app.use("/api", createHealthRouter(), createModelRouter(), createMusicLibraryRouter(), createMuNewsRouter(), createPiperRuntimeRouter(), createSystemRouter(), createSetupWizardRouter(), createResourceRouter(), createStoryReviewRouter(), createWebExtractRouter(), createGenerateRouter(), createAiVideoAgentRouter(), createChannelProviderRouter(), createElevenLabsRouter(), createSupertonicRouter(), createRvcApplioRouter(), createVieneuRouter(), createVideoRouter(), createYoutubeRouter(), createYoutubeToolRouter(), createPublishQueueRouter());
+app.use("/api", createHealthRouter(), createModelRouter(), createMusicLibraryRouter(), createMuNewsRouter(), createPiperRuntimeRouter(), createSystemRouter(), createSetupWizardRouter(), createProviderStartupRouter(), createResourceRouter(), createStoryReviewRouter(), createWebExtractRouter(), createGenerateRouter(), createAiVideoAgentRouter(), createChannelProviderRouter(), createElevenLabsRouter(), createSupertonicRouter(), createGptSoVitsRouter(), createRvcApplioRouter(), createVieneuRouter(), createVideoRouter(), createYoutubeRouter(), createYoutubeToolRouter(), createPublishQueueRouter());
 
 startLocalPublishWorker();
 attachBackgroundJobsWebSocket(httpServer, () => ({

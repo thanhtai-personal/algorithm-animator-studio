@@ -50,7 +50,7 @@ function normalizeRuntimePaths(env: RuntimeEnvValues): RuntimeEnvValues {
     }
   }
 
-  for (const key of ["PIPER_EXE", "FFMPEG_EXE", "FFPROBE_EXE", "RVC_APPLIO_PYTHON", "VIENEU_PYTHON", "YOUTUBE_TOOLS_PYTHON", "YOUTUBE_DLP_EXE", "WHISPER_EXE"]) {
+  for (const key of ["PIPER_EXE", "FFMPEG_EXE", "FFPROBE_EXE", "RVC_APPLIO_PYTHON", "VIENEU_PYTHON", "GPT_SOVITS_PYTHON", "YOUTUBE_TOOLS_PYTHON", "YOUTUBE_DLP_EXE", "WHISPER_EXE"]) {
     if (normalized[key]) {
       normalized[key] = resolveRuntimeExecutable(normalized[key]);
     }
@@ -58,6 +58,14 @@ function normalizeRuntimePaths(env: RuntimeEnvValues): RuntimeEnvValues {
 
   if (normalized.VIENEU_REFERENCE_AUDIO && looksLikePath(normalized.VIENEU_REFERENCE_AUDIO)) {
     normalized.VIENEU_REFERENCE_AUDIO = resolveRuntimePath(normalized.VIENEU_REFERENCE_AUDIO, getWritableRelativeRoot());
+  }
+
+  if (normalized.GPT_SOVITS_SOURCE_DIR && looksLikePath(normalized.GPT_SOVITS_SOURCE_DIR)) {
+    normalized.GPT_SOVITS_SOURCE_DIR = resolveRuntimePath(normalized.GPT_SOVITS_SOURCE_DIR, getWritableRelativeRoot());
+  }
+
+  if (normalized.GPT_SOVITS_REFERENCE_AUDIO && looksLikePath(normalized.GPT_SOVITS_REFERENCE_AUDIO)) {
+    normalized.GPT_SOVITS_REFERENCE_AUDIO = resolveRuntimePath(normalized.GPT_SOVITS_REFERENCE_AUDIO, getWritableRelativeRoot());
   }
 
   if (normalized.YOUTUBE_COOKIES_FILE && looksLikePath(normalized.YOUTUBE_COOKIES_FILE)) {

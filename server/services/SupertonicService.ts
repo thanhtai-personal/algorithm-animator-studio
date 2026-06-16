@@ -11,6 +11,7 @@ import type { EndpointCheckStatus } from "../models/EndpointHealth";
 import type { SupertonicConfigStatus, SupertonicGenerateBody, SupertonicImportStyleBody, SupertonicVoice } from "../models/Supertonic";
 import { ensureDirectoryExists, getLocalDateFolderName, getUniqueOutputFileWithExtension, sanitizeFileBaseName } from "../utils/audioOutput";
 import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
+import { isProviderStartupEnabled } from "./ProviderStartupService";
 
 const REQUEST_TIMEOUT_MS = 120_000;
 const SUPPORTED_FORMATS = ["wav", "flac", "ogg"] as const;
@@ -33,6 +34,24 @@ export async function getSupertonicConfigStatus(envOverrides: RuntimeEnvValues =
   const endpoints = getSupertonicEndpoints(env);
   const fallbackVoice = DEFAULT_SUPERTONIC_VOICE;
   const endpointChecks: EndpointCheckStatus[] = [];
+  const providerEnabled = isProviderStartupEnabled("supertonic", env);
+
+  if (!providerEnabled) {
+    return {
+      enabled: false,
+      serverOk: false,
+      endpointChecks,
+      endpointsOk: false,
+      baseUrl,
+      endpoints,
+      model: env.SUPERTONIC_MODEL || "supertonic-3",
+      defaultVoice: fallbackVoice,
+      defaultLang: DEFAULT_SUPERTONIC_LANG,
+      defaultTotalSteps: DEFAULT_SUPERTONIC_TOTAL_STEPS,
+      voices: defaultVoices(),
+      error: "Supertonic đang tắt trong Provider Manager.",
+    };
+  }
 
   let health: HealthPayload;
   try {
@@ -109,6 +128,7 @@ export async function importSupertonicStyle(body: SupertonicImportStyleBody, env
 
 export async function generateSupertonicAudio(body: SupertonicGenerateBody, envOverrides: RuntimeEnvValues = {}) {
   const env = readEnvValues(envOverrides);
+  if (!isProviderStartupEnabled("supertonic", env)) throw new Error("Supertonic đang tắt. Bật trong Provider Manager rồi restart app/dev server.");
   const text = normalizeText(body);
   if (!text) throw new Error("Text không được để trống.");
 

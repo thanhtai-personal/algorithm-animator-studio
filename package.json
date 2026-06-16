@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n client,server,supertonic,applio,vieneu -c cyan,green,magenta,yellow,blue \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:supertonic\" \"npm run dev:applio\" \"npm run dev:vieneu\"",
+    "dev": "concurrently -n client,server,supertonic,applio,vieneu,gptsovits -c cyan,green,magenta,yellow,blue,red \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:supertonic\" \"npm run dev:applio\" \"npm run dev:vieneu\" \"npm run dev:gpt-sovits\"",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
@@ -44,7 +44,9 @@
     "electron:dist:x64": "npm run build && electron-builder --win nsis --x64",
     "electron:dist:portable": "npm run build && electron-builder --win portable --x64",
     "dev:remotion": "remotion studio src/features/remotion-video/remotion/index.ts --port=3003",
-    "remotion:render:test": "remotion render src/features/remotion-video/remotion/index.ts AlgorithmExplainer generated-videos/remotion-test.mp4"
+    "remotion:render:test": "remotion render src/features/remotion-video/remotion/index.ts AlgorithmExplainer generated-videos/remotion-test.mp4",
+    "dev:gpt-sovits": "node scripts/start-gpt-sovits.mjs",
+    "gpt-sovits:serve": "node scripts/start-gpt-sovits.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

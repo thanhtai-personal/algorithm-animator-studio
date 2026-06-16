@@ -10,6 +10,7 @@ const SETUP_TASKS = new Set<SetupTaskId>([
   "applio-client",
   "applio-start",
   "vieneu",
+  "gpt-sovits-start",
 ]);
 
 export function createSetupWizardRouter() {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bot, ChevronsLeft, ChevronsRight, Mic2, Radio, Waves } from "lucide-react";
+import { Bot, ChevronsLeft, ChevronsRight, Mic2, Radio, Sparkles, Waves } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { t, text, type Lang } from "@/lib/i18n";
 import { PathInput, SecretInput, VoiceRowsTable, type VoiceRow } from "./SettingsFields";
 import { SettingsApplioTemplateFields } from "./SettingsApplioTemplateFields";
+import { SettingsGptSoVitsFields } from "./SettingsGptSoVitsFields";
 import type { RvcApplioTemplateFileResponse, SettingsForm, SettingsFormKey } from "./SettingsTypes";
 
 type ApplioTemplateField = keyof Pick<RvcApplioTemplateFileResponse, "convertTemplatesJson" | "ttsTemplatesJson">;
@@ -26,12 +27,13 @@ type SettingsVoiceTabProps = {
   onUpdateVoiceRow: (index: number, patch: Partial<VoiceRow>) => void;
 };
 
-type VoiceSection = "piper" | "elevenlabs" | "supertonic" | "vieneu" | "applio";
+type VoiceSection = "piper" | "elevenlabs" | "supertonic" | "gpt-sovits" | "vieneu" | "applio";
 
 const VOICE_SECTIONS: { id: VoiceSection; label: string; shortLabel: string; icon: typeof Mic2 }[] = [
   { id: "piper", label: "Piper", shortLabel: "P", icon: Mic2 },
   { id: "elevenlabs", label: "ElevenLabs", shortLabel: "E", icon: Waves },
   { id: "supertonic", label: "Supertonic", shortLabel: "S", icon: Radio },
+  { id: "gpt-sovits", label: "GPT-SoVITS", shortLabel: "G", icon: Sparkles },
   { id: "vieneu", label: "VieNeu", shortLabel: "V", icon: Waves },
   { id: "applio", label: "Applio", shortLabel: "A", icon: Bot },
 ];
@@ -183,6 +185,17 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               />
             </div>
             </div>
+            ) : null}
+
+            {activeSection === "gpt-sovits" ? (
+              <SettingsGptSoVitsFields
+                form={props.form}
+                lang={props.lang}
+                selecting={props.selecting}
+                onOpenPath={props.onOpenPath}
+                onSelectPath={props.onSelectPath}
+                onUpdateField={props.onUpdateField}
+              />
             ) : null}
 
             {activeSection === "vieneu" ? (

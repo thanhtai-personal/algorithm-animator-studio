@@ -119,6 +119,26 @@ export type VieneuConfig = {
   error?: string;
 };
 
+
+export type GptSoVitsConfig = {
+  enabled: boolean;
+  serverOk: boolean;
+  baseUrl: string;
+  ttsEndpoint: string;
+  defaultTextLang: string;
+  defaultPromptLang: string;
+  referenceAudioPath: string;
+  referenceAudioExists: boolean;
+  promptTextConfigured: boolean;
+  mediaType: "wav" | "raw" | "ogg" | "aac";
+  textSplitMethod: string;
+  timeoutMs: number;
+  endpointChecks: EndpointCheck[];
+  endpointsOk: boolean;
+  restartNote: string;
+  error?: string;
+};
+
 export type SupertonicConfig = {
   enabled: boolean;
   serverOk: boolean;
@@ -199,6 +219,10 @@ export async function getVieneuConfig() {
   return parseApiResponse<VieneuConfig>(await fetch(buildApiUrl("/api/vieneu/config"), { headers: buildRuntimeSettingsHeaders() }));
 }
 
+export async function getGptSoVitsConfig() {
+  return parseApiResponse<GptSoVitsConfig>(await fetch(buildApiUrl("/api/gpt-sovits/config"), { headers: buildRuntimeSettingsHeaders() }));
+}
+
 export async function importSupertonicVoiceStyle(styleJson: unknown) {
   return parseApiResponse<{ ok: boolean; voices: SupertonicVoice[]; model: string }>(await fetch(buildApiUrl("/api/supertonic/styles/import"), {
     method: "POST",
@@ -234,6 +258,25 @@ export async function generateVieneuVoice(payload: {
   referenceText?: string;
 }) {
   return parseApiResponse<VoiceGenerateResult>(await fetch(buildApiUrl("/api/vieneu/generate"), {
+    method: "POST",
+    headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(payload),
+  }));
+}
+
+export async function generateGptSoVitsVoice(payload: {
+  text: string;
+  segments?: string[];
+  fileName: string;
+  textLang?: string;
+  promptLang?: string;
+  referenceAudioPath?: string;
+  promptText?: string;
+  mediaType?: "wav" | "raw" | "ogg" | "aac";
+  textSplitMethod?: string;
+  speedFactor?: number;
+}) {
+  return parseApiResponse<VoiceGenerateResult>(await fetch(buildApiUrl("/api/gpt-sovits/generate"), {
     method: "POST",
     headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),

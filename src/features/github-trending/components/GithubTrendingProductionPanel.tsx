@@ -32,6 +32,7 @@ type Props = {
   generateVoiceOver: () => void;
   clearGeneratedVoice: () => void;
   reloadCatalogs: () => void;
+  compact?: boolean;
 };
 
 const OUTPUT_LANGUAGES: Array<{ value: GithubTrendingOutputLanguage; label: string }> = [
@@ -62,7 +63,7 @@ export function GithubTrendingProductionPanel(props: Props) {
   const piperModels = props.piperModels.filter((model) => model.available).length ? props.piperModels.filter((model) => model.available) : props.piperModels;
   return (
     <Card className="border-cyan-400/20 bg-gradient-to-br from-slate-950/60 via-background to-cyan-950/20">
-      <CardHeader className="gap-3 md:flex-row md:items-start md:justify-between">
+      <CardHeader className={props.compact ? "gap-3" : "gap-3 md:flex-row md:items-start md:justify-between"}>
         <div>
           <CardTitle className="flex items-center gap-2"><Volume2 className="h-5 w-5 text-cyan-300" /> Voice · Music · Language</CardTitle>
           <CardDescription>Chọn ngôn ngữ script, tạo voice-over và chọn nhạc nền trước khi render video.</CardDescription>
@@ -71,7 +72,7 @@ export function GithubTrendingProductionPanel(props: Props) {
           {props.catalogLoading ? <SystemLoader className="mr-2 h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />} Reload
         </Button>
       </CardHeader>
-      <CardContent className="grid gap-5 xl:grid-cols-2">
+      <CardContent className={props.compact ? "grid gap-5" : "grid gap-5 xl:grid-cols-2"}>
         <div className="space-y-4 rounded-xl border border-border/70 bg-muted/10 p-4">
           <Field label="Ngôn ngữ video/script">
             <Select value={props.production.outputLanguage} onValueChange={(value) => props.updateProduction({ outputLanguage: value as GithubTrendingOutputLanguage })}>
@@ -80,7 +81,7 @@ export function GithubTrendingProductionPanel(props: Props) {
             </Select>
           </Field>
 
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className={props.compact ? "grid gap-3" : "grid gap-3 md:grid-cols-2"}>
             <Field label="Voice provider">
               <Select value={props.production.voiceProvider} onValueChange={(value) => props.updateProduction({ voiceProvider: value as GithubTrendingVoiceProvider })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -117,7 +118,7 @@ export function GithubTrendingProductionPanel(props: Props) {
 
         <div className="space-y-4 rounded-xl border border-border/70 bg-muted/10 p-4">
           <div className="flex items-center gap-2 text-sm font-semibold"><Music2 className="h-4 w-4 text-cyan-300" /> Nhạc nền</div>
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className={props.compact ? "grid gap-3" : "grid gap-3 md:grid-cols-2"}>
             <Field label="Nguồn nhạc">
               <Select value={props.production.musicMode} onValueChange={(value) => props.updateProduction({ musicMode: value as GithubTrendingProductionSettings["musicMode"] })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>

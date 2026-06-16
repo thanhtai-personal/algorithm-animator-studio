@@ -320,6 +320,7 @@ function getAgentLabels(preset: string, vi: boolean) {
   if (preset === "story-video") return { ...base, research: vi ? "Mạch truyện" : "Story arc", strategy: vi ? "Nhịp cảm xúc" : "Emotional pacing", script: vi ? "Narration" : "Narration", visuals: vi ? "Cảnh nền truyện" : "Story backgrounds" };
   if (preset === "algorithm-long") return { ...base, research: vi ? "Concept thuật toán" : "Algorithm concept", strategy: vi ? "Chapter plan" : "Chapter plan", script: vi ? "Script dài" : "Long script", visuals: vi ? "Ví dụ/chapter" : "Examples/chapters", metadata: vi ? "SEO video dài" : "Long-form SEO" };
   if (preset === "maze-pathfinding") return { ...base, research: vi ? "Mê cung & thuật toán" : "Maze algorithms", strategy: vi ? "Luật trận đua" : "Race rules", script: vi ? "Commentary" : "Commentary", visuals: vi ? "Maze visualizer" : "Maze visualizer", render: vi ? "Render đua mê cung" : "Render maze race" };
+  if (preset === "github-trending") return { ...base, research: vi ? "Repo trending" : "Trending repos", strategy: vi ? "Góc open source" : "Open source angle", script: vi ? "Script repo" : "Repo script", visuals: vi ? "GitHub cards" : "GitHub cards", metadata: vi ? "SEO developer" : "Developer SEO" };
   if (preset === "algorithm-shorts") return { ...base, research: vi ? "Hook thuật toán" : "Algorithm hook", strategy: vi ? "Format Shorts" : "Shorts format", script: vi ? "Script ngắn" : "Short script", visuals: vi ? "Animation thuật toán" : "Algorithm animation" };
   return base;
 }

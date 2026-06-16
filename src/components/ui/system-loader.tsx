@@ -1,27 +1,25 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-type SystemLoaderProps = React.SVGAttributes<SVGSVGElement> & {
+type SystemLoaderProps = React.HTMLAttributes<HTMLDivElement> & {
   title?: string;
 };
 
-const SystemLoader = React.forwardRef<SVGSVGElement, SystemLoaderProps>(({ className, title = "Loading", ...props }, ref) => (
-  <svg
+const SystemLoader = React.forwardRef<HTMLDivElement, SystemLoaderProps>(({ className, title = "Loading", ...props }, ref) => (
+  <div
     ref={ref}
-    viewBox="0 0 96 48"
     role="img"
     aria-label={title}
     className={cn("kai-system-loader", className)}
     {...props}
   >
-    <title>{title}</title>
-    <path className="kai-system-loader-orbit kai-system-loader-orbit-soft" pathLength="1" d="M18 24c10-18 22-18 30 0s20 18 30 0" />
-    <path className="kai-system-loader-orbit kai-system-loader-orbit-soft" pathLength="1" d="M18 24c10 18 22 18 30 0s20-18 30 0" />
-    <path className="kai-system-loader-orbit kai-system-loader-orbit-main" pathLength="1" d="M18 24c10-18 22-18 30 0s20 18 30 0" />
-    <path className="kai-system-loader-orbit kai-system-loader-orbit-main kai-system-loader-delay" pathLength="1" d="M18 24c10 18 22 18 30 0s20-18 30 0" />
-    <circle className="kai-system-loader-pulse kai-system-loader-pulse-a" cx="18" cy="24" r="3.2" />
-    <circle className="kai-system-loader-pulse kai-system-loader-pulse-b" cx="78" cy="24" r="3.2" />
-  </svg>
+    <span className="sr-only">{title}</span>
+    <span className="kai-system-loader-glow kai-system-loader-glow-a" />
+    <span className="kai-system-loader-glow kai-system-loader-glow-b" />
+    <span className="kai-system-loader-curve kai-system-loader-curve-a" />
+    <span className="kai-system-loader-curve kai-system-loader-curve-b" />
+    <span className="kai-system-loader-core" />
+  </div>
 ));
 SystemLoader.displayName = "SystemLoader";
 

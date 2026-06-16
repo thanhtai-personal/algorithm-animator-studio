@@ -20,7 +20,7 @@ const FEATURE_GROUPS: Array<{
   {
     titleEn: "Algorithm channel screens",
     titleVi: "Màn hình kênh thuật toán",
-    items: ["algorithm-shorts", "maze-pathfinding", "algorithm-long"],
+    items: ["algorithm-shorts", "maze-pathfinding", "algorithm-long", "github-trending"],
   },
   {
     titleEn: "Story channel screens",

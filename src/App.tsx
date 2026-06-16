@@ -16,6 +16,7 @@ const AiVideoAgent = lazy(() => import("./pages/AiVideoAgent.tsx"));
 const AlgorithmWorld = lazy(() => import("./pages/AlgorithmWorld.tsx"));
 const Auth = lazy(() => import("./pages/Auth.tsx"));
 const GeneratedAssets = lazy(() => import("./pages/GeneratedAssets.tsx"));
+const GithubTrendingVideo = lazy(() => import("./pages/GithubTrendingVideo.tsx"));
 const Index = lazy(() => import("./pages/Index.tsx"));
 const LegalPage = lazy(() => import("./pages/LegalPage.tsx"));
 const LongContent = lazy(() => import("./pages/LongContent.tsx"));
@@ -80,6 +81,7 @@ const App = () => (
                 <Route path="/algorithms/short" element={<Index />} />
                 <Route path="/algorithms/maze" element={<AlgorithmWorld />} />
                 <Route path="/algorithms/video-long" element={<LongContent />} />
+                <Route path="/algorithms/github-trending" element={<GithubTrendingVideo />} />
                 <Route path="/stories/video" element={<StoryVideoStudio />} />
                 <Route path="/stories/create" element={<StoryAuthorStudio />} />
                 <Route path="/stories/review" element={<StoryReviewStudio />} />
@@ -87,6 +89,7 @@ const App = () => (
                 <Route path="/maze-pathfinding" element={<Navigate replace to="/algorithms/maze" />} />
                 <Route path="/algorithm-world" element={<Navigate replace to="/algorithms/maze" />} />
                 <Route path="/long-content" element={<Navigate replace to="/algorithms/video-long" />} />
+                <Route path="/github-trending" element={<Navigate replace to="/algorithms/github-trending" />} />
                 <Route path="/mu-news" element={<Navigate replace to="/football/mu-news" />} />
                 <Route path="/story-author" element={<Navigate replace to="/stories/create" />} />
                 <Route path="/story-review" element={<Navigate replace to="/stories/review" />} />

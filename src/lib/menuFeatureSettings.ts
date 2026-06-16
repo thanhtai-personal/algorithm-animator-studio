@@ -2,6 +2,7 @@ export type MenuFeatureId =
   | "algorithm-shorts"
   | "maze-pathfinding"
   | "algorithm-long"
+  | "github-trending"
   | "story-video"
   | "story-author"
   | "story-review"
@@ -17,6 +18,7 @@ export const DEFAULT_MENU_FEATURE_SETTINGS: MenuFeatureSettings = {
   "algorithm-shorts": false,
   "maze-pathfinding": false,
   "algorithm-long": false,
+  "github-trending": false,
   "story-video": false,
   "story-author": false,
   "story-review": false,
@@ -36,6 +38,10 @@ export const MENU_FEATURE_LABELS: Record<MenuFeatureId, { en: string; vi: string
   "algorithm-long": {
     en: "Algorithm Long",
     vi: "Video thuật toán dài",
+  },
+  "github-trending": {
+    en: "GitHub Trend Video",
+    vi: "Video GitHub trend",
   },
   "story-video": {
     en: "Story Video",

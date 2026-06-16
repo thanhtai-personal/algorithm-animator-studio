@@ -4,6 +4,11 @@ export type ChillTrack = {
   embedCode: string;
 };
 
+type ChillEmbedOptions = {
+  autoplay?: boolean;
+  enableJsApi?: boolean;
+};
+
 const STORAGE_KEY = "kai-studio.chill-tracks";
 const CHANGE_EVENT = "kai-studio:chill-tracks-change";
 
@@ -48,7 +53,7 @@ export function subscribeChillTracks(callback: (tracks: ChillTrack[]) => void) {
   };
 }
 
-export function getChillEmbedSrc(embedCode: string) {
+export function getChillEmbedSrc(embedCode: string, options: ChillEmbedOptions = {}) {
   const value = embedCode.trim();
   const iframeMatch = value.match(/src=["']([^"']+)["']/i);
   const rawUrl = iframeMatch?.[1] || value;
@@ -60,8 +65,15 @@ export function getChillEmbedSrc(embedCode: string) {
     url.searchParams.forEach((paramValue, key) => {
       if (key !== "v" && key !== "si") next.searchParams.set(key, paramValue);
     });
-    next.searchParams.set("autoplay", "1");
+    next.searchParams.set("autoplay", options.autoplay === false ? "0" : "1");
     next.searchParams.set("playsinline", "1");
+    next.searchParams.set("disablekb", "1");
+    if (options.enableJsApi) {
+      next.searchParams.set("enablejsapi", "1");
+      if (window.location.origin && window.location.origin !== "null") {
+        next.searchParams.set("origin", window.location.origin);
+      }
+    }
     return next.toString();
   } catch {
     return "";
@@ -79,7 +91,7 @@ function sanitizeTrack(value: unknown): ChillTrack | null {
   if (!value || typeof value !== "object") return null;
   const item = value as Record<string, unknown>;
   const embedCode = typeof item.embedCode === "string" ? item.embedCode.trim() : "";
-  if (!embedCode || !getChillEmbedSrc(embedCode)) return null;
+  if (!embedCode || !getChillEmbedSrc(embedCode, { autoplay: false })) return null;
   return {
     id: typeof item.id === "string" && item.id.trim() ? item.id.trim() : crypto.randomUUID(),
     title: typeof item.title === "string" && item.title.trim() ? item.title.trim() : "Chill track",

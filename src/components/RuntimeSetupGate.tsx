@@ -1,6 +1,6 @@
 import { useEffect, useState, type PropsWithChildren } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { SystemLoader } from "@/components/ui/system-loader";
+import { PageLoader } from "@/components/ui/system-loader";
 import { getCachedSetupWizardStatusSnapshot, getSetupWizardStatus } from "@/lib/setupWizardApi";
 import { IS_PUBLIC_WEB } from "@/lib/runtimeApi";
 
@@ -50,8 +50,8 @@ export function RuntimeSetupGate({ children }: PropsWithChildren) {
   if (state === "needs-setup") return <Navigate replace to="/settings?tab=health" state={{ from: location }} />;
 
   return (
-    <main className="runtime-loading-screen grid min-h-screen place-items-center px-4">
-      <SystemLoader className="h-[18rem] w-[36rem] max-w-[72vw] text-primary" title="Loading" />
+    <main className="runtime-loading-screen min-h-screen px-4">
+      <PageLoader className="min-h-screen" title="Loading" />
     </main>
   );
 }

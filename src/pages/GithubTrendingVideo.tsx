@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { GithubTrendingProductionPanel } from "@/features/github-trending/components/GithubTrendingProductionPanel";
 import { TrendingRepoCard } from "@/features/github-trending/components/TrendingRepoCard";
 import { TrendingVideoScriptPanel } from "@/features/github-trending/components/TrendingVideoScriptPanel";
 import { useGithubTrendingVideo } from "@/features/github-trending/useGithubTrendingVideo";
@@ -25,7 +26,11 @@ export default function GithubTrendingVideo() {
     durationSeconds: Math.max(24, studio.selectedRepos.length * 12 + 12),
     accentColor: "#22d3ee",
     primaryColor: "#020617",
-    watermark: "KAI STUDIO · OPEN SOURCE",
+    watermark: `KAI STUDIO · OPEN SOURCE · ${studio.plan.language.toUpperCase()}`,
+    voiceAudioUrl: studio.generatedMedia.voiceUrl,
+    backgroundMusicUrl: studio.generatedMedia.musicUrl,
+    voiceVolume: studio.production.voiceVolume,
+    backgroundMusicVolume: studio.production.musicVolume,
   };
 
   return (
@@ -115,6 +120,26 @@ export default function GithubTrendingVideo() {
             </CardContent>
           </Card>
 
+          <GithubTrendingProductionPanel
+            production={studio.production}
+            generatedVoice={studio.generatedVoice}
+            voiceUrl={studio.generatedMedia.voiceUrl}
+            musicUrl={studio.generatedMedia.musicUrl}
+            musicLabel={studio.generatedMedia.musicLabel}
+            voiceLoading={studio.voiceLoading}
+            catalogLoading={studio.catalogLoading}
+            piperModels={studio.piperModels}
+            elevenLabsConfig={studio.elevenLabsConfig}
+            supertonicConfig={studio.supertonicConfig}
+            rvcApplioConfig={studio.rvcApplioConfig}
+            vieneuConfig={studio.vieneuConfig}
+            assetMusicOptions={studio.assetMusicOptions}
+            musicTracks={studio.musicTracks}
+            updateProduction={studio.updateProduction}
+            generateVoiceOver={() => void studio.generateVoiceOver()}
+            clearGeneratedVoice={studio.clearGeneratedVoice}
+            reloadCatalogs={() => void studio.loadProductionCatalogs()}
+          />
           <TrendingVideoScriptPanel plan={studio.plan} />
           <RemotionVideoGenerator fixedTemplate="news-card" preset={preset} heading="Render video giới thiệu GitHub trending" description="Preview và render MP4 intro open source bằng Remotion backend local." onVideoCreated={() => undefined} />
         </section>

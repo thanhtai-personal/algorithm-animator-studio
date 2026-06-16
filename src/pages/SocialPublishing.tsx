@@ -1,6 +1,6 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CheckCircle2, RadioTower, Trash2, UploadCloud } from "lucide-react";
-import { SystemLoader } from "@/components/ui/system-loader";
+import { PageLoader, SystemLoader } from "@/components/ui/system-loader";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -389,7 +389,7 @@ function ToggleRow(props: { label: string; checked: boolean; onChange: (checked:
 }
 
 function ScreenMessage() {
-  return <div className="flex min-h-screen items-center justify-center bg-background"><SystemLoader className="h-40 w-80" title="Loading" /></div>;
+  return <div className="min-h-screen bg-background"><PageLoader className="min-h-screen" title="Loading" /></div>;
 }
 
 function errorMessage(error: unknown): string {

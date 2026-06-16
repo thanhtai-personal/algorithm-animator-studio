@@ -1,4 +1,4 @@
-import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
+import { AbsoluteFill, Audio, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { DEFAULT_REMOTION_VIDEO, normalizeRemotionVideoInput, type RemotionVideoInputProps } from "../lib/remotionVideoTypes";
 
 export function AlgorithmExplainerComposition(rawProps: Partial<RemotionVideoInputProps>) {
@@ -13,6 +13,8 @@ export function AlgorithmExplainerComposition(rawProps: Partial<RemotionVideoInp
 
   return (
     <AbsoluteFill style={{ background: props.primaryColor, color: "white", fontFamily: "Inter, Arial, sans-serif" }}>
+      {props.backgroundMusicUrl ? <Audio src={props.backgroundMusicUrl} volume={props.backgroundMusicVolume} /> : null}
+      {props.voiceAudioUrl ? <Audio src={props.voiceAudioUrl} volume={props.voiceVolume} /> : null}
       <div style={{ position: "absolute", inset: 0, background: `radial-gradient(circle at 22% 18%, ${accent}55, transparent 35%), linear-gradient(135deg, rgba(15,23,42,0.96), rgba(2,6,23,0.98))` }} />
       <div style={{ position: "absolute", top: 48, left: 64, right: 64, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: isPortrait ? 30 : 34, letterSpacing: 2, opacity: 0.72 }}>
         <span>{props.watermark}</span>

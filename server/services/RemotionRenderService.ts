@@ -23,6 +23,10 @@ const DEFAULT_INPUT: NormalizedRemotionVideoInput = {
   data: [18, 42, 27, 64, 33, 75, 52, 91, 46, 68],
   narration: "Use Remotion for template-based videos, subtitles, scene timelines, and long-form renders. Keep Canvas export for fast algorithm Shorts.",
   watermark: "KAI STUDIO",
+  voiceAudioUrl: "",
+  backgroundMusicUrl: "",
+  voiceVolume: 0.9,
+  backgroundMusicVolume: 0.22,
 };
 
 let cachedBundle: { entryMtimeMs: number; serveUrl: string } | null = null;
@@ -131,7 +135,11 @@ function normalizeRemotionVideoInput(raw: RemotionVideoRenderBody): NormalizedRe
     subtitle: sanitizeText(raw.subtitle, DEFAULT_INPUT.subtitle, 160),
     algorithmLabel: sanitizeText(raw.algorithmLabel, DEFAULT_INPUT.algorithmLabel, 80),
     narration: sanitizeText(raw.narration, DEFAULT_INPUT.narration, 600),
-    watermark: sanitizeText(raw.watermark, DEFAULT_INPUT.watermark, 40),
+    watermark: sanitizeText(raw.watermark, DEFAULT_INPUT.watermark, 48),
+    voiceAudioUrl: sanitizeMediaUrl(raw.voiceAudioUrl),
+    backgroundMusicUrl: sanitizeMediaUrl(raw.backgroundMusicUrl),
+    voiceVolume: clampNumber(raw.voiceVolume, 0, 1, DEFAULT_INPUT.voiceVolume),
+    backgroundMusicVolume: clampNumber(raw.backgroundMusicVolume, 0, 1, DEFAULT_INPUT.backgroundMusicVolume),
     primaryColor: sanitizeColor(raw.primaryColor, DEFAULT_INPUT.primaryColor),
     accentColor: sanitizeColor(raw.accentColor, DEFAULT_INPUT.accentColor),
     durationSeconds: clampNumber(raw.durationSeconds, 5, 600, DEFAULT_INPUT.durationSeconds),
@@ -144,6 +152,13 @@ function sanitizeText(value: unknown, fallback: string, maxLength: number) {
   if (typeof value !== "string") return fallback;
   const trimmed = value.trim();
   return trimmed ? trimmed.slice(0, maxLength) : fallback;
+}
+
+function sanitizeMediaUrl(value: unknown) {
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  return /^(https?:|data:|blob:|\/)/i.test(trimmed) ? trimmed : "";
 }
 
 function sanitizeColor(value: unknown, fallback: string) {

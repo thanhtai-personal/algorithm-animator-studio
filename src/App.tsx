@@ -7,7 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { AppLayout } from "@/components/AppLayout";
 import { RuntimeSetupGate } from "@/components/RuntimeSetupGate";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { SystemLoader } from "@/components/ui/system-loader";
+import { PageLoader } from "@/components/ui/system-loader";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -50,8 +50,8 @@ const AnalyticsTracker = () => {
 };
 
 const RouteFallback = () => (
-  <main className="grid min-h-[60vh] place-items-center px-4 text-muted-foreground">
-    <SystemLoader className="h-36 w-72 text-primary" title="Loading" />
+  <main className="min-h-[60vh] px-4 text-muted-foreground">
+    <PageLoader title="Loading" />
   </main>
 );
 

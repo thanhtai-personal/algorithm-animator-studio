@@ -14,6 +14,10 @@ export type RemotionVideoRenderBody = {
   data?: number[];
   narration?: string;
   watermark?: string;
+  voiceAudioUrl?: string;
+  backgroundMusicUrl?: string;
+  voiceVolume?: number;
+  backgroundMusicVolume?: number;
 };
 
 export type NormalizedRemotionVideoInput = Required<RemotionVideoRenderBody>;

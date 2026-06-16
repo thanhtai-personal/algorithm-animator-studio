@@ -14,6 +14,10 @@ export type RemotionVideoInputProps = {
   data: number[];
   narration: string;
   watermark: string;
+  voiceAudioUrl: string;
+  backgroundMusicUrl: string;
+  voiceVolume: number;
+  backgroundMusicVolume: number;
 };
 
 export type RemotionRenderResponse = {
@@ -54,6 +58,10 @@ export const DEFAULT_REMOTION_VIDEO: RemotionVideoInputProps = {
   data: [18, 42, 27, 64, 33, 75, 52, 91, 46, 68],
   narration: "Use Remotion for template-based videos, subtitles, scene timelines, and long-form renders. Keep Canvas export for fast algorithm Shorts.",
   watermark: "KAI STUDIO",
+  voiceAudioUrl: "",
+  backgroundMusicUrl: "",
+  voiceVolume: 0.9,
+  backgroundMusicVolume: 0.22,
 };
 
 export function getRemotionDimensions(aspectRatio: RemotionVideoAspectRatio) {
@@ -72,7 +80,11 @@ export function normalizeRemotionVideoInput(raw: Partial<RemotionVideoInputProps
     subtitle: sanitizeText(raw.subtitle, DEFAULT_REMOTION_VIDEO.subtitle, 160),
     algorithmLabel: sanitizeText(raw.algorithmLabel, DEFAULT_REMOTION_VIDEO.algorithmLabel, 80),
     narration: sanitizeText(raw.narration, DEFAULT_REMOTION_VIDEO.narration, 600),
-    watermark: sanitizeText(raw.watermark, DEFAULT_REMOTION_VIDEO.watermark, 40),
+    watermark: sanitizeText(raw.watermark, DEFAULT_REMOTION_VIDEO.watermark, 48),
+    voiceAudioUrl: sanitizeMediaUrl(raw.voiceAudioUrl),
+    backgroundMusicUrl: sanitizeMediaUrl(raw.backgroundMusicUrl),
+    voiceVolume: clampNumber(raw.voiceVolume, 0, 1, DEFAULT_REMOTION_VIDEO.voiceVolume),
+    backgroundMusicVolume: clampNumber(raw.backgroundMusicVolume, 0, 1, DEFAULT_REMOTION_VIDEO.backgroundMusicVolume),
     primaryColor: sanitizeColor(raw.primaryColor, DEFAULT_REMOTION_VIDEO.primaryColor),
     accentColor: sanitizeColor(raw.accentColor, DEFAULT_REMOTION_VIDEO.accentColor),
     durationSeconds: clampNumber(raw.durationSeconds, 5, 600, DEFAULT_REMOTION_VIDEO.durationSeconds),
@@ -85,6 +97,13 @@ function sanitizeText(value: unknown, fallback: string, maxLength: number) {
   if (typeof value !== "string") return fallback;
   const trimmed = value.trim();
   return trimmed ? trimmed.slice(0, maxLength) : fallback;
+}
+
+function sanitizeMediaUrl(value: unknown) {
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  return /^(https?:|data:|blob:|\/)/i.test(trimmed) ? trimmed : "";
 }
 
 function sanitizeColor(value: unknown, fallback: string) {

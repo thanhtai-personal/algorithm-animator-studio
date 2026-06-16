@@ -1,134 +1,102 @@
-.kai-system-loader {
-  --kai-loader-neon: currentColor;
+.kai-section-loader {
   position: relative;
-  display: inline-block;
+  display: inline-grid;
+  place-items: center;
+  width: 1em;
+  height: 1em;
   min-width: 1em;
   min-height: 1em;
-  overflow: hidden;
   color: currentColor;
-  border-radius: 999px;
-  isolation: isolate;
   vertical-align: -0.14em;
-  filter: saturate(1.25);
+  filter: drop-shadow(0 0 0.35em hsl(var(--primary) / 0.5));
 }
 
-.kai-system-loader::before {
-  content: "";
+.kai-section-loader-dot {
   position: absolute;
-  inset: 10%;
-  border-radius: inherit;
-  background:
-    radial-gradient(circle at 32% 40%, hsl(var(--primary) / 0.85), transparent 24%),
-    radial-gradient(circle at 68% 58%, hsl(var(--accent) / 0.72), transparent 26%),
-    linear-gradient(90deg, transparent, currentColor, transparent);
-  opacity: 0.48;
-  filter: blur(0.22em);
-  animation: kai-loader-acid-burn 2.2s ease-in-out infinite;
-}
-
-.kai-system-loader-glow,
-.kai-system-loader-curve,
-.kai-system-loader-core {
-  position: absolute;
-  pointer-events: none;
-}
-
-.kai-system-loader-glow {
-  inset: 18% 12%;
+  width: 0.42em;
+  height: 0.42em;
   border-radius: 999px;
-  background: conic-gradient(from 120deg, transparent, hsl(var(--primary)), hsl(var(--accent)), transparent 72%);
-  mix-blend-mode: screen;
-  opacity: 0.48;
-  filter: blur(0.18em);
-  animation: kai-loader-spin 1.9s linear infinite;
-}
-
-.kai-system-loader-glow-b {
-  animation-duration: 2.7s;
-  animation-direction: reverse;
-  opacity: 0.28;
-}
-
-.kai-system-loader-curve {
-  inset: 18% 9%;
-  border-radius: 50%;
-  border-top: max(1px, 0.09em) solid currentColor;
-  border-bottom: max(1px, 0.09em) solid hsl(var(--accent));
+  background: currentColor;
   box-shadow:
-    0 0 0.24em hsl(var(--primary) / 0.86),
-    inset 0 0 0.18em hsl(var(--accent) / 0.62);
-  transform: skewX(-24deg) rotate(var(--kai-loader-rotate, 0deg));
-  animation: kai-loader-curve 1.36s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+    0 0 0.24em currentColor,
+    0 0 0.68em hsl(var(--primary) / 0.62),
+    0 0 1.1em hsl(var(--accent) / 0.4);
+  animation: kai-section-loader-orbit 0.92s ease-in-out infinite;
 }
 
-.kai-system-loader-curve-b {
-  --kai-loader-rotate: 180deg;
-  animation-delay: -0.68s;
+.kai-section-loader-dot-b {
+  animation-delay: -0.46s;
   opacity: 0.72;
 }
 
-.kai-system-loader-core {
-  left: 50%;
-  top: 50%;
-  width: 0.34em;
-  height: 0.34em;
+.kai-page-loader {
+  position: relative;
+  display: grid;
+  min-height: min(72vh, 720px);
+  width: 100%;
+  place-items: center;
+  align-content: center;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(circle at 50% 48%, hsl(var(--primary) / 0.18), transparent 28%),
+    radial-gradient(circle at 50% 52%, hsl(var(--accent) / 0.12), transparent 38%);
+  color: hsl(var(--primary));
+}
+
+.kai-page-loader::before {
+  content: "";
+  position: absolute;
+  inset: 16%;
   border-radius: 999px;
-  background: #fff;
+  background: conic-gradient(from 120deg, transparent, hsl(var(--primary) / 0.32), hsl(var(--accent) / 0.22), transparent 68%);
+  filter: blur(1.5rem);
+  opacity: 0.68;
+  animation: kai-page-loader-spin 2.8s linear infinite;
+}
+
+.kai-page-loader-orb {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  height: 7.5rem;
+  width: 7.5rem;
+  place-items: center;
+  border: 1px solid hsl(var(--primary) / 0.32);
+  border-radius: 999px;
+  background: hsl(var(--background) / 0.72);
   box-shadow:
-    0 0 0.18em #fff,
-    0 0 0.48em hsl(var(--primary)),
-    0 0 0.86em hsl(var(--accent));
-  transform: translate(-50%, -50%);
-  animation: kai-loader-core 1.36s ease-in-out infinite;
+    0 0 0 1px hsl(var(--accent) / 0.12) inset,
+    0 22px 90px hsl(var(--primary) / 0.22);
+  backdrop-filter: blur(18px);
 }
 
-.fantastic-mode .kai-system-loader {
-  filter: saturate(1.55) drop-shadow(0 0 0.45em hsl(var(--primary) / 0.38));
+.kai-page-loader-icon {
+  position: absolute;
+  height: 2.2rem;
+  width: 2.2rem;
+  color: hsl(var(--primary));
+  animation: kai-page-loader-spin 1.05s linear infinite;
 }
 
-@keyframes kai-loader-spin {
-  to {
-    transform: rotate(1turn);
-  }
+.fantastic-mode .kai-section-loader,
+.fantastic-mode .kai-page-loader-orb {
+  filter: saturate(1.55) drop-shadow(0 0 0.55em hsl(var(--primary) / 0.42));
 }
 
-@keyframes kai-loader-acid-burn {
-  0%,
-  100% {
-    transform: scaleX(0.72) scaleY(0.84);
-    opacity: 0.22;
-  }
-  50% {
-    transform: scaleX(1.08) scaleY(1.12);
-    opacity: 0.68;
-  }
-}
-
-@keyframes kai-loader-curve {
-  0% {
-    clip-path: inset(0 100% 0 0 round 999px);
-    opacity: 0.22;
-    filter: hue-rotate(0deg);
-  }
-  45% {
-    clip-path: inset(0 0 0 0 round 999px);
-    opacity: 1;
-  }
-  100% {
-    clip-path: inset(0 0 0 100% round 999px);
-    opacity: 0.18;
-    filter: hue-rotate(180deg);
-  }
-}
-
-@keyframes kai-loader-core {
-  0%,
-  100% {
-    transform: translate(-50%, -50%) scale(0.68);
+@keyframes kai-section-loader-orbit {
+  0%, 100% {
+    transform: translateX(-0.36em) scale(0.78);
     opacity: 0.55;
   }
   50% {
-    transform: translate(-50%, -50%) scale(1.22);
+    transform: translateX(0.36em) scale(1.08);
     opacity: 1;
+  }
+}
+
+@keyframes kai-page-loader-spin {
+  to {
+    transform: rotate(1turn);
   }
 }

@@ -16,7 +16,7 @@ import { SocialChannelManagerCard } from "@/features/social-channel/components/S
 import { PublishingOpsCard } from "@/features/publishing-ops/components/PublishingOpsCard";
 import { useSocialChannelWorkspace } from "@/features/social-channel/hooks/useSocialChannelWorkspace";
 import type { SocialChannel, SocialPlatform } from "@/features/social-channel/types";
-import { SystemLoader } from "@/components/ui/system-loader";
+import { PageLoader, SystemLoader } from "@/components/ui/system-loader";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -375,7 +375,7 @@ function channelTitle(channels: Array<{ name: string }>, provider: SocialPlatfor
 function ScreenMessage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background">
-      <SystemLoader className="h-40 w-80" title="Loading" />
+      <PageLoader className="min-h-screen" title="Loading" />
     </main>
   );
 }

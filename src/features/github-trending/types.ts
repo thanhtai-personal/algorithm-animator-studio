@@ -1,3 +1,6 @@
+import type { BackgroundMusicId } from "@/lib/backgroundMusic";
+import type { VoiceGenerateResult } from "@/lib/voiceApi";
+
 export type GithubTrendingRepo = {
   id: number;
   name: string;
@@ -23,6 +26,30 @@ export type GithubTrendingFilter = {
   limit: number;
 };
 
+export type GithubTrendingOutputLanguage = "en" | "vi" | "zh" | "ja" | "ko";
+export type GithubTrendingVoiceProvider = "piper" | "supertonic" | "vieneu" | "elevenlabs" | "applio";
+export type GithubTrendingMusicMode = "procedural" | "asset" | "library" | "custom";
+
+export type GithubTrendingProductionSettings = {
+  outputLanguage: GithubTrendingOutputLanguage;
+  voiceProvider: GithubTrendingVoiceProvider;
+  piperModelKey: string;
+  supertonicVoice: string;
+  supertonicTotalSteps: number;
+  elevenModelId: string;
+  elevenVoiceId: string;
+  vieneuMode: string;
+  vieneuEmotion: string;
+  vieneuVoiceId: string;
+  applioTtsTemplateId: string;
+  externalVoiceUrl: string;
+  musicMode: GithubTrendingMusicMode;
+  musicPreset: BackgroundMusicId;
+  customMusicUrl: string;
+  voiceVolume: number;
+  musicVolume: number;
+};
+
 export type GithubTrendingVideoPlan = {
   title: string;
   subtitle: string;
@@ -32,4 +59,12 @@ export type GithubTrendingVideoPlan = {
   tags: string[];
   chapters: string[];
   data: number[];
+  language: GithubTrendingOutputLanguage;
+};
+
+export type GithubTrendingGeneratedMedia = {
+  voice: VoiceGenerateResult | null;
+  voiceUrl: string;
+  musicUrl: string;
+  musicLabel: string;
 };

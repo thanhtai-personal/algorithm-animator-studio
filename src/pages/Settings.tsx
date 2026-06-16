@@ -38,6 +38,7 @@ import {
   type MenuFeatureSettings,
 } from "@/lib/menuFeatureSettings";
 import { readChillTracks, saveChillTracks, type ChillTrack } from "@/lib/chillMusicSettings";
+import { useFantasticMode } from "@/hooks/use-fantastic-mode";
 
 export default function Settings() {
   const [form, setForm] = useState<SettingsForm>(() => ({ ...EMPTY_FORM, ...getRuntimeSettings() }));
@@ -59,6 +60,7 @@ export default function Settings() {
   const [models, setModels] = useState<PiperModel[]>([]);
   const [loading, setLoading] = useState(false);
   const [selecting, setSelecting] = useState<string | null>(null);
+  const [fantasticMode,] = useFantasticMode();
 
   const availableModels = useMemo(() => models.filter((model) => model.available).length, [models]);
 
@@ -217,7 +219,7 @@ export default function Settings() {
             <TabsTrigger value="voice">{t(lang, "settingsVoiceTab")}</TabsTrigger>
             <TabsTrigger value="data">{t(lang, "settingsDataTab")}</TabsTrigger>
             <TabsTrigger value="tools">{text(lang, "Modules", "Module")}</TabsTrigger>
-            <TabsTrigger value="chill">Chill</TabsTrigger>
+            {fantasticMode && <TabsTrigger value="chill">Chill</TabsTrigger>}
             <TabsTrigger value="api-key">{t(lang, "settingsApiKeyTab")}</TabsTrigger>
             <TabsTrigger value="health">{t(lang, "settingsHealthCheckTab")}</TabsTrigger>
           </TabsList>
@@ -247,9 +249,9 @@ export default function Settings() {
             <SettingsModulesTab lang={lang} settings={menuFeatures} onChange={setMenuFeatures} />
           </TabsContent>
 
-          <TabsContent value="chill" className="mt-0">
+          {fantasticMode && <TabsContent value="chill" className="mt-0">
             <SettingsChillTab tracks={chillTracks} onChange={setChillTracks} />
-          </TabsContent>
+          </TabsContent>}
 
           <TabsContent value="api-key" className="mt-0">
             <SettingsApiKeyTab form={form} lang={lang} onUpdateField={updateField} />

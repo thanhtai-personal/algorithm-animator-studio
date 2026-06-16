@@ -22,7 +22,6 @@ const LegalPage = lazy(() => import("./pages/LegalPage.tsx"));
 const LongContent = lazy(() => import("./pages/LongContent.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const MuNewsStudio = lazy(() => import("./pages/MuNewsStudio.tsx"));
-const ProviderManager = lazy(() => import("./pages/ProviderManager.tsx"));
 const Settings = lazy(() => import("./pages/Settings.tsx"));
 const TextToSpeech = lazy(() => import("./pages/TextToSpeech.tsx"));
 const StoryAuthorStudio = lazy(() => import("./pages/StoryAuthorStudio.tsx"));
@@ -97,7 +96,7 @@ const App = () => (
                 <Route path="/story-review" element={<Navigate replace to="/stories/review" />} />
                 <Route path="/story-video" element={<Navigate replace to="/stories/video" />} />
                 <Route path="/assets" element={<GeneratedAssets />} />
-                <Route path="/providers" element={<ProviderManager />} />
+                <Route path="/providers" element={<Navigate replace to="/settings?tab=providers" />} />
                 <Route path="/text-to-speech" element={<TextToSpeech />} />
                 <Route path="/ai-video-agent" element={<AiVideoAgent />} />
                 <Route path="/video-create" element={<VideoCreate />} />

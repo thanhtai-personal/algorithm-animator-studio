@@ -49,7 +49,7 @@ export async function getSupertonicConfigStatus(envOverrides: RuntimeEnvValues =
       defaultLang: DEFAULT_SUPERTONIC_LANG,
       defaultTotalSteps: DEFAULT_SUPERTONIC_TOTAL_STEPS,
       voices: defaultVoices(),
-      error: "Supertonic đang tắt trong Provider Manager.",
+      error: "Supertonic đang tắt trong Settings > Provider.",
     };
   }
 
@@ -128,7 +128,7 @@ export async function importSupertonicStyle(body: SupertonicImportStyleBody, env
 
 export async function generateSupertonicAudio(body: SupertonicGenerateBody, envOverrides: RuntimeEnvValues = {}) {
   const env = readEnvValues(envOverrides);
-  if (!isProviderStartupEnabled("supertonic", env)) throw new Error("Supertonic đang tắt. Bật trong Provider Manager rồi restart app/dev server.");
+  if (!isProviderStartupEnabled("supertonic", env)) throw new Error("Supertonic đang tắt. Bật trong Settings > Provider rồi restart app/dev server.");
   const text = normalizeText(body);
   if (!text) throw new Error("Text không được để trống.");
 

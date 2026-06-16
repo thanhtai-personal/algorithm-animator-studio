@@ -220,7 +220,7 @@ export default function TextToSpeech() {
                 <p className="text-sm text-yellow-100">
                   {gptSoVits?.enabled
                     ? text(lang, "GPT-SoVITS uses a local API and usually needs reference audio plus matching prompt text.", "GPT-SoVITS dùng API local và thường cần audio mẫu cùng text khớp audio mẫu.")
-                    : text(lang, "GPT-SoVITS is disabled in Provider Manager. Enable it and restart the app before generating.", "GPT-SoVITS đang tắt trong Quản lý provider. Bật rồi restart app trước khi tạo voice.")}
+                    : text(lang, "GPT-SoVITS is disabled in Settings > Provider. Enable it and restart the app before generating.", "GPT-SoVITS đang tắt trong Cài đặt > Provider. Bật rồi restart app trước khi tạo voice.")}
                 </p>
                 <div className="grid gap-3 md:grid-cols-2">
                   <SelectField label={text(lang, "Text language", "Ngôn ngữ text")} value={gptTextLang} onChange={setGptTextLang} options={GPT_SOVITS_LANGS} />

@@ -37,7 +37,7 @@ export async function getGptSoVitsConfigStatus(envOverrides: RuntimeEnvValues = 
       endpointChecks,
       endpointsOk: false,
       restartNote,
-      error: "GPT-SoVITS đang tắt trong Provider Manager.",
+      error: "GPT-SoVITS đang tắt trong Settings > Provider.",
     };
   }
 
@@ -59,7 +59,7 @@ export async function getGptSoVitsConfigStatus(envOverrides: RuntimeEnvValues = 
 export async function generateGptSoVitsAudio(body: GptSoVitsGenerateBody, envOverrides: RuntimeEnvValues = {}) {
   const env = readEnvValues(envOverrides);
   const config = readGptSoVitsConfig(env);
-  if (!config.enabled) throw new Error("GPT-SoVITS đang tắt. Bật trong Provider Manager rồi restart app/dev server.");
+  if (!config.enabled) throw new Error("GPT-SoVITS đang tắt. Bật trong Settings > Provider rồi restart app/dev server.");
 
   const text = normalizeText(body);
   if (!text) throw new Error("Chưa có text để tạo voice bằng GPT-SoVITS.");

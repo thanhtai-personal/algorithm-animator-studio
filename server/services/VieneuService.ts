@@ -50,7 +50,7 @@ export async function getVieneuConfigStatus(envOverrides: RuntimeEnvValues = {})
   };
 
   if (!providerEnabled) {
-    return { ...baseStatus, enabled: false, sdkInstalled: false, error: "VieNeu-TTS đang tắt trong Provider Manager." };
+    return { ...baseStatus, enabled: false, sdkInstalled: false, error: "VieNeu-TTS đang tắt trong Settings > Provider." };
   }
 
   if (!baseStatus.pythonExists) {
@@ -83,7 +83,7 @@ export async function generateVieneuAudio(body: VieneuGenerateBody, envOverrides
   if (!text) throw new Error("Chưa có text để tạo voice bằng VieNeu-TTS.");
 
   const env = readEnvValues(envOverrides);
-  if (!isProviderStartupEnabled("vieneu", env)) throw new Error("VieNeu-TTS đang tắt. Bật trong Provider Manager rồi restart app/dev server.");
+  if (!isProviderStartupEnabled("vieneu", env)) throw new Error("VieNeu-TTS đang tắt. Bật trong Settings > Provider rồi restart app/dev server.");
   const config = readVieneuConfig(env);
   if (!fs.existsSync(BRIDGE_PATH)) throw new Error("Thiếu scripts/vieneu-generate.py.");
   if (!commandLooksExecutable(config.pythonExe)) throw new Error(`Không tìm thấy Python: ${config.pythonExe}`);

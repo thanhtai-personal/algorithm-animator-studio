@@ -41,7 +41,7 @@ export async function getRvcApplioConfigStatus(envOverrides: RuntimeEnvValues = 
       enabled: false,
       serverOk: false,
       endpointsOk: false,
-      error: "RVC/Applio đang tắt trong Provider Manager.",
+      error: "RVC/Applio đang tắt trong Settings > Provider.",
     };
   }
 
@@ -81,7 +81,7 @@ export async function getRvcApplioConfigStatus(envOverrides: RuntimeEnvValues = 
 
 export async function convertRvcApplioAudio(body: RvcApplioConvertBody, envOverrides: RuntimeEnvValues = {}) {
   const env = readEnvValues(envOverrides);
-  if (!isProviderStartupEnabled("applio", env)) throw new Error("RVC/Applio đang tắt. Bật trong Provider Manager rồi restart app/dev server.");
+  if (!isProviderStartupEnabled("applio", env)) throw new Error("RVC/Applio đang tắt. Bật trong Settings > Provider rồi restart app/dev server.");
   const config = readRvcConfig(env);
   const template = selectRvcTemplate(config, body.templateId);
   const source = resolveGeneratedResource({ kind: "audio", relativePath: body.audioRelativePath }, envOverrides);
@@ -135,7 +135,7 @@ export async function generateRvcApplioSpeech(body: RvcApplioTextToSpeechBody, e
   if (!text) throw new Error("Chưa có text để tạo voice bằng Applio.");
 
   const env = readEnvValues(envOverrides);
-  if (!isProviderStartupEnabled("applio", env)) throw new Error("RVC/Applio đang tắt. Bật trong Provider Manager rồi restart app/dev server.");
+  if (!isProviderStartupEnabled("applio", env)) throw new Error("RVC/Applio đang tắt. Bật trong Settings > Provider rồi restart app/dev server.");
   const config = readRvcConfig(env);
   const template = selectRvcTemplate(config, body.templateId, "tts");
   const dateFolderName = getLocalDateFolderName();

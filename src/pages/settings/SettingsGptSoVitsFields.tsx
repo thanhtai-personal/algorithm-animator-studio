@@ -17,7 +17,7 @@ export function SettingsGptSoVitsFields(props: SettingsGptSoVitsFieldsProps) {
   return (
     <div className="space-y-5">
       <p className="rounded-lg border border-yellow-400/40 bg-yellow-400/10 p-3 text-sm text-yellow-100">
-        {text(props.lang, "GPT-SoVITS is an experimental local voice cloning provider. Keep it disabled in Provider Manager until you need it because model loading can be heavy.", "GPT-SoVITS là provider clone giọng local thử nghiệm. Nên để tắt trong Quản lý provider đến khi cần dùng vì load model khá nặng.")}
+        {text(props.lang, "GPT-SoVITS is an experimental local voice cloning provider. Keep it disabled in Settings > Provider until you need it because model loading can be heavy.", "GPT-SoVITS là provider clone giọng local thử nghiệm. Nên để tắt trong Cài đặt > Provider đến khi cần dùng vì load model khá nặng.")}
       </p>
       <div className="grid gap-3 md:grid-cols-2">
         <SecretInput id="gpt-sovits-base-url" label="GPT-SoVITS API base" description={text(props.lang, "Local API URL, usually http://127.0.0.1:9880.", "URL API local, thường là http://127.0.0.1:9880.")} value={props.form.GPT_SOVITS_BASE_URL} placeholder="http://127.0.0.1:9880" type="text" onChange={(value) => props.onUpdateField("GPT_SOVITS_BASE_URL", value)} />

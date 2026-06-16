@@ -19,6 +19,7 @@ import { SettingsApiKeyTab } from "./settings/SettingsApiKeyTab";
 import { SettingsDataTab } from "./settings/SettingsDataTab";
 import { SettingsHealthTab } from "./settings/SettingsHealthTab";
 import { SettingsModulesTab } from "./settings/SettingsModulesTab";
+import { SettingsProvidersTab } from "./settings/SettingsProvidersTab";
 import { EMPTY_FORM, type ElevenLabsConfigResponse, type HealthResponse, type PiperModel, type RvcApplioConfigResponse, type RvcApplioTemplateFileResponse, type SelectPathResponse, type SettingsForm, type SettingsFormKey, type SupertonicConfigResponse, type VieneuConfigResponse, type YoutubeToolsHealthResponse } from "./settings/SettingsTypes";
 import { SettingsVoiceTab } from "./settings/SettingsVoiceTab";
 import { readSystemLang, subscribeSystemLang, t, text, type Lang } from "@/lib/i18n";
@@ -208,10 +209,11 @@ export default function Settings() {
         </div>
 
         <Tabs defaultValue={getDefaultSettingsTab()} className="space-y-4">
-          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/40 p-1 md:grid-cols-5">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/40 p-1 md:grid-cols-6">
             <TabsTrigger value="voice">{t(lang, "settingsVoiceTab")}</TabsTrigger>
             <TabsTrigger value="data">{t(lang, "settingsDataTab")}</TabsTrigger>
             <TabsTrigger value="modules">{text(lang, "Screens", "Màn hình")}</TabsTrigger>
+            <TabsTrigger value="providers">{text(lang, "Providers", "Provider")}</TabsTrigger>
             <TabsTrigger value="api-key">{t(lang, "settingsApiKeyTab")}</TabsTrigger>
             <TabsTrigger value="health">{t(lang, "settingsHealthCheckTab")}</TabsTrigger>
           </TabsList>
@@ -239,6 +241,10 @@ export default function Settings() {
 
           <TabsContent value="modules" className="mt-0">
             <SettingsModulesTab lang={lang} settings={menuFeatures} onChange={setMenuFeatures} />
+          </TabsContent>
+
+          <TabsContent value="providers" className="mt-0">
+            <SettingsProvidersTab lang={lang} />
           </TabsContent>
 
           <TabsContent value="api-key" className="mt-0">
@@ -270,5 +276,5 @@ export default function Settings() {
 function getDefaultSettingsTab() {
   if (typeof window === "undefined") return "voice";
   const tab = new URLSearchParams(window.location.search).get("tab") || "voice";
-  return ["voice", "data", "modules", "api-key", "health"].includes(tab) ? tab : "voice";
+  return ["voice", "data", "modules", "providers", "api-key", "health"].includes(tab) ? tab : "voice";
 }

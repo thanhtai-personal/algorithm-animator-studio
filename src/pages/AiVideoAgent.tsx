@@ -287,9 +287,10 @@ export default function AiVideoAgent() {
       <div className="grid gap-4 transition-[grid-template-columns] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] xl:grid-cols-[minmax(0,1fr)_var(--agent-panel-width)]" style={{ "--agent-panel-width": settingsOpen ? "420px" : "64px" } as CSSProperties}>
         <section className="min-w-0 space-y-4">
           <Tabs value={pipelineTab} onValueChange={setPipelineTab} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="flow">Flow</TabsTrigger>
               <TabsTrigger value="result">Result</TabsTrigger>
+              <TabsTrigger value="logs">Logs</TabsTrigger>
               <TabsTrigger value="videos">Videos</TabsTrigger>
             </TabsList>
             <TabsContent value="flow" className="mt-0">
@@ -298,16 +299,18 @@ export default function AiVideoAgent() {
             <TabsContent value="result" className="mt-0">
               <AgentReviewCard job={latestJob} publishJobs={publishJobs} lang={lang} busy={busyJobId === latestJob?.id} onRun={handleRunJob} />
             </TabsContent>
+            <TabsContent value="logs" className="mt-0">
+              <LogCard job={activeJob} lang={lang} selectedStageId={selectedStageId} />
+            </TabsContent>
             <TabsContent value="videos" className="mt-0">
               <AgentSelectedChannelVideos channels={selectedPublishChannels} lang={lang} />
             </TabsContent>
           </Tabs>
-          <Tabs defaultValue="logs" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-5"><TabsTrigger value="plan">Plan</TabsTrigger><TabsTrigger value="latest">Live job</TabsTrigger><TabsTrigger value="queue">Queue</TabsTrigger><TabsTrigger value="logs">Logs</TabsTrigger><TabsTrigger value="history">History</TabsTrigger></TabsList>
+          <Tabs defaultValue="plan" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-4"><TabsTrigger value="plan">Plan</TabsTrigger><TabsTrigger value="latest">Live job</TabsTrigger><TabsTrigger value="queue">Queue</TabsTrigger><TabsTrigger value="history">History</TabsTrigger></TabsList>
             <TabsContent value="plan"><PlanCard plan={plan || latestJob?.plan || null} lang={lang} /></TabsContent>
             <TabsContent value="latest"><JobCard job={latestJob} lang={lang} busy={busyJobId === latestJob?.id} onRun={handleRunJob} /></TabsContent>
             <TabsContent value="queue"><PublishJobsCard jobs={publishJobs} agentJob={latestJob} lang={lang} /></TabsContent>
-            <TabsContent value="logs"><LogCard job={activeJob} lang={lang} selectedStageId={selectedStageId} /></TabsContent>
             <TabsContent value="history" className="space-y-3">{jobs.length ? jobs.map((job) => <JobCard key={job.id} job={job} lang={lang} busy={busyJobId === job.id} onRun={handleRunJob} compact />) : <Empty lang={lang} />}</TabsContent>
           </Tabs>
         </section>

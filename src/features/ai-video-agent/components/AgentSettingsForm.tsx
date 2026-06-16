@@ -49,7 +49,7 @@ export function AgentSettingsForm(props: AgentSettingsFormProps) {
       <Field label={text(lang, "Agent preset", "Agent preset")}><Select value={form.agentPreset || "custom"} onValueChange={applyPreset}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="custom">Custom</SelectItem>{presets.map((preset) => <SelectItem key={preset.id} value={preset.id}>{preset.title}</SelectItem>)}</SelectContent></Select></Field>
       <Field label={text(lang, "Video topic", "Chủ đề video")}><Input value={form.topic} onChange={(event) => update("topic", event.target.value)} /></Field>
       <Field label={text(lang, "Platform", "Nền tảng")}><Select value={form.platform} onValueChange={(value) => update("platform", value as AgentVideoForm["platform"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="youtube-short">YouTube Short 9:16</SelectItem><SelectItem value="youtube-long">YouTube Long 16:9</SelectItem><SelectItem value="tiktok">TikTok 9:16</SelectItem><SelectItem value="facebook-reel">Facebook Reel 9:16</SelectItem></SelectContent></Select></Field>
-      <div className="grid gap-3 sm:grid-cols-2"><Field label={text(lang, "Language", "Ngôn ngữ")}><Select value={form.language} onValueChange={(value) => update("language", value as AgentVideoForm["language"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="vi">Tiếng Việt</SelectItem><SelectItem value="en">English</SelectItem></SelectContent></Select></Field><Field label={text(lang, "Target seconds", "Thời lượng giây")}><Input type="number" min={15} max={600} value={form.targetDurationSec} onChange={(event) => update("targetDurationSec", Number(event.target.value))} /></Field></div>
+      <div className="grid gap-3 sm:grid-cols-2"><Field label={text(lang, "Language", "Ngôn ngữ")}><Select value={form.language} onValueChange={(value) => update("language", value as AgentVideoForm["language"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="vi">Tiếng Việt</SelectItem><SelectItem value="en">English</SelectItem></SelectContent></Select></Field><Field label={text(lang, "Target seconds (AI only)", "Thời lượng giây (chỉ AI)")}><Input type="number" min={15} max={600} value={form.targetDurationSec} onChange={(event) => update("targetDurationSec", Number(event.target.value))} /></Field></div>
       <AgentVoiceSettings form={form} models={models} availableModels={availableModels} elevenConfig={props.elevenConfig} supertonicConfig={props.supertonicConfig} rvcApplioConfig={props.rvcApplioConfig} vieneuConfig={props.vieneuConfig} update={update} />
       <div className="grid gap-3 sm:grid-cols-2"><Field label={text(lang, "Speech rate", "Tốc độ đọc")}><Input type="number" step="0.05" value={form.speechRate} onChange={(event) => update("speechRate", Number(event.target.value))} /></Field><Field label={text(lang, "Sentence silence", "Nghỉ giữa câu")}><Input type="number" step="0.05" value={form.sentenceSilence} onChange={(event) => update("sentenceSilence", Number(event.target.value))} /></Field></div>
       <RenderOptions form={form} lang={lang} update={update} />
@@ -66,10 +66,9 @@ export function AgentSettingsForm(props: AgentSettingsFormProps) {
 
 function RenderOptions({ form, lang, update }: { form: AgentVideoForm; lang: Lang; update: UpdateForm }) {
   return (
-    <div className="rounded-lg border p-3">
-      <div className="mb-3">
+    <div className="space-y-3 rounded-lg border p-3">
+      <div>
         <Label>{text(lang, "Render module", "Render module")}</Label>
-        <p className="mt-1 text-xs text-muted-foreground">{text(lang, "Use the same Remotion export settings as module videos.", "Dùng cùng cấu hình Remotion export như các module video.")}</p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Template"><Select value={form.renderTemplate} onValueChange={(value) => update("renderTemplate", value as AgentVideoForm["renderTemplate"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="algorithm-explainer">Algorithm explainer</SelectItem><SelectItem value="news-card">News card</SelectItem><SelectItem value="story-card">Story card</SelectItem></SelectContent></Select></Field>

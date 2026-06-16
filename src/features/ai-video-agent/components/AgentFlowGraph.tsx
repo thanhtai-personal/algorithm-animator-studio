@@ -21,6 +21,7 @@ type StageNodeData = {
   selected: boolean;
   logCount: number;
   kind: FlowNodeKind;
+  tone?: "api-key" | "start" | "end";
   stageId?: AgentWorkflowStageId;
 };
 
@@ -35,6 +36,7 @@ type FlowSpecNode = {
   status?: string;
   progress?: number;
   message?: string;
+  tone?: StageNodeData["tone"];
 };
 
 type FlowSpecEdge = { source: string; target: string; active?: boolean; skipped?: boolean; label?: string; sourceHandle?: string; targetHandle?: string };
@@ -76,6 +78,7 @@ export function AgentFlowGraph({
         selected: Boolean(node.stageId && selectedStageId === node.stageId),
         logCount: node.stageId ? logs.filter((log) => log.stageId === node.stageId).length : 0,
         kind: node.kind || "stage",
+        tone: node.tone,
         stageId: node.stageId,
       },
     };
@@ -121,35 +124,25 @@ export function AgentFlowGraph({
         <div className="kai-agent-flow-shell h-[680px] overflow-hidden rounded-xl border bg-muted/20 xl:h-[720px]">
           <style>{`
             .kai-agent-flow-card {
-              --kai-agent-active: #0284c7; --kai-agent-active-soft: rgba(2, 132, 199, 0.2);
-              --kai-agent-active-glow: rgba(2, 132, 199, 0.65);
-              --kai-agent-done: #059669;
-              --kai-agent-done-soft: rgba(5, 150, 105, 0.14);
-              --kai-agent-skip: #64748b;
-              --kai-agent-skip-soft: rgba(100, 116, 139, 0.12);
-              --kai-agent-process-bg: rgba(255, 255, 255, 0.96);
-              --kai-agent-terminal-bg: rgba(241, 245, 249, 0.98);
-              --kai-agent-decision: #f97316;
-              --kai-agent-decision-soft: rgba(249, 115, 22, 0.14);
-              --kai-agent-decision-glow: rgba(249, 115, 22, 0.45);
-              --kai-agent-data: #2563eb;
-              --kai-agent-data-soft: rgba(37, 99, 235, 0.12);
+              --kai-agent-active: #0284c7; --kai-agent-active-soft: rgba(2, 132, 199, 0.2); --kai-agent-active-glow: rgba(2, 132, 199, 0.65);
+              --kai-agent-done: #059669; --kai-agent-done-soft: rgba(5, 150, 105, 0.14); --kai-agent-skip: #64748b; --kai-agent-skip-soft: rgba(100, 116, 139, 0.12);
+              --kai-agent-process-bg: rgba(255, 255, 255, 0.96); --kai-agent-terminal-bg: rgba(241, 245, 249, 0.98);
+              --kai-agent-decision: #f97316; --kai-agent-decision-soft: rgba(249, 115, 22, 0.14); --kai-agent-decision-glow: rgba(249, 115, 22, 0.45);
+              --kai-agent-api-key: #eab308; --kai-agent-api-key-soft: rgba(234, 179, 8, 0.16); --kai-agent-api-key-glow: rgba(234, 179, 8, 0.4);
+              --kai-agent-start: #ffffff; --kai-agent-start-text: #020617; --kai-agent-start-soft: rgba(255, 255, 255, 0.92);
+              --kai-agent-end: #dc2626; --kai-agent-end-soft: rgba(220, 38, 38, 0.16); --kai-agent-end-text: #991b1b;
+              --kai-agent-data: #2563eb; --kai-agent-data-soft: rgba(37, 99, 235, 0.12);
               --kai-agent-label-bg: #ffffff; --kai-agent-label-border: rgba(15, 23, 42, 0.2); --kai-agent-label-text: #020617;
             }
             .dark .kai-agent-flow-card {
-              --kai-agent-active: #fb923c; --kai-agent-active-soft: rgba(251, 146, 60, 0.18);
-              --kai-agent-active-glow: rgba(251, 146, 60, 0.8);
-              --kai-agent-done: #22c55e;
-              --kai-agent-done-soft: rgba(34, 197, 94, 0.13);
-              --kai-agent-skip: #475569;
-              --kai-agent-skip-soft: rgba(71, 85, 105, 0.2);
-              --kai-agent-process-bg: rgba(2, 6, 23, 0.92);
-              --kai-agent-terminal-bg: rgba(15, 23, 42, 0.96);
-              --kai-agent-decision: #fb923c;
-              --kai-agent-decision-soft: rgba(251, 146, 60, 0.18);
-              --kai-agent-decision-glow: rgba(251, 146, 60, 0.75);
-              --kai-agent-data: #38bdf8;
-              --kai-agent-data-soft: rgba(56, 189, 248, 0.14);
+              --kai-agent-active: #fb923c; --kai-agent-active-soft: rgba(251, 146, 60, 0.18); --kai-agent-active-glow: rgba(251, 146, 60, 0.8);
+              --kai-agent-done: #22c55e; --kai-agent-done-soft: rgba(34, 197, 94, 0.13); --kai-agent-skip: #475569; --kai-agent-skip-soft: rgba(71, 85, 105, 0.2);
+              --kai-agent-process-bg: rgba(2, 6, 23, 0.92); --kai-agent-terminal-bg: rgba(15, 23, 42, 0.96);
+              --kai-agent-decision: #fb923c; --kai-agent-decision-soft: rgba(251, 146, 60, 0.18); --kai-agent-decision-glow: rgba(251, 146, 60, 0.75);
+              --kai-agent-api-key: #facc15; --kai-agent-api-key-soft: rgba(250, 204, 21, 0.2); --kai-agent-api-key-glow: rgba(250, 204, 21, 0.75);
+              --kai-agent-start: #f8fafc; --kai-agent-start-text: #020617; --kai-agent-start-soft: rgba(248, 250, 252, 0.96);
+              --kai-agent-end: #ef4444; --kai-agent-end-soft: rgba(239, 68, 68, 0.2); --kai-agent-end-text: #fecaca;
+              --kai-agent-data: #38bdf8; --kai-agent-data-soft: rgba(56, 189, 248, 0.14);
               --kai-agent-label-bg: #020617; --kai-agent-label-border: rgba(148, 163, 184, 0.55); --kai-agent-label-text: #f8fafc;
             }
             .kai-agent-running-edge .react-flow__edge-path { stroke-dasharray: 12 8; animation: kai-agent-flow-dash 0.7s linear infinite; filter: drop-shadow(0 0 7px var(--kai-agent-active-glow)); }
@@ -199,10 +192,10 @@ function buildAgentFlow(job: AgentVideoJob | undefined, steps: AgentStep[], lang
   const runningId = steps.find((step) => step.status === "running")?.id;
   const node = (id: string, label: string, x: number, y: number, stageId?: AgentWorkflowStageId, extra?: Partial<FlowSpecNode>): FlowSpecNode => ({ id, label, x, y, stageId, ...extra });
   const nodes: FlowSpecNode[] = [
-    node("start", vi ? "Bắt đầu" : "Start", -360, 240, undefined, { kind: "terminal", status: job ? "done" : "pending", progress: job ? 100 : 0 }),
+    node("start", vi ? "Bắt đầu" : "Start", -360, 240, undefined, { kind: "terminal", tone: "start", status: job ? "done" : "pending", progress: job ? 100 : 0 }),
     node("research", labels.research, 0, 220, "research"),
     node("api-check", vi ? "Có API key?" : "API key?", 360, 220, "research", { kind: "condition", status: conditionStatus(steps, "research"), progress: hasPlan ? 100 : 0, message: apiMessage(job, vi) }),
-    node("ai-plan", vi ? "AI plan" : "AI plan", 760, 0, "research", { kind: "branch", status: branchStatus(hasApiKeyPath, fallback, runningId === "research"), progress: hasApiKeyPath ? 100 : 0, message: labels.aiPlan }),
+    node("ai-plan", vi ? "AI plan" : "AI plan", 760, 0, "research", { kind: "branch", tone: "api-key", status: branchStatus(hasApiKeyPath, fallback, runningId === "research"), progress: hasApiKeyPath ? 100 : 0, message: labels.aiPlan }),
     node("fallback-plan", vi ? "Fallback local" : "Local fallback", 760, 470, "research", { kind: "branch", status: branchStatus(fallback, hasApiKeyPath, runningId === "research"), progress: fallback ? 100 : 0, message: job?.plan?.warning || labels.fallback }),
     node("strategy", labels.strategy, 1140, 220, "strategy"),
     node("script", labels.script, 1500, 220, "script"),
@@ -215,7 +208,7 @@ function buildAgentFlow(job: AgentVideoJob | undefined, steps: AgentStep[], lang
     node("local-output", vi ? "Lưu local" : "Local output", 3300, 470, "publish", { kind: "branch", status: publishStep?.status === "skipped" ? "done" : autoPublish ? "skipped" : publishStep?.status || "pending", progress: publishStep?.status === "skipped" ? 100 : 0, message: labels.publishNo }),
     node("engage", labels.engage, 3660, 100, "engage"),
     node("monetize", labels.monetize, 4020, 320, "monetize"),
-    node("end", vi ? "Kết thúc" : "End", 4380, 320, undefined, { kind: "terminal", status: job?.status === "success" ? "done" : job?.status === "failed" ? "failed" : "pending", progress: job?.status === "success" ? 100 : 0, message: job?.status === "failed" ? job.error : "" }),
+    node("end", vi ? "Kết thúc" : "End", 4380, 320, undefined, { kind: "terminal", tone: "end", status: job?.status === "success" ? "done" : job?.status === "failed" ? "failed" : "pending", progress: job?.status === "success" ? 100 : 0, message: job?.status === "failed" ? job.error : "" }),
   ];
   const active = (source: AgentWorkflowStageId, target?: AgentWorkflowStageId) => runningId === source || runningId === target;
   const edges: FlowSpecEdge[] = [
@@ -252,7 +245,7 @@ function buildAgentDataFlow(job: AgentVideoJob | undefined, steps: AgentStep[], 
       n("user-input", vi ? "Người dùng / Form agent" : "User / Agent form", -420, 230, "research", { kind: "external", status: job ? "done" : "pending", message: vi ? "Nguồn topic, setting, kênh đăng." : "Source of topic, settings, selected channels." }),
       n("runtime-config", vi ? "Kho cấu hình local" : "Local config store", -60, 20, "research", { kind: "store", status: job ? "done" : "pending", message: vi ? "API key, preset, token, fallback." : "API keys, presets, tokens, fallback data." }),
       n("plan-resolver", vi ? "Resolve plan" : "Resolve plan", 260, 230, "research", { message: fallback ? (vi ? "Thiếu API key, đọc fallback local." : "No API key, reading local fallback.") : vi ? "Chuẩn hóa input thành plan." : "Normalizes input into a plan." }),
-      n("ai-provider", vi ? "AI provider" : "AI provider", 620, 20, "research", { kind: "external", status: hasApiKeyPath ? "done" : fallback ? "skipped" : "pending", message: vi ? "Nhận prompt, trả plan." : "Receives prompt, returns plan." }),
+      n("ai-provider", vi ? "AI provider" : "AI provider", 620, 20, "research", { kind: "external", tone: "api-key", status: hasApiKeyPath ? "done" : fallback ? "skipped" : "pending", message: vi ? "Nhận prompt, trả plan." : "Receives prompt, returns plan." }),
       n("fallback-store", vi ? "Fallback templates" : "Fallback templates", 620, 430, "research", { kind: "store", status: fallback ? "done" : hasApiKeyPath ? "skipped" : "pending", message: vi ? "Dữ liệu local của agent." : "Local agent data." }),
       n("plan-store", vi ? "Plan JSON" : "Plan JSON", 980, 230, "strategy", { kind: "store" }),
       n("script-process", labels.script, 1340, 110, "script"),
@@ -329,6 +322,7 @@ function StageNode({ data }: NodeProps<Node<StageNodeData>>) {
   const running = data.status === "running";
   const condition = data.kind === "condition", terminal = data.kind === "terminal", dataNode = data.kind === "data";
   const store = data.kind === "store", external = data.kind === "external";
+  const apiKey = data.tone === "api-key", start = data.tone === "start", end = data.tone === "end";
   const skipped = data.status === "skipped";
   const done = data.status === "done";
   if (condition) {
@@ -336,14 +330,15 @@ function StageNode({ data }: NodeProps<Node<StageNodeData>>) {
       <div className="relative flex h-44 w-44 items-center justify-center">
         <NodeHandles />
         <div className={cn(
-          "absolute inset-4 rotate-45 border-2 border-[var(--kai-agent-decision)] bg-[var(--kai-agent-decision-soft)] shadow-[0_0_18px_var(--kai-agent-decision-glow)] transition",
+          "absolute inset-4 rotate-45 border-2 transition",
+          apiKey ? "border-[var(--kai-agent-api-key)] bg-[var(--kai-agent-api-key-soft)] shadow-[0_0_18px_var(--kai-agent-api-key-glow)]" : "border-[var(--kai-agent-decision)] bg-[var(--kai-agent-decision-soft)] shadow-[0_0_18px_var(--kai-agent-decision-glow)]",
           skipped && "opacity-55 grayscale",
           data.selected && "ring-2 ring-primary/20",
-          running && "shadow-[0_0_28px_var(--kai-agent-decision-glow)] ring-2 ring-[var(--kai-agent-decision)]/40"
+          running && (apiKey ? "shadow-[0_0_28px_var(--kai-agent-api-key-glow)] ring-2 ring-[var(--kai-agent-api-key)]/40" : "shadow-[0_0_28px_var(--kai-agent-decision-glow)] ring-2 ring-[var(--kai-agent-decision)]/40")
         )} />
         <div className="relative z-10 px-8 text-center">
           <StatusIcon status={data.status} />
-          <p className="mt-2 text-sm font-semibold leading-tight text-[var(--kai-agent-decision)]">{data.label}</p>
+          <p className={cn("mt-2 text-sm font-semibold leading-tight", apiKey ? "text-[var(--kai-agent-api-key)]" : "text-[var(--kai-agent-decision)]")}>{data.label}</p>
           <p className="mt-1 text-[11px] text-muted-foreground">{data.status}</p>
           {running ? <p className="mt-1 animate-pulse text-[11px] font-medium text-[var(--kai-agent-active)]">Live signal</p> : null}
         </div>
@@ -360,7 +355,10 @@ function StageNode({ data }: NodeProps<Node<StageNodeData>>) {
       done && !running && "border-[var(--kai-agent-done)] bg-[var(--kai-agent-done-soft)]",
       skipped && "border-[var(--kai-agent-skip)] bg-[var(--kai-agent-skip-soft)] opacity-55 grayscale",
       data.selected && "border-primary ring-2 ring-primary/20",
-      running && "border-[var(--kai-agent-active)] bg-[var(--kai-agent-active-soft)] shadow-[0_0_24px_var(--kai-agent-active-glow)] ring-2 ring-[var(--kai-agent-active)]/30"
+      running && "border-[var(--kai-agent-active)] bg-[var(--kai-agent-active-soft)] shadow-[0_0_24px_var(--kai-agent-active-glow)] ring-2 ring-[var(--kai-agent-active)]/30",
+      apiKey && "border-[var(--kai-agent-api-key)] bg-[var(--kai-agent-api-key-soft)] shadow-[0_0_18px_var(--kai-agent-api-key-glow)]",
+      start && "border-[var(--kai-agent-start)] bg-[var(--kai-agent-start-soft)] text-[var(--kai-agent-start-text)]",
+      end && "border-[var(--kai-agent-end)] bg-[var(--kai-agent-end-soft)] text-[var(--kai-agent-end-text)]"
     )}>
       {running ? <div className="absolute inset-x-0 top-0 h-1 animate-pulse bg-[var(--kai-agent-active)] shadow-[0_0_14px_var(--kai-agent-active)]" /> : null}
       <NodeHandles />

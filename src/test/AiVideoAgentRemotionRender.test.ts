@@ -53,6 +53,20 @@ describe("AiVideoAgentRemotionRender", () => {
     expect(input.title).toBe("Fallback plan title");
     expect(input.narration).toBe("Generated narration");
   });
+
+  it("uses plan scene duration instead of target seconds for render duration", () => {
+    const job = makeJob({ targetDurationSec: 45 });
+    job.plan!.scenes = [
+      { id: "scene-1", title: "A", narration: "A", onScreenText: "A", visualPrompt: "A", durationSec: 30 },
+      { id: "scene-2", title: "B", narration: "B", onScreenText: "B", visualPrompt: "B", durationSec: 30 },
+      { id: "scene-3", title: "C", narration: "C", onScreenText: "C", visualPrompt: "C", durationSec: 30 },
+      { id: "scene-4", title: "D", narration: "D", onScreenText: "D", visualPrompt: "D", durationSec: 30 },
+    ];
+
+    const input = buildAgentRemotionVideoInput({ job, narration: "Generated narration" });
+
+    expect(input.durationSeconds).toBe(120);
+  });
 });
 
 function makeJob(input: Partial<AgentVideoJob["input"]>): AgentVideoJob {

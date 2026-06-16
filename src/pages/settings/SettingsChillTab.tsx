@@ -25,7 +25,7 @@ export function SettingsChillTab({ tracks, onChange }: Props) {
   }
 
   function addTrack() {
-    onChange([...tracks, { id: crypto.randomUUID(), title: "Chill track", embedCode: "" }]);
+    onChange([{ id: crypto.randomUUID(), title: "Chill track", embedCode: "" }, ...tracks]);
   }
 
   function removeTrack(id: string) {

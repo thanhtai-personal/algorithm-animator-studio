@@ -6,6 +6,7 @@ import type {
   CreateAgentVideoJobBody,
 } from "../models/AiVideoAgent";
 import type { RemotionVideoAspectRatio, RemotionVideoRenderBody } from "../models/RemotionVideo";
+import { getPlanDurationSec } from "./AiVideoAgentFallbackTiming";
 
 const DEFAULT_RENDER_DATA = "18, 42, 27, 64, 33, 75, 52, 91, 46, 68";
 
@@ -35,7 +36,7 @@ export function buildAgentRemotionVideoInput(params: { job: Pick<AgentVideoJob, 
     subtitle: firstText(job.input.renderSubtitle, job.plan?.hook, job.plan?.description, job.input.extraInstruction),
     template: job.input.renderTemplate,
     aspectRatio: resolveAspectRatio(job.input.renderAspectRatio, job.input.platform),
-    durationSeconds: job.input.targetDurationSec,
+    durationSeconds: getPlanDurationSec(job.plan, job.input.targetDurationSec),
     fps: clampNumber(job.input.renderFps, 24, 60, 30),
     primaryColor: sanitizeColor(job.input.renderPrimaryColor, "#020617"),
     accentColor: sanitizeColor(job.input.renderAccentColor, "#38bdf8"),

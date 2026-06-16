@@ -29,6 +29,7 @@ import { generateRvcApplioSpeech } from "./RvcApplioService";
 import { generateVideoFromAudio } from "./VideoService";
 import { renderRemotionVideo } from "./RemotionRenderService";
 import { buildAgentRemotionVideoInput, normalizeAgentRenderSettings } from "./AiVideoAgentRemotionRender";
+import { getAgentFallbackDurationSec, splitDurationAcrossScenes } from "./AiVideoAgentFallbackTiming";
 import { createGradientPng } from "../utils/simplePng";
 import { createPublishJob } from "./PublishQueueService";
 import { notifyBackgroundJobsChanged } from "./BackgroundJobsRealtimeService";
@@ -443,6 +444,7 @@ function createLocalFallbackPlan(input: ReturnType<typeof normalizePlanInput>, w
     [context.bodyTitle, context.body(topic)],
     [context.recapTitle, context.recap(topic)],
   ];
+  const sceneDurations = splitDurationAcrossScenes(getAgentFallbackDurationSec(input), scenes.length);
   return {
     title: context.title(topic),
     description: context.description(topic),
@@ -460,7 +462,7 @@ function createLocalFallbackPlan(input: ReturnType<typeof normalizePlanInput>, w
       visualPrompt: context.visual(topic),
       brollPrompt: context.broll,
       editInstruction: context.edit,
-      durationSec: Math.max(8, Math.round(input.targetDurationSec / scenes.length)),
+      durationSec: sceneDurations[index] || 8,
     })),
     publishNotes: [vi ? "Plan local fallback: nên duyệt lại script trước khi đăng." : "Local fallback plan: review script before publishing."],
     engagementPrompts: [vi ? "Bạn muốn mình giải thích thuật toán nào tiếp theo?" : "Which concept should I explain next?"],

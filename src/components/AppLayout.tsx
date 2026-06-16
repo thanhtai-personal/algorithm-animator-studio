@@ -33,7 +33,7 @@ export function AppLayout({ children }: PropsWithChildren) {
   }
 
   return (
-    <div style={{ "--app-sidebar-width": sidebarWidth } as CSSProperties}>
+    <div className="min-h-screen kai-grid-bg" style={{ "--app-sidebar-width": sidebarWidth } as CSSProperties}>
       <AppHeader sidebarMode={sidebarMode} onToggleSidebar={toggleSidebar} />
       <AppSidebar lang={lang} mode={sidebarMode} onClose={() => setSidebarMode("hidden")} onCollapse={() => setSidebarMode("collapsed")} onExpand={() => setSidebarMode("expanded")} />
       <div className="transition-[padding] duration-300 lg:pl-[var(--app-sidebar-width)]">

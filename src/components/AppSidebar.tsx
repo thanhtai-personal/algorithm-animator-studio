@@ -34,7 +34,7 @@ export function AppSidebar({ lang, mode, onClose, onCollapse, onExpand }: AppSid
       {!isHidden ? <button aria-label={text(lang, "Close menu", "Đóng menu")} className="fixed inset-0 z-30 bg-background/70 backdrop-blur-sm lg:hidden" onClick={onClose} /> : null}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 h-dvh w-72 border-r border-border/60 bg-background/95 shadow-2xl backdrop-blur transition-all duration-300 lg:top-[65px] lg:h-[calc(100dvh-65px)] lg:shadow-none",
+          "fixed left-0 top-0 z-40 h-dvh w-72 border-r border-border/60 bg-sidebar/90 shadow-2xl backdrop-blur-xl transition-all duration-300 lg:top-[65px] lg:h-[calc(100dvh-65px)] lg:shadow-[18px_0_50px_hsl(214_80%_5%/0.16)]",
           isHidden ? "-translate-x-full" : "translate-x-0",
           isCollapsed ? "lg:w-20" : "lg:w-72",
         )}
@@ -66,7 +66,7 @@ export function AppSidebar({ lang, mode, onClose, onCollapse, onExpand }: AppSid
               {visibleGroups.map((group) => (
                 <div key={group.id} className="space-y-1.5">
                   {!isCollapsed ? (
-                    <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
+                    <p className="px-3 text-[11px] font-bold uppercase tracking-[0.18em] text-primary/80">
                       {group.label[lang]}
                     </p>
                   ) : (
@@ -81,8 +81,8 @@ export function AppSidebar({ lang, mode, onClose, onCollapse, onExpand }: AppSid
                         key={item.id}
                         to={item.to}
                         className={cn(
-                          "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground",
-                          active && "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground",
+                          "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-all duration-200 hover:bg-primary/10 hover:text-foreground hover:shadow-[0_8px_24px_hsl(var(--primary)/0.12)]",
+                          active && "bg-primary text-primary-foreground shadow-[0_12px_34px_hsl(var(--primary)/0.28)] hover:bg-primary/90 hover:text-primary-foreground",
                           isCollapsed && "justify-center px-2",
                         )}
                         onClick={() => {

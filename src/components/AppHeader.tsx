@@ -73,7 +73,7 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border/40 bg-background/95 px-3 py-2.5 backdrop-blur md:px-5">
+    <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 px-3 py-2.5 shadow-[0_10px_40px_hsl(214_80%_5%/0.12)] backdrop-blur-xl md:px-5">
       <div className="flex items-center gap-3">
         <Button
           aria-label={sidebarMode === "hidden" ? text(lang, "Open menu", "Mở menu") : text(lang, "Hide menu", "Ẩn menu")}
@@ -87,7 +87,7 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
 
         <img src="/kai-studio-logo.svg" alt={text(lang, "KAI STUDIO logo", "Logo KAI STUDIO")} className="h-10 w-10 shrink-0 rounded-xl" />
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-base font-bold md:text-lg">{APP_TITLE}</h1>
+          <h1 className="truncate bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-base font-black text-transparent md:text-lg">{APP_TITLE}</h1>
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
@@ -104,7 +104,7 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
           {isAuthenticated ? (
             <Button
               aria-label={authAriaLabel}
-              className="h-10 shrink-0 border-red-500/70 bg-red-600 text-white hover:bg-red-700"
+              className="h-10 shrink-0 border-red-500/70 bg-red-600 text-white shadow-[0_10px_28px_hsl(0_76%_45%/0.24)] hover:bg-red-700"
               variant="outline"
               onClick={handleSignOut}
             >
@@ -114,7 +114,7 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
           ) : (
             <Button
               aria-label={authAriaLabel}
-              className="h-10 shrink-0 border-emerald-500/70 bg-emerald-600 text-white hover:bg-emerald-700"
+              className="h-10 shrink-0 border-emerald-500/70 bg-emerald-600 text-white shadow-[0_10px_28px_hsl(150_80%_38%/0.24)] hover:bg-emerald-700"
               variant="outline"
               onClick={() => navigate("/auth", { state: { from: authFrom } })}
             >

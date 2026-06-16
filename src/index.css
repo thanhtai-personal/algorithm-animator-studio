@@ -129,4 +129,125 @@ All colors MUST be HSL.
       linear-gradient(90deg, hsl(var(--foreground) / 0.05) 1px, transparent 1px);
     background-size: 28px 28px;
   }
+
+  .fantastic-backdrop {
+    --fantastic-scroll: 0;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at calc(12% + (var(--fantastic-scroll) * 18%)) 14%, hsl(var(--primary) / 0.24), transparent 24rem),
+      radial-gradient(circle at calc(92% - (var(--fantastic-scroll) * 16%)) 8%, hsl(var(--accent) / 0.2), transparent 24rem),
+      linear-gradient(135deg, hsl(216 58% 5% / 0.38), transparent 52%);
+  }
+
+  .fantastic-orb {
+    position: absolute;
+    width: 42rem;
+    height: 42rem;
+    border-radius: 9999px;
+    filter: blur(62px);
+    mix-blend-mode: screen;
+    opacity: 0.55;
+  }
+
+  .fantastic-orb-a {
+    left: -10rem;
+    top: -12rem;
+    background: hsl(var(--primary) / 0.5);
+  }
+
+  .fantastic-orb-b {
+    right: -14rem;
+    top: 22vh;
+    background: hsl(var(--accent) / 0.42);
+  }
+
+  .fantastic-beam {
+    position: absolute;
+    left: -24vw;
+    top: 18vh;
+    width: 88vw;
+    height: 9rem;
+    transform: rotate(-18deg);
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.22), hsl(var(--accent) / 0.18), transparent);
+    filter: blur(18px);
+    opacity: 0.48;
+  }
+
+  .fantastic-pulse {
+    position: absolute;
+    right: 10vw;
+    bottom: 8vh;
+    width: 24rem;
+    height: 24rem;
+    border-radius: 9999px;
+    border: 1px solid hsl(var(--primary) / 0.18);
+    box-shadow:
+      inset 0 0 38px hsl(var(--primary) / 0.14),
+      0 0 64px hsl(var(--accent) / 0.12);
+  }
+
+  .fantastic-noise {
+    position: absolute;
+    inset: 0;
+    opacity: 0.12;
+    background-image:
+      radial-gradient(circle at 20% 30%, hsl(var(--foreground) / 0.22) 0 1px, transparent 1px),
+      radial-gradient(circle at 70% 60%, hsl(var(--primary) / 0.28) 0 1px, transparent 1px);
+    background-size: 22px 22px, 34px 34px;
+  }
+
+  .fantastic-toggle-dot {
+    width: 0.72rem;
+    height: 0.72rem;
+    border-radius: 9999px;
+    background: hsl(var(--muted-foreground) / 0.5);
+    box-shadow: inset 0 0 0 1px hsl(var(--foreground) / 0.12);
+  }
+
+  .fantastic-toggle-dot.is-on {
+    background: hsl(150 90% 45%);
+    box-shadow: 0 0 14px hsl(150 90% 45% / 0.7);
+  }
+
+  .fantastic-mode body {
+    background:
+      radial-gradient(circle at 18% -12%, hsl(var(--primary) / 0.26), transparent 34rem),
+      radial-gradient(circle at 92% 8%, hsl(var(--accent) / 0.22), transparent 28rem),
+      linear-gradient(135deg, hsl(216 57% 5%), hsl(var(--background)));
+  }
+
+  .fantastic-mode .kai-surface {
+    background:
+      linear-gradient(135deg, hsl(var(--card) / 0.8), hsl(var(--card) / 0.48)),
+      radial-gradient(circle at 8% 0%, hsl(var(--primary) / 0.18), transparent 19rem),
+      radial-gradient(circle at 95% 8%, hsl(var(--accent) / 0.12), transparent 18rem);
+    border-color: hsl(var(--primary) / 0.32);
+    box-shadow:
+      0 22px 80px hsl(214 80% 5% / 0.42),
+      0 0 0 1px hsl(var(--primary) / 0.08);
+  }
+
+  .fantastic-mode .kai-grid-bg {
+    background-image:
+      linear-gradient(hsl(var(--primary) / 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--primary) / 0.08) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .fantastic-mode button:not(:disabled),
+  .fantastic-mode a {
+    transition-duration: 220ms;
+  }
+
+  .fantastic-mode button:not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+
+  .fantastic-mode [data-radix-popper-content-wrapper] {
+    filter: drop-shadow(0 20px 42px hsl(var(--primary) / 0.18));
+  }
 }

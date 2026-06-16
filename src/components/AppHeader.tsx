@@ -1,4 +1,4 @@
-import { LogIn, LogOut, Menu, Moon, PanelLeftOpen, Sun } from "lucide-react";
+import { LogIn, LogOut, Menu, Moon, PanelLeftOpen, Sparkles, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -6,6 +6,7 @@ import { APP_TITLE } from "@/components/appNavigation";
 import type { SidebarMode } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useFantasticMode } from "@/hooks/use-fantastic-mode";
 import { AUTH_STATE_EVENT, AuthProfile, getCurrentProfile, signOut } from "@/lib/auth";
 import { text, type Lang, readSystemLang, subscribeSystemLang, writeSystemLang } from "@/lib/i18n";
 
@@ -21,6 +22,7 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
   const [profile, setProfile] = useState<AuthProfile | null>(null);
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
   const [mounted, setMounted] = useState(false);
+  const [fantasticMode, setFantasticMode] = useFantasticMode();
   const isAuthenticated = profile !== null;
   const authLabel = isAuthenticated ? text(lang, "Logout", "Đăng xuất") : text(lang, "Login", "Đăng nhập");
   const authAriaLabel = isAuthenticated ? text(lang, "Logout account", "Đăng xuất tài khoản") : text(lang, "Login account", "Đăng nhập tài khoản");
@@ -91,6 +93,35 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            className={[
+              "fantastic-toggle hidden h-10 items-center gap-2 rounded-full border px-3 text-sm font-bold transition-all duration-300 md:inline-flex",
+              fantasticMode
+                ? "border-amber-300/70 bg-amber-300 text-slate-950 shadow-[0_0_24px_hsl(39_96%_57%/0.42)]"
+                : "border-input bg-background/70 text-muted-foreground hover:border-primary/60 hover:bg-primary/10 hover:text-foreground",
+            ].join(" ")}
+            aria-pressed={fantasticMode}
+            aria-label={text(lang, "Toggle Fantastic Mode", "Bật/tắt Fantastic Mode")}
+            title={text(lang, "Fantastic Mode", "Fantastic Mode")}
+            onClick={() => setFantasticMode(!fantasticMode)}
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>Fantastic</span>
+            <span className={fantasticMode ? "fantastic-toggle-dot is-on" : "fantastic-toggle-dot"} />
+          </button>
+          <Button
+            type="button"
+            className={fantasticMode ? "h-10 shrink-0 border-amber-300/70 bg-amber-300 text-slate-950 shadow-[0_0_24px_hsl(39_96%_57%/0.42)] md:hidden" : "h-10 shrink-0 md:hidden"}
+            size="icon"
+            variant={fantasticMode ? "outline" : "outline"}
+            aria-pressed={fantasticMode}
+            aria-label={text(lang, "Toggle Fantastic Mode", "Bật/tắt Fantastic Mode")}
+            title={text(lang, "Fantastic Mode", "Fantastic Mode")}
+            onClick={() => setFantasticMode(!fantasticMode)}
+          >
+            <Sparkles className="h-4 w-4" />
+          </Button>
           <Select value={lang} onValueChange={(value) => changeLanguage(value as Lang)}>
             <SelectTrigger className="h-10 w-[92px] shrink-0 md:w-28"><SelectValue /></SelectTrigger>
             <SelectContent>

@@ -11,6 +11,7 @@ type ChillEmbedOptions = {
 
 const STORAGE_KEY = "kai-studio.chill-tracks";
 const CHANGE_EVENT = "kai-studio:chill-tracks-change";
+const PLAY_EVENT = "kai-studio:chill-play-request";
 
 const DEFAULT_EMBED = `<iframe width="560" height="315" src="https://www.youtube.com/embed/S3jQYY-SDIg?si=WpNI2fDDSVPtVh44" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`;
 
@@ -51,6 +52,16 @@ export function subscribeChillTracks(callback: (tracks: ChillTrack[]) => void) {
     window.removeEventListener(CHANGE_EVENT, handleChange);
     window.removeEventListener("storage", handleChange);
   };
+}
+
+
+export function requestChillPlayback() {
+  window.dispatchEvent(new CustomEvent(PLAY_EVENT));
+}
+
+export function subscribeChillPlayback(callback: () => void) {
+  window.addEventListener(PLAY_EVENT, callback);
+  return () => window.removeEventListener(PLAY_EVENT, callback);
 }
 
 export function getChillEmbedSrc(embedCode: string, options: ChillEmbedOptions = {}) {

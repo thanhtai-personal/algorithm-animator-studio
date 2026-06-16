@@ -1,4 +1,4 @@
-import { LogIn, LogOut, Menu, Moon, PanelLeftOpen, Sparkles, Sun } from "lucide-react";
+import { LogIn, LogOut, Menu, Moon, PanelLeftOpen, Play, Sparkles, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFantasticMode } from "@/hooks/use-fantastic-mode";
 import { AUTH_STATE_EVENT, AuthProfile, getCurrentProfile, signOut } from "@/lib/auth";
+import { requestChillPlayback } from "@/lib/chillMusicSettings";
 import { text, type Lang, readSystemLang, subscribeSystemLang, writeSystemLang } from "@/lib/i18n";
 
 type AppHeaderProps = {
@@ -122,6 +123,30 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
           >
             <Sparkles className="h-4 w-4" />
           </Button>
+          <div
+            aria-hidden={!fantasticMode}
+            className={[
+              "flex shrink-0 overflow-hidden transition-all duration-500 ease-out",
+              fantasticMode
+                ? "max-w-[156px] translate-y-0 scale-100 opacity-100 blur-0"
+                : "pointer-events-none max-w-0 -translate-y-1 scale-75 opacity-0 blur-sm",
+            ].join(" ")}
+          >
+            <Button
+              type="button"
+              className="h-10 shrink-0 border-cyan-300/70 bg-cyan-400 text-slate-950 shadow-[0_0_22px_hsl(187_92%_63%/0.34)] hover:bg-cyan-300"
+              size="sm"
+              variant="outline"
+              aria-label={text(lang, "Play Chill mode music", "Phát nhạc Chill mode")}
+              disabled={!fantasticMode}
+              tabIndex={fantasticMode ? 0 : -1}
+              title={text(lang, "Play Chill mode music", "Phát nhạc Chill mode")}
+              onClick={requestChillPlayback}
+            >
+              <Play className="h-4 w-4" />
+              <span className="hidden lg:inline">Chill</span>
+            </Button>
+          </div>
           <Select value={lang} onValueChange={(value) => changeLanguage(value as Lang)}>
             <SelectTrigger className="h-10 w-[92px] shrink-0 md:w-28"><SelectValue /></SelectTrigger>
             <SelectContent>

@@ -1,7 +1,13 @@
 import { ChevronDown, ChevronUp, Music2, Pause, Play, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { getChillEmbedSrc, readChillTracks, subscribeChillTracks, type ChillTrack } from "@/lib/chillMusicSettings";
+import {
+  getChillEmbedSrc,
+  readChillTracks,
+  subscribeChillPlayback,
+  subscribeChillTracks,
+  type ChillTrack,
+} from "@/lib/chillMusicSettings";
 
 const IDLE_MS = 60_000;
 const CHECK_MS = 5_000;
@@ -70,7 +76,27 @@ export function ChillMusicNotifier({ enabled }: { enabled: boolean }) {
     playTrackAt(currentIndex + 1);
   }, [activeTrackId, playableTracks, playTrackAt]);
 
+  const playFromHeader = useCallback(() => {
+    if (!enabled || !playableTracks.length) return;
+    lastActionRef.current = Date.now();
+    pausedByUserRef.current = false;
+
+    if (activeTrackId && playerState === "playing") {
+      setExpanded(true);
+      return;
+    }
+
+    if (activeTrackId && playerState === "paused") {
+      setExpanded(true);
+      setPlayerState("playing");
+      return;
+    }
+
+    playNextTrack();
+  }, [activeTrackId, enabled, playableTracks.length, playerState, playNextTrack]);
+
   useEffect(() => subscribeChillTracks(setTracks), []);
+  useEffect(() => subscribeChillPlayback(playFromHeader), [playFromHeader]);
 
   useEffect(() => {
     positionRef.current = position;

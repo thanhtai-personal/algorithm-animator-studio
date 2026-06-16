@@ -1,8 +1,6 @@
 .kai-system-loader {
   display: inline-block;
-  width: 1.45em;
-  min-width: 1.45em;
-  height: 1em;
+  min-width: 0;
   overflow: visible;
   fill: none;
   color: currentColor;

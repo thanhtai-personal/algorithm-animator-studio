@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { parseVoiceRows, serializeVoiceRows, type VoiceRow } from "./settings/SettingsFields";
 import { SettingsApiKeyTab } from "./settings/SettingsApiKeyTab";
+import { SettingsChillTab } from "./settings/SettingsChillTab";
 import { SettingsDataTab } from "./settings/SettingsDataTab";
 import { SettingsHealthTab } from "./settings/SettingsHealthTab";
 import { SettingsModulesTab } from "./settings/SettingsModulesTab";
@@ -36,10 +37,12 @@ import {
   saveMenuFeatureSettings,
   type MenuFeatureSettings,
 } from "@/lib/menuFeatureSettings";
+import { readChillTracks, saveChillTracks, type ChillTrack } from "@/lib/chillMusicSettings";
 
 export default function Settings() {
   const [form, setForm] = useState<SettingsForm>(() => ({ ...EMPTY_FORM, ...getRuntimeSettings() }));
   const [menuFeatures, setMenuFeatures] = useState<MenuFeatureSettings>(() => getMenuFeatureSettings());
+  const [chillTracks, setChillTracks] = useState<ChillTrack[]>(() => readChillTracks());
   const [applioTemplates, setApplioTemplates] = useState<RvcApplioTemplateFileResponse>({
     filePath: "",
     convertTemplatesJson: "[]",
@@ -122,6 +125,7 @@ export default function Settings() {
   async function handleSave() {
     saveRuntimeSettings(form);
     saveMenuFeatureSettings(menuFeatures);
+    saveChillTracks(chillTracks);
     const savedTemplates = await parseApiResponse<RvcApplioTemplateFileResponse>(await fetch(buildApiUrl("/api/rvc-applio/templates"), {
       method: "PUT",
       headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
@@ -140,6 +144,7 @@ export default function Settings() {
     clearMenuFeatureSettings();
     setForm(EMPTY_FORM);
     setMenuFeatures({ ...DEFAULT_MENU_FEATURE_SETTINGS });
+    setChillTracks([]);
     setVoiceRows([]);
     toast.success(t(lang, "settingsOverridesCleared"));
     await refreshHealth();
@@ -208,10 +213,11 @@ export default function Settings() {
         </div>
 
         <Tabs defaultValue={getDefaultSettingsTab()} className="space-y-4">
-          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/40 p-1 md:grid-cols-5">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/40 p-1 md:grid-cols-6">
             <TabsTrigger value="voice">{t(lang, "settingsVoiceTab")}</TabsTrigger>
             <TabsTrigger value="data">{t(lang, "settingsDataTab")}</TabsTrigger>
             <TabsTrigger value="tools">{text(lang, "Modules", "Module")}</TabsTrigger>
+            <TabsTrigger value="chill">Chill</TabsTrigger>
             <TabsTrigger value="api-key">{t(lang, "settingsApiKeyTab")}</TabsTrigger>
             <TabsTrigger value="health">{t(lang, "settingsHealthCheckTab")}</TabsTrigger>
           </TabsList>
@@ -239,6 +245,10 @@ export default function Settings() {
 
           <TabsContent value="tools" className="mt-0">
             <SettingsModulesTab lang={lang} settings={menuFeatures} onChange={setMenuFeatures} />
+          </TabsContent>
+
+          <TabsContent value="chill" className="mt-0">
+            <SettingsChillTab tracks={chillTracks} onChange={setChillTracks} />
           </TabsContent>
 
           <TabsContent value="api-key" className="mt-0">
@@ -271,5 +281,5 @@ function getDefaultSettingsTab() {
   if (typeof window === "undefined") return "voice";
   const tab = new URLSearchParams(window.location.search).get("tab") || "voice";
   if (tab === "modules" || tab === "providers") return "tools";
-  return ["voice", "data", "tools", "api-key", "health"].includes(tab) ? tab : "voice";
+  return ["voice", "data", "tools", "chill", "api-key", "health"].includes(tab) ? tab : "voice";
 }

@@ -51,7 +51,7 @@ export function RuntimeSetupGate({ children }: PropsWithChildren) {
 
   return (
     <main className="runtime-loading-screen grid min-h-screen place-items-center px-4">
-      <SystemLoader className="h-52 w-[26rem] text-primary" title="Loading" />
+      <SystemLoader className="h-[18rem] w-[36rem] max-w-[72vw] text-primary" title="Loading" />
     </main>
   );
 }

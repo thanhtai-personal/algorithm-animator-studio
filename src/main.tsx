@@ -6,6 +6,7 @@ import "./styles/fantastic-universe.css";
 import "./styles/auth-fantastic.css";
 import "./styles/runtime-loading.css";
 import "./styles/fantastic-glass.css";
+import "./styles/fantastic-entrance.css";
 import "./styles/system-loader.css";
 
 createRoot(document.getElementById("root")!).render(<App />);

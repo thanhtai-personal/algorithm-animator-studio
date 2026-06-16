@@ -1,7 +1,9 @@
 import { type CSSProperties, type PropsWithChildren, useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { AppHeader } from "@/components/AppHeader";
 import { AppSidebar, type SidebarMode } from "@/components/AppSidebar";
 import { BackgroundJobsNotifier } from "@/components/BackgroundJobsNotifier";
+import { ChillMusicNotifier } from "@/components/ChillMusicNotifier";
 import { FantasticModeBackdrop } from "@/components/FantasticModeBackdrop";
 import { useFantasticFrameMotion } from "@/hooks/use-fantastic-frame-motion";
 import { useFantasticMode } from "@/hooks/use-fantastic-mode";
@@ -16,12 +18,13 @@ function readSidebarMode(): SidebarMode {
 }
 
 export function AppLayout({ children }: PropsWithChildren) {
+  const location = useLocation();
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>(() => readSidebarMode());
   const [fantasticMode] = useFantasticMode();
 
   useEffect(() => subscribeSystemLang(setLang), []);
-  useFantasticFrameMotion(fantasticMode);
+  useFantasticFrameMotion(fantasticMode, location.pathname);
 
   useEffect(() => {
     window.localStorage.setItem(SIDEBAR_STORAGE_KEY, sidebarMode);
@@ -45,6 +48,7 @@ export function AppLayout({ children }: PropsWithChildren) {
       <div className="relative z-10 transition-[padding] duration-300 lg:pl-[var(--app-sidebar-width)]">
         {children}
       </div>
+      <ChillMusicNotifier enabled={fantasticMode} />
       <BackgroundJobsNotifier />
     </div>
   );

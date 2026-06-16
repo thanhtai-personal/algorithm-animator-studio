@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Github, RefreshCcw, RotateCcw, Sparkles, Video } from "lucide-react";
+import { Github, RefreshCcw, Sparkles, Video } from "lucide-react";
 import { SystemLoader } from "@/components/ui/system-loader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -89,9 +89,8 @@ function GithubTrendingLeftPanel({ studio, durationSeconds }: { studio: GithubTr
           <Field label="Số repo"><Select value={String(studio.filter.limit)} onValueChange={(value) => studio.updateFilter({ limit: Number(value) })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="8">8</SelectItem><SelectItem value="12">12</SelectItem><SelectItem value="20">20</SelectItem><SelectItem value="30">30</SelectItem></SelectContent></Select></Field>
         </div>
         <Field label="Min stars"><Input type="number" value={studio.filter.minStars} onChange={(event) => studio.updateFilter({ minStars: Number(event.target.value) })} /></Field>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid gap-2">
           <Button type="button" onClick={() => void studio.loadTrending()} disabled={studio.loading}>{studio.loading ? <SystemLoader className="mr-2 h-4 w-4" /> : <RefreshCcw className="mr-2 h-4 w-4" />} Tải trend</Button>
-          <Button type="button" variant="outline" onClick={studio.clearDraft}><RotateCcw className="mr-2 h-4 w-4" /> Reset</Button>
         </div>
       </Card>
       <Card className="p-4 space-y-2 text-sm">

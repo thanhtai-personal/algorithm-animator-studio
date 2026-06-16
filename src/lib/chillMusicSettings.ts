@@ -10,7 +10,9 @@ type ChillEmbedOptions = {
 };
 
 const STORAGE_KEY = "kai-studio.chill-tracks";
+const MODE_STORAGE_KEY = "kai-studio.chill-mode-enabled";
 const CHANGE_EVENT = "kai-studio:chill-tracks-change";
+const MODE_CHANGE_EVENT = "kai-studio:chill-mode-change";
 const PLAY_EVENT = "kai-studio:chill-play-request";
 
 const DEFAULT_EMBED = `<iframe width="560" height="315" src="https://www.youtube.com/embed/S3jQYY-SDIg?si=WpNI2fDDSVPtVh44" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`;
@@ -54,6 +56,30 @@ export function subscribeChillTracks(callback: (tracks: ChillTrack[]) => void) {
   };
 }
 
+export function readChillModeEnabled() {
+  try {
+    return window.localStorage.getItem(MODE_STORAGE_KEY) !== "false";
+  } catch {
+    return true;
+  }
+}
+
+export function saveChillModeEnabled(enabled: boolean) {
+  window.localStorage.setItem(MODE_STORAGE_KEY, String(enabled));
+  window.dispatchEvent(new CustomEvent<boolean>(MODE_CHANGE_EVENT, { detail: enabled }));
+}
+
+export function subscribeChillMode(callback: (enabled: boolean) => void) {
+  const handleChange = (event: Event) => {
+    callback(event instanceof CustomEvent && typeof event.detail === "boolean" ? event.detail : readChillModeEnabled());
+  };
+  window.addEventListener(MODE_CHANGE_EVENT, handleChange);
+  window.addEventListener("storage", handleChange);
+  return () => {
+    window.removeEventListener(MODE_CHANGE_EVENT, handleChange);
+    window.removeEventListener("storage", handleChange);
+  };
+}
 
 export function requestChillPlayback() {
   window.dispatchEvent(new CustomEvent(PLAY_EVENT));

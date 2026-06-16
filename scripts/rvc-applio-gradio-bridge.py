@@ -29,6 +29,7 @@ except Exception as exc:  # pragma: no cover - user environment issue
     raise exc
 
 AUDIO_EXTENSIONS = {".wav", ".flac", ".mp3", ".ogg", ".m4a"}
+MIN_AUDIO_BYTES = 44
 
 
 def main() -> int:
@@ -46,10 +47,13 @@ def main() -> int:
     result = client.predict(*rendered_args, api_name=api_name)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    audio_path = find_audio_path(result)
+    audio_path = find_best_audio_path(
+        result,
+        [payload["outputPath"], payload["gradioOutputPath"], payload["gradioTtsOutputPath"]],
+    )
     if not audio_path:
         print(json.dumps({"result": make_json_safe(result)}, ensure_ascii=False, indent=2), file=sys.stderr)
-        raise RuntimeError("Applio/RVC result did not contain a downloadable audio file path.")
+        raise RuntimeError("Applio/RVC result did not contain a non-empty downloadable audio file path.")
 
     copy_result_audio(audio_path, output_path)
     print(json.dumps({"ok": True, "outputPath": str(output_path)}, ensure_ascii=False))
@@ -102,32 +106,43 @@ def make_temp_audio_path(output_path: Path) -> str:
     return handle.name
 
 
-def find_audio_path(value: Any) -> str | None:
+def find_best_audio_path(value: Any, preferred_paths: list[str]) -> str | None:
+    for path in preferred_paths:
+        if is_non_empty_audio_path(path):
+            return path
+
+    candidates = list_audio_paths(value)
+    candidates.sort(key=lambda item: Path(item).stat().st_size if Path(item).exists() else 0, reverse=True)
+    return candidates[0] if candidates else None
+
+
+def list_audio_paths(value: Any) -> list[str]:
     if isinstance(value, str):
         if value.startswith("http://") or value.startswith("https://"):
-            return download_temp_file(value)
-        if Path(value).suffix.lower() in AUDIO_EXTENSIONS and Path(value).exists():
-            return value
-        return None
+            downloaded = download_temp_file(value)
+            return [downloaded] if is_non_empty_audio_path(downloaded) else []
+        return [value] if is_non_empty_audio_path(value) else []
 
     if isinstance(value, dict):
+        paths: list[str] = []
         for key in ("path", "name", "file", "url"):
-            found = find_audio_path(value.get(key))
-            if found:
-                return found
+            paths.extend(list_audio_paths(value.get(key)))
         for item in value.values():
-            found = find_audio_path(item)
-            if found:
-                return found
-        return None
+            paths.extend(list_audio_paths(item))
+        return paths
 
     if isinstance(value, (list, tuple)):
+        paths: list[str] = []
         for item in value:
-            found = find_audio_path(item)
-            if found:
-                return found
+            paths.extend(list_audio_paths(item))
+        return paths
 
-    return None
+    return []
+
+
+def is_non_empty_audio_path(value: str) -> bool:
+    path = Path(value)
+    return path.suffix.lower() in AUDIO_EXTENSIONS and path.exists() and path.stat().st_size > MIN_AUDIO_BYTES
 
 
 def download_temp_file(url: str) -> str:
@@ -142,6 +157,8 @@ def copy_result_audio(source: str, output_path: Path) -> None:
     source_path = Path(source)
     if not source_path.exists():
         raise FileNotFoundError(source)
+    if source_path.resolve() == output_path.resolve():
+        return
     shutil.copyfile(source_path, output_path)
 
 

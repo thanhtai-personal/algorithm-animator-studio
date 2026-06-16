@@ -1,11 +1,10 @@
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, PanelRightClose, PanelRightOpen, Play, RefreshCcw, Terminal } from "lucide-react";
+import { Bot, PanelRightClose, PanelRightOpen, RefreshCcw, Terminal } from "lucide-react";
 import { SystemLoader } from "@/components/ui/system-loader";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSystemLang } from "@/hooks/use-system-lang";
@@ -13,6 +12,7 @@ import { openBackgroundJobsSocket } from "@/lib/backgroundJobsRealtime";
 import {
   createAgentVideoJob,
   createAgentVideoPlan,
+  getAgentVideoJob,
   getAgentPresets,
   listAgentVideoJobs,
   runAgentVideoJobInBackground,
@@ -28,6 +28,7 @@ import { text, type Lang } from "@/lib/i18n";
 import { getElevenLabsConfig, getPiperModels, getRvcApplioConfig, getSupertonicConfig, getVieneuConfig, type ElevenLabsConfig, type PiperModel, type RvcApplioConfig, type SupertonicConfig, type VieneuConfig } from "@/lib/voiceApi";
 import { getPublishJobs, type PublishJob } from "@/lib/publishQueueApi";
 import { AgentFlowGraph } from "@/features/ai-video-agent/components/AgentFlowGraph";
+import { AgentReviewCard, Empty, JobCard, PublishJobsCard } from "@/features/ai-video-agent/components/AgentJobCards";
 import { AgentSettingsForm } from "@/features/ai-video-agent/components/AgentSettingsForm";
 import { AgentSelectedChannelVideos } from "@/features/ai-video-agent/components/AgentSelectedChannelVideos";
 import { channelsFromKeys, getAgentPublishChannelOptions, getPreferredChannelKeys, type AgentPublishChannelOption } from "@/features/ai-video-agent/lib/publishChannelOptions";
@@ -97,6 +98,8 @@ const KIND_DEFAULTS: Record<AgentVideoForm["kind"], Partial<AgentVideoForm>> = {
     extraInstruction: "",
   },
 };
+
+const TERMINAL_JOB_STATUSES = new Set(["success", "failed", "cancelled", "review_ready"]);
 
 export default function AiVideoAgent() {
   const lang = useSystemLang();
@@ -253,10 +256,23 @@ export default function AiVideoAgent() {
         .then((result) => setJobs((current) => [result, ...current.filter((item) => item.id !== result.id)]))
         .catch((error) => toast.error(error instanceof Error ? error.message : text(lang, "Could not run job", "Không chạy được job")))
         .finally(() => {
-          onDone?.();
+          void pollJobUntilDone(jobId).finally(onDone);
           refresh();
         });
     }, 0);
+  }
+
+  async function pollJobUntilDone(jobId: string) {
+    for (let attempt = 0; attempt < 90; attempt += 1) {
+      const job = await getAgentVideoJob(jobId);
+      setJobs((current) => [job, ...current.filter((item) => item.id !== job.id)]);
+      if (TERMINAL_JOB_STATUSES.has(job.status)) {
+        await refresh();
+        return;
+      }
+      await sleep(2000);
+    }
+    await refresh();
   }
 
   function markJobStarting(job: AgentVideoJob): AgentVideoJob {
@@ -329,8 +345,9 @@ export default function AiVideoAgent() {
       <div className="grid gap-4 transition-[grid-template-columns] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] xl:grid-cols-[minmax(0,1fr)_var(--agent-panel-width)]" style={{ "--agent-panel-width": settingsOpen ? "420px" : "64px" } as CSSProperties}>
         <section className="min-w-0 space-y-4">
           <AgentFlowGraph job={fullAgentRunning ? activeJob : undefined} draftInput={form} lang={lang} selectedStageId={selectedStageId} onSelectStage={setSelectedStageId} />
-          <Tabs defaultValue="logs" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5"><TabsTrigger value="plan">Plan</TabsTrigger><TabsTrigger value="latest">Live job</TabsTrigger><TabsTrigger value="queue">Queue</TabsTrigger><TabsTrigger value="logs">Logs</TabsTrigger><TabsTrigger value="history">History</TabsTrigger></TabsList>
+          <Tabs defaultValue="review" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-6"><TabsTrigger value="review">Review</TabsTrigger><TabsTrigger value="plan">Plan</TabsTrigger><TabsTrigger value="latest">Live job</TabsTrigger><TabsTrigger value="queue">Queue</TabsTrigger><TabsTrigger value="logs">Logs</TabsTrigger><TabsTrigger value="history">History</TabsTrigger></TabsList>
+          <TabsContent value="review"><AgentReviewCard job={latestJob} publishJobs={publishJobs} lang={lang} busy={busyJobId === latestJob?.id} onRun={handleRunJob} /></TabsContent>
           <TabsContent value="plan"><PlanCard plan={plan || latestJob?.plan || null} lang={lang} /></TabsContent>
           <TabsContent value="latest"><JobCard job={latestJob} lang={lang} busy={busyJobId === latestJob?.id} onRun={handleRunJob} /></TabsContent>
           <TabsContent value="queue"><PublishJobsCard jobs={publishJobs} agentJob={latestJob} lang={lang} /></TabsContent>
@@ -367,18 +384,6 @@ function PlanCard({ plan, lang }: { plan: AgentVideoPlan | null; lang: Lang }) {
   return <Card><CardHeader><CardTitle className="flex flex-wrap items-center gap-2">{plan.title}{plan.warning ? <Badge variant="secondary">fallback</Badge> : <Badge>AI</Badge>}</CardTitle><CardDescription>{plan.description}</CardDescription></CardHeader><CardContent className="space-y-4"><InfoList title="Research" items={[plan.researchSummary || "", plan.audiencePersona || "", ...(plan.contentAngles || [])]} /><InfoList title="Scenes" items={plan.scenes.map((scene) => `${scene.title}: ${scene.narration}`)} /><InfoList title="Engage / Monetize" items={[...(plan.engagementPrompts || []), ...(plan.monetizationIdeas || []), ...(plan.repurposeIdeas || [])]} /><div className="flex flex-wrap gap-2">{plan.tags.map((tag) => <Badge key={tag} variant="outline">{tag}</Badge>)}</div></CardContent></Card>;
 }
 
-function JobCard({ job, lang, busy, onRun, compact }: { job?: AgentVideoJob; lang: Lang; busy: boolean; onRun: (job: AgentVideoJob) => void; compact?: boolean }) {
-  if (!job) return <Empty lang={lang} />;
-  return <Card><CardHeader className="pb-3"><div className="flex items-start justify-between gap-3"><div><CardTitle className="text-base">{job.plan?.title || job.input.topic}</CardTitle><CardDescription>{new Date(job.createdAtMs).toLocaleString()} · {job.status}</CardDescription></div><Badge variant={job.status === "success" ? "default" : job.status === "failed" ? "destructive" : "secondary"}>{job.status}</Badge></div></CardHeader><CardContent className="space-y-3"><Progress value={job.progress} /><p className="text-sm text-muted-foreground">{job.currentStep || job.error || "Idle"}</p>{job.error ? <p className="rounded-md bg-destructive/10 p-2 text-sm text-destructive">{job.error}</p> : null}{job.artifacts?.videoUrl ? <video src={job.artifacts.videoUrl} controls className="max-h-[360px] w-full rounded-lg border bg-black" /> : null}{job.artifacts?.publishJobIds?.length ? <p className="text-xs text-muted-foreground">Publish jobs: {job.artifacts.publishJobIds.length}</p> : null}{!compact && <Button onClick={() => onRun(job)} disabled={busy || job.status === "running"}>{busy ? <SystemLoader className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}{text(lang, "Run / rerun", "Chạy / chạy lại")}</Button>}</CardContent></Card>;
-}
-
-function PublishJobsCard({ jobs, agentJob, lang }: { jobs: PublishJob[]; agentJob?: AgentVideoJob; lang: Lang }) {
-  const ids = new Set(agentJob?.artifacts?.publishJobIds || []);
-  const related = jobs.filter((job) => ids.has(job.id));
-  if (!related.length) return <Card className="border-dashed p-8 text-center text-sm text-muted-foreground">{text(lang, "No publish queue jobs yet. Render with publish channels selected to create queue jobs.", "Chưa có publish job. Hãy render với kênh đăng đã chọn để tạo job upload.")}</Card>;
-  return <Card><CardContent className="space-y-3 pt-6">{related.map((job) => <div key={job.id} className="rounded-lg border p-3"><div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between"><div><p className="font-medium">{job.title}</p><p className="text-xs text-muted-foreground">{job.platform} · {job.channelTitle || job.channelId || text(lang, "No channel", "Chưa có kênh")} · {new Date(job.updatedAtMs).toLocaleString()}</p>{job.message ? <p className="mt-1 text-xs text-muted-foreground">{job.message}</p> : null}</div><Badge variant={job.status === "success" ? "default" : job.status === "failed" ? "destructive" : "secondary"}>{job.status}</Badge></div><Progress value={job.progress || 0} className="mt-3" />{job.resultUrl ? <a className="mt-2 inline-block text-xs text-primary underline" href={job.resultUrl} target="_blank" rel="noreferrer">{text(lang, "Open published video", "Mở video đã đăng")}</a> : null}</div>)}</CardContent></Card>;
-}
-
 function LogCard({ job, lang, selectedStageId }: { job?: AgentVideoJob; lang: Lang; selectedStageId: AgentWorkflowStageId | "all" }) {
   if (!job) return <Empty lang={lang} />;
   const logs = selectedStageId === "all" ? job.logs || [] : (job.logs || []).filter((log) => log.stageId === selectedStageId);
@@ -393,4 +398,4 @@ function commandForLog(stageId: AgentWorkflowStageId | undefined, level: string)
 }
 
 function InfoList({ title, items }: { title: string; items: string[] }) { const filtered = items.filter(Boolean); if (!filtered.length) return null; return <div><h3 className="mb-2 text-sm font-semibold">{title}</h3><div className="space-y-2">{filtered.map((item, index) => <p key={`${title}-${index}`} className="rounded-md bg-muted p-3 text-sm text-muted-foreground">{item}</p>)}</div></div>; }
-function Empty({ lang }: { lang: Lang }) { return <Card className="border-dashed p-8 text-center text-sm text-muted-foreground">{text(lang, "No data yet.", "Chưa có dữ liệu.")}</Card>; }
+function sleep(ms: number) { return new Promise((resolve) => window.setTimeout(resolve, ms)); }

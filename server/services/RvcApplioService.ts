@@ -2,13 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { Buffer } from "node:buffer";
-import {
-  GENERATED_PUBLIC_PATH,
-  SERVER_ORIGIN,
-  buildGeneratedFileUrl,
-  getGeneratedDir,
-  PROJECT_ROOT,
-} from "../config/paths";
+import { GENERATED_PUBLIC_PATH, SERVER_ORIGIN, buildGeneratedFileUrl, getGeneratedDir, PROJECT_ROOT } from "../config/paths";
 import { DEFAULT_RVC_APPLIO_TEMPLATE_VALUES, DEFAULT_RVC_APPLIO_TIMEOUT_MS } from "../config/rvcApplioDefaults";
 import type { RvcApplioConfigStatus, RvcApplioConvertBody, RvcApplioTemplateStatus, RvcApplioTextToSpeechBody } from "../models/RvcApplio";
 import {
@@ -17,7 +11,7 @@ import {
   getUniqueOutputFileWithExtension,
   sanitizeFileBaseName,
 } from "../utils/audioOutput";
-import { getAudioDurationSeconds } from "../utils/ffmpeg";
+import { getValidatedAudioDurationSeconds } from "../utils/audioValidation";
 import { stripAnsi } from "../utils/text";
 import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
 import { isProviderStartupEnabled } from "./ProviderStartupService";
@@ -115,7 +109,7 @@ export async function convertRvcApplioAudio(body: RvcApplioConvertBody, envOverr
   });
 
   const relativePath = `rvc-applio/${dateFolderName}/${outputFileName}`;
-  const durationSec = await readDurationOrZero(outputPath, envOverrides);
+  const durationSec = await getValidatedAudioDurationSeconds(outputPath, envOverrides);
   return {
     ok: true,
     fileName: outputFileName,
@@ -126,7 +120,7 @@ export async function convertRvcApplioAudio(body: RvcApplioConvertBody, envOverr
     model: `RVC/Applio · ${template.label || template.modelName || "selected model"}`,
     rvcModelName: template.modelName,
     sourceRelativePath: source.relativePath,
-    segmentDurationsSec: durationSec > 0 ? [durationSec] : undefined,
+    segmentDurationsSec: [durationSec],
   };
 }
 
@@ -155,7 +149,7 @@ export async function generateRvcApplioSpeech(body: RvcApplioTextToSpeechBody, e
   });
 
   const relativePath = `rvc-applio-tts/${dateFolderName}/${outputFileName}`;
-  const durationSec = await readDurationOrZero(outputPath, envOverrides);
+  const durationSec = await getValidatedAudioDurationSeconds(outputPath, envOverrides);
   return {
     ok: true,
     fileName: outputFileName,
@@ -165,7 +159,7 @@ export async function generateRvcApplioSpeech(body: RvcApplioTextToSpeechBody, e
     audioUrl: buildGeneratedFileUrl(GENERATED_PUBLIC_PATH, relativePath, env.SERVER_ORIGIN || SERVER_ORIGIN),
     model: `Applio TTS/RVC · ${template.label || template.modelName || template.ttsVoice || "selected voice"}`,
     rvcModelName: template.modelName,
-    segmentDurationsSec: durationSec > 0 ? [durationSec] : undefined,
+    segmentDurationsSec: [durationSec],
   };
 }
 
@@ -314,14 +308,6 @@ async function withGradioClientStatus(config: RvcRuntimeConfig): Promise<RvcRunt
     gradioClientInstallCommand: status.installCommand,
     gradioClientCheckError: status.error,
   };
-}
-
-async function readDurationOrZero(audioPath: string, envOverrides: RuntimeEnvValues) {
-  try {
-    return await getAudioDurationSeconds(audioPath, envOverrides);
-  } catch {
-    return 0;
-  }
 }
 
 async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {

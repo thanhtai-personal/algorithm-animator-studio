@@ -2,8 +2,9 @@ import { Eye, EyeOff, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { getChillEmbedSrc, type ChillTrack } from "@/lib/chillMusicSettings";
+import { getChillEmbedSrc, readChillModeEnabled, saveChillModeEnabled, type ChillTrack } from "@/lib/chillMusicSettings";
 
 type Props = {
   tracks: ChillTrack[];
@@ -12,6 +13,12 @@ type Props = {
 
 export function SettingsChillTab({ tracks, onChange }: Props) {
   const [previewTrackId, setPreviewTrackId] = useState("");
+  const [chillModeEnabled, setChillModeEnabled] = useState(() => readChillModeEnabled());
+
+  function toggleChillMode(enabled: boolean) {
+    setChillModeEnabled(enabled);
+    saveChillModeEnabled(enabled);
+  }
 
   function updateTrack(id: string, patch: Partial<ChillTrack>) {
     onChange(tracks.map((track) => (track.id === id ? { ...track, ...patch } : track)));
@@ -28,14 +35,21 @@ export function SettingsChillTab({ tracks, onChange }: Props) {
 
   return (
     <section className="rounded-xl border border-border/70 p-4">
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold">Chill</h2>
           <p className="text-sm text-muted-foreground">Thêm iframe/link YouTube, bấm Preview để xem thử ngay trong tab này.</p>
         </div>
-        <Button type="button" variant="outline" onClick={addTrack}>
-          <Plus className="mr-2 h-4 w-4" /> Thêm nhạc
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex h-10 items-center gap-2 rounded-md border border-border/70 px-3 text-sm">
+            <Switch aria-label="Enable chill mode" checked={chillModeEnabled} onCheckedChange={toggleChillMode} />
+            <span>Enable chill mode</span>
+            <span className="text-xs text-muted-foreground">{chillModeEnabled ? "On" : "Off"}</span>
+          </div>
+          <Button type="button" variant="outline" onClick={addTrack}>
+            <Plus className="mr-2 h-4 w-4" /> Thêm nhạc
+          </Button>
+        </div>
       </div>
       <div className="space-y-3">
         {tracks.map((track) => (

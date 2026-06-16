@@ -16,6 +16,7 @@ const POSITION_KEY = "kai-studio.chill-player-position";
 const YOUTUBE_API_SRC = "https://www.youtube.com/iframe_api";
 
 type PlayerState = "idle" | "playing" | "paused";
+type PlaybackSource = "auto" | "manual";
 type ChillPosition = { x: number; y: number };
 type YoutubeApi = {
   Player: new (element: HTMLElement | string, options: { events?: { onStateChange?: (event: { data: number }) => void } }) => { destroy?: () => void };
@@ -31,10 +32,11 @@ declare global {
 
 let youtubeApiPromise: Promise<YoutubeApi | undefined> | null = null;
 
-export function ChillMusicNotifier({ enabled }: { enabled: boolean }) {
+export function ChillMusicNotifier({ enabled, autoPlayEnabled }: { enabled: boolean; autoPlayEnabled: boolean }) {
   const [tracks, setTracks] = useState<ChillTrack[]>(() => readChillTracks());
   const [expanded, setExpanded] = useState(true);
   const [playerState, setPlayerState] = useState<PlayerState>("idle");
+  const [playbackSource, setPlaybackSource] = useState<PlaybackSource>("auto");
   const [activeTrackId, setActiveTrackId] = useState("");
   const [position, setPosition] = useState<ChillPosition | null>(() => readStoredPosition());
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -59,7 +61,7 @@ export function ChillMusicNotifier({ enabled }: { enabled: boolean }) {
     [activeTrack],
   );
 
-  const playTrackAt = useCallback((index: number) => {
+  const playTrackAt = useCallback((index: number, source: PlaybackSource) => {
     if (!playableTracks.length) return;
     const normalizedIndex = normalizeIndex(index, playableTracks.length);
     const next = playableTracks[normalizedIndex];
@@ -67,13 +69,14 @@ export function ChillMusicNotifier({ enabled }: { enabled: boolean }) {
     pausedByUserRef.current = false;
     setActiveTrackId(next.id);
     setExpanded(true);
+    setPlaybackSource(source);
     setPlayerState("playing");
   }, [playableTracks]);
 
-  const playNextTrack = useCallback(() => {
+  const playNextTrack = useCallback((source: PlaybackSource = "auto") => {
     if (!playableTracks.length) return;
     const currentIndex = playableTracks.findIndex((track) => track.id === (activeTrackId || lastTrackIdRef.current));
-    playTrackAt(currentIndex + 1);
+    playTrackAt(currentIndex + 1, source);
   }, [activeTrackId, playableTracks, playTrackAt]);
 
   const playFromHeader = useCallback(() => {
@@ -88,11 +91,12 @@ export function ChillMusicNotifier({ enabled }: { enabled: boolean }) {
 
     if (activeTrackId && playerState === "paused") {
       setExpanded(true);
+      setPlaybackSource("manual");
       setPlayerState("playing");
       return;
     }
 
-    playNextTrack();
+    playNextTrack("manual");
   }, [activeTrackId, enabled, playableTracks.length, playerState, playNextTrack]);
 
   useEffect(() => subscribeChillTracks(setTracks), []);
@@ -117,16 +121,23 @@ export function ChillMusicNotifier({ enabled }: { enabled: boolean }) {
       setActiveTrackId("");
       return;
     }
+    if (!autoPlayEnabled) return;
 
     const timer = window.setInterval(() => {
       if (pausedByUserRef.current || playerState !== "idle") return;
       if (Date.now() - lastActionRef.current < IDLE_MS) return;
       if (hasActiveMedia()) return;
-      playNextTrack();
+      playNextTrack("auto");
     }, CHECK_MS);
 
     return () => window.clearInterval(timer);
-  }, [enabled, playableTracks.length, playerState, playNextTrack]);
+  }, [autoPlayEnabled, enabled, playableTracks.length, playerState, playNextTrack]);
+
+  useEffect(() => {
+    if (autoPlayEnabled || playbackSource !== "auto") return;
+    setPlayerState("idle");
+    setActiveTrackId("");
+  }, [autoPlayEnabled, playbackSource]);
 
   useEffect(() => {
     if (activeTrackId && !playableTracks.some((track) => track.id === activeTrackId)) {
@@ -146,7 +157,7 @@ export function ChillMusicNotifier({ enabled }: { enabled: boolean }) {
         events: {
           onStateChange: (event) => {
             const endedState = YT.PlayerState?.ENDED ?? 0;
-            if (event.data === endedState) playNextTrack();
+            if (event.data === endedState) playNextTrack(playbackSource);
           },
         },
       });
@@ -157,7 +168,7 @@ export function ChillMusicNotifier({ enabled }: { enabled: boolean }) {
       playerRef.current?.destroy?.();
       playerRef.current = null;
     };
-  }, [embedSrc, expanded, playerState, playNextTrack]);
+  }, [embedSrc, expanded, playbackSource, playerState, playNextTrack]);
 
   useEffect(() => {
     function handleResize() {
@@ -249,7 +260,7 @@ export function ChillMusicNotifier({ enabled }: { enabled: boolean }) {
               <Pause className="h-4 w-4" />
             </Button>
           ) : (
-            <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-100 hover:bg-slate-800" onClick={() => { pausedByUserRef.current = false; setPlayerState("playing"); }} title="Play">
+            <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-100 hover:bg-slate-800" onClick={() => { pausedByUserRef.current = false; setPlaybackSource("manual"); setPlayerState("playing"); }} title="Play">
               <Play className="h-4 w-4" />
             </Button>
           )}

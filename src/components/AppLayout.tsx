@@ -7,6 +7,7 @@ import { ChillMusicNotifier } from "@/components/ChillMusicNotifier";
 import { FantasticModeBackdrop } from "@/components/FantasticModeBackdrop";
 import { useFantasticFrameMotion } from "@/hooks/use-fantastic-frame-motion";
 import { useFantasticMode } from "@/hooks/use-fantastic-mode";
+import { readChillModeEnabled, subscribeChillMode } from "@/lib/chillMusicSettings";
 import { readSystemLang, subscribeSystemLang, type Lang } from "@/lib/i18n";
 
 const SIDEBAR_STORAGE_KEY = "kai-studio.sidebar.mode";
@@ -22,8 +23,10 @@ export function AppLayout({ children }: PropsWithChildren) {
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>(() => readSidebarMode());
   const [fantasticMode] = useFantasticMode();
+  const [chillModeEnabled, setChillModeEnabled] = useState(() => readChillModeEnabled());
 
   useEffect(() => subscribeSystemLang(setLang), []);
+  useEffect(() => subscribeChillMode(setChillModeEnabled), []);
   useFantasticFrameMotion(fantasticMode, location.pathname);
 
   useEffect(() => {
@@ -48,7 +51,7 @@ export function AppLayout({ children }: PropsWithChildren) {
       <div className="relative z-10 transition-[padding] duration-300 lg:pl-[var(--app-sidebar-width)]">
         {children}
       </div>
-      <ChillMusicNotifier enabled={fantasticMode} />
+      <ChillMusicNotifier enabled={fantasticMode} autoPlayEnabled={chillModeEnabled} />
       <BackgroundJobsNotifier />
     </div>
   );

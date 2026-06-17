@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { readSystemLang, subscribeSystemLang, text, type Lang } from "@/lib/i18n";
+import { t, readSystemLang, subscribeSystemLang, type Lang  } from "@/lib/i18n";
 import { AlgorithmExplainerComposition } from "../remotion/AlgorithmExplainerComposition";
 import { checkRemotionHealth, renderRemotionVideo } from "../lib/remotionVideoApi";
 import {
@@ -64,7 +64,7 @@ export function RemotionVideoGenerator({ onVideoCreated, preset, fixedTemplate, 
       setHealth(await checkRemotionHealth());
     } catch (error) {
       setHealth(null);
-      toast.error(error instanceof Error ? error.message : text(lang, "Could not check Remotion.", "Không kiểm tra được Remotion."));
+      toast.error(error instanceof Error ? error.message : t(lang, "uiCouldNotCheckRemotion"));
     } finally {
       setChecking(false);
     }
@@ -73,14 +73,14 @@ export function RemotionVideoGenerator({ onVideoCreated, preset, fixedTemplate, 
   async function handleRender() {
     setRendering(true);
     setLastVideoUrl("");
-    const toastId = toast.loading(text(lang, "Rendering with Remotion...", "Đang render bằng Remotion..."));
+    const toastId = toast.loading(t(lang, "uiRenderingWithRemotion"));
     try {
       const result = await renderRemotionVideo(normalized);
       setLastVideoUrl(result.videoUrl);
-      toast.success(text(lang, "Remotion video saved to library.", "Đã lưu video Remotion vào thư viện."), { id: toastId });
+      toast.success(t(lang, "uiRemotionVideoSavedToLibrary"), { id: toastId });
       await onVideoCreated();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, "Remotion render failed.", "Render Remotion thất bại."), { id: toastId });
+      toast.error(error instanceof Error ? error.message : t(lang, "uiRemotionRenderFailed"), { id: toastId });
     } finally {
       setRendering(false);
     }
@@ -90,9 +90,9 @@ export function RemotionVideoGenerator({ onVideoCreated, preset, fixedTemplate, 
     <Card className="border-sky-500/20 bg-sky-500/[0.03]">
       <CardHeader className="gap-3 md:flex-row md:items-start md:justify-between">
         <div className="space-y-1.5">
-          <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-sky-300" /> {heading || text(lang, "Remotion video generator", "Trình tạo video Remotion")}</CardTitle>
+          <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-sky-300" /> {heading || t(lang, "uiRemotionVideoGenerator")}</CardTitle>
           <CardDescription>
-            {description || text(lang, "Create template videos with React scenes, subtitles, and stable server-side MP4 rendering.", "Tạo video template bằng React scene, phụ đề, và render MP4 ổn định ở backend.")}
+            {description || t(lang, "uiCreateTemplateVideosWithReactScenesSubtitlesAnd")}
           </CardDescription>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -141,7 +141,7 @@ export function RemotionVideoGenerator({ onVideoCreated, preset, fixedTemplate, 
 
           <Button className="w-full md:w-auto" onClick={() => void handleRender()} disabled={rendering || Boolean(health && !health.available)}>
             {rendering ? <SystemLoader className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
-            {text(lang, "Render MP4 with Remotion", "Render MP4 bằng Remotion")}
+            {t(lang, "uiRenderMp4WithRemotion")}
           </Button>
         </div>
 
@@ -160,7 +160,7 @@ export function RemotionVideoGenerator({ onVideoCreated, preset, fixedTemplate, 
           </div>
           <div className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-2 font-medium text-foreground"><Cpu className="h-4 w-4" /> {dimensions.width}×{dimensions.height} · {durationInFrames} frames</div>
-            <p className="mt-1">{text(lang, "This option renders on the local backend and saves the MP4 into the same generated-videos library.", "Option này render ở backend local và lưu MP4 vào cùng thư viện generated-videos.")}</p>
+            <p className="mt-1">{t(lang, "uiThisOptionRendersOnTheLocalBackendAnd")}</p>
           </div>
           {lastVideoUrl ? <video controls className="aspect-video w-full rounded-xl border bg-black" src={lastVideoUrl} /> : null}
         </div>

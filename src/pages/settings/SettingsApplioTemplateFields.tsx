@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { text, type Lang } from "@/lib/i18n";
+import { t, type Lang  } from "@/lib/i18n";
 import type { RvcApplioTemplateFileResponse } from "./SettingsTypes";
 
 type ApplioTemplateField = keyof Pick<
@@ -53,8 +53,8 @@ export function SettingsApplioTemplateFields(props: Props) {
       <TemplateJsonSection
         id="rvc-applio-templates"
         lang={props.lang}
-        label={text(props.lang, "Applio voice templates", "Danh sách template voice Applio")}
-        description={text(props.lang, "JSON array. Each item is one selectable custom voice for Applio conversion.", "JSON array. Mỗi item là một custom voice có thể chọn khi chuyển voice bằng Applio.")}
+        label={t(props.lang, "uiApplioVoiceTemplates")}
+        description={t(props.lang, "uiJsonArrayEachItemIsOneSelectableCustom")}
         editing={editing.convertTemplatesJson}
         minHeight="220px"
         mode="convert"
@@ -66,8 +66,8 @@ export function SettingsApplioTemplateFields(props: Props) {
       <TemplateJsonSection
         id="rvc-applio-tts-templates"
         lang={props.lang}
-        label={text(props.lang, "Applio TTS templates", "Danh sách template TTS Applio")}
-        description={text(props.lang, "JSON array for Applio Text-to-Speech. Copy api_name and argument order from the Gradio /config dependencies.", "JSON array cho Text-to-Speech của Applio. Copy api_name và thứ tự tham số từ dependencies trong Gradio /config.")}
+        label={t(props.lang, "uiApplioTtsTemplates")}
+        description={t(props.lang, "uiJsonArrayForApplioTextToSpeechCopy")}
         editing={editing.ttsTemplatesJson}
         minHeight="180px"
         mode="tts"
@@ -103,7 +103,7 @@ function TemplateJsonSection(props: {
         </div>
         <Button type="button" variant="outline" size="sm" onClick={props.onToggleEditing}>
           {showEditor ? <Rows3 className="mr-2 h-4 w-4" /> : <Pencil className="mr-2 h-4 w-4" />}
-          {showEditor ? text(props.lang, "View list", "Xem danh sách") : text(props.lang, "Edit JSON", "Sửa JSON")}
+          {showEditor ? t(props.lang, "uiViewList") : t(props.lang, "uiEditJson")}
         </Button>
       </div>
 
@@ -130,9 +130,9 @@ function TemplateList(props: { lang: Lang; items: TemplateItem[]; mode: "convert
   if (!props.items.length) {
     return (
       <div className="flex flex-col gap-3 rounded-md border border-dashed p-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground">{text(props.lang, "No templates configured.", "Chưa cấu hình template.")}</p>
+        <p className="text-sm text-muted-foreground">{t(props.lang, "uiNoTemplatesConfigured")}</p>
         <Button type="button" variant="outline" size="sm" onClick={props.onEdit}>
-          <Pencil className="mr-2 h-4 w-4" /> {text(props.lang, "Edit JSON", "Sửa JSON")}
+          <Pencil className="mr-2 h-4 w-4" /> {t(props.lang, "uiEditJson")}
         </Button>
       </div>
     );

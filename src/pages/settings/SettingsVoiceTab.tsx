@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { t, text, type Lang } from "@/lib/i18n";
+import { t, type Lang  } from "@/lib/i18n";
 import { PathInput, SecretInput, VoiceRowsTable, type VoiceRow } from "./SettingsFields";
 import { SettingsApplioTemplateFields } from "./SettingsApplioTemplateFields";
 import { SettingsGptSoVitsFields } from "./SettingsGptSoVitsFields";
@@ -51,12 +51,12 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
         <div className="grid gap-4 lg:grid-cols-[auto_minmax(0,1fr)]">
           <aside className={`rounded-lg border border-border bg-muted/30 p-2 transition-[width] duration-200 ${menuCollapsed ? "w-[68px]" : "w-full lg:w-56"}`}>
             <div className="mb-2 flex items-center justify-between gap-2">
-              {!menuCollapsed ? <span className="px-2 text-xs font-semibold text-muted-foreground">{text(props.lang, "Voice providers", "Provider voice")}</span> : null}
+              {!menuCollapsed ? <span className="px-2 text-xs font-semibold text-muted-foreground">{t(props.lang, "uiVoiceProviders")}</span> : null}
               <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setMenuCollapsed((value) => !value)}>
                 {menuCollapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
               </Button>
             </div>
-            <nav className="grid gap-1" aria-label={text(props.lang, "Voice provider settings", "Cài đặt provider voice")}>
+            <nav className="grid gap-1" aria-label={t(props.lang, "uiVoiceProviderSettings")}>
               {VOICE_SECTIONS.map((section) => {
                 const Icon = section.icon;
                 const selected = activeSection === section.id;
@@ -148,8 +148,8 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
             <div className="grid gap-3 md:grid-cols-2">
               <SecretInput
                 id="supertonic-health-endpoint"
-                label={text(props.lang, "Health endpoint", "Endpoint health")}
-                description={text(props.lang, "GET endpoint used by health check.", "Endpoint GET dùng cho health check.")}
+                label={t(props.lang, "uiHealthEndpoint")}
+                description={t(props.lang, "uiGetEndpointUsedByHealthCheck")}
                 value={props.form.SUPERTONIC_HEALTH_ENDPOINT}
                 placeholder="/v1/health"
                 type="text"
@@ -157,8 +157,8 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               />
               <SecretInput
                 id="supertonic-styles-endpoint"
-                label={text(props.lang, "Styles endpoint", "Endpoint styles")}
-                description={text(props.lang, "GET endpoint used to list Supertonic voices/styles.", "Endpoint GET dùng để lấy danh sách voice/style Supertonic.")}
+                label={t(props.lang, "uiStylesEndpoint")}
+                description={t(props.lang, "uiGetEndpointUsedToListSupertonicVoicesStyles")}
                 value={props.form.SUPERTONIC_STYLES_ENDPOINT}
                 placeholder="/v1/styles"
                 type="text"
@@ -166,8 +166,8 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               />
               <SecretInput
                 id="supertonic-import-style-endpoint"
-                label={text(props.lang, "Import style endpoint", "Endpoint import style")}
-                description={text(props.lang, "POST endpoint used when importing a voice/style JSON.", "Endpoint POST dùng khi import voice/style JSON.")}
+                label={t(props.lang, "uiImportStyleEndpoint")}
+                description={t(props.lang, "uiPostEndpointUsedWhenImportingAVoiceStyle")}
                 value={props.form.SUPERTONIC_IMPORT_STYLE_ENDPOINT}
                 placeholder="/v1/styles/import"
                 type="text"
@@ -175,8 +175,8 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               />
               <SecretInput
                 id="supertonic-tts-endpoint"
-                label={text(props.lang, "TTS endpoint", "Endpoint TTS")}
-                description={text(props.lang, "POST endpoint used to generate Supertonic audio.", "Endpoint POST dùng để tạo audio Supertonic.")}
+                label={t(props.lang, "uiTtsEndpoint")}
+                description={t(props.lang, "uiPostEndpointUsedToGenerateSupertonicAudio")}
                 value={props.form.SUPERTONIC_TTS_ENDPOINT}
                 placeholder="/v1/tts"
                 type="text"
@@ -202,8 +202,8 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
             <div className="grid gap-3 md:grid-cols-2">
               <PathInput
                 id="vieneu-python"
-                label={text(props.lang, "VieNeu Python", "Python chạy VieNeu")}
-                description={text(props.lang, "python/python.exe inside the environment where package vieneu is installed.", "python/python.exe trong môi trường đã cài package vieneu.")}
+                label={t(props.lang, "uiVieneuPython")}
+                description={t(props.lang, "uiPythonPythonExeInsideTheEnvironmentWherePackage")}
                 lang={props.lang}
                 value={props.form.VIENEU_PYTHON}
                 placeholder="python"
@@ -215,7 +215,7 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               <SecretInput
                 id="vieneu-mode"
                 label="VieNeu mode"
-                description={text(props.lang, "Use turbo for CPU tests, standard for higher quality, remote for a VieNeu server.", "Dùng turbo để test CPU, standard cho chất lượng cao hơn, remote khi có VieNeu server.")}
+                description={t(props.lang, "uiUseTurboForCpuTestsStandardForHigher")}
                 value={props.form.VIENEU_MODE}
                 placeholder="turbo"
                 type="text"
@@ -224,7 +224,7 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               <SecretInput
                 id="vieneu-emotion"
                 label="VieNeu emotion"
-                description={text(props.lang, "Common values: natural or storytelling.", "Giá trị thường dùng: natural hoặc storytelling.")}
+                description={t(props.lang, "uiCommonValuesNaturalOrStorytelling")}
                 value={props.form.VIENEU_EMOTION}
                 placeholder="natural"
                 type="text"
@@ -232,8 +232,8 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               />
               <SecretInput
                 id="vieneu-default-voice-id"
-                label={text(props.lang, "Preset voice ID", "ID giọng preset")}
-                description={text(props.lang, "Optional. Leave empty to use VieNeu default voice.", "Không bắt buộc. Để trống để dùng giọng mặc định của VieNeu.")}
+                label={t(props.lang, "uiPresetVoiceId")}
+                description={t(props.lang, "uiOptionalLeaveEmptyToUseVieneuDefaultVoice")}
                 value={props.form.VIENEU_DEFAULT_VOICE_ID}
                 placeholder=""
                 type="text"
@@ -241,8 +241,8 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               />
               <PathInput
                 id="vieneu-reference-audio"
-                label={text(props.lang, "Reference audio", "Audio mẫu clone giọng")}
-                description={text(props.lang, "Optional WAV/MP3 reference audio for zero-shot voice cloning.", "Không bắt buộc. WAV/MP3 mẫu để clone giọng zero-shot.")}
+                label={t(props.lang, "uiReferenceAudio")}
+                description={t(props.lang, "uiOptionalWavMp3ReferenceAudioForZeroShot")}
                 lang={props.lang}
                 value={props.form.VIENEU_REFERENCE_AUDIO}
                 placeholder="C:/voices/my-voice.wav"
@@ -254,7 +254,7 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               <SecretInput
                 id="vieneu-timeout"
                 label="VieNeu timeout ms"
-                description={text(props.lang, "First run may download/load models, so keep this high.", "Lần đầu có thể tải/load model nên để timeout cao.")}
+                description={t(props.lang, "uiFirstRunMayDownloadLoadModelsSoKeep")}
                 value={props.form.VIENEU_TIMEOUT_MS}
                 placeholder="1200000"
                 type="text"
@@ -262,7 +262,7 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               />
             </div>
             <div>
-              <Label htmlFor="vieneu-reference-text">{text(props.lang, "Reference text", "Text khớp với audio mẫu")}</Label>
+              <Label htmlFor="vieneu-reference-text">{t(props.lang, "uiReferenceText")}</Label>
               <Textarea
                 id="vieneu-reference-text"
                 className="mt-2 min-h-[90px]"
@@ -275,7 +275,7 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               <SecretInput
                 id="vieneu-remote-api"
                 label="Remote API base"
-                description={text(props.lang, "Only used when VIENEU_MODE=remote.", "Chỉ dùng khi VIENEU_MODE=remote.")}
+                description={t(props.lang, "uiOnlyUsedWhenVieneu_modeRemote")}
                 value={props.form.VIENEU_REMOTE_API_BASE}
                 placeholder="http://127.0.0.1:23333/v1"
                 type="text"
@@ -284,7 +284,7 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               <SecretInput
                 id="vieneu-remote-model"
                 label="Remote model"
-                description={text(props.lang, "Model name for remote VieNeu server.", "Tên model cho VieNeu server remote.")}
+                description={t(props.lang, "uiModelNameForRemoteVieneuServer")}
                 value={props.form.VIENEU_REMOTE_MODEL}
                 placeholder="pnnbao-ump/VieNeu-TTS-v2"
                 type="text"
@@ -308,8 +308,8 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               />
               <SecretInput
                 id="rvc-applio-start-command"
-                label={text(props.lang, "Applio start command", "Lệnh chạy Applio")}
-                description={text(props.lang, "Command run by npm run dev, for example C:/Applio/run-applio.bat.", "Lệnh được chạy cùng npm run dev, ví dụ C:/Applio/run-applio.bat.")}
+                label={t(props.lang, "uiApplioStartCommand")}
+                description={t(props.lang, "uiCommandRunByNpmRunDevForExample")}
                 value={props.form.RVC_APPLIO_START_COMMAND}
                 placeholder="C:/Applio/run-applio.bat"
                 type="text"
@@ -327,7 +327,7 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
               <PathInput
                 id="rvc-applio-python"
                 label={t(props.lang, "settingsRvcApplioPythonLabel")}
-                description={text(props.lang, "python or python.exe inside the Applio environment.", "python hoặc python.exe trong môi trường Applio.")}
+                description={t(props.lang, "uiPythonOrPythonExeInsideTheApplioEnvironment")}
                 lang={props.lang}
                 value={props.form.RVC_APPLIO_PYTHON}
                 placeholder="python"

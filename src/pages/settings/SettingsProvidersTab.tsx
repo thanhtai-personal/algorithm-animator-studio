@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { text, type Lang } from "@/lib/i18n";
+import { t, type Lang  } from "@/lib/i18n";
 import {
   getProviderStartupSettings,
   updateProviderStartupSetting,
@@ -32,7 +32,7 @@ export function SettingsProvidersTab({ lang }: SettingsProvidersTabProps) {
     try {
       setSettings(await getProviderStartupSettings());
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, "Could not load providers.", "Không tải được danh sách provider."));
+      toast.error(error instanceof Error ? error.message : t(lang, "uiCouldNotLoadProviders"));
     } finally {
       setLoading(false);
     }
@@ -51,7 +51,7 @@ export function SettingsProvidersTab({ lang }: SettingsProvidersTabProps) {
       setRestartRequired(true);
       toast.success(result.message);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, "Could not save provider.", "Không lưu được provider."));
+      toast.error(error instanceof Error ? error.message : t(lang, "uiCouldNotSaveProvider"));
     } finally {
       setSavingId(null);
     }
@@ -62,17 +62,17 @@ export function SettingsProvidersTab({ lang }: SettingsProvidersTabProps) {
   return (
     <section className="space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <h3 className="text-lg font-semibold">{text(lang, "Provider Manager", "Quản lý provider")}</h3>
+        <h3 className="text-lg font-semibold">{t(lang, "uiProviderManager")}</h3>
         <Button variant="outline" onClick={refresh} disabled={loading}>
           {loading ? <SystemLoader className="mr-2 h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-          {text(lang, "Refresh", "Tải lại")}
+          {t(lang, "uiRefresh")}
         </Button>
       </div>
 
       {(restartRequired || settings?.restartRequired) ? (
         <Alert className="border-yellow-500/40 bg-yellow-500/10 text-yellow-100">
           <RotateCcw className="h-4 w-4" />
-          <AlertTitle>{text(lang, "Restart required", "Cần khởi động lại app")}</AlertTitle>
+          <AlertTitle>{t(lang, "uiRestartRequired")}</AlertTitle>
         </Alert>
       ) : null}
 

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { readSystemLang, subscribeSystemLang, text, type Lang } from "@/lib/i18n";
+import { t, readSystemLang, subscribeSystemLang, type Lang  } from "@/lib/i18n";
 import { getMusicLibraryTracks } from "@/lib/musicLibrary";
 import { VideoEditorPreview } from "./VideoEditorPreview";
 import { MediaBin, TimelineTrack, type TrackKind } from "./VideoEditorTimeline";
@@ -213,13 +213,13 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
 
   async function handleRender() {
     if (!visualClips.length) {
-      toast.error(text(lang, "Add at least one image or video to Track 1.", "Cần thêm ít nhất 1 ảnh hoặc video vào Track 1."));
+      toast.error(t(lang, "uiAddAtLeastOneImageOrVideoTo"));
       return;
     }
     setRendering(true);
     const toastId = toast.loading(renderEngine === "remotion"
-      ? text(lang, "Rendering ProShow timeline with Remotion...", "Đang render timeline ProShow bằng Remotion...")
-      : text(lang, "Exporting MP4 timeline...", "Đang export timeline MP4...")
+      ? t(lang, "uiRenderingProshowTimelineWithRemotion")
+      : t(lang, "uiExportingMp4Timeline")
     );
     try {
       const result = await renderTimelineVideo({ title, aspectRatio, fps, renderEngine, showWatermark, watermarkText, watermarkLogoAssetId, clips: clips.map(toRenderClip) }, assets);
@@ -227,10 +227,10 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
       downloadVideo(result.videoUrl, result.fileName);
       const renderedAsset = await createRenderedVideoAsset(result);
       setAssets((current) => [...current, renderedAsset]);
-      toast.success(text(lang, "Video exported to library.", "Đã export video vào thư viện."), { id: toastId });
+      toast.success(t(lang, "uiVideoExportedToLibrary"), { id: toastId });
       await onVideoCreated();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, "Could not export video.", "Không export được video."), { id: toastId });
+      toast.error(error instanceof Error ? error.message : t(lang, "uiCouldNotExportVideo"), { id: toastId });
     } finally {
       setRendering(false);
     }
@@ -240,23 +240,23 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
     <Card className="border-cyan-500/20 bg-cyan-500/[0.03]" onDragOver={(event) => event.preventDefault()} onDrop={handleEditorDrop}>
       <CardHeader className="gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <CardTitle className="flex items-center gap-2 text-xl"><Scissors className="h-5 w-5 text-cyan-300" /> {text(lang, "Common video editor", "Trình ghép video chung")}</CardTitle>
-          <CardDescription>{text(lang, "Drag media into the bin, arrange two ProShow-style tracks, then render MP4 with FFmpeg or Remotion.", "Kéo media vào kho, sắp xếp 2 track kiểu ProShow rồi render MP4 bằng FFmpeg hoặc Remotion.")}</CardDescription>
+          <CardTitle className="flex items-center gap-2 text-xl"><Scissors className="h-5 w-5 text-cyan-300" /> {t(lang, "uiCommonVideoEditor")}</CardTitle>
+          <CardDescription>{t(lang, "uiDragMediaIntoTheBinArrangeTwoProshow")}</CardDescription>
         </div>
         <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted/40">
-          <Upload className="h-4 w-4" /> {text(lang, "Upload media", "Upload media")}
+          <Upload className="h-4 w-4" /> {t(lang, "uiUploadMedia")}
           <input type="file" multiple accept="image/*,audio/*,video/*" className="hidden" onChange={(event) => addFiles(event.target.files)} />
         </label>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-4">
           <div className="grid gap-3 xl:grid-cols-[minmax(260px,1fr)_120px_110px_auto] xl:items-end">
-            <Field label={text(lang, "Output name", "Tên video")}><Input value={title} onChange={(event) => setTitle(event.target.value)} /></Field>
-            <Field label={text(lang, "Aspect", "Tỉ lệ")}><Select value={aspectRatio} onValueChange={(value) => setAspectRatio(value as VideoEditorAspectRatio)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="16:9">16:9</SelectItem><SelectItem value="9:16">9:16</SelectItem></SelectContent></Select></Field>
+            <Field label={t(lang, "uiOutputName")}><Input value={title} onChange={(event) => setTitle(event.target.value)} /></Field>
+            <Field label={t(lang, "uiAspect")}><Select value={aspectRatio} onValueChange={(value) => setAspectRatio(value as VideoEditorAspectRatio)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="16:9">16:9</SelectItem><SelectItem value="9:16">9:16</SelectItem></SelectContent></Select></Field>
             <Field label="FPS"><Select value={String(fps)} onValueChange={(value) => setFps(Number(value))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="24">24</SelectItem><SelectItem value="30">30</SelectItem><SelectItem value="60">60</SelectItem></SelectContent></Select></Field>
             <Button className="xl:min-w-64" onClick={() => void handleRender()} disabled={rendering || !visualClips.length}>
               {rendering ? <SystemLoader className="mr-2 h-4 w-4" /> : <Film className="mr-2 h-4 w-4" />}
-              {renderEngine === "remotion" ? text(lang, "Render MP4 with Remotion", "Render MP4 bằng Remotion") : text(lang, "Export MP4 with FFmpeg", "Export MP4 bằng FFmpeg")}
+              {renderEngine === "remotion" ? t(lang, "uiRenderMp4WithRemotion") : t(lang, "uiExportMp4WithFfmpeg")}
             </Button>
           </div>
           <div className="grid gap-3 rounded-lg border bg-background/40 p-3 lg:grid-cols-[auto_minmax(180px,280px)_minmax(180px,280px)_auto] lg:items-end">

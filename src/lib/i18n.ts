@@ -1,3 +1,5 @@
+import { GENERATED_STRINGS } from "./i18n.generated";
+
 export type Lang = "en" | "vi";
 
 export const SYSTEM_LANG_STORAGE_KEY = "algoshorts.systemLanguage";
@@ -47,7 +49,7 @@ export function subscribeSystemLang(listener: (lang: Lang) => void) {
 }
 
 
-export const STRINGS = {
+const BASE_STRINGS = {
   appTitle: { en: "KAI STUDIO", vi: "KAI STUDIO" },
   tagline: {
     en: "Create algorithm videos for TikTok / Reels / Shorts",
@@ -238,11 +240,16 @@ export const STRINGS = {
   settingsCouldNotOpenFolder: { en: "Could not open the folder.", vi: "Không mở được Explorer." },
 } as const;
 
+export const STRINGS = {
+  ...BASE_STRINGS,
+  ...GENERATED_STRINGS,
+} as const;
+
 export type StringKey = keyof typeof STRINGS;
 export const t = (lang: Lang, k: StringKey) => STRINGS[k][lang];
 
-export function text(lang: Lang, enText: string, viText: string = enText) {
-  return lang === "vi" ? viText : enText;
+export function tf(lang: Lang, k: StringKey, values: Record<string, string | number>) {
+  return t(lang, k).replace(/\{(\w+)\}/g, (match, key) => String(values[key] ?? match));
 }
 
 export const PLATFORMS = [

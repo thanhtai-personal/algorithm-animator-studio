@@ -22,7 +22,7 @@ import { SettingsHealthTab } from "./settings/SettingsHealthTab";
 import { SettingsModulesTab } from "./settings/SettingsModulesTab";
 import { EMPTY_FORM, type ElevenLabsConfigResponse, type HealthResponse, type PiperModel, type RvcApplioConfigResponse, type RvcApplioTemplateFileResponse, type SelectPathResponse, type SettingsForm, type SettingsFormKey, type SupertonicConfigResponse, type VieneuConfigResponse, type YoutubeToolsHealthResponse } from "./settings/SettingsTypes";
 import { SettingsVoiceTab } from "./settings/SettingsVoiceTab";
-import { readSystemLang, subscribeSystemLang, t, text, type Lang } from "@/lib/i18n";
+import { readSystemLang, subscribeSystemLang, t, type Lang  } from "@/lib/i18n";
 import { buildApiUrl, parseApiResponse } from "@/lib/runtimeApi";
 import {
   buildRuntimeSettingsHeaders,
@@ -144,7 +144,7 @@ export default function Settings() {
     setMenuFeatures(getMenuFeatureSettings());
     setChillTracks(readChillTracks());
     setVoiceRows(parseVoiceRows(savedSettings.ELEVENLABS_VOICES));
-    toast.success(text(lang, "Unsaved settings reset.", "Đã bỏ thay đổi chưa lưu."));
+    toast.success(t(lang, "uiUnsavedSettingsReset"));
     await refreshHealth();
   }
 
@@ -193,9 +193,9 @@ export default function Settings() {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>{text(lang, "Reset unsaved changes?", "Đặt lại thay đổi chưa lưu?")}</AlertDialogTitle>
+                  <AlertDialogTitle>{t(lang, "uiResetUnsavedChanges")}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    {text(lang, "This only discards edits that have not been saved yet. Saved runtime settings, modules, chill tracks, and template files are kept.", "Thao tác này chỉ bỏ các chỉnh sửa chưa lưu. Settings runtime, module, chill track và template file đã lưu sẽ được giữ nguyên.")}
+                    {t(lang, "uiThisOnlyDiscardsEditsThatHaveNotBeen")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -211,7 +211,7 @@ export default function Settings() {
           <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/40 p-1 md:grid-cols-6">
             <TabsTrigger value="voice">{t(lang, "settingsVoiceTab")}</TabsTrigger>
             <TabsTrigger value="data">{t(lang, "settingsDataTab")}</TabsTrigger>
-            <TabsTrigger value="tools">{text(lang, "Modules", "Module")}</TabsTrigger>
+            <TabsTrigger value="tools">{t(lang, "uiModules")}</TabsTrigger>
             {fantasticMode && <TabsTrigger value="chill">Chill</TabsTrigger>}
             <TabsTrigger value="api-key">{t(lang, "settingsApiKeyTab")}</TabsTrigger>
             <TabsTrigger value="health">{t(lang, "settingsHealthCheckTab")}</TabsTrigger>

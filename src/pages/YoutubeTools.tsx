@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { openBackgroundJobsSocket, type BackgroundJobsSnapshot } from "@/lib/backgroundJobsRealtime";
-import { text, type Lang } from "@/lib/i18n";
+import { t, type Lang  } from "@/lib/i18n";
 import {
   getYoutubeToolsHealth,
   listYoutubeToolsJobs,
@@ -71,7 +71,7 @@ export default function YoutubeTools() {
     try {
       setHealth(await getYoutubeToolsHealth());
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, "Could not check YouTube tools.", "Không kiểm tra được YouTube tools."));
+      toast.error(error instanceof Error ? error.message : t(lang, "uiCouldNotCheckYoutubeTools"));
     } finally {
       setBusy("");
     }
@@ -108,9 +108,9 @@ export default function YoutubeTools() {
     try {
       const job = await startYoutubeDownloadJob({ url: videoUrl, mode, maxHeight: Number(maxHeight), fileName });
       setJobs((current) => [job, ...current.filter((item) => item.id !== job.id)]);
-      toast.success(text(lang, "Download job is running in background.", "Job tải YouTube đang chạy nền."));
+      toast.success(t(lang, "uiDownloadJobIsRunningInBackground"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, "Download failed.", "Tải thất bại."));
+      toast.error(error instanceof Error ? error.message : t(lang, "uiDownloadFailed"));
     } finally {
       setBusy("");
     }
@@ -126,9 +126,9 @@ export default function YoutubeTools() {
         task,
       });
       setJobs((current) => [job, ...current.filter((item) => item.id !== job.id)]);
-      toast.success(text(lang, "Transcript job is running in background.", "Job transcript đang chạy nền."));
+      toast.success(t(lang, "uiTranscriptJobIsRunningInBackground"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, "Transcript failed.", "Lấy transcript thất bại."));
+      toast.error(error instanceof Error ? error.message : t(lang, "uiTranscriptFailed"));
     } finally {
       setBusy("");
     }
@@ -137,7 +137,7 @@ export default function YoutubeTools() {
   async function copyTranscript() {
     if (!transcriptResult?.transcriptText) return;
     await navigator.clipboard.writeText(transcriptResult.transcriptText);
-    toast.success(text(lang, "Transcript copied.", "Đã copy transcript."));
+    toast.success(t(lang, "uiTranscriptCopied"));
   }
 
   return (
@@ -150,11 +150,11 @@ export default function YoutubeTools() {
                 <Youtube className="h-6 w-6 text-red-400" /> YouTube Tools
               </CardTitle>
               <CardDescription>
-                {text(lang, "Download YouTube video/audio and create transcripts with local Whisper.", "Tải video/audio YouTube và lấy transcript bằng Whisper local.")}
+                {t(lang, "uiDownloadYoutubeVideoAudioAndCreateTranscriptsWith")}
               </CardDescription>
             </div>
             <Button variant="outline" onClick={refreshHealth} disabled={Boolean(busy)}>
-              <RefreshCcw className="mr-2 h-4 w-4" /> {text(lang, "Check tools", "Kiểm tra tools")}
+              <RefreshCcw className="mr-2 h-4 w-4" /> {t(lang, "uiCheckTools")}
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -164,9 +164,9 @@ export default function YoutubeTools() {
             {health && !ready ? (
               <Alert className="border-amber-500/40 bg-amber-500/10">
                 <Settings2 className="h-4 w-4" />
-                <AlertTitle>{text(lang, "Missing background tools", "Thiếu công cụ nền")}</AlertTitle>
+                <AlertTitle>{t(lang, "uiMissingBackgroundTools")}</AlertTitle>
                 <AlertDescription className="space-y-2">
-                  <p>{text(lang, "Install the missing tools, then click Check tools again.", "Cài công cụ còn thiếu rồi bấm Kiểm tra tools lại.")}</p>
+                  <p>{t(lang, "uiInstallTheMissingToolsThenClickCheckTools")}</p>
                   <code className="block rounded bg-background/80 p-2 text-xs">python -m pip install -U yt-dlp openai-whisper</code>
                 </AlertDescription>
               </Alert>
@@ -177,8 +177,8 @@ export default function YoutubeTools() {
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
           <Card className="border-border/70">
             <CardHeader>
-              <CardTitle>{text(lang, "Download from YouTube", "Tải từ YouTube")}</CardTitle>
-              <CardDescription>{text(lang, "Paste a YouTube link, choose video/audio, then save to generated-videos.", "Dán link YouTube, chọn video/audio rồi lưu vào generated-videos.")}</CardDescription>
+              <CardTitle>{t(lang, "uiDownloadFromYoutube")}</CardTitle>
+              <CardDescription>{t(lang, "uiPasteAYoutubeLinkChooseVideoAudioThen")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -187,11 +187,11 @@ export default function YoutubeTools() {
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 <div className="space-y-2 md:col-span-1">
-                  <Label htmlFor="youtube-file-name">{text(lang, "File name", "Tên file")}</Label>
+                  <Label htmlFor="youtube-file-name">{t(lang, "uiFileName")}</Label>
                   <Input id="youtube-file-name" value={fileName} onChange={(event) => setFileName(event.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{text(lang, "Max video quality", "Chất lượng video tối đa")}</Label>
+                  <Label>{t(lang, "uiMaxVideoQuality")}</Label>
                   <Select value={maxHeight} onValueChange={setMaxHeight}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -203,7 +203,7 @@ export default function YoutubeTools() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{text(lang, "Output", "Đầu ra")}</Label>
+                  <Label>{t(lang, "uiOutput")}</Label>
                   <div className="grid grid-cols-2 gap-2">
                     <Button onClick={() => handleDownload("video")} disabled={Boolean(busy) || !videoUrl.trim()}>
                       <FileVideo className="mr-2 h-4 w-4" /> Video
@@ -214,20 +214,20 @@ export default function YoutubeTools() {
                   </div>
                 </div>
               </div>
-              {busy === "download-video" || busy === "download-audio" ? <p className="text-sm text-muted-foreground">{text(lang, "Starting background job...", "Đang tạo job chạy nền...")}</p> : null}
+              {busy === "download-video" || busy === "download-audio" ? <p className="text-sm text-muted-foreground">{t(lang, "uiStartingBackgroundJob")}</p> : null}
               {downloadResult ? <DownloadResultCard lang={lang} result={downloadResult} /> : null}
             </CardContent>
           </Card>
 
           <Card className="border-border/70">
             <CardHeader>
-              <CardTitle>{text(lang, "Transcript", "Transcript")}</CardTitle>
-              <CardDescription>{text(lang, "Use local Whisper to transcribe the YouTube link or the last downloaded video.", "Dùng Whisper local để lấy transcript từ link hoặc file vừa tải.")}</CardDescription>
+              <CardTitle>{t(lang, "uiTranscript")}</CardTitle>
+              <CardDescription>{t(lang, "uiUseLocalWhisperToTranscribeTheYoutubeLink")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                 <div className="space-y-2">
-                  <Label>{text(lang, "Whisper model", "Model Whisper")}</Label>
+                  <Label>{t(lang, "uiWhisperModel")}</Label>
                   <Select value={model} onValueChange={setModel}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -240,7 +240,7 @@ export default function YoutubeTools() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{text(lang, "Language", "Ngôn ngữ")}</Label>
+                  <Label>{t(lang, "uiLanguage")}</Label>
                   <Select value={language} onValueChange={setLanguage}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -252,7 +252,7 @@ export default function YoutubeTools() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{text(lang, "Task", "Tác vụ")}</Label>
+                  <Label>{t(lang, "uiTask")}</Label>
                   <Select value={task} onValueChange={(value) => setTask(value === "translate" ? "translate" : "transcribe")}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -264,13 +264,13 @@ export default function YoutubeTools() {
               </div>
               <div className="grid gap-2">
                 <Button onClick={() => handleTranscript("url")} disabled={Boolean(busy) || !videoUrl.trim()}>
-                  <FileText className="mr-2 h-4 w-4" /> {text(lang, "Transcript from URL", "Lấy transcript từ link")}
+                  <FileText className="mr-2 h-4 w-4" /> {t(lang, "uiTranscriptFromUrl")}
                 </Button>
                 <Button variant="outline" onClick={() => handleTranscript("file")} disabled={Boolean(busy) || !downloadResult?.relativePath}>
-                  <FileText className="mr-2 h-4 w-4" /> {text(lang, "Transcript last downloaded file", "Lấy transcript file vừa tải")}
+                  <FileText className="mr-2 h-4 w-4" /> {t(lang, "uiTranscriptLastDownloadedFile")}
                 </Button>
               </div>
-              {busy === "transcript-url" || busy === "transcript-file" ? <p className="text-sm text-muted-foreground">{text(lang, "Starting background job...", "Đang tạo job chạy nền...")}</p> : null}
+              {busy === "transcript-url" || busy === "transcript-file" ? <p className="text-sm text-muted-foreground">{t(lang, "uiStartingBackgroundJob")}</p> : null}
             </CardContent>
           </Card>
         </div>
@@ -304,7 +304,7 @@ function DownloadResultCard(props: { lang: Lang; result: YoutubeDownloadResult }
           <p className="text-xs text-muted-foreground">{formatBytes(props.result.sizeBytes)}</p>
         </div>
         <Button asChild size="sm" variant="outline">
-          <a href={props.result.url} download target="_blank" rel="noreferrer"><Download className="mr-2 h-4 w-4" /> {text(props.lang, "Download", "Tải file")}</a>
+          <a href={props.result.url} download target="_blank" rel="noreferrer"><Download className="mr-2 h-4 w-4" /> {t(props.lang, "uiDownload")}</a>
         </Button>
       </div>
     </div>
@@ -317,10 +317,10 @@ function TranscriptCard(props: { lang: Lang; result: YoutubeTranscriptResult; on
     <Card className="border-border/70">
       <CardHeader className="gap-3 md:flex-row md:items-start md:justify-between">
         <div>
-          <CardTitle>{text(props.lang, "Transcript result", "Kết quả transcript")}</CardTitle>
+          <CardTitle>{t(props.lang, "uiTranscriptResult")}</CardTitle>
           <CardDescription>{props.result.sourceLabel}</CardDescription>
         </div>
-        <Button variant="outline" onClick={props.onCopy}><Clipboard className="mr-2 h-4 w-4" /> {text(props.lang, "Copy text", "Copy text")}</Button>
+        <Button variant="outline" onClick={props.onCopy}><Clipboard className="mr-2 h-4 w-4" /> {t(props.lang, "uiCopyText")}</Button>
       </CardHeader>
       <CardContent className="space-y-3">
         <Textarea value={props.result.transcriptText} readOnly className="min-h-[320px] font-mono text-sm" />

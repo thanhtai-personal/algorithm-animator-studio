@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { markRuntimeSetupGateSkipped, markRuntimeSetupGateVisited } from "@/components/RuntimeSetupGate";
 import { getSetupWizardStatus, runSetupWizardTask, type SetupTaskId, type SetupTaskStatus, type SetupWizardStatus } from "@/lib/setupWizardApi";
-import { readSystemLang, t, text, type Lang } from "@/lib/i18n";
+import { readSystemLang, t, type Lang  } from "@/lib/i18n";
 
 const AUTO_TASKS: SetupTaskId[] = [
   "generated-data",
@@ -102,15 +102,11 @@ export default function RuntimeSetup() {
         <div className="space-y-2">
           <Badge className="w-fit" variant={coreReady ? "default" : "secondary"}>
             {coreReady ? <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> : <Wrench className="mr-1 h-3.5 w-3.5" />}
-            {coreReady ? text(lang, "Core runtime ready", "Runtime chính đã sẵn sàng") : text(lang, "First-run setup", "Cài đặt lần đầu")}
+            {coreReady ? t(lang, "uiCoreRuntimeReady") : t(lang, "uiFirstRunSetup")}
           </Badge>
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{text(lang, "Setup local services", "Cài đặt service local")}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{t(lang, "uiSetupLocalServices")}</h1>
           <p className="max-w-3xl text-sm text-muted-foreground">
-            {text(
-              lang,
-              "KAI STUDIO will try to prepare generated data folders, Piper, voice models and local voice providers before opening the studio.",
-              "KAI STUDIO sẽ cố gắng tạo thư mục dữ liệu, cài Piper, tải model giọng đọc và chuẩn bị các provider voice local trước khi vào màn hình làm việc.",
-            )}
+            {t(lang, "uiKaiStudioWillTryToPrepareGeneratedData")}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -119,11 +115,11 @@ export default function RuntimeSetup() {
           </Button>
           <Button onClick={() => void runAutoSetup()} disabled={autoDisabled}>
             {runningTask ? <SystemLoader className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
-            {text(lang, "Auto install", "Tự cài đặt")}
+            {t(lang, "uiAutoInstall")}
           </Button>
           <Button variant={coreReady ? "default" : "secondary"} onClick={() => enterStudio(!coreReady)}>
             <ArrowRight className="mr-2 h-4 w-4" />
-            {coreReady ? text(lang, "Enter Studio", "Vào Studio") : text(lang, "Skip for now", "Bỏ qua tạm")}
+            {coreReady ? t(lang, "uiEnterStudio") : t(lang, "uiSkipForNow")}
           </Button>
         </div>
       </section>
@@ -131,13 +127,9 @@ export default function RuntimeSetup() {
       {!coreReady ? (
         <Alert className="border-amber-500/40 bg-amber-500/10">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>{text(lang, "Studio is not ready yet", "Studio chưa sẵn sàng")}</AlertTitle>
+          <AlertTitle>{t(lang, "uiStudioIsNotReadyYet")}</AlertTitle>
           <AlertDescription>
-            {text(
-              lang,
-              "Core checks require backend data, piper.exe and at least one Piper model. Optional cloud/custom providers can be configured later in Settings.",
-              "Điều kiện chính cần có thư mục dữ liệu backend, piper.exe và ít nhất một model Piper. Các provider cloud/custom có thể cấu hình sau trong Settings.",
-            )}
+            {t(lang, "uiCoreChecksRequireBackendDataPiperExeAnd")}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -146,7 +138,7 @@ export default function RuntimeSetup() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5" /> Health readiness</CardTitle>
           <CardDescription>
-            {readyCount}/{taskCount} {text(lang, "checks ready", "mục đã sẵn sàng")}
+            {readyCount}/{taskCount} {t(lang, "uiChecksReady")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -168,14 +160,14 @@ export default function RuntimeSetup() {
       <Card>
         <CardHeader className="md:flex-row md:items-center md:justify-between">
           <div>
-            <CardTitle>{text(lang, "Setup log", "Nhật ký setup")}</CardTitle>
-            <CardDescription>{text(lang, "Latest install/start attempts.", "Các lần thử cài/khởi động gần nhất.")}</CardDescription>
+            <CardTitle>{t(lang, "uiSetupLog")}</CardTitle>
+            <CardDescription>{t(lang, "uiLatestInstallStartAttempts")}</CardDescription>
           </div>
           <Button variant="outline" onClick={() => navigate("/settings")}> <Settings className="mr-2 h-4 w-4" /> Settings</Button>
         </CardHeader>
         <CardContent>
           <pre className="max-h-72 overflow-auto rounded-lg bg-muted/50 p-3 text-xs leading-5 text-muted-foreground">
-            {log.length ? log.join("\n\n") : text(lang, "No setup task has run yet.", "Chưa chạy task setup nào.")}
+            {log.length ? log.join("\n\n") : t(lang, "uiNoSetupTaskHasRunYet")}
           </pre>
         </CardContent>
       </Card>
@@ -191,7 +183,7 @@ function SetupTaskCard(props: { lang: Lang; task: SetupTaskStatus; running: bool
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-semibold">{task.label}</h3>
-            {task.optional ? <Badge variant="outline">{text(lang, "Optional", "Tùy chọn")}</Badge> : <Badge>{text(lang, "Required", "Bắt buộc")}</Badge>}
+            {task.optional ? <Badge variant="outline">{t(lang, "uiOptional")}</Badge> : <Badge>{t(lang, "uiRequired")}</Badge>}
           </div>
           <p className="text-sm text-muted-foreground">{task.description}</p>
         </div>
@@ -202,7 +194,7 @@ function SetupTaskCard(props: { lang: Lang; task: SetupTaskStatus; running: bool
       <div className="mt-3 flex justify-end">
         <Button size="sm" variant={task.ready ? "outline" : "default"} disabled={!props.onRun || !task.canAutoFix || props.running} onClick={props.onRun}>
           {props.running ? <SystemLoader className="mr-2 h-4 w-4" /> : <Wrench className="mr-2 h-4 w-4" />}
-          {task.ready ? text(lang, "Run again", "Chạy lại") : text(lang, "Fix", "Sửa")}
+          {task.ready ? t(lang, "uiRunAgain") : t(lang, "uiFix")}
         </Button>
       </div>
     </div>

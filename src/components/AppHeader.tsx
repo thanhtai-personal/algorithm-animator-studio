@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useFantasticMode } from "@/hooks/use-fantastic-mode";
 import { AUTH_STATE_EVENT, AuthProfile, getCurrentProfile, signOut } from "@/lib/auth";
 import { requestChillPlayback } from "@/lib/chillMusicSettings";
-import { text, type Lang, readSystemLang, subscribeSystemLang, writeSystemLang } from "@/lib/i18n";
+import { t, type Lang, readSystemLang, subscribeSystemLang, writeSystemLang  } from "@/lib/i18n";
 
 type AppHeaderProps = {
   sidebarMode: SidebarMode;
@@ -25,8 +25,8 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
   const [mounted, setMounted] = useState(false);
   const [fantasticMode, setFantasticMode] = useFantasticMode();
   const isAuthenticated = profile !== null;
-  const authLabel = isAuthenticated ? text(lang, "Logout", "Đăng xuất") : text(lang, "Login", "Đăng nhập");
-  const authAriaLabel = isAuthenticated ? text(lang, "Logout account", "Đăng xuất tài khoản") : text(lang, "Login account", "Đăng nhập tài khoản");
+  const authLabel = isAuthenticated ? t(lang, "uiLogout") : t(lang, "uiLogin");
+  const authAriaLabel = isAuthenticated ? t(lang, "uiLogoutAccount") : t(lang, "uiLoginAccount");
   const authFrom = location.pathname === "/auth" ? "/" : location.pathname;
 
   const refreshProfile = useCallback(() => {
@@ -79,7 +79,7 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
     <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 px-3 py-2.5 shadow-[0_10px_40px_hsl(214_80%_5%/0.12)] backdrop-blur-xl md:px-5">
       <div className="flex items-center gap-3">
         <Button
-          aria-label={sidebarMode === "hidden" ? text(lang, "Open menu", "Mở menu") : text(lang, "Hide menu", "Ẩn menu")}
+          aria-label={sidebarMode === "hidden" ? t(lang, "uiOpenMenu") : t(lang, "uiHideMenu")}
           className="h-10 w-10 shrink-0"
           size="icon"
           variant="outline"
@@ -88,7 +88,7 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
           {sidebarMode === "hidden" ? <PanelLeftOpen className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </Button>
 
-        <img src="/kai-studio-logo.svg" alt={text(lang, "KAI STUDIO logo", "Logo KAI STUDIO")} className="h-10 w-10 shrink-0 rounded-xl" />
+        <img src="/kai-studio-logo.svg" alt={t(lang, "uiKaiStudioLogo")} className="h-10 w-10 shrink-0 rounded-xl" />
         <div className="min-w-0 flex-1">
           <h1 className="truncate bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-base font-black text-transparent md:text-lg">{APP_TITLE}</h1>
         </div>
@@ -103,8 +103,8 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
                 : "border-input bg-background/70 text-muted-foreground hover:border-primary/60 hover:bg-primary/10 hover:text-foreground",
             ].join(" ")}
             aria-pressed={fantasticMode}
-            aria-label={text(lang, "Toggle Fantastic Mode", "Bật/tắt Fantastic Mode")}
-            title={text(lang, "Fantastic Mode", "Fantastic Mode")}
+            aria-label={t(lang, "uiToggleFantasticMode")}
+            title={t(lang, "uiFantasticMode")}
             onClick={() => setFantasticMode(!fantasticMode)}
           >
             <Sparkles className="h-4 w-4" />
@@ -117,8 +117,8 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
             size="icon"
             variant={fantasticMode ? "outline" : "outline"}
             aria-pressed={fantasticMode}
-            aria-label={text(lang, "Toggle Fantastic Mode", "Bật/tắt Fantastic Mode")}
-            title={text(lang, "Fantastic Mode", "Fantastic Mode")}
+            aria-label={t(lang, "uiToggleFantasticMode")}
+            title={t(lang, "uiFantasticMode")}
             onClick={() => setFantasticMode(!fantasticMode)}
           >
             <Sparkles className="h-4 w-4" />
@@ -137,10 +137,10 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
               className="h-10 shrink-0 border-cyan-300/70 bg-cyan-400 text-slate-950 shadow-[0_0_22px_hsl(187_92%_63%/0.34)] hover:bg-cyan-300"
               size="sm"
               variant="outline"
-              aria-label={text(lang, "Play Chill mode music", "Phát nhạc Chill mode")}
+              aria-label={t(lang, "uiPlayChillModeMusic")}
               disabled={!fantasticMode}
               tabIndex={fantasticMode ? 0 : -1}
-              title={text(lang, "Play Chill mode music", "Phát nhạc Chill mode")}
+              title={t(lang, "uiPlayChillModeMusic")}
               onClick={requestChillPlayback}
             >
               <Play className="h-4 w-4" />
@@ -150,10 +150,10 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
             <SelectTrigger className="h-10 w-[92px] shrink-0 md:w-28"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="en">English</SelectItem>
-              <SelectItem value="vi">{text(lang, "Vietnamese", "Tiếng Việt")}</SelectItem>
+              <SelectItem value="vi">{t(lang, "uiVietnamese")}</SelectItem>
             </SelectContent>
           </Select>
-          <Button aria-label={text(lang, "Toggle light/dark theme", "Đổi giao diện sáng/tối")} className="h-10 shrink-0" size="icon" variant="outline" onClick={toggleTheme}>
+          <Button aria-label={t(lang, "uiToggleLightDarkTheme")} className="h-10 shrink-0" size="icon" variant="outline" onClick={toggleTheme}>
             {mounted && resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
           {isAuthenticated ? (

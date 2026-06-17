@@ -2,7 +2,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { t, type Lang } from "@/lib/i18n";
-import { text } from "@/lib/i18n";
 import { PathInput } from "./SettingsFields";
 import type { SettingsForm, SettingsFormKey } from "./SettingsTypes";
 
@@ -45,7 +44,7 @@ export function SettingsDataTab(props: SettingsDataTabProps) {
           onOpen={() => props.onOpenPath(props.form.MUSIC_LIBRARY_DIR)}
         />
         <div className="rounded-lg border p-4">
-          <h3 className="font-semibold">{text(props.lang, "YouTube download", "Tải YouTube")}</h3>
+          <h3 className="font-semibold">{t(props.lang, "uiYoutubeDownload")}</h3>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <TextInput id="youtube-cookies-browser" label="YOUTUBE_COOKIES_FROM_BROWSER" value={props.form.YOUTUBE_COOKIES_FROM_BROWSER} placeholder="chrome" onChange={(value) => props.onUpdateField("YOUTUBE_COOKIES_FROM_BROWSER", value)} />
             <TextInput id="youtube-js-runtime" label="YOUTUBE_JS_RUNTIME" value={props.form.YOUTUBE_JS_RUNTIME} placeholder="node" onChange={(value) => props.onUpdateField("YOUTUBE_JS_RUNTIME", value)} />
@@ -60,7 +59,7 @@ export function SettingsDataTab(props: SettingsDataTabProps) {
               placeholder="C:/Users/.../youtube-cookies.txt"
               busy={props.selecting === "YOUTUBE_COOKIES_FILE"}
               onChange={(value) => props.onUpdateField("YOUTUBE_COOKIES_FILE", value)}
-              onSelect={() => props.onSelectPath("file", "YOUTUBE_COOKIES_FILE", text(props.lang, "Select YouTube cookies.txt", "Chọn file cookies.txt YouTube"))}
+              onSelect={() => props.onSelectPath("file", "YOUTUBE_COOKIES_FILE", t(props.lang, "uiSelectYoutubeCookiesTxt"))}
               onOpen={() => props.onOpenPath(props.form.YOUTUBE_COOKIES_FILE)}
             />
           </div>

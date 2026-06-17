@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { readSystemLang, subscribeSystemLang, text, type Lang } from "@/lib/i18n";
+import { t, readSystemLang, subscribeSystemLang, type Lang  } from "@/lib/i18n";
 import {
   convertRvcApplioVoice,
   generateElevenLabsVoice,
@@ -98,7 +98,7 @@ export default function TextToSpeech() {
   async function handleGenerate() {
     const normalizedText = textValue.trim();
     if (!normalizedText) {
-      toast.error(text(lang, "Please enter text first.", "Vui lòng nhập nội dung trước."));
+      toast.error(t(lang, "uiPleaseEnterTextFirst"));
       return;
     }
 
@@ -108,9 +108,9 @@ export default function TextToSpeech() {
       const output = await runGenerate(normalizedText);
       setResult(output);
       setSourceAudioRelativePath(output.relativePath || "");
-      toast.success(text(lang, "Voice generated.", "Đã tạo voice."));
+      toast.success(t(lang, "uiVoiceGenerated"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, "Could not generate voice.", "Không tạo được voice."));
+      toast.error(error instanceof Error ? error.message : t(lang, "uiCouldNotGenerateVoice"));
     } finally {
       setLoading(false);
     }
@@ -147,7 +147,7 @@ export default function TextToSpeech() {
 
   async function handleConvert() {
     if (!sourceAudioRelativePath.trim()) {
-      toast.error(text(lang, "Enter a generated audio relative path first.", "Nhập relative path audio đã tạo trước."));
+      toast.error(t(lang, "uiEnterAGeneratedAudioRelativePathFirst"));
       return;
     }
     setConverting(true);
@@ -159,9 +159,9 @@ export default function TextToSpeech() {
         templateId: convertTemplateId || undefined,
       });
       setConverted(output);
-      toast.success(text(lang, "Custom voice generated.", "Đã chuyển sang custom voice."));
+      toast.success(t(lang, "uiCustomVoiceGenerated"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, "Could not convert custom voice.", "Không chuyển được custom voice."));
+      toast.error(error instanceof Error ? error.message : t(lang, "uiCouldNotConvertCustomVoice"));
     } finally {
       setConverting(false);
     }
@@ -170,25 +170,25 @@ export default function TextToSpeech() {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 text-foreground">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{text(lang, "Text to Speech", "Text to Speech")}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t(lang, "uiTextToSpeech")}</h1>
         <p className="text-sm text-muted-foreground">
-          {text(lang, "Generate voice-over and convert generated audio to custom voice with Applio/RVC.", "Tạo voice-over và chuyển audio đã tạo sang custom voice bằng Applio/RVC.")}
+          {t(lang, "uiGenerateVoiceOverAndConvertGeneratedAudioTo")}
         </p>
       </header>
 
       <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><MicVocal className="h-5 w-5" /> {text(lang, "Generate voice", "Tạo voice")}</CardTitle>
+            <CardTitle className="flex items-center gap-2"><MicVocal className="h-5 w-5" /> {t(lang, "uiGenerateVoice")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>{text(lang, "Input text", "Nội dung")}</Label>
+              <Label>{t(lang, "uiInputText")}</Label>
               <Textarea value={textValue} onChange={(event) => setTextValue(event.target.value)} rows={8} />
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>{text(lang, "Provider", "Nguồn voice")}</Label>
+                <Label>{t(lang, "uiProvider")}</Label>
                 <Select value={provider} onValueChange={(value) => setProvider(value as Provider)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -202,13 +202,13 @@ export default function TextToSpeech() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>{text(lang, "File name", "Tên file")}</Label>
+                <Label>{t(lang, "uiFileName")}</Label>
                 <Input value={fileName} onChange={(event) => setFileName(event.target.value)} />
               </div>
             </div>
 
             {provider === "piper" ? (
-              <SelectField label={text(lang, "Piper model", "Model Piper")} value={modelKey} onChange={setModelKey} options={availableModels.map((model) => ({ value: model.key, label: model.label }))} />
+              <SelectField label={t(lang, "uiPiperModel")} value={modelKey} onChange={setModelKey} options={availableModels.map((model) => ({ value: model.key, label: model.label }))} />
             ) : null}
             {provider === "elevenlabs" ? (
               <div className="grid gap-3 md:grid-cols-2">
@@ -220,54 +220,54 @@ export default function TextToSpeech() {
               <div className="space-y-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4">
                 <p className="text-sm text-yellow-100">
                   {gptSoVits?.enabled
-                    ? text(lang, "GPT-SoVITS uses a local API and usually needs reference audio plus matching prompt text.", "GPT-SoVITS dùng API local và thường cần audio mẫu cùng text khớp audio mẫu.")
-                    : text(lang, "GPT-SoVITS is disabled in Settings > Provider. Enable it and restart the app before generating.", "GPT-SoVITS đang tắt trong Cài đặt > Provider. Bật rồi restart app trước khi tạo voice.")}
+                    ? t(lang, "uiGptSovitsUsesALocalApiAndUsually")
+                    : t(lang, "uiGptSovitsIsDisabledInSettingsProviderEnable")}
                 </p>
                 <div className="grid gap-3 md:grid-cols-2">
-                  <SelectField label={text(lang, "Text language", "Ngôn ngữ text")} value={gptTextLang} onChange={setGptTextLang} options={GPT_SOVITS_LANGS} />
-                  <SelectField label={text(lang, "Prompt language", "Ngôn ngữ audio mẫu")} value={gptPromptLang} onChange={setGptPromptLang} options={GPT_SOVITS_LANGS} />
+                  <SelectField label={t(lang, "uiTextLanguage")} value={gptTextLang} onChange={setGptTextLang} options={GPT_SOVITS_LANGS} />
+                  <SelectField label={t(lang, "uiPromptLanguage")} value={gptPromptLang} onChange={setGptPromptLang} options={GPT_SOVITS_LANGS} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{text(lang, "Reference audio path", "Đường dẫn audio mẫu")}</Label>
+                  <Label>{t(lang, "uiReferenceAudioPath")}</Label>
                   <Input value={gptReferenceAudioPath} onChange={(event) => setGptReferenceAudioPath(event.target.value)} placeholder="C:/voices/reference.wav" />
                 </div>
                 <div className="space-y-2">
-                  <Label>{text(lang, "Prompt text", "Text khớp audio mẫu")}</Label>
+                  <Label>{t(lang, "uiPromptText")}</Label>
                   <Textarea value={gptPromptText} onChange={(event) => setGptPromptText(event.target.value)} rows={3} placeholder="Exact sentence spoken in the reference audio" />
                 </div>
               </div>
             ) : null}
             {provider === "applio-tts" ? (
-              <SelectField label={text(lang, "Applio TTS template", "Template Applio TTS")} value={applioTtsTemplateId} onChange={setApplioTtsTemplateId} options={(applio?.ttsTemplates || []).map((template) => ({ value: template.id, label: template.label }))} />
+              <SelectField label={t(lang, "uiApplioTtsTemplate")} value={applioTtsTemplateId} onChange={setApplioTtsTemplateId} options={(applio?.ttsTemplates || []).map((template) => ({ value: template.id, label: template.label }))} />
             ) : null}
 
             <Button onClick={handleGenerate} disabled={loading || (provider === "piper" && !modelKey) || (provider === "gpt-sovits" && !gptSoVits?.enabled)}>
               {loading ? <SystemLoader className="mr-2 h-4 w-4" /> : <WandSparkles className="mr-2 h-4 w-4" />}
-              {text(lang, "Generate", "Tạo voice")}
+              {t(lang, "uiGenerate")}
             </Button>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>{text(lang, "Result", "Kết quả")}</CardTitle>
+            <CardTitle>{t(lang, "uiResult")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <AudioResult lang={lang} result={result} />
             <div className="rounded-xl border p-4">
-              <h3 className="font-semibold">{text(lang, "Voice to custom voice", "Voice sang custom voice")}</h3>
+              <h3 className="font-semibold">{t(lang, "uiVoiceToCustomVoice")}</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                {text(lang, "Use Applio/RVC to convert a generated audio file to a configured custom voice.", "Dùng Applio/RVC để chuyển audio đã tạo sang giọng custom đã cấu hình.")}
+                {t(lang, "uiUseApplioRvcToConvertAGeneratedAudio")}
               </p>
               <div className="mt-4 space-y-3">
-                <SelectField label={text(lang, "Convert template", "Template chuyển giọng")} value={convertTemplateId} onChange={setConvertTemplateId} options={(applio?.templates || []).map((template) => ({ value: template.id, label: template.label }))} />
+                <SelectField label={t(lang, "uiConvertTemplate")} value={convertTemplateId} onChange={setConvertTemplateId} options={(applio?.templates || []).map((template) => ({ value: template.id, label: template.label }))} />
                 <div className="space-y-2">
-                  <Label>{text(lang, "Generated audio relative path", "Relative path audio đã tạo")}</Label>
+                  <Label>{t(lang, "uiGeneratedAudioRelativePath")}</Label>
                   <Input value={sourceAudioRelativePath} onChange={(event) => setSourceAudioRelativePath(event.target.value)} placeholder="2026-06-09/voice-over.wav" />
                 </div>
                 <Button variant="secondary" onClick={handleConvert} disabled={converting || !sourceAudioRelativePath.trim()}>
                   {converting ? <SystemLoader className="mr-2 h-4 w-4" /> : <WandSparkles className="mr-2 h-4 w-4" />}
-                  {text(lang, "Convert", "Chuyển giọng")}
+                  {t(lang, "uiConvert")}
                 </Button>
               </div>
             </div>
@@ -305,7 +305,7 @@ function SelectField(props: { label: string; value: string; options: Array<{ val
 }
 
 function AudioResult({ result, lang }: { result: VoiceGenerateResult | null; lang: Lang }) {
-  if (!result) return <p className="text-sm text-muted-foreground">{text(lang, "No audio yet.", "Chưa có audio.")}</p>;
+  if (!result) return <p className="text-sm text-muted-foreground">{t(lang, "uiNoAudioYet")}</p>;
   return (
     <div className="space-y-2 rounded-xl border p-3">
       <p className="font-medium">{result.fileName}</p>

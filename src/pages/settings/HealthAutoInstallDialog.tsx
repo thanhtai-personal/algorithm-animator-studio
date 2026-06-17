@@ -15,7 +15,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { getSetupWizardStatus, runSetupWizardTask, type SetupTaskId, type SetupTaskStatus, type SetupWizardStatus } from "@/lib/setupWizardApi";
-import { text, type Lang } from "@/lib/i18n";
+import { t, type Lang  } from "@/lib/i18n";
 
 const AUTO_TASKS: SetupTaskId[] = [
   "generated-data",
@@ -100,8 +100,8 @@ export function HealthAutoInstallDialog({ lang, onAfterTask }: HealthAutoInstall
         updateResult(task.id, {
           status: "skipped",
           message: task.ready
-            ? text(lang, "Already ready, skipped.", "Đã sẵn sàng, bỏ qua.")
-            : text(lang, "No auto-fix command configured, skipped.", "Chưa có lệnh tự sửa, bỏ qua."),
+            ? t(lang, "uiAlreadyReadySkipped")
+            : t(lang, "uiNoAutoFixCommandConfiguredSkipped"),
         });
         continue;
       }
@@ -109,7 +109,7 @@ export function HealthAutoInstallDialog({ lang, onAfterTask }: HealthAutoInstall
       setRunningTaskId(task.id);
       updateResult(task.id, {
         status: "running",
-        message: text(lang, "Running command...", "Đang chạy lệnh..."),
+        message: t(lang, "uiRunningCommand"),
       });
 
       try {
@@ -142,21 +142,17 @@ export function HealthAutoInstallDialog({ lang, onAfterTask }: HealthAutoInstall
     <>
       <Button onClick={() => void runAutoInstall()} disabled={running}>
         {running ? <SystemLoader className="mr-2 h-4 w-4" /> : <Wrench className="mr-2 h-4 w-4" />}
-        {text(lang, "Auto install", "Tự cài đặt")}
+        {t(lang, "uiAutoInstall")}
       </Button>
 
       <Dialog open={open} onOpenChange={(nextOpen) => { if (!running) setOpen(nextOpen); }}>
         <DialogContent className="max-h-[88vh] overflow-hidden sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Wrench className="h-5 w-5" /> {text(lang, "Local services auto install", "Tự cài đặt service local")}
+              <Wrench className="h-5 w-5" /> {t(lang, "uiLocalServicesAutoInstall")}
             </DialogTitle>
             <DialogDescription>
-              {text(
-                lang,
-                "The app runs each required command one by one and keeps going even if one task fails.",
-                "App chạy từng lệnh theo thứ tự và vẫn chạy tiếp task sau dù một task bị lỗi.",
-              )}
+              {t(lang, "uiTheAppRunsEachRequiredCommandOneBy")}
             </DialogDescription>
           </DialogHeader>
 
@@ -164,7 +160,7 @@ export function HealthAutoInstallDialog({ lang, onAfterTask }: HealthAutoInstall
             <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                 <span className="font-medium">
-                  {completedCount}/{totalCount || 0} {text(lang, "tasks completed", "task đã xử lý")}
+                  {completedCount}/{totalCount || 0} {t(lang, "uiTasksCompleted")}
                 </span>
                 <div className="flex flex-wrap gap-2">
                   <ResultBadge label="Success" count={successCount} variant="success" />
@@ -175,10 +171,10 @@ export function HealthAutoInstallDialog({ lang, onAfterTask }: HealthAutoInstall
               <Progress value={progress} />
               {runningTaskId ? (
                 <p className="text-xs text-muted-foreground">
-                  {text(lang, "Running", "Đang chạy")}: <span className="font-medium text-foreground">{labelOf(runningTaskId)}</span>
+                  {t(lang, "uiRunning")}: <span className="font-medium text-foreground">{labelOf(runningTaskId)}</span>
                 </p>
               ) : done ? (
-                <p className="text-xs text-muted-foreground">{text(lang, "Auto install finished.", "Đã chạy xong tự cài đặt.")}</p>
+                <p className="text-xs text-muted-foreground">{t(lang, "uiAutoInstallFinished")}</p>
               ) : null}
             </div>
 
@@ -187,7 +183,7 @@ export function HealthAutoInstallDialog({ lang, onAfterTask }: HealthAutoInstall
                 <InstallResultCard key={result.taskId} lang={lang} result={result} />
               )) : (
                 <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                  {text(lang, "Click Auto install to start checking and installing local tools.", "Bấm Tự cài đặt để bắt đầu kiểm tra và cài các tool local.")}
+                  {t(lang, "uiClickAutoInstallToStartCheckingAndInstalling")}
                 </div>
               )}
             </div>
@@ -195,11 +191,11 @@ export function HealthAutoInstallDialog({ lang, onAfterTask }: HealthAutoInstall
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => void refreshStatus()} disabled={running}>
-              <RefreshCw className="mr-2 h-4 w-4" /> {text(lang, "Refresh", "Kiểm tra lại")}
+              <RefreshCw className="mr-2 h-4 w-4" /> {t(lang, "uiRefresh")}
             </Button>
             <Button onClick={() => void runAutoInstall()} disabled={running}>
               {running ? <SystemLoader className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
-              {done ? text(lang, "Run again", "Chạy lại") : text(lang, "Start", "Bắt đầu")}
+              {done ? t(lang, "uiRunAgain") : t(lang, "uiStart")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -228,7 +224,7 @@ function InstallResultCard({ lang, result }: { lang: Lang; result: InstallResult
       {result.command ? (
         <div className="mt-3 rounded-lg bg-muted/50 p-3">
           <div className="mb-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
-            <Terminal className="h-3.5 w-3.5" /> {text(lang, "Command", "Lệnh đang chạy")}
+            <Terminal className="h-3.5 w-3.5" /> {t(lang, "uiCommand")}
           </div>
           <code className="block break-all text-xs text-foreground">{result.command}</code>
         </div>

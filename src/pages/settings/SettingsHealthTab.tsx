@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import {text, uiText, t, type Lang} from "@/lib/i18n";
+import { uiText, t, type Lang  } from "@/lib/i18n";
 import { StatusTile } from "./SettingsFields";
 import { applioInstruction, elevenLabsInstruction, piperInstruction, supertonicInstruction, systemInstruction, vieneuInstruction, type HealthInstruction } from "./SettingsHealthInstructions";
 import { SettingsMarkdown } from "./SettingsMarkdown";
@@ -123,7 +123,7 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
                 {menuCollapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
               </Button>
             </div>
-            <nav className="grid gap-1" aria-label={text(props.lang, "Health check groups", "Nhóm kiểm tra health")}>
+            <nav className="grid gap-1" aria-label={t(props.lang, "uiHealthCheckGroups")}>
               {HEALTH_SECTIONS.map((section) => {
                 const Icon = section.icon;
                 const selected = activeSection === section.id;
@@ -262,8 +262,8 @@ function renderHealthSection(section: HealthSectionId, props: SettingsHealthTabP
         <StatusTile lang={props.lang} label={uiText("FFmpeg")} ok={Boolean(props.youtubeTools?.ffmpeg.ok)} value={formatToolStatus(props.youtubeTools?.ffmpeg)} />
         <StatusTile lang={props.lang} label={uiText("FFprobe")} ok={Boolean(props.youtubeTools?.ffprobe.ok)} value={formatToolStatus(props.youtubeTools?.ffprobe)} />
         <StatusTile lang={props.lang} label={uiText("Python")} ok={Boolean(props.youtubeTools?.python.ok)} value={formatToolStatus(props.youtubeTools?.python)} />
-        <StatusTile lang={props.lang} label={text(props.lang, "Output folder", "Thư mục xuất")} ok={Boolean(props.youtubeTools?.outputDir)} value={props.youtubeTools?.outputDir || "-"} />
-        <StatusTile lang={props.lang} label={text(props.lang, "YouTube cookies", "Cookie YouTube")} ok={Boolean(props.youtubeTools?.cookieStatus.ok)} value={`${props.youtubeTools?.cookieMode || "none"} · ${formatToolStatus(props.youtubeTools?.cookieStatus)}`} />
+        <StatusTile lang={props.lang} label={t(props.lang, "uiOutputFolder")} ok={Boolean(props.youtubeTools?.outputDir)} value={props.youtubeTools?.outputDir || "-"} />
+        <StatusTile lang={props.lang} label={t(props.lang, "uiYoutubeCookies")} ok={Boolean(props.youtubeTools?.cookieStatus.ok)} value={`${props.youtubeTools?.cookieMode || "none"} · ${formatToolStatus(props.youtubeTools?.cookieStatus)}`} />
         <StatusTile lang={props.lang} label={uiText("JS runtime")} ok={Boolean(props.youtubeTools?.jsRuntime.ok)} value={formatToolStatus(props.youtubeTools?.jsRuntime)} />
         <StatusTile lang={props.lang} label={uiText("Remote components")} ok={Boolean(props.youtubeTools?.remoteComponents.ok)} value={formatToolStatus(props.youtubeTools?.remoteComponents)} />
       </>
@@ -308,11 +308,11 @@ function youtubeToolsInstruction(lang: Lang, health: YoutubeToolsHealthResponse 
     "ffmpeg -version",
   ];
   return {
-    description: text(lang, "Install yt-dlp, Whisper and FFmpeg for YouTube download/transcript tools.", "Cài yt-dlp, Whisper và FFmpeg để dùng công cụ tải video/lấy transcript YouTube."),
+    description: t(lang, "uiInstallYtDlpWhisperAndFfmpegForYoutube"),
     markdown: [
       "## YouTube Tools",
       "",
-      text(lang, "Required background tools:", "Các công cụ nền cần có:"),
+      t(lang, "uiRequiredBackgroundTools"),
       "",
       "- yt-dlp",
       "- Whisper / openai-whisper",
@@ -324,34 +324,34 @@ function youtubeToolsInstruction(lang: Lang, health: YoutubeToolsHealthResponse 
       ...commands,
       "```",
       "",
-      text(lang, "When YouTube returns 429/not-a-bot:", "Khi YouTube báo 429/not-a-bot:"),
+      t(lang, "uiWhenYoutubeReturns429NotABot"),
       "",
-      "1. " + text(lang, "Prefer cookies.txt when Chrome cannot be read on Windows.", "Ưu tiên cookies.txt khi Windows không cho đọc cookie Chrome."),
-      "2. " + text(lang, "Install a local-only cookies.txt exporter extension from the browser store, then export YouTube cookies in Netscape format.", "Cài extension export cookies.txt dạng local-only từ store của trình duyệt, sau đó export cookie YouTube theo định dạng Netscape."),
-      "3. " + text(lang, "Save the file somewhere private, then set YOUTUBE_COOKIES_FILE to that path.", "Lưu file ở nơi riêng tư, sau đó đặt YOUTUBE_COOKIES_FILE trỏ tới file đó."),
+      "1. " + t(lang, "uiPreferCookiesTxtWhenChromeCannotBeRead"),
+      "2. " + t(lang, "uiInstallALocalOnlyCookiesTxtExporterExtension"),
+      "3. " + t(lang, "uiSaveTheFileSomewherePrivateThenSetYoutube_cookies_file"),
       "",
       "```bat",
       "yt-dlp --cookies \"C:\\path\\www.youtube.com_cookies.txt\" --simulate \"https://youtu.be/VIDEO_ID\"",
       "```",
       "",
-      text(lang, "If you use browser cookies directly:", "Nếu dùng cookie trực tiếp từ trình duyệt:"),
+      t(lang, "uiIfYouUseBrowserCookiesDirectly"),
       "",
       "```env",
       "YOUTUBE_COOKIES_FROM_BROWSER=firefox",
       "```",
       "",
-      text(lang, "Firefox is usually more reliable than Chrome on Windows because Chrome can lock its cookie database while running.", "Firefox thường ổn định hơn Chrome trên Windows vì Chrome có thể khóa database cookie khi đang chạy."),
+      t(lang, "uiFirefoxIsUsuallyMoreReliableThanChromeOn"),
       "",
-      text(lang, "When YouTube reports n challenge / only images available:", "Khi YouTube báo n challenge / chỉ có image format:"),
+      t(lang, "uiWhenYoutubeReportsNChallengeOnlyImagesAvailable"),
       "",
       "```env",
       "YOUTUBE_JS_RUNTIME=node",
       "YOUTUBE_REMOTE_COMPONENTS=ejs:github",
       "```",
       "",
-      text(lang, "Security note: cookies.txt is equivalent to a temporary login token. Do not upload, share, or commit it. This app stores only the path/settings; it does not ship a custom cookie-reading extension.", "Lưu ý bảo mật: cookies.txt tương đương token đăng nhập tạm thời. Không upload, không chia sẻ, không commit. App chỉ lưu đường dẫn/cấu hình; không phát hành extension tự đọc cookie."),
+      t(lang, "uiSecurityNoteCookiesTxtIsEquivalentToA"),
       "",
-      text(lang, "Optional .env overrides:", "Có thể override trong .env:"),
+      t(lang, "uiOptionalEnvOverrides"),
       "",
       "```env",
       "YOUTUBE_TOOLS_PYTHON=python",

@@ -25,7 +25,7 @@ import {
   type AgentVideoPublishTarget,
   type AgentWorkflowStageId,
 } from "@/lib/aiVideoAgentApi";
-import { text } from "@/lib/i18n";
+import { t, tf } from "@/lib/i18n";
 import { getElevenLabsConfig, getPiperModels, getRvcApplioConfig, getSupertonicConfig, getVieneuConfig, type ElevenLabsConfig, type PiperModel, type RvcApplioConfig, type SupertonicConfig, type VieneuConfig } from "@/lib/voiceApi";
 import { getPublishJobs, type PublishJob } from "@/lib/publishQueueApi";
 import { AgentFlowGraph } from "@/features/ai-video-agent/components/AgentFlowGraph";
@@ -75,7 +75,7 @@ export default function AiVideoAgent({ lockedKind, pageTitle, pageDescription, a
     return channelsFromKeys(publishOptions, selectedPublishChannelKeys).filter((channel) => targets.includes(channel.platform));
   }, [publishOptions, selectedPublishChannelKeys, form.publishTargets]);
   const publishChannelWarning = form.autoCreatePublishJobs && !selectedPublishChannels.length
-    ? text(lang, "Select at least one channel before queueing publish jobs.", "Hãy chọn ít nhất một kênh trước khi tạo publish job.")
+    ? t(lang, "uiSelectAtLeastOneChannelBeforeQueueingPublish")
     : "";
   const lockedForm = useMemo(() => enforceLockedForm(form, lockedKind), [form, lockedKind]);
 
@@ -134,9 +134,9 @@ export default function AiVideoAgent({ lockedKind, pageTitle, pageDescription, a
     try {
       const nextPlan = await createAgentVideoPlan(lockedForm);
       setPlan(nextPlan);
-      toast.success(text(lang, "Plan created", "Đã tạo plan"));
+      toast.success(t(lang, "uiPlanCreated"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, "Could not create plan", "Không tạo được plan"));
+      toast.error(error instanceof Error ? error.message : t(lang, "uiCouldNotCreatePlan"));
     } finally {
       setLoadingPlan(false);
     }
@@ -154,7 +154,7 @@ export default function AiVideoAgent({ lockedKind, pageTitle, pageDescription, a
       started = true;
       startJobInBackground(job.id, () => setRunning(false));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, "Could not run agent", "Không chạy được agent"));
+      toast.error(error instanceof Error ? error.message : t(lang, "uiCouldNotRunAgent"));
     } finally {
       if (!started) setRunning(false);
     }
@@ -165,9 +165,9 @@ export default function AiVideoAgent({ lockedKind, pageTitle, pageDescription, a
       if (publishChannelWarning) { toast.error(publishChannelWarning); return; }
       const job = await createAgentVideoJob({ ...lockedForm, publishChannels: lockedForm.autoCreatePublishJobs ? selectedPublishChannels : [], plan: plan || undefined });
       setJobs((current) => [job, ...current]);
-      toast.success(text(lang, "Draft job saved", "Đã lưu job nháp"));
+      toast.success(t(lang, "uiDraftJobSaved"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, "Could not save job", "Không lưu được job"));
+      toast.error(error instanceof Error ? error.message : t(lang, "uiCouldNotSaveJob"));
     }
   }
 
@@ -175,10 +175,10 @@ export default function AiVideoAgent({ lockedKind, pageTitle, pageDescription, a
     setRunning(true);
     try {
       const result = await runDueAgentVideoJobs();
-      toast.success(text(lang, `Ran ${result.ran} due jobs`, `Đã chạy ${result.ran} job tới lịch`));
+      toast.success(tf(lang, "uiRanDueJobs", { count: result.ran }));
       await refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, "Could not run due jobs", "Không chạy được job tới lịch"));
+      toast.error(error instanceof Error ? error.message : t(lang, "uiCouldNotRunDueJobs"));
     } finally {
       setRunning(false);
     }
@@ -191,7 +191,7 @@ export default function AiVideoAgent({ lockedKind, pageTitle, pageDescription, a
       setPipelineTab("flow");
       startJobInBackground(job.id, () => setBusyJobId(""));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, "Could not run job", "Không chạy được job"));
+      toast.error(error instanceof Error ? error.message : t(lang, "uiCouldNotRunJob"));
       setBusyJobId("");
     }
   }
@@ -200,7 +200,7 @@ export default function AiVideoAgent({ lockedKind, pageTitle, pageDescription, a
     window.setTimeout(() => {
       runAgentVideoJobInBackground(jobId)
         .then((result) => setJobs((current) => [result, ...current.filter((item) => item.id !== result.id)]))
-        .catch((error) => toast.error(error instanceof Error ? error.message : text(lang, "Could not run job", "Không chạy được job")))
+        .catch((error) => toast.error(error instanceof Error ? error.message : t(lang, "uiCouldNotRunJob")))
         .finally(() => {
           void pollJobUntilDone(jobId).finally(onDone);
           refresh();
@@ -236,7 +236,7 @@ export default function AiVideoAgent({ lockedKind, pageTitle, pageDescription, a
         ...step,
         status: "running",
         progress: Math.max(step.progress || 0, 8),
-        message: step.message || text(lang, "Starting...", "Đang bắt đầu..."),
+        message: step.message || t(lang, "uiStarting"),
         startedAtMs: step.startedAtMs || now,
         updatedAtMs: now,
       } : step),
@@ -274,7 +274,7 @@ export default function AiVideoAgent({ lockedKind, pageTitle, pageDescription, a
     const options = getAgentPublishChannelOptions();
     setPublishOptions(options);
     setSelectedPublishChannelKeys((current) => current.filter((key) => options.some((option) => option.key === key && !option.disabled)));
-    toast.success(text(lang, "Channel list refreshed", "Đã tải lại danh sách kênh"));
+    toast.success(t(lang, "uiChannelListRefreshed"));
   }
 
   function togglePublishChannel(key: string, enabled: boolean) {
@@ -295,15 +295,15 @@ export default function AiVideoAgent({ lockedKind, pageTitle, pageDescription, a
             <Badge variant="secondary" className="gap-1"><Bot className="h-3.5 w-3.5" />{agentBadge || "Local Agent"}</Badge>
             <Badge variant="outline">Create → Publish → Engage → Monetize</Badge>
           </div>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight">{pageTitle ? pageTitle[lang] : text(lang, "AI Video Agent Flow", "AI Video Agent Flow")}</h1>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight">{pageTitle ? pageTitle[lang] : t(lang, "uiAiVideoAgentFlow")}</h1>
           {pageDescription ? <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{pageDescription[lang]}</p> : null}
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" asChild>
-            <Link to="/jobs"><ListChecks className="mr-2 h-4 w-4" />{text(lang, "Job manager", "Quản lý job")}</Link>
+            <Link to="/jobs"><ListChecks className="mr-2 h-4 w-4" />{t(lang, "uiJobManager")}</Link>
           </Button>
           <Button variant="outline" onClick={handleRunDue} disabled={fullAgentRunning}>
-            {fullAgentRunning ? <SystemLoader className="mr-2 h-4 w-4" /> : <RefreshCcw className="mr-2 h-4 w-4" />}{text(lang, "Run scheduled", "Chạy job tới lịch")}
+            {fullAgentRunning ? <SystemLoader className="mr-2 h-4 w-4" /> : <RefreshCcw className="mr-2 h-4 w-4" />}{t(lang, "uiRunScheduled")}
           </Button>
         </div>
       </div>
@@ -342,8 +342,8 @@ export default function AiVideoAgent({ lockedKind, pageTitle, pageDescription, a
         <aside className="min-w-0">
           <Card className="sticky top-4 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]">
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 p-3">
-              <div className={settingsOpen ? "min-w-0 transition-all duration-300" : "pointer-events-none w-0 min-w-0 -translate-x-2 overflow-hidden opacity-0 transition-all duration-300"}><CardTitle className="text-base">{text(lang, "Agent settings", "Thiết lập Agent")}</CardTitle><CardDescription>{text(lang, "Local backend controls.", "Điều khiển backend local.")}</CardDescription></div>
-              <Button type="button" variant="ghost" size="icon" onClick={() => setSettingsOpen((open) => !open)} aria-label={text(lang, "Toggle settings panel", "Thu gọn/mở panel thiết lập")}>
+              <div className={settingsOpen ? "min-w-0 transition-all duration-300" : "pointer-events-none w-0 min-w-0 -translate-x-2 overflow-hidden opacity-0 transition-all duration-300"}><CardTitle className="text-base">{t(lang, "uiAgentSettings")}</CardTitle><CardDescription>{t(lang, "uiLocalBackendControls")}</CardDescription></div>
+              <Button type="button" variant="ghost" size="icon" onClick={() => setSettingsOpen((open) => !open)} aria-label={t(lang, "uiToggleSettingsPanel")}>
                 {settingsOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
               </Button>
             </CardHeader>

@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { YoutubeUploadHistoryCard } from "@/features/youtube-channel/components/YoutubeUploadHistoryCard";
 import type { AgentVideoPublishChannel } from "@/lib/aiVideoAgentApi";
-import { text, type Lang } from "@/lib/i18n";
+import { t, type Lang  } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -28,7 +28,7 @@ export function AgentSelectedChannelVideos({ channels, lang }: Props) {
   if (!channels.length) {
     return (
       <Card className="border-dashed p-6 text-center text-sm text-muted-foreground">
-        {text(lang, "No selected channels.", "Chưa chọn kênh.")}
+        {t(lang, "uiNoSelectedChannels")}
       </Card>
     );
   }
@@ -36,7 +36,7 @@ export function AgentSelectedChannelVideos({ channels, lang }: Props) {
   if (!youtubeChannels.length) {
     return (
       <Card className="border-dashed p-6 text-center text-sm text-muted-foreground">
-        {text(lang, "YouTube only.", "Chỉ hỗ trợ YouTube.")}
+        {t(lang, "uiYoutubeOnly")}
       </Card>
     );
   }
@@ -46,15 +46,15 @@ export function AgentSelectedChannelVideos({ channels, lang }: Props) {
       <div className="border-b p-4">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="font-semibold">{text(lang, "Selected channel videos", "Video của kênh sẽ đăng")}</h2>
+            <h2 className="font-semibold">{t(lang, "uiSelectedChannelVideos")}</h2>
           </div>
-          <Badge variant="secondary">{youtubeChannels.length} {text(lang, "YouTube channels", "kênh YouTube")}</Badge>
+          <Badge variant="secondary">{youtubeChannels.length} {t(lang, "uiYoutubeChannels")}</Badge>
         </div>
       </div>
       <div className="grid gap-0 lg:grid-cols-[300px_minmax(0,1fr)]">
         <aside className="border-b bg-muted/20 p-3 lg:border-b-0 lg:border-r">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {text(lang, "Selected channels", "Kênh đã chọn")}
+            {t(lang, "uiSelectedChannels")}
           </p>
           <div className="max-h-[520px] space-y-2 overflow-y-auto pr-1">
             {youtubeChannels.map((channel) => {
@@ -72,7 +72,7 @@ export function AgentSelectedChannelVideos({ channels, lang }: Props) {
                       <p className="truncate text-sm font-semibold">{channel.title}</p>
                       <p className="truncate text-xs text-muted-foreground">YouTube · {channel.id}</p>
                     </div>
-                    {active ? <Badge className="shrink-0">{text(lang, "Active", "Đang xem")}</Badge> : null}
+                    {active ? <Badge className="shrink-0">{t(lang, "uiActive")}</Badge> : null}
                   </div>
                 </button>
               );

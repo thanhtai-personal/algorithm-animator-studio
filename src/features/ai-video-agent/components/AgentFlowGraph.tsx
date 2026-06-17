@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { usePersistedFlowLayout } from "@/features/ai-video-agent/hooks/usePersistedFlowLayout";
 import type { AgentVideoForm, AgentVideoJob, AgentWorkflowStageId } from "@/lib/aiVideoAgentApi";
-import { text, type Lang } from "@/lib/i18n";
+import { t, type Lang  } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 type FlowNodeKind = "stage" | "condition" | "branch" | "terminal" | "data" | "store" | "external"; type FlowMode = "process" | "data";
@@ -108,15 +108,15 @@ export function AgentFlowGraph({
     <Card className="kai-agent-flow-card overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <CardTitle className="text-base">{text(lang, "Live React Flow pipeline", "Sơ đồ luồng chạy real-time")}</CardTitle>
+          <CardTitle className="text-base">{t(lang, "uiLiveReactFlowPipeline")}</CardTitle>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <Badge variant={job?.status === "success" ? "default" : job?.status === "failed" ? "destructive" : "secondary"}>{job?.status || "idle"}</Badge>
             {runningStep ? <span className="flex items-center gap-1 text-[var(--kai-agent-active)]"><span className="h-2 w-2 animate-pulse rounded-full bg-[var(--kai-agent-active)] shadow-[0_0_10px_var(--kai-agent-active)]" />{runningStep.label}</span> : null}
             <span>{Math.round(job?.progress || 0)}%</span>
-            <SegmentedTabs value={mode} options={[{ value: "process", label: text(lang, "Process flow", "Sơ đồ xử lý") }, { value: "data", label: text(lang, "Data flow", "Sơ đồ dữ liệu") }]} onValueChange={setMode} aria-label={text(lang, "Flow chart mode", "Chế độ sơ đồ")} className="h-9 bg-card/70" />
-            {dirty ? <button type="button" className="rounded-full border border-primary bg-primary px-3 py-1 font-medium text-primary-foreground" onClick={saveLayout}>{text(lang, "Save layout", "Lưu layout")}</button> : null}
-            <button type="button" className="rounded-full border px-3 py-1 font-medium hover:bg-muted" onClick={resetLayout}>{text(lang, "Reset layout", "Reset layout")}</button>
-            <button type="button" className="underline-offset-4 hover:underline" onClick={() => onSelectStage("all")}>{text(lang, "All logs", "Tất cả log")}</button>
+            <SegmentedTabs value={mode} options={[{ value: "process", label: t(lang, "uiProcessFlow") }, { value: "data", label: t(lang, "uiDataFlow") }]} onValueChange={setMode} aria-label={t(lang, "uiFlowChartMode")} className="h-9 bg-card/70" />
+            {dirty ? <button type="button" className="rounded-full border border-primary bg-primary px-3 py-1 font-medium text-primary-foreground" onClick={saveLayout}>{t(lang, "uiSaveLayout")}</button> : null}
+            <button type="button" className="rounded-full border px-3 py-1 font-medium hover:bg-muted" onClick={resetLayout}>{t(lang, "uiResetLayout")}</button>
+            <button type="button" className="underline-offset-4 hover:underline" onClick={() => onSelectStage("all")}>{t(lang, "uiAllLogs")}</button>
           </div>
         </div>
       </CardHeader>

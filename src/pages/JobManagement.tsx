@@ -13,7 +13,7 @@ import {
   runAgentVideoJobInBackground,
   type AgentVideoJob,
 } from "@/lib/aiVideoAgentApi";
-import { readSystemLang, text, type Lang } from "@/lib/i18n";
+import { t, readSystemLang, type Lang  } from "@/lib/i18n";
 import {
   cancelPublishJob,
   getPublishJobs,
@@ -42,7 +42,7 @@ export default function JobManagement() {
       setAgentJobs(nextAgentJobs);
       setPublishJobs(nextPublishJobs);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, "Could not load jobs", "Không tải được job"));
+      toast.error(error instanceof Error ? error.message : t(lang, "uiCouldNotLoadJobs"));
     } finally {
       setLoading(false);
     }
@@ -67,7 +67,7 @@ export default function JobManagement() {
       await run();
       await refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, "Job action failed", "Thao tác job thất bại"));
+      toast.error(error instanceof Error ? error.message : t(lang, "uiJobActionFailed"));
     } finally {
       setBusy("");
     }
@@ -80,35 +80,35 @@ export default function JobManagement() {
           <div>
             <h1 className="flex items-center gap-2 text-2xl font-black">
               <ListChecks className="h-6 w-6 text-primary" />
-              {text(lang, "Job Manager", "Quản lý job")}
+              {t(lang, "uiJobManager2")}
             </h1>
             <p className="text-sm text-muted-foreground">
-              {text(lang, "Track agent jobs and publish queue jobs.", "Theo dõi AI agent job và publish queue job.")}
+              {t(lang, "uiTrackAgentJobsAndPublishQueueJobs")}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => void refresh()} disabled={loading || Boolean(busy)}>
               {loading ? <SystemLoader className="h-4 w-4" /> : <RefreshCcw className="h-4 w-4" />}
-              {text(lang, "Refresh", "Tải lại")}
+              {t(lang, "uiRefresh")}
             </Button>
             <Button onClick={() => void withBusy("publish-run-due", async () => { await runDuePublishJobs(); })} disabled={Boolean(busy)}>
               {busy === "publish-run-due" ? <SystemLoader className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              {text(lang, "Run due publish jobs", "Chạy publish job tới lịch")}
+              {t(lang, "uiRunDuePublishJobs")}
             </Button>
           </div>
         </header>
 
         <section className="grid gap-3 md:grid-cols-3">
-          <MetricCard label={text(lang, "Total jobs", "Tổng job")} value={summary.total} />
-          <MetricCard label={text(lang, "Active", "Đang chạy/chờ")} value={summary.active} />
-          <MetricCard label={text(lang, "Failed", "Lỗi")} value={summary.failed} tone={summary.failed ? "danger" : "default"} />
+          <MetricCard label={t(lang, "uiTotalJobs")} value={summary.total} />
+          <MetricCard label={t(lang, "uiActive")} value={summary.active} />
+          <MetricCard label={t(lang, "uiFailed")} value={summary.failed} tone={summary.failed ? "danger" : "default"} />
         </section>
 
         <section className="grid gap-5 xl:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>{text(lang, "AI agent jobs", "AI agent job")}</CardTitle>
-              <CardDescription>{text(lang, "Video creation workflows.", "Luồng tạo video.")}</CardDescription>
+              <CardTitle>{t(lang, "uiAiAgentJobs")}</CardTitle>
+              <CardDescription>{t(lang, "uiVideoCreationWorkflows")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {loading ? <LoadingRows /> : null}
@@ -123,8 +123,8 @@ export default function JobManagement() {
                   message={job.currentStep || job.error}
                   busy={busy === `agent-${job.id}`}
                   actions={[
-                    { label: text(lang, "Run", "Chạy"), icon: Play, disabled: job.status === "running", onClick: () => withBusy(`agent-${job.id}`, async () => { await runAgentVideoJobInBackground(job.id); }) },
-                    { label: text(lang, "Cancel", "Hủy"), icon: XCircle, disabled: job.status !== "queued" && job.status !== "running", onClick: () => withBusy(`agent-${job.id}`, async () => { await cancelAgentVideoJob(job.id); }) },
+                    { label: t(lang, "uiRun"), icon: Play, disabled: job.status === "running", onClick: () => withBusy(`agent-${job.id}`, async () => { await runAgentVideoJobInBackground(job.id); }) },
+                    { label: t(lang, "uiCancel"), icon: XCircle, disabled: job.status !== "queued" && job.status !== "running", onClick: () => withBusy(`agent-${job.id}`, async () => { await cancelAgentVideoJob(job.id); }) },
                   ]}
                 />
               ))}
@@ -133,8 +133,8 @@ export default function JobManagement() {
 
           <Card>
             <CardHeader>
-              <CardTitle>{text(lang, "Publish queue", "Publish queue")}</CardTitle>
-              <CardDescription>{text(lang, "Scheduled and manual publish jobs.", "Job đăng theo lịch và thao tác tay.")}</CardDescription>
+              <CardTitle>{t(lang, "uiPublishQueue")}</CardTitle>
+              <CardDescription>{t(lang, "uiScheduledAndManualPublishJobs")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {loading ? <LoadingRows /> : null}
@@ -150,9 +150,9 @@ export default function JobManagement() {
                   resultUrl={job.resultUrl}
                   busy={busy === `publish-${job.id}`}
                   actions={[
-                    { label: text(lang, "Run", "Chạy"), icon: Play, disabled: job.status === "running" || job.status === "success", onClick: () => withBusy(`publish-${job.id}`, async () => { await runPublishJob(job.id); }) },
-                    { label: text(lang, "Retry", "Chạy lại"), icon: RotateCcw, disabled: job.status === "running", onClick: () => withBusy(`publish-${job.id}`, async () => { await retryPublishJob(job.id); }) },
-                    { label: text(lang, "Cancel", "Hủy"), icon: XCircle, disabled: job.status === "running" || job.status === "success" || job.status === "cancelled", onClick: () => withBusy(`publish-${job.id}`, async () => { await cancelPublishJob(job.id); }) },
+                    { label: t(lang, "uiRun"), icon: Play, disabled: job.status === "running" || job.status === "success", onClick: () => withBusy(`publish-${job.id}`, async () => { await runPublishJob(job.id); }) },
+                    { label: t(lang, "uiRetry"), icon: RotateCcw, disabled: job.status === "running", onClick: () => withBusy(`publish-${job.id}`, async () => { await retryPublishJob(job.id); }) },
+                    { label: t(lang, "uiCancel"), icon: XCircle, disabled: job.status === "running" || job.status === "success" || job.status === "cancelled", onClick: () => withBusy(`publish-${job.id}`, async () => { await cancelPublishJob(job.id); }) },
                   ]}
                 />
               ))}
@@ -239,9 +239,9 @@ function EmptyJobs({ lang }: { lang: Lang }) {
     <div className="grid min-h-32 place-items-center rounded-lg border border-dashed text-center text-sm text-muted-foreground">
       <div>
         <Bot className="mx-auto mb-2 h-5 w-5" />
-        <p>{text(lang, "No jobs yet.", "Chưa có job.")}</p>
+        <p>{t(lang, "uiNoJobsYet")}</p>
         <Button asChild className="mt-3" size="sm" variant="outline">
-          <Link to="/videos/agentic">{text(lang, "Create agent job", "Tạo agent job")}</Link>
+          <Link to="/videos/agentic">{t(lang, "uiCreateAgentJob")}</Link>
         </Button>
       </div>
     </div>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { text, type Lang } from "@/lib/i18n";
+import { t, type Lang } from "@/lib/i18n";
 import {
   MENU_FEATURE_LABELS,
   type MenuFeatureId,
@@ -13,42 +13,36 @@ import {
 import { SettingsProvidersTab } from "./SettingsProvidersTab";
 
 const FEATURE_GROUPS: Array<{
-  titleEn: string;
-  titleVi: string;
+  title: Record<Lang, string>;
   items: MenuFeatureId[];
 }> = [
   {
-    titleEn: "Algorithm channel screens",
-    titleVi: "Màn hình kênh thuật toán",
+    title: { en: "Algorithm channel screens", vi: "Màn hình kênh thuật toán" },
     items: ["algorithm-agentic", "algorithm-manual", "maze-pathfinding", "algorithm-long", "github-trending"],
   },
   {
-    titleEn: "Football commentary screens",
-    titleVi: "Màn hình bình luận bóng đá",
+    title: { en: "Football commentary screens", vi: "Màn hình bình luận bóng đá" },
     items: ["football-agentic", "football-manual"],
   },
   {
-    titleEn: "Story channel screens",
-    titleVi: "Màn hình kênh truyện",
+    title: { en: "Story channel screens", vi: "Màn hình kênh truyện" },
     items: ["story-agentic", "story-manual", "story-author", "story-review"],
   },
   {
-    titleEn: "Common video screens",
-    titleVi: "Màn hình video chung",
+    title: { en: "Common video screens", vi: "Màn hình video chung" },
     items: ["common-video-agentic", "common-video-manual", "text-to-speech", "youtube-tools"],
   },
   {
-    titleEn: "Management screens",
-    titleVi: "Màn hình quản lý",
+    title: { en: "Management screens", vi: "Màn hình quản lý" },
     items: ["jobs", "channel", "assets"],
   },
 ];
 
 type ToolsSection = "screens" | "providers";
 
-const TOOLS_SECTIONS: { id: ToolsSection; labelEn: string; labelVi: string; icon: typeof Eye }[] = [
-  { id: "screens", labelEn: "Screens", labelVi: "Màn hình", icon: Eye },
-  { id: "providers", labelEn: "Providers", labelVi: "Provider", icon: PlugZap },
+const TOOLS_SECTIONS: { id: ToolsSection; label: Record<Lang, string>; icon: typeof Eye }[] = [
+  { id: "screens", label: { en: "Screens", vi: "Màn hình" }, icon: Eye },
+  { id: "providers", label: { en: "Providers", vi: "Provider" }, icon: PlugZap },
 ];
 
 type SettingsModulesTabProps = {
@@ -68,22 +62,22 @@ export function SettingsModulesTab({ lang, settings, onChange }: SettingsModules
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{text(lang, "Modules", "Module")}</CardTitle>
+        <CardTitle>{t(lang, "uiModules")}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 lg:grid-cols-[auto_minmax(0,1fr)]">
           <aside className={`rounded-lg border border-border bg-muted/30 p-2 transition-[width] duration-200 ${menuCollapsed ? "w-[68px]" : "w-full lg:w-56"}`}>
             <div className="mb-2 flex items-center justify-between gap-2">
-              {!menuCollapsed ? <span className="px-2 text-xs font-semibold text-muted-foreground">{text(lang, "Modules", "Module")}</span> : null}
+              {!menuCollapsed ? <span className="px-2 text-xs font-semibold text-muted-foreground">{t(lang, "uiModules")}</span> : null}
               <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setMenuCollapsed((value) => !value)}>
                 {menuCollapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
               </Button>
             </div>
-            <nav className="grid gap-1" aria-label={text(lang, "Module settings", "Cài đặt module")}>
+            <nav className="grid gap-1" aria-label={t(lang, "uiModuleSettings")}>
               {TOOLS_SECTIONS.map((section) => {
                 const Icon = section.icon;
                 const selected = activeSection === section.id;
-                const label = text(lang, section.labelEn, section.labelVi);
+                const label = section.label[lang];
                 return (
                   <button
                     key={section.id}
@@ -108,11 +102,11 @@ export function SettingsModulesTab({ lang, settings, onChange }: SettingsModules
           <div className="min-w-0">
             {activeSection === "screens" ? (
               <section className="space-y-6">
-                <h3 className="text-lg font-semibold">{text(lang, "Screen visibility", "Ẩn/hiện màn hình")}</h3>
+                <h3 className="text-lg font-semibold">{t(lang, "uiScreenVisibility")}</h3>
                 {FEATURE_GROUPS.map((group) => (
-                  <section key={group.titleEn} className="space-y-3 rounded-xl border border-border/70 p-4">
+                  <section key={group.title.en} className="space-y-3 rounded-xl border border-border/70 p-4">
                     <div>
-                      <h4 className="font-semibold">{text(lang, group.titleEn, group.titleVi)}</h4>
+                      <h4 className="font-semibold">{group.title[lang]}</h4>
                     </div>
                     <div className="grid gap-3 md:grid-cols-2">
                       {group.items.map((id) => {
@@ -121,7 +115,7 @@ export function SettingsModulesTab({ lang, settings, onChange }: SettingsModules
                           <div key={id} className="flex items-start justify-between gap-4 rounded-lg border bg-card/40 p-3">
                             <div className="min-w-0">
                               <Label htmlFor={`menu-feature-${id}`} className="font-medium">
-                                {text(lang, label.en, label.vi)}
+                                {label[lang]}
                               </Label>
                             </div>
                             <Switch

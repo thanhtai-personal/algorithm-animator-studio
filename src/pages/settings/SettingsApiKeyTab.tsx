@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { t, text, type Lang } from "@/lib/i18n";
+import { t, type Lang  } from "@/lib/i18n";
 import { SecretInput } from "./SettingsFields";
 import type { SettingsForm, SettingsFormKey } from "./SettingsTypes";
 
@@ -79,7 +79,7 @@ function AgentApiFields(props: SettingsApiKeyTabProps) {
   return (
     <div className="space-y-5">
       <div className="space-y-2">
-        <Label>{text(props.lang, "Agent text provider", "Provider text cho Agent")}</Label>
+        <Label>{t(props.lang, "uiAgentTextProvider")}</Label>
         <Select value={props.form.AI_AGENT_PROVIDER || "gemini"} onValueChange={(value) => props.onUpdateField("AI_AGENT_PROVIDER", value)}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -90,17 +90,17 @@ function AgentApiFields(props: SettingsApiKeyTabProps) {
       </div>
       <SecretInput
         id="ai-shorts-api-key"
-        label={text(props.lang, "Gemini API key", "Gemini API key")}
+        label={t(props.lang, "uiGeminiApiKey")}
         description=""
         value={props.form.AI_SHORTS_API_KEY}
         placeholder="AIza..."
         onChange={(value) => props.onUpdateField("AI_SHORTS_API_KEY", value)}
       />
-      <TextInput id="ai-agent-text-model" label={text(props.lang, "Gemini text model", "Gemini text model")} value={props.form.AI_AGENT_TEXT_MODEL} placeholder="gemini-2.0-flash" onChange={(value) => props.onUpdateField("AI_AGENT_TEXT_MODEL", value)} />
-      <TextInput id="ai-shorts-api-url" label={text(props.lang, "Gemini API base URL", "Gemini API base URL")} value={props.form.AI_SHORTS_API_URL} placeholder="https://generativelanguage.googleapis.com/v1beta" onChange={(value) => props.onUpdateField("AI_SHORTS_API_URL", value)} />
+      <TextInput id="ai-agent-text-model" label={t(props.lang, "uiGeminiTextModel")} value={props.form.AI_AGENT_TEXT_MODEL} placeholder="gemini-2.0-flash" onChange={(value) => props.onUpdateField("AI_AGENT_TEXT_MODEL", value)} />
+      <TextInput id="ai-shorts-api-url" label={t(props.lang, "uiGeminiApiBaseUrl")} value={props.form.AI_SHORTS_API_URL} placeholder="https://generativelanguage.googleapis.com/v1beta" onChange={(value) => props.onUpdateField("AI_SHORTS_API_URL", value)} />
       <SecretInput
         id="openai-api-key"
-        label={text(props.lang, "OpenAI / compatible API key", "OpenAI / compatible API key")}
+        label={t(props.lang, "uiOpenaiCompatibleApiKey")}
         description=""
         value={props.form.OPENAI_API_KEY}
         placeholder="sk-..."

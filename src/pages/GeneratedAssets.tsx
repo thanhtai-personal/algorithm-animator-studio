@@ -14,7 +14,7 @@ import {
   type GeneratedAsset,
   type GeneratedAssetKind,
 } from "@/lib/generatedAssetsApi";
-import { text, type Lang } from "@/lib/i18n";
+import { t, tf, type Lang } from "@/lib/i18n";
 
 const LOCKED_ASSETS_KEY = "kai-studio.generated-assets.locked";
 
@@ -39,23 +39,23 @@ export default function GeneratedAssets() {
       setAudio(data.audio);
       setVideo(data.video);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, "Could not load the file list.", "Không tải được danh sách file."));
+      toast.error(error instanceof Error ? error.message : t(lang, "uiCouldNotLoadTheFileList"));
     } finally {
       setLoading(false);
     }
   }
 
   async function removeOne(kind: GeneratedAssetKind, item: GeneratedAsset) {
-    if (!window.confirm(text(lang, `Delete file "${item.fileName}"?`, `Xóa file "${item.fileName}"?`))) return;
+    if (!window.confirm(tf(lang, "uiDeleteFileConfirm", { fileName: item.fileName }))) return;
     const key = `${kind}:${item.relativePath}`;
     setBusyKey(key);
     try {
       await deleteGeneratedAsset(kind, item.relativePath);
       if (kind === "audio") setAudio((current) => current.filter((asset) => asset.relativePath !== item.relativePath));
       else setVideo((current) => current.filter((asset) => asset.relativePath !== item.relativePath));
-      toast.success(text(lang, "File deleted.", "Đã xóa file."));
+      toast.success(t(lang, "uiFileDeleted"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, "Could not delete the file.", "Xóa file thất bại."));
+      toast.error(error instanceof Error ? error.message : t(lang, "uiCouldNotDeleteTheFile"));
     } finally {
       setBusyKey("");
     }
@@ -77,16 +77,16 @@ export default function GeneratedAssets() {
     const lockedPaths = (kind === "audio" ? audio : video)
       .filter((item) => lockedKeys.has(assetLockKey(kind, item.relativePath)))
       .map((item) => item.relativePath);
-    if (!window.confirm(text(lang, `Delete all generated ${label} files?`, `Xóa toàn bộ file ${label} đã tạo?`))) return;
+    if (!window.confirm(tf(lang, "uiDeleteAllGeneratedFilesConfirm", { label }))) return;
     setBusyKey(`${kind}:all`);
     try {
       const result = await deleteGeneratedAssets(kind, lockedPaths);
       if (kind === "audio") setAudio((current) => current.filter((item) => lockedPaths.includes(item.relativePath)));
       else setVideo((current) => current.filter((item) => lockedPaths.includes(item.relativePath)));
-      const lockedText = lockedPaths.length ? text(lang, ` ${lockedPaths.length} locked file(s) were kept.`, ` Đã giữ lại ${lockedPaths.length} file đang khóa.`) : "";
-      toast.success(text(lang, `Deleted ${result.deleted} ${label} file(s).`, `Đã xóa ${result.deleted} file ${label}.`) + lockedText);
+      const lockedText = lockedPaths.length ? tf(lang, "uiLockedFilesKept", { count: lockedPaths.length }) : "";
+      toast.success(tf(lang, "uiDeletedGeneratedFiles", { count: result.deleted, label }) + lockedText);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : text(lang, `Could not delete all ${label} files.`, `Xóa toàn bộ ${label} thất bại.`));
+      toast.error(error instanceof Error ? error.message : tf(lang, "uiCouldNotDeleteAllGeneratedFiles", { label }));
     } finally {
       setBusyKey("");
     }
@@ -97,23 +97,23 @@ export default function GeneratedAssets() {
       <section className="mx-auto max-w-7xl space-y-4">
         <Card className="flex flex-col gap-3 border-border/70 p-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-xl font-bold">{text(lang, "Files Management", "Quản lý file đã tạo")}</h1>
-            <p className="text-sm text-muted-foreground">{text(lang, "View, download, delete individual files, or clear all generated voice/video files on the server.", "Xem, tải xuống, xóa từng file hoặc xóa toàn bộ voice/video trên server.")}</p>
+            <h1 className="text-xl font-bold">{t(lang, "uiFilesManagement")}</h1>
+            <p className="text-sm text-muted-foreground">{t(lang, "uiViewDownloadDeleteIndividualFilesOrClearAll")}</p>
           </div>
           <Button variant="outline" onClick={refresh} disabled={loading}>
-            <RefreshCcw className="mr-2 h-4 w-4" /> {text(lang, "Refresh", "Tải lại")}
+            <RefreshCcw className="mr-2 h-4 w-4" /> {t(lang, "uiRefresh")}
           </Button>
         </Card>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <SummaryCard title={text(lang, "Voice", "Voice")} count={audio.length} size={totals.audioSize} icon={<FileAudio className="h-5 w-5 text-emerald-300" />} />
-          <SummaryCard title={text(lang, "Video", "Video")} count={video.length} size={totals.videoSize} icon={<FileVideo className="h-5 w-5 text-sky-300" />} />
+          <SummaryCard title={t(lang, "uiVoice")} count={audio.length} size={totals.audioSize} icon={<FileAudio className="h-5 w-5 text-emerald-300" />} />
+          <SummaryCard title={t(lang, "uiVideo")} count={video.length} size={totals.videoSize} icon={<FileVideo className="h-5 w-5 text-sky-300" />} />
         </div>
 
         <Tabs defaultValue="video" className="space-y-4">
           <TabsList className="grid w-full grid-cols-2 md:w-[420px]">
-            <TabsTrigger value="video">{text(lang, "Video", "Video")} ({video.length})</TabsTrigger>
-            <TabsTrigger value="audio">{text(lang, "Voice", "Voice")} ({audio.length})</TabsTrigger>
+            <TabsTrigger value="video">{t(lang, "uiVideo")} ({video.length})</TabsTrigger>
+            <TabsTrigger value="audio">{t(lang, "uiVoice")} ({audio.length})</TabsTrigger>
           </TabsList>
           <TabsContent value="video">
             <AssetList lang={lang} kind="video" items={video} loading={loading} busyKey={busyKey} lockedKeys={lockedKeys} onDelete={removeOne} onDeleteAll={removeAll} onToggleLocked={toggleLocked} />
@@ -157,16 +157,16 @@ function AssetList(props: {
     <Card className="space-y-4 border-border/70 p-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="font-semibold">{props.kind === "audio" ? text(props.lang, "Voice files", "File voice") : text(props.lang, "Video files", "File video")}</h2>
-          <p className="text-xs text-muted-foreground">{props.loading ? text(props.lang, "Loading...", "Đang tải...") : text(props.lang, `${props.items.length} generated file(s).`, `${props.items.length} file đã tạo.`)}</p>
+          <h2 className="font-semibold">{props.kind === "audio" ? t(props.lang, "uiVoiceFiles") : t(props.lang, "uiVideoFiles")}</h2>
+          <p className="text-xs text-muted-foreground">{props.loading ? t(props.lang, "uiLoading") : tf(props.lang, "uiGeneratedFileCount", { count: props.items.length })}</p>
         </div>
         <Button
           variant="destructive"
           disabled={!props.items.length || props.busyKey === `${props.kind}:all`}
-          title={text(props.lang, "Delete all unlocked media", "Xóa tất cả các media không khóa")}
+          title={t(props.lang, "uiDeleteAllUnlockedMedia")}
           onClick={() => props.onDeleteAll(props.kind)}
         >
-          <Trash2 className="mr-2 h-4 w-4" /> {text(props.lang, `Delete all ${label}`, `Xóa toàn bộ ${label}`)}
+          <Trash2 className="mr-2 h-4 w-4" /> {tf(props.lang, "uiDeleteAllLabel", { label })}
         </Button>
       </div>
 
@@ -180,7 +180,7 @@ function AssetList(props: {
               variant="outline"
               size="icon"
               className={locked ? "border-yellow-500/60 text-yellow-400 hover:text-yellow-300" : "border-red-500/50 text-red-400 hover:text-red-300"}
-              title={locked ? text(props.lang, "Locked: kept when deleting all", "Đã khóa: giữ lại khi xóa toàn bộ") : text(props.lang, "Unlocked: can be deleted by delete all", "Chưa khóa: sẽ bị xóa khi xóa toàn bộ")}
+              title={locked ? t(props.lang, "uiLockedKeptWhenDeletingAll") : t(props.lang, "uiUnlockedCanBeDeletedByDeleteAll")}
               onClick={() => props.onToggleLocked(props.kind, item)}
             >
               {locked ? <Lock className="h-4 w-4" /> : <LockOpen className="h-4 w-4" />}
@@ -196,11 +196,11 @@ function AssetList(props: {
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" asChild>
                 <a href={item.url} target="_blank" rel="noreferrer">
-                  <Download className="mr-2 h-4 w-4" /> {text(props.lang, "Open / download", "Mở / tải")}
+                  <Download className="mr-2 h-4 w-4" /> {t(props.lang, "uiOpenDownload")}
                 </a>
               </Button>
               <Button variant="destructive" size="sm" disabled={props.busyKey === `${props.kind}:${item.relativePath}`} onClick={() => props.onDelete(props.kind, item)}>
-                <Trash2 className="mr-2 h-4 w-4" /> {text(props.lang, "Delete", "Xóa")}
+                <Trash2 className="mr-2 h-4 w-4" /> {t(props.lang, "uiDelete")}
               </Button>
             </div>
           </div>
@@ -228,11 +228,11 @@ function writeLockedKeys(keys: Set<string>) {
 }
 
 function EmptyState({ label, lang }: { label: string; lang: Lang }) {
-  return <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">{text(lang, `No ${label} files on the server yet.`, `Chưa có file ${label} nào trên server.`)}</div>;
+  return <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">{tf(lang, "uiNoLabelFilesOnTheServerYet", { label })}</div>;
 }
 
 function assetKindLabel(lang: Lang, kind: GeneratedAssetKind) {
-  return kind === "audio" ? text(lang, "voice", "voice") : text(lang, "video", "video");
+  return kind === "audio" ? t(lang, "uiVoice2") : t(lang, "uiVideo2");
 }
 
 function formatBytes(value: number) {

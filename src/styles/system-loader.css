@@ -70,11 +70,11 @@
   position: relative;
   z-index: 1;
   display: grid;
-  height: 7.5rem;
-  width: 7.5rem;
+  height: 8.25rem;
+  width: 12.5rem;
   place-items: center;
   border: 1px solid hsl(var(--primary) / 0.32);
-  border-radius: 999px;
+  border-radius: 2rem;
   background: hsl(var(--background) / 0.72);
   box-shadow:
     0 0 0 1px hsl(var(--accent) / 0.12) inset,
@@ -82,12 +82,45 @@
   backdrop-filter: blur(18px);
 }
 
-.kai-page-loader-icon {
-  position: absolute;
-  height: 2.2rem;
-  width: 2.2rem;
+.kai-infinity-loader {
+  width: min(9.75rem, 76vw);
+  height: auto;
+  overflow: visible;
   color: hsl(var(--primary));
-  animation: kai-page-loader-spin 1.05s linear infinite;
+  filter:
+    drop-shadow(0 0 0.4rem hsl(var(--primary) / 0.48))
+    drop-shadow(0 0 1rem hsl(var(--accent) / 0.28));
+}
+
+.kai-infinity-loader-track,
+.kai-infinity-loader-segment {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.kai-infinity-loader-track {
+  stroke: hsl(var(--primary) / 0.14);
+  stroke-width: 10;
+}
+
+.kai-infinity-loader-segment {
+  stroke: currentColor;
+  stroke-width: 12;
+  stroke-dasharray: 12 88;
+  animation: kai-infinity-loader-flow 1.34s linear infinite;
+}
+
+.kai-infinity-loader-segment-b {
+  color: hsl(var(--accent));
+  opacity: 0.86;
+  animation-delay: -0.44s;
+}
+
+.kai-infinity-loader-segment-c {
+  color: hsl(38 96% 57%);
+  opacity: 0.78;
+  animation-delay: -0.88s;
 }
 
 .fantastic-mode .kai-section-loader,
@@ -109,5 +142,11 @@
 @keyframes kai-page-loader-spin {
   to {
     transform: rotate(1turn);
+  }
+}
+
+@keyframes kai-infinity-loader-flow {
+  to {
+    stroke-dashoffset: -100;
   }
 }

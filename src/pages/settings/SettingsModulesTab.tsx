@@ -18,7 +18,7 @@ const FEATURE_GROUPS: Array<{
 }> = [
   {
     title: { en: "Algorithm channel screens", vi: "Màn hình kênh thuật toán" },
-    items: ["algorithm-agentic", "algorithm-manual", "maze-pathfinding", "algorithm-long"],
+    items: ["algorithm-studio", "maze-pathfinding", "algorithm-long"],
   },
   {
     title: { en: "News channel screens", vi: "Màn hình kênh tin tức" },
@@ -26,11 +26,11 @@ const FEATURE_GROUPS: Array<{
   },
   {
     title: { en: "Story channel screens", vi: "Màn hình kênh truyện" },
-    items: ["story-agentic", "story-manual", "story-author", "story-review"],
+    items: ["story-studio", "story-author", "story-review"],
   },
   {
     title: { en: "Common video screens", vi: "Màn hình video chung" },
-    items: ["common-video-agentic", "common-video-manual", "text-to-speech", "youtube-tools"],
+    items: ["common-video", "text-to-speech", "youtube-tools"],
   },
   {
     title: { en: "Management screens", vi: "Màn hình quản lý" },

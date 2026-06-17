@@ -1,23 +1,15 @@
 export type MenuFeatureId =
-  | "algorithm-shorts"
-  | "algorithm-agentic"
-  | "algorithm-manual"
+  | "algorithm-studio"
   | "maze-pathfinding"
   | "algorithm-long"
   | "github-trending"
   | "football-commentary"
-  | "football-agentic"
-  | "football-manual"
-  | "story-video"
-  | "story-agentic"
-  | "story-manual"
+  | "story-studio"
   | "story-author"
   | "story-review"
-  | "common-video-agentic"
-  | "common-video-manual"
+  | "common-video"
   | "text-to-speech"
   | "youtube-tools"
-  | "mu-news"
   | "jobs"
   | "channel"
   | "assets";
@@ -28,42 +20,26 @@ export const MENU_FEATURE_SETTINGS_EVENT = "kai-studio:menu-feature-settings-cha
 const STORAGE_KEY = "kai-studio.menuFeatureSettings";
 
 export const DEFAULT_MENU_FEATURE_SETTINGS: MenuFeatureSettings = {
-  "algorithm-shorts": false,
-  "algorithm-agentic": false,
-  "algorithm-manual": false,
+  "algorithm-studio": false,
   "maze-pathfinding": false,
   "algorithm-long": false,
   "github-trending": false,
   "football-commentary": false,
-  "football-agentic": false,
-  "football-manual": false,
-  "story-video": false,
-  "story-agentic": false,
-  "story-manual": false,
+  "story-studio": false,
   "story-author": false,
   "story-review": false,
-  "common-video-agentic": true,
-  "common-video-manual": true,
+  "common-video": true,
   "text-to-speech": true,
   "youtube-tools": true,
-  "mu-news": false,
   jobs: true,
   channel: false,
   assets: true,
 };
 
 export const MENU_FEATURE_LABELS: Record<MenuFeatureId, { en: string; vi: string }> = {
-  "algorithm-shorts": {
-    en: "Algorithm Shorts",
-    vi: "Short thuật toán",
-  },
-  "algorithm-agentic": {
-    en: "Algorithm AI Agentic",
-    vi: "AI Agentic thuật toán",
-  },
-  "algorithm-manual": {
-    en: "Algorithm Manual Create",
-    vi: "Tạo thuật toán thủ công",
+  "algorithm-studio": {
+    en: "Algorithm Video",
+    vi: "Video thuật toán",
   },
   "maze-pathfinding": {
     en: "Maze Pathfinding",
@@ -81,25 +57,9 @@ export const MENU_FEATURE_LABELS: Record<MenuFeatureId, { en: string; vi: string
     en: "Football Commentary",
     vi: "Bình luận bóng đá",
   },
-  "football-agentic": {
-    en: "Football AI Agentic",
-    vi: "AI Agentic bóng đá",
-  },
-  "football-manual": {
-    en: "Football Manual Create",
-    vi: "Tạo bóng đá thủ công",
-  },
-  "story-video": {
+  "story-studio": {
     en: "Story Video",
     vi: "Video truyện",
-  },
-  "story-agentic": {
-    en: "Story AI Agentic",
-    vi: "AI Agentic truyện",
-  },
-  "story-manual": {
-    en: "Story Manual Create",
-    vi: "Tạo truyện thủ công",
   },
   "story-author": {
     en: "Story Author",
@@ -109,13 +69,9 @@ export const MENU_FEATURE_LABELS: Record<MenuFeatureId, { en: string; vi: string
     en: "Story Review",
     vi: "Review truyện",
   },
-  "common-video-agentic": {
-    en: "Common Video AI Agentic",
-    vi: "AI Agentic video chung",
-  },
-  "common-video-manual": {
-    en: "Common Video Manual Create",
-    vi: "Tạo video chung thủ công",
+  "common-video": {
+    en: "Create Video",
+    vi: "Tạo video",
   },
   "text-to-speech": {
     en: "Text to Speech",
@@ -124,10 +80,6 @@ export const MENU_FEATURE_LABELS: Record<MenuFeatureId, { en: string; vi: string
   "youtube-tools": {
     en: "YouTube Tools",
     vi: "Tải YouTube",
-  },
-  "mu-news": {
-    en: "MU News",
-    vi: "Tin tức MU",
   },
   jobs: {
     en: "Job Manager",
@@ -182,8 +134,25 @@ function sanitizeMenuFeatureSettings(values: Record<string, unknown>): MenuFeatu
   for (const key of Object.keys(output) as MenuFeatureId[]) {
     if (typeof values[key] === "boolean") output[key] = values[key];
   }
-  if (values["football-agentic"] === true || values["football-manual"] === true || values["mu-news"] === true) {
-    output["football-commentary"] = true;
+  if (hasLegacyKeys(values, ["algorithm-shorts", "algorithm-agentic", "algorithm-manual"])) {
+    output["algorithm-studio"] = legacyAnyEnabled(values, ["algorithm-shorts", "algorithm-agentic", "algorithm-manual"]);
+  }
+  if (hasLegacyKeys(values, ["story-video", "story-agentic", "story-manual"])) {
+    output["story-studio"] = legacyAnyEnabled(values, ["story-video", "story-agentic", "story-manual"]);
+  }
+  if (hasLegacyKeys(values, ["common-video-agentic", "common-video-manual"])) {
+    output["common-video"] = legacyAnyEnabled(values, ["common-video-agentic", "common-video-manual"]);
+  }
+  if (hasLegacyKeys(values, ["football-agentic", "football-manual", "mu-news"])) {
+    output["football-commentary"] = legacyAnyEnabled(values, ["football-agentic", "football-manual", "mu-news"]);
   }
   return output;
+}
+
+function hasLegacyKeys(values: Record<string, unknown>, keys: string[]) {
+  return keys.some((key) => typeof values[key] === "boolean");
+}
+
+function legacyAnyEnabled(values: Record<string, unknown>, keys: string[]) {
+  return keys.some((key) => values[key] === true);
 }

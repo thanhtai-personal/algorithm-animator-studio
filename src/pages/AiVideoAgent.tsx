@@ -40,12 +40,13 @@ type AiVideoAgentPageText = { en: string; vi: string };
 type AiVideoAgentProps = {
   lockedKind?: AgentVideoForm["kind"];
   initialPresetId?: string;
+  lockedPresetId?: string;
   pageTitle?: AiVideoAgentPageText;
   pageDescription?: AiVideoAgentPageText;
   agentBadge?: string;
 };
 
-export default function AiVideoAgent({ lockedKind, initialPresetId, pageTitle, pageDescription, agentBadge }: AiVideoAgentProps) {
+export default function AiVideoAgent({ lockedKind, initialPresetId, lockedPresetId, pageTitle, pageDescription, agentBadge }: AiVideoAgentProps) {
   const lang = useSystemLang();
   const [form, setForm] = useState<AgentVideoForm>(() => createInitialForm(lockedKind, initialPresetId));
   const [plan, setPlan] = useState<AgentVideoPlan | null>(null);
@@ -78,7 +79,7 @@ export default function AiVideoAgent({ lockedKind, initialPresetId, pageTitle, p
   const publishChannelWarning = form.autoCreatePublishJobs && !selectedPublishChannels.length
     ? t(lang, "uiSelectAtLeastOneChannelBeforeQueueingPublish")
     : "";
-  const lockedForm = useMemo(() => enforceLockedForm(form, lockedKind), [form, lockedKind]);
+  const lockedForm = useMemo(() => enforceLockedForm(form, lockedKind, lockedPresetId), [form, lockedKind, lockedPresetId]);
 
   useEffect(() => {
     refresh();
@@ -246,15 +247,19 @@ export default function AiVideoAgent({ lockedKind, initialPresetId, pageTitle, p
 
   function applyPreset(id: string) {
     if (lockedKind === "generic") {
-      setForm((current) => enforceLockedForm({ ...current, agentPreset: "custom", ...getAgentRenderDefaults({ kind: "generic", agentPreset: "custom", platform: current.platform }) }, lockedKind));
+      setForm((current) => enforceLockedForm({ ...current, agentPreset: "custom", ...getAgentRenderDefaults({ kind: "generic", agentPreset: "custom", platform: current.platform }) }, lockedKind, lockedPresetId));
+      return;
+    }
+    if (lockedPresetId) {
+      setForm((current) => enforceLockedForm({ ...current, agentPreset: lockedPresetId, ...getAgentRenderDefaults({ kind: lockedKind || current.kind, agentPreset: lockedPresetId, platform: current.platform }) }, lockedKind, lockedPresetId));
       return;
     }
     const preset = presets.find((item) => item.id === id);
     if (lockedKind && preset && preset.kind !== lockedKind) return;
     setForm((current) => {
       const currentKind = lockedKind || current.kind;
-      if (!preset) return enforceLockedForm({ ...current, kind: currentKind, agentPreset: id, ...getAgentRenderDefaults({ kind: currentKind, agentPreset: id, platform: current.platform }) }, lockedKind);
-      return enforceLockedForm({ ...current, ...preset, agentPreset: preset.id, ...getAgentRenderDefaults({ kind: preset.kind, agentPreset: preset.id, platform: preset.platform }) }, lockedKind);
+      if (!preset) return enforceLockedForm({ ...current, kind: currentKind, agentPreset: id, ...getAgentRenderDefaults({ kind: currentKind, agentPreset: id, platform: current.platform }) }, lockedKind, lockedPresetId);
+      return enforceLockedForm({ ...current, ...preset, agentPreset: preset.id, ...getAgentRenderDefaults({ kind: preset.kind, agentPreset: preset.id, platform: preset.platform }) }, lockedKind, lockedPresetId);
     });
   }
 
@@ -351,7 +356,7 @@ export default function AiVideoAgent({ lockedKind, initialPresetId, pageTitle, p
             <div aria-hidden={!settingsOpen} className={settingsOpen ? "max-h-[calc(100vh-130px)] opacity-100 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]" : "pointer-events-none max-h-0 translate-x-3 overflow-hidden opacity-0 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"}>
               <ScrollArea className="h-[calc(100vh-130px)]">
                 <CardContent className="space-y-4 p-3 pt-0">
-                  <AgentSettingsForm form={lockedForm} lang={lang} presets={presets} models={models} availableModels={availableModels} elevenConfig={elevenConfig} supertonicConfig={supertonicConfig} rvcApplioConfig={rvcApplioConfig} vieneuConfig={vieneuConfig} publishOptions={publishOptions} selectedPublishChannelKeys={selectedPublishChannelKeys} publishChannelWarning={publishChannelWarning} loadingPlan={loadingPlan} running={fullAgentRunning} lockedKind={lockedKind} applyPreset={applyPreset} applyContentKind={applyContentKind} update={update} togglePublishTarget={togglePublishTarget} togglePublishChannel={togglePublishChannel} refreshPublishChannels={refreshPublishChannels} handleCreatePlan={handleCreatePlan} handleRunNow={handleRunNow} handleSaveDraft={handleSaveDraft} />
+                  <AgentSettingsForm form={lockedForm} lang={lang} presets={presets} models={models} availableModels={availableModels} elevenConfig={elevenConfig} supertonicConfig={supertonicConfig} rvcApplioConfig={rvcApplioConfig} vieneuConfig={vieneuConfig} publishOptions={publishOptions} selectedPublishChannelKeys={selectedPublishChannelKeys} publishChannelWarning={publishChannelWarning} loadingPlan={loadingPlan} running={fullAgentRunning} lockedKind={lockedKind} lockedPresetId={lockedPresetId} applyPreset={applyPreset} applyContentKind={applyContentKind} update={update} togglePublishTarget={togglePublishTarget} togglePublishChannel={togglePublishChannel} refreshPublishChannels={refreshPublishChannels} handleCreatePlan={handleCreatePlan} handleRunNow={handleRunNow} handleSaveDraft={handleSaveDraft} />
                 </CardContent>
               </ScrollArea>
             </div>
@@ -377,15 +382,25 @@ function createInitialForm(lockedKind?: AgentVideoForm["kind"], initialPresetId?
       ...getAgentRenderDefaults({ kind: "algorithm", agentPreset: "github-trending", platform: "youtube-long" }),
     }, lockedKind);
   }
+  if (initialPresetId) {
+    return enforceLockedForm({
+      ...base,
+      agentPreset: initialPresetId,
+      ...getAgentRenderDefaults({ kind: lockedKind, agentPreset: initialPresetId, platform: base.platform }),
+    }, lockedKind, initialPresetId);
+  }
   return enforceLockedForm(base, lockedKind);
 }
 
-function enforceLockedForm(form: AgentVideoForm, lockedKind?: AgentVideoForm["kind"]): AgentVideoForm {
-  if (!lockedKind) return form;
+function enforceLockedForm(form: AgentVideoForm, lockedKind?: AgentVideoForm["kind"], lockedPresetId?: string): AgentVideoForm {
+  const withKind = lockedKind ? { ...form, kind: lockedKind } : form;
   if (lockedKind === "generic") {
-    return { ...form, kind: "generic", agentPreset: "custom" };
+    return { ...withKind, kind: "generic", agentPreset: "custom" };
   }
-  return { ...form, kind: lockedKind };
+  if (lockedPresetId) {
+    return { ...withKind, agentPreset: lockedPresetId };
+  }
+  return withKind;
 }
 
 function sleep(ms: number) { return new Promise((resolve) => window.setTimeout(resolve, ms)); }

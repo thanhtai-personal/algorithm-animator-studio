@@ -78,7 +78,7 @@ export const AGENT_PRESETS: AgentPreset[] = [
   {
     id: "github-trending",
     title: "Video GitHub trend Agent",
-    description: "Agent cho /algorithms/github-trending: nghiên cứu repo open source trending, chọn angle, script giới thiệu và metadata.",
+    description: "Agent cho kênh tin tức GitHub trending: nghiên cứu repo open source trending, chọn angle, script giới thiệu và metadata.",
     kind: "algorithm",
     platform: "youtube-long",
     language: "vi",

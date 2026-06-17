@@ -7,8 +7,8 @@
 }
 
 .fantastic-toggle-dot.is-on {
-    background: hsl(150 90% 45%);
-    box-shadow: 0 0 14px hsl(150 90% 45% / 0.7);
+    background: hsl(30 96% 56%);
+    box-shadow: 0 0 14px hsl(28 96% 54% / 0.72);
 }
 
 .kai-switch {
@@ -192,6 +192,16 @@
       0 7px 20px hsl(214 80% 5% / 0.36);
 }
 
+.fantastic-mode .kai-switch[data-state="checked"] .switch-thumb-indicator {
+    background:
+      radial-gradient(circle at 34% 24%, hsl(0 0% 100% / 0.96), transparent 0.44rem),
+      linear-gradient(135deg, hsl(36 100% 94%), hsl(28 96% 72%));
+    box-shadow:
+      0 0 0 1px hsl(0 0% 100% / 0.3),
+      0 0 18px hsl(28 96% 54% / 0.66),
+      0 7px 20px hsl(24 95% 42% / 0.38);
+}
+
 .fantastic-mode body {
     background:
       radial-gradient(circle at 18% -12%, hsl(var(--primary) / 0.26), transparent 34rem),
@@ -303,10 +313,10 @@ html:not(.dark).fantastic-mode .fantastic-toggle:hover {
 }
 
 html:not(.dark).fantastic-mode .fantastic-toggle-dot.is-on {
-    background: hsl(188 86% 42%);
+    background: hsl(30 96% 55%);
     box-shadow:
-      0 0 0 3px hsl(188 88% 52% / 0.14),
-      0 0 18px hsl(188 90% 48% / 0.42);
+      0 0 0 3px hsl(30 96% 55% / 0.16),
+      0 0 18px hsl(28 96% 54% / 0.46);
 }
 
 html:not(.dark).fantastic-mode .kai-surface {

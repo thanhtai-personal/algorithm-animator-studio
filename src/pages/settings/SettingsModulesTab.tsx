@@ -20,17 +20,27 @@ const FEATURE_GROUPS: Array<{
   {
     titleEn: "Algorithm channel screens",
     titleVi: "Màn hình kênh thuật toán",
-    items: ["algorithm-shorts", "maze-pathfinding", "algorithm-long", "github-trending"],
+    items: ["algorithm-agentic", "algorithm-manual", "maze-pathfinding", "algorithm-long", "github-trending"],
+  },
+  {
+    titleEn: "Football commentary screens",
+    titleVi: "Màn hình bình luận bóng đá",
+    items: ["football-agentic", "football-manual"],
   },
   {
     titleEn: "Story channel screens",
     titleVi: "Màn hình kênh truyện",
-    items: ["story-video", "story-author", "story-review"],
+    items: ["story-agentic", "story-manual", "story-author", "story-review"],
   },
   {
-    titleEn: "Publishing screens",
-    titleVi: "Màn hình publishing",
-    items: ["mu-news"],
+    titleEn: "Common video screens",
+    titleVi: "Màn hình video chung",
+    items: ["common-video-agentic", "common-video-manual", "text-to-speech", "youtube-tools"],
+  },
+  {
+    titleEn: "Management screens",
+    titleVi: "Màn hình quản lý",
+    items: ["jobs", "channel", "assets"],
   },
 ];
 

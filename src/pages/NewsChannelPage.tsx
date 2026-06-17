@@ -60,6 +60,7 @@ export default function NewsChannelPage({ channel, initialMode = "manual" }: New
               lockedKind="algorithm"
               initialPresetId="github-trending"
               lockedPresetId="github-trending"
+              autoPublishByDefault
               agentBadge="GitHub News Agent"
               pageTitle={{ en: "GitHub Trend AI Agentic", vi: "AI Agentic GitHub trend" }}
               pageDescription={{ en: "Generate news-style GitHub trending videos with the local agent flow.", vi: "Tạo video tin tức GitHub trending bằng local agent flow." }}
@@ -69,6 +70,7 @@ export default function NewsChannelPage({ channel, initialMode = "manual" }: New
               lockedKind="football"
               initialPresetId="mu-news"
               lockedPresetId="mu-news"
+              autoPublishByDefault
               agentBadge="Football News Agent"
               pageTitle={{ en: "Football Commentary AI Agentic", vi: "AI Agentic bình luận bóng đá" }}
               pageDescription={{ en: "Generate football commentary videos with voice, music, render and publish queue in one agent flow.", vi: "Tạo video bình luận bóng đá với voice, nhạc nền, render và publish queue trong một luồng agent." }}

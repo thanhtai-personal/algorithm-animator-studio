@@ -46,6 +46,7 @@ export default function StoryReviewChannelPage({ initialMode = "manual" }: Story
             lockedKind="story"
             initialPresetId="story-review"
             lockedPresetId="story-review"
+            autoPublishByDefault
             agentBadge="Story Review Agent"
             pageTitle={{ en: "Story Review AI Agentic", vi: "AI Agentic review truyện" }}
             pageDescription={{ en: "Generate low-spoiler story review videos with hook, recap, review angle, voice, render and metadata in one agent flow.", vi: "Tạo video review truyện ít spoil với hook, tóm tắt, góc đánh giá, voice, render và metadata trong một luồng agent." }}

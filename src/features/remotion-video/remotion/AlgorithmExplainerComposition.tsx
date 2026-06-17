@@ -10,6 +10,7 @@ export function AlgorithmExplainerComposition(rawProps: Partial<RemotionVideoInp
   const isPortrait = height > width;
   const progress = Math.min(1, Math.max(0, frame / Math.max(1, durationInFrames - 1)));
   const accent = props.accentColor;
+  const visualMode = getVisualMode(props);
 
   return (
     <AbsoluteFill style={{ background: props.primaryColor, color: "white", fontFamily: "Inter, Arial, sans-serif" }}>
@@ -25,7 +26,7 @@ export function AlgorithmExplainerComposition(rawProps: Partial<RemotionVideoInp
         <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 34 }}>
           <div style={{ opacity: introOpacity }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 16, border: `2px solid ${accent}88`, borderRadius: 999, padding: "12px 22px", color: accent, fontWeight: 800, fontSize: isPortrait ? 26 : 30 }}>
-              REMOTION ENGINE
+              {badgeLabel(visualMode)}
             </div>
             <h1 style={{ margin: "32px 0 0", fontSize: isPortrait ? 78 : 92, lineHeight: 1, fontWeight: 900, letterSpacing: -4 }}>{props.title}</h1>
             <p style={{ margin: "28px 0 0", maxWidth: 980, color: "#cbd5e1", fontSize: isPortrait ? 34 : 38, lineHeight: 1.25 }}>{props.subtitle}</p>
@@ -43,7 +44,7 @@ export function AlgorithmExplainerComposition(rawProps: Partial<RemotionVideoInp
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 26 }}>
-          <AnimatedBars data={props.data} accent={accent} progress={progress} isPortrait={isPortrait} />
+          <VisualPanel mode={visualMode} data={props.data} accent={accent} progress={progress} isPortrait={isPortrait} title={props.title} subtitle={props.subtitle} narration={props.narration} />
           <div style={{ minHeight: isPortrait ? 190 : 150, borderRadius: 28, padding: 28, background: "rgba(2,6,23,0.62)", border: "1px solid rgba(148,163,184,0.25)", fontSize: isPortrait ? 30 : 32, lineHeight: 1.3, color: "#e2e8f0" }}>
             {props.narration}
           </div>
@@ -58,6 +59,90 @@ export function AlgorithmExplainerComposition(rawProps: Partial<RemotionVideoInp
       </div>
     </AbsoluteFill>
   );
+}
+
+type VisualMode = "bars" | "maze" | "news" | "story";
+
+function getVisualMode(props: RemotionVideoInputProps): VisualMode {
+  if (props.template === "story-card") return "story";
+  if (props.template === "news-card") return "news";
+  return props.algorithmLabel.toLowerCase().includes("path") || props.title.toLowerCase().includes("maze") || props.title.toLowerCase().includes("mê cung") ? "maze" : "bars";
+}
+
+function badgeLabel(mode: VisualMode) {
+  if (mode === "maze") return "MAZE RACE ENGINE";
+  if (mode === "news") return "NEWS CARD ENGINE";
+  if (mode === "story") return "STORY REVIEW ENGINE";
+  return "ALGORITHM ENGINE";
+}
+
+function VisualPanel(props: { mode: VisualMode; data: number[]; accent: string; progress: number; isPortrait: boolean; title: string; subtitle: string; narration: string }) {
+  if (props.mode === "maze") return <MazePathVisual accent={props.accent} progress={props.progress} isPortrait={props.isPortrait} />;
+  if (props.mode === "news") return <NewsCardVisual accent={props.accent} progress={props.progress} isPortrait={props.isPortrait} title={props.title} subtitle={props.subtitle} />;
+  if (props.mode === "story") return <StoryCardVisual accent={props.accent} progress={props.progress} isPortrait={props.isPortrait} title={props.title} subtitle={props.subtitle} narration={props.narration} />;
+  return <AnimatedBars data={props.data} accent={props.accent} progress={props.progress} isPortrait={props.isPortrait} />;
+}
+
+function MazePathVisual(props: { accent: string; progress: number; isPortrait: boolean }) {
+  const walls = new Set([2, 3, 4, 10, 11, 12, 16, 18, 19, 24, 25, 26, 31, 33, 38, 39, 40]);
+  const path = [0, 7, 14, 21, 28, 35, 42, 43, 44, 45, 46, 47, 48];
+  const visiblePath = Math.max(1, Math.floor(path.length * props.progress));
+  return (
+    <div style={{ height: props.isPortrait ? 620 : 560, borderRadius: 36, padding: 34, background: "rgba(15,23,42,0.74)", border: "1px solid rgba(148,163,184,0.28)", boxShadow: "0 30px 90px rgba(0,0,0,0.35)", display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: props.isPortrait ? 11 : 13 }}>
+      {Array.from({ length: 49 }, (_, index) => {
+        const pathIndex = path.indexOf(index);
+        const onPath = pathIndex >= 0 && pathIndex < visiblePath;
+        const start = index === 0;
+        const end = index === 48;
+        return (
+          <div key={index} style={{ borderRadius: 16, background: walls.has(index) ? "#0f172a" : onPath ? props.accent : "rgba(148,163,184,0.22)", border: `2px solid ${onPath ? props.accent : "rgba(148,163,184,0.18)"}`, boxShadow: onPath ? `0 0 30px ${props.accent}88` : "none", display: "grid", placeItems: "center", color: start || end ? "#020617" : "white", fontWeight: 900, fontSize: props.isPortrait ? 26 : 30 }}>
+            {start ? "S" : end ? "E" : onPath ? "•" : ""}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function NewsCardVisual(props: { accent: string; progress: number; isPortrait: boolean; title: string; subtitle: string }) {
+  const pulse = 0.82 + props.progress * 0.18;
+  return (
+    <div style={{ minHeight: props.isPortrait ? 620 : 560, borderRadius: 36, padding: 34, background: "rgba(15,23,42,0.74)", border: "1px solid rgba(148,163,184,0.28)", boxShadow: "0 30px 90px rgba(0,0,0,0.35)", display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 26 }}>
+      <div style={{ display: "inline-flex", width: "fit-content", borderRadius: 999, padding: "12px 20px", background: `${props.accent}22`, color: props.accent, fontWeight: 900, fontSize: props.isPortrait ? 26 : 28 }}>BREAKING / TRENDING</div>
+      <div style={{ transform: `scale(${pulse})`, transformOrigin: "left center", borderRadius: 34, padding: 30, background: "rgba(2,6,23,0.72)", border: `2px solid ${props.accent}66` }}>
+        <div style={{ fontSize: props.isPortrait ? 46 : 54, lineHeight: 1.02, fontWeight: 900 }}>{shortText(props.title, 72)}</div>
+        <div style={{ marginTop: 22, color: "#cbd5e1", fontSize: props.isPortrait ? 28 : 30, lineHeight: 1.2 }}>{shortText(props.subtitle, 110)}</div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, color: "#e2e8f0", fontSize: props.isPortrait ? 22 : 24, fontWeight: 800 }}>
+        {["Context", "Impact", "CTA"].map((item) => <div key={item} style={{ borderRadius: 22, padding: "18px 14px", textAlign: "center", background: "rgba(148,163,184,0.14)", border: "1px solid rgba(148,163,184,0.22)" }}>{item}</div>)}
+      </div>
+    </div>
+  );
+}
+
+function StoryCardVisual(props: { accent: string; progress: number; isPortrait: boolean; title: string; subtitle: string; narration: string }) {
+  const cards = [
+    { label: "HOOK", text: props.title },
+    { label: "RECAP", text: props.subtitle },
+    { label: "WHY WATCH", text: props.narration },
+  ];
+  return (
+    <div style={{ minHeight: props.isPortrait ? 620 : 560, borderRadius: 36, padding: 34, background: "rgba(15,23,42,0.74)", border: "1px solid rgba(148,163,184,0.28)", boxShadow: "0 30px 90px rgba(0,0,0,0.35)", display: "flex", flexDirection: "column", justifyContent: "center", gap: 22 }}>
+      {cards.map((card, index) => {
+        const active = props.progress * cards.length >= index;
+        return (
+          <div key={card.label} style={{ borderRadius: 28, padding: 26, background: active ? `${props.accent}20` : "rgba(2,6,23,0.62)", border: `2px solid ${active ? props.accent : "rgba(148,163,184,0.22)"}`, transform: `translateX(${active ? 0 : 24}px)`, opacity: active ? 1 : 0.62 }}>
+            <div style={{ color: props.accent, fontWeight: 900, letterSpacing: 2, fontSize: props.isPortrait ? 20 : 22 }}>{card.label}</div>
+            <div style={{ marginTop: 12, color: "#f8fafc", fontWeight: 800, fontSize: props.isPortrait ? 30 : 34, lineHeight: 1.16 }}>{shortText(card.text, index === 2 ? 120 : 90)}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function shortText(value: string, max: number) {
+  return value.length > max ? `${value.slice(0, max - 1)}…` : value;
 }
 
 function AnimatedBars(props: { data: number[]; accent: string; progress: number; isPortrait: boolean }) {

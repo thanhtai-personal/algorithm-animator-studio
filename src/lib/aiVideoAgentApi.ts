@@ -67,6 +67,7 @@ export type AgentVideoJob = {
   input: AgentVideoForm & {
     agentPreset: string;
     autoCreatePublishJobs: boolean;
+    autoRunPublishJobs: boolean;
     publishTargets: AgentVideoPublishTarget[];
     publishChannels: AgentVideoPublishChannel[];
     publishScheduledAt: string;
@@ -124,6 +125,7 @@ export type AgentVideoForm = {
   renderBackgroundMusicVolume: number;
   agentPreset?: string;
   autoCreatePublishJobs?: boolean;
+  autoRunPublishJobs?: boolean;
   publishTargets?: AgentVideoPublishTarget[];
   publishChannels?: AgentVideoPublishChannel[];
   publishScheduledAt?: string;

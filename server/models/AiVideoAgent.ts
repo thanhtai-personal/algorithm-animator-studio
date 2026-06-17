@@ -100,6 +100,7 @@ export type CreateAgentVideoJobBody = CreateAgentVideoPlanBody & {
   runNow?: boolean;
   scheduledAt?: string;
   autoCreatePublishJobs?: boolean;
+  autoRunPublishJobs?: boolean;
   publishTargets?: AgentVideoPublishTarget[];
   publishChannels?: AgentVideoPublishChannel[];
   publishScheduledAt?: string;
@@ -164,6 +165,7 @@ export type AgentVideoJob = {
     renderVoiceVolume: number;
     renderBackgroundMusicVolume: number;
     autoCreatePublishJobs: boolean;
+    autoRunPublishJobs: boolean;
     publishTargets: AgentVideoPublishTarget[];
     publishChannels: AgentVideoPublishChannel[];
     publishScheduledAt: string;

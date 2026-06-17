@@ -46,6 +46,7 @@ export default function MazePathfindingPage({ initialMode = "manual" }: MazePath
             lockedKind="algorithm"
             initialPresetId="maze-pathfinding"
             lockedPresetId="maze-pathfinding"
+            autoPublishByDefault
             agentBadge="Maze Agent"
             pageTitle={{ en: "Maze Pathfinding AI Agentic", vi: "AI Agentic tìm đường mê cung" }}
             pageDescription={{ en: "Generate maze race/pathfinding videos with script, visuals, voice, render and publish queue in one agent flow.", vi: "Tạo video đua mê cung/tìm đường với script, visual, voice, render và publish queue trong một luồng agent." }}

@@ -44,11 +44,12 @@ type AiVideoAgentProps = {
   pageTitle?: AiVideoAgentPageText;
   pageDescription?: AiVideoAgentPageText;
   agentBadge?: string;
+  autoPublishByDefault?: boolean;
 };
 
-export default function AiVideoAgent({ lockedKind, initialPresetId, lockedPresetId, pageTitle, pageDescription, agentBadge }: AiVideoAgentProps) {
+export default function AiVideoAgent({ lockedKind, initialPresetId, lockedPresetId, pageTitle, pageDescription, agentBadge, autoPublishByDefault = false }: AiVideoAgentProps) {
   const lang = useSystemLang();
-  const [form, setForm] = useState<AgentVideoForm>(() => createInitialForm(lockedKind, initialPresetId));
+  const [form, setForm] = useState<AgentVideoForm>(() => createInitialForm(lockedKind, initialPresetId, autoPublishByDefault));
   const [plan, setPlan] = useState<AgentVideoPlan | null>(null);
   const [jobs, setJobs] = useState<AgentVideoJob[]>([]);
   const [publishJobs, setPublishJobs] = useState<PublishJob[]>([]);
@@ -367,9 +368,10 @@ export default function AiVideoAgent({ lockedKind, initialPresetId, lockedPreset
   );
 }
 
-function createInitialForm(lockedKind?: AgentVideoForm["kind"], initialPresetId?: string): AgentVideoForm {
-  if (!lockedKind) return DEFAULT_FORM;
-  const base = { ...DEFAULT_FORM, ...KIND_DEFAULTS[lockedKind], kind: lockedKind };
+function createInitialForm(lockedKind?: AgentVideoForm["kind"], initialPresetId?: string, autoPublishByDefault = false): AgentVideoForm {
+  const publishDefaults = autoPublishByDefault ? { autoCreatePublishJobs: true, autoRunPublishJobs: true } : {};
+  if (!lockedKind) return { ...DEFAULT_FORM, ...publishDefaults };
+  const base = { ...DEFAULT_FORM, ...KIND_DEFAULTS[lockedKind], ...publishDefaults, kind: lockedKind };
   const presetDefaults = initialPresetId ? getAgentPresetInitialDefaults(initialPresetId, lockedKind) : null;
   if (presetDefaults) return enforceLockedForm({ ...base, ...presetDefaults }, lockedKind, initialPresetId);
   if (initialPresetId) {

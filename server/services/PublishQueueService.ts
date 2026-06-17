@@ -23,7 +23,7 @@ export function createPublishJob(body: CreatePublishJobBody, envOverrides: Runti
   const now = Date.now();
   const platform = normalizePlatform(body.platform);
   const source = body.source || (body.videoRelativePath ? "generated-video" : "local-file");
-  const resolved = resolveSourcePath(source, body.videoRelativePath, body.localFilePath);
+  const resolved = resolveSourcePath(source, body.videoRelativePath, body.localFilePath, envOverrides);
   const scheduledAtMs = normalizeScheduledAt(body.scheduledAt);
   const status: PublishJobStatus = scheduledAtMs && scheduledAtMs > now ? "scheduled" : "queued";
   const title = String(body.title || resolved.sourceFileName || "Untitled video").trim();
@@ -216,9 +216,9 @@ export function getPublishAgentSuggestions(envOverrides: RuntimeEnvValues = {}):
   return suggestions;
 }
 
-export function getPublishJobFilePath(job: PublishJob) {
+export function getPublishJobFilePath(job: PublishJob, envOverrides: RuntimeEnvValues = {}) {
   if (job.source === "generated-video" && job.sourceRelativePath) {
-    return resolveGeneratedVideoPath(job.sourceRelativePath).absolutePath;
+    return resolveGeneratedVideoPath(job.sourceRelativePath, envOverrides).absolutePath;
   }
   if (job.source === "local-file" && job.sourceFilePath) {
     return job.sourceFilePath;
@@ -260,9 +260,9 @@ function writeHistory(items: PublishHistoryItem[], envOverrides: RuntimeEnvValue
   fs.writeFileSync(getHistoryFile(envOverrides), JSON.stringify(items, null, 2), "utf8");
 }
 
-function resolveSourcePath(source: string, relativePath?: string, localFilePath?: string) {
+function resolveSourcePath(source: string, relativePath?: string, localFilePath?: string, envOverrides: RuntimeEnvValues = {}) {
   if (source === "generated-video") {
-    const resolved = resolveGeneratedVideoPath(String(relativePath || ""));
+    const resolved = resolveGeneratedVideoPath(String(relativePath || ""), envOverrides);
     if (!fs.existsSync(resolved.absolutePath)) throw new Error("Không tìm thấy video generated để đưa vào hàng đợi.");
     return {
       sourceRelativePath: resolved.relativePath,

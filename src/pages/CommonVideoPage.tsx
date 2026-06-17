@@ -44,6 +44,7 @@ export default function CommonVideoPage({ initialMode = "agentic" }: CommonVideo
         <TabsContent value="agentic" className="mt-0">
           <AiVideoAgent
             lockedKind="generic"
+            autoPublishByDefault
             agentBadge="Custom Agent"
             pageTitle={{ en: "Common Video AI Agentic", vi: "AI Agentic video chung" }}
             pageDescription={{ en: "Common agentic video creation is locked to Custom mode; the video type picker is hidden here.", vi: "Màn hình tạo video common với agentic được khóa ở loại Custom, không còn chọn video type." }}

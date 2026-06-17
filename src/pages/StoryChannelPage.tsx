@@ -44,6 +44,7 @@ export default function StoryChannelPage({ initialMode = "manual" }: StoryChanne
         <TabsContent value="agentic" className="mt-0">
           <AiVideoAgent
             lockedKind="story"
+            autoPublishByDefault
             agentBadge="Story Agent"
             pageTitle={{ en: "Story AI Agentic", vi: "AI Agentic truyện" }}
             pageDescription={{ en: "Create story videos with the local agent while keeping the module type locked to Story.", vi: "Tạo video truyện bằng local agent, khóa module ở loại Story." }}

@@ -56,6 +56,7 @@ export const DEFAULT_FORM: AgentVideoForm = {
   ...BASE_RENDER_DEFAULTS,
   agentPreset: "algorithm-shorts",
   autoCreatePublishJobs: false,
+  autoRunPublishJobs: false,
   publishTargets: ["youtube"],
   publishChannels: [],
   publishPrivacyStatus: "private",
@@ -163,7 +164,8 @@ export function getAgentRenderDefaults(input: { kind?: AgentVideoForm["kind"]; a
       ...BASE_RENDER_DEFAULTS,
       renderTemplate: "story-card" as const,
       renderAlgorithmLabel: preset === "story-review" ? "Story Review" : "Story",
-      renderAccentColor: "#f97316",
+      renderAccentColor: preset === "story-review" ? "#a855f7" : "#f97316",
+      renderData: preset === "story-review" ? "30, 55, 80, 45, 70" : BASE_RENDER_DEFAULTS.renderData,
     };
   }
   if (input.kind === "football" || preset === "mu-news" || preset === "github-trending") {
@@ -177,7 +179,9 @@ export function getAgentRenderDefaults(input: { kind?: AgentVideoForm["kind"]; a
   return {
     ...BASE_RENDER_DEFAULTS,
     renderTemplate: "algorithm-explainer" as const,
-    renderAlgorithmLabel: preset === "maze-pathfinding" ? "Pathfinding" : preset === "algorithm-long" ? "Algorithm Long" : "Bubble Sort",
+    renderAlgorithmLabel: preset === "maze-pathfinding" ? "Pathfinding Race" : preset === "algorithm-long" ? "Algorithm Long" : "Bubble Sort",
     renderAspectRatio: input.platform === "youtube-long" ? "16:9" as const : "auto" as const,
+    renderData: preset === "maze-pathfinding" ? "12, 28, 44, 61, 79, 93" : preset === "algorithm-long" ? "18, 42, 27, 64, 33, 75, 52, 91, 46, 68, 58, 83" : BASE_RENDER_DEFAULTS.renderData,
+    renderAccentColor: preset === "maze-pathfinding" ? "#22d3ee" : BASE_RENDER_DEFAULTS.renderAccentColor,
   };
 }

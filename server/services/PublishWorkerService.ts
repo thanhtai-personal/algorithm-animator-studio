@@ -65,7 +65,7 @@ async function processPublishJob(job: PublishJob, envOverrides: RuntimeEnvValues
 
 async function publishYoutube(job: PublishJob, envOverrides: RuntimeEnvValues = {}) {
   if (!job.youtubeRefreshToken) throw new Error("Job YouTube thiếu refresh token. Hãy tạo job từ kênh YouTube đã kết nối.");
-  const filePath = getPublishJobFilePath(job);
+  const filePath = getPublishJobFilePath(job, envOverrides);
   updatePublishJob(job.id, { progress: 35, message: "Đang upload YouTube..." }, envOverrides);
 
   const result = await uploadYoutubeVideo({
@@ -104,7 +104,7 @@ async function publishFacebook(job: PublishJob, envOverrides: RuntimeEnvValues =
     }, envOverrides);
   }
 
-  const filePath = getPublishJobFilePath(job);
+  const filePath = getPublishJobFilePath(job, envOverrides);
   updatePublishJob(job.id, { progress: 35, message: "Đang upload Facebook Page video..." }, envOverrides);
 
   const buffer = await fs.promises.readFile(filePath);
@@ -138,7 +138,7 @@ async function publishTikTokInbox(job: PublishJob, envOverrides: RuntimeEnvValue
     }, envOverrides);
   }
 
-  const filePath = getPublishJobFilePath(job);
+  const filePath = getPublishJobFilePath(job, envOverrides);
   const stat = await fs.promises.stat(filePath);
   updatePublishJob(job.id, { progress: 25, message: "Đang khởi tạo TikTok inbox upload..." }, envOverrides);
 
@@ -187,7 +187,7 @@ async function publishTikTokInbox(job: PublishJob, envOverrides: RuntimeEnvValue
 }
 
 async function assertVideoFile(job: PublishJob) {
-  const filePath = getPublishJobFilePath(job);
+  const filePath = getPublishJobFilePath(job, envOverrides);
   const stat = await fs.promises.stat(filePath);
   if (!stat.isFile()) throw new Error("Đường dẫn publish không phải file video.");
   if (stat.size <= 0) throw new Error("File video rỗng.");

@@ -119,6 +119,7 @@ function PublishOptions({ form, lang, publishOptions, selectedPublishChannelKeys
   return (
     <div className="rounded-lg border p-3">
       <label className="flex items-center gap-2 text-sm font-medium"><Checkbox checked={Boolean(form.autoCreatePublishJobs)} onCheckedChange={(value) => update("autoCreatePublishJobs", Boolean(value))} />{t(lang, "uiCreatePublishQueueJobsAfterRender")}</label>
+      <label className="mt-2 flex items-start gap-2 text-sm text-muted-foreground"><Checkbox checked={Boolean(form.autoRunPublishJobs)} disabled={!form.autoCreatePublishJobs} onCheckedChange={(value) => update("autoRunPublishJobs", Boolean(value))} /><span>{t(lang, "uiRunPublishJobsImmediatelyAfterRender")}</span></label>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">{targets.map((target) => <label key={target} className="flex items-center gap-2 text-sm"><Checkbox checked={selectedPlatforms.includes(target)} onCheckedChange={(value) => togglePublishTarget(target, Boolean(value))} />{target}</label>)}</div>
       <div className="mt-4 flex items-center justify-between gap-3"><Label>{t(lang, "uiPublishChannels")}</Label><Button type="button" size="sm" variant="outline" onClick={refreshPublishChannels}>{t(lang, "uiRefreshChannels")}</Button></div>
       <div className="mt-2 max-h-48 space-y-2 overflow-y-auto rounded-md border p-2">

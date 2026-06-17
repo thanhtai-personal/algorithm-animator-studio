@@ -32,6 +32,7 @@ import { buildAgentRemotionVideoInput, normalizeAgentRenderSettings } from "./Ai
 import { getAgentFallbackDurationSec, splitDurationAcrossScenes } from "./AiVideoAgentFallbackTiming";
 import { createGradientPng } from "../utils/simplePng";
 import { createPublishJob } from "./PublishQueueService";
+import { runDuePublishJobs } from "./PublishWorkerService";
 import { notifyBackgroundJobsChanged } from "./BackgroundJobsRealtimeService";
 import { listGeneratedVideos, resolveGeneratedVideoPath } from "../utils/videoOutput";
 
@@ -224,6 +225,7 @@ export async function runAgentVideoJob(id: string, envOverrides: RuntimeEnvValue
     }));
 
     job = await runStage(job, "publish", envOverrides, 94, "Đang nối output vào Publish Queue local...", async (current) => createPublishJobsForAgent(current, envOverrides));
+    job = await runAutoPublishIfRequested(job, envOverrides);
     job = await runStage(job, "engage", envOverrides, 97, "Đã tạo prompt gợi ý bình luận/tương tác sau khi đăng.", async (current) => current);
     job = await runStage(job, "monetize", envOverrides, 100, "Đã tạo ý tưởng CTA/monetize/repurpose cho video.", async (current) => current);
 
@@ -304,6 +306,7 @@ function normalizeJobInput(body: CreateAgentVideoJobBody, envOverrides: RuntimeE
     sentenceSilence: clampNumber(Number(body.sentenceSilence), 0.25, 0, 2),
     ...normalizeAgentRenderSettings({ ...body, ...input }),
     autoCreatePublishJobs: Boolean(body.autoCreatePublishJobs),
+    autoRunPublishJobs: Boolean(body.autoRunPublishJobs),
     publishTargets: normalizePublishTargets(body.publishTargets),
     publishChannels: normalizePublishChannels(body.publishChannels),
     publishScheduledAt: String(body.publishScheduledAt || body.scheduledAt || ""),
@@ -684,6 +687,29 @@ function createPublishJobsForAgent(job: AgentVideoJob, envOverrides: RuntimeEnvV
   return created.reduce(
     (current, item) => addAndPersistLog(current, envOverrides, "success", `Đã tạo publish job ${item.id.slice(0, 8)} cho ${item.platform} · ${item.channelTitle || item.channelId || "chưa rõ kênh"}.`, "publish"),
     next
+  );
+}
+
+
+async function runAutoPublishIfRequested(job: AgentVideoJob, envOverrides: RuntimeEnvValues) {
+  if (!job.input.autoCreatePublishJobs || !job.input.autoRunPublishJobs || job.input.publishScheduledAt) return job;
+  const publishJobIds = job.artifacts?.publishJobIds || [];
+  if (!publishJobIds.length) return job;
+  const started = addAndPersistLog(job, envOverrides, "info", `Auto publish đang chạy ${publishJobIds.length} job vừa tạo.`, "publish");
+  let processed = 0;
+  while (processed < publishJobIds.length) {
+    const result = await runDuePublishJobs(envOverrides);
+    if (!result.processed) break;
+    processed += result.processed;
+  }
+  return addAndPersistLog(
+    started,
+    envOverrides,
+    processed ? "success" : "warning",
+    processed
+      ? `Auto publish đã xử lý ${processed} job. Kiểm tra tab Queue/History để xem kết quả từng nền tảng.`
+      : "Auto publish chưa xử lý job nào. Có thể worker đang bận hoặc job đang lên lịch.",
+    "publish"
   );
 }
 

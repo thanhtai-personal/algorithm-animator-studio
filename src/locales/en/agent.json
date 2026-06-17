@@ -60,5 +60,6 @@
   "uiTrackAgentJobsAndPublishQueueJobs": "Track agent jobs and publish queue jobs.",
   "uiUnlock": "Unlock",
   "uiUnlocked": "Unlocked",
-  "uiVideoCreationWorkflows": "Video creation workflows."
+  "uiVideoCreationWorkflows": "Video creation workflows.",
+  "uiRunPublishJobsImmediatelyAfterRender": "Run due publish jobs immediately after render (YouTube/Facebook can auto-post; TikTok/Instagram may still require platform confirmation)."
 }

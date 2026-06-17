@@ -44,6 +44,7 @@ export default function AlgorithmChannelPage({ initialMode = "manual" }: Algorit
         <TabsContent value="agentic" className="mt-0">
           <AiVideoAgent
             lockedKind="algorithm"
+            autoPublishByDefault
             agentBadge="Algorithm Agent"
             pageTitle={{ en: "Algorithm AI Agentic", vi: "AI Agentic thuật toán" }}
             pageDescription={{ en: "Create algorithm videos with the local agent flow while keeping the module type locked to Algorithm.", vi: "Tạo video thuật toán bằng local agent, khóa module ở loại Algorithm." }}

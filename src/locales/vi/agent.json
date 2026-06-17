@@ -60,5 +60,6 @@
   "uiTrackAgentJobsAndPublishQueueJobs": "Theo dõi AI agent job và publish queue job.",
   "uiUnlock": "Mở khóa",
   "uiUnlocked": "Chưa khóa",
-  "uiVideoCreationWorkflows": "Luồng tạo video."
+  "uiVideoCreationWorkflows": "Luồng tạo video.",
+  "uiRunPublishJobsImmediatelyAfterRender": "Render xong thì chạy publish job ngay (YouTube/Facebook có thể tự đăng; TikTok/Instagram có thể vẫn cần xác nhận trên nền tảng)."
 }

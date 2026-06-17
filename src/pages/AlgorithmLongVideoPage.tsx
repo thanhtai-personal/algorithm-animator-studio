@@ -46,6 +46,7 @@ export default function AlgorithmLongVideoPage({ initialMode = "manual" }: Algor
             lockedKind="algorithm"
             initialPresetId="algorithm-long"
             lockedPresetId="algorithm-long"
+            autoPublishByDefault
             agentBadge="Algorithm Long Agent"
             pageTitle={{ en: "Algorithm Long Video AI Agentic", vi: "AI Agentic video thuật toán dài" }}
             pageDescription={{ en: "Generate long-form algorithm explainers with chapter plan, script, voice, render and metadata in one agent flow.", vi: "Tạo video thuật toán dài với chapter plan, script, voice, render và metadata trong một luồng agent." }}

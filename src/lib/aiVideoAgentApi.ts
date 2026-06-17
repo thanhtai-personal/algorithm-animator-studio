@@ -184,6 +184,13 @@ export async function getAgentVideoJob(id: string) {
   }));
 }
 
+export async function cancelAgentVideoJob(id: string) {
+  return parseApiResponse<AgentVideoJob>(await fetch(buildApiUrl(`/api/ai-video-agent/jobs/${id}/cancel`), {
+    method: "POST",
+    headers: buildRuntimeSettingsHeaders(),
+  }));
+}
+
 export async function runDueAgentVideoJobs() {
   return parseApiResponse<{ ok: boolean; ran: number; jobs: AgentVideoJob[] }>(await fetch(buildApiUrl("/api/ai-video-agent/jobs/run-due"), {
     method: "POST",

@@ -1,13 +1,25 @@
 export type MenuFeatureId =
   | "algorithm-shorts"
+  | "algorithm-agentic"
+  | "algorithm-manual"
   | "maze-pathfinding"
   | "algorithm-long"
   | "github-trending"
+  | "football-agentic"
+  | "football-manual"
   | "story-video"
+  | "story-agentic"
+  | "story-manual"
   | "story-author"
   | "story-review"
+  | "common-video-agentic"
+  | "common-video-manual"
+  | "text-to-speech"
+  | "youtube-tools"
   | "mu-news"
-  | "channel";
+  | "jobs"
+  | "channel"
+  | "assets";
 
 export type MenuFeatureSettings = Record<MenuFeatureId, boolean>;
 
@@ -16,20 +28,40 @@ const STORAGE_KEY = "kai-studio.menuFeatureSettings";
 
 export const DEFAULT_MENU_FEATURE_SETTINGS: MenuFeatureSettings = {
   "algorithm-shorts": false,
+  "algorithm-agentic": true,
+  "algorithm-manual": true,
   "maze-pathfinding": false,
   "algorithm-long": false,
   "github-trending": false,
+  "football-agentic": true,
+  "football-manual": true,
   "story-video": false,
+  "story-agentic": true,
+  "story-manual": true,
   "story-author": false,
   "story-review": false,
+  "common-video-agentic": true,
+  "common-video-manual": true,
+  "text-to-speech": true,
+  "youtube-tools": true,
   "mu-news": false,
-  channel: false,
+  jobs: true,
+  channel: true,
+  assets: true,
 };
 
 export const MENU_FEATURE_LABELS: Record<MenuFeatureId, { en: string; vi: string }> = {
   "algorithm-shorts": {
     en: "Algorithm Shorts",
     vi: "Short thuật toán",
+  },
+  "algorithm-agentic": {
+    en: "Algorithm AI Agentic",
+    vi: "AI Agentic thuật toán",
+  },
+  "algorithm-manual": {
+    en: "Algorithm Manual Create",
+    vi: "Tạo thuật toán thủ công",
   },
   "maze-pathfinding": {
     en: "Maze Pathfinding",
@@ -43,9 +75,25 @@ export const MENU_FEATURE_LABELS: Record<MenuFeatureId, { en: string; vi: string
     en: "GitHub Trend Video",
     vi: "Video GitHub trend",
   },
+  "football-agentic": {
+    en: "Football AI Agentic",
+    vi: "AI Agentic bóng đá",
+  },
+  "football-manual": {
+    en: "Football Manual Create",
+    vi: "Tạo bóng đá thủ công",
+  },
   "story-video": {
     en: "Story Video",
     vi: "Video truyện",
+  },
+  "story-agentic": {
+    en: "Story AI Agentic",
+    vi: "AI Agentic truyện",
+  },
+  "story-manual": {
+    en: "Story Manual Create",
+    vi: "Tạo truyện thủ công",
   },
   "story-author": {
     en: "Story Author",
@@ -55,13 +103,37 @@ export const MENU_FEATURE_LABELS: Record<MenuFeatureId, { en: string; vi: string
     en: "Story Review",
     vi: "Review truyện",
   },
+  "common-video-agentic": {
+    en: "Common Video AI Agentic",
+    vi: "AI Agentic video chung",
+  },
+  "common-video-manual": {
+    en: "Common Video Manual Create",
+    vi: "Tạo video chung thủ công",
+  },
+  "text-to-speech": {
+    en: "Text to Speech",
+    vi: "Text to Speech",
+  },
+  "youtube-tools": {
+    en: "YouTube Tools",
+    vi: "Tải YouTube",
+  },
   "mu-news": {
     en: "MU News",
     vi: "Tin tức MU",
   },
+  jobs: {
+    en: "Job Manager",
+    vi: "Quản lý job",
+  },
   channel: {
     en: "Channel Manager",
     vi: "Quản lý kênh",
+  },
+  assets: {
+    en: "Files Management",
+    vi: "Quản lý file",
   },
 };
 

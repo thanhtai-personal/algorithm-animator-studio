@@ -30,6 +30,7 @@ type AgentSettingsFormProps = {
   publishChannelWarning: string;
   loadingPlan: boolean;
   running: boolean;
+  lockedKind?: AgentVideoForm["kind"];
   applyPreset: (id: string) => void;
   applyContentKind: (kind: AgentVideoForm["kind"]) => void;
   update: UpdateForm;
@@ -42,11 +43,20 @@ type AgentSettingsFormProps = {
 };
 
 export function AgentSettingsForm(props: AgentSettingsFormProps) {
-  const { form, lang, presets, models, availableModels, loadingPlan, running, applyPreset, applyContentKind, update } = props;
+  const { form, lang, presets, models, availableModels, loadingPlan, running, applyPreset, applyContentKind, update, lockedKind } = props;
+  const presetOptions = lockedKind === "generic" ? [] : lockedKind ? presets.filter((preset) => preset.kind === lockedKind) : presets;
   return <div className="relative min-h-[calc(100vh-150px)] pb-28">
     <div className="space-y-4">
-      <Field label={text(lang, "Content kind", "Loại nội dung")}><Select value={form.kind} disabled={running} onValueChange={(value) => applyContentKind(value as AgentVideoForm["kind"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="algorithm">Algorithm</SelectItem><SelectItem value="football">Football/MU</SelectItem><SelectItem value="story">Story</SelectItem><SelectItem value="generic">Generic</SelectItem></SelectContent></Select></Field>
-      <Field label={text(lang, "Agent preset", "Agent preset")}><Select value={form.agentPreset || "custom"} onValueChange={applyPreset}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="custom">Custom</SelectItem>{presets.map((preset) => <SelectItem key={preset.id} value={preset.id}>{preset.title}</SelectItem>)}</SelectContent></Select></Field>
+      {lockedKind ? (
+        <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
+          {lockedKind === "generic"
+            ? text(lang, "This common agent always uses Custom video mode. Video type selection is locked.", "Màn hình common agentic luôn dùng loại Custom. Đã khóa phần chọn video type.")
+            : text(lang, "This screen is locked to its module type, so the video type picker is hidden.", "Màn hình này đã khóa theo module nên ẩn phần chọn video type.")}
+        </div>
+      ) : (
+        <Field label={text(lang, "Content kind", "Loại nội dung")}><Select value={form.kind} disabled={running} onValueChange={(value) => applyContentKind(value as AgentVideoForm["kind"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="algorithm">Algorithm</SelectItem><SelectItem value="football">Football/MU</SelectItem><SelectItem value="story">Story</SelectItem><SelectItem value="generic">Generic</SelectItem></SelectContent></Select></Field>
+      )}
+      <Field label={text(lang, "Agent preset", "Agent preset")}><Select value={form.agentPreset || "custom"} disabled={lockedKind === "generic"} onValueChange={applyPreset}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="custom">Custom</SelectItem>{presetOptions.map((preset) => <SelectItem key={preset.id} value={preset.id}>{preset.title}</SelectItem>)}</SelectContent></Select></Field>
       <Field label={text(lang, "Video topic", "Chủ đề video")}><Input value={form.topic} onChange={(event) => update("topic", event.target.value)} /></Field>
       <Field label={text(lang, "Platform", "Nền tảng")}><Select value={form.platform} onValueChange={(value) => update("platform", value as AgentVideoForm["platform"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="youtube-short">YouTube Short 9:16</SelectItem><SelectItem value="youtube-long">YouTube Long 16:9</SelectItem><SelectItem value="tiktok">TikTok 9:16</SelectItem><SelectItem value="facebook-reel">Facebook Reel 9:16</SelectItem></SelectContent></Select></Field>
       <div className="grid gap-3 sm:grid-cols-2"><Field label={text(lang, "Language", "Ngôn ngữ")}><Select value={form.language} onValueChange={(value) => update("language", value as AgentVideoForm["language"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="vi">Tiếng Việt</SelectItem><SelectItem value="en">English</SelectItem></SelectContent></Select></Field><Field label={text(lang, "Target seconds (AI only)", "Thời lượng giây (chỉ AI)")}><Input type="number" min={15} max={600} value={form.targetDurationSec} onChange={(event) => update("targetDurationSec", Number(event.target.value))} /></Field></div>

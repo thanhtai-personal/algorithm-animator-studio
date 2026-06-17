@@ -1,5 +1,6 @@
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, PanelRightClose, PanelRightOpen, RefreshCcw } from "lucide-react";
+import { Bot, ListChecks, PanelRightClose, PanelRightOpen, RefreshCcw } from "lucide-react";
+import { Link } from "react-router-dom";
 import { SystemLoader } from "@/components/ui/system-loader";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -34,9 +35,18 @@ import { AgentSelectedChannelVideos } from "@/features/ai-video-agent/components
 import { DEFAULT_FORM, KIND_DEFAULTS, TERMINAL_JOB_STATUSES, getAgentRenderDefaults } from "@/features/ai-video-agent/lib/agentFormDefaults";
 import { channelsFromKeys, getAgentPublishChannelOptions, getPreferredChannelKeys, type AgentPublishChannelOption } from "@/features/ai-video-agent/lib/publishChannelOptions";
 
-export default function AiVideoAgent() {
+type AiVideoAgentPageText = { en: string; vi: string };
+
+type AiVideoAgentProps = {
+  lockedKind?: AgentVideoForm["kind"];
+  pageTitle?: AiVideoAgentPageText;
+  pageDescription?: AiVideoAgentPageText;
+  agentBadge?: string;
+};
+
+export default function AiVideoAgent({ lockedKind, pageTitle, pageDescription, agentBadge }: AiVideoAgentProps) {
   const lang = useSystemLang();
-  const [form, setForm] = useState<AgentVideoForm>(DEFAULT_FORM);
+  const [form, setForm] = useState<AgentVideoForm>(() => createInitialForm(lockedKind));
   const [plan, setPlan] = useState<AgentVideoPlan | null>(null);
   const [jobs, setJobs] = useState<AgentVideoJob[]>([]);
   const [publishJobs, setPublishJobs] = useState<PublishJob[]>([]);
@@ -67,6 +77,7 @@ export default function AiVideoAgent() {
   const publishChannelWarning = form.autoCreatePublishJobs && !selectedPublishChannels.length
     ? text(lang, "Select at least one channel before queueing publish jobs.", "Hãy chọn ít nhất một kênh trước khi tạo publish job.")
     : "";
+  const lockedForm = useMemo(() => enforceLockedForm(form, lockedKind), [form, lockedKind]);
 
   useEffect(() => {
     refresh();
@@ -121,7 +132,7 @@ export default function AiVideoAgent() {
   async function handleCreatePlan() {
     setLoadingPlan(true);
     try {
-      const nextPlan = await createAgentVideoPlan(form);
+      const nextPlan = await createAgentVideoPlan(lockedForm);
       setPlan(nextPlan);
       toast.success(text(lang, "Plan created", "Đã tạo plan"));
     } catch (error) {
@@ -136,7 +147,7 @@ export default function AiVideoAgent() {
     let started = false;
     try {
       if (publishChannelWarning) { toast.error(publishChannelWarning); return; }
-      const job = await createAgentVideoJob({ ...form, publishChannels: form.autoCreatePublishJobs ? selectedPublishChannels : [], plan: plan || undefined });
+      const job = await createAgentVideoJob({ ...lockedForm, publishChannels: lockedForm.autoCreatePublishJobs ? selectedPublishChannels : [], plan: plan || undefined });
       const runningJob = markJobStarting(job);
       setJobs((current) => [runningJob, ...current.filter((item) => item.id !== job.id)]);
       setPipelineTab("flow");
@@ -152,7 +163,7 @@ export default function AiVideoAgent() {
   async function handleSaveDraft() {
     try {
       if (publishChannelWarning) { toast.error(publishChannelWarning); return; }
-      const job = await createAgentVideoJob({ ...form, publishChannels: form.autoCreatePublishJobs ? selectedPublishChannels : [], plan: plan || undefined });
+      const job = await createAgentVideoJob({ ...lockedForm, publishChannels: lockedForm.autoCreatePublishJobs ? selectedPublishChannels : [], plan: plan || undefined });
       setJobs((current) => [job, ...current]);
       toast.success(text(lang, "Draft job saved", "Đã lưu job nháp"));
     } catch (error) {
@@ -233,10 +244,16 @@ export default function AiVideoAgent() {
   }
 
   function applyPreset(id: string) {
+    if (lockedKind === "generic") {
+      setForm((current) => enforceLockedForm({ ...current, agentPreset: "custom", ...getAgentRenderDefaults({ kind: "generic", agentPreset: "custom", platform: current.platform }) }, lockedKind));
+      return;
+    }
     const preset = presets.find((item) => item.id === id);
+    if (lockedKind && preset && preset.kind !== lockedKind) return;
     setForm((current) => {
-      if (!preset) return { ...current, agentPreset: id, ...getAgentRenderDefaults({ kind: current.kind, agentPreset: id, platform: current.platform }) };
-      return { ...current, ...preset, agentPreset: preset.id, ...getAgentRenderDefaults({ kind: preset.kind, agentPreset: preset.id, platform: preset.platform }) };
+      const currentKind = lockedKind || current.kind;
+      if (!preset) return enforceLockedForm({ ...current, kind: currentKind, agentPreset: id, ...getAgentRenderDefaults({ kind: currentKind, agentPreset: id, platform: current.platform }) }, lockedKind);
+      return enforceLockedForm({ ...current, ...preset, agentPreset: preset.id, ...getAgentRenderDefaults({ kind: preset.kind, agentPreset: preset.id, platform: preset.platform }) }, lockedKind);
     });
   }
 
@@ -248,6 +265,7 @@ export default function AiVideoAgent() {
   }
 
   function applyContentKind(kind: AgentVideoForm["kind"]) {
+    if (lockedKind) return;
     setForm((current) => ({ ...current, ...KIND_DEFAULTS[kind], kind }));
     setPlan(null);
   }
@@ -274,14 +292,20 @@ export default function AiVideoAgent() {
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary" className="gap-1"><Bot className="h-3.5 w-3.5" />Local Agent</Badge>
+            <Badge variant="secondary" className="gap-1"><Bot className="h-3.5 w-3.5" />{agentBadge || "Local Agent"}</Badge>
             <Badge variant="outline">Create → Publish → Engage → Monetize</Badge>
           </div>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight">{text(lang, "AI Video Agent Flow", "AI Video Agent Flow")}</h1>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight">{pageTitle ? pageTitle[lang] : text(lang, "AI Video Agent Flow", "AI Video Agent Flow")}</h1>
+          {pageDescription ? <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{pageDescription[lang]}</p> : null}
         </div>
-        <Button variant="outline" onClick={handleRunDue} disabled={fullAgentRunning}>
-          {fullAgentRunning ? <SystemLoader className="mr-2 h-4 w-4" /> : <RefreshCcw className="mr-2 h-4 w-4" />}{text(lang, "Run scheduled", "Chạy job tới lịch")}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" asChild>
+            <Link to="/jobs"><ListChecks className="mr-2 h-4 w-4" />{text(lang, "Job manager", "Quản lý job")}</Link>
+          </Button>
+          <Button variant="outline" onClick={handleRunDue} disabled={fullAgentRunning}>
+            {fullAgentRunning ? <SystemLoader className="mr-2 h-4 w-4" /> : <RefreshCcw className="mr-2 h-4 w-4" />}{text(lang, "Run scheduled", "Chạy job tới lịch")}
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 transition-[grid-template-columns] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] xl:grid-cols-[minmax(0,1fr)_var(--agent-panel-width)]" style={{ "--agent-panel-width": settingsOpen ? "420px" : "64px" } as CSSProperties}>
@@ -294,7 +318,7 @@ export default function AiVideoAgent() {
               <TabsTrigger value="videos">Videos</TabsTrigger>
             </TabsList>
             <TabsContent value="flow" className="mt-0">
-              <AgentFlowGraph job={fullAgentRunning ? activeJob : undefined} draftInput={form} lang={lang} selectedStageId={selectedStageId} onSelectStage={setSelectedStageId} />
+              <AgentFlowGraph job={fullAgentRunning ? activeJob : undefined} draftInput={lockedForm} lang={lang} selectedStageId={selectedStageId} onSelectStage={setSelectedStageId} />
             </TabsContent>
             <TabsContent value="result" className="mt-0">
               <AgentReviewCard job={latestJob} publishJobs={publishJobs} lang={lang} busy={busyJobId === latestJob?.id} onRun={handleRunJob} />
@@ -326,7 +350,7 @@ export default function AiVideoAgent() {
             <div aria-hidden={!settingsOpen} className={settingsOpen ? "max-h-[calc(100vh-130px)] opacity-100 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]" : "pointer-events-none max-h-0 translate-x-3 overflow-hidden opacity-0 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"}>
               <ScrollArea className="h-[calc(100vh-130px)]">
                 <CardContent className="space-y-4 p-3 pt-0">
-                  <AgentSettingsForm form={form} lang={lang} presets={presets} models={models} availableModels={availableModels} elevenConfig={elevenConfig} supertonicConfig={supertonicConfig} rvcApplioConfig={rvcApplioConfig} vieneuConfig={vieneuConfig} publishOptions={publishOptions} selectedPublishChannelKeys={selectedPublishChannelKeys} publishChannelWarning={publishChannelWarning} loadingPlan={loadingPlan} running={fullAgentRunning} applyPreset={applyPreset} applyContentKind={applyContentKind} update={update} togglePublishTarget={togglePublishTarget} togglePublishChannel={togglePublishChannel} refreshPublishChannels={refreshPublishChannels} handleCreatePlan={handleCreatePlan} handleRunNow={handleRunNow} handleSaveDraft={handleSaveDraft} />
+                  <AgentSettingsForm form={lockedForm} lang={lang} presets={presets} models={models} availableModels={availableModels} elevenConfig={elevenConfig} supertonicConfig={supertonicConfig} rvcApplioConfig={rvcApplioConfig} vieneuConfig={vieneuConfig} publishOptions={publishOptions} selectedPublishChannelKeys={selectedPublishChannelKeys} publishChannelWarning={publishChannelWarning} loadingPlan={loadingPlan} running={fullAgentRunning} lockedKind={lockedKind} applyPreset={applyPreset} applyContentKind={applyContentKind} update={update} togglePublishTarget={togglePublishTarget} togglePublishChannel={togglePublishChannel} refreshPublishChannels={refreshPublishChannels} handleCreatePlan={handleCreatePlan} handleRunNow={handleRunNow} handleSaveDraft={handleSaveDraft} />
                 </CardContent>
               </ScrollArea>
             </div>
@@ -335,6 +359,19 @@ export default function AiVideoAgent() {
       </div>
     </main>
   );
+}
+
+function createInitialForm(lockedKind?: AgentVideoForm["kind"]): AgentVideoForm {
+  if (!lockedKind) return DEFAULT_FORM;
+  return enforceLockedForm({ ...DEFAULT_FORM, ...KIND_DEFAULTS[lockedKind], kind: lockedKind }, lockedKind);
+}
+
+function enforceLockedForm(form: AgentVideoForm, lockedKind?: AgentVideoForm["kind"]): AgentVideoForm {
+  if (!lockedKind) return form;
+  if (lockedKind === "generic") {
+    return { ...form, kind: "generic", agentPreset: "custom" };
+  }
+  return { ...form, kind: lockedKind };
 }
 
 function sleep(ms: number) { return new Promise((resolve) => window.setTimeout(resolve, ms)); }

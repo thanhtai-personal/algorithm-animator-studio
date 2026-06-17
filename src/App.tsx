@@ -18,6 +18,7 @@ const Auth = lazy(() => import("./pages/Auth.tsx"));
 const GeneratedAssets = lazy(() => import("./pages/GeneratedAssets.tsx"));
 const GithubTrendingVideo = lazy(() => import("./pages/GithubTrendingVideo.tsx"));
 const Index = lazy(() => import("./pages/Index.tsx"));
+const JobManagement = lazy(() => import("./pages/JobManagement.tsx"));
 const LegalPage = lazy(() => import("./pages/LegalPage.tsx"));
 const LongContent = lazy(() => import("./pages/LongContent.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
@@ -78,27 +79,36 @@ const App = () => (
                 <Route path="/term" element={<LegalPage type="terms" />} />
                 <Route path="/terms" element={<LegalPage type="terms" />} />
                 <Route path="/" element={<Navigate replace to="/text-to-speech" />} />
+                <Route path="/algorithms/agentic" element={<AiVideoAgent lockedKind="algorithm" agentBadge="Algorithm Agent" pageTitle={{ en: "Algorithm AI Agentic", vi: "AI Agentic thuật toán" }} pageDescription={{ en: "Create algorithm videos with the local agent flow while keeping the module type locked to Algorithm.", vi: "Tạo video thuật toán bằng local agent, khóa module ở loại Algorithm." }} />} />
+                <Route path="/algorithms/manual" element={<Index />} />
                 <Route path="/algorithms/short" element={<Index />} />
                 <Route path="/algorithms/maze" element={<AlgorithmWorld />} />
                 <Route path="/algorithms/video-long" element={<LongContent />} />
                 <Route path="/algorithms/github-trending" element={<GithubTrendingVideo />} />
+                <Route path="/football/commentary/agentic" element={<AiVideoAgent lockedKind="football" agentBadge="Football Agent" pageTitle={{ en: "Football Commentary AI Agentic", vi: "AI Agentic bình luận bóng đá" }} pageDescription={{ en: "Generate football commentary videos with voice, music, render and publish queue in one agent flow.", vi: "Tạo video bình luận bóng đá với voice, nhạc nền, render và publish queue trong một luồng agent." }} />} />
+                <Route path="/football/commentary/manual" element={<MuNewsStudio />} />
+                <Route path="/football/mu-news" element={<Navigate replace to="/football/commentary/manual" />} />
+                <Route path="/stories/agentic" element={<AiVideoAgent lockedKind="story" agentBadge="Story Agent" pageTitle={{ en: "Story AI Agentic", vi: "AI Agentic truyện" }} pageDescription={{ en: "Create story videos with the local agent while keeping the module type locked to Story.", vi: "Tạo video truyện bằng local agent, khóa module ở loại Story." }} />} />
+                <Route path="/stories/manual" element={<StoryVideoStudio />} />
                 <Route path="/stories/video" element={<StoryVideoStudio />} />
                 <Route path="/stories/create" element={<StoryAuthorStudio />} />
                 <Route path="/stories/review" element={<StoryReviewStudio />} />
-                <Route path="/football/mu-news" element={<MuNewsStudio />} />
+                <Route path="/videos/agentic" element={<AiVideoAgent lockedKind="generic" agentBadge="Custom Agent" pageTitle={{ en: "Common Video AI Agentic", vi: "AI Agentic video chung" }} pageDescription={{ en: "Common agentic video creation is locked to Custom mode; the video type picker is hidden here.", vi: "Màn hình tạo video common với agentic được khóa ở loại Custom, không còn chọn video type." }} />} />
+                <Route path="/videos/manual" element={<VideoCreate />} />
+                <Route path="/jobs" element={<JobManagement />} />
                 <Route path="/maze-pathfinding" element={<Navigate replace to="/algorithms/maze" />} />
                 <Route path="/algorithm-world" element={<Navigate replace to="/algorithms/maze" />} />
                 <Route path="/long-content" element={<Navigate replace to="/algorithms/video-long" />} />
                 <Route path="/github-trending" element={<Navigate replace to="/algorithms/github-trending" />} />
-                <Route path="/mu-news" element={<Navigate replace to="/football/mu-news" />} />
+                <Route path="/mu-news" element={<Navigate replace to="/football/commentary/manual" />} />
                 <Route path="/story-author" element={<Navigate replace to="/stories/create" />} />
                 <Route path="/story-review" element={<Navigate replace to="/stories/review" />} />
-                <Route path="/story-video" element={<Navigate replace to="/stories/video" />} />
+                <Route path="/story-video" element={<Navigate replace to="/stories/manual" />} />
                 <Route path="/assets" element={<GeneratedAssets />} />
                 <Route path="/providers" element={<Navigate replace to="/settings?tab=tools" />} />
                 <Route path="/text-to-speech" element={<TextToSpeech />} />
-                <Route path="/ai-video-agent" element={<AiVideoAgent />} />
-                <Route path="/video-create" element={<VideoCreate />} />
+                <Route path="/ai-video-agent" element={<Navigate replace to="/videos/agentic" />} />
+                <Route path="/video-create" element={<Navigate replace to="/videos/manual" />} />
                 <Route path="/youtube-tools" element={<YoutubeTools />} />
                 <Route path="/channel" element={<YoutubePublishing />} />
                 <Route path="/social-publishing" element={<LegacyChannelRedirect />} />

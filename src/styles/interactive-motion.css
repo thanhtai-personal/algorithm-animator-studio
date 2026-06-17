@@ -66,6 +66,10 @@
 
 .tabs-list-animated {
     isolation: isolate;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    overflow: clip;
 }
 
 .tabs-active-indicator {

@@ -8,6 +8,7 @@ export type PublishJob = {
   id: string;
   platform: PublishPlatform;
   status: PublishJobStatus;
+  locked?: boolean;
   source: "generated-video" | "local-file";
   sourceRelativePath?: string;
   sourceFilePath?: string;
@@ -125,6 +126,29 @@ export async function cancelPublishJob(id: string) {
     headers: buildRuntimeSettingsHeaders(),
   }));
   return data.job;
+}
+
+export async function setPublishJobLocked(id: string, locked: boolean) {
+  const data = await parseApiResponse<{ job: PublishJob }>(await fetch(buildApiUrl(`/api/publish/jobs/${id}/lock`), {
+    method: "POST",
+    headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ locked }),
+  }));
+  return data.job;
+}
+
+export async function deletePublishJob(id: string) {
+  return parseApiResponse<{ ok: boolean; deleted: number }>(await fetch(buildApiUrl(`/api/publish/jobs/${id}`), {
+    method: "DELETE",
+    headers: buildRuntimeSettingsHeaders(),
+  }));
+}
+
+export async function deleteUnlockedJobs() {
+  return parseApiResponse<{ ok: boolean; deleted: number; keptLocked: number; keptRunning: number }>(await fetch(buildApiUrl("/api/publish/jobs/all-unlocked"), {
+    method: "DELETE",
+    headers: buildRuntimeSettingsHeaders(),
+  }));
 }
 
 export async function getPublishHistory() {

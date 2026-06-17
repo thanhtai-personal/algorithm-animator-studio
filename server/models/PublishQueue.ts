@@ -15,6 +15,7 @@ export type PublishJob = {
   id: string;
   platform: PublishPlatform;
   status: PublishJobStatus;
+  locked?: boolean;
   source: PublishJobSource;
   sourceRelativePath?: string;
   sourceFilePath?: string;

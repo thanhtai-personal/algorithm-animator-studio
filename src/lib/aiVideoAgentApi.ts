@@ -60,6 +60,7 @@ export type AgentVideoJobLog = {
 export type AgentVideoJob = {
   id: string;
   status: AgentVideoJobStatus;
+  locked?: boolean;
   createdAtMs: number;
   updatedAtMs: number;
   scheduledAtMs?: number;
@@ -187,6 +188,21 @@ export async function getAgentVideoJob(id: string) {
 export async function cancelAgentVideoJob(id: string) {
   return parseApiResponse<AgentVideoJob>(await fetch(buildApiUrl(`/api/ai-video-agent/jobs/${id}/cancel`), {
     method: "POST",
+    headers: buildRuntimeSettingsHeaders(),
+  }));
+}
+
+export async function setAgentVideoJobLocked(id: string, locked: boolean) {
+  return parseApiResponse<AgentVideoJob>(await fetch(buildApiUrl(`/api/ai-video-agent/jobs/${id}/lock`), {
+    method: "POST",
+    headers: buildRuntimeSettingsHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ locked }),
+  }));
+}
+
+export async function deleteAgentVideoJob(id: string) {
+  return parseApiResponse<{ ok: boolean; deleted: number }>(await fetch(buildApiUrl(`/api/ai-video-agent/jobs/${id}`), {
+    method: "DELETE",
     headers: buildRuntimeSettingsHeaders(),
   }));
 }

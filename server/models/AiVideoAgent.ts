@@ -128,6 +128,7 @@ export type AgentVideoJobLog = {
 export type AgentVideoJob = {
   id: string;
   status: AgentVideoJobStatus;
+  locked?: boolean;
   createdAtMs: number;
   updatedAtMs: number;
   scheduledAtMs?: number;

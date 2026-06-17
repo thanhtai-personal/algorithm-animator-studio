@@ -1,6 +1,7 @@
 import { Router, type Response } from "express";
 import { cancelPublishJob, createPublishJob, getPublishAgentSuggestions, listPublishHistory, listPublishJobs, retryPublishJob } from "../services/PublishQueueService";
 import { runDuePublishJobs, runPublishJobNow } from "../services/PublishWorkerService";
+import { deleteManagedJob, deleteUnlockedManagedJobs, setManagedJobLocked } from "../services/JobManagementService";
 import { listSocialProviderAccounts, removeSocialProviderAccount } from "../services/SocialProviderAccountService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
 
@@ -50,6 +51,30 @@ export function createPublishQueueRouter() {
   router.post("/publish/jobs/:id/cancel", (req, res) => {
     try {
       res.json({ job: cancelPublishJob(req.params.id, readRuntimeEnvFromRequest(req)) });
+    } catch (error) {
+      sendError(res, error);
+    }
+  });
+
+  router.post("/publish/jobs/:id/lock", (req, res) => {
+    try {
+      res.json({ job: setManagedJobLocked("publish", req.params.id, Boolean(req.body?.locked), readRuntimeEnvFromRequest(req)) });
+    } catch (error) {
+      sendError(res, error);
+    }
+  });
+
+  router.delete("/publish/jobs/all-unlocked", (req, res) => {
+    try {
+      res.json(deleteUnlockedManagedJobs(readRuntimeEnvFromRequest(req)));
+    } catch (error) {
+      sendError(res, error);
+    }
+  });
+
+  router.delete("/publish/jobs/:id", (req, res) => {
+    try {
+      res.json(deleteManagedJob("publish", req.params.id, readRuntimeEnvFromRequest(req)));
     } catch (error) {
       sendError(res, error);
     }

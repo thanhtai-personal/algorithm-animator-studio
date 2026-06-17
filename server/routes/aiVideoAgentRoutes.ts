@@ -11,6 +11,7 @@ import {
   runDueAgentVideoJobs,
 } from "../services/AiVideoAgentService";
 import { startAgentVideoJobInBackground } from "../services/AiVideoAgentBackgroundService";
+import { deleteManagedJob, setManagedJobLocked } from "../services/JobManagementService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
 
 export function createAiVideoAgentRouter() {
@@ -73,6 +74,22 @@ export function createAiVideoAgentRouter() {
   router.post("/ai-video-agent/jobs/:id/cancel", (req, res) => {
     try {
       res.json(cancelAgentVideoJob(req.params.id, readRuntimeEnvFromRequest(req)));
+    } catch (error) {
+      sendError(res, error);
+    }
+  });
+
+  router.post("/ai-video-agent/jobs/:id/lock", (req, res) => {
+    try {
+      res.json(setManagedJobLocked("agent", req.params.id, Boolean(req.body?.locked), readRuntimeEnvFromRequest(req)));
+    } catch (error) {
+      sendError(res, error);
+    }
+  });
+
+  router.delete("/ai-video-agent/jobs/:id", (req, res) => {
+    try {
+      res.json(deleteManagedJob("agent", req.params.id, readRuntimeEnvFromRequest(req)));
     } catch (error) {
       sendError(res, error);
     }

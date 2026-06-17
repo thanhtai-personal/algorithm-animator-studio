@@ -131,6 +131,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .fantastic-mode [data-fantastic-enter] {
-    animation: none !important;
+    animation: none;
   }
 }

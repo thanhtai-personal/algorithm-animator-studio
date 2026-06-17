@@ -21,6 +21,7 @@
   "uiCreatePublishQueueJobsAfterRender": "Tạo publish job sau khi render",
   "uiDeleteAllJobs": "Xóa tất cả",
   "uiDeleteAllUnlockedJobsConfirm": "Xóa tất cả job chưa khóa? Job đã khóa sẽ được giữ lại.",
+  "uiDeleteJobConfirm": "Xóa job này?",
   "uiDeletedUnlockedJobsSummary": "Đã xóa {count} job. Giữ lại {kept} job đang khóa.",
   "uiDownloadJobIsRunningInBackground": "Job tải YouTube đang chạy nền.",
   "uiDraftJobSaved": "Đã lưu job nháp",

@@ -21,6 +21,7 @@
   "uiCreatePublishQueueJobsAfterRender": "Create publish queue jobs after render",
   "uiDeleteAllJobs": "Delete all",
   "uiDeleteAllUnlockedJobsConfirm": "Delete all unlocked jobs? Locked jobs will be kept.",
+  "uiDeleteJobConfirm": "Delete this job?",
   "uiDeletedUnlockedJobsSummary": "Deleted {count} job(s). Kept {kept} locked job(s).",
   "uiDownloadJobIsRunningInBackground": "Download job is running in background.",
   "uiDraftJobSaved": "Draft job saved",

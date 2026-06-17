@@ -109,6 +109,11 @@ export default function JobManagement() {
     });
   }
 
+  function confirmDeleteJob(run: () => Promise<void>) {
+    if (!window.confirm(t(lang, "uiDeleteJobConfirm"))) return Promise.resolve();
+    return run();
+  }
+
   return (
     <main className="min-h-screen bg-background px-4 py-5 text-foreground">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
@@ -188,7 +193,7 @@ export default function JobManagement() {
                     { label: t(lang, "uiRun"), icon: Play, disabled: job.status === "running", onClick: () => withBusy(`agent-${job.id}`, async () => { await runAgentVideoJobInBackground(job.id); }) },
                     { label: t(lang, "uiCancel"), icon: XCircle, disabled: job.status !== "queued" && job.status !== "running", onClick: () => withBusy(`agent-${job.id}`, async () => { await cancelAgentVideoJob(job.id); }) },
                     { label: job.locked ? t(lang, "uiUnlock") : t(lang, "uiLock"), icon: job.locked ? Unlock : Lock, onClick: () => withBusy(`agent-${job.id}`, async () => { await setAgentVideoJobLocked(job.id, !job.locked); }) },
-                    { label: t(lang, "uiDelete"), icon: Trash2, disabled: job.locked || job.status === "running", onClick: () => withBusy(`agent-${job.id}`, async () => { await deleteAgentVideoJob(job.id); }) },
+                    { label: t(lang, "uiDelete"), icon: Trash2, disabled: job.locked || job.status === "running", onClick: () => confirmDeleteJob(() => withBusy(`agent-${job.id}`, async () => { await deleteAgentVideoJob(job.id); })) },
                   ]}
                 />
               ))}
@@ -220,7 +225,7 @@ export default function JobManagement() {
                     { label: t(lang, "uiRetry"), icon: RotateCcw, disabled: job.status === "running", onClick: () => withBusy(`publish-${job.id}`, async () => { await retryPublishJob(job.id); }) },
                     { label: t(lang, "uiCancel"), icon: XCircle, disabled: job.status === "running" || job.status === "success" || job.status === "cancelled", onClick: () => withBusy(`publish-${job.id}`, async () => { await cancelPublishJob(job.id); }) },
                     { label: job.locked ? t(lang, "uiUnlock") : t(lang, "uiLock"), icon: job.locked ? Unlock : Lock, onClick: () => withBusy(`publish-${job.id}`, async () => { await setPublishJobLocked(job.id, !job.locked); }) },
-                    { label: t(lang, "uiDelete"), icon: Trash2, disabled: job.locked || job.status === "running", onClick: () => withBusy(`publish-${job.id}`, async () => { await deletePublishJob(job.id); }) },
+                    { label: t(lang, "uiDelete"), icon: Trash2, disabled: job.locked || job.status === "running", onClick: () => confirmDeleteJob(() => withBusy(`publish-${job.id}`, async () => { await deletePublishJob(job.id); })) },
                   ]}
                 />
               ))}

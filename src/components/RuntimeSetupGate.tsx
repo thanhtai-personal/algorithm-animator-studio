@@ -50,7 +50,7 @@ export function RuntimeSetupGate({ children }: PropsWithChildren) {
   if (state === "needs-setup") return <Navigate replace to="/settings?tab=health" state={{ from: location }} />;
 
   return (
-    <main className="runtime-loading-screen min-h-screen px-4">
+    <main className="runtime-loading-screen min-h-screen">
       <PageLoader className="min-h-screen" title="Loading" />
     </main>
   );

@@ -50,8 +50,8 @@ const AnalyticsTracker = () => {
 };
 
 const RouteFallback = () => (
-  <main className="min-h-[60vh] px-4 text-muted-foreground">
-    <PageLoader title="Loading" />
+  <main className="min-h-[calc(100dvh-65px)] text-muted-foreground">
+    <PageLoader className="kai-route-loader" title="Loading" />
   </main>
 );
 

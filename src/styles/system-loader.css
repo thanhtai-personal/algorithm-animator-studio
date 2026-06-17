@@ -32,22 +32,33 @@
 .kai-page-loader {
   position: relative;
   display: grid;
-  min-height: min(72vh, 720px);
+  min-height: var(--kai-page-loader-min-height, min(72dvh, 720px));
   width: 100%;
   place-items: center;
   align-content: center;
-  overflow: hidden;
-  border-radius: 1.5rem;
+  overflow-x: hidden;
+  overflow-y: visible;
+  border-radius: var(--kai-page-loader-radius, 1.5rem);
   background:
     radial-gradient(circle at 50% 48%, hsl(var(--primary) / 0.18), transparent 28%),
     radial-gradient(circle at 50% 52%, hsl(var(--accent) / 0.12), transparent 38%);
   color: hsl(var(--primary));
 }
 
+.kai-page-loader.min-h-screen {
+  --kai-page-loader-min-height: 100dvh;
+  --kai-page-loader-radius: 0;
+}
+
+.kai-page-loader.kai-route-loader {
+  --kai-page-loader-min-height: calc(100dvh - 65px);
+  --kai-page-loader-radius: 0;
+}
+
 .kai-page-loader::before {
   content: "";
   position: absolute;
-  inset: 16%;
+  inset: 12%;
   border-radius: 999px;
   background: conic-gradient(from 120deg, transparent, hsl(var(--primary) / 0.32), hsl(var(--accent) / 0.22), transparent 68%);
   filter: blur(1.5rem);

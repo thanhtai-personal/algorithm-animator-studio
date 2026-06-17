@@ -105,6 +105,55 @@ export const KIND_DEFAULTS: Record<AgentVideoForm["kind"], Partial<AgentVideoFor
   },
 };
 
+
+export function getAgentPresetInitialDefaults(presetId: string, kind: AgentVideoForm["kind"]): Partial<AgentVideoForm> | null {
+  if (presetId === "github-trending") {
+    return {
+      agentPreset: "github-trending",
+      topic: "GitHub trending open source tools",
+      platform: "youtube-long",
+      targetDurationSec: 120,
+      tone: "Hiện đại, gọn, developer-friendly, giải thích repo bằng lợi ích thực tế.",
+      extraInstruction: "Tập trung vào repo GitHub trending/open source: vấn đề giải quyết, điểm nổi bật, stars/language nếu có, ai nên thử và CTA xem link repo.",
+      ...getAgentRenderDefaults({ kind, agentPreset: "github-trending", platform: "youtube-long" }),
+    };
+  }
+  if (presetId === "maze-pathfinding") {
+    return {
+      agentPreset: "maze-pathfinding",
+      topic: "A* và Dijkstra tìm đường trong mê cung",
+      platform: "youtube-short",
+      targetDurationSec: 55,
+      tone: "Kịch tính, trực quan, nhịp nhanh, giải thích dễ hiểu như một trận đua thuật toán.",
+      extraInstruction: "Tập trung vào mê cung, đường đi, so sánh chiến thuật tìm đường và kết quả thắng/thua.",
+      ...getAgentRenderDefaults({ kind, agentPreset: "maze-pathfinding", platform: "youtube-short" }),
+    };
+  }
+  if (presetId === "algorithm-long") {
+    return {
+      agentPreset: "algorithm-long",
+      topic: "Merge Sort explained visually",
+      platform: "youtube-long",
+      targetDurationSec: 240,
+      tone: "Rõ ràng, có cấu trúc, phù hợp video dài YouTube.",
+      extraInstruction: "Chia scene có chapter, recap, ví dụ trực quan, code mapping và ý tưởng cắt ra Shorts.",
+      ...getAgentRenderDefaults({ kind, agentPreset: "algorithm-long", platform: "youtube-long" }),
+    };
+  }
+  if (presetId === "story-review") {
+    return {
+      agentPreset: "story-review",
+      topic: "Review truyện tiên hiệp đang được quan tâm",
+      platform: "youtube-short",
+      targetDurationSec: 60,
+      tone: "Review lôi cuốn, rõ ý, có nhận xét cá nhân nhưng tránh spoil quá đà.",
+      extraInstruction: "Tạo hook review, tóm tắt không spoil nặng, điểm đáng xem và câu hỏi kéo tương tác.",
+      ...getAgentRenderDefaults({ kind, agentPreset: "story-review", platform: "youtube-short" }),
+    };
+  }
+  return null;
+}
+
 export const TERMINAL_JOB_STATUSES = new Set(["success", "failed", "cancelled", "review_ready"]);
 
 export function getAgentRenderDefaults(input: { kind?: AgentVideoForm["kind"]; agentPreset?: string; platform?: AgentVideoForm["platform"] }) {
@@ -113,7 +162,7 @@ export function getAgentRenderDefaults(input: { kind?: AgentVideoForm["kind"]; a
     return {
       ...BASE_RENDER_DEFAULTS,
       renderTemplate: "story-card" as const,
-      renderAlgorithmLabel: "Story",
+      renderAlgorithmLabel: preset === "story-review" ? "Story Review" : "Story",
       renderAccentColor: "#f97316",
     };
   }
@@ -128,7 +177,7 @@ export function getAgentRenderDefaults(input: { kind?: AgentVideoForm["kind"]; a
   return {
     ...BASE_RENDER_DEFAULTS,
     renderTemplate: "algorithm-explainer" as const,
-    renderAlgorithmLabel: preset === "maze-pathfinding" ? "Pathfinding" : "Bubble Sort",
+    renderAlgorithmLabel: preset === "maze-pathfinding" ? "Pathfinding" : preset === "algorithm-long" ? "Algorithm Long" : "Bubble Sort",
     renderAspectRatio: input.platform === "youtube-long" ? "16:9" as const : "auto" as const,
   };
 }

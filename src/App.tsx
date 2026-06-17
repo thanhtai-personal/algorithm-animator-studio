@@ -13,20 +13,20 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 const queryClient = new QueryClient();
 const AlgorithmChannelPage = lazy(() => import("./pages/AlgorithmChannelPage.tsx"));
-const AlgorithmWorld = lazy(() => import("./pages/AlgorithmWorld.tsx"));
+const AlgorithmLongVideoPage = lazy(() => import("./pages/AlgorithmLongVideoPage.tsx"));
+const MazePathfindingPage = lazy(() => import("./pages/MazePathfindingPage.tsx"));
 const Auth = lazy(() => import("./pages/Auth.tsx"));
 const GeneratedAssets = lazy(() => import("./pages/GeneratedAssets.tsx"));
 const CommonVideoPage = lazy(() => import("./pages/CommonVideoPage.tsx"));
 const JobManagement = lazy(() => import("./pages/JobManagement.tsx"));
 const LegalPage = lazy(() => import("./pages/LegalPage.tsx"));
-const LongContent = lazy(() => import("./pages/LongContent.tsx"));
 const NewsChannelPage = lazy(() => import("./pages/NewsChannelPage.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const Settings = lazy(() => import("./pages/Settings.tsx"));
 const TextToSpeech = lazy(() => import("./pages/TextToSpeech.tsx"));
 const StoryChannelPage = lazy(() => import("./pages/StoryChannelPage.tsx"));
 const StoryAuthorStudio = lazy(() => import("./pages/StoryAuthorStudio.tsx"));
-const StoryReviewStudio = lazy(() => import("./pages/StoryReviewStudio.tsx"));
+const StoryReviewChannelPage = lazy(() => import("./pages/StoryReviewChannelPage.tsx"));
 const YoutubePublishing = lazy(() => import("./pages/YoutubePublishing.tsx"));
 const YoutubeTools = lazy(() => import("./pages/YoutubeTools.tsx"));
 
@@ -81,8 +81,12 @@ const App = () => (
                 <Route path="/algorithms/agentic" element={<AlgorithmChannelPage initialMode="agentic" />} />
                 <Route path="/algorithms/manual" element={<AlgorithmChannelPage initialMode="manual" />} />
                 <Route path="/algorithms/short" element={<AlgorithmChannelPage initialMode="manual" />} />
-                <Route path="/algorithms/maze" element={<AlgorithmWorld />} />
-                <Route path="/algorithms/video-long" element={<LongContent />} />
+                <Route path="/algorithms/maze" element={<MazePathfindingPage />} />
+                <Route path="/algorithms/maze/agentic" element={<MazePathfindingPage initialMode="agentic" />} />
+                <Route path="/algorithms/maze/manual" element={<MazePathfindingPage initialMode="manual" />} />
+                <Route path="/algorithms/video-long" element={<AlgorithmLongVideoPage />} />
+                <Route path="/algorithms/video-long/agentic" element={<AlgorithmLongVideoPage initialMode="agentic" />} />
+                <Route path="/algorithms/video-long/manual" element={<AlgorithmLongVideoPage initialMode="manual" />} />
                 <Route path="/news/github-trending" element={<NewsChannelPage channel="github-trending" />} />
                 <Route path="/news/github-trending/agentic" element={<NewsChannelPage channel="github-trending" initialMode="agentic" />} />
                 <Route path="/news/github-trending/manual" element={<NewsChannelPage channel="github-trending" initialMode="manual" />} />
@@ -98,18 +102,26 @@ const App = () => (
                 <Route path="/stories/manual" element={<StoryChannelPage initialMode="manual" />} />
                 <Route path="/stories/video" element={<StoryChannelPage initialMode="manual" />} />
                 <Route path="/stories/create" element={<StoryAuthorStudio />} />
-                <Route path="/stories/review" element={<StoryReviewStudio />} />
+                <Route path="/stories/review" element={<StoryReviewChannelPage />} />
+                <Route path="/stories/review/agentic" element={<StoryReviewChannelPage initialMode="agentic" />} />
+                <Route path="/stories/review/manual" element={<StoryReviewChannelPage initialMode="manual" />} />
                 <Route path="/videos" element={<CommonVideoPage />} />
                 <Route path="/videos/agentic" element={<CommonVideoPage initialMode="agentic" />} />
                 <Route path="/videos/manual" element={<CommonVideoPage initialMode="manual" />} />
                 <Route path="/jobs" element={<JobManagement />} />
                 <Route path="/maze-pathfinding" element={<Navigate replace to="/algorithms/maze" />} />
+                <Route path="/maze-pathfinding/agentic" element={<Navigate replace to="/algorithms/maze/agentic" />} />
+                <Route path="/maze-pathfinding/manual" element={<Navigate replace to="/algorithms/maze/manual" />} />
                 <Route path="/algorithm-world" element={<Navigate replace to="/algorithms/maze" />} />
                 <Route path="/long-content" element={<Navigate replace to="/algorithms/video-long" />} />
+                <Route path="/long-content/agentic" element={<Navigate replace to="/algorithms/video-long/agentic" />} />
+                <Route path="/long-content/manual" element={<Navigate replace to="/algorithms/video-long/manual" />} />
                 <Route path="/github-trending" element={<Navigate replace to="/news/github-trending" />} />
                 <Route path="/mu-news" element={<Navigate replace to="/news/football-commentary" />} />
                 <Route path="/story-author" element={<Navigate replace to="/stories/create" />} />
                 <Route path="/story-review" element={<Navigate replace to="/stories/review" />} />
+                <Route path="/story-review/agentic" element={<Navigate replace to="/stories/review/agentic" />} />
+                <Route path="/story-review/manual" element={<Navigate replace to="/stories/review/manual" />} />
                 <Route path="/story-video" element={<Navigate replace to="/stories" />} />
                 <Route path="/assets" element={<GeneratedAssets />} />
                 <Route path="/providers" element={<Navigate replace to="/settings?tab=tools" />} />

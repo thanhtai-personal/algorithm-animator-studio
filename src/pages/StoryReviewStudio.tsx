@@ -106,12 +106,12 @@ export default function StoryReviewStudio() {
         <section className="min-w-0">
           <Tabs value={studio.activeStep} onValueChange={(value) => studio.setActiveStep(value as StoryReviewStepId)} className="min-w-0">
             <div className="sticky top-0 z-20 -mx-3 mb-3 border-b border-border bg-background/95 px-3 py-2 backdrop-blur sm:-mx-4 sm:px-4 lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0">
-              <TabsList className="grid h-auto w-full grid-cols-4 gap-1 overflow-x-auto rounded-xl p-1">
+              <TabsList className="grid h-auto w-full grid-cols-4 gap-1 overflow-hidden rounded-xl p-1">
                 {STEPS.map((step) => (
-                  <TabsTrigger key={step.id} value={step.id} className="min-w-0 flex-col gap-1 px-2 py-2 text-xs sm:flex-row sm:text-sm">
+                  <TabsTrigger key={step.id} value={step.id} className="min-w-0 overflow-hidden flex-col gap-1 px-2 py-2 text-xs sm:flex-row sm:text-sm">
                     <step.icon className="h-4 w-4 shrink-0" />
-                    <span className="hidden truncate sm:inline">{step.label}</span>
-                    <span className="truncate sm:hidden">{step.shortLabel}</span>
+                    <span className="hidden min-w-0 max-w-full truncate sm:inline">{step.label}</span>
+                    <span className="min-w-0 max-w-full truncate sm:hidden">{step.shortLabel}</span>
                     {getStepDone(studio, step.id) ? <Badge className="hidden h-5 px-1.5 text-[10px] md:inline-flex" variant="outline">OK</Badge> : null}
                   </TabsTrigger>
                 ))}

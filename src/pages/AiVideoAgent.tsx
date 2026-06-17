@@ -32,7 +32,7 @@ import { AgentFlowGraph } from "@/features/ai-video-agent/components/AgentFlowGr
 import { AgentReviewCard, Empty, JobCard, LogCard, PlanCard, PublishJobsCard } from "@/features/ai-video-agent/components/AgentJobCards";
 import { AgentSettingsForm } from "@/features/ai-video-agent/components/AgentSettingsForm";
 import { AgentSelectedChannelVideos } from "@/features/ai-video-agent/components/AgentSelectedChannelVideos";
-import { DEFAULT_FORM, KIND_DEFAULTS, TERMINAL_JOB_STATUSES, getAgentRenderDefaults } from "@/features/ai-video-agent/lib/agentFormDefaults";
+import { DEFAULT_FORM, KIND_DEFAULTS, TERMINAL_JOB_STATUSES, getAgentPresetInitialDefaults, getAgentRenderDefaults } from "@/features/ai-video-agent/lib/agentFormDefaults";
 import { channelsFromKeys, getAgentPublishChannelOptions, getPreferredChannelKeys, type AgentPublishChannelOption } from "@/features/ai-video-agent/lib/publishChannelOptions";
 
 type AiVideoAgentPageText = { en: string; vi: string };
@@ -370,18 +370,8 @@ export default function AiVideoAgent({ lockedKind, initialPresetId, lockedPreset
 function createInitialForm(lockedKind?: AgentVideoForm["kind"], initialPresetId?: string): AgentVideoForm {
   if (!lockedKind) return DEFAULT_FORM;
   const base = { ...DEFAULT_FORM, ...KIND_DEFAULTS[lockedKind], kind: lockedKind };
-  if (initialPresetId === "github-trending") {
-    return enforceLockedForm({
-      ...base,
-      agentPreset: "github-trending",
-      topic: "GitHub trending open source tools",
-      platform: "youtube-long",
-      targetDurationSec: 120,
-      tone: "Hiện đại, gọn, developer-friendly, giải thích repo bằng lợi ích thực tế.",
-      extraInstruction: "Tập trung vào repo GitHub trending/open source: vấn đề giải quyết, điểm nổi bật, stars/language nếu có, ai nên thử và CTA xem link repo.",
-      ...getAgentRenderDefaults({ kind: "algorithm", agentPreset: "github-trending", platform: "youtube-long" }),
-    }, lockedKind);
-  }
+  const presetDefaults = initialPresetId ? getAgentPresetInitialDefaults(initialPresetId, lockedKind) : null;
+  if (presetDefaults) return enforceLockedForm({ ...base, ...presetDefaults }, lockedKind, initialPresetId);
   if (initialPresetId) {
     return enforceLockedForm({
       ...base,

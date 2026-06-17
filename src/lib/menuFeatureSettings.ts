@@ -28,16 +28,16 @@ const STORAGE_KEY = "kai-studio.menuFeatureSettings";
 
 export const DEFAULT_MENU_FEATURE_SETTINGS: MenuFeatureSettings = {
   "algorithm-shorts": false,
-  "algorithm-agentic": true,
-  "algorithm-manual": true,
+  "algorithm-agentic": false,
+  "algorithm-manual": false,
   "maze-pathfinding": false,
   "algorithm-long": false,
   "github-trending": false,
-  "football-agentic": true,
-  "football-manual": true,
+  "football-agentic": false,
+  "football-manual": false,
   "story-video": false,
-  "story-agentic": true,
-  "story-manual": true,
+  "story-agentic": false,
+  "story-manual": false,
   "story-author": false,
   "story-review": false,
   "common-video-agentic": true,
@@ -46,7 +46,7 @@ export const DEFAULT_MENU_FEATURE_SETTINGS: MenuFeatureSettings = {
   "youtube-tools": true,
   "mu-news": false,
   jobs: true,
-  channel: true,
+  channel: false,
   assets: true,
 };
 
@@ -174,7 +174,7 @@ export function subscribeMenuFeatureSettings(listener: (settings: MenuFeatureSet
 function sanitizeMenuFeatureSettings(values: Record<string, unknown>): MenuFeatureSettings {
   const output = { ...DEFAULT_MENU_FEATURE_SETTINGS };
   for (const key of Object.keys(output) as MenuFeatureId[]) {
-    output[key] = values[key] === true;
+    if (typeof values[key] === "boolean") output[key] = values[key];
   }
   return output;
 }

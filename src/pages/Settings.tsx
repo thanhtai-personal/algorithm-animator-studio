@@ -46,6 +46,14 @@ export default function Settings() {
     convertTemplatesJson: "[]",
     ttsTemplatesJson: "[]",
   });
+  const [savedForm, setSavedForm] = useState<SettingsForm>(() => ({ ...EMPTY_FORM, ...getRuntimeSettings() }));
+  const [savedMenuFeatures, setSavedMenuFeatures] = useState<MenuFeatureSettings>(() => getMenuFeatureSettings());
+  const [savedChillTracks, setSavedChillTracks] = useState<ChillTrack[]>(() => readChillTracks());
+  const [savedApplioTemplates, setSavedApplioTemplates] = useState<RvcApplioTemplateFileResponse>({
+    filePath: "",
+    convertTemplatesJson: "[]",
+    ttsTemplatesJson: "[]",
+  });
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
   const [voiceRows, setVoiceRows] = useState<VoiceRow[]>(() => parseVoiceRows(getRuntimeSettings().ELEVENLABS_VOICES));
   const [health, setHealth] = useState<HealthResponse | null>(null);
@@ -60,6 +68,12 @@ export default function Settings() {
   const [fantasticMode,] = useFantasticMode();
 
   const availableModels = useMemo(() => models.filter((model) => model.available).length, [models]);
+  const hasSettingsChanges = useMemo(() => {
+    return !settingsEqual(form, savedForm)
+      || !settingsEqual(menuFeatures, savedMenuFeatures)
+      || !settingsEqual(chillTracks, savedChillTracks)
+      || !settingsEqual(pickTemplateFields(applioTemplates), pickTemplateFields(savedApplioTemplates));
+  }, [applioTemplates, chillTracks, form, menuFeatures, savedApplioTemplates, savedChillTracks, savedForm, savedMenuFeatures]);
 
   useEffect(() => {
     void refreshHealth();
@@ -88,6 +102,7 @@ export default function Settings() {
       setRvcApplio(rvcApplioData);
       setVieneu(vieneuData);
       setApplioTemplates(applioTemplateData);
+      setSavedApplioTemplates(applioTemplateData);
       setYoutubeTools(youtubeToolsData);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t(lang, "settingsCouldNotCheckPiper"));
@@ -134,15 +149,25 @@ export default function Settings() {
       }),
     }));
     setApplioTemplates(savedTemplates);
+    setSavedForm(form);
+    setSavedMenuFeatures(menuFeatures);
+    setSavedChillTracks(chillTracks);
+    setSavedApplioTemplates(savedTemplates);
     toast.success(t(lang, "settingsRuntimeSaved"));
     await refreshHealth();
   }
 
   async function handleReset() {
     const savedSettings = { ...EMPTY_FORM, ...getRuntimeSettings() };
+    const savedFeatures = getMenuFeatureSettings();
+    const savedTracks = readChillTracks();
     setForm(savedSettings);
-    setMenuFeatures(getMenuFeatureSettings());
-    setChillTracks(readChillTracks());
+    setMenuFeatures(savedFeatures);
+    setChillTracks(savedTracks);
+    setApplioTemplates(savedApplioTemplates);
+    setSavedForm(savedSettings);
+    setSavedMenuFeatures(savedFeatures);
+    setSavedChillTracks(savedTracks);
     setVoiceRows(parseVoiceRows(savedSettings.ELEVENLABS_VOICES));
     toast.success(t(lang, "uiUnsavedSettingsReset"));
     await refreshHealth();
@@ -186,7 +211,9 @@ export default function Settings() {
             <h1 className="text-2xl font-semibold tracking-tight">{t(lang, "settingsTitle")}</h1>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={handleSave}><Save className="mr-2 h-4 w-4" /> {t(lang, "settingsSave")}</Button>
+            <Button onClick={handleSave} disabled={!hasSettingsChanges}>
+              <Save className="mr-2 h-4 w-4" /> {t(lang, "settingsSave")}
+            </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="ghost"><RotateCcw className="mr-2 h-4 w-4" /> {t(lang, "settingsClearOverrides")}</Button>
@@ -277,4 +304,23 @@ function getDefaultSettingsTab() {
   const tab = new URLSearchParams(window.location.search).get("tab") || "voice";
   if (tab === "modules" || tab === "providers") return "tools";
   return ["voice", "data", "tools", "chill", "api-key", "health"].includes(tab) ? tab : "voice";
+}
+
+function pickTemplateFields(value: RvcApplioTemplateFileResponse) {
+  return {
+    convertTemplatesJson: value.convertTemplatesJson,
+    ttsTemplatesJson: value.ttsTemplatesJson,
+  };
+}
+
+function settingsEqual(left: unknown, right: unknown) {
+  return stableStringify(left) === stableStringify(right);
+}
+
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value as Record<string, unknown>).sort().map((key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
 }

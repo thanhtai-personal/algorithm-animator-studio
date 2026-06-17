@@ -5,6 +5,7 @@ export type MenuFeatureId =
   | "maze-pathfinding"
   | "algorithm-long"
   | "github-trending"
+  | "football-commentary"
   | "football-agentic"
   | "football-manual"
   | "story-video"
@@ -33,6 +34,7 @@ export const DEFAULT_MENU_FEATURE_SETTINGS: MenuFeatureSettings = {
   "maze-pathfinding": false,
   "algorithm-long": false,
   "github-trending": false,
+  "football-commentary": false,
   "football-agentic": false,
   "football-manual": false,
   "story-video": false,
@@ -74,6 +76,10 @@ export const MENU_FEATURE_LABELS: Record<MenuFeatureId, { en: string; vi: string
   "github-trending": {
     en: "GitHub Trend Video",
     vi: "Video GitHub trend",
+  },
+  "football-commentary": {
+    en: "Football Commentary",
+    vi: "Bình luận bóng đá",
   },
   "football-agentic": {
     en: "Football AI Agentic",
@@ -175,6 +181,9 @@ function sanitizeMenuFeatureSettings(values: Record<string, unknown>): MenuFeatu
   const output = { ...DEFAULT_MENU_FEATURE_SETTINGS };
   for (const key of Object.keys(output) as MenuFeatureId[]) {
     if (typeof values[key] === "boolean") output[key] = values[key];
+  }
+  if (values["football-agentic"] === true || values["football-manual"] === true || values["mu-news"] === true) {
+    output["football-commentary"] = true;
   }
   return output;
 }

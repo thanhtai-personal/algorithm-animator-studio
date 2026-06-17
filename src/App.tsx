@@ -16,13 +16,12 @@ const AiVideoAgent = lazy(() => import("./pages/AiVideoAgent.tsx"));
 const AlgorithmWorld = lazy(() => import("./pages/AlgorithmWorld.tsx"));
 const Auth = lazy(() => import("./pages/Auth.tsx"));
 const GeneratedAssets = lazy(() => import("./pages/GeneratedAssets.tsx"));
-const GithubTrendingVideo = lazy(() => import("./pages/GithubTrendingVideo.tsx"));
 const Index = lazy(() => import("./pages/Index.tsx"));
 const JobManagement = lazy(() => import("./pages/JobManagement.tsx"));
 const LegalPage = lazy(() => import("./pages/LegalPage.tsx"));
 const LongContent = lazy(() => import("./pages/LongContent.tsx"));
+const NewsChannelPage = lazy(() => import("./pages/NewsChannelPage.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
-const MuNewsStudio = lazy(() => import("./pages/MuNewsStudio.tsx"));
 const Settings = lazy(() => import("./pages/Settings.tsx"));
 const TextToSpeech = lazy(() => import("./pages/TextToSpeech.tsx"));
 const StoryAuthorStudio = lazy(() => import("./pages/StoryAuthorStudio.tsx"));
@@ -84,10 +83,16 @@ const App = () => (
                 <Route path="/algorithms/short" element={<Index />} />
                 <Route path="/algorithms/maze" element={<AlgorithmWorld />} />
                 <Route path="/algorithms/video-long" element={<LongContent />} />
-                <Route path="/algorithms/github-trending" element={<GithubTrendingVideo />} />
-                <Route path="/football/commentary/agentic" element={<AiVideoAgent lockedKind="football" agentBadge="Football Agent" pageTitle={{ en: "Football Commentary AI Agentic", vi: "AI Agentic bình luận bóng đá" }} pageDescription={{ en: "Generate football commentary videos with voice, music, render and publish queue in one agent flow.", vi: "Tạo video bình luận bóng đá với voice, nhạc nền, render và publish queue trong một luồng agent." }} />} />
-                <Route path="/football/commentary/manual" element={<MuNewsStudio />} />
-                <Route path="/football/mu-news" element={<Navigate replace to="/football/commentary/manual" />} />
+                <Route path="/news/github-trending" element={<NewsChannelPage channel="github-trending" />} />
+                <Route path="/news/github-trending/agentic" element={<NewsChannelPage channel="github-trending" initialMode="agentic" />} />
+                <Route path="/news/github-trending/manual" element={<NewsChannelPage channel="github-trending" initialMode="manual" />} />
+                <Route path="/news/football-commentary" element={<NewsChannelPage channel="football-commentary" />} />
+                <Route path="/news/football-commentary/agentic" element={<NewsChannelPage channel="football-commentary" initialMode="agentic" />} />
+                <Route path="/news/football-commentary/manual" element={<NewsChannelPage channel="football-commentary" initialMode="manual" />} />
+                <Route path="/algorithms/github-trending" element={<Navigate replace to="/news/github-trending/manual" />} />
+                <Route path="/football/commentary/agentic" element={<Navigate replace to="/news/football-commentary/agentic" />} />
+                <Route path="/football/commentary/manual" element={<Navigate replace to="/news/football-commentary/manual" />} />
+                <Route path="/football/mu-news" element={<Navigate replace to="/news/football-commentary/manual" />} />
                 <Route path="/stories/agentic" element={<AiVideoAgent lockedKind="story" agentBadge="Story Agent" pageTitle={{ en: "Story AI Agentic", vi: "AI Agentic truyện" }} pageDescription={{ en: "Create story videos with the local agent while keeping the module type locked to Story.", vi: "Tạo video truyện bằng local agent, khóa module ở loại Story." }} />} />
                 <Route path="/stories/manual" element={<StoryVideoStudio />} />
                 <Route path="/stories/video" element={<StoryVideoStudio />} />
@@ -99,8 +104,8 @@ const App = () => (
                 <Route path="/maze-pathfinding" element={<Navigate replace to="/algorithms/maze" />} />
                 <Route path="/algorithm-world" element={<Navigate replace to="/algorithms/maze" />} />
                 <Route path="/long-content" element={<Navigate replace to="/algorithms/video-long" />} />
-                <Route path="/github-trending" element={<Navigate replace to="/algorithms/github-trending" />} />
-                <Route path="/mu-news" element={<Navigate replace to="/football/commentary/manual" />} />
+                <Route path="/github-trending" element={<Navigate replace to="/news/github-trending/manual" />} />
+                <Route path="/mu-news" element={<Navigate replace to="/news/football-commentary/manual" />} />
                 <Route path="/story-author" element={<Navigate replace to="/stories/create" />} />
                 <Route path="/story-review" element={<Navigate replace to="/stories/review" />} />
                 <Route path="/story-video" element={<Navigate replace to="/stories/manual" />} />

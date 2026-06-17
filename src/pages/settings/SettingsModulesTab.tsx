@@ -18,11 +18,11 @@ const FEATURE_GROUPS: Array<{
 }> = [
   {
     title: { en: "Algorithm channel screens", vi: "Màn hình kênh thuật toán" },
-    items: ["algorithm-agentic", "algorithm-manual", "maze-pathfinding", "algorithm-long", "github-trending"],
+    items: ["algorithm-agentic", "algorithm-manual", "maze-pathfinding", "algorithm-long"],
   },
   {
-    title: { en: "Football commentary screens", vi: "Màn hình bình luận bóng đá" },
-    items: ["football-agentic", "football-manual"],
+    title: { en: "News channel screens", vi: "Màn hình kênh tin tức" },
+    items: ["github-trending", "football-commentary"],
   },
   {
     title: { en: "Story channel screens", vi: "Màn hình kênh truyện" },

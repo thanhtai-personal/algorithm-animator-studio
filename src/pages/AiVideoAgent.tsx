@@ -39,14 +39,15 @@ type AiVideoAgentPageText = { en: string; vi: string };
 
 type AiVideoAgentProps = {
   lockedKind?: AgentVideoForm["kind"];
+  initialPresetId?: string;
   pageTitle?: AiVideoAgentPageText;
   pageDescription?: AiVideoAgentPageText;
   agentBadge?: string;
 };
 
-export default function AiVideoAgent({ lockedKind, pageTitle, pageDescription, agentBadge }: AiVideoAgentProps) {
+export default function AiVideoAgent({ lockedKind, initialPresetId, pageTitle, pageDescription, agentBadge }: AiVideoAgentProps) {
   const lang = useSystemLang();
-  const [form, setForm] = useState<AgentVideoForm>(() => createInitialForm(lockedKind));
+  const [form, setForm] = useState<AgentVideoForm>(() => createInitialForm(lockedKind, initialPresetId));
   const [plan, setPlan] = useState<AgentVideoPlan | null>(null);
   const [jobs, setJobs] = useState<AgentVideoJob[]>([]);
   const [publishJobs, setPublishJobs] = useState<PublishJob[]>([]);
@@ -361,9 +362,22 @@ export default function AiVideoAgent({ lockedKind, pageTitle, pageDescription, a
   );
 }
 
-function createInitialForm(lockedKind?: AgentVideoForm["kind"]): AgentVideoForm {
+function createInitialForm(lockedKind?: AgentVideoForm["kind"], initialPresetId?: string): AgentVideoForm {
   if (!lockedKind) return DEFAULT_FORM;
-  return enforceLockedForm({ ...DEFAULT_FORM, ...KIND_DEFAULTS[lockedKind], kind: lockedKind }, lockedKind);
+  const base = { ...DEFAULT_FORM, ...KIND_DEFAULTS[lockedKind], kind: lockedKind };
+  if (initialPresetId === "github-trending") {
+    return enforceLockedForm({
+      ...base,
+      agentPreset: "github-trending",
+      topic: "GitHub trending open source tools",
+      platform: "youtube-long",
+      targetDurationSec: 120,
+      tone: "Hiện đại, gọn, developer-friendly, giải thích repo bằng lợi ích thực tế.",
+      extraInstruction: "Tập trung vào repo GitHub trending/open source: vấn đề giải quyết, điểm nổi bật, stars/language nếu có, ai nên thử và CTA xem link repo.",
+      ...getAgentRenderDefaults({ kind: "algorithm", agentPreset: "github-trending", platform: "youtube-long" }),
+    }, lockedKind);
+  }
+  return enforceLockedForm(base, lockedKind);
 }
 
 function enforceLockedForm(form: AgentVideoForm, lockedKind?: AgentVideoForm["kind"]): AgentVideoForm {

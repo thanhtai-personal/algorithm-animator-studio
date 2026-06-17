@@ -1,11 +1,49 @@
-import enCommonCatalog from "../locales/en.common.json";
-import enUiCatalog from "../locales/en.ui.json";
-import viCommonCatalog from "../locales/vi.common.json";
-import viUiCatalog from "../locales/vi.ui.json";
+import enAgentCatalog from "../locales/en/agent.json";
+import enAuthCatalog from "../locales/en/auth.json";
+import enCoreCatalog from "../locales/en/core.json";
+import enMediaCatalog from "../locales/en/media.json";
+import enNavigationCatalog from "../locales/en/navigation.json";
+import enRuntimeCatalog from "../locales/en/runtime.json";
+import enSettingsCatalog from "../locales/en/settings.json";
+import enStudioCatalog from "../locales/en/studio.json";
+import enVoiceCatalog from "../locales/en/voice.json";
+import enYoutubeCatalog from "../locales/en/youtube.json";
+import viAgentCatalog from "../locales/vi/agent.json";
+import viAuthCatalog from "../locales/vi/auth.json";
+import viCoreCatalog from "../locales/vi/core.json";
+import viMediaCatalog from "../locales/vi/media.json";
+import viNavigationCatalog from "../locales/vi/navigation.json";
+import viRuntimeCatalog from "../locales/vi/runtime.json";
+import viSettingsCatalog from "../locales/vi/settings.json";
+import viStudioCatalog from "../locales/vi/studio.json";
+import viVoiceCatalog from "../locales/vi/voice.json";
+import viYoutubeCatalog from "../locales/vi/youtube.json";
 
 export type Lang = "en" | "vi";
-const enCatalog = { ...enCommonCatalog, ...enUiCatalog };
-const viCatalog = { ...viCommonCatalog, ...viUiCatalog };
+const enCatalog = {
+  ...enCoreCatalog,
+  ...enNavigationCatalog,
+  ...enSettingsCatalog,
+  ...enVoiceCatalog,
+  ...enAgentCatalog,
+  ...enMediaCatalog,
+  ...enYoutubeCatalog,
+  ...enRuntimeCatalog,
+  ...enStudioCatalog,
+  ...enAuthCatalog,
+};
+const viCatalog = {
+  ...viCoreCatalog,
+  ...viNavigationCatalog,
+  ...viSettingsCatalog,
+  ...viVoiceCatalog,
+  ...viAgentCatalog,
+  ...viMediaCatalog,
+  ...viYoutubeCatalog,
+  ...viRuntimeCatalog,
+  ...viStudioCatalog,
+  ...viAuthCatalog,
+};
 
 export type StringKey = keyof typeof enCatalog;
 

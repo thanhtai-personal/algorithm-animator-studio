@@ -121,3 +121,35 @@ html:not(.dark).fantastic-mode :where(input, textarea, [role="combobox"]) {
   background: hsl(0 0% 100% / 0.42) !important;
   border-color: hsl(190 46% 64% / 0.5) !important;
 }
+
+.fantastic-mode .kai-switch[data-state="checked"] {
+  border-color: hsl(30 96% 58% / 0.72) !important;
+  background:
+    linear-gradient(135deg, hsl(24 95% 50%), hsl(37 96% 57%)),
+    radial-gradient(circle at 26% 0%, hsl(0 0% 100% / 0.52), transparent 5rem) !important;
+  box-shadow:
+    0 0 0 1px hsl(0 0% 100% / 0.16),
+    0 0 18px hsl(28 96% 54% / 0.52),
+    0 0 34px hsl(37 96% 57% / 0.36),
+    0 12px 28px hsl(24 95% 42% / 0.24) !important;
+}
+
+.fantastic-mode .kai-switch[data-state="checked"] .switch-thumb-indicator {
+  background:
+    radial-gradient(circle at 34% 24%, hsl(0 0% 100% / 0.96), transparent 0.44rem),
+    linear-gradient(135deg, hsl(36 100% 94%), hsl(28 96% 72%)) !important;
+  box-shadow:
+    0 0 0 1px hsl(0 0% 100% / 0.3),
+    0 0 18px hsl(28 96% 54% / 0.66),
+    0 7px 20px hsl(24 95% 42% / 0.38) !important;
+}
+
+html:not(.dark).fantastic-mode .kai-switch[data-state="checked"] {
+  border-color: hsl(30 96% 50% / 0.66) !important;
+  background:
+    linear-gradient(135deg, hsl(30 96% 55%), hsl(24 95% 48%)),
+    radial-gradient(circle at 24% 0%, hsl(0 0% 100% / 0.55), transparent 5rem) !important;
+  box-shadow:
+    0 0 0 1px hsl(0 0% 100% / 0.7),
+    0 12px 24px hsl(24 95% 42% / 0.28) !important;
+}

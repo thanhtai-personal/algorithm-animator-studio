@@ -52,11 +52,11 @@ def main() -> int:
         [payload["outputPath"], payload["gradioOutputPath"], payload["gradioTtsOutputPath"]],
     )
     if not audio_path:
-        print(json.dumps({"result": make_json_safe(result)}, ensure_ascii=False, indent=2), file=sys.stderr)
+        print(json.dumps({"result": make_json_safe(result)}, ensure_ascii=True, indent=2), file=sys.stderr)
         raise RuntimeError("Applio/RVC result did not contain a non-empty downloadable audio file path.")
 
     copy_result_audio(audio_path, output_path)
-    print(json.dumps({"ok": True, "outputPath": str(output_path)}, ensure_ascii=False))
+    print(json.dumps({"ok": True, "outputPath": str(output_path)}, ensure_ascii=True))
     return 0
 
 

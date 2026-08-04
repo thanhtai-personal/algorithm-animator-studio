@@ -424,7 +424,7 @@ def load_model(backbone_choice: str, codec_choice: str, device_choice: str,
                              "presets": temp_tts._preset_voices
                         }
                         with open(voices_json_path, 'w', encoding='utf-8') as f:
-                             json.dump(voices_content, f, ensure_ascii=False, indent=2)
+                             json.dump(voices_content, f, ensure_ascii=True, indent=2)
 
                         del temp_tts
                         cleanup_gpu_memory()

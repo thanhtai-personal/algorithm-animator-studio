@@ -82,7 +82,7 @@ def create_voices_json(audio_path, text, voice_name, output_path="voices.json", 
     
     # Save to file
     with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(voices_data, f, ensure_ascii=False, indent=2)
+        json.dump(voices_data, f, ensure_ascii=True, indent=2)
     
     print(f"✅ {'Updated' if append else 'Created'} {output_path}")
     print(f"   Total voices: {len(voices_data['presets'])}")

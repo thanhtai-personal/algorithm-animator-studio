@@ -40,6 +40,27 @@ export type PlatformStyle = (typeof PLATFORM_STYLES)[number];
 export type PlatformMixMode = "single" | "alternate" | "accent" | "shuffle";
 export type MidiInstrumentMode = "auto" | "single";
 
+export const BACKGROUND_PRESETS = [
+  "neon-grid",
+  "aurora",
+  "starfield",
+  "sunset",
+  "spotlight",
+  "deep-space",
+] as const;
+
+export type BackgroundPreset = (typeof BACKGROUND_PRESETS)[number];
+export type BackgroundFit = "cover" | "contain";
+export type LyricStyle = "karaoke" | "minimal" | "boxed";
+export type LyricPosition = "top" | "middle" | "bottom";
+
+export interface LyricCue {
+  id: string;
+  startMs: number;
+  endMs: number;
+  text: string;
+}
+
 export interface NoteEvent {
   id: string;
   timeMs: number;
@@ -86,6 +107,11 @@ export interface StudioSettings {
   prismStart: string;
   prismEnd: string;
   backgroundColor: string;
+  backgroundPreset: BackgroundPreset;
+  backgroundMotion: number;
+  backgroundImageOpacity: number;
+  backgroundImageBlur: number;
+  backgroundImageFit: BackgroundFit;
   trailLength: number;
   ballSize: number;
   particleCount: number;
@@ -114,6 +140,14 @@ export interface StudioSettings {
   platformDetail: number;
   impactRipple: boolean;
   showBeatLabels: boolean;
+  lyricsEnabled: boolean;
+  lyricStyle: LyricStyle;
+  lyricPosition: LyricPosition;
+  lyricFontSize: number;
+  lyricColor: string;
+  lyricAccentColor: string;
+  lyricShadow: number;
+  lyricShowNext: boolean;
 }
 
 export interface StoredProject {

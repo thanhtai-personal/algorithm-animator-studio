@@ -28,6 +28,11 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   prismStart: '#7c5cff',
   prismEnd: '#36f1cd',
   backgroundColor: '#05060a',
+  backgroundPreset: 'neon-grid',
+  backgroundMotion: 0.55,
+  backgroundImageOpacity: 0.86,
+  backgroundImageBlur: 0,
+  backgroundImageFit: 'cover',
   trailLength: 18,
   ballSize: 13,
   particleCount: 18,
@@ -56,6 +61,14 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   platformDetail: 0.82,
   impactRipple: true,
   showBeatLabels: false,
+  lyricsEnabled: false,
+  lyricStyle: 'karaoke',
+  lyricPosition: 'bottom',
+  lyricFontSize: 38,
+  lyricColor: '#f8fafc',
+  lyricAccentColor: '#7c5cff',
+  lyricShadow: 0.78,
+  lyricShowNext: true,
 };
 
 function note(id: number, timeMs: number, midi: number, durationMs = 260): NoteEvent {

@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { MutableRefObject } from "react";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { rhythmicText } from "../i18n";
-import type { NoteEvent, StudioSettings } from "../types";
+import type { LyricCue, NoteEvent, StudioSettings } from "../types";
 import {
   buildMarbleCourse,
   clamp,
@@ -13,6 +13,8 @@ import {
   type MarblePoint,
 } from "../lib/marbleCourse";
 import { drawStyledPlatform } from "../lib/platformStyles";
+import { drawRhythmicBackground } from "../lib/backgrounds";
+import { activeLyricAt } from "../lib/lyrics";
 
 interface Props {
   events: NoteEvent[];
@@ -20,6 +22,10 @@ interface Props {
   durationMs: number;
   playing: boolean;
   playbackToken: number;
+  playbackStartMs: number;
+  playbackEndMs: number;
+  backgroundUrl: string | null;
+  lyrics: LyricCue[];
   onNote: (event: NoteEvent) => void;
   onTime: (timeMs: number) => void;
   onEnded: () => void;
@@ -28,35 +34,6 @@ interface Props {
 
 const WIDTH = 720;
 const HEIGHT = 1280;
-
-function drawBackground(ctx: CanvasRenderingContext2D, settings: StudioSettings, pulse: number, timeMs: number) {
-  const centerX = WIDTH / 2 + Math.sin(timeMs / 2800) * 46;
-  const glow = ctx.createRadialGradient(centerX, HEIGHT * 0.38, 20, WIDTH / 2, HEIGHT * 0.48, HEIGHT * 0.78);
-  glow.addColorStop(0, mixHex(settings.backgroundColor, settings.prismStart, 0.12 + pulse * 0.08));
-  glow.addColorStop(0.52, mixHex(settings.backgroundColor, settings.prismEnd, 0.035));
-  glow.addColorStop(1, settings.backgroundColor);
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-  ctx.save();
-  ctx.globalAlpha = 0.11;
-  ctx.strokeStyle = settings.shellColor;
-  ctx.lineWidth = 1;
-  const drift = (timeMs * 0.012) % 54;
-  for (let x = -54; x < WIDTH + 54; x += 54) {
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, HEIGHT); ctx.stroke();
-  }
-  for (let y = -54 + drift; y < HEIGHT + 54; y += 54) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WIDTH, y); ctx.stroke();
-  }
-  ctx.restore();
-
-  const vignette = ctx.createRadialGradient(WIDTH / 2, HEIGHT / 2, HEIGHT * 0.22, WIDTH / 2, HEIGHT / 2, HEIGHT * 0.72);
-  vignette.addColorStop(0, "rgba(0,0,0,0)");
-  vignette.addColorStop(1, "rgba(0,0,0,.58)");
-  ctx.fillStyle = vignette;
-  ctx.fillRect(0, 0, WIDTH, HEIGHT);
-}
 
 function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
   const r = Math.min(radius, width / 2, height / 2);
@@ -115,9 +92,73 @@ function drawMarble(ctx: CanvasRenderingContext2D, point: MarblePoint, cameraY: 
   ctx.shadowBlur = 0;
 }
 
-function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEvent[], platforms: MarblePlatform[], cameraY: number, durationMs: number, settings: StudioSettings, beatLabel: string) {
+
+function wrapLyric(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let line = "";
+  for (const word of words) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (line && ctx.measureText(candidate).width > maxWidth) { lines.push(line); line = word; }
+    else line = candidate;
+  }
+  if (line) lines.push(line);
+  return lines.slice(0, 3);
+}
+
+function drawLyrics(ctx: CanvasRenderingContext2D, timeMs: number, lyrics: LyricCue[], settings: StudioSettings) {
+  if (!settings.lyricsEnabled || !lyrics.length) return;
+  const { current, next } = activeLyricAt(lyrics, timeMs);
+  if (!current) return;
+  const baseY = settings.lyricPosition === "top" ? 150 : settings.lyricPosition === "middle" ? HEIGHT * 0.56 : HEIGHT - 155;
+  const fontSize = settings.lyricFontSize;
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = `800 ${fontSize}px Inter, system-ui, sans-serif`;
+  const lines = wrapLyric(ctx, current.text, WIDTH - 112);
+  const nextLines = settings.lyricShowNext && next ? wrapLyric(ctx, next.text, WIDTH - 150).slice(0, 1) : [];
+  const lineHeight = fontSize * 1.18;
+  const blockHeight = lines.length * lineHeight + (nextLines.length ? fontSize * 0.9 : 0);
+  const top = baseY - blockHeight / 2;
+  if (settings.lyricStyle === "boxed") {
+    ctx.fillStyle = "rgba(2,4,12,.62)";
+    roundedRect(ctx, 42, top - 24, WIDTH - 84, blockHeight + 48, 22);
+    ctx.fill();
+    ctx.strokeStyle = `${settings.lyricAccentColor}66`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+  ctx.shadowColor = `rgba(0,0,0,${settings.lyricShadow})`;
+  ctx.shadowBlur = 14 + settings.lyricShadow * 18;
+  const progress = Math.max(0, Math.min(1, (timeMs - current.startMs) / Math.max(1, current.endMs - current.startMs)));
+  lines.forEach((line, index) => {
+    const y = top + index * lineHeight + lineHeight / 2;
+    if (settings.lyricStyle === "karaoke") {
+      const width = Math.max(1, ctx.measureText(line).width);
+      const gradient = ctx.createLinearGradient(WIDTH / 2 - width / 2, 0, WIDTH / 2 + width / 2, 0);
+      const edge = Math.max(0.002, Math.min(0.998, progress));
+      gradient.addColorStop(0, settings.lyricAccentColor);
+      gradient.addColorStop(edge, settings.lyricAccentColor);
+      gradient.addColorStop(Math.min(1, edge + 0.002), settings.lyricColor);
+      gradient.addColorStop(1, settings.lyricColor);
+      ctx.fillStyle = gradient;
+    } else ctx.fillStyle = settings.lyricColor;
+    ctx.fillText(line, WIDTH / 2, y);
+  });
+  if (nextLines.length) {
+    ctx.shadowBlur = 8;
+    ctx.globalAlpha = 0.52;
+    ctx.font = `600 ${Math.max(18, fontSize * 0.62)}px Inter, system-ui, sans-serif`;
+    ctx.fillStyle = settings.lyricColor;
+    ctx.fillText(nextLines[0], WIDTH / 2, top + lines.length * lineHeight + fontSize * 0.48);
+  }
+  ctx.restore();
+}
+
+function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEvent[], platforms: MarblePlatform[], cameraY: number, durationMs: number, settings: StudioSettings, beatLabel: string, backgroundImage: HTMLImageElement | null, lyrics: LyricCue[]) {
   const pulse = settings.pulseAnimation ? collisionStrength(timeMs, events) * settings.animationSensitivity : 0;
-  drawBackground(ctx, settings, pulse, timeMs);
+  drawRhythmicBackground(ctx, WIDTH, HEIGHT, settings, pulse, timeMs, backgroundImage);
   for (const platform of platforms) {
     const y = platform.y - cameraY;
     if (y < -100 || y > HEIGHT + 120) continue;
@@ -137,6 +178,7 @@ function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEv
   ctx.globalAlpha = 1;
   drawParticles(ctx, platforms, cameraY, timeMs, settings);
   drawMarble(ctx, marbleAtTime(timeMs, events, platforms, settings), cameraY, pulse, settings);
+  drawLyrics(ctx, timeMs, lyrics, settings);
 
   const progress = clamp(timeMs / Math.max(1, durationMs));
   ctx.fillStyle = "rgba(255,255,255,.82)";
@@ -152,9 +194,21 @@ function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEv
   roundedRect(ctx, 76, HEIGHT - 48, (WIDTH - 152) * progress, 5, 3); ctx.fill();
 }
 
-export function RhythmicCanvas({ events, settings, durationMs, playing, playbackToken, onNote, onTime, onEnded, canvasRef }: Props) {
+function firstEventAtOrAfter(events: NoteEvent[], timeMs: number) {
+  let low = 0;
+  let high = events.length;
+  while (low < high) {
+    const mid = (low + high) >> 1;
+    if (events[mid].timeMs < timeMs) low = mid + 1;
+    else high = mid;
+  }
+  return low;
+}
+
+export function RhythmicCanvas({ events, settings, durationMs, playing, playbackToken, playbackStartMs, playbackEndMs, backgroundUrl, lyrics, onNote, onTime, onEnded, canvasRef }: Props) {
   const lang = useSystemLang();
   const beatLabel = rhythmicText(lang, "canvas.beats");
+  const [backgroundImage, setBackgroundImage] = useState<HTMLImageElement | null>(null);
   const platforms = useMemo(
     () => buildMarbleCourse(events, settings, WIDTH),
     [events, settings.platformGap, settings.platformWidth, settings.platformThickness, settings.platformTilt, settings.laneSpread, settings.minBounceDistance, settings.prismStart, settings.prismEnd, settings.autoSyncGaps],
@@ -166,22 +220,31 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
   const previousToken = useRef(playbackToken);
 
   useEffect(() => {
+    if (!backgroundUrl) { setBackgroundImage(null); return; }
+    const image = new Image();
+    image.onload = () => setBackgroundImage(image);
+    image.onerror = () => setBackgroundImage(null);
+    image.src = backgroundUrl;
+    return () => { image.onload = null; image.onerror = null; };
+  }, [backgroundUrl]);
+
+  useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
     const point = marbleAtTime(currentTime.current, events, platforms, settings);
     cameraY.current = point.y - HEIGHT * settings.cameraAnchor;
-    drawFrame(ctx, currentTime.current, events, platforms, cameraY.current, durationMs, settings, beatLabel);
-  }, [beatLabel, canvasRef, durationMs, events, platforms, settings]);
+    drawFrame(ctx, currentTime.current, events, platforms, cameraY.current, durationMs, settings, beatLabel, backgroundImage, lyrics);
+  }, [backgroundImage, beatLabel, canvasRef, durationMs, events, lyrics, platforms, settings]);
 
   useEffect(() => {
     if (previousToken.current === playbackToken) return;
     previousToken.current = playbackToken;
-    currentTime.current = 0;
-    nextNoteIndex.current = 0;
-    const point = marbleAtTime(0, events, platforms, settings);
+    currentTime.current = playbackStartMs;
+    nextNoteIndex.current = firstEventAtOrAfter(events, playbackStartMs);
+    const point = marbleAtTime(playbackStartMs, events, platforms, settings);
     cameraY.current = point.y - HEIGHT * settings.cameraAnchor;
-    onTime(0);
-  }, [events, onTime, playbackToken, platforms, settings]);
+    onTime(playbackStartMs);
+  }, [events, onTime, playbackStartMs, playbackToken, platforms, settings]);
 
   useEffect(() => {
     if (!playing) {
@@ -201,14 +264,14 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
       const marble = marbleAtTime(time, events, platforms, settings);
       const targetCamera = marble.y - HEIGHT * settings.cameraAnchor;
       cameraY.current += (targetCamera - cameraY.current) * clamp(settings.cameraSmoothing, 0.03, 1);
-      drawFrame(ctx, time, events, platforms, cameraY.current, durationMs, settings, beatLabel);
+      drawFrame(ctx, time, events, platforms, cameraY.current, durationMs, settings, beatLabel, backgroundImage, lyrics);
       onTime(time);
-      if (time >= durationMs) { onEnded(); return; }
+      if (time >= playbackEndMs) { onTime(playbackEndMs); onEnded(); return; }
       frameRef.current = requestAnimationFrame(loop);
     };
     frameRef.current = requestAnimationFrame(loop);
     return () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); };
-  }, [beatLabel, canvasRef, durationMs, events, onEnded, onNote, onTime, platforms, playing, playbackToken, settings]);
+  }, [backgroundImage, beatLabel, canvasRef, durationMs, events, lyrics, onEnded, onNote, onTime, playbackEndMs, platforms, playing, playbackToken, settings]);
 
   return <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} className="block h-auto max-h-[66vh] w-auto max-w-full rounded-xl" />;
 }

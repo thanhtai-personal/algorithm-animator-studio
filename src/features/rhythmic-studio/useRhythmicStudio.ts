@@ -9,7 +9,8 @@ import { AudioEngine } from "./lib/audioEngine";
 import { parseMidi } from "./lib/midiParser";
 import { deleteRhythmicProject, listRhythmicProjects, saveRhythmicProject } from "./lib/projectStorage";
 import { buildRhythmicTimeline, timelineDuration } from "./lib/timeline";
-import { PLATFORM_STYLES, type AudioSourceMeta, type NoteEvent, type StoredProject, type StudioSettings } from "./types";
+import { BACKGROUND_PRESETS, PLATFORM_STYLES, type AudioSourceMeta, type NoteEvent, type StoredProject, type StudioSettings } from "./types";
+import { useRhythmicMedia } from "./useRhythmicMedia";
 
 type MessageToken = { key: RhythmicTextKey; values?: Record<string, string | number> };
 
@@ -31,6 +32,11 @@ export function useRhythmicStudio() {
   const [playing, setPlaying] = useState(false);
   const [playbackToken, setPlaybackToken] = useState(0);
   const [timeMs, setTimeMs] = useState(0);
+  const [playbackStartMs, setPlaybackStartMs] = useState(0);
+  const [playbackEndMs, setPlaybackEndMs] = useState(0);
+  const [trimStartMs, setTrimStartMs] = useState(0);
+  const [trimEndMs, setTrimEndMs] = useState(0);
+  const [playingClip, setPlayingClip] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordingFormat, setRecordingFormat] = useState<ExportFormat | null>(null);
   const [statusToken, setStatusToken] = useState<MessageToken>({ key: "status.ready" });
@@ -61,10 +67,32 @@ export function useRhythmicStudio() {
   useEffect(() => audioEngine.current.setBrightness(settings.synthBrightness), [settings.synthBrightness]);
   useEffect(() => audioEngine.current.setStereoWidth(settings.synthStereoWidth), [settings.synthStereoWidth]);
   useEffect(() => () => { if (audioUrl) URL.revokeObjectURL(audioUrl); }, [audioUrl]);
+  const previousDuration = useRef(durationMs);
+  useEffect(() => {
+    const oldDuration = previousDuration.current;
+    previousDuration.current = durationMs;
+    setTrimStartMs((value) => Math.min(value, Math.max(0, durationMs - 1000)));
+    setTrimEndMs((value) => {
+      if (value <= 0 || Math.abs(value - oldDuration) < 250) return durationMs;
+      return Math.min(durationMs, Math.max(1000, value));
+    });
+    setPlaybackEndMs((value) => value <= 0 || Math.abs(value - oldDuration) < 250 ? durationMs : Math.min(value, durationMs));
+  }, [durationMs]);
 
   const patch = useCallback(<K extends keyof StudioSettings>(key: K, value: StudioSettings[K]) => {
     setSettings((current) => ({ ...current, [key]: value }));
   }, []);
+
+  const media = useRhythmicMedia(durationMs, patch);
+  const displayLyrics = useMemo(() => {
+    if (media.lyricFormat === "plain") return media.lyrics;
+    const speed = Math.max(0.1, settings.playbackSpeed);
+    return media.lyrics.map((cue) => {
+      const startMs = Math.max(0, cue.startMs / speed + settings.syncOffsetMs);
+      const endMs = Math.max(startMs + 120, cue.endMs / speed + settings.syncOffsetMs);
+      return { ...cue, startMs, endMs };
+    });
+  }, [media.lyricFormat, media.lyrics, settings.playbackSpeed, settings.syncOffsetMs]);
 
   const stopOriginalAudio = useCallback(() => audioElementRef.current?.pause(), []);
   const stopPlaybackAudio = useCallback(() => {
@@ -98,15 +126,28 @@ export function useRhythmicStudio() {
     await Promise.all(tasks);
   }, [settings.playOriginalSong, source.type, startMidiAudio, startOriginalAudio]);
 
-  const resetAndPlay = useCallback(async () => {
+  const playRange = useCallback(async (startMs: number, endMs: number, clip = false) => {
+    const start = Math.max(0, Math.min(startMs, durationMs));
+    const end = Math.max(start + 1, Math.min(endMs, durationMs));
     await audioEngine.current.ensure();
     stopPlaybackAudio();
+    setPlaybackStartMs(start);
+    setPlaybackEndMs(end);
+    setPlayingClip(clip);
     setPlaybackToken((value) => value + 1);
-    setTimeMs(0);
+    setTimeMs(start);
     setPlaying(true);
     setStatusToken({ key: "status.playing" });
-    try { await startPlaybackAudio(0); } catch { setStatusToken({ key: "status.playingBlocked" }); }
-  }, [startPlaybackAudio, stopPlaybackAudio]);
+    try { await startPlaybackAudio(start); } catch { setStatusToken({ key: "status.playingBlocked" }); }
+  }, [durationMs, startPlaybackAudio, stopPlaybackAudio]);
+
+  const resetAndPlay = useCallback(async () => {
+    await playRange(0, durationMs, false);
+  }, [durationMs, playRange]);
+
+  const previewTrim = useCallback(async () => {
+    await playRange(trimStartMs, trimEndMs, true);
+  }, [playRange, trimEndMs, trimStartMs]);
 
   const togglePlayback = useCallback(async () => {
     if (playing) {
@@ -116,22 +157,26 @@ export function useRhythmicStudio() {
       return;
     }
     await audioEngine.current.ensure();
-    if (timeMs > 0 && timeMs < durationMs - 120) {
+    const activeEnd = playbackEndMs || durationMs;
+    if (timeMs >= playbackStartMs && timeMs < activeEnd - 120) {
       setPlaying(true);
       setStatusToken({ key: "status.playing" });
       await startPlaybackAudio(timeMs).catch(() => undefined);
       return;
     }
     await resetAndPlay();
-  }, [durationMs, playing, resetAndPlay, startPlaybackAudio, stopPlaybackAudio, timeMs]);
+  }, [durationMs, playbackEndMs, playbackStartMs, playing, resetAndPlay, startPlaybackAudio, stopPlaybackAudio, timeMs]);
 
   const resetPlayback = useCallback(() => {
     setPlaying(false);
     stopPlaybackAudio();
     setPlaybackToken((value) => value + 1);
     setTimeMs(0);
+    setPlaybackStartMs(0);
+    setPlaybackEndMs(durationMs);
+    setPlayingClip(false);
     setStatusToken({ key: "status.reset" });
-  }, [stopPlaybackAudio]);
+  }, [durationMs, stopPlaybackAudio]);
 
   const onNote = useCallback((event: NoteEvent) => {
     void audioEngine.current.playNote(event.midi, event.velocity, event.durationMs, settings.synthPreset);
@@ -143,6 +188,7 @@ export function useRhythmicStudio() {
 
   const onEnded = useCallback(() => {
     setPlaying(false);
+    setPlayingClip(false);
     stopPlaybackAudio();
     setStatusToken({ key: recording ? "status.finalizing" : "status.finished" });
     if (recording) finishRecording();
@@ -157,7 +203,10 @@ export function useRhythmicStudio() {
     setPlaybackToken((value) => value + 1);
     setTimeMs(0);
     setPlaying(false);
-    setSource({ type: "builtin", name, durationMs: events.at(-1)?.timeMs ?? 0, eventCount: events.length });
+    const nextDuration = events.at(-1)?.timeMs ?? 0;
+    setTrimStartMs(0);
+    setTrimEndMs(nextDuration);
+    setSource({ type: "builtin", name, durationMs: nextDuration, eventCount: events.length });
     setAudioInfoToken({ key: "info.builtin" });
     setStatusToken({ key: "status.loaded", values: { name } });
   }, [stopPlaybackAudio]);
@@ -172,7 +221,10 @@ export function useRhythmicStudio() {
       setPlaying(false);
       setTimeMs(0);
       setPlaybackToken((value) => value + 1);
-      setSource({ type: "midi", name: file.name, durationMs: events.at(-1)?.timeMs ?? 0, eventCount: events.length });
+      const nextDuration = events.at(-1)?.timeMs ?? 0;
+      setTrimStartMs(0);
+      setTrimEndMs(nextDuration);
+      setSource({ type: "midi", name: file.name, durationMs: nextDuration, eventCount: events.length });
       setAudioInfoToken({ key: "info.midi", values: { name: file.name, size: prettyBytes(file.size), count: events.length } });
       setStatusToken({ key: "status.midiParsed" });
       toast.success(rhythmicText(lang, "toast.midiImported"));
@@ -195,7 +247,10 @@ export function useRhythmicStudio() {
       setPlaying(false);
       setTimeMs(0);
       setPlaybackToken((value) => value + 1);
-      setSource({ type: "audio", name: file.name, durationMs: buffer.duration * 1000, eventCount: events.length });
+      const nextDuration = buffer.duration * 1000;
+      setTrimStartMs(0);
+      setTrimEndMs(nextDuration);
+      setSource({ type: "audio", name: file.name, durationMs: nextDuration, eventCount: events.length });
       setAudioInfoToken({ key: "info.audio", values: { name: file.name, size: prettyBytes(file.size), count: events.length } });
       setStatusToken({ key: "status.audioAnalyzed" });
       toast.success(rhythmicText(lang, "toast.detectedHits", { count: events.length }));
@@ -224,6 +279,8 @@ export function useRhythmicStudio() {
       platformAccentStyle: PLATFORM_STYLES[Math.floor(Math.random() * PLATFORM_STYLES.length)],
       platformAccentEvery: Math.round(4 + Math.random() * 8),
       platformDetail: +(0.58 + Math.random() * 0.55).toFixed(2),
+      backgroundPreset: BACKGROUND_PRESETS[Math.floor(Math.random() * BACKGROUND_PRESETS.length)],
+      backgroundMotion: +(0.28 + Math.random() * 0.9).toFixed(2),
       trailLength: Math.round(10 + Math.random() * 28),
       particleCount: Math.round(10 + Math.random() * 30),
     }));
@@ -245,7 +302,14 @@ export function useRhythmicStudio() {
     else setStatusToken({ key: project.source ? "status.presetReimport" : "status.presetLoaded" });
   }, [loadBuiltin]);
 
-  const recordVideo = useCallback(async (format: ExportFormat = "webm") => {
+  const setTrimRange = useCallback((startMs: number, endMs: number) => {
+    const start = Math.max(0, Math.min(startMs, Math.max(0, durationMs - 1000)));
+    const end = Math.min(durationMs, Math.max(start + 1000, endMs));
+    setTrimStartMs(start);
+    setTrimEndMs(end);
+  }, [durationMs]);
+
+  const recordVideo = useCallback(async (format: ExportFormat = "webm", clipOnly = false) => {
     const canvas = canvasRef.current;
     if (!canvas || typeof canvas.captureStream !== "function" || typeof MediaRecorder === "undefined") {
       toast.error(rhythmicText(lang, "error.recordingUnsupported"));
@@ -272,7 +336,8 @@ export function useRhythmicStudio() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${safeFileName(projectName)}.${exportFormat.id}`;
+      const clipSuffix = clipOnly ? `-clip-${Math.round(trimStartMs / 1000)}-${Math.round(trimEndMs / 1000)}` : "";
+      link.download = `${safeFileName(projectName)}${clipSuffix}.${exportFormat.id}`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1500);
       stream.getTracks().forEach((track) => track.stop());
@@ -292,8 +357,9 @@ export function useRhythmicStudio() {
     setRecording(true);
     setRecordingFormat(format);
     setStatusToken({ key: "status.recording", values: { format: exportFormat.label } });
-    await resetAndPlay();
-  }, [lang, projectName, resetAndPlay]);
+    if (clipOnly) await playRange(trimStartMs, trimEndMs, true);
+    else await resetAndPlay();
+  }, [lang, playRange, projectName, resetAndPlay, trimEndMs, trimStartMs]);
 
-  return { settings, patch, sourceEvents, source, audioUrl, audioFileInfo, playing, playbackToken, timeMs, setTimeMs, recording, recordingFormat, status, projectName, setProjectName, projects, canvasRef, audioElementRef, timeline, durationMs, onNote, onEnded, togglePlayback, resetPlayback, loadBuiltin, importMidi, importAudio, randomize, saveProject, removeProject, loadProject, recordVideo };
+  return { settings, patch, sourceEvents, source, audioUrl, audioFileInfo, playing, playingClip, playbackToken, playbackStartMs, playbackEndMs, timeMs, setTimeMs, trimStartMs, trimEndMs, setTrimRange, previewTrim, recording, recordingFormat, status, projectName, setProjectName, projects, canvasRef, audioElementRef, timeline, durationMs, onNote, onEnded, togglePlayback, resetPlayback, loadBuiltin, importMidi, importAudio, randomize, saveProject, removeProject, loadProject, recordVideo, ...media, lyrics: displayLyrics };
 }

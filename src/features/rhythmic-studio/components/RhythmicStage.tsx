@@ -5,6 +5,7 @@ import { useSystemLang } from "@/hooks/use-system-lang";
 import { rhythmicText } from "../i18n";
 import { RhythmicCanvas } from "./RhythmicCanvas";
 import { RhythmicTimeline } from "./RhythmicTimeline";
+import { RhythmicTrimPanel } from "./RhythmicTrimPanel";
 import type { useRhythmicStudio } from "../useRhythmicStudio";
 
 type Studio = ReturnType<typeof useRhythmicStudio>;
@@ -19,7 +20,7 @@ export function RhythmicStage({ studio }: { studio: Studio }) {
     </div>
 
     <div className="mx-auto flex max-h-[68vh] justify-center overflow-hidden rounded-2xl border bg-black p-2 shadow-2xl">
-      <RhythmicCanvas events={studio.timeline} settings={studio.settings} durationMs={studio.durationMs} playing={studio.playing} playbackToken={studio.playbackToken} onNote={studio.onNote} onTime={studio.setTimeMs} onEnded={studio.onEnded} canvasRef={studio.canvasRef} />
+      <RhythmicCanvas events={studio.timeline} settings={studio.settings} durationMs={studio.durationMs} playing={studio.playing} playbackToken={studio.playbackToken} playbackStartMs={studio.playbackStartMs} playbackEndMs={studio.playbackEndMs || studio.durationMs} backgroundUrl={studio.backgroundUrl} lyrics={studio.lyrics} onNote={studio.onNote} onTime={studio.setTimeMs} onEnded={studio.onEnded} canvasRef={studio.canvasRef} />
     </div>
 
     <div className="flex flex-wrap items-center justify-center gap-2">
@@ -34,6 +35,7 @@ export function RhythmicStage({ studio }: { studio: Studio }) {
         {studio.recording && studio.recordingFormat === "mp4" ? t("stage.recordingMp4") : t("stage.exportMp4")}
       </Button>
     </div>
-    <RhythmicTimeline events={studio.timeline} timeMs={studio.timeMs} durationMs={studio.durationMs} />
+    <RhythmicTimeline events={studio.timeline} timeMs={studio.timeMs} durationMs={studio.durationMs} trimStartMs={studio.trimStartMs} trimEndMs={studio.trimEndMs} />
+    <RhythmicTrimPanel durationMs={studio.durationMs} timeMs={studio.timeMs} trimStartMs={studio.trimStartMs} trimEndMs={studio.trimEndMs} playingClip={studio.playingClip} recording={studio.recording} onRangeChange={studio.setTrimRange} onPreview={() => void studio.previewTrim()} onExport={(format) => void studio.recordVideo(format, true)} />
   </section>;
 }

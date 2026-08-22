@@ -9,6 +9,8 @@ import { useSystemLang } from "@/hooks/use-system-lang";
 import { BUILTIN_MELODIES } from "../defaults";
 import { melodyLabel, rhythmicText, type RhythmicTextKey } from "../i18n";
 import { PLATFORM_STYLES, SYNTH_PRESETS, type AudioSourceMeta, type StudioSettings } from "../types";
+import type { LyricFormat } from "../lib/lyrics";
+import { RhythmicMediaAccordionItems } from "./RhythmicMediaControls";
 
 type Patch = <K extends keyof StudioSettings>(key: K, value: StudioSettings[K]) => void;
 
@@ -21,6 +23,16 @@ type Props = {
   loadBuiltin: (name: string) => void;
   importMidi: (file: File) => Promise<void>;
   importAudio: (file: File) => Promise<void>;
+  backgroundName: string | null;
+  importBackground: (file: File) => Promise<void>;
+  clearBackground: () => void;
+  lyricRaw: string;
+  setLyricRaw: (value: string) => void;
+  lyricCount: number;
+  lyricFormat: LyricFormat | null;
+  importLyrics: (file: File) => Promise<void>;
+  applyLyrics: () => void;
+  clearLyrics: () => void;
 };
 
 function UploadSourceButton({ title, hint, accept, kind, onFile }: { title: string; hint: string; accept: string; kind: "midi" | "audio"; onFile: (file: File) => Promise<void> }) {
@@ -51,7 +63,7 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
   return <div className="flex items-center justify-between gap-3"><Label className="text-sm">{label}</Label><input className="h-9 w-14 cursor-pointer rounded-md border bg-transparent p-1" type="color" value={value} onChange={(event) => onChange(event.target.value)} /></div>;
 }
 
-export function RhythmicControls({ settings, source, sourceInfo, usableHits, patch, loadBuiltin, importMidi, importAudio }: Props) {
+export function RhythmicControls({ settings, source, sourceInfo, usableHits, patch, loadBuiltin, importMidi, importAudio, backgroundName, importBackground, clearBackground, lyricRaw, setLyricRaw, lyricCount, lyricFormat, importLyrics, applyLyrics, clearLyrics }: Props) {
   const lang = useSystemLang();
   const t = (key: RhythmicTextKey, values?: Record<string, string | number>) => rhythmicText(lang, key, values);
   const accelerationOptions = (["none", "ease-in", "ease-out", "pulse"] as const).map((value) => ({ value, label: t(`acceleration.${value}` as RhythmicTextKey) }));
@@ -120,6 +132,8 @@ export function RhythmicControls({ settings, source, sourceInfo, usableHits, pat
         <ColorField label={t("visual.neonEnd")} value={settings.prismEnd} onChange={(value) => patch("prismEnd", value)} />
         <ColorField label={t("visual.background")} value={settings.backgroundColor} onChange={(value) => patch("backgroundColor", value)} />
       </AccordionContent></AccordionItem>
+
+      <RhythmicMediaAccordionItems settings={settings} patch={patch} backgroundName={backgroundName} importBackground={importBackground} clearBackground={clearBackground} lyricRaw={lyricRaw} setLyricRaw={setLyricRaw} lyricCount={lyricCount} lyricFormat={lyricFormat} importLyrics={importLyrics} applyLyrics={applyLyrics} clearLyrics={clearLyrics} />
 
       <AccordionItem value="sound"><AccordionTrigger>{t("section.sound")}</AccordionTrigger><AccordionContent className="space-y-4 px-1">
         <RangeField label={t("sound.musicVolume")} value={settings.musicVolume} min={0} max={1.15} step={0.02} onChange={(value) => patch("musicVolume", value)} />

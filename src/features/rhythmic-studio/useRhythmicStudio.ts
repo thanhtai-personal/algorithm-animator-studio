@@ -35,7 +35,10 @@ export function useRhythmicStudio() {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timeline = useMemo(() => buildRhythmicTimeline(sourceEvents, settings), [sourceEvents, settings]);
-  const durationMs = useMemo(() => timelineDuration(timeline), [timeline]);
+  const durationMs = useMemo(() => {
+    const sourceEnd = source.durationMs / Math.max(0.1, settings.playbackSpeed) + settings.syncOffsetMs;
+    return Math.max(timelineDuration(timeline), sourceEnd, 1000);
+  }, [settings.playbackSpeed, settings.syncOffsetMs, source.durationMs, timeline]);
 
   useEffect(() => audioEngine.current.setVolume(settings.synthVolume), [settings.synthVolume]);
   useEffect(() => () => { if (audioUrl) URL.revokeObjectURL(audioUrl); }, [audioUrl]);
@@ -125,8 +128,21 @@ export function useRhythmicStudio() {
   }, [stopOriginalAudio]);
 
   const randomize = useCallback(() => {
-    setSettings((current) => ({ ...current, curveIntensity: +(0.2 + Math.random() * 0.75).toFixed(2), curvePathLength: +(0.35 + Math.random() * 0.6).toFixed(2), shieldRadius: +(0.62 + Math.random() * 0.2).toFixed(2), ringPulseSensitivity: +(0.45 + Math.random() * 0.55).toFixed(2), trailLength: Math.round(8 + Math.random() * 28), particleCount: Math.round(8 + Math.random() * 28) }));
-    setStatus("Visual motion randomized");
+    setSettings((current) => ({
+      ...current,
+      curveIntensity: +(0.18 + Math.random() * 0.78).toFixed(2),
+      curvePathLength: +(0.35 + Math.random() * 0.6).toFixed(2),
+      platformGap: Math.round(115 + Math.random() * 90),
+      platformWidth: Math.round(180 + Math.random() * 120),
+      platformTilt: Math.round(2 + Math.random() * 12),
+      laneSpread: Math.round(330 + Math.random() * 190),
+      bounceHeight: Math.round(90 + Math.random() * 105),
+      cameraAnchor: +(0.28 + Math.random() * 0.14).toFixed(2),
+      platformGlow: +(0.5 + Math.random() * 0.75).toFixed(2),
+      trailLength: Math.round(10 + Math.random() * 28),
+      particleCount: Math.round(10 + Math.random() * 30),
+    }));
+    setStatus("Marble course randomized");
   }, []);
 
   const saveProject = useCallback(() => {

@@ -22,7 +22,8 @@ type Props = {
 };
 
 function RangeField({ label, value, min, max, step, unit = "", onChange }: { label: string; value: number; min: number; max: number; step: number; unit?: string; onChange: (value: number) => void }) {
-  return <div className="space-y-2"><div className="flex items-center justify-between gap-3"><Label className="text-xs text-muted-foreground">{label}</Label><span className="text-xs font-semibold tabular-nums">{Number.isInteger(step) ? value : value.toFixed(step < 0.1 ? 2 : 1)}{unit}</span></div><Slider value={[value]} min={min} max={max} step={step} onValueChange={([next]) => onChange(next)} /></div>;
+  const displayed = Number.isInteger(step) ? value : value.toFixed(step < 0.1 ? 2 : 1);
+  return <div className="space-y-2"><div className="flex items-center justify-between gap-3"><Label className="text-xs text-muted-foreground">{label}</Label><span className="text-xs font-semibold tabular-nums">{displayed}{unit}</span></div><Slider value={[value]} min={min} max={max} step={step} onValueChange={([next]) => onChange(next)} /></div>;
 }
 
 function ToggleField({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
@@ -39,8 +40,8 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
 
 export function RhythmicControls({ settings, source, sourceInfo, usableHits, patch, loadBuiltin, importMidi, importAudio }: Props) {
   return <div className="space-y-3">
-    <div><h2 className="font-semibold">Rhythmic controls</h2><p className="text-xs text-muted-foreground">{usableHits} usable collisions</p></div>
-    <Accordion type="multiple" defaultValue={["song", "motion", "shield"]} className="w-full">
+    <div><h2 className="font-semibold">Marble Music controls</h2><p className="text-xs text-muted-foreground">{usableHits} beat platforms</p></div>
+    <Accordion type="multiple" defaultValue={["song", "course", "motion"]} className="w-full">
       <AccordionItem value="song"><AccordionTrigger>Song & timing</AccordionTrigger><AccordionContent className="space-y-4 px-1">
         <SelectField label="Built-in sequence" value={source.type === "builtin" ? source.name : "imported"} options={[{ value: "imported", label: "Imported source" }, ...Object.keys(BUILTIN_MELODIES).map((name) => ({ value: name, label: name }))]} onChange={(value) => value !== "imported" && loadBuiltin(value)} />
         <div className="grid grid-cols-2 gap-2">
@@ -51,33 +52,51 @@ export function RhythmicControls({ settings, source, sourceInfo, usableHits, pat
         <ToggleField label="Play original song" checked={settings.playOriginalSong} onChange={(value) => patch("playOriginalSong", value)} />
         <RangeField label="Playback speed" value={settings.playbackSpeed} min={0.35} max={2} step={0.05} unit="×" onChange={(value) => patch("playbackSpeed", value)} />
         <RangeField label="Sync offset" value={settings.syncOffsetMs} min={-400} max={400} step={5} unit="ms" onChange={(value) => patch("syncOffsetMs", value)} />
-        <RangeField label="Min bounce spacing" value={settings.minBounceSpacingMs} min={40} max={600} step={10} unit="ms" onChange={(value) => patch("minBounceSpacingMs", value)} />
-        <RangeField label="Min bounce distance" value={settings.minBounceDistance} min={8} max={120} step={2} unit="px" onChange={(value) => patch("minBounceDistance", value)} />
-        <ToggleField label="Auto-sync gaps" checked={settings.autoSyncGaps} onChange={(value) => patch("autoSyncGaps", value)} />
+        <RangeField label="Min beat spacing" value={settings.minBounceSpacingMs} min={40} max={600} step={10} unit="ms" onChange={(value) => patch("minBounceSpacingMs", value)} />
+        <ToggleField label="Auto-sync dense hits" checked={settings.autoSyncGaps} onChange={(value) => patch("autoSyncGaps", value)} />
       </AccordionContent></AccordionItem>
-      <AccordionItem value="motion"><AccordionTrigger>Ball motion</AccordionTrigger><AccordionContent className="space-y-4 px-1">
-        <ToggleField label="Decouple ball speed" checked={settings.decoupleBallSpeed} onChange={(value) => patch("decoupleBallSpeed", value)} />
+
+      <AccordionItem value="course"><AccordionTrigger>Marble course</AccordionTrigger><AccordionContent className="space-y-4 px-1">
+        <RangeField label="Platform width" value={settings.platformWidth} min={120} max={360} step={4} unit="px" onChange={(value) => patch("platformWidth", value)} />
+        <RangeField label="Platform thickness" value={settings.platformThickness} min={8} max={34} step={1} unit="px" onChange={(value) => patch("platformThickness", value)} />
+        <RangeField label="Vertical platform gap" value={settings.platformGap} min={90} max={240} step={5} unit="px" onChange={(value) => patch("platformGap", value)} />
+        <RangeField label="Lane spread" value={settings.laneSpread} min={220} max={560} step={5} unit="px" onChange={(value) => patch("laneSpread", value)} />
+        <RangeField label="Min horizontal jump" value={settings.minBounceDistance} min={8} max={140} step={2} unit="px" onChange={(value) => patch("minBounceDistance", value)} />
+        <RangeField label="Platform tilt" value={settings.platformTilt} min={0} max={18} step={1} unit="°" onChange={(value) => patch("platformTilt", value)} />
+        <RangeField label="Platform glow" value={settings.platformGlow} min={0} max={1.5} step={0.05} onChange={(value) => patch("platformGlow", value)} />
+        <ToggleField label="Impact ripple" checked={settings.impactRipple} onChange={(value) => patch("impactRipple", value)} />
+        <ToggleField label="Show beat numbers" checked={settings.showBeatLabels} onChange={(value) => patch("showBeatLabels", value)} />
+      </AccordionContent></AccordionItem>
+
+      <AccordionItem value="motion"><AccordionTrigger>Marble motion & camera</AccordionTrigger><AccordionContent className="space-y-4 px-1">
+        <RangeField label="Bounce height" value={settings.bounceHeight} min={45} max={260} step={5} unit="px" onChange={(value) => patch("bounceHeight", value)} />
+        <RangeField label="Arc curve" value={settings.curveIntensity} min={0} max={1.2} step={0.02} onChange={(value) => patch("curveIntensity", value)} />
+        <RangeField label="Arc path length" value={settings.curvePathLength} min={0} max={1.2} step={0.02} onChange={(value) => patch("curvePathLength", value)} />
+        <RangeField label="Camera vertical anchor" value={settings.cameraAnchor} min={0.2} max={0.55} step={0.01} onChange={(value) => patch("cameraAnchor", value)} />
+        <RangeField label="Camera follow" value={settings.cameraSmoothing} min={0.03} max={0.65} step={0.01} onChange={(value) => patch("cameraSmoothing", value)} />
+        <ToggleField label="Shape speed inside each beat" checked={settings.decoupleBallSpeed} onChange={(value) => patch("decoupleBallSpeed", value)} />
         <SelectField label="Acceleration mode" value={settings.accelerationMode} options={["none", "ease-in", "ease-out", "pulse"].map((value) => ({ value, label: value }))} onChange={(value) => patch("accelerationMode", value as StudioSettings["accelerationMode"])} />
         <RangeField label="Acceleration factor" value={settings.accelerationFactor} min={0.5} max={2.5} step={0.05} onChange={(value) => patch("accelerationFactor", value)} />
         <RangeField label="Acceleration rate" value={settings.accelerationRate} min={0.4} max={3} step={0.05} onChange={(value) => patch("accelerationRate", value)} />
-        <RangeField label="Min speed cap" value={settings.minSpeedCap} min={0.2} max={1.4} step={0.05} unit="×" onChange={(value) => patch("minSpeedCap", value)} />
-        <RangeField label="Max speed cap" value={settings.maxSpeedCap} min={1} max={4} step={0.05} unit="×" onChange={(value) => patch("maxSpeedCap", value)} />
-        <RangeField label="Curve intensity" value={settings.curveIntensity} min={0} max={1.2} step={0.02} onChange={(value) => patch("curveIntensity", value)} />
-        <RangeField label="Curve path length" value={settings.curvePathLength} min={0} max={1.2} step={0.02} onChange={(value) => patch("curvePathLength", value)} />
       </AccordionContent></AccordionItem>
-      <AccordionItem value="shield"><AccordionTrigger>Shield ring</AccordionTrigger><AccordionContent className="space-y-4 px-1">
-        <ToggleField label="Rhythmic shield ring" checked={settings.shieldEnabled} onChange={(value) => patch("shieldEnabled", value)} />
-        <RangeField label="Shield radius" value={settings.shieldRadius} min={0.48} max={0.9} step={0.01} onChange={(value) => patch("shieldRadius", value)} />
-        <SelectField label="Destroy mode" value={settings.shieldDestroyMode} options={[{ value: "chip", label: "Chip away" }, { value: "segment", label: "Random segments" }, { value: "sweep", label: "Sweep" }]} onChange={(value) => patch("shieldDestroyMode", value as StudioSettings["shieldDestroyMode"])} />
-        <RangeField label="Circle size multiplier" value={settings.circleSizeMultiplier} min={0.65} max={1.25} step={0.01} unit="×" onChange={(value) => patch("circleSizeMultiplier", value)} />
-      </AccordionContent></AccordionItem>
+
       <AccordionItem value="visual"><AccordionTrigger>Reactive visuals</AccordionTrigger><AccordionContent className="space-y-4 px-1">
-        <ToggleField label="Pulse animation" checked={settings.pulseAnimation} onChange={(value) => patch("pulseAnimation", value)} /><ToggleField label="Glow animation" checked={settings.glowAnimation} onChange={(value) => patch("glowAnimation", value)} />
-        <RangeField label="Ring pulse sensitivity" value={settings.ringPulseSensitivity} min={0} max={1.5} step={0.05} onChange={(value) => patch("ringPulseSensitivity", value)} /><RangeField label="Animation sensitivity" value={settings.animationSensitivity} min={0} max={1.5} step={0.05} onChange={(value) => patch("animationSensitivity", value)} /><RangeField label="Spectral density" value={settings.spectralDensity} min={0} max={1.5} step={0.05} onChange={(value) => patch("spectralDensity", value)} /><RangeField label="Trail length" value={settings.trailLength} min={0} max={48} step={1} onChange={(value) => patch("trailLength", value)} /><RangeField label="Collision particles" value={settings.particleCount} min={0} max={48} step={1} onChange={(value) => patch("particleCount", value)} />
+        <ToggleField label="Impact pulse" checked={settings.pulseAnimation} onChange={(value) => patch("pulseAnimation", value)} />
+        <ToggleField label="Marble glow" checked={settings.glowAnimation} onChange={(value) => patch("glowAnimation", value)} />
+        <RangeField label="Impact sensitivity" value={settings.animationSensitivity} min={0} max={1.5} step={0.05} onChange={(value) => patch("animationSensitivity", value)} />
+        <RangeField label="Particle density" value={settings.spectralDensity} min={0} max={1.5} step={0.05} onChange={(value) => patch("spectralDensity", value)} />
+        <RangeField label="Trail length" value={settings.trailLength} min={0} max={48} step={1} onChange={(value) => patch("trailLength", value)} />
+        <RangeField label="Collision particles" value={settings.particleCount} min={0} max={48} step={1} onChange={(value) => patch("particleCount", value)} />
+        <RangeField label="Marble size" value={settings.ballSize} min={6} max={28} step={1} unit="px" onChange={(value) => patch("ballSize", value)} />
+        <ColorField label="Grid / shell" value={settings.shellColor} onChange={(value) => patch("shellColor", value)} />
+        <ColorField label="Neon start" value={settings.prismStart} onChange={(value) => patch("prismStart", value)} />
+        <ColorField label="Neon end" value={settings.prismEnd} onChange={(value) => patch("prismEnd", value)} />
+        <ColorField label="Background" value={settings.backgroundColor} onChange={(value) => patch("backgroundColor", value)} />
       </AccordionContent></AccordionItem>
-      <AccordionItem value="arena"><AccordionTrigger>Arena & sound</AccordionTrigger><AccordionContent className="space-y-4 px-1">
-        <ColorField label="Shell color" value={settings.shellColor} onChange={(value) => patch("shellColor", value)} /><ColorField label="Prism start" value={settings.prismStart} onChange={(value) => patch("prismStart", value)} /><ColorField label="Prism end" value={settings.prismEnd} onChange={(value) => patch("prismEnd", value)} /><ColorField label="Background" value={settings.backgroundColor} onChange={(value) => patch("backgroundColor", value)} />
-        <RangeField label="Ball size" value={settings.ballSize} min={6} max={28} step={1} unit="px" onChange={(value) => patch("ballSize", value)} /><SelectField label="Synth preset" value={settings.synthPreset} options={["chime", "piano", "fm", "vibraphone", "bell"].map((value) => ({ value, label: value }))} onChange={(value) => patch("synthPreset", value as StudioSettings["synthPreset"])} /><RangeField label="Synth volume" value={settings.synthVolume} min={0} max={1} step={0.02} onChange={(value) => patch("synthVolume", value)} />
+
+      <AccordionItem value="sound"><AccordionTrigger>Marble sound</AccordionTrigger><AccordionContent className="space-y-4 px-1">
+        <SelectField label="Hit synth" value={settings.synthPreset} options={["chime", "piano", "fm", "vibraphone", "bell"].map((value) => ({ value, label: value }))} onChange={(value) => patch("synthPreset", value as StudioSettings["synthPreset"])} />
+        <RangeField label="Synth volume" value={settings.synthVolume} min={0} max={1} step={0.02} onChange={(value) => patch("synthVolume", value)} />
       </AccordionContent></AccordionItem>
     </Accordion>
   </div>;

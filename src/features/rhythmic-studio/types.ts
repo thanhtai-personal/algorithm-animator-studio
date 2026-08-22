@@ -1,6 +1,6 @@
-export type SynthPreset = 'chime' | 'piano' | 'fm' | 'vibraphone' | 'bell';
-export type DestroyMode = 'chip' | 'segment' | 'sweep';
-export type AccelerationMode = 'none' | 'ease-in' | 'ease-out' | 'pulse';
+export type SynthPreset = "chime" | "piano" | "fm" | "vibraphone" | "bell";
+export type DestroyMode = "chip" | "segment" | "sweep";
+export type AccelerationMode = "none" | "ease-in" | "ease-out" | "pulse";
 
 export interface NoteEvent {
   id: string;
@@ -11,7 +11,7 @@ export interface NoteEvent {
 }
 
 export interface AudioSourceMeta {
-  type: 'builtin' | 'midi' | 'audio';
+  type: "builtin" | "midi" | "audio";
   name: string;
   durationMs: number;
   eventCount: number;
@@ -50,6 +50,17 @@ export interface StudioSettings {
   particleCount: number;
   synthPreset: SynthPreset;
   synthVolume: number;
+  platformWidth: number;
+  platformThickness: number;
+  platformGap: number;
+  laneSpread: number;
+  platformTilt: number;
+  bounceHeight: number;
+  cameraAnchor: number;
+  cameraSmoothing: number;
+  platformGlow: number;
+  impactRipple: boolean;
+  showBeatLabels: boolean;
 }
 
 export interface StoredProject {

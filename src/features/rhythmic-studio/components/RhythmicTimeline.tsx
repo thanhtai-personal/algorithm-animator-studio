@@ -1,8 +1,8 @@
 import type { NoteEvent } from "../types";
 import { midiName, timelineDuration } from "../lib/timeline";
 
-export function RhythmicTimeline({ events, timeMs }: { events: NoteEvent[]; timeMs: number }) {
-  const duration = timelineDuration(events);
+export function RhythmicTimeline({ events, timeMs, durationMs }: { events: NoteEvent[]; timeMs: number; durationMs?: number }) {
+  const duration = Math.max(durationMs ?? 0, timelineDuration(events));
   const progress = Math.min(100, Math.max(0, timeMs / duration * 100));
   return <div className="space-y-2 rounded-xl border bg-card/50 p-3">
     <div className="flex justify-between text-xs text-muted-foreground"><span>{(timeMs / 1000).toFixed(2)}s</span><span>{(duration / 1000).toFixed(2)}s</span></div>

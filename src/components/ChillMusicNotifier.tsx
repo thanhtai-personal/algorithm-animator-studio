@@ -9,14 +9,11 @@ import {
   type ChillTrack,
 } from "@/lib/chillMusicSettings";
 
-const IDLE_MS = 60_000;
-const CHECK_MS = 5_000;
-const ACTIVITY_EVENTS = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
 const POSITION_KEY = "kai-studio.chill-player-position";
 const YOUTUBE_API_SRC = "https://www.youtube.com/iframe_api";
 
 type PlayerState = "idle" | "playing" | "paused";
-type PlaybackSource = "auto" | "manual";
+type PlaybackSource = "manual";
 type ChillPosition = { x: number; y: number };
 type YoutubeApi = {
   Player: new (element: HTMLElement | string, options: { events?: { onStateChange?: (event: { data: number }) => void } }) => { destroy?: () => void };
@@ -32,11 +29,11 @@ declare global {
 
 let youtubeApiPromise: Promise<YoutubeApi | undefined> | null = null;
 
-export function ChillMusicNotifier({ enabled, autoPlayEnabled }: { enabled: boolean; autoPlayEnabled: boolean }) {
+export function ChillMusicNotifier({ enabled }: { enabled: boolean }) {
   const [tracks, setTracks] = useState<ChillTrack[]>(() => readChillTracks());
   const [expanded, setExpanded] = useState(true);
   const [playerState, setPlayerState] = useState<PlayerState>("idle");
-  const [playbackSource, setPlaybackSource] = useState<PlaybackSource>("auto");
+  const [playbackSource, setPlaybackSource] = useState<PlaybackSource>("manual");
   const [activeTrackId, setActiveTrackId] = useState("");
   const [position, setPosition] = useState<ChillPosition | null>(() => readStoredPosition());
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -44,8 +41,6 @@ export function ChillMusicNotifier({ enabled, autoPlayEnabled }: { enabled: bool
   const playerRef = useRef<{ destroy?: () => void } | null>(null);
   const dragRef = useRef<{ offsetX: number; offsetY: number; pointerId: number } | null>(null);
   const positionRef = useRef<ChillPosition | null>(position);
-  const lastActionRef = useRef(Date.now());
-  const pausedByUserRef = useRef(false);
   const lastTrackIdRef = useRef("");
 
   const playableTracks = useMemo(
@@ -66,14 +61,13 @@ export function ChillMusicNotifier({ enabled, autoPlayEnabled }: { enabled: bool
     const normalizedIndex = normalizeIndex(index, playableTracks.length);
     const next = playableTracks[normalizedIndex];
     lastTrackIdRef.current = next.id;
-    pausedByUserRef.current = false;
     setActiveTrackId(next.id);
     setExpanded(true);
     setPlaybackSource(source);
     setPlayerState("playing");
   }, [playableTracks]);
 
-  const playNextTrack = useCallback((source: PlaybackSource = "auto") => {
+  const playNextTrack = useCallback((source: PlaybackSource = "manual") => {
     if (!playableTracks.length) return;
     const currentIndex = playableTracks.findIndex((track) => track.id === (activeTrackId || lastTrackIdRef.current));
     playTrackAt(currentIndex + 1, source);
@@ -81,8 +75,6 @@ export function ChillMusicNotifier({ enabled, autoPlayEnabled }: { enabled: bool
 
   const playFromHeader = useCallback(() => {
     if (!enabled || !playableTracks.length) return;
-    lastActionRef.current = Date.now();
-    pausedByUserRef.current = false;
 
     if (activeTrackId && playerState === "playing") {
       setExpanded(true);
@@ -108,36 +100,10 @@ export function ChillMusicNotifier({ enabled, autoPlayEnabled }: { enabled: bool
   }, [position]);
 
   useEffect(() => {
-    function markAction() {
-      lastActionRef.current = Date.now();
-    }
-    ACTIVITY_EVENTS.forEach((eventName) => window.addEventListener(eventName, markAction, { passive: true }));
-    return () => ACTIVITY_EVENTS.forEach((eventName) => window.removeEventListener(eventName, markAction));
-  }, []);
-
-  useEffect(() => {
-    if (!enabled || !playableTracks.length) {
-      setPlayerState("idle");
-      setActiveTrackId("");
-      return;
-    }
-    if (!autoPlayEnabled) return;
-
-    const timer = window.setInterval(() => {
-      if (pausedByUserRef.current || playerState !== "idle") return;
-      if (Date.now() - lastActionRef.current < IDLE_MS) return;
-      if (hasActiveMedia()) return;
-      playNextTrack("auto");
-    }, CHECK_MS);
-
-    return () => window.clearInterval(timer);
-  }, [autoPlayEnabled, enabled, playableTracks.length, playerState, playNextTrack]);
-
-  useEffect(() => {
-    if (autoPlayEnabled || playbackSource !== "auto") return;
+    if (enabled && playableTracks.length) return;
     setPlayerState("idle");
     setActiveTrackId("");
-  }, [autoPlayEnabled, playbackSource]);
+  }, [enabled, playableTracks.length]);
 
   useEffect(() => {
     if (activeTrackId && !playableTracks.some((track) => track.id === activeTrackId)) {
@@ -197,14 +163,12 @@ export function ChillMusicNotifier({ enabled, autoPlayEnabled }: { enabled: bool
   if (playerState === "idle" || !activeTrack) return null;
 
   function pauseRandom() {
-    pausedByUserRef.current = true;
     setPlayerState("paused");
   }
 
   function closePlayer() {
     setActiveTrackId("");
     setPlayerState("idle");
-    lastActionRef.current = Date.now();
   }
 
   function handleDragStart(event) {
@@ -260,7 +224,7 @@ export function ChillMusicNotifier({ enabled, autoPlayEnabled }: { enabled: bool
               <Pause className="h-4 w-4" />
             </Button>
           ) : (
-            <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-100 hover:bg-slate-800" onClick={() => { pausedByUserRef.current = false; setPlaybackSource("manual"); setPlayerState("playing"); }} title="Play">
+            <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-100 hover:bg-slate-800" onClick={() => { setPlaybackSource("manual"); setPlayerState("playing"); }} title="Play">
               <Play className="h-4 w-4" />
             </Button>
           )}
@@ -286,12 +250,6 @@ export function ChillMusicNotifier({ enabled, autoPlayEnabled }: { enabled: bool
       </div>
     </div>
   );
-}
-
-function hasActiveMedia() {
-  return Array.from(document.querySelectorAll<HTMLMediaElement>("audio,video")).some((media) => {
-    return !media.paused && !media.ended && media.readyState > 1;
-  });
 }
 
 function blockSpaceKey(event) {

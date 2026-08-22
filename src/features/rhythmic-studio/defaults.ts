@@ -33,6 +33,17 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   particleCount: 18,
   synthPreset: 'chime',
   synthVolume: 0.72,
+  platformWidth: 238,
+  platformThickness: 18,
+  platformGap: 150,
+  laneSpread: 430,
+  platformTilt: 7,
+  bounceHeight: 126,
+  cameraAnchor: 0.34,
+  cameraSmoothing: 0.2,
+  platformGlow: 0.82,
+  impactRipple: true,
+  showBeatLabels: false,
 };
 
 function note(id: number, timeMs: number, midi: number, durationMs = 260): NoteEvent {

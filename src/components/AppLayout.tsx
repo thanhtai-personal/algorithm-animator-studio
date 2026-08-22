@@ -51,7 +51,7 @@ export function AppLayout({ children }: PropsWithChildren) {
       <div className="relative z-10 transition-[padding] duration-300 lg:pl-[var(--app-sidebar-width)]">
         {children}
       </div>
-      <ChillMusicNotifier enabled={fantasticMode} autoPlayEnabled={chillModeEnabled} />
+      <ChillMusicNotifier enabled={fantasticMode && chillModeEnabled} />
       <BackgroundJobsNotifier />
     </div>
   );

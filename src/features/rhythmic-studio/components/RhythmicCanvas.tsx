@@ -13,6 +13,7 @@ import {
   type MarblePoint,
 } from "../lib/marbleCourse";
 import { drawStyledPlatform } from "../lib/platformStyles";
+import { drawLongGapTubes } from "../lib/longGapTube";
 import { drawRhythmicBackground } from "../lib/backgrounds";
 import { activeLyricAt } from "../lib/lyrics";
 
@@ -46,42 +47,6 @@ function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width:
   ctx.closePath();
 }
 
-
-function drawSilentGuides(ctx: CanvasRenderingContext2D, platforms: MarblePlatform[], cameraY: number, events: NoteEvent[]) {
-  for (let i = 0; i < platforms.length - 1; i += 1) {
-    const span = events[i + 1].timeMs - events[i].timeMs;
-    if (span < 1200) continue;
-    const start = platforms[i];
-    const end = platforms[i + 1];
-    const y1 = start.y - cameraY + 10;
-    const y2 = end.y - cameraY + 10;
-    const x = start.x + (end.x - start.x) * 0.12;
-    ctx.save();
-    ctx.strokeStyle = 'rgba(220,245,255,.18)';
-    ctx.fillStyle = 'rgba(120,180,255,.05)';
-    ctx.lineWidth = 1.2;
-    if (Math.abs(end.x - start.x) < 55) {
-      ctx.beginPath();
-      ctx.roundRect(x - 14, y1, 28, y2 - y1, 14);
-      ctx.fill();
-      ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,255,255,.10)';
-      ctx.beginPath();
-      ctx.moveTo(x - 6, y1 + 8);
-      ctx.lineTo(x - 6, y2 - 8);
-      ctx.moveTo(x + 6, y1 + 8);
-      ctx.lineTo(x + 6, y2 - 8);
-      ctx.stroke();
-    } else {
-      ctx.setLineDash([8, 10]);
-      ctx.beginPath();
-      ctx.moveTo(start.x, y1);
-      ctx.quadraticCurveTo((start.x + end.x) / 2, (y1 + y2) / 2, end.x, y2);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-}
 
 function drawParticles(ctx: CanvasRenderingContext2D, platforms: MarblePlatform[], cameraY: number, timeMs: number, settings: StudioSettings) {
   const count = Math.max(0, Math.floor(settings.particleCount * settings.spectralDensity));
@@ -231,7 +196,7 @@ function drawLyrics(ctx: CanvasRenderingContext2D, timeMs: number, lyrics: Lyric
 function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEvent[], platforms: MarblePlatform[], cameraY: number, durationMs: number, settings: StudioSettings, beatLabel: string, backgroundImage: HTMLImageElement | null, lyrics: LyricCue[]) {
   const pulse = settings.pulseAnimation ? collisionStrength(timeMs, events) * settings.animationSensitivity : 0;
   drawRhythmicBackground(ctx, WIDTH, HEIGHT, settings, pulse, timeMs, backgroundImage);
-  drawSilentGuides(ctx, platforms, cameraY, events);
+  drawLongGapTubes(ctx, platforms, events, cameraY, timeMs, settings);
   for (const platform of platforms) {
     const y = platform.y - cameraY;
     if (y < -100 || y > HEIGHT + 120) continue;

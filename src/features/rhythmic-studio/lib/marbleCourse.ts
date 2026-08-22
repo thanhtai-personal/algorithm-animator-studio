@@ -11,6 +11,27 @@ export interface MarblePlatform {
   event: NoteEvent;
 }
 
+export const LONG_GAP_TUBE_MS = 1500;
+export const TUBE_ENTRY_T = 0.22;
+export const TUBE_EXIT_T = 0.78;
+
+
+export interface LongGapTubeGeometry {
+  entryX: number;
+  entryY: number;
+  exitX: number;
+  exitY: number;
+}
+
+export function longGapTubeGeometry(start: MarblePlatform, end: MarblePlatform, settings: StudioSettings): LongGapTubeGeometry {
+  return {
+    entryX: start.x + (end.x - start.x) * 0.2,
+    entryY: start.y + (end.y - start.y) * TUBE_ENTRY_T - settings.ballSize - 22,
+    exitX: start.x + (end.x - start.x) * 0.8,
+    exitY: start.y + (end.y - start.y) * TUBE_EXIT_T - settings.ballSize - 22,
+  };
+}
+
 export interface MarblePoint {
   x: number;
   y: number;
@@ -62,7 +83,7 @@ export function buildMarbleCourse(events: NoteEvent[], settings: StudioSettings,
   return events.map((event, index) => {
     if (index > 0) {
       const deltaMs = Math.max(1, event.timeMs - events[index - 1].timeMs);
-      const gapScale = settings.autoSyncGaps ? clamp(deltaMs / 420, 0.62, 1.75) : 1;
+      const gapScale = settings.autoSyncGaps ? clamp(deltaMs / 420, 0.62, 2.55) : 1;
       currentY += settings.platformGap * gapScale;
     }
     const pitch = maxMidi === minMidi ? 0.5 : (event.midi - minMidi) / (maxMidi - minMidi);
@@ -126,12 +147,44 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
   const end = platforms[index + 1];
   const span = Math.max(1, events[index + 1].timeMs - events[index].timeMs);
   const t = ease((timeMs - events[index].timeMs) / span, settings);
-  const isSilentDrop = span > 1200;
-  const arc = isSilentDrop ? Math.sin(Math.PI * t) * 0.16 : Math.sin(Math.PI * t);
-  const horizontalCurve = isSilentDrop ? (end.x - start.x) * 0.06 * Math.sin(Math.PI * t) : Math.sin(Math.PI * t) * settings.curveIntensity * settings.curvePathLength * 52 * (index % 2 ? -1 : 1);
-  const speedArc = clamp(span / 520, 0.62, isSilentDrop ? 0.82 : 1.3);
+  if (span >= LONG_GAP_TUBE_MS) {
+    const { entryX, entryY, exitX, exitY } = longGapTubeGeometry(start, end, settings);
+    if (t < TUBE_ENTRY_T) {
+      const phase = t / TUBE_ENTRY_T;
+      return {
+        x: start.x + (entryX - start.x) * phase,
+        y: start.y - settings.ballSize + (entryY - (start.y - settings.ballSize)) * phase - Math.sin(Math.PI * phase) * settings.bounceHeight * 0.42,
+        color: mixHex(start.color, end.color, t),
+        platformIndex: index,
+      };
+    }
+    if (t <= TUBE_EXIT_T) {
+      const phase = (t - TUBE_ENTRY_T) / (TUBE_EXIT_T - TUBE_ENTRY_T);
+      const dx = exitX - entryX;
+      const dy = exitY - entryY;
+      const length = Math.max(1, Math.hypot(dx, dy));
+      const wobble = Math.sin(phase * Math.PI * 2) * Math.min(5, settings.ballSize * 0.22);
+      return {
+        x: entryX + dx * phase + (-dy / length) * wobble,
+        y: entryY + dy * phase + (dx / length) * wobble,
+        color: mixHex(start.color, end.color, t),
+        platformIndex: index,
+      };
+    }
+    const phase = (t - TUBE_EXIT_T) / (1 - TUBE_EXIT_T);
+    return {
+      x: exitX + (end.x - exitX) * phase,
+      y: exitY + (end.y - settings.ballSize - exitY) * phase - Math.sin(Math.PI * phase) * settings.bounceHeight * 0.22,
+      color: mixHex(start.color, end.color, t),
+      platformIndex: index,
+    };
+  }
+
+  const arc = Math.sin(Math.PI * t);
+  const horizontalCurve = Math.sin(Math.PI * t) * settings.curveIntensity * settings.curvePathLength * 52 * (index % 2 ? -1 : 1);
+  const speedArc = clamp(span / 520, 0.62, 1.3);
   return {
-    x: start.x + (end.x - start.x) * (isSilentDrop ? Math.pow(t, 1.1) : t) + horizontalCurve,
+    x: start.x + (end.x - start.x) * t + horizontalCurve,
     y: start.y + (end.y - start.y) * t - arc * settings.bounceHeight * speedArc - settings.ballSize,
     color: mixHex(start.color, end.color, t),
     platformIndex: index,

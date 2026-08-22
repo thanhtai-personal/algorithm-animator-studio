@@ -5,6 +5,9 @@ interface RawMidiEvent {
   midi: number;
   velocity: number;
   durationTicks: number;
+  channel: number;
+  program: number;
+  isDrum: boolean;
 }
 
 interface TempoEvent { tick: number; microsecondsPerQuarter: number }
@@ -57,7 +60,8 @@ export function parseMidi(buffer: ArrayBuffer): NoteEvent[] {
     let cursor = offset + 8;
     let tick = 0;
     let runningStatus = 0;
-    const active = new Map<string, { tick: number; velocity: number }>();
+    const active = new Map<string, { tick: number; velocity: number; program: number }>();
+    const programByChannel = Array.from({ length: 16 }, () => 0);
 
     while (cursor < end) {
       const delta = readVarLen(view, cursor);
@@ -97,12 +101,14 @@ export function parseMidi(buffer: ArrayBuffer): NoteEvent[] {
       const data2Needed = ![0xc0, 0xd0].includes(kind);
       const data2 = data2Needed ? view.getUint8(cursor++) : 0;
       const key = `${channel}:${data1}`;
-      if (kind === 0x90 && data2 > 0) {
-        active.set(key, { tick, velocity: data2 / 127 });
+      if (kind === 0xc0) {
+        programByChannel[channel] = data1;
+      } else if (kind === 0x90 && data2 > 0) {
+        active.set(key, { tick, velocity: data2 / 127, program: programByChannel[channel] });
       } else if (kind === 0x80 || (kind === 0x90 && data2 === 0)) {
         const start = active.get(key);
         if (start) {
-          rawNotes.push({ tick: start.tick, midi: data1, velocity: start.velocity, durationTicks: Math.max(1, tick - start.tick) });
+          rawNotes.push({ tick: start.tick, midi: data1, velocity: start.velocity, durationTicks: Math.max(1, tick - start.tick), channel, program: start.program, isDrum: channel === 9 });
           active.delete(key);
         }
       }
@@ -122,6 +128,9 @@ export function parseMidi(buffer: ArrayBuffer): NoteEvent[] {
         midi: item.midi,
         velocity: item.velocity,
         durationMs: Math.max(70, endMs - startMs),
+        channel: item.channel,
+        program: item.program,
+        isDrum: item.isDrum,
       };
     });
 }

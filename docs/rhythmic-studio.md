@@ -14,6 +14,8 @@ Marble Music Studio is integrated into KAI Studio's Algorithm Studio group. It c
 
 - Beat timing controls platform-contact timestamps.
 - Platform width, thickness, vertical gap, lane spread, minimum horizontal jump and tilt are adjustable.
+- Eight procedural platform looks are available: neon tube lamp, neon edge bar, glass light plate, metal neon rail, dual rail, light pods, tech pad and prism segments.
+- Styles can be single, alternating, accent-based or deterministically shuffled in the same generated course.
 - Bounce height, curved flight path, acceleration shaping, camera anchor and camera follow can be tuned.
 - The camera tracks the marble through a procedural vertical platform staircase rather than a circular shield arena.
 - Impact ripple, platform glow, marble glow, trail, particles and neon colors react to collisions.
@@ -22,8 +24,11 @@ Marble Music Studio is integrated into KAI Studio's Algorithm Studio group. It c
 ## Audio
 
 - Imported source audio only starts when the Marble Music Play/Export action starts playback.
-- Web Audio synth hits fire at platform collisions; imported source audio can play simultaneously.
-- MIDI is the precision path for note-for-note melody videos; song import remains onset/beat mode.
+- Original audio/MIDI music and collision SFX use separate mixer buses, then pass through a safety compressor for cleaner headroom.
+- Collision SFX have independent level, tone brightness, stereo width and room reverb controls.
+- MIDI parsing preserves channel, Program Change and channel-10 drums. Full MIDI notes are scheduled independently from the filtered marble-hit timeline so chords/accompaniment are not discarded just because visual hits are spaced out.
+- Auto MIDI mode maps General MIDI program families and drum notes to the richer in-browser voice set. This improves orchestration substantially, but it is still synthesized Web Audio rather than a bundled sample SoundFont.
+- A short look-ahead scheduler prevents long MIDI files from creating thousands of Web Audio voices at load/start time.
 
 ## Preview and export
 

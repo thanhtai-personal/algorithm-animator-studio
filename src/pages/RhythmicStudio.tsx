@@ -27,6 +27,6 @@ export default function RhythmicStudio() {
       </div>
     </div>
     <RhythmicProjectsDialog open={projectsOpen} onOpenChange={setProjectsOpen} projects={studio.projects} onLoad={studio.loadProject} onDelete={studio.removeProject} />
-    <audio ref={studio.audioElementRef} src={studio.audioUrl ?? undefined} preload="auto" className="hidden" />
+    <audio ref={studio.audioElementRef} src={studio.audioUrl ?? undefined} preload="metadata" className="hidden" />
   </main>;
 }

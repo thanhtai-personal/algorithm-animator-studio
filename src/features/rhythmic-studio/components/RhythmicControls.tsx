@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { BUILTIN_MELODIES } from "../defaults";
 import { melodyLabel, rhythmicText, type RhythmicTextKey } from "../i18n";
-import { SYNTH_PRESETS, type AudioSourceMeta, type StudioSettings } from "../types";
+import { PLATFORM_STYLES, SYNTH_PRESETS, type AudioSourceMeta, type StudioSettings } from "../types";
 
 type Patch = <K extends keyof StudioSettings>(key: K, value: StudioSettings[K]) => void;
 
@@ -56,6 +56,9 @@ export function RhythmicControls({ settings, source, sourceInfo, usableHits, pat
   const t = (key: RhythmicTextKey, values?: Record<string, string | number>) => rhythmicText(lang, key, values);
   const accelerationOptions = (["none", "ease-in", "ease-out", "pulse"] as const).map((value) => ({ value, label: t(`acceleration.${value}` as RhythmicTextKey) }));
   const synthOptions = SYNTH_PRESETS.map((value) => ({ value, label: t(`synth.${value}` as RhythmicTextKey) }));
+  const platformStyleOptions = PLATFORM_STYLES.map((value) => ({ value, label: t(`platformStyle.${value}` as RhythmicTextKey) }));
+  const platformMixOptions = (["single", "alternate", "accent", "shuffle"] as const).map((value) => ({ value, label: t(`platformMix.${value}` as RhythmicTextKey) }));
+  const midiModeOptions = (["auto", "single"] as const).map((value) => ({ value, label: t(`midiMode.${value}` as RhythmicTextKey) }));
 
   return <div className="space-y-3">
     <div><h2 className="font-semibold">{t("controls.title")}</h2><p className="text-xs text-muted-foreground">{t("controls.platforms", { count: usableHits })}</p></div>
@@ -75,6 +78,12 @@ export function RhythmicControls({ settings, source, sourceInfo, usableHits, pat
       </AccordionContent></AccordionItem>
 
       <AccordionItem value="course"><AccordionTrigger>{t("section.course")}</AccordionTrigger><AccordionContent className="space-y-4 px-1">
+        <SelectField label={t("course.platformMix")} value={settings.platformMixMode} options={platformMixOptions} onChange={(value) => patch("platformMixMode", value as StudioSettings["platformMixMode"])} />
+        <SelectField label={t("course.primaryStyle")} value={settings.platformPrimaryStyle} options={platformStyleOptions} onChange={(value) => patch("platformPrimaryStyle", value as StudioSettings["platformPrimaryStyle"])} />
+        {settings.platformMixMode !== "single" && <SelectField label={t("course.secondaryStyle")} value={settings.platformSecondaryStyle} options={platformStyleOptions} onChange={(value) => patch("platformSecondaryStyle", value as StudioSettings["platformSecondaryStyle"])} />}
+        {(settings.platformMixMode === "accent" || settings.platformMixMode === "shuffle") && <SelectField label={t("course.accentStyle")} value={settings.platformAccentStyle} options={platformStyleOptions} onChange={(value) => patch("platformAccentStyle", value as StudioSettings["platformAccentStyle"])} />}
+        {settings.platformMixMode === "accent" && <RangeField label={t("course.accentEvery")} value={settings.platformAccentEvery} min={2} max={16} step={1} onChange={(value) => patch("platformAccentEvery", value)} />}
+        <RangeField label={t("course.platformDetail")} value={settings.platformDetail} min={0.2} max={1.2} step={0.05} onChange={(value) => patch("platformDetail", value)} />
         <RangeField label={t("course.platformWidth")} value={settings.platformWidth} min={120} max={360} step={4} unit="px" onChange={(value) => patch("platformWidth", value)} />
         <RangeField label={t("course.platformThickness")} value={settings.platformThickness} min={8} max={34} step={1} unit="px" onChange={(value) => patch("platformThickness", value)} />
         <RangeField label={t("course.verticalGap")} value={settings.platformGap} min={90} max={240} step={5} unit="px" onChange={(value) => patch("platformGap", value)} />
@@ -113,9 +122,15 @@ export function RhythmicControls({ settings, source, sourceInfo, usableHits, pat
       </AccordionContent></AccordionItem>
 
       <AccordionItem value="sound"><AccordionTrigger>{t("section.sound")}</AccordionTrigger><AccordionContent className="space-y-4 px-1">
+        <RangeField label={t("sound.musicVolume")} value={settings.musicVolume} min={0} max={1.15} step={0.02} onChange={(value) => patch("musicVolume", value)} />
+        <ToggleField label={t("sound.midiPlayback")} checked={settings.midiPlaybackEnabled} onChange={(value) => patch("midiPlaybackEnabled", value)} />
+        <SelectField label={t("sound.midiMode")} value={settings.midiInstrumentMode} options={midiModeOptions} onChange={(value) => patch("midiInstrumentMode", value as StudioSettings["midiInstrumentMode"])} />
         <SelectField label={t("sound.hitSynth")} value={settings.synthPreset} options={synthOptions} onChange={(value) => patch("synthPreset", value as StudioSettings["synthPreset"])} />
         <p className="rounded-lg border border-dashed bg-muted/20 px-3 py-2 text-[11px] leading-4 text-muted-foreground">{t("sound.effectsHint")}</p>
-        <RangeField label={t("sound.synthVolume")} value={settings.synthVolume} min={0} max={1} step={0.02} onChange={(value) => patch("synthVolume", value)} />
+        <RangeField label={t("sound.synthVolume")} value={settings.synthVolume} min={0} max={0.75} step={0.01} onChange={(value) => patch("synthVolume", value)} />
+        <RangeField label={t("sound.reverb")} value={settings.synthReverb} min={0} max={0.8} step={0.02} onChange={(value) => patch("synthReverb", value)} />
+        <RangeField label={t("sound.brightness")} value={settings.synthBrightness} min={0} max={1} step={0.02} onChange={(value) => patch("synthBrightness", value)} />
+        <RangeField label={t("sound.stereoWidth")} value={settings.synthStereoWidth} min={0} max={1} step={0.02} onChange={(value) => patch("synthStereoWidth", value)} />
       </AccordionContent></AccordionItem>
     </Accordion>
   </div>;

@@ -9,7 +9,7 @@ import { AudioEngine } from "./lib/audioEngine";
 import { parseMidi } from "./lib/midiParser";
 import { deleteRhythmicProject, listRhythmicProjects, saveRhythmicProject } from "./lib/projectStorage";
 import { buildRhythmicTimeline, timelineDuration } from "./lib/timeline";
-import type { AudioSourceMeta, NoteEvent, StoredProject, StudioSettings } from "./types";
+import { PLATFORM_STYLES, type AudioSourceMeta, type NoteEvent, type StoredProject, type StudioSettings } from "./types";
 
 type MessageToken = { key: RhythmicTextKey; values?: Record<string, string | number> };
 
@@ -56,6 +56,10 @@ export function useRhythmicStudio() {
   const audioFileInfo = useMemo(() => rhythmicText(lang, audioInfoToken.key, audioInfoToken.values), [audioInfoToken, lang]);
 
   useEffect(() => audioEngine.current.setVolume(settings.synthVolume), [settings.synthVolume]);
+  useEffect(() => audioEngine.current.setMusicVolume(settings.musicVolume), [settings.musicVolume]);
+  useEffect(() => audioEngine.current.setReverb(settings.synthReverb), [settings.synthReverb]);
+  useEffect(() => audioEngine.current.setBrightness(settings.synthBrightness), [settings.synthBrightness]);
+  useEffect(() => audioEngine.current.setStereoWidth(settings.synthStereoWidth), [settings.synthStereoWidth]);
   useEffect(() => () => { if (audioUrl) URL.revokeObjectURL(audioUrl); }, [audioUrl]);
 
   const patch = useCallback(<K extends keyof StudioSettings>(key: K, value: StudioSettings[K]) => {
@@ -63,6 +67,10 @@ export function useRhythmicStudio() {
   }, []);
 
   const stopOriginalAudio = useCallback(() => audioElementRef.current?.pause(), []);
+  const stopPlaybackAudio = useCallback(() => {
+    stopOriginalAudio();
+    audioEngine.current.stopMidi();
+  }, [stopOriginalAudio]);
   const startOriginalAudio = useCallback(async (resumeMs = 0) => {
     const audio = audioElementRef.current;
     if (!audio || !audioUrl || !settings.playOriginalSong) return;
@@ -72,20 +80,38 @@ export function useRhythmicStudio() {
     await audio.play();
   }, [audioUrl, settings.playOriginalSong, settings.playbackSpeed, settings.syncOffsetMs]);
 
+  const startMidiAudio = useCallback(async (resumeMs = 0) => {
+    if (source.type !== "midi" || !settings.midiPlaybackEnabled) return;
+    await audioEngine.current.scheduleMidi(sourceEvents, resumeMs, {
+      playbackSpeed: settings.playbackSpeed,
+      syncOffsetMs: settings.syncOffsetMs,
+      mode: settings.midiInstrumentMode,
+      preset: settings.synthPreset,
+      brightness: settings.synthBrightness,
+      stereoWidth: settings.synthStereoWidth,
+    });
+  }, [settings.midiInstrumentMode, settings.midiPlaybackEnabled, settings.playbackSpeed, settings.syncOffsetMs, settings.synthBrightness, settings.synthPreset, settings.synthStereoWidth, source.type, sourceEvents]);
+
+  const startPlaybackAudio = useCallback(async (resumeMs = 0) => {
+    const tasks: Promise<unknown>[] = [startMidiAudio(resumeMs)];
+    if (source.type === "audio" && settings.playOriginalSong) tasks.push(startOriginalAudio(resumeMs));
+    await Promise.all(tasks);
+  }, [settings.playOriginalSong, source.type, startMidiAudio, startOriginalAudio]);
+
   const resetAndPlay = useCallback(async () => {
     await audioEngine.current.ensure();
-    audioEngine.current.setVolume(settings.synthVolume);
+    stopPlaybackAudio();
     setPlaybackToken((value) => value + 1);
     setTimeMs(0);
     setPlaying(true);
     setStatusToken({ key: "status.playing" });
-    try { await startOriginalAudio(0); } catch { setStatusToken({ key: "status.playingBlocked" }); }
-  }, [settings.synthVolume, startOriginalAudio]);
+    try { await startPlaybackAudio(0); } catch { setStatusToken({ key: "status.playingBlocked" }); }
+  }, [startPlaybackAudio, stopPlaybackAudio]);
 
   const togglePlayback = useCallback(async () => {
     if (playing) {
       setPlaying(false);
-      stopOriginalAudio();
+      stopPlaybackAudio();
       setStatusToken({ key: "status.paused" });
       return;
     }
@@ -93,19 +119,19 @@ export function useRhythmicStudio() {
     if (timeMs > 0 && timeMs < durationMs - 120) {
       setPlaying(true);
       setStatusToken({ key: "status.playing" });
-      await startOriginalAudio(timeMs).catch(() => undefined);
+      await startPlaybackAudio(timeMs).catch(() => undefined);
       return;
     }
     await resetAndPlay();
-  }, [durationMs, playing, resetAndPlay, startOriginalAudio, stopOriginalAudio, timeMs]);
+  }, [durationMs, playing, resetAndPlay, startPlaybackAudio, stopPlaybackAudio, timeMs]);
 
   const resetPlayback = useCallback(() => {
     setPlaying(false);
-    stopOriginalAudio();
+    stopPlaybackAudio();
     setPlaybackToken((value) => value + 1);
     setTimeMs(0);
     setStatusToken({ key: "status.reset" });
-  }, [stopOriginalAudio]);
+  }, [stopPlaybackAudio]);
 
   const onNote = useCallback((event: NoteEvent) => {
     void audioEngine.current.playNote(event.midi, event.velocity, event.durationMs, settings.synthPreset);
@@ -117,15 +143,15 @@ export function useRhythmicStudio() {
 
   const onEnded = useCallback(() => {
     setPlaying(false);
-    stopOriginalAudio();
+    stopPlaybackAudio();
     setStatusToken({ key: recording ? "status.finalizing" : "status.finished" });
     if (recording) finishRecording();
-  }, [finishRecording, recording, stopOriginalAudio]);
+  }, [finishRecording, recording, stopPlaybackAudio]);
 
   const loadBuiltin = useCallback((name: string) => {
     const events = BUILTIN_MELODIES[name];
     if (!events) return;
-    stopOriginalAudio();
+    stopPlaybackAudio();
     setAudioUrl(null);
     setSourceEvents(events);
     setPlaybackToken((value) => value + 1);
@@ -134,13 +160,13 @@ export function useRhythmicStudio() {
     setSource({ type: "builtin", name, durationMs: events.at(-1)?.timeMs ?? 0, eventCount: events.length });
     setAudioInfoToken({ key: "info.builtin" });
     setStatusToken({ key: "status.loaded", values: { name } });
-  }, [stopOriginalAudio]);
+  }, [stopPlaybackAudio]);
 
   const importMidi = useCallback(async (file: File) => {
     try {
       const events = parseMidi(await file.arrayBuffer());
       if (!events.length) throw new Error("NO_NOTE_EVENTS");
-      stopOriginalAudio();
+      stopPlaybackAudio();
       setAudioUrl(null);
       setSourceEvents(events);
       setPlaying(false);
@@ -156,13 +182,13 @@ export function useRhythmicStudio() {
       setStatusToken({ key: "status.midiError", values: { message } });
       toast.error(message);
     }
-  }, [lang, stopOriginalAudio]);
+  }, [lang, stopPlaybackAudio]);
 
   const importAudio = useCallback(async (file: File) => {
     setStatusToken({ key: "status.analyzing" });
     try {
       const { buffer, events } = await analyzeAudioFile(file);
-      stopOriginalAudio();
+      stopPlaybackAudio();
       const url = URL.createObjectURL(file);
       setAudioUrl(url);
       setSourceEvents(events);
@@ -178,7 +204,7 @@ export function useRhythmicStudio() {
       setStatusToken({ key: "status.audioError", values: { message } });
       toast.error(message);
     }
-  }, [lang, stopOriginalAudio]);
+  }, [lang, stopPlaybackAudio]);
 
   const randomize = useCallback(() => {
     setSettings((current) => ({
@@ -191,7 +217,13 @@ export function useRhythmicStudio() {
       laneSpread: Math.round(330 + Math.random() * 190),
       bounceHeight: Math.round(90 + Math.random() * 105),
       cameraAnchor: +(0.28 + Math.random() * 0.14).toFixed(2),
-      platformGlow: +(0.5 + Math.random() * 0.75).toFixed(2),
+      platformGlow: +(0.68 + Math.random() * 0.65).toFixed(2),
+      platformMixMode: Math.random() > 0.5 ? "alternate" : "accent",
+      platformPrimaryStyle: PLATFORM_STYLES[Math.floor(Math.random() * PLATFORM_STYLES.length)],
+      platformSecondaryStyle: PLATFORM_STYLES[Math.floor(Math.random() * PLATFORM_STYLES.length)],
+      platformAccentStyle: PLATFORM_STYLES[Math.floor(Math.random() * PLATFORM_STYLES.length)],
+      platformAccentEvery: Math.round(4 + Math.random() * 8),
+      platformDetail: +(0.58 + Math.random() * 0.55).toFixed(2),
       trailLength: Math.round(10 + Math.random() * 28),
       particleCount: Math.round(10 + Math.random() * 30),
     }));

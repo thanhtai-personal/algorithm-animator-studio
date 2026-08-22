@@ -25,12 +25,30 @@ export type SynthPreset = (typeof SYNTH_PRESETS)[number];
 export type DestroyMode = "chip" | "segment" | "sweep";
 export type AccelerationMode = "none" | "ease-in" | "ease-out" | "pulse";
 
+export const PLATFORM_STYLES = [
+  "neon-tube",
+  "neon-bar",
+  "glass",
+  "metal-rail",
+  "dual-rail",
+  "light-pods",
+  "tech-pad",
+  "prism",
+] as const;
+
+export type PlatformStyle = (typeof PLATFORM_STYLES)[number];
+export type PlatformMixMode = "single" | "alternate" | "accent" | "shuffle";
+export type MidiInstrumentMode = "auto" | "single";
+
 export interface NoteEvent {
   id: string;
   timeMs: number;
   midi: number;
   velocity: number;
   durationMs: number;
+  channel?: number;
+  program?: number;
+  isDrum?: boolean;
 }
 
 export interface AudioSourceMeta {
@@ -73,6 +91,12 @@ export interface StudioSettings {
   particleCount: number;
   synthPreset: SynthPreset;
   synthVolume: number;
+  musicVolume: number;
+  synthReverb: number;
+  synthBrightness: number;
+  synthStereoWidth: number;
+  midiPlaybackEnabled: boolean;
+  midiInstrumentMode: MidiInstrumentMode;
   platformWidth: number;
   platformThickness: number;
   platformGap: number;
@@ -82,6 +106,12 @@ export interface StudioSettings {
   cameraAnchor: number;
   cameraSmoothing: number;
   platformGlow: number;
+  platformPrimaryStyle: PlatformStyle;
+  platformSecondaryStyle: PlatformStyle;
+  platformAccentStyle: PlatformStyle;
+  platformMixMode: PlatformMixMode;
+  platformAccentEvery: number;
+  platformDetail: number;
   impactRipple: boolean;
   showBeatLabels: boolean;
 }

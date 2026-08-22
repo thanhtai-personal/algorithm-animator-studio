@@ -1,229 +1,207 @@
-import type { SynthPreset } from "../types";
+import type { NoteEvent, SynthPreset } from "../types";
 
 const EPSILON = 0.0001;
+
+export interface SynthVoiceOptions {
+  when?: number;
+  brightness?: number;
+  stereoWidth?: number;
+  gainScale?: number;
+}
 
 function midiToHz(midi: number) {
   return 440 * Math.pow(2, (midi - 69) / 12);
 }
 
-function connectEnvelope(
-  context: AudioContext,
-  bus: AudioNode,
-  now: number,
-  peak: number,
-  attack: number,
-  releaseSeconds: number,
-) {
+function voiceOutput(context: AudioContext, bus: AudioNode, midi: number, options: SynthVoiceOptions) {
+  const filter = context.createBiquadFilter();
+  const brightness = Math.max(0, Math.min(1, options.brightness ?? 0.62));
+  filter.type = "lowpass";
+  filter.frequency.value = 2600 + brightness * 11800;
+  filter.Q.value = 0.45 + brightness * 0.8;
+  const pan = context.createStereoPanner();
+  pan.pan.value = Math.sin(midi * 0.73) * Math.max(0, Math.min(1, options.stereoWidth ?? 0.3));
+  filter.connect(pan);
+  pan.connect(bus);
+  return filter;
+}
+
+function envelope(context: AudioContext, target: AudioNode, when: number, peak: number, attack: number, hold: number, release: number) {
   const gain = context.createGain();
-  gain.gain.setValueAtTime(EPSILON, now);
-  gain.gain.exponentialRampToValueAtTime(Math.max(EPSILON, peak), now + attack);
-  gain.gain.exponentialRampToValueAtTime(EPSILON, now + Math.max(attack + 0.02, releaseSeconds));
-  gain.connect(bus);
+  gain.gain.setValueAtTime(EPSILON, when);
+  gain.gain.exponentialRampToValueAtTime(Math.max(EPSILON, peak), when + attack);
+  gain.gain.setValueAtTime(Math.max(EPSILON, peak * 0.9), when + attack + hold);
+  gain.gain.exponentialRampToValueAtTime(EPSILON, when + attack + hold + release);
+  gain.connect(target);
   return gain;
 }
 
-function oscillator(
-  context: AudioContext,
-  target: AudioNode,
-  now: number,
-  frequency: number,
-  duration: number,
-  type: OscillatorType,
-  gain = 1,
-) {
-  const osc = context.createOscillator();
+function osc(context: AudioContext, target: AudioNode, when: number, frequency: number, duration: number, type: OscillatorType, gain = 1, detune = 0) {
+  const oscillator = context.createOscillator();
   const level = context.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(Math.max(20, frequency), now);
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(Math.max(20, frequency), when);
+  oscillator.detune.value = detune;
   level.gain.value = gain;
-  osc.connect(level);
+  oscillator.connect(level);
   level.connect(target);
-  osc.start(now);
-  osc.stop(now + Math.max(0.03, duration));
-  return osc;
+  oscillator.start(when);
+  oscillator.stop(when + Math.max(0.04, duration));
+  return oscillator;
 }
 
-function createNoise(context: AudioContext, seconds: number) {
-  const frameCount = Math.max(1, Math.ceil(context.sampleRate * seconds));
-  const buffer = context.createBuffer(1, frameCount, context.sampleRate);
+function noise(context: AudioContext, seconds: number) {
+  const frames = Math.max(1, Math.ceil(context.sampleRate * seconds));
+  const buffer = context.createBuffer(1, frames, context.sampleRate);
   const data = buffer.getChannelData(0);
-  for (let i = 0; i < frameCount; i += 1) data[i] = Math.random() * 2 - 1;
+  for (let i = 0; i < frames; i += 1) data[i] = Math.random() * 2 - 1;
   const source = context.createBufferSource();
   source.buffer = buffer;
   return source;
 }
 
-function noiseBurst(
-  context: AudioContext,
-  bus: AudioNode,
-  now: number,
-  duration: number,
-  peak: number,
-  filterType: BiquadFilterType,
-  frequency: number,
-  q = 0.8,
-) {
-  const source = createNoise(context, duration);
+function noiseBurst(context: AudioContext, target: AudioNode, when: number, duration: number, peak: number, type: BiquadFilterType, frequency: number, q = 0.8) {
+  const source = noise(context, duration);
   const filter = context.createBiquadFilter();
-  const envelope = connectEnvelope(context, bus, now, peak, 0.004, duration);
-  filter.type = filterType;
-  filter.frequency.setValueAtTime(frequency, now);
+  const env = envelope(context, target, when, peak, 0.003, 0.006, Math.max(0.03, duration - 0.009));
+  filter.type = type;
+  filter.frequency.setValueAtTime(frequency, when);
   filter.Q.value = q;
   source.connect(filter);
-  filter.connect(envelope);
-  source.start(now);
-  source.stop(now + duration);
+  filter.connect(env);
+  source.start(when);
+  source.stop(when + duration);
 }
 
-function tonalVoice(
-  context: AudioContext,
-  bus: AudioNode,
-  now: number,
-  hz: number,
-  duration: number,
-  peak: number,
-  partials: Array<[number, number, OscillatorType]>,
-  attack = 0.008,
-) {
-  const envelope = connectEnvelope(context, bus, now, peak, attack, duration);
-  partials.forEach(([ratio, level, type]) => oscillator(context, envelope, now, hz * ratio, duration, type, level));
+function partials(context: AudioContext, target: AudioNode, when: number, hz: number, duration: number, peak: number, values: Array<[number, number, OscillatorType]>, attack = 0.006) {
+  const env = envelope(context, target, when, peak, attack, Math.min(0.045, duration * 0.08), Math.max(0.04, duration - attack));
+  values.forEach(([ratio, level, type], index) => osc(context, env, when, hz * ratio, duration + index * 0.012, type, level, index % 2 ? 2.5 : -1.5));
 }
 
-function playPercussion(context: AudioContext, bus: AudioNode, now: number, preset: SynthPreset, peak: number) {
+function pianoVoice(context: AudioContext, target: AudioNode, when: number, hz: number, duration: number, peak: number) {
+  const env = envelope(context, target, when, peak, 0.004, 0.025, Math.min(1.7, Math.max(0.28, duration * 1.25)));
+  const filter = context.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(Math.min(9800, 2600 + hz * 5.5), when);
+  filter.frequency.exponentialRampToValueAtTime(Math.max(850, 1200 + hz * 1.6), when + Math.min(0.9, duration));
+  filter.Q.value = 0.7;
+  filter.connect(env);
+  osc(context, filter, when, hz, duration + 0.9, "triangle", 0.78, -2.5);
+  osc(context, filter, when, hz, duration + 0.82, "sine", 0.5, 2.2);
+  osc(context, filter, when, hz * 2, duration + 0.56, "sine", 0.13);
+  noiseBurst(context, env, when, 0.025, peak * 0.08, "highpass", 2600, 0.55);
+}
+
+function malletVoice(context: AudioContext, target: AudioNode, when: number, hz: number, peak: number, kind: "marimba" | "kalimba" | "wood") {
+  const duration = kind === "wood" ? 0.12 : kind === "marimba" ? 0.52 : 0.74;
+  const env = envelope(context, target, when, peak, 0.002, 0.006, duration);
+  const body = context.createBiquadFilter();
+  body.type = "bandpass";
+  body.frequency.value = kind === "wood" ? Math.max(680, hz * 2.4) : hz;
+  body.Q.value = kind === "wood" ? 3.8 : 2.1;
+  body.connect(env);
+  osc(context, body, when, kind === "wood" ? Math.max(650, hz * 2.2) : hz, duration + 0.08, "sine", 1);
+  osc(context, body, when, hz * (kind === "marimba" ? 4 : 2.02), duration * 0.72, "sine", kind === "wood" ? 0.1 : 0.14);
+  noiseBurst(context, env, when, 0.018, peak * 0.1, "highpass", 1800, 0.7);
+}
+
+function percussion(context: AudioContext, target: AudioNode, when: number, preset: SynthPreset, peak: number) {
   if (preset === "kick") {
-    const envelope = connectEnvelope(context, bus, now, peak * 0.8, 0.003, 0.42);
-    const osc = oscillator(context, envelope, now, 150, 0.44, "sine");
-    osc.frequency.exponentialRampToValueAtTime(48, now + 0.28);
+    const env = envelope(context, target, when, peak * 0.84, 0.002, 0.008, 0.38);
+    const body = osc(context, env, when, 132, 0.43, "sine", 1);
+    body.frequency.exponentialRampToValueAtTime(46, when + 0.28);
     return;
   }
   if (preset === "snare") {
-    noiseBurst(context, bus, now, 0.22, peak * 0.6, "highpass", 1400, 0.7);
-    tonalVoice(context, bus, now, 185, 0.16, peak * 0.18, [[1, 1, "triangle"]]);
+    noiseBurst(context, target, when, 0.19, peak * 0.55, "highpass", 1550, 0.72);
+    partials(context, target, when, 178, 0.12, peak * 0.16, [[1, 1, "triangle"]], 0.002);
     return;
   }
   if (preset === "clap") {
-    [0, 0.028, 0.055].forEach((offset, index) => noiseBurst(context, bus, now + offset, 0.09, peak * (0.36 - index * 0.06), "bandpass", 1700, 0.65));
+    [0, 0.026, 0.052].forEach((offset, i) => noiseBurst(context, target, when + offset, 0.075, peak * (0.28 - i * 0.035), "bandpass", 1850, 0.72));
     return;
   }
   if (preset === "hihat") {
-    noiseBurst(context, bus, now, 0.095, peak * 0.38, "highpass", 6500, 0.5);
+    noiseBurst(context, target, when, 0.085, peak * 0.3, "highpass", 7200, 0.48);
     return;
   }
-  if (preset === "impact") {
-    noiseBurst(context, bus, now, 0.3, peak * 0.42, "lowpass", 850, 1.2);
-    const envelope = connectEnvelope(context, bus, now, peak * 0.5, 0.004, 0.34);
-    const osc = oscillator(context, envelope, now, 96, 0.36, "sine");
-    osc.frequency.exponentialRampToValueAtTime(42, now + 0.3);
-  }
+  noiseBurst(context, target, when, 0.25, peak * 0.34, "lowpass", 920, 1.1);
+  const env = envelope(context, target, when, peak * 0.43, 0.002, 0.008, 0.32);
+  const body = osc(context, env, when, 88, 0.36, "sine", 1);
+  body.frequency.exponentialRampToValueAtTime(39, when + 0.28);
 }
 
-function playSweep(context: AudioContext, bus: AudioNode, now: number, preset: SynthPreset, hz: number, peak: number) {
+function sweep(context: AudioContext, target: AudioNode, when: number, preset: SynthPreset, hz: number, peak: number) {
   if (preset === "laser") {
-    const envelope = connectEnvelope(context, bus, now, peak * 0.5, 0.003, 0.32);
-    const osc = oscillator(context, envelope, now, Math.max(700, hz * 4), 0.34, "sawtooth", 0.75);
-    osc.frequency.exponentialRampToValueAtTime(Math.max(80, hz * 0.45), now + 0.3);
+    const env = envelope(context, target, when, peak * 0.38, 0.002, 0.01, 0.28);
+    const body = osc(context, env, when, Math.max(660, hz * 3.2), 0.32, "sawtooth", 0.5);
+    body.frequency.exponentialRampToValueAtTime(Math.max(95, hz * 0.55), when + 0.28);
     return;
   }
-  if (preset === "whoosh") {
-    const source = createNoise(context, 0.55);
-    const filter = context.createBiquadFilter();
-    const envelope = connectEnvelope(context, bus, now, peak * 0.35, 0.05, 0.54);
-    filter.type = "bandpass";
-    filter.frequency.setValueAtTime(380, now);
-    filter.frequency.exponentialRampToValueAtTime(4200, now + 0.42);
-    filter.Q.value = 0.7;
-    source.connect(filter);
-    filter.connect(envelope);
-    source.start(now);
-    source.stop(now + 0.55);
-  }
+  const source = noise(context, 0.5);
+  const filter = context.createBiquadFilter();
+  const env = envelope(context, target, when, peak * 0.27, 0.035, 0.04, 0.42);
+  filter.type = "bandpass";
+  filter.frequency.setValueAtTime(420, when);
+  filter.frequency.exponentialRampToValueAtTime(3800, when + 0.36);
+  filter.Q.value = 0.72;
+  source.connect(filter); filter.connect(env); source.start(when); source.stop(when + 0.5);
 }
 
-export function playSynthVoice(
-  context: AudioContext,
-  bus: AudioNode,
-  midi: number,
-  velocity: number,
-  durationMs: number,
-  preset: SynthPreset,
-) {
-  const now = context.currentTime;
+export function presetForMidiEvent(event: NoteEvent): SynthPreset {
+  if (event.isDrum) {
+    if ([35, 36].includes(event.midi)) return "kick";
+    if ([38, 39, 40].includes(event.midi)) return "snare";
+    if ([42, 44, 46].includes(event.midi)) return "hihat";
+    if ([49, 51, 52, 55, 57, 59].includes(event.midi)) return "metal-hit";
+    return "woodblock";
+  }
+  const program = Math.max(0, Math.min(127, event.program ?? 0));
+  if (program <= 7) return "piano";
+  if (program <= 15) return program <= 11 ? "vibraphone" : "marimba";
+  if (program <= 23) return "chime";
+  if (program <= 31) return "pluck";
+  if (program <= 39) return "kalimba";
+  if (program <= 55) return program <= 47 ? "glass" : "chime";
+  if (program <= 63) return "fm";
+  if (program <= 79) return "vibraphone";
+  if (program <= 95) return program <= 87 ? "fm" : "glass";
+  if (program <= 103) return "sparkle";
+  if (program <= 111) return program <= 107 ? "kalimba" : "marimba";
+  if (program <= 119) return program % 2 ? "metal-hit" : "woodblock";
+  return program % 3 === 0 ? "sparkle" : program % 3 === 1 ? "laser" : "impact";
+}
+
+export function playSynthVoice(context: AudioContext, bus: AudioNode, midi: number, velocity: number, durationMs: number, preset: SynthPreset, options: SynthVoiceOptions = {}) {
+  const when = Math.max(context.currentTime, options.when ?? context.currentTime);
   const hz = midiToHz(midi);
-  const baseDuration = Math.max(0.08, Math.min(2.5, durationMs / 1000));
-  const peak = Math.max(0.03, Math.min(1, velocity)) * 0.34;
+  const duration = Math.max(0.08, Math.min(2.6, durationMs / 1000));
+  const gainScale = Math.max(0.02, options.gainScale ?? 1);
+  const peak = Math.max(0.025, Math.min(1, velocity)) * 0.24 * gainScale;
+  const target = voiceOutput(context, bus, midi, options);
 
-  if (["kick", "snare", "clap", "hihat", "impact"].includes(preset)) {
-    playPercussion(context, bus, now, preset, peak);
-    return;
-  }
-  if (preset === "laser" || preset === "whoosh") {
-    playSweep(context, bus, now, preset, hz, peak);
-    return;
-  }
+  if (["kick", "snare", "clap", "hihat", "impact"].includes(preset)) return percussion(context, target, when, preset, peak);
+  if (preset === "laser" || preset === "whoosh") return sweep(context, target, when, preset, hz, peak);
 
-  switch (preset) {
-    case "piano":
-      tonalVoice(context, bus, now, hz, Math.min(0.85, baseDuration), peak, [[1, 1, "triangle"], [2, 0.18, "sine"], [3, 0.07, "sine"]]);
-      break;
-    case "fm": {
-      const envelope = connectEnvelope(context, bus, now, peak, 0.006, baseDuration);
-      const carrier = oscillator(context, envelope, now, hz, baseDuration, "sine");
-      const mod = context.createOscillator();
-      const modGain = context.createGain();
-      mod.frequency.value = hz * 2;
-      modGain.gain.value = hz * 0.9;
-      mod.connect(modGain);
-      modGain.connect(carrier.frequency);
-      mod.start(now);
-      mod.stop(now + baseDuration);
-      break;
-    }
-    case "vibraphone": {
-      const envelope = connectEnvelope(context, bus, now, peak, 0.008, Math.max(0.5, baseDuration));
-      const tremolo = context.createGain();
-      const lfo = context.createOscillator();
-      const lfoGain = context.createGain();
-      tremolo.gain.value = 0.7;
-      lfo.frequency.value = 5.2;
-      lfoGain.gain.value = 0.28;
-      lfo.connect(lfoGain);
-      lfoGain.connect(tremolo.gain);
-      tremolo.connect(envelope);
-      oscillator(context, tremolo, now, hz, Math.max(0.5, baseDuration), "sine");
-      lfo.start(now);
-      lfo.stop(now + Math.max(0.5, baseDuration));
-      break;
-    }
-    case "bell":
-      tonalVoice(context, bus, now, hz, Math.max(0.7, baseDuration), peak, [[1, 1, "sine"], [2.7, 0.34, "sine"], [4.1, 0.16, "sine"]]);
-      break;
-    case "marimba":
-      tonalVoice(context, bus, now, hz, 0.34, peak, [[1, 1, "sine"], [4, 0.16, "triangle"]], 0.003);
-      break;
-    case "kalimba":
-      tonalVoice(context, bus, now, hz, 0.58, peak, [[1, 1, "triangle"], [2.05, 0.16, "sine"], [5.8, 0.05, "sine"]], 0.003);
-      break;
-    case "glass":
-      tonalVoice(context, bus, now, hz, Math.max(0.65, baseDuration), peak, [[1, 1, "sine"], [2.32, 0.28, "sine"], [4.25, 0.12, "sine"]]);
-      break;
-    case "steel-drum":
-      tonalVoice(context, bus, now, hz, 0.72, peak, [[1, 1, "triangle"], [1.5, 0.18, "sine"], [2.02, 0.22, "sine"], [3.1, 0.08, "sine"]], 0.004);
-      break;
-    case "metal-hit":
-      tonalVoice(context, bus, now, hz * 1.5, 0.28, peak, [[1, 1, "square"], [1.37, 0.26, "sine"], [2.18, 0.14, "sine"]], 0.002);
-      break;
-    case "woodblock":
-      tonalVoice(context, bus, now, Math.max(500, hz * 2.2), 0.12, peak, [[1, 1, "sine"], [1.48, 0.22, "triangle"]], 0.002);
-      break;
-    case "pluck":
-      tonalVoice(context, bus, now, hz, 0.3, peak, [[1, 1, "sawtooth"], [2, 0.1, "triangle"]], 0.002);
-      break;
-    case "sparkle":
-      tonalVoice(context, bus, now, hz * 2, 0.55, peak * 0.8, [[1, 1, "sine"], [2.75, 0.22, "sine"], [5.1, 0.08, "sine"]], 0.002);
-      break;
-    case "chime":
-    default:
-      tonalVoice(context, bus, now, hz, Math.max(0.5, baseDuration), peak, [[1, 1, "sine"], [3.01, 0.2, "sine"], [4.02, 0.08, "sine"]]);
-      break;
-  }
+  if (preset === "piano") pianoVoice(context, target, when, hz, duration, peak);
+  else if (preset === "fm") {
+    const env = envelope(context, target, when, peak, 0.006, 0.018, Math.max(0.24, duration));
+    const carrier = osc(context, env, when, hz, duration + 0.18, "sine", 0.9);
+    const mod = context.createOscillator(); const amount = context.createGain();
+    mod.frequency.value = hz * 1.995; amount.gain.value = Math.min(420, hz * 0.46);
+    mod.connect(amount); amount.connect(carrier.frequency); mod.start(when); mod.stop(when + duration + 0.18);
+  } else if (preset === "vibraphone") partials(context, target, when, hz, Math.max(0.62, duration), peak, [[1, 1, "sine"], [3.01, 0.13, "sine"], [4.02, 0.05, "sine"]]);
+  else if (preset === "bell") partials(context, target, when, hz, Math.max(0.9, duration), peak, [[1, 1, "sine"], [2.71, 0.28, "sine"], [4.08, 0.12, "sine"], [5.41, 0.05, "sine"]]);
+  else if (preset === "marimba") malletVoice(context, target, when, hz, peak, "marimba");
+  else if (preset === "kalimba") malletVoice(context, target, when, hz, peak, "kalimba");
+  else if (preset === "woodblock") malletVoice(context, target, when, hz, peak, "wood");
+  else if (preset === "glass") partials(context, target, when, hz, Math.max(0.76, duration), peak, [[1, 1, "sine"], [2.33, 0.24, "sine"], [4.19, 0.1, "sine"], [6.13, 0.035, "sine"]], 0.002);
+  else if (preset === "steel-drum") partials(context, target, when, hz, 0.76, peak, [[1, 1, "triangle"], [1.5, 0.13, "sine"], [2.01, 0.2, "sine"], [3.08, 0.055, "sine"]], 0.003);
+  else if (preset === "metal-hit") partials(context, target, when, hz * 1.42, 0.3, peak * 0.78, [[1, 1, "sine"], [1.37, 0.38, "sine"], [2.17, 0.16, "sine"], [3.43, 0.07, "sine"]], 0.0015);
+  else if (preset === "pluck") {
+    const env = envelope(context, target, when, peak, 0.002, 0.008, 0.34);
+    const filter = context.createBiquadFilter(); filter.type = "lowpass"; filter.frequency.value = Math.min(7200, 1600 + hz * 6); filter.Q.value = 1.3; filter.connect(env);
+    osc(context, filter, when, hz, 0.4, "sawtooth", 0.42); osc(context, filter, when, hz, 0.38, "triangle", 0.5, 3.2);
+  } else if (preset === "sparkle") partials(context, target, when, hz * 2, 0.62, peak * 0.72, [[1, 1, "sine"], [2.74, 0.2, "sine"], [5.08, 0.06, "sine"]], 0.002);
+  else partials(context, target, when, hz, Math.max(0.58, duration), peak, [[1, 1, "sine"], [3.01, 0.17, "sine"], [4.02, 0.055, "sine"]]);
 }

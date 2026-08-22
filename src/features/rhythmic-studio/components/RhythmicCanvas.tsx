@@ -7,12 +7,12 @@ import {
   buildMarbleCourse,
   clamp,
   collisionStrength,
-  hexToRgb,
   marbleAtTime,
   mixHex,
   type MarblePlatform,
   type MarblePoint,
 } from "../lib/marbleCourse";
+import { drawStyledPlatform } from "../lib/platformStyles";
 
 interface Props {
   events: NoteEvent[];
@@ -69,63 +69,6 @@ function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width:
   ctx.closePath();
 }
 
-function drawPlatform(ctx: CanvasRenderingContext2D, platform: MarblePlatform, screenY: number, timeMs: number, settings: StudioSettings) {
-  const age = timeMs - platform.event.timeMs;
-  const impact = age >= 0 && age < 320 ? 1 - age / 320 : 0;
-  const alpha = 0.55 + platform.event.velocity * 0.3;
-  const rgb = hexToRgb(platform.color);
-  const half = platform.width / 2;
-  const topGlow = settings.platformGlow * (0.5 + impact * 0.72);
-
-  ctx.save();
-  ctx.translate(platform.x, screenY);
-  ctx.rotate(platform.tiltRad);
-  ctx.shadowColor = platform.color;
-  ctx.shadowBlur = 18 + topGlow * 34;
-  const body = ctx.createLinearGradient(-half, 0, half, platform.thickness);
-  body.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},${0.22 + alpha * 0.24})`);
-  body.addColorStop(0.5, "rgba(11,16,33,.94)");
-  body.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},${0.28 + alpha * 0.28})`);
-  roundedRect(ctx, -half, 0, platform.width, platform.thickness, platform.thickness / 2);
-  ctx.fillStyle = body;
-  ctx.fill();
-  ctx.shadowBlur = 0;
-
-  ctx.globalAlpha = 0.65 + impact * 0.35;
-  ctx.strokeStyle = platform.color;
-  ctx.lineWidth = 2.3 + impact * 2.4;
-  ctx.beginPath();
-  ctx.moveTo(-half + 12, 1);
-  ctx.lineTo(half - 12, 1);
-  ctx.stroke();
-
-  ctx.globalAlpha = 0.48 + topGlow * 0.35;
-  ctx.fillStyle = platform.color;
-  ctx.beginPath(); ctx.arc(-half + 10, platform.thickness / 2, 4 + impact * 3, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(half - 10, platform.thickness / 2, 4 + impact * 3, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
-
-  if (settings.impactRipple && impact > 0) {
-    ctx.save();
-    ctx.globalAlpha = impact * 0.42;
-    ctx.strokeStyle = platform.color;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.ellipse(platform.x, screenY + 4, platform.width * (0.22 + (1 - impact) * 0.35), 10 + (1 - impact) * 24, 0, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  if (settings.showBeatLabels) {
-    ctx.save();
-    ctx.fillStyle = "rgba(255,255,255,.42)";
-    ctx.font = "600 12px Inter, system-ui";
-    ctx.textAlign = "center";
-    ctx.fillText(`#${platform.index + 1}`, platform.x, screenY + platform.thickness + 24);
-    ctx.restore();
-  }
-}
-
 function drawParticles(ctx: CanvasRenderingContext2D, platforms: MarblePlatform[], cameraY: number, timeMs: number, settings: StudioSettings) {
   const count = Math.max(0, Math.floor(settings.particleCount * settings.spectralDensity));
   if (!count) return;
@@ -178,7 +121,7 @@ function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEv
   for (const platform of platforms) {
     const y = platform.y - cameraY;
     if (y < -100 || y > HEIGHT + 120) continue;
-    drawPlatform(ctx, platform, y, timeMs, settings);
+    drawStyledPlatform(ctx, platform, y, timeMs, settings);
   }
 
   const trailCount = Math.max(0, Math.floor(settings.trailLength));

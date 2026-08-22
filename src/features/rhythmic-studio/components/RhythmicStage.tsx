@@ -1,0 +1,17 @@
+import { CircleStop, Pause, Play, RefreshCcw, Video } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { RhythmicCanvas } from "./RhythmicCanvas";
+import { RhythmicTimeline } from "./RhythmicTimeline";
+import type { useRhythmicStudio } from "../useRhythmicStudio";
+
+type Studio = ReturnType<typeof useRhythmicStudio>;
+
+export function RhythmicStage({ studio }: { studio: Studio }) {
+  return <section className="min-w-0 space-y-3">
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card/60 px-3 py-2"><div className="flex items-center gap-2"><span className={`h-2.5 w-2.5 rounded-full ${studio.playing ? "animate-pulse bg-emerald-500" : "bg-muted-foreground/40"}`} /><span className="text-sm font-medium">{studio.status}</span></div><div className="flex gap-2"><Badge variant="secondary">9:16</Badge><Badge variant="outline">720×1280</Badge><Badge variant="outline">60 FPS</Badge></div></div>
+    <div className="mx-auto flex max-h-[68vh] justify-center overflow-hidden rounded-2xl border bg-black p-2 shadow-2xl"><RhythmicCanvas events={studio.timeline} settings={studio.settings} playing={studio.playing} playbackToken={studio.playbackToken} onNote={studio.onNote} onTime={studio.setTimeMs} onEnded={studio.onEnded} canvasRef={studio.canvasRef} /></div>
+    <div className="flex flex-wrap items-center justify-center gap-2"><Button variant="outline" size="icon" onClick={studio.resetPlayback}><RefreshCcw className="h-4 w-4" /></Button><Button size="lg" className="min-w-36" onClick={() => void studio.togglePlayback()}>{studio.playing ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}{studio.playing ? "Pause" : "Preview"}</Button><Button variant={studio.recording ? "destructive" : "secondary"} size="lg" disabled={studio.recording} onClick={() => void studio.recordVideo()}>{studio.recording ? <CircleStop className="mr-2 h-4 w-4" /> : <Video className="mr-2 h-4 w-4" />}{studio.recording ? "Recording…" : "Export WebM"}</Button></div>
+    <RhythmicTimeline events={studio.timeline} timeMs={studio.timeMs} />
+  </section>;
+}

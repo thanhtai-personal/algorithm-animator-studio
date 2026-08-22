@@ -1,5 +1,6 @@
 export type MenuFeatureId =
   | "algorithm-studio"
+  | "rhythmic-studio"
   | "maze-pathfinding"
   | "algorithm-long"
   | "github-trending"
@@ -21,6 +22,7 @@ const STORAGE_KEY = "kai-studio.menuFeatureSettings";
 
 export const DEFAULT_MENU_FEATURE_SETTINGS: MenuFeatureSettings = {
   "algorithm-studio": false,
+  "rhythmic-studio": true,
   "maze-pathfinding": false,
   "algorithm-long": false,
   "github-trending": false,
@@ -40,6 +42,10 @@ export const MENU_FEATURE_LABELS: Record<MenuFeatureId, { en: string; vi: string
   "algorithm-studio": {
     en: "Algorithm Video",
     vi: "Video thuật toán",
+  },
+  "rhythmic-studio": {
+    en: "Rhythmic Studio",
+    vi: "Video nhịp điệu",
   },
   "maze-pathfinding": {
     en: "Maze Pathfinding",

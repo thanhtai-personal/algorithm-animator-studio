@@ -1,0 +1,62 @@
+export type SynthPreset = 'chime' | 'piano' | 'fm' | 'vibraphone' | 'bell';
+export type DestroyMode = 'chip' | 'segment' | 'sweep';
+export type AccelerationMode = 'none' | 'ease-in' | 'ease-out' | 'pulse';
+
+export interface NoteEvent {
+  id: string;
+  timeMs: number;
+  midi: number;
+  velocity: number;
+  durationMs: number;
+}
+
+export interface AudioSourceMeta {
+  type: 'builtin' | 'midi' | 'audio';
+  name: string;
+  durationMs: number;
+  eventCount: number;
+}
+
+export interface StudioSettings {
+  playbackSpeed: number;
+  syncOffsetMs: number;
+  minBounceSpacingMs: number;
+  minBounceDistance: number;
+  autoSyncGaps: boolean;
+  playOriginalSong: boolean;
+  decoupleBallSpeed: boolean;
+  accelerationMode: AccelerationMode;
+  accelerationFactor: number;
+  accelerationRate: number;
+  minSpeedCap: number;
+  maxSpeedCap: number;
+  curveIntensity: number;
+  curvePathLength: number;
+  shieldEnabled: boolean;
+  shieldRadius: number;
+  shieldDestroyMode: DestroyMode;
+  circleSizeMultiplier: number;
+  pulseAnimation: boolean;
+  glowAnimation: boolean;
+  ringPulseSensitivity: number;
+  animationSensitivity: number;
+  spectralDensity: number;
+  shellColor: string;
+  prismStart: string;
+  prismEnd: string;
+  backgroundColor: string;
+  trailLength: number;
+  ballSize: number;
+  particleCount: number;
+  synthPreset: SynthPreset;
+  synthVolume: number;
+}
+
+export interface StoredProject {
+  id: string;
+  name: string;
+  settings: StudioSettings;
+  source?: AudioSourceMeta;
+  createdAt: string;
+  updatedAt: string;
+}

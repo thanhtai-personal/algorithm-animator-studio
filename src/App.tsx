@@ -15,6 +15,7 @@ const queryClient = new QueryClient();
 const AlgorithmChannelPage = lazy(() => import("./pages/AlgorithmChannelPage.tsx"));
 const AlgorithmLongVideoPage = lazy(() => import("./pages/AlgorithmLongVideoPage.tsx"));
 const MazePathfindingPage = lazy(() => import("./pages/MazePathfindingPage.tsx"));
+const RhythmicStudio = lazy(() => import("./pages/RhythmicStudio.tsx"));
 const Auth = lazy(() => import("./pages/Auth.tsx"));
 const GeneratedAssets = lazy(() => import("./pages/GeneratedAssets.tsx"));
 const CommonVideoPage = lazy(() => import("./pages/CommonVideoPage.tsx"));
@@ -81,6 +82,7 @@ const App = () => (
                 <Route path="/algorithms/agentic" element={<AlgorithmChannelPage initialMode="agentic" />} />
                 <Route path="/algorithms/manual" element={<AlgorithmChannelPage initialMode="manual" />} />
                 <Route path="/algorithms/short" element={<AlgorithmChannelPage initialMode="manual" />} />
+                <Route path="/algorithms/rhythmic" element={<RhythmicStudio />} />
                 <Route path="/algorithms/maze" element={<MazePathfindingPage />} />
                 <Route path="/algorithms/maze/agentic" element={<MazePathfindingPage initialMode="agentic" />} />
                 <Route path="/algorithms/maze/manual" element={<MazePathfindingPage initialMode="manual" />} />

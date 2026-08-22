@@ -1,0 +1,46 @@
+import type { NoteEvent, StudioSettings } from './types';
+
+export const DEFAULT_SETTINGS: StudioSettings = {
+  playbackSpeed: 1,
+  syncOffsetMs: 0,
+  minBounceSpacingMs: 110,
+  minBounceDistance: 42,
+  autoSyncGaps: true,
+  playOriginalSong: true,
+  decoupleBallSpeed: true,
+  accelerationMode: 'ease-in',
+  accelerationFactor: 1.15,
+  accelerationRate: 1.4,
+  minSpeedCap: 0.55,
+  maxSpeedCap: 2.2,
+  curveIntensity: 0.54,
+  curvePathLength: 0.72,
+  shieldEnabled: true,
+  shieldRadius: 0.74,
+  shieldDestroyMode: 'segment',
+  circleSizeMultiplier: 1,
+  pulseAnimation: true,
+  glowAnimation: true,
+  ringPulseSensitivity: 0.8,
+  animationSensitivity: 0.9,
+  spectralDensity: 0.55,
+  shellColor: '#dbe7ff',
+  prismStart: '#7c5cff',
+  prismEnd: '#36f1cd',
+  backgroundColor: '#05060a',
+  trailLength: 18,
+  ballSize: 13,
+  particleCount: 18,
+  synthPreset: 'chime',
+  synthVolume: 0.72,
+};
+
+function note(id: number, timeMs: number, midi: number, durationMs = 260): NoteEvent {
+  return { id: `builtin-${id}`, timeMs, midi, velocity: 0.82, durationMs };
+}
+
+export const BUILTIN_MELODIES: Record<string, NoteEvent[]> = {
+  'Neon Scale': [60, 62, 64, 65, 67, 69, 71, 72, 71, 69, 67, 65, 64, 62, 60].map((midi, i) => note(i, i * 360, midi)),
+  'Pentatonic Run': [60, 62, 64, 67, 69, 72, 69, 67, 64, 62, 60, 64, 67, 72, 76, 72].map((midi, i) => note(i, i * 300, midi, 210)),
+  'Twinkle Fragment': [60, 60, 67, 67, 69, 69, 67, 65, 65, 64, 64, 62, 62, 60].map((midi, i) => note(i, i * 430, midi, 320)),
+};

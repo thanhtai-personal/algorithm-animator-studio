@@ -18,7 +18,7 @@ const FEATURE_GROUPS: Array<{
 }> = [
   {
     title: { en: "Algorithm channel screens", vi: "Màn hình kênh thuật toán" },
-    items: ["algorithm-studio", "maze-pathfinding", "algorithm-long"],
+    items: ["algorithm-studio", "rhythmic-studio", "maze-pathfinding", "algorithm-long"],
   },
   {
     title: { en: "News channel screens", vi: "Màn hình kênh tin tức" },

@@ -7,6 +7,7 @@ import {
   Home,
   ListChecks,
   Map,
+  Music2,
   MicVocal,
   Newspaper,
   PenLine,
@@ -48,6 +49,14 @@ export const APP_NAVIGATION_GROUPS: AppNavigationGroup[] = [
         icon: Home,
         label: { en: "Algorithm Video", vi: "Video thuật toán" },
         matchPaths: ["/algorithms", "/algorithms/agentic", "/algorithms/manual", "/algorithms/short"],
+      },
+      {
+        id: "rhythmic-studio",
+        featureId: "rhythmic-studio",
+        to: "/algorithms/rhythmic",
+        icon: Music2,
+        label: { en: "Rhythmic Studio", vi: "Video nhịp điệu" },
+        matchPaths: ["/algorithms/rhythmic"],
       },
       {
         id: "maze-pathfinding",

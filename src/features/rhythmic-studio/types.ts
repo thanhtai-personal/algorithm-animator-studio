@@ -1,4 +1,27 @@
-export type SynthPreset = "chime" | "piano" | "fm" | "vibraphone" | "bell";
+export const SYNTH_PRESETS = [
+  "chime",
+  "piano",
+  "fm",
+  "vibraphone",
+  "bell",
+  "marimba",
+  "kalimba",
+  "glass",
+  "steel-drum",
+  "metal-hit",
+  "woodblock",
+  "pluck",
+  "sparkle",
+  "laser",
+  "impact",
+  "kick",
+  "snare",
+  "clap",
+  "hihat",
+  "whoosh",
+] as const;
+
+export type SynthPreset = (typeof SYNTH_PRESETS)[number];
 export type DestroyMode = "chip" | "segment" | "sweep";
 export type AccelerationMode = "none" | "ease-in" | "ease-out" | "pulse";
 

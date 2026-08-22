@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import type { MutableRefObject } from "react";
+import { useSystemLang } from "@/hooks/use-system-lang";
+import { rhythmicText } from "../i18n";
 import type { NoteEvent, StudioSettings } from "../types";
 import {
   buildMarbleCourse,
@@ -170,7 +172,7 @@ function drawMarble(ctx: CanvasRenderingContext2D, point: MarblePoint, cameraY: 
   ctx.shadowBlur = 0;
 }
 
-function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEvent[], platforms: MarblePlatform[], cameraY: number, durationMs: number, settings: StudioSettings) {
+function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEvent[], platforms: MarblePlatform[], cameraY: number, durationMs: number, settings: StudioSettings, beatLabel: string) {
   const pulse = settings.pulseAnimation ? collisionStrength(timeMs, events) * settings.animationSensitivity : 0;
   drawBackground(ctx, settings, pulse, timeMs);
   for (const platform of platforms) {
@@ -200,7 +202,7 @@ function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEv
   ctx.fillText("MARBLE MUSIC", WIDTH / 2, 58);
   ctx.font = "600 12px Inter, system-ui";
   ctx.fillStyle = "rgba(255,255,255,.38)";
-  ctx.fillText(`${events.length} beats · ${(durationMs / 1000).toFixed(1)}s`, WIDTH / 2, 82);
+  ctx.fillText(`${events.length} ${beatLabel} · ${(durationMs / 1000).toFixed(1)}s`, WIDTH / 2, 82);
   ctx.fillStyle = "rgba(255,255,255,.12)";
   roundedRect(ctx, 76, HEIGHT - 48, WIDTH - 152, 5, 3); ctx.fill();
   ctx.fillStyle = mixHex(settings.prismStart, settings.prismEnd, progress);
@@ -208,6 +210,8 @@ function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEv
 }
 
 export function RhythmicCanvas({ events, settings, durationMs, playing, playbackToken, onNote, onTime, onEnded, canvasRef }: Props) {
+  const lang = useSystemLang();
+  const beatLabel = rhythmicText(lang, "canvas.beats");
   const platforms = useMemo(
     () => buildMarbleCourse(events, settings, WIDTH),
     [events, settings.platformGap, settings.platformWidth, settings.platformThickness, settings.platformTilt, settings.laneSpread, settings.minBounceDistance, settings.prismStart, settings.prismEnd, settings.autoSyncGaps],
@@ -223,8 +227,8 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
     if (!ctx) return;
     const point = marbleAtTime(currentTime.current, events, platforms, settings);
     cameraY.current = point.y - HEIGHT * settings.cameraAnchor;
-    drawFrame(ctx, currentTime.current, events, platforms, cameraY.current, durationMs, settings);
-  }, [canvasRef, durationMs, events, platforms, settings]);
+    drawFrame(ctx, currentTime.current, events, platforms, cameraY.current, durationMs, settings, beatLabel);
+  }, [beatLabel, canvasRef, durationMs, events, platforms, settings]);
 
   useEffect(() => {
     if (previousToken.current === playbackToken) return;
@@ -254,14 +258,14 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
       const marble = marbleAtTime(time, events, platforms, settings);
       const targetCamera = marble.y - HEIGHT * settings.cameraAnchor;
       cameraY.current += (targetCamera - cameraY.current) * clamp(settings.cameraSmoothing, 0.03, 1);
-      drawFrame(ctx, time, events, platforms, cameraY.current, durationMs, settings);
+      drawFrame(ctx, time, events, platforms, cameraY.current, durationMs, settings, beatLabel);
       onTime(time);
       if (time >= durationMs) { onEnded(); return; }
       frameRef.current = requestAnimationFrame(loop);
     };
     frameRef.current = requestAnimationFrame(loop);
     return () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); };
-  }, [canvasRef, durationMs, events, onEnded, onNote, onTime, platforms, playing, playbackToken, settings]);
+  }, [beatLabel, canvasRef, durationMs, events, onEnded, onNote, onTime, platforms, playing, playbackToken, settings]);
 
   return <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} className="block h-auto max-h-[66vh] w-auto max-w-full rounded-xl" />;
 }

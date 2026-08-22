@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useSystemLang } from "@/hooks/use-system-lang";
+import { getExportFormat, type ExportFormat } from "@/pages/studio/exportFormats";
+import { BUILTIN_MELODIES, DEFAULT_SETTINGS } from "./defaults";
+import { melodyLabel, rhythmicText, type RhythmicTextKey } from "./i18n";
 import { analyzeAudioFile } from "./lib/audioAnalysis";
 import { AudioEngine } from "./lib/audioEngine";
 import { parseMidi } from "./lib/midiParser";
 import { deleteRhythmicProject, listRhythmicProjects, saveRhythmicProject } from "./lib/projectStorage";
 import { buildRhythmicTimeline, timelineDuration } from "./lib/timeline";
-import { BUILTIN_MELODIES, DEFAULT_SETTINGS } from "./defaults";
 import type { AudioSourceMeta, NoteEvent, StoredProject, StudioSettings } from "./types";
+
+type MessageToken = { key: RhythmicTextKey; values?: Record<string, string | number> };
 
 function prettyBytes(bytes: number) {
   return bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -17,28 +22,38 @@ function safeFileName(value: string) {
 }
 
 export function useRhythmicStudio() {
+  const lang = useSystemLang();
   const [settings, setSettings] = useState<StudioSettings>(DEFAULT_SETTINGS);
   const [sourceEvents, setSourceEvents] = useState<NoteEvent[]>(BUILTIN_MELODIES["Neon Scale"]);
   const [source, setSource] = useState<AudioSourceMeta>({ type: "builtin", name: "Neon Scale", durationMs: 5040, eventCount: 15 });
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [audioFileInfo, setAudioFileInfo] = useState("Built-in synthesized sequence");
+  const [audioInfoToken, setAudioInfoToken] = useState<MessageToken>({ key: "info.builtin" });
   const [playing, setPlaying] = useState(false);
   const [playbackToken, setPlaybackToken] = useState(0);
   const [timeMs, setTimeMs] = useState(0);
   const [recording, setRecording] = useState(false);
-  const [status, setStatus] = useState("Ready");
-  const [projectName, setProjectName] = useState("My rhythmic run");
+  const [recordingFormat, setRecordingFormat] = useState<ExportFormat | null>(null);
+  const [statusToken, setStatusToken] = useState<MessageToken>({ key: "status.ready" });
+  const [projectName, setProjectName] = useState(() => rhythmicText(lang, "default.projectName"));
   const [projects, setProjects] = useState<StoredProject[]>(() => listRhythmicProjects());
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const audioEngine = useRef(new AudioEngine());
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+
   const timeline = useMemo(() => buildRhythmicTimeline(sourceEvents, settings), [sourceEvents, settings]);
   const durationMs = useMemo(() => {
     const sourceEnd = source.durationMs / Math.max(0.1, settings.playbackSpeed) + settings.syncOffsetMs;
     return Math.max(timelineDuration(timeline), sourceEnd, 1000);
   }, [settings.playbackSpeed, settings.syncOffsetMs, source.durationMs, timeline]);
+  const status = useMemo(() => {
+    const values = statusToken.key === "status.loaded" && statusToken.values?.name
+      ? { ...statusToken.values, name: melodyLabel(lang, String(statusToken.values.name)) }
+      : statusToken.values;
+    return rhythmicText(lang, statusToken.key, values);
+  }, [lang, statusToken]);
+  const audioFileInfo = useMemo(() => rhythmicText(lang, audioInfoToken.key, audioInfoToken.values), [audioInfoToken, lang]);
 
   useEffect(() => audioEngine.current.setVolume(settings.synthVolume), [settings.synthVolume]);
   useEffect(() => () => { if (audioUrl) URL.revokeObjectURL(audioUrl); }, [audioUrl]);
@@ -63,15 +78,21 @@ export function useRhythmicStudio() {
     setPlaybackToken((value) => value + 1);
     setTimeMs(0);
     setPlaying(true);
-    setStatus("Playing");
-    try { await startOriginalAudio(0); } catch { setStatus("Playing · original audio blocked"); }
+    setStatusToken({ key: "status.playing" });
+    try { await startOriginalAudio(0); } catch { setStatusToken({ key: "status.playingBlocked" }); }
   }, [settings.synthVolume, startOriginalAudio]);
 
   const togglePlayback = useCallback(async () => {
-    if (playing) { setPlaying(false); stopOriginalAudio(); setStatus("Paused"); return; }
+    if (playing) {
+      setPlaying(false);
+      stopOriginalAudio();
+      setStatusToken({ key: "status.paused" });
+      return;
+    }
     await audioEngine.current.ensure();
     if (timeMs > 0 && timeMs < durationMs - 120) {
-      setPlaying(true); setStatus("Playing");
+      setPlaying(true);
+      setStatusToken({ key: "status.playing" });
       await startOriginalAudio(timeMs).catch(() => undefined);
       return;
     }
@@ -79,7 +100,11 @@ export function useRhythmicStudio() {
   }, [durationMs, playing, resetAndPlay, startOriginalAudio, stopOriginalAudio, timeMs]);
 
   const resetPlayback = useCallback(() => {
-    setPlaying(false); stopOriginalAudio(); setPlaybackToken((value) => value + 1); setTimeMs(0); setStatus("Reset");
+    setPlaying(false);
+    stopOriginalAudio();
+    setPlaybackToken((value) => value + 1);
+    setTimeMs(0);
+    setStatusToken({ key: "status.reset" });
   }, [stopOriginalAudio]);
 
   const onNote = useCallback((event: NoteEvent) => {
@@ -91,41 +116,69 @@ export function useRhythmicStudio() {
   }, []);
 
   const onEnded = useCallback(() => {
-    setPlaying(false); stopOriginalAudio(); setStatus(recording ? "Finalizing video…" : "Finished");
+    setPlaying(false);
+    stopOriginalAudio();
+    setStatusToken({ key: recording ? "status.finalizing" : "status.finished" });
     if (recording) finishRecording();
   }, [finishRecording, recording, stopOriginalAudio]);
 
   const loadBuiltin = useCallback((name: string) => {
     const events = BUILTIN_MELODIES[name];
     if (!events) return;
-    stopOriginalAudio(); setAudioUrl(null); setSourceEvents(events); setPlaybackToken((value) => value + 1); setTimeMs(0); setPlaying(false);
+    stopOriginalAudio();
+    setAudioUrl(null);
+    setSourceEvents(events);
+    setPlaybackToken((value) => value + 1);
+    setTimeMs(0);
+    setPlaying(false);
     setSource({ type: "builtin", name, durationMs: events.at(-1)?.timeMs ?? 0, eventCount: events.length });
-    setAudioFileInfo("Built-in synthesized sequence"); setStatus(`Loaded ${name}`);
+    setAudioInfoToken({ key: "info.builtin" });
+    setStatusToken({ key: "status.loaded", values: { name } });
   }, [stopOriginalAudio]);
 
   const importMidi = useCallback(async (file: File) => {
     try {
       const events = parseMidi(await file.arrayBuffer());
-      if (!events.length) throw new Error("No note-on events found");
-      stopOriginalAudio(); setAudioUrl(null); setSourceEvents(events); setPlaying(false); setTimeMs(0); setPlaybackToken((value) => value + 1);
+      if (!events.length) throw new Error("NO_NOTE_EVENTS");
+      stopOriginalAudio();
+      setAudioUrl(null);
+      setSourceEvents(events);
+      setPlaying(false);
+      setTimeMs(0);
+      setPlaybackToken((value) => value + 1);
       setSource({ type: "midi", name: file.name, durationMs: events.at(-1)?.timeMs ?? 0, eventCount: events.length });
-      setAudioFileInfo(`${file.name} · ${prettyBytes(file.size)} · ${events.length} notes`); setStatus("MIDI parsed successfully");
-      toast.success("MIDI imported");
-    } catch (error) { const message = error instanceof Error ? error.message : "Unknown MIDI error"; setStatus(`MIDI error: ${message}`); toast.error(message); }
-  }, [stopOriginalAudio]);
+      setAudioInfoToken({ key: "info.midi", values: { name: file.name, size: prettyBytes(file.size), count: events.length } });
+      setStatusToken({ key: "status.midiParsed" });
+      toast.success(rhythmicText(lang, "toast.midiImported"));
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : "";
+      const message = raw === "NO_NOTE_EVENTS" ? rhythmicText(lang, "error.noMidiNotes") : raw || rhythmicText(lang, "error.unknownMidi");
+      setStatusToken({ key: "status.midiError", values: { message } });
+      toast.error(message);
+    }
+  }, [lang, stopOriginalAudio]);
 
   const importAudio = useCallback(async (file: File) => {
-    setStatus("Analyzing audio onsets…");
+    setStatusToken({ key: "status.analyzing" });
     try {
       const { buffer, events } = await analyzeAudioFile(file);
       stopOriginalAudio();
       const url = URL.createObjectURL(file);
-      setAudioUrl(url); setSourceEvents(events); setPlaying(false); setTimeMs(0); setPlaybackToken((value) => value + 1);
+      setAudioUrl(url);
+      setSourceEvents(events);
+      setPlaying(false);
+      setTimeMs(0);
+      setPlaybackToken((value) => value + 1);
       setSource({ type: "audio", name: file.name, durationMs: buffer.duration * 1000, eventCount: events.length });
-      setAudioFileInfo(`${file.name} · ${prettyBytes(file.size)} · ${events.length} detected hits`); setStatus("Audio analyzed · beat/onset mode");
-      toast.success(`Detected ${events.length} rhythmic hits`);
-    } catch (error) { const message = error instanceof Error ? error.message : "Unknown audio error"; setStatus(`Audio error: ${message}`); toast.error(message); }
-  }, [stopOriginalAudio]);
+      setAudioInfoToken({ key: "info.audio", values: { name: file.name, size: prettyBytes(file.size), count: events.length } });
+      setStatusToken({ key: "status.audioAnalyzed" });
+      toast.success(rhythmicText(lang, "toast.detectedHits", { count: events.length }));
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : rhythmicText(lang, "error.unknownAudio");
+      setStatusToken({ key: "status.audioError", values: { message } });
+      toast.error(message);
+    }
+  }, [lang, stopOriginalAudio]);
 
   const randomize = useCallback(() => {
     setSettings((current) => ({
@@ -142,41 +195,73 @@ export function useRhythmicStudio() {
       trailLength: Math.round(10 + Math.random() * 28),
       particleCount: Math.round(10 + Math.random() * 30),
     }));
-    setStatus("Marble course randomized");
+    setStatusToken({ key: "status.randomized" });
   }, []);
 
   const saveProject = useCallback(() => {
-    const saved = saveRhythmicProject(projectName.trim() || "Untitled run", settings, source);
-    setProjects((items) => [saved, ...items.filter((item) => item.id !== saved.id)]); setStatus("Project preset saved"); toast.success("Rhythmic preset saved");
-  }, [projectName, settings, source]);
+    const saved = saveRhythmicProject(projectName.trim() || rhythmicText(lang, "default.untitled"), settings, source);
+    setProjects((items) => [saved, ...items.filter((item) => item.id !== saved.id)]);
+    setStatusToken({ key: "status.projectSaved" });
+    toast.success(rhythmicText(lang, "toast.presetSaved"));
+  }, [lang, projectName, settings, source]);
 
   const removeProject = useCallback((id: string) => setProjects(deleteRhythmicProject(id)), []);
   const loadProject = useCallback((project: StoredProject) => {
-    setSettings({ ...DEFAULT_SETTINGS, ...project.settings }); setProjectName(project.name);
+    setSettings({ ...DEFAULT_SETTINGS, ...project.settings });
+    setProjectName(project.name);
     if (project.source?.type === "builtin" && BUILTIN_MELODIES[project.source.name]) loadBuiltin(project.source.name);
-    else setStatus(project.source ? "Preset loaded · re-import source MIDI/audio" : "Preset loaded");
+    else setStatusToken({ key: project.source ? "status.presetReimport" : "status.presetLoaded" });
   }, [loadBuiltin]);
 
-  const recordVideo = useCallback(async () => {
+  const recordVideo = useCallback(async (format: ExportFormat = "webm") => {
     const canvas = canvasRef.current;
-    if (!canvas || typeof canvas.captureStream !== "function" || typeof MediaRecorder === "undefined") { toast.error("Canvas video recording is not supported by this browser"); return; }
+    if (!canvas || typeof canvas.captureStream !== "function" || typeof MediaRecorder === "undefined") {
+      toast.error(rhythmicText(lang, "error.recordingUnsupported"));
+      return;
+    }
+    const exportFormat = getExportFormat(format);
+    const mimeType = exportFormat.mimeCandidates.find((candidate) => MediaRecorder.isTypeSupported(candidate));
+    if (!mimeType) {
+      const message = rhythmicText(lang, "status.exportUnsupported", { format: exportFormat.label });
+      setStatusToken({ key: "status.exportUnsupported", values: { format: exportFormat.label } });
+      toast.error(message);
+      return;
+    }
+
     await audioEngine.current.ensure();
     const stream = canvas.captureStream(60);
     audioEngine.current.getRecordStream()?.getAudioTracks().forEach((track) => stream.addTrack(track));
-    const candidates = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
-    const mimeType = candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate)) ?? "";
-    const recorder = new MediaRecorder(stream, mimeType ? { mimeType, videoBitsPerSecond: 9_000_000 } : undefined);
-    recorderRef.current = recorder; chunksRef.current = [];
+    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 9_000_000 });
+    recorderRef.current = recorder;
+    chunksRef.current = [];
     recorder.ondataavailable = (event) => { if (event.data.size) chunksRef.current.push(event.data); };
     recorder.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "video/webm" });
-      const url = URL.createObjectURL(blob); const link = document.createElement("a");
-      link.href = url; link.download = `${safeFileName(projectName)}.webm`; link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1500); stream.getTracks().forEach((track) => track.stop());
-      setRecording(false); setStatus(`Video exported · ${(blob.size / (1024 * 1024)).toFixed(1)} MB`); toast.success("Rhythmic WebM exported");
+      const blob = new Blob(chunksRef.current, { type: recorder.mimeType || mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${safeFileName(projectName)}.${exportFormat.id}`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      stream.getTracks().forEach((track) => track.stop());
+      setRecording(false);
+      setRecordingFormat(null);
+      setStatusToken({ key: "status.exported", values: { format: exportFormat.label, size: (blob.size / (1024 * 1024)).toFixed(1) } });
+      toast.success(rhythmicText(lang, "toast.exported", { format: exportFormat.label }));
     };
-    recorder.start(1000); setRecording(true); setStatus("Recording 9:16 · 60fps"); await resetAndPlay();
-  }, [projectName, resetAndPlay]);
+    recorder.onerror = () => {
+      stream.getTracks().forEach((track) => track.stop());
+      setRecording(false);
+      setRecordingFormat(null);
+      setStatusToken({ key: "status.exportFailed", values: { format: exportFormat.label } });
+      toast.error(rhythmicText(lang, "status.exportFailed", { format: exportFormat.label }));
+    };
+    recorder.start(1000);
+    setRecording(true);
+    setRecordingFormat(format);
+    setStatusToken({ key: "status.recording", values: { format: exportFormat.label } });
+    await resetAndPlay();
+  }, [lang, projectName, resetAndPlay]);
 
-  return { settings, patch, sourceEvents, source, audioUrl, audioFileInfo, playing, playbackToken, timeMs, setTimeMs, recording, status, projectName, setProjectName, projects, canvasRef, audioElementRef, timeline, durationMs, onNote, onEnded, togglePlayback, resetPlayback, loadBuiltin, importMidi, importAudio, randomize, saveProject, removeProject, loadProject, recordVideo };
+  return { settings, patch, sourceEvents, source, audioUrl, audioFileInfo, playing, playbackToken, timeMs, setTimeMs, recording, recordingFormat, status, projectName, setProjectName, projects, canvasRef, audioElementRef, timeline, durationMs, onNote, onEnded, togglePlayback, resetPlayback, loadBuiltin, importMidi, importAudio, randomize, saveProject, removeProject, loadProject, recordVideo };
 }

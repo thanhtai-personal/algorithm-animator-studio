@@ -72,6 +72,70 @@ function drawSunset(ctx: CanvasRenderingContext2D, width: number, height: number
   ctx.fillStyle = sun; ctx.fillRect(0, 0, width, height);
 }
 
+
+function drawPipeTower(ctx: CanvasRenderingContext2D, width: number, height: number, settings: StudioSettings, timeMs: number) {
+  ctx.fillStyle = "#080910";
+  ctx.fillRect(0, 0, width, height);
+  const drift = (timeMs * 0.02 * settings.backgroundMotion) % 160;
+  for (let i = 0; i < 6; i += 1) {
+    const x = 70 + i * 110 + (i % 2 ? drift * 0.08 : -drift * 0.04);
+    const pipe = ctx.createLinearGradient(x, 0, x + 34, 0);
+    pipe.addColorStop(0, "rgba(200,230,255,.08)");
+    pipe.addColorStop(0.5, "rgba(255,255,255,.24)");
+    pipe.addColorStop(1, "rgba(130,170,255,.08)");
+    ctx.fillStyle = pipe;
+    ctx.strokeStyle = i % 2 ? `${settings.prismEnd}55` : `${settings.prismStart}55`;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.roundRect(x, -20, 34, height + 40, 18);
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.strokeStyle = "rgba(255,255,255,.08)";
+  for (let y = 160; y < height; y += 170) {
+    ctx.beginPath();
+    ctx.moveTo(110, y);
+    ctx.lineTo(width - 110, y);
+    ctx.stroke();
+  }
+}
+
+function drawStairway(ctx: CanvasRenderingContext2D, width: number, height: number, settings: StudioSettings, timeMs: number) {
+  const bg = ctx.createLinearGradient(0, 0, 0, height);
+  bg.addColorStop(0, "#090b16");
+  bg.addColorStop(1, mixHex(settings.backgroundColor, '#020305', 0.45));
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, width, height);
+  const rise = 80 + Math.sin(timeMs / 1800) * 8 * settings.backgroundMotion;
+  for (let i = 0; i < 11; i += 1) {
+    const y = height - i * 86 - rise;
+    const stepWidth = 140 + i * 26;
+    const x = width / 2 - stepWidth / 2 + Math.sin(i + timeMs / 2400) * 14 * settings.backgroundMotion;
+    ctx.fillStyle = 'rgba(8,12,26,.82)';
+    ctx.strokeStyle = i % 2 ? `${settings.prismEnd}55` : `${settings.prismStart}55`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(x, y, stepWidth, 22, 8);
+    ctx.fill();
+    ctx.stroke();
+  }
+}
+
+function drawTubeTunnel(ctx: CanvasRenderingContext2D, width: number, height: number, settings: StudioSettings, pulse: number, timeMs: number) {
+  ctx.fillStyle = '#04050b';
+  ctx.fillRect(0, 0, width, height);
+  const cx = width / 2;
+  const cy = height * 0.42;
+  for (let i = 0; i < 8; i += 1) {
+    const radius = 90 + i * 70 + ((timeMs * 0.04 * settings.backgroundMotion) % 70);
+    ctx.strokeStyle = i % 2 ? `${settings.prismStart}${Math.round((0.18 + pulse * 0.05) * 255).toString(16).padStart(2, '0')}` : `${settings.prismEnd}26`;
+    ctx.lineWidth = i % 2 ? 2.4 : 1.2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, radius * 0.84, radius, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+}
+
 function drawSpotlight(ctx: CanvasRenderingContext2D, width: number, height: number, settings: StudioSettings, pulse: number, timeMs: number) {
   ctx.fillStyle = "#040407"; ctx.fillRect(0, 0, width, height);
   const x = width / 2 + Math.sin(timeMs / 2400) * 120 * settings.backgroundMotion;

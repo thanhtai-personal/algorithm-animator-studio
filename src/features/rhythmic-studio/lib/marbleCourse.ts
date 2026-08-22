@@ -62,7 +62,7 @@ export function buildMarbleCourse(events: NoteEvent[], settings: StudioSettings,
   return events.map((event, index) => {
     if (index > 0) {
       const deltaMs = Math.max(1, event.timeMs - events[index - 1].timeMs);
-      const gapScale = settings.autoSyncGaps ? clamp(deltaMs / 420, 0.62, 1.45) : 1;
+      const gapScale = settings.autoSyncGaps ? clamp(deltaMs / 420, 0.62, 1.75) : 1;
       currentY += settings.platformGap * gapScale;
     }
     const pitch = maxMidi === minMidi ? 0.5 : (event.midi - minMidi) / (maxMidi - minMidi);
@@ -70,7 +70,9 @@ export function buildMarbleCourse(events: NoteEvent[], settings: StudioSettings,
     const margin = Math.min(width / 2 - 24, platformWidth / 2 + 22);
     const pitchX = center + (pitch - 0.5) * laneHalf * 1.7;
     const wobble = seededNoise(index) * laneHalf * 0.34;
+    const deltaMs = index > 0 ? Math.max(1, event.timeMs - events[index - 1].timeMs) : 0;
     let x = clamp(pitchX + wobble, margin, width - margin);
+    if (deltaMs > 1200) x = clamp(previousX + (pitchX - previousX) * 0.18, margin, width - margin);
     const minDistance = Math.min(settings.minBounceDistance, laneHalf * 0.7);
     if (index > 0 && Math.abs(x - previousX) < minDistance) {
       const direction = seededNoise(index + 91) >= 0 ? 1 : -1;
@@ -124,11 +126,12 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
   const end = platforms[index + 1];
   const span = Math.max(1, events[index + 1].timeMs - events[index].timeMs);
   const t = ease((timeMs - events[index].timeMs) / span, settings);
-  const arc = Math.sin(Math.PI * t);
-  const horizontalCurve = Math.sin(Math.PI * t) * settings.curveIntensity * settings.curvePathLength * 52 * (index % 2 ? -1 : 1);
-  const speedArc = clamp(span / 520, 0.62, 1.3);
+  const isSilentDrop = span > 1200;
+  const arc = isSilentDrop ? Math.sin(Math.PI * t) * 0.16 : Math.sin(Math.PI * t);
+  const horizontalCurve = isSilentDrop ? (end.x - start.x) * 0.06 * Math.sin(Math.PI * t) : Math.sin(Math.PI * t) * settings.curveIntensity * settings.curvePathLength * 52 * (index % 2 ? -1 : 1);
+  const speedArc = clamp(span / 520, 0.62, isSilentDrop ? 0.82 : 1.3);
   return {
-    x: start.x + (end.x - start.x) * t + horizontalCurve,
+    x: start.x + (end.x - start.x) * (isSilentDrop ? Math.pow(t, 1.1) : t) + horizontalCurve,
     y: start.y + (end.y - start.y) * t - arc * settings.bounceHeight * speedArc - settings.ballSize,
     color: mixHex(start.color, end.color, t),
     platformIndex: index,

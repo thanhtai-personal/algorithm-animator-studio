@@ -34,10 +34,22 @@ export const PLATFORM_STYLES = [
   "light-pods",
   "tech-pad",
   "prism",
+  "pipe-rail",
+  "stair-step",
 ] as const;
 
 export type PlatformStyle = (typeof PLATFORM_STYLES)[number];
 export type PlatformMixMode = "single" | "alternate" | "accent" | "shuffle";
+export const BALL_STYLES = [
+  "classic",
+  "chrome",
+  "glass",
+  "neon",
+  "striped",
+  "prism",
+] as const;
+
+export type BallStyle = (typeof BALL_STYLES)[number];
 export type MidiInstrumentMode = "auto" | "single";
 
 export const BACKGROUND_PRESETS = [
@@ -47,6 +59,9 @@ export const BACKGROUND_PRESETS = [
   "sunset",
   "spotlight",
   "deep-space",
+  "pipe-tower",
+  "stairway",
+  "tube-tunnel",
 ] as const;
 
 export type BackgroundPreset = (typeof BACKGROUND_PRESETS)[number];
@@ -107,6 +122,7 @@ export interface StudioSettings {
   prismStart: string;
   prismEnd: string;
   backgroundColor: string;
+  ballStyle: BallStyle;
   backgroundPreset: BackgroundPreset;
   backgroundMotion: number;
   backgroundImageOpacity: number;

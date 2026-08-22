@@ -165,6 +165,43 @@ function drawTechPad(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatf
   ctx.restore();
 }
 
+
+function drawPipeRail(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, settings: StudioSettings) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(225,245,255,.22)';
+  ctx.fillStyle = 'rgba(120,170,255,.08)';
+  ctx.lineWidth = 1.4;
+  roundedRect(ctx, -half, -2, p.width, p.thickness + 6, p.thickness * 0.55);
+  ctx.fill();
+  ctx.stroke();
+  neonLine(ctx, -half + 16, p.thickness * 0.5, half - 16, p.thickness * 0.5, p.color, 3.4, 15 + settings.platformGlow * 24 + impact * 16);
+  ctx.restore();
+}
+
+function drawStairStep(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, settings: StudioSettings) {
+  const body = ctx.createLinearGradient(0, 0, 0, p.thickness + 8);
+  body.addColorStop(0, 'rgba(10,14,28,.98)');
+  body.addColorStop(1, 'rgba(36,44,62,.95)');
+  ctx.save();
+  ctx.shadowColor = p.color;
+  ctx.shadowBlur = 10 + settings.platformGlow * 18 + impact * 12;
+  roundedRect(ctx, -half, 0, p.width, p.thickness + 6, 7);
+  ctx.fillStyle = body;
+  ctx.fill();
+  ctx.strokeStyle = mixHex(p.color, '#ffffff', 0.22);
+  ctx.lineWidth = 1.3;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  for (let x = -half + 12; x < half - 10; x += 24) {
+    ctx.strokeStyle = 'rgba(255,255,255,.08)';
+    ctx.beginPath();
+    ctx.moveTo(x, p.thickness + 4);
+    ctx.lineTo(x + 14, 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawPrism(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, settings: StudioSettings) {
   const segments = Math.max(5, Math.round(5 + settings.platformDetail * 5));
   const segment = p.width / segments;
@@ -195,6 +232,8 @@ export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: Marb
   else if (style === "dual-rail") drawDualRail(ctx, half, platform, impact, settings);
   else if (style === "light-pods") drawLightPods(ctx, half, platform, impact, settings);
   else if (style === "tech-pad") drawTechPad(ctx, half, platform, impact, settings);
+  else if (style === "pipe-rail") drawPipeRail(ctx, half, platform, impact, settings);
+  else if (style === "stair-step") drawStairStep(ctx, half, platform, impact, settings);
   else drawPrism(ctx, half, platform, impact, settings);
   ctx.restore();
 

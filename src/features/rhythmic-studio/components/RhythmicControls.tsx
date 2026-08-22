@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { BUILTIN_MELODIES } from "../defaults";
 import { melodyLabel, rhythmicText, type RhythmicTextKey } from "../i18n";
-import { PLATFORM_STYLES, SYNTH_PRESETS, type AudioSourceMeta, type StudioSettings } from "../types";
+import { BALL_STYLES, PLATFORM_STYLES, SYNTH_PRESETS, type AudioSourceMeta, type StudioSettings } from "../types";
 import type { LyricFormat } from "../lib/lyrics";
 import { RhythmicMediaAccordionItems } from "./RhythmicMediaControls";
 
@@ -69,6 +69,7 @@ export function RhythmicControls({ settings, source, sourceInfo, usableHits, pat
   const accelerationOptions = (["none", "ease-in", "ease-out", "pulse"] as const).map((value) => ({ value, label: t(`acceleration.${value}` as RhythmicTextKey) }));
   const synthOptions = SYNTH_PRESETS.map((value) => ({ value, label: t(`synth.${value}` as RhythmicTextKey) }));
   const platformStyleOptions = PLATFORM_STYLES.map((value) => ({ value, label: t(`platformStyle.${value}` as RhythmicTextKey) }));
+  const ballStyleOptions = BALL_STYLES.map((value) => ({ value, label: t(`ball.${value}` as RhythmicTextKey) }));
   const platformMixOptions = (["single", "alternate", "accent", "shuffle"] as const).map((value) => ({ value, label: t(`platformMix.${value}` as RhythmicTextKey) }));
   const midiModeOptions = (["auto", "single"] as const).map((value) => ({ value, label: t(`midiMode.${value}` as RhythmicTextKey) }));
 
@@ -127,6 +128,7 @@ export function RhythmicControls({ settings, source, sourceInfo, usableHits, pat
         <RangeField label={t("visual.trailLength")} value={settings.trailLength} min={0} max={48} step={1} onChange={(value) => patch("trailLength", value)} />
         <RangeField label={t("visual.collisionParticles")} value={settings.particleCount} min={0} max={48} step={1} onChange={(value) => patch("particleCount", value)} />
         <RangeField label={t("visual.marbleSize")} value={settings.ballSize} min={6} max={28} step={1} unit="px" onChange={(value) => patch("ballSize", value)} />
+        <SelectField label={t("visual.ballStyle")} value={settings.ballStyle} options={ballStyleOptions} onChange={(value) => patch("ballStyle", value as StudioSettings["ballStyle"])} />
         <ColorField label={t("visual.gridShell")} value={settings.shellColor} onChange={(value) => patch("shellColor", value)} />
         <ColorField label={t("visual.neonStart")} value={settings.prismStart} onChange={(value) => patch("prismStart", value)} />
         <ColorField label={t("visual.neonEnd")} value={settings.prismEnd} onChange={(value) => patch("prismEnd", value)} />

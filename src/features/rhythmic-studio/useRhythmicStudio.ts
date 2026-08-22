@@ -283,6 +283,7 @@ export function useRhythmicStudio() {
       backgroundMotion: +(0.28 + Math.random() * 0.9).toFixed(2),
       trailLength: Math.round(10 + Math.random() * 28),
       particleCount: Math.round(10 + Math.random() * 30),
+      ballStyle: BALL_STYLES[Math.floor(Math.random() * BALL_STYLES.length)],
     }));
     setStatusToken({ key: "status.randomized" });
   }, []);

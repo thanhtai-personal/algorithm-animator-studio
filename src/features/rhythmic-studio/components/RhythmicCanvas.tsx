@@ -46,6 +46,43 @@ function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width:
   ctx.closePath();
 }
 
+
+function drawSilentGuides(ctx: CanvasRenderingContext2D, platforms: MarblePlatform[], cameraY: number, events: NoteEvent[]) {
+  for (let i = 0; i < platforms.length - 1; i += 1) {
+    const span = events[i + 1].timeMs - events[i].timeMs;
+    if (span < 1200) continue;
+    const start = platforms[i];
+    const end = platforms[i + 1];
+    const y1 = start.y - cameraY + 10;
+    const y2 = end.y - cameraY + 10;
+    const x = start.x + (end.x - start.x) * 0.12;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(220,245,255,.18)';
+    ctx.fillStyle = 'rgba(120,180,255,.05)';
+    ctx.lineWidth = 1.2;
+    if (Math.abs(end.x - start.x) < 55) {
+      ctx.beginPath();
+      ctx.roundRect(x - 14, y1, 28, y2 - y1, 14);
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,.10)';
+      ctx.beginPath();
+      ctx.moveTo(x - 6, y1 + 8);
+      ctx.lineTo(x - 6, y2 - 8);
+      ctx.moveTo(x + 6, y1 + 8);
+      ctx.lineTo(x + 6, y2 - 8);
+      ctx.stroke();
+    } else {
+      ctx.setLineDash([8, 10]);
+      ctx.beginPath();
+      ctx.moveTo(start.x, y1);
+      ctx.quadraticCurveTo((start.x + end.x) / 2, (y1 + y2) / 2, end.x, y2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
 function drawParticles(ctx: CanvasRenderingContext2D, platforms: MarblePlatform[], cameraY: number, timeMs: number, settings: StudioSettings) {
   const count = Math.max(0, Math.floor(settings.particleCount * settings.spectralDensity));
   if (!count) return;
@@ -73,23 +110,58 @@ function drawMarble(ctx: CanvasRenderingContext2D, point: MarblePoint, cameraY: 
   const y = point.y - cameraY;
   const radius = settings.ballSize * (1 + pulse * 0.08);
   if (settings.glowAnimation) {
-    const glowRadius = radius * (3.6 + pulse * 2.4);
+    const glowRadius = radius * (3.4 + pulse * 2.2);
     const glow = ctx.createRadialGradient(x, y, 2, x, y, glowRadius);
     glow.addColorStop(0, `${point.color}b8`);
-    glow.addColorStop(0.38, `${point.color}48`);
+    glow.addColorStop(0.42, `${point.color}38`);
     glow.addColorStop(1, `${point.color}00`);
     ctx.fillStyle = glow;
     ctx.beginPath(); ctx.arc(x, y, glowRadius, 0, Math.PI * 2); ctx.fill();
   }
+  ctx.save();
   ctx.shadowBlur = 24 + pulse * 34;
   ctx.shadowColor = point.color;
-  const marble = ctx.createRadialGradient(x - radius * 0.35, y - radius * 0.45, radius * 0.12, x, y, radius);
-  marble.addColorStop(0, "#ffffff");
-  marble.addColorStop(0.38, mixHex("#ffffff", point.color, 0.22));
-  marble.addColorStop(1, mixHex(point.color, "#050712", 0.35));
-  ctx.fillStyle = marble;
+  if (settings.ballStyle === "chrome") {
+    const g = ctx.createRadialGradient(x - radius * 0.5, y - radius * 0.6, radius * 0.12, x, y, radius);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(0.18, '#dfe6ef'); g.addColorStop(0.42, point.color); g.addColorStop(1, '#111827');
+    ctx.fillStyle = g;
+  } else if (settings.ballStyle === "glass") {
+    const g = ctx.createRadialGradient(x - radius * 0.25, y - radius * 0.35, radius * 0.08, x, y, radius);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(0.32, 'rgba(255,255,255,.68)'); g.addColorStop(1, mixHex(point.color, '#040814', 0.16));
+    ctx.fillStyle = g;
+  } else if (settings.ballStyle === "neon") {
+    const g = ctx.createRadialGradient(x, y, 2, x, y, radius);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(0.28, mixHex('#ffffff', point.color, 0.14)); g.addColorStop(1, mixHex(point.color, '#0a0d18', 0.18));
+    ctx.fillStyle = g;
+  } else if (settings.ballStyle === "striped") {
+    const g = ctx.createRadialGradient(x - radius * 0.25, y - radius * 0.32, radius * 0.06, x, y, radius);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(1, mixHex(point.color, '#0f172a', 0.24));
+    ctx.fillStyle = g;
+  } else if (settings.ballStyle === "prism") {
+    const g = ctx.createLinearGradient(x - radius, y - radius, x + radius, y + radius);
+    g.addColorStop(0, settings.prismStart); g.addColorStop(0.5, '#ffffff'); g.addColorStop(1, settings.prismEnd);
+    ctx.fillStyle = g;
+  } else {
+    const g = ctx.createRadialGradient(x - radius * 0.35, y - radius * 0.45, radius * 0.12, x, y, radius);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(0.38, mixHex('#ffffff', point.color, 0.22)); g.addColorStop(1, mixHex(point.color, '#050712', 0.35));
+    ctx.fillStyle = g;
+  }
   ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
+  if (settings.ballStyle === 'striped') {
+    ctx.strokeStyle = mixHex(settings.prismEnd, '#ffffff', 0.18);
+    ctx.lineWidth = Math.max(2, radius * 0.22);
+    ctx.beginPath(); ctx.arc(x, y, radius * 0.7, Math.PI * 0.18, Math.PI * 0.94); ctx.stroke();
+    ctx.strokeStyle = mixHex(settings.prismStart, '#ffffff', 0.18);
+    ctx.beginPath(); ctx.arc(x, y, radius * 0.36, Math.PI * 1.08, Math.PI * 1.88); ctx.stroke();
+  }
+  if (settings.ballStyle === 'glass') {
+    ctx.fillStyle = 'rgba(255,255,255,.26)';
+    ctx.beginPath(); ctx.arc(x - radius * 0.32, y - radius * 0.34, radius * 0.24, 0, Math.PI * 2); ctx.fill();
+  }
   ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(255,255,255,.45)';
+  ctx.beginPath(); ctx.arc(x - radius * 0.32, y - radius * 0.36, Math.max(1.8, radius * 0.18), 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
 }
 
 
@@ -159,6 +231,7 @@ function drawLyrics(ctx: CanvasRenderingContext2D, timeMs: number, lyrics: Lyric
 function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEvent[], platforms: MarblePlatform[], cameraY: number, durationMs: number, settings: StudioSettings, beatLabel: string, backgroundImage: HTMLImageElement | null, lyrics: LyricCue[]) {
   const pulse = settings.pulseAnimation ? collisionStrength(timeMs, events) * settings.animationSensitivity : 0;
   drawRhythmicBackground(ctx, WIDTH, HEIGHT, settings, pulse, timeMs, backgroundImage);
+  drawSilentGuides(ctx, platforms, cameraY, events);
   for (const platform of platforms) {
     const y = platform.y - cameraY;
     if (y < -100 || y > HEIGHT + 120) continue;

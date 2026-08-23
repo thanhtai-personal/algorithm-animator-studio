@@ -11,7 +11,7 @@ export function MotionFrame({ studio }: { studio: RhythmicStudioController }) {
   const t = (key: RhythmicTextKey) => rhythmicText(lang, key);
   const options = (["none", "ease-in", "ease-out", "pulse"] as const).map((value) => ({ value, label: t(`acceleration.${value}` as RhythmicTextKey) }));
   const s = studio.settings;
-  return <ControlFrame title={t("section.motion")} icon={<Move3d className="h-4 w-4 text-primary" />}>
+  return <ControlFrame title={t("section.motion")} icon={<Move3d className="h-4 w-4 text-primary" />} collapsible={false}>
     <RangeField label={t("motion.bounceHeight")} value={s.bounceHeight} min={45} max={260} step={5} unit="px" onChange={(value) => studio.patch("bounceHeight", value)} />
     <RangeField label={t("motion.arcCurve")} value={s.curveIntensity} min={0} max={1.2} step={0.02} onChange={(value) => studio.patch("curveIntensity", value)} />
     <RangeField label={t("motion.cameraAnchor")} value={s.cameraAnchor} min={0.2} max={0.55} step={0.01} onChange={(value) => studio.patch("cameraAnchor", value)} />

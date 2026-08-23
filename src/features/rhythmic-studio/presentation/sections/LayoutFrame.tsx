@@ -7,7 +7,7 @@ import { ControlFrame } from "../atoms/ControlFrame";
 
 export function LayoutFrame({ studio }: { studio: RhythmicStudioController }) {
   const lang = useSystemLang();
-  return <ControlFrame title={layoutText(lang, "tabs.layout")} icon={<LayoutGrid className="h-4 w-4 text-primary" />}>
+  return <ControlFrame title={layoutText(lang, "tabs.layout")} icon={<LayoutGrid className="h-4 w-4 text-primary" />} defaultOpen={false}>
     <RhythmicCourseEditor
       nodeCount={studio.timeline.length}
       selectedNodeIndex={studio.selectedNodeIndex}

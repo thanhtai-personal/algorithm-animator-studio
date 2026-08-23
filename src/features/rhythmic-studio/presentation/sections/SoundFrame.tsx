@@ -13,7 +13,6 @@ export function SoundFrame({ studio }: { studio: RhythmicStudioController }) {
   const midiOptions = (["auto", "single"] as const).map((value) => ({ value, label: t(`midiMode.${value}` as RhythmicTextKey) }));
   const s = studio.settings;
   return <ControlFrame title={t("section.sound")} icon={<Volume2 className="h-4 w-4 text-primary" />} defaultOpen={false}>
-    <RangeField label={t("sound.musicVolume")} value={s.musicVolume} min={0} max={1.15} step={0.02} onChange={(value) => studio.patch("musicVolume", value)} />
     <ToggleField label={t("sound.midiPlayback")} checked={s.midiPlaybackEnabled} onChange={(value) => studio.patch("midiPlaybackEnabled", value)} />
     <SelectField label={t("sound.midiMode")} value={s.midiInstrumentMode} options={midiOptions} onChange={(value) => studio.patch("midiInstrumentMode", value as StudioSettings["midiInstrumentMode"])} />
     <SelectField label={t("sound.hitSynth")} value={s.synthPreset} options={synthOptions} onChange={(value) => studio.patch("synthPreset", value as StudioSettings["synthPreset"])} />

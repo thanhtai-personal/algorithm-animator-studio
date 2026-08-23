@@ -40,7 +40,7 @@ export class AudioEngine {
   private midiTimer: ReturnType<typeof setInterval> | null = null;
   private brightness = 0.62;
   private stereoWidth = 0.34;
-  private musicVolume = 0.94;
+  private musicVolume = 1.3;
   private sfxVolume = 0.26;
   private reverbAmount = 0.22;
 
@@ -93,7 +93,7 @@ export class AudioEngine {
   }
 
   setMusicVolume(value: number) {
-    this.musicVolume = Math.max(0, Math.min(1.25, value));
+    this.musicVolume = Math.max(0, Math.min(1.6, value));
     if (this.musicBus) this.musicBus.gain.value = this.musicVolume;
   }
 

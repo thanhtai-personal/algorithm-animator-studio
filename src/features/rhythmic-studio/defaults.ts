@@ -46,7 +46,7 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   particleCount: 1,
   synthPreset: 'piano',
   synthVolume: 0.26,
-  musicVolume: 1.15,
+  musicVolume: 1.3,
   synthReverb: 0.18,
   synthBrightness: 0.58,
   synthStereoWidth: 0.28,

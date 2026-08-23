@@ -10,8 +10,7 @@ import { RhythmicStage } from "../components/RhythmicStage";
 import { useRhythmicStudioController } from "../hooks/useRhythmicStudioController";
 import { rhythmicText } from "../i18n";
 import { layoutText } from "../layoutI18n";
-import { RhythmicLeftControls, RhythmicRightControls } from "./layouts/RhythmicControlColumns";
-import { QuickPresetBar } from "./QuickPresetBar";
+import { RhythmicAdvancedControls, RhythmicPrimaryControls } from "./layouts/RhythmicControlColumns";
 
 export const RhythmicStudioWorkspace = observer(function RhythmicStudioWorkspace() {
   const lang = useSystemLang();
@@ -33,13 +32,12 @@ export const RhythmicStudioWorkspace = observer(function RhythmicStudioWorkspace
         </div>
       </header>
 
-      <QuickPresetBar studio={studio} />
-
-      <div className="grid items-start gap-4 xl:grid-cols-[340px_minmax(500px,1fr)_340px]">
-        <RhythmicLeftControls studio={studio} />
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
         <RhythmicStage studio={studio} />
-        <RhythmicRightControls studio={studio} />
+        <RhythmicPrimaryControls studio={studio} />
       </div>
+
+      <RhythmicAdvancedControls studio={studio} />
     </div>
 
     <Sheet open={infoOpen} onOpenChange={setInfoOpen}>

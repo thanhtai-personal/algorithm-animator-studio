@@ -3,11 +3,17 @@ import { mixHex, type MarblePoint } from "./marbleCourse";
 
 function groundShadow(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, alpha = 0.32) {
   ctx.save();
-  ctx.fillStyle = `rgba(8,10,16,${alpha})`;
-  ctx.filter = "blur(5px)";
-  ctx.beginPath();
-  ctx.ellipse(x - radius * 0.75, y + radius * 1.05, radius * 1.28, radius * 0.48, -0.18, 0, Math.PI * 2);
-  ctx.fill();
+  const sx = x - radius * 0.75;
+  const sy = y + radius * 1.05;
+  ctx.translate(sx, sy);
+  ctx.rotate(-0.18);
+  ctx.scale(1, 0.38);
+  const shadow = ctx.createRadialGradient(0, 0, radius * 0.08, 0, 0, radius * 1.45);
+  shadow.addColorStop(0, `rgba(8,10,16,${alpha})`);
+  shadow.addColorStop(0.64, `rgba(8,10,16,${alpha * 0.5})`);
+  shadow.addColorStop(1, "rgba(8,10,16,0)");
+  ctx.fillStyle = shadow;
+  ctx.beginPath(); ctx.arc(0, 0, radius * 1.45, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
 

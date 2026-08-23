@@ -1,19 +1,13 @@
 import type { PlatformStyle, StudioSettings } from "../types";
+import { instrumentScenePlan } from "./instrumentScenePlan";
 
 export interface PresetObstaclePlan {
   style: PlatformStyle;
   widthScale: number;
-}
-
-function instrumentStyle(index: number): PlatformStyle {
-  const section = Math.floor(index / 8) % 6;
-  const local = index % 8;
-  if (section === 0) return "instrument-key";
-  if (section === 1) return local % 5 === 0 ? "instrument-rail" : "instrument-pad";
-  if (section === 2) return local % 3 === 0 ? "instrument-rail" : "instrument-cymbal";
-  if (section === 3) return local % 2 ? "instrument-pad" : "instrument-rail";
-  if (section === 4) return local % 4 === 0 ? "instrument-cymbal" : "instrument-wire";
-  return local % 3 === 0 ? "instrument-key" : local % 3 === 1 ? "instrument-rail" : "instrument-wire";
+  verticalScale?: number;
+  horizontalScale?: number;
+  sceneStart?: boolean;
+  sceneIndex?: number;
 }
 
 function widthScale(style: PlatformStyle) {
@@ -34,8 +28,15 @@ export function presetObstaclePlan(index: number, settings: StudioSettings): Pre
     return { style: "comet-pad", widthScale: widthScale("comet-pad") };
   }
   if (settings.terrainProfile === "xylophone" && settings.platformPrimaryStyle.startsWith("instrument-")) {
-    const style = instrumentStyle(index);
-    return { style, widthScale: widthScale(style) };
+    const scene = instrumentScenePlan(index);
+    return {
+      style: scene.style,
+      widthScale: widthScale(scene.style) * scene.widthScale,
+      verticalScale: scene.verticalScale,
+      horizontalScale: scene.horizontalScale,
+      sceneStart: scene.sceneStart,
+      sceneIndex: scene.sceneIndex,
+    };
   }
   return null;
 }

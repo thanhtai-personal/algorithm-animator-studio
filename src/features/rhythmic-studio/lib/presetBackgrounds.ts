@@ -50,32 +50,35 @@ function drawCometVoid(ctx: CanvasRenderingContext2D, width: number, height: num
 
 function drawInstrumentRoom(ctx: CanvasRenderingContext2D, width: number, height: number, settings: StudioSettings) {
   const floor = ctx.createLinearGradient(0, 0, width, height);
-  floor.addColorStop(0, "#e5ddd3");
-  floor.addColorStop(0.42, "#d6d0c8");
-  floor.addColorStop(1, "#aeb4c0");
+  floor.addColorStop(0, "#ebe5dd");
+  floor.addColorStop(0.38, "#ddd7cf");
+  floor.addColorStop(0.72, "#cfd1d5");
+  floor.addColorStop(1, "#b7bdc8");
   ctx.fillStyle = floor;
   ctx.fillRect(0, 0, width, height);
 
-  const warm = ctx.createRadialGradient(width * 0.18, height * 0.12, 15, width * 0.24, height * 0.28, height * 0.66);
-  warm.addColorStop(0, "rgba(255,226,175,.42)");
-  warm.addColorStop(0.48, "rgba(255,226,175,.12)");
+  const warm = ctx.createRadialGradient(width * 0.1, height * 0.02, 10, width * 0.2, height * 0.26, height * 0.82);
+  warm.addColorStop(0, "rgba(255,231,188,.56)");
+  warm.addColorStop(0.42, "rgba(255,220,166,.18)");
   warm.addColorStop(1, "rgba(255,226,175,0)");
   ctx.fillStyle = warm;
   ctx.fillRect(0, 0, width, height);
 
-  const cool = ctx.createRadialGradient(width * 0.86, height * 0.7, 16, width * 0.68, height * 0.6, height * 0.64);
-  cool.addColorStop(0, `${settings.prismStart}20`);
-  cool.addColorStop(0.42, `${settings.prismEnd}0e`);
+  const cool = ctx.createRadialGradient(width * 0.94, height * 0.72, 16, width * 0.72, height * 0.62, height * 0.72);
+  cool.addColorStop(0, `${settings.prismStart}26`);
+  cool.addColorStop(0.44, `${settings.prismEnd}10`);
   cool.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = cool;
   ctx.fillRect(0, 0, width, height);
 
-  const vignette = ctx.createRadialGradient(width * 0.52, height * 0.44, height * 0.22, width * 0.5, height * 0.5, height * 0.9);
-  vignette.addColorStop(0, "rgba(255,255,255,.04)");
-  vignette.addColorStop(1, "rgba(58,62,72,.18)");
-  ctx.fillStyle = vignette;
+  const horizon = ctx.createLinearGradient(0, height * 0.1, 0, height);
+  horizon.addColorStop(0, "rgba(255,255,255,.08)");
+  horizon.addColorStop(0.58, "rgba(255,255,255,0)");
+  horizon.addColorStop(1, "rgba(65,72,88,.11)");
+  ctx.fillStyle = horizon;
   ctx.fillRect(0, 0, width, height);
 }
+
 
 export function drawPresetBackground(
   ctx: CanvasRenderingContext2D,

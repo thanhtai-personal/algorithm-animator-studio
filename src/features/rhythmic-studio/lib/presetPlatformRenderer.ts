@@ -1,4 +1,4 @@
-import type { PlatformStyle, StudioSettings } from "../types";
+import type { PlatformStyle, RenderQuality, StudioSettings } from "../types";
 import { mixHex, type MarblePlatform } from "./marbleCourse";
 
 function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
@@ -25,6 +25,7 @@ function drawTubeCylinder(
   impact: number,
   ageMs: number,
   settings: StudioSettings,
+  lowPower: boolean,
 ) {
   const h = Math.max(24, p.thickness);
   const radius = h * 0.5;
@@ -34,22 +35,24 @@ function drawTubeCylinder(
   const farX = -contactX;
 
   ctx.save();
-  const underGlow = ctx.createRadialGradient(0, h * 0.55, 4, 0, h * 0.55, p.width * 0.78);
-  underGlow.addColorStop(0, active ? `${litColor}${impact > 0 ? "4f" : "24"}` : "rgba(120,126,140,.08)");
-  underGlow.addColorStop(1, active ? `${litColor}00` : "rgba(120,126,140,0)");
-  ctx.fillStyle = underGlow;
-  ctx.fillRect(-p.width, -p.width * 0.45, p.width * 2, p.width * 1.15);
+  if (!lowPower) {
+    const underGlow = ctx.createRadialGradient(0, h * 0.55, 4, 0, h * 0.55, p.width * 0.78);
+    underGlow.addColorStop(0, active ? `${litColor}${impact > 0 ? "4f" : "24"}` : "rgba(120,126,140,.08)");
+    underGlow.addColorStop(1, active ? `${litColor}00` : "rgba(120,126,140,0)");
+    ctx.fillStyle = underGlow;
+    ctx.fillRect(-p.width, -p.width * 0.45, p.width * 2, p.width * 1.15);
+  }
 
   ctx.shadowColor = "rgba(8,9,13,.58)";
-  ctx.shadowBlur = 13;
-  ctx.shadowOffsetX = -22;
-  ctx.shadowOffsetY = 28;
+  ctx.shadowBlur = lowPower ? 0 : 13;
+  ctx.shadowOffsetX = lowPower ? 0 : -22;
+  ctx.shadowOffsetY = lowPower ? 0 : 28;
   roundedRect(ctx, -half, -h / 2, p.width, h, radius);
   ctx.fillStyle = "rgba(13,14,19,.72)";
   ctx.fill();
 
   ctx.shadowColor = active ? litColor : "rgba(190,198,210,.18)";
-  ctx.shadowBlur = active ? 4 + settings.platformGlow * 10 + impact * 8 : 1.5;
+  ctx.shadowBlur = lowPower ? 0 : (active ? 4 + settings.platformGlow * 10 + impact * 8 : 1.5);
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = 0;
   const body = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
@@ -121,7 +124,7 @@ function drawTubeCylinder(
 }
 
 
-function drawCometPad(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, ageMs: number, settings: StudioSettings) {
+function drawCometPad(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, ageMs: number, settings: StudioSettings, lowPower: boolean) {
   const h = Math.max(12, p.thickness);
   const recentlyHit = ageMs >= 0 && ageMs < 1350;
   const hitFade = recentlyHit ? Math.max(0, 1 - ageMs / 1350) : 0;
@@ -129,16 +132,18 @@ function drawCometPad(ctx: CanvasRenderingContext2D, half: number, p: MarblePlat
   const activeColor = active ? p.color : "#656476";
   ctx.save();
 
-  const haloRadius = p.width * (active ? 2.15 : 0.95);
-  const glow = ctx.createRadialGradient(0, h * 0.2, 4, 0, h * 0.2, haloRadius);
-  glow.addColorStop(0, active ? `${p.color}${impact > 0 ? "a8" : "70"}` : "rgba(110,110,135,.10)");
-  glow.addColorStop(0.34, active ? `${p.color}${hitFade > 0.2 ? "34" : "20"}` : "rgba(90,90,115,.04)");
-  glow.addColorStop(1, `${p.color}00`);
-  ctx.fillStyle = glow;
-  ctx.fillRect(-haloRadius, -haloRadius, haloRadius * 2, haloRadius * 2);
+  if (!lowPower) {
+    const haloRadius = p.width * (active ? 2.15 : 0.95);
+    const glow = ctx.createRadialGradient(0, h * 0.2, 4, 0, h * 0.2, haloRadius);
+    glow.addColorStop(0, active ? `${p.color}${impact > 0 ? "a8" : "70"}` : "rgba(110,110,135,.10)");
+    glow.addColorStop(0.34, active ? `${p.color}${hitFade > 0.2 ? "34" : "20"}` : "rgba(90,90,115,.04)");
+    glow.addColorStop(1, `${p.color}00`);
+    ctx.fillStyle = glow;
+    ctx.fillRect(-haloRadius, -haloRadius, haloRadius * 2, haloRadius * 2);
+  }
 
   ctx.shadowColor = active ? p.color : "rgba(110,110,130,.28)";
-  ctx.shadowBlur = active ? 16 + settings.platformGlow * 23 + impact * 28 : 4;
+  ctx.shadowBlur = lowPower ? 0 : (active ? 16 + settings.platformGlow * 23 + impact * 28 : 4);
   const body = ctx.createLinearGradient(0, -h * 0.65, 0, h);
   body.addColorStop(0, active ? mixHex(activeColor, "#ffffff", 0.62) : "#a2a1ae");
   body.addColorStop(0.36, activeColor);
@@ -169,99 +174,126 @@ function drawCometPad(ctx: CanvasRenderingContext2D, half: number, p: MarblePlat
   ctx.restore();
 }
 
-function drawInstrumentKey(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number) {
+function drawInstrumentKey(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, lowPower: boolean) {
   const h = Math.max(13, p.thickness);
   ctx.save();
-  ctx.shadowColor = "rgba(32,35,45,.40)";
-  ctx.shadowBlur = 11;
-  ctx.shadowOffsetX = -8;
-  ctx.shadowOffsetY = 13;
+  ctx.shadowColor = "rgba(32,35,45,.42)";
+  ctx.shadowBlur = lowPower ? 0 : 12;
+  ctx.shadowOffsetX = lowPower ? 0 : -10;
+  ctx.shadowOffsetY = lowPower ? 0 : 15;
+  roundedRect(ctx, -half + 3, 5, p.width, h, 4);
+  ctx.fillStyle = mixHex(p.color, "#252832", 0.48);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
   roundedRect(ctx, -half, 0, p.width, h, 4);
   ctx.fillStyle = p.color;
   ctx.fill();
-  ctx.shadowBlur = 0;
   const shine = ctx.createLinearGradient(0, 0, 0, h);
-  shine.addColorStop(0, "rgba(255,255,255,.58)");
-  shine.addColorStop(0.34, "rgba(255,255,255,.13)");
-  shine.addColorStop(1, "rgba(0,0,0,.16)");
+  shine.addColorStop(0, "rgba(255,255,255,.72)");
+  shine.addColorStop(0.28, "rgba(255,255,255,.18)");
+  shine.addColorStop(0.78, "rgba(0,0,0,.08)");
+  shine.addColorStop(1, "rgba(0,0,0,.22)");
   roundedRect(ctx, -half, 0, p.width, h, 4);
   ctx.fillStyle = shine;
   ctx.fill();
-  ctx.strokeStyle = impact > 0 ? "rgba(255,255,255,.92)" : "rgba(46,49,58,.66)";
-  ctx.lineWidth = impact > 0 ? 2.1 : 1.2;
+  ctx.strokeStyle = impact > 0 ? "rgba(255,255,255,.94)" : "rgba(44,47,55,.72)";
+  ctx.lineWidth = impact > 0 ? 2 : 1.1;
   ctx.stroke();
   for (const x of [-half + 13, half - 13]) {
-    ctx.fillStyle = "rgba(25,28,35,.66)";
-    ctx.beginPath(); ctx.arc(x, h / 2, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "rgba(25,28,35,.72)";
+    ctx.beginPath(); ctx.arc(x, h / 2, 2.4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.42)";
+    ctx.beginPath(); ctx.arc(x - 0.7, h / 2 - 0.7, 0.8, 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();
 }
 
-function drawInstrumentCymbal(ctx: CanvasRenderingContext2D, p: MarblePlatform, impact: number) {
+function drawInstrumentCymbal(ctx: CanvasRenderingContext2D, p: MarblePlatform, impact: number, lowPower: boolean) {
   const rx = Math.max(28, p.width * 0.32);
   const ry = Math.max(8, p.thickness * 0.62);
   ctx.save();
+  ctx.strokeStyle = "rgba(80,82,88,.7)";
+  ctx.lineWidth = 2.2;
+  ctx.beginPath(); ctx.moveTo(0, ry * 0.4); ctx.lineTo(5, ry * 3.1); ctx.stroke();
+  ctx.fillStyle = "#60646d";
+  ctx.beginPath(); ctx.arc(5, ry * 3.1, 3, 0, Math.PI * 2); ctx.fill();
   ctx.shadowColor = "rgba(25,28,36,.42)";
-  ctx.shadowBlur = 14;
-  ctx.shadowOffsetX = -10;
-  ctx.shadowOffsetY = 15;
+  ctx.shadowBlur = lowPower ? 0 : 14;
+  ctx.shadowOffsetX = lowPower ? 0 : -12;
+  ctx.shadowOffsetY = lowPower ? 0 : 17;
   const metal = ctx.createRadialGradient(-rx * 0.25, -ry * 0.2, 2, 0, 0, rx);
-  metal.addColorStop(0, "#fff8dc");
+  metal.addColorStop(0, "#fff9df");
   metal.addColorStop(0.28, mixHex(p.color, "#f6d48a", 0.35));
   metal.addColorStop(0.75, mixHex(p.color, "#6f5b3f", 0.34));
   metal.addColorStop(1, "#3b342c");
   ctx.fillStyle = metal;
   ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
   ctx.shadowBlur = 0;
-  ctx.strokeStyle = impact > 0 ? "rgba(255,255,255,.88)" : "rgba(75,62,46,.78)";
+  ctx.strokeStyle = impact > 0 ? "rgba(255,255,255,.9)" : "rgba(75,62,46,.8)";
   ctx.lineWidth = 1.4;
   ctx.stroke();
-  ctx.fillStyle = "rgba(255,255,255,.32)";
-  ctx.beginPath(); ctx.ellipse(-rx * 0.18, -ry * 0.18, rx * 0.22, ry * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,.34)";
+  ctx.beginPath(); ctx.ellipse(-rx * 0.18, -ry * 0.2, rx * 0.22, ry * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "rgba(72,61,46,.78)";
+  ctx.beginPath(); ctx.arc(0, 0, Math.max(2.5, ry * 0.23), 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
 
-function drawInstrumentRail(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number) {
+function drawInstrumentRail(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, lowPower: boolean) {
   const h = Math.max(8, p.thickness * 0.62);
   ctx.save();
-  ctx.shadowColor = "rgba(30,34,44,.38)";
-  ctx.shadowBlur = 9;
-  ctx.shadowOffsetY = 10;
+  ctx.shadowColor = "rgba(30,34,44,.4)";
+  ctx.shadowBlur = lowPower ? 0 : 9;
+  ctx.shadowOffsetX = lowPower ? 0 : -8;
+  ctx.shadowOffsetY = lowPower ? 0 : 12;
   roundedRect(ctx, -half, 0, p.width, h, h / 2);
   const rail = ctx.createLinearGradient(0, 0, 0, h);
-  rail.addColorStop(0, "#f7f8fb"); rail.addColorStop(0.35, "#a9afba"); rail.addColorStop(1, "#424955");
+  rail.addColorStop(0, "#fbfcff"); rail.addColorStop(0.35, "#a9afba"); rail.addColorStop(1, "#3f4651");
   ctx.fillStyle = rail; ctx.fill();
   ctx.shadowBlur = 0;
-  ctx.strokeStyle = impact > 0 ? p.color : "rgba(45,49,58,.78)";
+  ctx.strokeStyle = impact > 0 ? p.color : "rgba(45,49,58,.8)";
   ctx.lineWidth = 1.2; ctx.stroke();
+  for (const x of [-half + 4, half - 4]) {
+    ctx.fillStyle = "#d9dde4";
+    ctx.beginPath(); ctx.arc(x, h / 2, h * 0.42, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#59606b"; ctx.lineWidth = 0.9; ctx.stroke();
+  }
   ctx.restore();
 }
 
-function drawInstrumentPad(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number) {
+function drawInstrumentPad(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, lowPower: boolean) {
   const h = Math.max(14, p.thickness);
   ctx.save();
-  ctx.shadowColor = "rgba(28,32,40,.38)";
-  ctx.shadowBlur = 10;
-  ctx.shadowOffsetY = 12;
-  roundedRect(ctx, -half, 0, p.width, h, 7);
-  ctx.fillStyle = mixHex(p.color, "#ffffff", impact > 0 ? 0.16 : 0.04);
+  ctx.shadowColor = "rgba(28,32,40,.4)";
+  ctx.shadowBlur = lowPower ? 0 : 11;
+  ctx.shadowOffsetX = lowPower ? 0 : -9;
+  ctx.shadowOffsetY = lowPower ? 0 : 14;
+  roundedRect(ctx, -half + 4, 5, p.width, h, 7);
+  ctx.fillStyle = mixHex(p.color, "#252832", 0.5);
   ctx.fill();
   ctx.shadowBlur = 0;
-  ctx.strokeStyle = "rgba(45,48,56,.74)";
+  roundedRect(ctx, -half, 0, p.width, h, 7);
+  ctx.fillStyle = mixHex(p.color, "#ffffff", impact > 0 ? 0.18 : 0.04);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(45,48,56,.76)";
   ctx.lineWidth = 1.4; ctx.stroke();
-  ctx.fillStyle = "rgba(255,255,255,.28)";
-  roundedRect(ctx, -half + 5, 3, p.width - 10, 4, 2); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,.34)";
+  roundedRect(ctx, -half + 6, 3, p.width - 12, 4, 2); ctx.fill();
+  ctx.fillStyle = "rgba(30,32,38,.58)";
+  ctx.beginPath(); ctx.arc(half - 12, h / 2, 2.5, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
 
 
-function drawInstrumentWire(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number) {
+function drawInstrumentWire(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, lowPower: boolean) {
   const railGap = Math.max(12, p.thickness * 0.9);
   ctx.save();
   ctx.shadowColor = "rgba(32,36,44,.34)";
-  ctx.shadowBlur = 8;
-  ctx.shadowOffsetX = -7;
-  ctx.shadowOffsetY = 11;
+  ctx.shadowBlur = lowPower ? 0 : 8;
+  ctx.shadowOffsetX = lowPower ? 0 : -7;
+  ctx.shadowOffsetY = lowPower ? 0 : 11;
   ctx.strokeStyle = impact > 0 ? mixHex(p.color, "#ffffff", 0.38) : "#737b88";
   ctx.lineWidth = 2.2;
   ctx.lineCap = "round";
@@ -287,8 +319,8 @@ function drawInstrumentWire(ctx: CanvasRenderingContext2D, half: number, p: Marb
   ctx.restore();
 }
 
-function drawXylophoneKey(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, settings: StudioSettings) {
-  drawInstrumentKey(ctx, half, p, settings.platformGlow > 1 ? 0.4 : 0);
+function drawXylophoneKey(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, settings: StudioSettings, lowPower: boolean) {
+  drawInstrumentKey(ctx, half, p, settings.platformGlow > 1 ? 0.4 : 0, lowPower);
 }
 
 export function drawPresetPlatform(
@@ -299,14 +331,16 @@ export function drawPresetPlatform(
   impact: number,
   ageMs: number,
   settings: StudioSettings,
+  renderQuality: RenderQuality = "live",
 ) {
-  if (style === "tube-cylinder") { drawTubeCylinder(ctx, half, platform, impact, ageMs, settings); return true; }
-  if (style === "comet-pad") { drawCometPad(ctx, half, platform, impact, ageMs, settings); return true; }
-  if (style === "xylophone-key") { drawXylophoneKey(ctx, half, platform, settings); return true; }
-  if (style === "instrument-key") { drawInstrumentKey(ctx, half, platform, impact); return true; }
-  if (style === "instrument-cymbal") { drawInstrumentCymbal(ctx, platform, impact); return true; }
-  if (style === "instrument-rail") { drawInstrumentRail(ctx, half, platform, impact); return true; }
-  if (style === "instrument-pad") { drawInstrumentPad(ctx, half, platform, impact); return true; }
-  if (style === "instrument-wire") { drawInstrumentWire(ctx, half, platform, impact); return true; }
+  const lowPower = renderQuality === "idle";
+  if (style === "tube-cylinder") { drawTubeCylinder(ctx, half, platform, impact, ageMs, settings, lowPower); return true; }
+  if (style === "comet-pad") { drawCometPad(ctx, half, platform, impact, ageMs, settings, lowPower); return true; }
+  if (style === "xylophone-key") { drawXylophoneKey(ctx, half, platform, settings, lowPower); return true; }
+  if (style === "instrument-key") { drawInstrumentKey(ctx, half, platform, impact, lowPower); return true; }
+  if (style === "instrument-cymbal") { drawInstrumentCymbal(ctx, platform, impact, lowPower); return true; }
+  if (style === "instrument-rail") { drawInstrumentRail(ctx, half, platform, impact, lowPower); return true; }
+  if (style === "instrument-pad") { drawInstrumentPad(ctx, half, platform, impact, lowPower); return true; }
+  if (style === "instrument-wire") { drawInstrumentWire(ctx, half, platform, impact, lowPower); return true; }
   return false;
 }

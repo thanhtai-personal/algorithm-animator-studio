@@ -1,4 +1,4 @@
-import type { PlatformMixMode, PlatformStyle, StudioSettings } from "../types";
+import type { PlatformMixMode, PlatformStyle, RenderQuality, StudioSettings } from "../types";
 import { clamp, hexToRgb, mixHex, type MarblePlatform } from "./marbleCourse";
 import { drawPresetPlatform } from "./presetPlatformRenderer";
 import { presetObstaclePlan } from "../engine/presetObstaclePlan";
@@ -326,7 +326,7 @@ function drawPrism(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatfor
   }
 }
 
-export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: MarblePlatform, screenY: number, timeMs: number, settings: StudioSettings, forcedStyle?: PlatformStyle) {
+export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: MarblePlatform, screenY: number, timeMs: number, settings: StudioSettings, forcedStyle?: PlatformStyle, renderQuality: RenderQuality = "live") {
   const age = timeMs - platform.event.timeMs;
   const impact = age >= 0 && age < 320 ? 1 - age / 320 : 0;
   const half = platform.width / 2;
@@ -334,7 +334,7 @@ export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: Marb
   ctx.save();
   ctx.translate(platform.x, screenY);
   ctx.rotate(platform.tiltRad);
-  if (drawPresetPlatform(ctx, style, half, platform, impact, age, settings)) {
+  if (drawPresetPlatform(ctx, style, half, platform, impact, age, settings, renderQuality)) {
     // preset renderer already drew the item
   } else if (style === "neon-tube") drawNeonTube(ctx, half, platform, impact, settings);
   else if (style === "neon-bar") drawNeonBar(ctx, half, platform, impact, settings);

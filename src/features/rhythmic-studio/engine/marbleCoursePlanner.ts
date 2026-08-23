@@ -119,14 +119,19 @@ function fallbackCandidate(hit: Vec2, incoming: Vec2, spanMs: number, direction:
 }
 
 
-function obstacleSpacingScale(index: number, settings: StudioSettings) {
-  const style = presetObstaclePlan(index, settings)?.style;
-  if (style === "instrument-key") return { vertical: 0.84, horizontal: 0.82 };
-  if (style === "instrument-pad") return { vertical: 1.38, horizontal: 1.12 };
-  if (style === "instrument-cymbal") return { vertical: 1.72, horizontal: 1.24 };
-  if (style === "instrument-rail") return { vertical: 1.42, horizontal: 1.3 };
-  if (style === "instrument-wire") return { vertical: 1.82, horizontal: 1.42 };
-  return { vertical: 1, horizontal: 1 };
+function obstacleSpacingScale(index: number, spanMs: number, settings: StudioSettings) {
+  const plan = presetObstaclePlan(index, settings);
+  if (!plan) return { vertical: 1, horizontal: 1 };
+  const base = {
+    vertical: plan.verticalScale ?? 1,
+    horizontal: plan.horizontalScale ?? 1,
+  };
+  if (settings.terrainProfile !== "xylophone" || !plan.sceneStart || index === 0) return base;
+  const gapWeight = clamp((spanMs - 280) / 620, 0, 1);
+  return {
+    vertical: base.vertical * (1.18 + gapWeight * 0.72),
+    horizontal: base.horizontal * (1.08 + gapWeight * 0.32),
+  };
 }
 
 function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: number, preferredDirection: number, pitch: number, settings: StudioSettings, width: number) {
@@ -134,7 +139,9 @@ function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: numb
   const terrain = rhythmTerrainForGap(spanMs, settings);
   const dt = Math.max(0.08, spanMs / 1000);
   const bounds = worldBounds(settings, width);
-  const spacing = obstacleSpacingScale(index, settings);
+  // This bounce lands on index + 1, so scene-boundary spacing belongs to the
+  // upcoming obstacle rather than the obstacle we are currently leaving.
+  const spacing = obstacleSpacingScale(index + 1, spanMs, settings);
   const baseDrop = Math.max(8, terrain.verticalDrop * profile.verticalScale * spacing.vertical);
   const desiredHorizontal = Math.max(12, terrain.horizontalDistance * profile.horizontalScale * spacing.horizontal);
   const targetApex = terrain.bounceHeight * profile.apexScale;
@@ -155,7 +162,7 @@ function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: numb
         reflected.velocity.x = clamp(reflected.velocity.x, -maxHorizontal, maxHorizontal);
       }
       const target = {
-        x: hit.x + reflected.velocity.x * dt + pitchBias,
+        x: hit.x + reflected.velocity.x * dt,
         y: hit.y + reflected.velocity.y * dt + 0.5 * profile.gravity * dt * dt,
       };
       const dx = target.x - hit.x;
@@ -167,6 +174,7 @@ function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: numb
       const cometMinimum = settings.terrainProfile === "comet" ? desiredHorizontal * 0.5 : 0;
       const shortJumpPenalty = Math.max(0, cometMinimum - Math.abs(dx)) * (settings.terrainProfile === "comet" ? 1.4 : 0);
       const horizontalPenalty = Math.abs(Math.abs(dx) - desiredHorizontal) * (settings.terrainProfile === "comet" ? 0.28 : 0.16);
+      const pitchPenalty = Math.abs(dx - (preferredDirection * desiredHorizontal + pitchBias)) * 0.025;
       const dropPenalty = Math.abs(dy - desiredDrop) * 0.24;
       const apexPenalty = Math.abs(apex - targetApex) * 0.2;
       const speedPenalty = Math.max(0, length(reflected.velocity) - 1200) * 0.08;
@@ -177,7 +185,7 @@ function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: numb
         normal: reflected.normal,
         outgoing: reflected.velocity,
         target,
-        score: directionPenalty + shortJumpPenalty + horizontalPenalty + dropPenalty + apexPenalty + speedPenalty + edgePenalty + orientationPenalty(index, reflected.normal, settings) + randomTieBreak,
+        score: directionPenalty + shortJumpPenalty + horizontalPenalty + pitchPenalty + dropPenalty + apexPenalty + speedPenalty + edgePenalty + orientationPenalty(index, reflected.normal, settings) + randomTieBreak,
       });
     }
   }
@@ -308,7 +316,8 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
     const expanded: SearchState[] = [];
 
     for (const state of states) {
-      const effectiveSpan = spanMs >= REST_GAP_MS && settings.terrainProfile !== "comet" ? Math.min(spanMs, 680) : spanMs;
+      const useGuideTube = spanMs >= REST_GAP_MS && (settings.terrainProfile === "tube-board" || settings.terrainProfile === "balanced");
+      const effectiveSpan = useGuideTube ? Math.min(spanMs, 680) : spanMs;
       const candidates = bounceCandidates(index, state.hit, state.incoming, effectiveSpan, state.preferredDirection, pitch, settings, width);
       for (const bounce of candidates) {
         const platform = obstacleFromImpact(index, state.hit, bounce.normal, bounce.outgoing, settings, event, resolveColor(index, pitch), platformWidth, profile.gravity);
@@ -316,7 +325,6 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
           expanded.push({ ...state, score: state.score + bounce.score, node: { platform, parent: state.node } });
           continue;
         }
-        const useGuideTube = spanMs >= REST_GAP_MS && settings.terrainProfile !== "comet";
         const nextHit = useGuideTube
           ? longGapTarget(index, state.hit, spanMs, state.preferredDirection, pitch, settings, width)
           : bounce.target;

@@ -4,6 +4,7 @@ import { guidedCoursePoint, overrideForSegment } from "./courseGuide";
 import { buildPhysicsCourse } from "../engine/marbleCoursePlanner";
 import type { MarblePlatform, MarblePoint } from "../engine/marblePhysicsTypes";
 import { presetObstaclePlan } from "../engine/presetObstaclePlan";
+import { instrumentScenePlan } from "../engine/instrumentScenePlan";
 
 export type { MarblePlatform, MarblePoint } from "../engine/marblePhysicsTypes";
 
@@ -124,11 +125,14 @@ function paletteColor(index: number, pitch: number, settings: StudioSettings) {
   }
   if (settings.colorPaletteMode === "key-rainbow") {
     const style = presetObstaclePlan(index, settings)?.style;
-    if (style === "instrument-cymbal") return index % 2 ? "#c89f5a" : "#e4c88f";
-    if (style === "instrument-rail") return index % 5 === 0 ? "#63d9e9" : "#777e88";
-    if (style === "instrument-wire") return index % 4 === 0 ? "#69c9d7" : "#747b86";
+    const scene = instrumentScenePlan(index);
+    if (style === "instrument-cymbal") return scene.sceneId === "finale" ? "#d5d9df" : (index % 2 ? "#c89f5a" : "#e4c88f");
+    if (style === "instrument-rail") return scene.sceneId === "finale" && index % 3 === 0 ? "#70e5f1" : "#737985";
+    if (style === "instrument-wire") return scene.sceneId === "wires" && index % 4 === 0 ? "#69c9d7" : "#7a808a";
     if (style === "instrument-pad") {
-      const pads = ["#ff4fa6", "#ff5b76", "#42dfba", "#2f333c", "#f28e45"];
+      const pads = scene.sceneId === "bars"
+        ? ["#30333a", "#4a4d55", "#e9edf1", "#202329"]
+        : ["#ff4fa6", "#ff5b76", "#42dfba", "#f8f8f5", "#2f333c"];
       return pads[index % pads.length];
     }
     const colors = ["#ff4f59", "#ff9238", "#ffdb45", "#62e572", "#4bdcff", "#5f86ff", "#cf6dff"];
@@ -208,7 +212,7 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
     if (guided) return { x: guided.x, y: guided.y, color: mixHex(start.color, end.color, rawT), platformIndex: index };
   }
 
-  if (span >= LONG_GAP_TUBE_MS && settings.terrainProfile !== "comet") {
+  if (span >= LONG_GAP_TUBE_MS && settings.terrainProfile !== "comet" && settings.terrainProfile !== "xylophone") {
     const geometry = longGapTubeGeometry(start, end, settings);
     if (rawT < TUBE_ENTRY_T) {
       const phase = rawT / TUBE_ENTRY_T;
@@ -243,7 +247,15 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
 }
 
 export function collisionStrength(timeMs: number, events: NoteEvent[], windowMs = 170) {
-  let nearest = Infinity;
-  for (const event of events) nearest = Math.min(nearest, Math.abs(timeMs - event.timeMs));
-  return clamp(1 - nearest / windowMs);
+  if (!events.length) return 0;
+  let low = 0;
+  let high = events.length;
+  while (low < high) {
+    const mid = (low + high) >> 1;
+    if (events[mid].timeMs < timeMs) low = mid + 1;
+    else high = mid;
+  }
+  const next = low < events.length ? Math.abs(events[low].timeMs - timeMs) : Infinity;
+  const previous = low > 0 ? Math.abs(events[low - 1].timeMs - timeMs) : Infinity;
+  return clamp(1 - Math.min(previous, next) / windowMs);
 }

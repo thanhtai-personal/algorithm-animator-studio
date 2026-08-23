@@ -124,12 +124,15 @@ export function drawLongGapTubes(
   settings: StudioSettings,
   overrides: CourseItemOverride[] = [],
 ) {
-  if (settings.terrainProfile === "comet") return;
+  if (settings.terrainProfile === "comet" || settings.terrainProfile === "xylophone") return;
   for (let index = 0; index < platforms.length - 1; index += 1) {
     const span = events[index + 1].timeMs - events[index].timeMs;
     if (span < LONG_GAP_TUBE_MS || overrideForSegment(index, overrides)) continue;
     const start = platforms[index];
     const end = platforms[index + 1];
+    const minWorldY = Math.min(start.hitY, end.hitY);
+    const maxWorldY = Math.max(start.hitY, end.hitY);
+    if (maxWorldY < cameraY - 180 || minWorldY > cameraY + 1460) continue;
     const geometry = longGapTubeGeometry(start, end, settings);
     const color = mixHex(start.color, end.color, 0.5);
     drawGlassTube(ctx, geometry, cameraY, color, settings.platformGlow, timeMs);

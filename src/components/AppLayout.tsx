@@ -24,10 +24,15 @@ export function AppLayout({ children }: PropsWithChildren) {
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>(() => readSidebarMode());
   const [fantasticMode] = useFantasticMode();
   const [chillModeEnabled, setChillModeEnabled] = useState(() => readChillModeEnabled());
+  const rhythmicStudioActive = location.pathname.startsWith("/algorithms/rhythmic");
+  const fantasticVisualsEnabled = fantasticMode && !rhythmicStudioActive;
 
   useEffect(() => subscribeSystemLang(setLang), []);
   useEffect(() => subscribeChillMode(setChillModeEnabled), []);
-  useFantasticFrameMotion(fantasticMode, location.pathname);
+  // Rhythmic Studio owns a continuously updated preview canvas. Running the
+  // fullscreen Fantastic backdrop plus AOS MutationObserver on the same route
+  // creates two independent animation/compositing loops and can overwhelm GPUs.
+  useFantasticFrameMotion(fantasticVisualsEnabled, location.pathname);
 
   useEffect(() => {
     window.localStorage.setItem(SIDEBAR_STORAGE_KEY, sidebarMode);
@@ -45,7 +50,7 @@ export function AppLayout({ children }: PropsWithChildren) {
 
   return (
     <div className="min-h-screen kai-grid-bg" style={{ "--app-sidebar-width": sidebarWidth } as CSSProperties}>
-      <FantasticModeBackdrop enabled={fantasticMode} />
+      <FantasticModeBackdrop enabled={fantasticVisualsEnabled} />
       <AppHeader sidebarMode={sidebarMode} onToggleSidebar={toggleSidebar} />
       <AppSidebar lang={lang} mode={sidebarMode} onClose={() => setSidebarMode("hidden")} onCollapse={() => setSidebarMode("collapsed")} onExpand={() => setSidebarMode("expanded")} />
       <div className="relative z-10 transition-[padding] duration-300 lg:pl-[var(--app-sidebar-width)]">

@@ -1,4 +1,5 @@
 import type { NoteEvent, StudioSettings } from "../types";
+import { REST_GAP_MS, ballisticArcOffset, rhythmTerrainForGap } from "./rhythmTerrain";
 
 export interface MarblePlatform {
   index: number;
@@ -11,24 +12,62 @@ export interface MarblePlatform {
   event: NoteEvent;
 }
 
-export const LONG_GAP_TUBE_MS = 1500;
-export const TUBE_ENTRY_T = 0.22;
-export const TUBE_EXIT_T = 0.78;
-
+export const LONG_GAP_TUBE_MS = REST_GAP_MS;
+export const TUBE_ENTRY_T = 0.18;
+export const TUBE_EXIT_T = 0.82;
 
 export interface LongGapTubeGeometry {
   entryX: number;
   entryY: number;
+  control1X: number;
+  control1Y: number;
+  control2X: number;
+  control2Y: number;
+  waveAmplitude: number;
+  waveDirection: number;
   exitX: number;
   exitY: number;
 }
 
 export function longGapTubeGeometry(start: MarblePlatform, end: MarblePlatform, settings: StudioSettings): LongGapTubeGeometry {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const entryX = start.x + dx * TUBE_ENTRY_T;
+  const entryY = start.y + dy * TUBE_ENTRY_T - settings.ballSize - 22;
+  const exitX = start.x + dx * TUBE_EXIT_T;
+  const exitY = start.y + dy * TUBE_EXIT_T - settings.ballSize - 22;
+  const tubeDy = exitY - entryY;
+  const direction = seededNoise(start.index + 311) >= 0 ? 1 : -1;
+  const lateral = clamp(Math.abs(tubeDy) * 0.14, 42, 72);
+  const waveAmplitude = clamp(Math.abs(tubeDy) * 0.22, 48, 90);
+  const control1X = clamp(entryX + (exitX - entryX) * 0.28 + direction * lateral, 72, 648);
+  const control2X = clamp(entryX + (exitX - entryX) * 0.72 - direction * lateral * 0.92, 72, 648);
   return {
-    entryX: start.x + (end.x - start.x) * 0.2,
-    entryY: start.y + (end.y - start.y) * TUBE_ENTRY_T - settings.ballSize - 22,
-    exitX: start.x + (end.x - start.x) * 0.8,
-    exitY: start.y + (end.y - start.y) * TUBE_EXIT_T - settings.ballSize - 22,
+    entryX,
+    entryY,
+    control1X,
+    control1Y: entryY + tubeDy * 0.26,
+    control2X,
+    control2Y: entryY + tubeDy * 0.74,
+    waveAmplitude,
+    waveDirection: direction,
+    exitX,
+    exitY,
+  };
+}
+
+export function longGapTubePoint(geometry: LongGapTubeGeometry, t: number) {
+  const p = clamp(t);
+  const inv = 1 - p;
+  const a = inv * inv * inv;
+  const b = 3 * inv * inv * p;
+  const c = 3 * inv * p * p;
+  const d = p * p * p;
+  const baseX = a * geometry.entryX + b * geometry.control1X + c * geometry.control2X + d * geometry.exitX;
+  const wave = Math.sin(p * Math.PI * 2) * Math.sin(p * Math.PI) * geometry.waveAmplitude * geometry.waveDirection;
+  return {
+    x: clamp(baseX + wave, 54, 666),
+    y: a * geometry.entryY + b * geometry.control1Y + c * geometry.control2Y + d * geometry.exitY,
   };
 }
 
@@ -79,35 +118,47 @@ export function buildMarbleCourse(events: NoteEvent[], settings: StudioSettings,
   const laneHalf = Math.min(width * 0.39, settings.laneSpread / 2);
   let previousX = center;
   let currentY = 230;
+  let direction = seededNoise(events.length + 41) >= 0 ? 1 : -1;
 
   return events.map((event, index) => {
-    if (index > 0) {
-      const deltaMs = Math.max(1, event.timeMs - events[index - 1].timeMs);
-      const gapScale = settings.autoSyncGaps ? clamp(deltaMs / 420, 0.62, 2.55) : 1;
-      currentY += settings.platformGap * gapScale;
-    }
+    const span = index > 0 ? Math.max(1, event.timeMs - events[index - 1].timeMs) : 0;
+    const terrain = rhythmTerrainForGap(span || 420, settings);
+    if (index > 0) currentY += terrain.verticalDrop;
+
     const pitch = maxMidi === minMidi ? 0.5 : (event.midi - minMidi) / (maxMidi - minMidi);
-    const platformWidth = settings.platformWidth * (0.88 + event.velocity * 0.18);
+    const platformWidth = settings.platformWidth * (0.88 + event.velocity * 0.18) * terrain.platformScale;
     const margin = Math.min(width / 2 - 24, platformWidth / 2 + 22);
-    const pitchX = center + (pitch - 0.5) * laneHalf * 1.7;
-    const wobble = seededNoise(index) * laneHalf * 0.34;
-    const deltaMs = index > 0 ? Math.max(1, event.timeMs - events[index - 1].timeMs) : 0;
-    let x = clamp(pitchX + wobble, margin, width - margin);
-    if (deltaMs > 1200) x = clamp(previousX + (pitchX - previousX) * 0.18, margin, width - margin);
-    const minDistance = Math.min(settings.minBounceDistance, laneHalf * 0.7);
-    if (index > 0 && Math.abs(x - previousX) < minDistance) {
-      const direction = seededNoise(index + 91) >= 0 ? 1 : -1;
-      x = clamp(previousX + direction * minDistance, margin, width - margin);
+    const pitchBias = (pitch - 0.5) * laneHalf * (terrain.kind === "burst" ? 0.12 : 0.22);
+    const noise = seededNoise(index + 17) * terrain.horizontalDistance * 0.1;
+
+    let x = index === 0 ? center + pitchBias * 0.35 : previousX + direction * terrain.horizontalDistance + pitchBias + noise;
+    if (terrain.kind === "rest") x = previousX + direction * terrain.horizontalDistance * 0.55 + pitchBias * 0.24;
+
+    if (x < margin || x > width - margin) {
+      direction *= -1;
+      x = previousX + direction * terrain.horizontalDistance + pitchBias * 0.35;
     }
+    x = clamp(x, margin, width - margin);
+
+    if (index > 0 && terrain.kind !== "rest") {
+      const actualDistance = Math.abs(x - previousX);
+      const minimum = Math.min(terrain.horizontalDistance * 0.58, laneHalf * 0.72);
+      if (actualDistance < minimum) {
+        x = clamp(previousX + direction * minimum, margin, width - margin);
+      }
+    }
+
+    if (index > 0 && terrain.kind !== "burst" && seededNoise(index + 97) > 0.76) direction *= -1;
     previousX = x;
     const color = mixHex(settings.prismStart, settings.prismEnd, clamp(pitch * 0.74 + (index % 5) * 0.052));
+    const tiltDirection = direction * -1;
     return {
       index,
       x,
       y: currentY,
       width: platformWidth,
       thickness: settings.platformThickness,
-      tiltRad: (seededNoise(index + 7) * settings.platformTilt * Math.PI) / 180,
+      tiltRad: (tiltDirection * settings.platformTilt * 0.24 + seededNoise(index + 7) * settings.platformTilt * 0.28) * Math.PI / 180,
       color,
       event,
     };
@@ -160,13 +211,10 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
     }
     if (t <= TUBE_EXIT_T) {
       const phase = (t - TUBE_ENTRY_T) / (TUBE_EXIT_T - TUBE_ENTRY_T);
-      const dx = exitX - entryX;
-      const dy = exitY - entryY;
-      const length = Math.max(1, Math.hypot(dx, dy));
-      const wobble = Math.sin(phase * Math.PI * 2) * Math.min(5, settings.ballSize * 0.22);
+      const point = longGapTubePoint(longGapTubeGeometry(start, end, settings), phase);
       return {
-        x: entryX + dx * phase + (-dy / length) * wobble,
-        y: entryY + dy * phase + (dx / length) * wobble,
+        x: point.x,
+        y: point.y,
         color: mixHex(start.color, end.color, t),
         platformIndex: index,
       };
@@ -180,12 +228,16 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
     };
   }
 
-  const arc = Math.sin(Math.PI * t);
-  const horizontalCurve = Math.sin(Math.PI * t) * settings.curveIntensity * settings.curvePathLength * 52 * (index % 2 ? -1 : 1);
-  const speedArc = clamp(span / 520, 0.62, 1.3);
+  const terrain = rhythmTerrainForGap(span, settings);
+  const drop = end.y - start.y;
+  const minimumBallisticHeight = drop * 0.28;
+  const bounceHeight = Math.max(terrain.bounceHeight, minimumBallisticHeight);
+  const arc = ballisticArcOffset(t, bounceHeight);
+  const curveSign = end.x >= start.x ? 1 : -1;
+  const horizontalCurve = 4 * t * (1 - t) * settings.curveIntensity * settings.curvePathLength * 32 * terrain.curveScale * curveSign;
   return {
     x: start.x + (end.x - start.x) * t + horizontalCurve,
-    y: start.y + (end.y - start.y) * t - arc * settings.bounceHeight * speedArc - settings.ballSize,
+    y: start.y + (end.y - start.y) * t - arc - settings.ballSize,
     color: mixHex(start.color, end.color, t),
     platformIndex: index,
   };

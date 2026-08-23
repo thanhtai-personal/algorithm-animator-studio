@@ -1,6 +1,6 @@
 import { COURSE_LONG_ITEMS, type CourseItemOverride, type CourseItemStyle, type CourseLongItem, type StudioSettings } from "../types";
 
-export interface CourseGuideNode { x: number; y: number; contactX?: number; tiltRad?: number }
+export interface CourseGuideNode { x: number; y: number; contactX?: number; contactY?: number; hitX?: number; hitY?: number; tiltRad?: number }
 
 const LONG_ITEMS = new Set<CourseItemStyle>(COURSE_LONG_ITEMS);
 
@@ -15,16 +15,16 @@ export function overrideForSegment(index: number, overrides: CourseItemOverride[
 
 export function guidedCoursePoint(start: CourseGuideNode, end: CourseGuideNode, t: number, style: CourseLongItem, settings: StudioSettings) {
   const p = Math.min(1, Math.max(0, t));
-  const startX = start.contactX ?? start.x;
-  const endX = end.contactX ?? end.x;
-  const startY = start.y + (startX - start.x) * Math.sin(start.tiltRad ?? 0);
-  const endY = end.y + (endX - end.x) * Math.sin(end.tiltRad ?? 0);
+  const startX = start.hitX ?? start.contactX ?? start.x;
+  const endX = end.hitX ?? end.contactX ?? end.x;
+  const startY = start.hitY ?? start.contactY ?? start.y;
+  const endY = end.hitY ?? end.contactY ?? end.y;
   const dx = endX - startX;
   const dy = endY - startY;
   const direction = dx >= 0 ? 1 : -1;
   const wave = 4 * p * (1 - p);
   const baseX = startX + dx * p;
-  const baseY = startY + dy * p - settings.ballSize;
+  const baseY = startY + dy * p;
   if (style === "glass-tube") return { x: baseX + wave * direction * Math.min(44, Math.abs(dy) * 0.13), y: baseY + Math.sin(p * Math.PI * 2) * 10 * wave };
   if (style === "glass-channel") return { x: baseX + wave * direction * 20, y: baseY + wave * 18 };
   if (style === "acrylic-pipe") return { x: baseX + Math.sin(p * Math.PI) * direction * 24, y: baseY + Math.sin(p * Math.PI * 2) * 6 };

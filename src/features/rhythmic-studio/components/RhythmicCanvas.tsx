@@ -18,7 +18,8 @@ import { drawCourseLongItems, isPlatformCourseItem, overrideForNode } from "../l
 import { drawRhythmicBackground } from "../lib/backgrounds";
 import { activeLyricAt } from "../lib/lyrics";
 import { applyPresetCamera, unprojectPresetCamera } from "../lib/presetCamera";
-
+import { drawPresetMarble } from "../lib/presetMarbleRenderer";
+import { drawPresetTrail } from "../lib/presetTrailRenderer";
 interface Props {
   events: NoteEvent[];
   settings: StudioSettings;
@@ -39,10 +40,8 @@ interface Props {
   onEnded: () => void;
   canvasRef: MutableRefObject<HTMLCanvasElement | null>;
 }
-
 const WIDTH = 720;
 const HEIGHT = 1280;
-
 function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
   const r = Math.min(radius, width / 2, height / 2);
   ctx.beginPath();
@@ -53,8 +52,6 @@ function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width:
   ctx.arcTo(x, y, x + width, y, r);
   ctx.closePath();
 }
-
-
 function drawParticles(ctx: CanvasRenderingContext2D, platforms: MarblePlatform[], cameraY: number, timeMs: number, settings: StudioSettings) {
   const count = Math.max(0, Math.floor(settings.particleCount * settings.spectralDensity));
   if (!count) return;
@@ -62,7 +59,7 @@ function drawParticles(ctx: CanvasRenderingContext2D, platforms: MarblePlatform[
     const age = timeMs - platform.event.timeMs;
     if (age < 0 || age > 430) continue;
     const life = 1 - age / 430;
-    const y = platform.y - cameraY;
+    const y = platform.hitY - cameraY;
     for (let i = 0; i < count; i += 1) {
       const angle = -Math.PI / 2 + (i / Math.max(1, count - 1) - 0.5) * 2.5;
       const speed = 26 + (i % 7) * 10;
@@ -70,14 +67,14 @@ function drawParticles(ctx: CanvasRenderingContext2D, platforms: MarblePlatform[
       ctx.globalAlpha = life * 0.78;
       ctx.fillStyle = platform.color;
       ctx.beginPath();
-      ctx.arc(platform.x + Math.cos(angle) * distance, y + Math.sin(angle) * distance, 1.5 + life * 2.2, 0, Math.PI * 2);
+      ctx.arc(platform.hitX + Math.cos(angle) * distance, y + Math.sin(angle) * distance, 1.5 + life * 2.2, 0, Math.PI * 2);
       ctx.fill();
     }
   }
   ctx.globalAlpha = 1;
 }
-
 function drawMarble(ctx: CanvasRenderingContext2D, point: MarblePoint, cameraY: number, pulse: number, settings: StudioSettings) {
+  if (drawPresetMarble(ctx, point, cameraY, pulse, settings)) return;
   const x = point.x;
   const y = point.y - cameraY;
   const radius = settings.ballSize * (1 + pulse * 0.08);
@@ -202,14 +199,17 @@ function drawLyrics(ctx: CanvasRenderingContext2D, timeMs: number, lyrics: Lyric
   ctx.restore();
 }
 
-function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEvent[], platforms: MarblePlatform[], cameraY: number, durationMs: number, settings: StudioSettings, beatLabel: string, backgroundImage: HTMLImageElement | null, lyrics: LyricCue[], courseOverrides: CourseItemOverride[], selectedNodeIndex: number | null, recording: boolean) {
+function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEvent[], platforms: MarblePlatform[], cameraX: number, cameraY: number, durationMs: number, settings: StudioSettings, beatLabel: string, backgroundImage: HTMLImageElement | null, lyrics: LyricCue[], courseOverrides: CourseItemOverride[], selectedNodeIndex: number | null, recording: boolean) {
   const pulse = settings.pulseAnimation ? collisionStrength(timeMs, events) * settings.animationSensitivity : 0;
   drawRhythmicBackground(ctx, WIDTH, HEIGHT, settings, pulse, timeMs, backgroundImage);
   ctx.save();
   applyPresetCamera(ctx, settings, WIDTH, HEIGHT);
+  ctx.translate(-cameraX, 0);
   drawLongGapTubes(ctx, platforms, events, cameraY, timeMs, settings, courseOverrides);
   drawCourseLongItems(ctx, platforms, courseOverrides, cameraY, settings);
   for (const platform of platforms) {
+    if (settings.terrainProfile === "comet" && (platform.event.timeMs < timeMs - 900 || platform.event.timeMs > timeMs + 1150)) continue;
+    if (settings.terrainProfile === "xylophone" && (platform.event.timeMs < timeMs - 2600 || platform.event.timeMs > timeMs + 4300)) continue;
     const y = platform.y - cameraY;
     if (y < -100 || y > HEIGHT + 120) continue;
     const override = overrideForNode(platform.index, courseOverrides);
@@ -217,32 +217,38 @@ function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEv
     else {
       ctx.save();
       ctx.strokeStyle = `${platform.color}88`; ctx.lineWidth = 1.4;
-      ctx.beginPath(); ctx.arc(platform.x, y, Math.max(7, settings.ballSize * 0.65), 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(platform.hitX, platform.hitY - cameraY, Math.max(7, settings.ballSize * 0.65), 0, Math.PI * 2); ctx.stroke();
       ctx.restore();
     }
   }
   if (selectedNodeIndex !== null && platforms[selectedNodeIndex]) {
     const selected = platforms[selectedNodeIndex];
-    const y = selected.y - cameraY;
+    const y = selected.hitY - cameraY;
     if (y > -80 && y < HEIGHT + 80) {
       ctx.save();
       ctx.strokeStyle = '#22d3ee'; ctx.shadowColor = '#22d3ee'; ctx.shadowBlur = 18; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(selected.x, y, Math.max(22, settings.ballSize + 11), 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(selected.hitX, y, Math.max(22, settings.ballSize + 11), 0, Math.PI * 2); ctx.stroke();
       ctx.fillStyle = 'rgba(34,211,238,.95)'; ctx.font = '700 14px Inter, system-ui'; ctx.textAlign = 'center';
-      ctx.fillText(`#${selectedNodeIndex + 1}`, selected.x, y - Math.max(30, settings.ballSize + 18));
+      ctx.fillText(`#${selectedNodeIndex + 1}`, selected.hitX, y - Math.max(30, settings.ballSize + 18));
       ctx.restore();
     }
   }
 
-  const trailCount = Math.max(0, Math.floor(settings.trailLength));
-  for (let i = trailCount; i >= 1; i -= 1) {
-    const point = marbleAtTime(Math.max(0, timeMs - i * 19), events, platforms, settings, courseOverrides);
-    const alpha = (1 - i / (trailCount + 1)) * 0.3;
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = point.color;
-    ctx.beginPath();
-    ctx.arc(point.x, point.y - cameraY, Math.max(2, settings.ballSize * (0.18 + alpha * 0.8)), 0, Math.PI * 2);
-    ctx.fill();
+  const trailCount = settings.terrainProfile === "comet" ? Math.max(84, Math.floor(settings.trailLength * 2.15)) : Math.max(0, Math.floor(settings.trailLength));
+  const trailStepMs = settings.terrainProfile === "comet" ? 19 : 19;
+  const trailPoints = Array.from({ length: trailCount }, (_, index) => {
+    const i = trailCount - index;
+    return { ...marbleAtTime(Math.max(0, timeMs - i * trailStepMs), events, platforms, settings, courseOverrides), age: i / Math.max(1, trailCount) };
+  });
+  if (!drawPresetTrail(ctx, trailPoints, cameraY, settings)) {
+    trailPoints.forEach((point) => {
+      const alpha = (1 - point.age) * 0.3;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = point.color;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y - cameraY, Math.max(2, settings.ballSize * (0.18 + alpha * 0.8)), 0, Math.PI * 2);
+      ctx.fill();
+    });
   }
   ctx.globalAlpha = 1;
   drawParticles(ctx, platforms, cameraY, timeMs, settings);
@@ -291,10 +297,11 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
   const [backgroundImage, setBackgroundImage] = useState<HTMLImageElement | null>(null);
   const platforms = useMemo(
     () => buildMarbleCourse(events, settings, WIDTH),
-    [events, settings.platformGap, settings.platformWidth, settings.platformThickness, settings.platformTilt, settings.laneSpread, settings.minBounceDistance, settings.prismStart, settings.prismEnd, settings.autoSyncGaps, settings.terrainProfile, settings.colorPaletteMode],
+    [events, settings.platformGap, settings.platformWidth, settings.platformThickness, settings.platformTilt, settings.laneSpread, settings.minBounceDistance, settings.bounceHeight, settings.ballSize, settings.prismStart, settings.prismEnd, settings.autoSyncGaps, settings.terrainProfile, settings.colorPaletteMode],
   );
   const currentTime = useRef(0);
   const nextNoteIndex = useRef(0);
+  const cameraX = useRef(0);
   const cameraY = useRef(0);
   const frameRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -314,8 +321,9 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
     const point = marbleAtTime(currentTime.current, events, platforms, settings, courseOverrides);
+    cameraX.current = point.x - WIDTH * (settings.cameraProfile === "xylophone" ? 0.52 : 0.5);
     cameraY.current = point.y - HEIGHT * settings.cameraAnchor;
-    drawFrame(ctx, currentTime.current, events, platforms, cameraY.current, durationMs, settings, beatLabel, backgroundImage, lyrics, courseOverrides, selectedNodeIndex, recording);
+    drawFrame(ctx, currentTime.current, events, platforms, cameraX.current, cameraY.current, durationMs, settings, beatLabel, backgroundImage, lyrics, courseOverrides, selectedNodeIndex, recording);
   }, [backgroundImage, beatLabel, canvasRef, courseOverrides, durationMs, events, lyrics, platforms, recording, selectedNodeIndex, settings]);
 
   useEffect(() => {
@@ -324,6 +332,7 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
     currentTime.current = playbackStartMs;
     nextNoteIndex.current = firstEventAtOrAfter(events, playbackStartMs);
     const point = marbleAtTime(playbackStartMs, events, platforms, settings, courseOverrides);
+    cameraX.current = point.x - WIDTH * (settings.cameraProfile === "xylophone" ? 0.52 : 0.5);
     cameraY.current = point.y - HEIGHT * settings.cameraAnchor;
     onTime(playbackStartMs);
   }, [courseOverrides, events, onTime, playbackStartMs, playbackToken, platforms, settings]);
@@ -351,9 +360,12 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
         nextNoteIndex.current += 1;
       }
       const marble = marbleAtTime(time, events, platforms, settings, courseOverrides);
-      const targetCamera = marble.y - HEIGHT * settings.cameraAnchor;
-      cameraY.current += (targetCamera - cameraY.current) * clamp(settings.cameraSmoothing, 0.03, 1);
-      drawFrame(ctx, time, events, platforms, cameraY.current, durationMs, settings, beatLabel, backgroundImage, lyrics, courseOverrides, selectedNodeIndex, recording);
+      const targetCameraX = marble.x - WIDTH * (settings.cameraProfile === "xylophone" ? 0.52 : 0.5);
+      const targetCameraY = marble.y - HEIGHT * settings.cameraAnchor;
+      const cameraEase = clamp(settings.cameraSmoothing, 0.03, 1);
+      cameraX.current += (targetCameraX - cameraX.current) * cameraEase;
+      cameraY.current += (targetCameraY - cameraY.current) * cameraEase;
+      drawFrame(ctx, time, events, platforms, cameraX.current, cameraY.current, durationMs, settings, beatLabel, backgroundImage, lyrics, courseOverrides, selectedNodeIndex, recording);
       if (now - lastUiUpdate.current >= 64) { lastUiUpdate.current = now; onTime(time); }
       if (time >= playbackEndMs) { onTime(playbackEndMs); onEnded(); return; }
       scheduleNext(loop);
@@ -369,13 +381,13 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
     const screenX = (clientX - rect.left) * WIDTH / rect.width;
     const screenY = (clientY - rect.top) * HEIGHT / rect.height;
     const projected = unprojectPresetCamera({ x: screenX, y: screenY }, settings, WIDTH, HEIGHT);
-    const x = projected.x;
+    const x = projected.x + cameraX.current;
     const worldY = projected.y + cameraY.current;
     let bestIndex: number | null = null;
     let bestScore = Infinity;
     for (const platform of platforms) {
-      const dx = Math.abs(platform.x - x) / Math.max(38, platform.width * 0.55);
-      const dy = Math.abs(platform.y - worldY) / 54;
+      const dx = Math.abs(platform.hitX - x) / Math.max(30, settings.ballSize * 2.8);
+      const dy = Math.abs(platform.hitY - worldY) / Math.max(38, settings.ballSize * 3.4);
       const score = dx * dx + dy * dy;
       if (score < bestScore && score < 1.35) { bestScore = score; bestIndex = platform.index; }
     }

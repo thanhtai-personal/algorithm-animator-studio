@@ -1,23 +1,20 @@
 import type { CourseItemOverride, NoteEvent, StudioSettings } from "../types";
-import { REST_GAP_MS, ballisticArcOffset, rhythmTerrainForGap } from "./rhythmTerrain";
+import { REST_GAP_MS } from "./rhythmTerrain";
 import { guidedCoursePoint, overrideForSegment } from "./courseGuide";
+import { buildPhysicsCourse } from "../engine/marbleCoursePlanner";
+import type { MarblePlatform, MarblePoint } from "../engine/marblePhysicsTypes";
+import { presetObstaclePlan } from "../engine/presetObstaclePlan";
 
-export interface MarblePlatform {
-  index: number;
-  x: number;
-  y: number;
-  width: number;
-  thickness: number;
-  tiltRad: number;
-  color: string;
-  contactX: number;
-  event: NoteEvent;
-}
+export type { MarblePlatform, MarblePoint } from "../engine/marblePhysicsTypes";
 
 export function platformContactPoint(platform: MarblePlatform) {
-  const x = platform.contactX ?? platform.x;
-  const localX = x - platform.x;
-  return { x, y: platform.y + localX * Math.sin(platform.tiltRad) };
+  return { x: platform.contactX ?? platform.x, y: platform.contactY ?? platform.y };
+}
+
+export function marbleHitPoint(platform: MarblePlatform) {
+  if (Number.isFinite(platform.hitX) && Number.isFinite(platform.hitY)) return { x: platform.hitX, y: platform.hitY };
+  const contact = platformContactPoint(platform);
+  return { x: contact.x, y: contact.y };
 }
 
 export const LONG_GAP_TUBE_MS = REST_GAP_MS;
@@ -38,22 +35,22 @@ export interface LongGapTubeGeometry {
 }
 
 export function longGapTubeGeometry(start: MarblePlatform, end: MarblePlatform, settings: StudioSettings): LongGapTubeGeometry {
-  const startContact = platformContactPoint(start);
-  const endContact = platformContactPoint(end);
-  const startX = startContact.x;
-  const endX = endContact.x;
+  const startHit = marbleHitPoint(start);
+  const endHit = marbleHitPoint(end);
+  const startX = startHit.x;
+  const endX = endHit.x;
   const dx = endX - startX;
-  const dy = endContact.y - startContact.y;
+  const dy = endHit.y - startHit.y;
   const entryX = startX + dx * TUBE_ENTRY_T;
-  const entryY = startContact.y + dy * TUBE_ENTRY_T - settings.ballSize - 22;
+  const entryY = startHit.y + dy * TUBE_ENTRY_T - 18;
   const exitX = startX + dx * TUBE_EXIT_T;
-  const exitY = startContact.y + dy * TUBE_EXIT_T - settings.ballSize - 22;
+  const exitY = startHit.y + dy * TUBE_EXIT_T - 18;
   const tubeDy = exitY - entryY;
   const direction = seededNoise(start.index + 311) >= 0 ? 1 : -1;
   const lateral = clamp(Math.abs(tubeDy) * 0.14, 42, 72);
   const waveAmplitude = clamp(Math.abs(tubeDy) * 0.22, 48, 90);
-  const control1X = clamp(entryX + (exitX - entryX) * 0.28 + direction * lateral, 72, 648);
-  const control2X = clamp(entryX + (exitX - entryX) * 0.72 - direction * lateral * 0.92, 72, 648);
+  const control1X = entryX + (exitX - entryX) * 0.28 + direction * lateral;
+  const control2X = entryX + (exitX - entryX) * 0.72 - direction * lateral * 0.92;
   return {
     entryX,
     entryY,
@@ -78,16 +75,9 @@ export function longGapTubePoint(geometry: LongGapTubeGeometry, t: number) {
   const baseX = a * geometry.entryX + b * geometry.control1X + c * geometry.control2X + d * geometry.exitX;
   const wave = Math.sin(p * Math.PI * 2) * Math.sin(p * Math.PI) * geometry.waveAmplitude * geometry.waveDirection;
   return {
-    x: clamp(baseX + wave, 54, 666),
+    x: baseX + wave,
     y: a * geometry.entryY + b * geometry.control1Y + c * geometry.control2Y + d * geometry.exitY,
   };
-}
-
-export interface MarblePoint {
-  x: number;
-  y: number;
-  color: string;
-  platformIndex: number;
 }
 
 export function clamp(value: number, min = 0, max = 1) {
@@ -134,6 +124,14 @@ function paletteColor(index: number, pitch: number, settings: StudioSettings) {
     return mixHex(colors[index % colors.length], colors[(index + 1) % colors.length], 0.32 + pitch * 0.44);
   }
   if (settings.colorPaletteMode === "key-rainbow") {
+    const style = presetObstaclePlan(index, settings)?.style;
+    if (style === "instrument-cymbal") return index % 2 ? "#c89f5a" : "#e4c88f";
+    if (style === "instrument-rail") return index % 5 === 0 ? "#63d9e9" : "#777e88";
+    if (style === "instrument-wire") return index % 4 === 0 ? "#69c9d7" : "#747b86";
+    if (style === "instrument-pad") {
+      const pads = ["#ff4fa6", "#ff5b76", "#42dfba", "#2f333c", "#f28e45"];
+      return pads[index % pads.length];
+    }
     const colors = ["#ff4f59", "#ff9238", "#ffdb45", "#62e572", "#4bdcff", "#5f86ff", "#cf6dff"];
     return colors[index % colors.length];
   }
@@ -166,154 +164,81 @@ function seededNoise(index: number) {
 }
 
 export function buildMarbleCourse(events: NoteEvent[], settings: StudioSettings, width: number): MarblePlatform[] {
-  if (!events.length) return [];
-  const minMidi = Math.min(...events.map((event) => event.midi));
-  const maxMidi = Math.max(...events.map((event) => event.midi));
-  const center = width / 2;
-  const laneHalf = Math.min(width * 0.39, settings.laneSpread / 2);
-  let previousContactX = center;
-  let currentY = 230;
-  let direction = settings.terrainProfile === "xylophone" ? 0 : (seededNoise(events.length + 41) >= 0 ? 1 : -1);
-
-  return events.map((event, index) => {
-    const span = index > 0 ? Math.max(1, event.timeMs - events[index - 1].timeMs) : 0;
-    const terrain = rhythmTerrainForGap(span || 420, settings);
-    if (index > 0) currentY += terrain.verticalDrop;
-    const pitch = maxMidi === minMidi ? 0.5 : (event.midi - minMidi) / (maxMidi - minMidi);
-    const widthScale = settings.terrainProfile === "xylophone" ? 1.12 : settings.terrainProfile === "tube-board" ? 0.92 : 1;
-    const platformWidth = settings.platformWidth * (0.9 + event.velocity * 0.16) * terrain.platformScale * widthScale;
-    const margin = Math.min(width / 2 - 24, platformWidth / 2 + 24);
-    const pitchBias = settings.terrainProfile === "comet" ? (pitch - 0.5) * laneHalf * 0.34 : (pitch - 0.5) * laneHalf * 0.12;
-    const noiseScale = settings.terrainProfile === "tube-board" ? 0.025 : 0.075;
-    const noise = seededNoise(index + 17) * terrain.horizontalDistance * noiseScale;
-
-    let contactX = center;
-    if (index === 0) contactX = center + pitchBias * 0.25;
-    else if (settings.terrainProfile === "xylophone") {
-      const stride = Math.min(laneHalf * 0.34, terrain.horizontalDistance * 0.28);
-      contactX = center + (index % 2 === 0 ? stride : -stride) + pitchBias * 0.18;
-    } else {
-      const distanceScale = settings.terrainProfile === "tube-board" ? 0.72 : 1;
-      contactX = previousContactX + direction * terrain.horizontalDistance * distanceScale + pitchBias + noise;
-      if (terrain.kind === "rest") contactX = previousContactX + direction * terrain.horizontalDistance * 0.38 + pitchBias * 0.2;
-    }
-
-    if (contactX < margin || contactX > width - margin) {
-      direction = direction === 0 ? (contactX > center ? -1 : 1) : direction * -1;
-      contactX = previousContactX + (direction || 1) * terrain.horizontalDistance * (settings.terrainProfile === "tube-board" ? 0.62 : 0.9);
-    }
-    contactX = clamp(contactX, margin, width - margin);
-    if (index > 0 && settings.terrainProfile === "tube-board" && terrain.kind !== "burst" && seededNoise(index + 90) > 0.58) direction *= -1;
-    if (index > 0 && settings.terrainProfile === "comet" && terrain.kind !== "burst" && seededNoise(index + 97) > 0.76) direction *= -1;
-
-    const contactOffset = settings.terrainProfile === "tube-board"
-      ? seededNoise(index + 141) * platformWidth * 0.26
-      : settings.terrainProfile === "xylophone" ? seededNoise(index + 141) * platformWidth * 0.06 : 0;
-    let x = clamp(contactX - contactOffset, margin, width - margin);
-    const resolvedContactX = clamp(x + contactOffset, 28, width - 28);
-    previousContactX = resolvedContactX;
-
-    return {
-      index,
-      x,
-      y: currentY,
-      width: platformWidth,
-      thickness: settings.platformThickness,
-      tiltRad: platformAngle(index, direction, settings),
-      color: paletteColor(index, pitch, settings),
-      contactX: resolvedContactX,
-      event,
-    };
-  });
+  return buildPhysicsCourse(events, settings, width, (index, pitch) => paletteColor(index, pitch, settings));
 }
 
 export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: MarblePlatform[], settings: StudioSettings, overrides: CourseItemOverride[] = []): MarblePoint {
-  if (!events.length || !platforms.length) {
-    return { x: 360, y: 180, color: settings.prismStart, platformIndex: 0 };
-  }
+  if (!events.length || !platforms.length) return { x: 360, y: 180, color: settings.prismStart, platformIndex: 0 };
 
   const first = platforms[0];
-  const firstContact = platformContactPoint(first);
+  const firstHit = marbleHitPoint(first);
   if (timeMs < events[0].timeMs) {
     const span = Math.max(280, events[0].timeMs || 620);
     const t = ease(timeMs / span, settings);
     return {
-      x: firstContact.x,
-      y: firstContact.y - settings.ballSize - settings.bounceHeight * (1 - t),
+      x: firstHit.x,
+      y: firstHit.y - Math.max(52, settings.bounceHeight * 0.82) * (1 - t),
       color: first.color,
       platformIndex: 0,
     };
   }
 
-  let index = events.length - 1;
-  for (let i = 0; i < events.length - 1; i += 1) {
-    if (timeMs >= events[i].timeMs && timeMs <= events[i + 1].timeMs) {
-      index = i;
-      break;
-    }
+  let low = 0;
+  let high = events.length - 1;
+  while (low < high) {
+    const mid = Math.floor((low + high + 1) / 2);
+    if (events[mid].timeMs <= timeMs) low = mid;
+    else high = mid - 1;
   }
+  const index = low;
   if (index >= events.length - 1) {
     const last = platforms[platforms.length - 1];
-    const contact = platformContactPoint(last);
-    return { x: contact.x, y: contact.y - settings.ballSize, color: last.color, platformIndex: last.index };
+    const hit = marbleHitPoint(last);
+    return { x: hit.x, y: hit.y, color: last.color, platformIndex: last.index };
   }
 
   const start = platforms[index];
   const end = platforms[index + 1];
-  const startContact = platformContactPoint(start);
-  const endContact = platformContactPoint(end);
-  const startX = startContact.x;
-  const endX = endContact.x;
-  const startY = startContact.y;
-  const endY = endContact.y;
+  const startHit = marbleHitPoint(start);
+  const endHit = marbleHitPoint(end);
   const span = Math.max(1, events[index + 1].timeMs - events[index].timeMs);
-  const t = ease((timeMs - events[index].timeMs) / span, settings);
+  const rawT = clamp((timeMs - events[index].timeMs) / span);
   const segmentOverride = overrideForSegment(index, overrides);
   if (segmentOverride) {
-    const guided = guidedCoursePoint(start, end, t, segmentOverride.style, settings);
-    if (guided) return { x: guided.x, y: guided.y, color: mixHex(start.color, end.color, t), platformIndex: index };
+    const guided = guidedCoursePoint(start, end, rawT, segmentOverride.style, settings);
+    if (guided) return { x: guided.x, y: guided.y, color: mixHex(start.color, end.color, rawT), platformIndex: index };
   }
+
   if (span >= LONG_GAP_TUBE_MS) {
-    const { entryX, entryY, exitX, exitY } = longGapTubeGeometry(start, end, settings);
-    if (t < TUBE_ENTRY_T) {
-      const phase = t / TUBE_ENTRY_T;
+    const geometry = longGapTubeGeometry(start, end, settings);
+    if (rawT < TUBE_ENTRY_T) {
+      const phase = rawT / TUBE_ENTRY_T;
       return {
-        x: startX + (entryX - startX) * phase,
-        y: startY - settings.ballSize + (entryY - (startY - settings.ballSize)) * phase - Math.sin(Math.PI * phase) * settings.bounceHeight * 0.42,
-        color: mixHex(start.color, end.color, t),
+        x: startHit.x + (geometry.entryX - startHit.x) * phase,
+        y: startHit.y + (geometry.entryY - startHit.y) * phase - Math.sin(Math.PI * phase) * settings.bounceHeight * 0.28,
+        color: mixHex(start.color, end.color, rawT),
         platformIndex: index,
       };
     }
-    if (t <= TUBE_EXIT_T) {
-      const phase = (t - TUBE_ENTRY_T) / (TUBE_EXIT_T - TUBE_ENTRY_T);
-      const point = longGapTubePoint(longGapTubeGeometry(start, end, settings), phase);
-      return {
-        x: point.x,
-        y: point.y,
-        color: mixHex(start.color, end.color, t),
-        platformIndex: index,
-      };
+    if (rawT <= TUBE_EXIT_T) {
+      const phase = (rawT - TUBE_ENTRY_T) / (TUBE_EXIT_T - TUBE_ENTRY_T);
+      const point = longGapTubePoint(geometry, phase);
+      return { ...point, color: mixHex(start.color, end.color, rawT), platformIndex: index };
     }
-    const phase = (t - TUBE_EXIT_T) / (1 - TUBE_EXIT_T);
+    const phase = (rawT - TUBE_EXIT_T) / (1 - TUBE_EXIT_T);
     return {
-      x: exitX + (endX - exitX) * phase,
-      y: exitY + (endY - settings.ballSize - exitY) * phase - Math.sin(Math.PI * phase) * settings.bounceHeight * 0.22,
-      color: mixHex(start.color, end.color, t),
+      x: geometry.exitX + (endHit.x - geometry.exitX) * phase,
+      y: geometry.exitY + (endHit.y - geometry.exitY) * phase - Math.sin(Math.PI * phase) * settings.bounceHeight * 0.16,
+      color: mixHex(start.color, end.color, rawT),
       platformIndex: index,
     };
   }
 
-  const terrain = rhythmTerrainForGap(span, settings);
-  const drop = endY - startY;
-  const minimumBallisticHeight = drop * 0.28;
-  const bounceHeight = Math.max(terrain.bounceHeight, minimumBallisticHeight);
-  const arc = ballisticArcOffset(t, bounceHeight);
-  const curveSign = endX >= startX ? 1 : -1;
-  const horizontalCurve = 4 * t * (1 - t) * settings.curveIntensity * settings.curvePathLength * 32 * terrain.curveScale * curveSign;
+  const elapsed = (timeMs - events[index].timeMs) / 1000;
   return {
-    x: startX + (endX - startX) * t + horizontalCurve,
-    y: startY + (endY - startY) * t - arc - settings.ballSize,
-    color: mixHex(start.color, end.color, t),
+    x: startHit.x + start.outVX * elapsed,
+    y: startHit.y + start.outVY * elapsed + 0.5 * start.gravity * elapsed * elapsed,
+    color: mixHex(start.color, end.color, rawT),
     platformIndex: index,
   };
 }

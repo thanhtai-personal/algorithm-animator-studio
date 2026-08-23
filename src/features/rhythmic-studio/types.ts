@@ -46,6 +46,11 @@ export const PLATFORM_STYLES = [
   "tube-cylinder",
   "comet-pad",
   "xylophone-key",
+  "instrument-key",
+  "instrument-cymbal",
+  "instrument-rail",
+  "instrument-pad",
+  "instrument-wire",
 ] as const;
 
 export type PlatformStyle = (typeof PLATFORM_STYLES)[number];
@@ -99,6 +104,7 @@ export const BACKGROUND_PRESETS = [
   "tube-board-dark",
   "comet-void",
   "xylophone-room",
+  "instrument-room",
 ] as const;
 
 export type BackgroundPreset = (typeof BACKGROUND_PRESETS)[number];

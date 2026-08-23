@@ -22,7 +22,7 @@ function sampleSegment(start: MarblePlatform, end: MarblePlatform, style: Course
       x: start.x + (end.x - start.x) * (i / steps),
       y: start.y + (end.y - start.y) * (i / steps) - settings.ballSize,
     };
-    points.push({ x: point.x, y: point.y - cameraY + settings.ballSize });
+    points.push({ x: point.x, y: point.y - cameraY });
   }
   return points;
 }

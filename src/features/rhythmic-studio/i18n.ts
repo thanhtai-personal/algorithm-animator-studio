@@ -48,11 +48,11 @@ const EN = {
   "platformStyle.prism": "Prism segments",
   "platformStyle.pipe-rail": "Transparent pipe rail",
   "platformStyle.stair-step": "Stair step pad",
-  "platformStyle.toy-peg": "Toy peg",
-  "platformStyle.toy-tube": "Toy tube",
-  "platformStyle.tube-cylinder": "3D tube cylinder",
-  "platformStyle.comet-pad": "Comet launch pad",
+  "platformStyle.toy-peg": "Toy peg", "platformStyle.toy-tube": "Toy tube",
+  "platformStyle.tube-cylinder": "3D tube cylinder", "platformStyle.comet-pad": "Comet launch pad",
   "platformStyle.xylophone-key": "Xylophone key",
+  "platformStyle.instrument-key": "Instrument key", "platformStyle.instrument-cymbal": "Cymbal disc",
+  "platformStyle.instrument-rail": "Metal rail", "platformStyle.instrument-pad": "Mallet pad", "platformStyle.instrument-wire": "Wire rail",
   "platformMix.single": "Single style",
   "platformMix.alternate": "Alternate two styles",
   "platformMix.accent": "Main + accent beats",
@@ -242,11 +242,11 @@ const VI: Record<keyof typeof EN, string> = {
   "platformStyle.prism": "Bệ lăng kính",
   "platformStyle.pipe-rail": "Ống ray trong suốt",
   "platformStyle.stair-step": "Bậc thang",
-  "platformStyle.toy-peg": "Chốt đồ chơi",
-  "platformStyle.toy-tube": "Ống đồ chơi",
-  "platformStyle.tube-cylinder": "Ống trụ 3D",
-  "platformStyle.comet-pad": "Bệ phóng sao chổi",
+  "platformStyle.toy-peg": "Chốt đồ chơi", "platformStyle.toy-tube": "Ống đồ chơi",
+  "platformStyle.tube-cylinder": "Ống trụ 3D", "platformStyle.comet-pad": "Bệ phóng sao chổi",
   "platformStyle.xylophone-key": "Phím xylophone",
+  "platformStyle.instrument-key": "Phím nhạc cụ", "platformStyle.instrument-cymbal": "Đĩa cymbal",
+  "platformStyle.instrument-rail": "Thanh kim loại", "platformStyle.instrument-pad": "Bệ gõ", "platformStyle.instrument-wire": "Ray dây kim loại",
   "platformMix.single": "Một kiểu duy nhất",
   "platformMix.alternate": "Xen kẽ hai kiểu",
   "platformMix.accent": "Bệ chính + bệ nhấn",
@@ -388,13 +388,11 @@ const VI: Record<keyof typeof EN, string> = {
   "default.untitled": "Đường chạy chưa đặt tên",
 };
 export type RhythmicTextKey = keyof typeof EN;
-
 export function rhythmicText(lang: Lang, key: RhythmicTextKey, values?: Record<string, string | number>) {
   const template = (lang === "vi" ? VI[key] : EN[key]) ?? EN[key];
   if (!values) return template;
   return template.replace(/\{(\w+)\}/g, (match, name) => String(values[name] ?? match));
 }
-
 export function melodyLabel(lang: Lang, name: string) {
   const key = `melody.${name}` as RhythmicTextKey;
   return key in EN ? rhythmicText(lang, key) : name;

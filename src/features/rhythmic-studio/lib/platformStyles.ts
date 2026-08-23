@@ -1,6 +1,7 @@
 import type { PlatformMixMode, PlatformStyle, StudioSettings } from "../types";
 import { clamp, hexToRgb, mixHex, type MarblePlatform } from "./marbleCourse";
 import { drawPresetPlatform } from "./presetPlatformRenderer";
+import { presetObstaclePlan } from "../engine/presetObstaclePlan";
 
 function hash(index: number, salt = 0) {
   const raw = Math.sin((index + salt) * 12.9898 + 78.233) * 43758.5453;
@@ -8,6 +9,8 @@ function hash(index: number, salt = 0) {
 }
 
 export function resolvePlatformStyle(index: number, settings: StudioSettings): PlatformStyle {
+  const planned = presetObstaclePlan(index, settings);
+  if (planned) return planned.style;
   const mode: PlatformMixMode = settings.platformMixMode;
   if (mode === "single") return settings.platformPrimaryStyle;
   if (mode === "alternate") return index % 2 ? settings.platformSecondaryStyle : settings.platformPrimaryStyle;

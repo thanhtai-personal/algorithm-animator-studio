@@ -17,7 +17,7 @@ import { drawLongGapTubes } from "../lib/longGapTube";
 import { drawCourseLongItems, isPlatformCourseItem, overrideForNode } from "../lib/courseItems";
 import { drawRhythmicBackground } from "../lib/backgrounds";
 import { activeLyricAt } from "../lib/lyrics";
-import { applyPresetCamera, unprojectPresetCamera } from "../lib/presetCamera";
+import { applyPresetCamera, presetCameraAnchorX, unprojectPresetCamera } from "../lib/presetCamera";
 import { drawPresetMarble } from "../lib/presetMarbleRenderer";
 import { drawPresetTrail } from "../lib/presetTrailRenderer";
 interface Props {
@@ -208,7 +208,7 @@ function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEv
   drawLongGapTubes(ctx, platforms, events, cameraY, timeMs, settings, courseOverrides);
   drawCourseLongItems(ctx, platforms, courseOverrides, cameraY, settings);
   for (const platform of platforms) {
-    if (settings.terrainProfile === "comet" && (platform.event.timeMs < timeMs - 900 || platform.event.timeMs > timeMs + 1150)) continue;
+    if (settings.terrainProfile === "comet" && (platform.event.timeMs < timeMs - 1450 || platform.event.timeMs > timeMs + 3300)) continue;
     if (settings.terrainProfile === "xylophone" && (platform.event.timeMs < timeMs - 2600 || platform.event.timeMs > timeMs + 4300)) continue;
     const y = platform.y - cameraY;
     if (y < -100 || y > HEIGHT + 120) continue;
@@ -234,7 +234,7 @@ function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEv
     }
   }
 
-  const trailCount = settings.terrainProfile === "comet" ? Math.max(84, Math.floor(settings.trailLength * 2.15)) : Math.max(0, Math.floor(settings.trailLength));
+  const trailCount = settings.terrainProfile === "comet" ? Math.max(104, Math.floor(settings.trailLength * 2.15)) : Math.max(0, Math.floor(settings.trailLength));
   const trailStepMs = settings.terrainProfile === "comet" ? 19 : 19;
   const trailPoints = Array.from({ length: trailCount }, (_, index) => {
     const i = trailCount - index;
@@ -321,7 +321,7 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
     const point = marbleAtTime(currentTime.current, events, platforms, settings, courseOverrides);
-    cameraX.current = point.x - WIDTH * (settings.cameraProfile === "xylophone" ? 0.52 : 0.5);
+    cameraX.current = point.x - WIDTH * presetCameraAnchorX(settings);
     cameraY.current = point.y - HEIGHT * settings.cameraAnchor;
     drawFrame(ctx, currentTime.current, events, platforms, cameraX.current, cameraY.current, durationMs, settings, beatLabel, backgroundImage, lyrics, courseOverrides, selectedNodeIndex, recording);
   }, [backgroundImage, beatLabel, canvasRef, courseOverrides, durationMs, events, lyrics, platforms, recording, selectedNodeIndex, settings]);
@@ -332,7 +332,7 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
     currentTime.current = playbackStartMs;
     nextNoteIndex.current = firstEventAtOrAfter(events, playbackStartMs);
     const point = marbleAtTime(playbackStartMs, events, platforms, settings, courseOverrides);
-    cameraX.current = point.x - WIDTH * (settings.cameraProfile === "xylophone" ? 0.52 : 0.5);
+    cameraX.current = point.x - WIDTH * presetCameraAnchorX(settings);
     cameraY.current = point.y - HEIGHT * settings.cameraAnchor;
     onTime(playbackStartMs);
   }, [courseOverrides, events, onTime, playbackStartMs, playbackToken, platforms, settings]);
@@ -360,7 +360,7 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
         nextNoteIndex.current += 1;
       }
       const marble = marbleAtTime(time, events, platforms, settings, courseOverrides);
-      const targetCameraX = marble.x - WIDTH * (settings.cameraProfile === "xylophone" ? 0.52 : 0.5);
+      const targetCameraX = marble.x - WIDTH * presetCameraAnchorX(settings);
       const targetCameraY = marble.y - HEIGHT * settings.cameraAnchor;
       const cameraEase = clamp(settings.cameraSmoothing, 0.03, 1);
       cameraX.current += (targetCameraX - cameraX.current) * cameraEase;

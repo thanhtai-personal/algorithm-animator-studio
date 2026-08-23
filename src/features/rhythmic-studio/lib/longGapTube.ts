@@ -124,6 +124,7 @@ export function drawLongGapTubes(
   settings: StudioSettings,
   overrides: CourseItemOverride[] = [],
 ) {
+  if (settings.terrainProfile === "comet") return;
   for (let index = 0; index < platforms.length - 1; index += 1) {
     const span = events[index + 1].timeMs - events[index].timeMs;
     if (span < LONG_GAP_TUBE_MS || overrideForSegment(index, overrides)) continue;

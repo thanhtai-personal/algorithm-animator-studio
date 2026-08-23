@@ -208,7 +208,7 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
     if (guided) return { x: guided.x, y: guided.y, color: mixHex(start.color, end.color, rawT), platformIndex: index };
   }
 
-  if (span >= LONG_GAP_TUBE_MS) {
+  if (span >= LONG_GAP_TUBE_MS && settings.terrainProfile !== "comet") {
     const geometry = longGapTubeGeometry(start, end, settings);
     if (rawT < TUBE_ENTRY_T) {
       const phase = rawT / TUBE_ENTRY_T;

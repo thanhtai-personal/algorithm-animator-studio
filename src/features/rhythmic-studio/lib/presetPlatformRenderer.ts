@@ -121,32 +121,50 @@ function drawTubeCylinder(
 }
 
 
-function drawCometPad(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, settings: StudioSettings) {
-  const h = Math.max(10, p.thickness);
-  const activeColor = impact > 0 ? p.color : mixHex(p.color, "#4b4a59", 0.72);
+function drawCometPad(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, ageMs: number, settings: StudioSettings) {
+  const h = Math.max(12, p.thickness);
+  const recentlyHit = ageMs >= 0 && ageMs < 1350;
+  const hitFade = recentlyHit ? Math.max(0, 1 - ageMs / 1350) : 0;
+  const active = impact > 0 || recentlyHit;
+  const activeColor = active ? p.color : "#656476";
   ctx.save();
-  const glow = ctx.createRadialGradient(0, h * 0.55, 3, 0, h * 0.55, p.width * 0.82);
-  glow.addColorStop(0, `${p.color}${impact > 0 ? "78" : "18"}`);
+
+  const haloRadius = p.width * (active ? 2.15 : 0.95);
+  const glow = ctx.createRadialGradient(0, h * 0.2, 4, 0, h * 0.2, haloRadius);
+  glow.addColorStop(0, active ? `${p.color}${impact > 0 ? "a8" : "70"}` : "rgba(110,110,135,.10)");
+  glow.addColorStop(0.34, active ? `${p.color}${hitFade > 0.2 ? "34" : "20"}` : "rgba(90,90,115,.04)");
   glow.addColorStop(1, `${p.color}00`);
   ctx.fillStyle = glow;
-  ctx.fillRect(-p.width, -p.width * 0.55, p.width * 2, p.width * 1.2);
-  ctx.shadowColor = p.color;
-  ctx.shadowBlur = 10 + settings.platformGlow * 20 + impact * 26;
-  const body = ctx.createLinearGradient(0, -h * 0.25, 0, h);
-  body.addColorStop(0, mixHex(activeColor, "#ffffff", impact > 0 ? 0.38 : 0.18));
-  body.addColorStop(0.5, activeColor);
-  body.addColorStop(1, mixHex(activeColor, "#120d1f", 0.56));
+  ctx.fillRect(-haloRadius, -haloRadius, haloRadius * 2, haloRadius * 2);
+
+  ctx.shadowColor = active ? p.color : "rgba(110,110,130,.28)";
+  ctx.shadowBlur = active ? 16 + settings.platformGlow * 23 + impact * 28 : 4;
+  const body = ctx.createLinearGradient(0, -h * 0.65, 0, h);
+  body.addColorStop(0, active ? mixHex(activeColor, "#ffffff", 0.62) : "#a2a1ae");
+  body.addColorStop(0.36, activeColor);
+  body.addColorStop(0.72, active ? mixHex(activeColor, "#20142e", 0.3) : "#4d4c5d");
+  body.addColorStop(1, active ? mixHex(activeColor, "#090710", 0.64) : "#292936");
+
   ctx.beginPath();
-  ctx.moveTo(-half, h * 0.82);
-  ctx.quadraticCurveTo(-half * 0.9, -h * 0.42, 0, -h * 0.48);
-  ctx.quadraticCurveTo(half * 0.9, -h * 0.42, half, h * 0.82);
-  ctx.lineTo(-half, h * 0.82);
+  ctx.moveTo(-half, h * 0.78);
+  ctx.quadraticCurveTo(-half * 0.98, -h * 0.6, -half * 0.52, -h * 0.72);
+  ctx.quadraticCurveTo(0, -h * 1.04, half * 0.52, -h * 0.72);
+  ctx.quadraticCurveTo(half * 0.98, -h * 0.6, half, h * 0.78);
+  ctx.lineTo(-half, h * 0.78);
   ctx.closePath();
   ctx.fillStyle = body;
   ctx.fill();
   ctx.shadowBlur = 0;
-  ctx.strokeStyle = mixHex(activeColor, "#ffffff", impact > 0 ? 0.52 : 0.24);
-  ctx.lineWidth = 1.3;
+  ctx.strokeStyle = active ? mixHex(activeColor, "#ffffff", 0.7) : "rgba(160,158,176,.72)";
+  ctx.lineWidth = active ? 1.8 : 1.15;
+  ctx.stroke();
+
+  ctx.globalAlpha = active ? 0.62 : 0.25;
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-half * 0.55, -h * 0.68);
+  ctx.quadraticCurveTo(0, -h * 0.9, half * 0.52, -h * 0.68);
   ctx.stroke();
   ctx.restore();
 }
@@ -283,7 +301,7 @@ export function drawPresetPlatform(
   settings: StudioSettings,
 ) {
   if (style === "tube-cylinder") { drawTubeCylinder(ctx, half, platform, impact, ageMs, settings); return true; }
-  if (style === "comet-pad") { drawCometPad(ctx, half, platform, impact, settings); return true; }
+  if (style === "comet-pad") { drawCometPad(ctx, half, platform, impact, ageMs, settings); return true; }
   if (style === "xylophone-key") { drawXylophoneKey(ctx, half, platform, settings); return true; }
   if (style === "instrument-key") { drawInstrumentKey(ctx, half, platform, impact); return true; }
   if (style === "instrument-cymbal") { drawInstrumentCymbal(ctx, platform, impact); return true; }

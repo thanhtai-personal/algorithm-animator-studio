@@ -2,6 +2,12 @@ import type { StudioSettings } from "../types";
 
 export interface CameraPoint { x: number; y: number }
 
+export function presetCameraAnchorX(settings: StudioSettings) {
+  if (settings.cameraProfile === "comet") return 0.64;
+  if (settings.cameraProfile === "xylophone") return 0.52;
+  return 0.5;
+}
+
 function matrix(settings: StudioSettings) {
   if (settings.cameraProfile === "xylophone") return { a: 0.92, b: -0.115, c: 0, d: 0.72 };
   if (settings.cameraProfile === "tube-board") return { a: 1.0, b: -0.015, c: 0, d: 0.96 };

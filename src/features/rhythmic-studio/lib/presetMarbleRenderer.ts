@@ -40,23 +40,40 @@ function drawCandyMarble(ctx: CanvasRenderingContext2D, x: number, y: number, ra
 
 function drawGalaxyMarble(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, pulse: number, settings: StudioSettings) {
   ctx.save();
+  const aura = ctx.createRadialGradient(x, y, radius * 0.2, x, y, radius * 2.9);
+  aura.addColorStop(0, `rgba(255,88,222,${0.34 + pulse * 0.2})`);
+  aura.addColorStop(0.42, `rgba(83,103,255,${0.16 + pulse * 0.12})`);
+  aura.addColorStop(1, "rgba(40,30,100,0)");
+  ctx.fillStyle = aura;
+  ctx.beginPath(); ctx.arc(x, y, radius * 2.9, 0, Math.PI * 2); ctx.fill();
+
   ctx.shadowColor = settings.prismEnd;
-  ctx.shadowBlur = 24 + pulse * 28;
-  const sphere = ctx.createRadialGradient(x - radius * 0.38, y - radius * 0.42, radius * 0.08, x, y, radius);
+  ctx.shadowBlur = 27 + pulse * 32;
+  const sphere = ctx.createRadialGradient(x - radius * 0.34, y - radius * 0.42, radius * 0.07, x, y, radius);
   sphere.addColorStop(0, "#ffffff");
-  sphere.addColorStop(0.2, "#78ecff");
-  sphere.addColorStop(0.52, "#6b55ff");
-  sphere.addColorStop(0.78, "#eb4bc8");
-  sphere.addColorStop(1, "#21103d");
+  sphere.addColorStop(0.14, "#ffc8ff");
+  sphere.addColorStop(0.34, "#e84ad4");
+  sphere.addColorStop(0.58, "#8256ff");
+  sphere.addColorStop(0.78, "#2f55cb");
+  sphere.addColorStop(1, "#180d35");
   ctx.fillStyle = sphere;
   ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
   ctx.clip();
-  ctx.globalAlpha = 0.72;
-  ctx.strokeStyle = "rgba(255,255,255,.7)";
-  ctx.lineWidth = Math.max(1.2, radius * 0.12);
-  ctx.beginPath(); ctx.ellipse(x - radius * 0.05, y, radius * 0.9, radius * 0.34, -0.4, 0.2, Math.PI * 1.55); ctx.stroke();
-  ctx.strokeStyle = "rgba(56,218,255,.7)";
-  ctx.beginPath(); ctx.ellipse(x + radius * 0.06, y + radius * 0.08, radius * 0.75, radius * 0.27, 0.7, 0, Math.PI * 1.65); ctx.stroke();
+
+  ctx.globalAlpha = 0.78;
+  ctx.strokeStyle = "rgba(255,219,255,.9)";
+  ctx.lineWidth = Math.max(1.3, radius * 0.13);
+  ctx.beginPath(); ctx.ellipse(x - radius * 0.08, y - radius * 0.02, radius * 0.88, radius * 0.3, -0.5, 0.08, Math.PI * 1.62); ctx.stroke();
+  ctx.strokeStyle = "rgba(78,221,255,.72)";
+  ctx.lineWidth = Math.max(1, radius * 0.085);
+  ctx.beginPath(); ctx.ellipse(x + radius * 0.08, y + radius * 0.1, radius * 0.74, radius * 0.24, 0.72, 0, Math.PI * 1.68); ctx.stroke();
+
+  for (let i = 0; i < 7; i += 1) {
+    const angle = i * 2.399 + radius * 0.03;
+    const rr = radius * (0.24 + (i % 4) * 0.13);
+    ctx.fillStyle = i % 2 ? "rgba(255,255,255,.84)" : "rgba(142,237,255,.78)";
+    ctx.beginPath(); ctx.arc(x + Math.cos(angle) * rr, y + Math.sin(angle) * rr, 0.7 + (i % 3) * 0.35, 0, Math.PI * 2); ctx.fill();
+  }
   ctx.restore();
 }
 

@@ -147,6 +147,13 @@ function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: numb
       const normalInput = normalForAngle(profile.normalAngles[order]);
       const restitution = restitutionForDrop(incoming, normalInput, desiredDrop, dt, profile);
       const reflected = outgoingForNormal(incoming, normalInput, restitution);
+      if (settings.terrainProfile === "comet") {
+        // The reference uses soft curved bumpers: they keep an arc but shed tangent
+        // momentum, especially through fast note clusters. Without this friction a
+        // long jump makes every following bumper fly off-screen.
+        const maxHorizontal = Math.max(80, desiredHorizontal / dt * 1.18);
+        reflected.velocity.x = clamp(reflected.velocity.x, -maxHorizontal, maxHorizontal);
+      }
       const target = {
         x: hit.x + reflected.velocity.x * dt + pitchBias,
         y: hit.y + reflected.velocity.y * dt + 0.5 * profile.gravity * dt * dt,
@@ -157,7 +164,9 @@ function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: numb
       if (dy < Math.max(3, baseDrop * 0.2) || dy > Math.max(190, baseDrop * 1.9)) continue;
       const apex = reflected.velocity.y < 0 ? reflected.velocity.y ** 2 / (2 * profile.gravity) : 0;
       const directionPenalty = Math.sign(dx || preferredDirection) === Math.sign(preferredDirection) ? 0 : (settings.terrainProfile === "tube-board" ? 8 : 30);
-      const horizontalPenalty = Math.abs(Math.abs(dx) - desiredHorizontal) * 0.16;
+      const cometMinimum = settings.terrainProfile === "comet" ? desiredHorizontal * 0.5 : 0;
+      const shortJumpPenalty = Math.max(0, cometMinimum - Math.abs(dx)) * (settings.terrainProfile === "comet" ? 1.4 : 0);
+      const horizontalPenalty = Math.abs(Math.abs(dx) - desiredHorizontal) * (settings.terrainProfile === "comet" ? 0.28 : 0.16);
       const dropPenalty = Math.abs(dy - desiredDrop) * 0.24;
       const apexPenalty = Math.abs(apex - targetApex) * 0.2;
       const speedPenalty = Math.max(0, length(reflected.velocity) - 1200) * 0.08;
@@ -168,7 +177,7 @@ function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: numb
         normal: reflected.normal,
         outgoing: reflected.velocity,
         target,
-        score: directionPenalty + horizontalPenalty + dropPenalty + apexPenalty + speedPenalty + edgePenalty + orientationPenalty(index, reflected.normal, settings) + randomTieBreak,
+        score: directionPenalty + shortJumpPenalty + horizontalPenalty + dropPenalty + apexPenalty + speedPenalty + edgePenalty + orientationPenalty(index, reflected.normal, settings) + randomTieBreak,
       });
     }
   }
@@ -299,7 +308,7 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
     const expanded: SearchState[] = [];
 
     for (const state of states) {
-      const effectiveSpan = spanMs >= REST_GAP_MS ? Math.min(spanMs, 680) : spanMs;
+      const effectiveSpan = spanMs >= REST_GAP_MS && settings.terrainProfile !== "comet" ? Math.min(spanMs, 680) : spanMs;
       const candidates = bounceCandidates(index, state.hit, state.incoming, effectiveSpan, state.preferredDirection, pitch, settings, width);
       for (const bounce of candidates) {
         const platform = obstacleFromImpact(index, state.hit, bounce.normal, bounce.outgoing, settings, event, resolveColor(index, pitch), platformWidth, profile.gravity);
@@ -307,11 +316,12 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
           expanded.push({ ...state, score: state.score + bounce.score, node: { platform, parent: state.node } });
           continue;
         }
-        const nextHit = spanMs >= REST_GAP_MS
+        const useGuideTube = spanMs >= REST_GAP_MS && settings.terrainProfile !== "comet";
+        const nextHit = useGuideTube
           ? longGapTarget(index, state.hit, spanMs, state.preferredDirection, pitch, settings, width)
           : bounce.target;
         const dt = Math.max(0.08, spanMs / 1000);
-        const nextIncoming = spanMs >= REST_GAP_MS
+        const nextIncoming = useGuideTube
           ? { x: (nextHit.x - state.hit.x) / dt * 0.24, y: Math.max(190, profile.gravity * Math.min(dt, 0.7) * 0.58) }
           : { x: bounce.outgoing.x, y: bounce.outgoing.y + profile.gravity * dt };
         let nextDirection = state.preferredDirection;

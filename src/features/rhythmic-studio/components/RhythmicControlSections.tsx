@@ -1,6 +1,7 @@
 import { FileMusic, Music2, Upload } from "lucide-react";
 import { useId } from "react";
 import { Accordion } from "@/components/ui/accordion";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -97,6 +98,11 @@ export function RhythmicControlSections(props: Props) {
       </TabsContent>
 
       <TabsContent value="visual" className="space-y-4 pt-2">
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">{t("visual.titleText")}</Label>
+          <Input value={props.settings.titleText} maxLength={64} placeholder="MARBLE MUSIC" onChange={(event) => props.patch("titleText", event.target.value)} />
+          <p className="text-[11px] text-muted-foreground">{t("visual.titleTextHint")}</p>
+        </div>
         <Toggle label={t("visual.impactPulse")} checked={props.settings.pulseAnimation} onChange={(v) => props.patch("pulseAnimation", v)} />
         <Toggle label={t("visual.marbleGlow")} checked={props.settings.glowAnimation} onChange={(v) => props.patch("glowAnimation", v)} />
         <Range label={t("visual.trailLength")} value={props.settings.trailLength} min={0} max={48} step={1} onChange={(v) => props.patch("trailLength", v)} />

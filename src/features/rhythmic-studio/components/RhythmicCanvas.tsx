@@ -246,9 +246,17 @@ function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEv
 
   const progress = clamp(timeMs / Math.max(1, durationMs));
   ctx.fillStyle = "rgba(255,255,255,.82)";
-  ctx.font = "800 20px Inter, system-ui";
   ctx.textAlign = "center";
-  ctx.fillText("MARBLE MUSIC", WIDTH / 2, 58);
+  const title = settings.titleText.trim();
+  if (title) {
+    let titleSize = 20;
+    ctx.font = `800 ${titleSize}px Inter, system-ui`;
+    while (titleSize > 12 && ctx.measureText(title).width > WIDTH - 120) {
+      titleSize -= 1;
+      ctx.font = `800 ${titleSize}px Inter, system-ui`;
+    }
+    ctx.fillText(title, WIDTH / 2, 58);
+  }
   ctx.font = "600 12px Inter, system-ui";
   ctx.fillStyle = "rgba(255,255,255,.38)";
   ctx.fillText(`${events.length} ${beatLabel} · ${(durationMs / 1000).toFixed(1)}s`, WIDTH / 2, 82);

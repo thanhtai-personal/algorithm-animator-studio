@@ -121,6 +121,7 @@ export interface AudioSourceMeta {
 
 export interface StudioSettings {
   exportFps: ExportFps;
+  titleText: string;
   playbackSpeed: number;
   syncOffsetMs: number;
   minBounceSpacingMs: number;

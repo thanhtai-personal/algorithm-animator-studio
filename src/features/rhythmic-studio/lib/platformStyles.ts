@@ -202,6 +202,47 @@ function drawStairStep(ctx: CanvasRenderingContext2D, half: number, p: MarblePla
   ctx.restore();
 }
 
+
+function drawRealGlass(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, settings: StudioSettings, kind: PlatformStyle) {
+  const frosted = kind === "glass-frosted";
+  const acrylic = kind === "glass-acrylic";
+  const optic = kind === "glass-optic";
+  const tempered = kind === "glass-tempered";
+  const height = p.thickness + (acrylic ? 9 : 5);
+  const radius = acrylic ? height * 0.48 : 7;
+  const alpha = frosted ? 0.24 : acrylic ? 0.16 : 0.09;
+  ctx.save();
+  ctx.shadowColor = p.color;
+  ctx.shadowBlur = (optic ? 22 : 8) + settings.platformGlow * (optic ? 28 : 14) + impact * 10;
+  const glass = ctx.createLinearGradient(0, -3, 0, height + 3);
+  glass.addColorStop(0, `rgba(255,255,255,${frosted ? 0.34 : 0.52})`);
+  glass.addColorStop(0.18, `rgba(210,238,255,${alpha})`);
+  glass.addColorStop(0.56, `${p.color}${frosted ? "30" : "18"}`);
+  glass.addColorStop(1, `rgba(120,170,210,${frosted ? 0.18 : 0.07})`);
+  roundedRect(ctx, -half, -2, p.width, height, radius);
+  ctx.fillStyle = glass; ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = tempered ? "rgba(230,248,255,.58)" : acrylic ? "rgba(220,245,255,.34)" : "rgba(245,252,255,.48)";
+  ctx.lineWidth = tempered ? 2.1 : acrylic ? 1.8 : 1.25;
+  ctx.stroke();
+  ctx.globalAlpha = frosted ? 0.36 : 0.62;
+  ctx.strokeStyle = "rgba(255,255,255,.72)";
+  ctx.lineWidth = frosted ? 1.2 : 1.8;
+  ctx.beginPath(); ctx.moveTo(-half + 16, 2); ctx.lineTo(half - 26, 2); ctx.stroke();
+  ctx.globalAlpha = 1;
+  if (tempered) {
+    ctx.fillStyle = "rgba(255,255,255,.24)";
+    for (const x of [-half + 14, half - 14]) { ctx.beginPath(); ctx.arc(x, height / 2 - 2, 2.5, 0, Math.PI * 2); ctx.fill(); }
+  }
+  if (optic) neonLine(ctx, -half + 18, height - 3, half - 18, height - 3, p.color, 2.5 + impact, 18 + settings.platformGlow * 24);
+  if (frosted) {
+    ctx.globalAlpha = 0.16;
+    ctx.fillStyle = "#ffffff";
+    for (let x = -half + 12; x < half - 8; x += 17) { ctx.fillRect(x, 4 + ((x + half) % 9), 6, 1); }
+  }
+  ctx.restore();
+}
+
 function drawPrism(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, settings: StudioSettings) {
   const segments = Math.max(5, Math.round(5 + settings.platformDetail * 5));
   const segment = p.width / segments;
@@ -217,11 +258,11 @@ function drawPrism(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatfor
   }
 }
 
-export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: MarblePlatform, screenY: number, timeMs: number, settings: StudioSettings) {
+export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: MarblePlatform, screenY: number, timeMs: number, settings: StudioSettings, forcedStyle?: PlatformStyle) {
   const age = timeMs - platform.event.timeMs;
   const impact = age >= 0 && age < 320 ? 1 - age / 320 : 0;
   const half = platform.width / 2;
-  const style = resolvePlatformStyle(platform.index, settings);
+  const style = forcedStyle ?? resolvePlatformStyle(platform.index, settings);
   ctx.save();
   ctx.translate(platform.x, screenY);
   ctx.rotate(platform.tiltRad);
@@ -234,6 +275,7 @@ export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: Marb
   else if (style === "tech-pad") drawTechPad(ctx, half, platform, impact, settings);
   else if (style === "pipe-rail") drawPipeRail(ctx, half, platform, impact, settings);
   else if (style === "stair-step") drawStairStep(ctx, half, platform, impact, settings);
+  else if (style.startsWith("glass-") && style !== "glass") drawRealGlass(ctx, half, platform, impact, settings, style);
   else drawPrism(ctx, half, platform, impact, settings);
   ctx.restore();
 

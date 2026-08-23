@@ -1,0 +1,83 @@
+import type { Lang } from "@/lib/i18n";
+
+const EN = {
+  "page.info": "Run info",
+  "drawer.title": "Run information",
+  "drawer.description": "Course metrics, source precision and export details.",
+  "tabs.source": "Source",
+  "tabs.terrain": "Terrain",
+  "tabs.layout": "Layout",
+  "tabs.motion": "Motion",
+  "tabs.visual": "Visual",
+  "tabs.media": "Media",
+  "tabs.sound": "Sound",
+  "platform.glass-borosilicate": "Borosilicate glass",
+  "platform.glass-tempered": "Tempered glass",
+  "platform.glass-frosted": "Frosted glass",
+  "platform.glass-acrylic": "Clear acrylic",
+  "platform.glass-optic": "Optic neon glass",
+  "item.glass-tube": "Curved glass tube",
+  "item.glass-channel": "Glass light channel",
+  "item.acrylic-pipe": "Clear acrylic pipe",
+  "item.neon-bridge": "Long neon bridge",
+  "item.stair-flight": "Stair flight",
+  "editor.title": "Free layout editor",
+  "editor.subtitle": "Click a lamp/platform in the preview, then replace it without moving its beat position.",
+  "editor.noSelection": "Click a course node in the preview to select it.",
+  "editor.selected": "Selected node {index} / {count}",
+  "editor.previous": "Previous",
+  "editor.next": "Next",
+  "editor.item": "Replacement item",
+  "editor.span": "Nodes occupied",
+  "editor.apply": "Replace selected",
+  "editor.clear": "Restore selected",
+  "editor.clearAll": "Reset free layout",
+  "editor.current": "Current override: {style} · {span} node(s)",
+  "editor.longHint": "Long tubes/rails may occupy several consecutive nodes. Beat timestamps and node coordinates remain unchanged.",
+  "editor.pickHint": "Tip: click directly on the video preview to pick a node.",
+} as const;
+
+const VI: Record<keyof typeof EN, string> = {
+  "page.info": "Thông tin",
+  "drawer.title": "Thông tin đường chạy",
+  "drawer.description": "Chỉ số địa hình, độ chính xác nguồn và cơ chế xuất video.",
+  "tabs.source": "Nguồn",
+  "tabs.terrain": "Địa hình",
+  "tabs.layout": "Bố cục",
+  "tabs.motion": "Chuyển động",
+  "tabs.visual": "Hình ảnh",
+  "tabs.media": "Media",
+  "tabs.sound": "Âm thanh",
+  "platform.glass-borosilicate": "Kính borosilicate",
+  "platform.glass-tempered": "Kính cường lực",
+  "platform.glass-frosted": "Kính mờ",
+  "platform.glass-acrylic": "Acrylic trong",
+  "platform.glass-optic": "Kính quang neon",
+  "item.glass-tube": "Ống kính uốn lượn",
+  "item.glass-channel": "Máng kính phát sáng",
+  "item.acrylic-pipe": "Ống acrylic trong",
+  "item.neon-bridge": "Cầu neon dài",
+  "item.stair-flight": "Dãy bậc thang",
+  "editor.title": "Biên tập bố cục tự do",
+  "editor.subtitle": "Bấm trực tiếp vào đèn/bệ trên preview rồi thay item mà không đổi vị trí nhịp.",
+  "editor.noSelection": "Hãy bấm một node trên preview để chọn.",
+  "editor.selected": "Đang chọn node {index} / {count}",
+  "editor.previous": "Node trước",
+  "editor.next": "Node sau",
+  "editor.item": "Item thay thế",
+  "editor.span": "Số node chiếm",
+  "editor.apply": "Thay node đã chọn",
+  "editor.clear": "Khôi phục node",
+  "editor.clearAll": "Xóa bố cục tự do",
+  "editor.current": "Đang thay: {style} · {span} node",
+  "editor.longHint": "Ống kính/ray dài có thể thay 1 hoặc nhiều node liên tiếp. Timestamp và tọa độ node vẫn được giữ nguyên.",
+  "editor.pickHint": "Mẹo: bấm trực tiếp lên preview video để chọn node.",
+};
+
+export type LayoutTextKey = keyof typeof EN;
+
+export function layoutText(lang: Lang, key: LayoutTextKey, values?: Record<string, string | number>) {
+  let value = (lang === "vi" ? VI[key] : EN[key]) ?? EN[key];
+  if (values) for (const [token, replacement] of Object.entries(values)) value = value.replaceAll(`{${token}}`, String(replacement));
+  return value;
+}

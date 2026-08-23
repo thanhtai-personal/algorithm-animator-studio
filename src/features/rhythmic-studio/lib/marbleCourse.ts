@@ -1,5 +1,6 @@
-import type { NoteEvent, StudioSettings } from "../types";
+import type { CourseItemOverride, NoteEvent, StudioSettings } from "../types";
 import { REST_GAP_MS, ballisticArcOffset, rhythmTerrainForGap } from "./rhythmTerrain";
+import { guidedCoursePoint, overrideForSegment } from "./courseGuide";
 
 export interface MarblePlatform {
   index: number;
@@ -165,7 +166,7 @@ export function buildMarbleCourse(events: NoteEvent[], settings: StudioSettings,
   });
 }
 
-export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: MarblePlatform[], settings: StudioSettings): MarblePoint {
+export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: MarblePlatform[], settings: StudioSettings, overrides: CourseItemOverride[] = []): MarblePoint {
   if (!events.length || !platforms.length) {
     return { x: 360, y: 180, color: settings.prismStart, platformIndex: 0 };
   }
@@ -198,6 +199,11 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
   const end = platforms[index + 1];
   const span = Math.max(1, events[index + 1].timeMs - events[index].timeMs);
   const t = ease((timeMs - events[index].timeMs) / span, settings);
+  const segmentOverride = overrideForSegment(index, overrides);
+  if (segmentOverride) {
+    const guided = guidedCoursePoint(start, end, t, segmentOverride.style, settings);
+    if (guided) return { x: guided.x, y: guided.y, color: mixHex(start.color, end.color, t), platformIndex: index };
+  }
   if (span >= LONG_GAP_TUBE_MS) {
     const { entryX, entryY, exitX, exitY } = longGapTubeGeometry(start, end, settings);
     if (t < TUBE_ENTRY_T) {

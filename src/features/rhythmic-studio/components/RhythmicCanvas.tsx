@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { MutableRefObject } from "react";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { rhythmicText } from "../i18n";
-import type { LyricCue, NoteEvent, StudioSettings } from "../types";
+import type { CourseItemOverride, LyricCue, NoteEvent, StudioSettings } from "../types";
 import {
   buildMarbleCourse,
   clamp,
@@ -14,6 +14,7 @@ import {
 } from "../lib/marbleCourse";
 import { drawStyledPlatform } from "../lib/platformStyles";
 import { drawLongGapTubes } from "../lib/longGapTube";
+import { drawCourseLongItems, isPlatformCourseItem, overrideForNode } from "../lib/courseItems";
 import { drawRhythmicBackground } from "../lib/backgrounds";
 import { activeLyricAt } from "../lib/lyrics";
 
@@ -27,6 +28,9 @@ interface Props {
   playbackEndMs: number;
   backgroundUrl: string | null;
   lyrics: LyricCue[];
+  courseOverrides: CourseItemOverride[];
+  selectedNodeIndex: number | null;
+  onSelectNode: (index: number | null) => void;
   recording: boolean;
   targetFps: number;
   onNote: (event: NoteEvent) => void;
@@ -195,19 +199,39 @@ function drawLyrics(ctx: CanvasRenderingContext2D, timeMs: number, lyrics: Lyric
   ctx.restore();
 }
 
-function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEvent[], platforms: MarblePlatform[], cameraY: number, durationMs: number, settings: StudioSettings, beatLabel: string, backgroundImage: HTMLImageElement | null, lyrics: LyricCue[]) {
+function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEvent[], platforms: MarblePlatform[], cameraY: number, durationMs: number, settings: StudioSettings, beatLabel: string, backgroundImage: HTMLImageElement | null, lyrics: LyricCue[], courseOverrides: CourseItemOverride[], selectedNodeIndex: number | null) {
   const pulse = settings.pulseAnimation ? collisionStrength(timeMs, events) * settings.animationSensitivity : 0;
   drawRhythmicBackground(ctx, WIDTH, HEIGHT, settings, pulse, timeMs, backgroundImage);
-  drawLongGapTubes(ctx, platforms, events, cameraY, timeMs, settings);
+  drawLongGapTubes(ctx, platforms, events, cameraY, timeMs, settings, courseOverrides);
+  drawCourseLongItems(ctx, platforms, courseOverrides, cameraY, settings);
   for (const platform of platforms) {
     const y = platform.y - cameraY;
     if (y < -100 || y > HEIGHT + 120) continue;
-    drawStyledPlatform(ctx, platform, y, timeMs, settings);
+    const override = overrideForNode(platform.index, courseOverrides);
+    if (!override || isPlatformCourseItem(override.style)) drawStyledPlatform(ctx, platform, y, timeMs, settings, override && isPlatformCourseItem(override.style) ? override.style : undefined);
+    else {
+      ctx.save();
+      ctx.strokeStyle = `${platform.color}88`; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(platform.x, y, Math.max(7, settings.ballSize * 0.65), 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
+  }
+  if (selectedNodeIndex !== null && platforms[selectedNodeIndex]) {
+    const selected = platforms[selectedNodeIndex];
+    const y = selected.y - cameraY;
+    if (y > -80 && y < HEIGHT + 80) {
+      ctx.save();
+      ctx.strokeStyle = '#22d3ee'; ctx.shadowColor = '#22d3ee'; ctx.shadowBlur = 18; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(selected.x, y, Math.max(22, settings.ballSize + 11), 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = 'rgba(34,211,238,.95)'; ctx.font = '700 14px Inter, system-ui'; ctx.textAlign = 'center';
+      ctx.fillText(`#${selectedNodeIndex + 1}`, selected.x, y - Math.max(30, settings.ballSize + 18));
+      ctx.restore();
+    }
   }
 
   const trailCount = Math.max(0, Math.floor(settings.trailLength));
   for (let i = trailCount; i >= 1; i -= 1) {
-    const point = marbleAtTime(Math.max(0, timeMs - i * 19), events, platforms, settings);
+    const point = marbleAtTime(Math.max(0, timeMs - i * 19), events, platforms, settings, courseOverrides);
     const alpha = (1 - i / (trailCount + 1)) * 0.3;
     ctx.globalAlpha = alpha;
     ctx.fillStyle = point.color;
@@ -217,7 +241,7 @@ function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEv
   }
   ctx.globalAlpha = 1;
   drawParticles(ctx, platforms, cameraY, timeMs, settings);
-  drawMarble(ctx, marbleAtTime(timeMs, events, platforms, settings), cameraY, pulse, settings);
+  drawMarble(ctx, marbleAtTime(timeMs, events, platforms, settings, courseOverrides), cameraY, pulse, settings);
   drawLyrics(ctx, timeMs, lyrics, settings);
 
   const progress = clamp(timeMs / Math.max(1, durationMs));
@@ -245,7 +269,7 @@ function firstEventAtOrAfter(events: NoteEvent[], timeMs: number) {
   return low;
 }
 
-export function RhythmicCanvas({ events, settings, durationMs, playing, playbackToken, playbackStartMs, playbackEndMs, backgroundUrl, lyrics, recording, targetFps, onNote, onTime, onEnded, canvasRef }: Props) {
+export function RhythmicCanvas({ events, settings, durationMs, playing, playbackToken, playbackStartMs, playbackEndMs, backgroundUrl, lyrics, courseOverrides, selectedNodeIndex, onSelectNode, recording, targetFps, onNote, onTime, onEnded, canvasRef }: Props) {
   const lang = useSystemLang();
   const beatLabel = rhythmicText(lang, "canvas.beats");
   const [backgroundImage, setBackgroundImage] = useState<HTMLImageElement | null>(null);
@@ -273,20 +297,20 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
-    const point = marbleAtTime(currentTime.current, events, platforms, settings);
+    const point = marbleAtTime(currentTime.current, events, platforms, settings, courseOverrides);
     cameraY.current = point.y - HEIGHT * settings.cameraAnchor;
-    drawFrame(ctx, currentTime.current, events, platforms, cameraY.current, durationMs, settings, beatLabel, backgroundImage, lyrics);
-  }, [backgroundImage, beatLabel, canvasRef, durationMs, events, lyrics, platforms, settings]);
+    drawFrame(ctx, currentTime.current, events, platforms, cameraY.current, durationMs, settings, beatLabel, backgroundImage, lyrics, courseOverrides, selectedNodeIndex);
+  }, [backgroundImage, beatLabel, canvasRef, courseOverrides, durationMs, events, lyrics, platforms, selectedNodeIndex, settings]);
 
   useEffect(() => {
     if (previousToken.current === playbackToken) return;
     previousToken.current = playbackToken;
     currentTime.current = playbackStartMs;
     nextNoteIndex.current = firstEventAtOrAfter(events, playbackStartMs);
-    const point = marbleAtTime(playbackStartMs, events, platforms, settings);
+    const point = marbleAtTime(playbackStartMs, events, platforms, settings, courseOverrides);
     cameraY.current = point.y - HEIGHT * settings.cameraAnchor;
     onTime(playbackStartMs);
-  }, [events, onTime, playbackStartMs, playbackToken, platforms, settings]);
+  }, [courseOverrides, events, onTime, playbackStartMs, playbackToken, platforms, settings]);
 
   useEffect(() => {
     const cancelScheduled = () => {
@@ -310,17 +334,35 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
         onNote(events[nextNoteIndex.current]);
         nextNoteIndex.current += 1;
       }
-      const marble = marbleAtTime(time, events, platforms, settings);
+      const marble = marbleAtTime(time, events, platforms, settings, courseOverrides);
       const targetCamera = marble.y - HEIGHT * settings.cameraAnchor;
       cameraY.current += (targetCamera - cameraY.current) * clamp(settings.cameraSmoothing, 0.03, 1);
-      drawFrame(ctx, time, events, platforms, cameraY.current, durationMs, settings, beatLabel, backgroundImage, lyrics);
+      drawFrame(ctx, time, events, platforms, cameraY.current, durationMs, settings, beatLabel, backgroundImage, lyrics, courseOverrides, selectedNodeIndex);
       if (now - lastUiUpdate.current >= 64) { lastUiUpdate.current = now; onTime(time); }
       if (time >= playbackEndMs) { onTime(playbackEndMs); onEnded(); return; }
       scheduleNext(loop);
     };
     scheduleNext(loop);
     return cancelScheduled;
-  }, [backgroundImage, beatLabel, canvasRef, durationMs, events, lyrics, onEnded, onNote, onTime, playbackEndMs, platforms, playing, playbackToken, recording, settings, targetFps]);
+  }, [backgroundImage, beatLabel, canvasRef, courseOverrides, durationMs, events, lyrics, onEnded, onNote, onTime, playbackEndMs, platforms, playing, playbackToken, recording, selectedNodeIndex, settings, targetFps]);
 
-  return <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} className="block h-auto max-h-[66vh] w-auto max-w-full rounded-xl" />;
+  const selectAtPointer = (clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = (clientX - rect.left) * WIDTH / rect.width;
+    const screenY = (clientY - rect.top) * HEIGHT / rect.height;
+    const worldY = screenY + cameraY.current;
+    let bestIndex: number | null = null;
+    let bestScore = Infinity;
+    for (const platform of platforms) {
+      const dx = Math.abs(platform.x - x) / Math.max(38, platform.width * 0.55);
+      const dy = Math.abs(platform.y - worldY) / 54;
+      const score = dx * dx + dy * dy;
+      if (score < bestScore && score < 1.35) { bestScore = score; bestIndex = platform.index; }
+    }
+    onSelectNode(bestIndex);
+  };
+
+  return <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} onClick={(event) => selectAtPointer(event.clientX, event.clientY)} className="block h-auto max-h-[66vh] w-auto max-w-full cursor-crosshair rounded-xl" />;
 }

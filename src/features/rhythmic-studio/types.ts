@@ -36,10 +36,33 @@ export const PLATFORM_STYLES = [
   "prism",
   "pipe-rail",
   "stair-step",
+  "glass-borosilicate",
+  "glass-tempered",
+  "glass-frosted",
+  "glass-acrylic",
+  "glass-optic",
 ] as const;
 
 export type PlatformStyle = (typeof PLATFORM_STYLES)[number];
 export type PlatformMixMode = "single" | "alternate" | "accent" | "shuffle";
+
+export const COURSE_LONG_ITEMS = [
+  "glass-tube",
+  "glass-channel",
+  "acrylic-pipe",
+  "neon-bridge",
+  "stair-flight",
+] as const;
+
+export type CourseLongItem = (typeof COURSE_LONG_ITEMS)[number];
+export type CourseItemStyle = PlatformStyle | CourseLongItem;
+
+export interface CourseItemOverride {
+  id: string;
+  startIndex: number;
+  span: number;
+  style: CourseItemStyle;
+}
 export const BALL_STYLES = [
   "classic",
   "chrome",
@@ -174,6 +197,7 @@ export interface StoredProject {
   name: string;
   settings: StudioSettings;
   source?: AudioSourceMeta;
+  courseOverrides?: CourseItemOverride[];
   createdAt: string;
   updatedAt: string;
 }

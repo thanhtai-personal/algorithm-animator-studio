@@ -1,4 +1,4 @@
-import type { AudioSourceMeta, StoredProject, StudioSettings } from "../types";
+import type { AudioSourceMeta, CourseItemOverride, StoredProject, StudioSettings } from "../types";
 
 const STORAGE_KEY = "kai-studio.rhythmic-projects.v1";
 
@@ -12,13 +12,14 @@ export function listRhythmicProjects(): StoredProject[] {
   }
 }
 
-export function saveRhythmicProject(name: string, settings: StudioSettings, source?: AudioSourceMeta): StoredProject {
+export function saveRhythmicProject(name: string, settings: StudioSettings, source?: AudioSourceMeta, courseOverrides: CourseItemOverride[] = []): StoredProject {
   const now = new Date().toISOString();
   const project: StoredProject = {
     id: crypto.randomUUID(),
     name,
     settings,
     source,
+    courseOverrides,
     createdAt: now,
     updatedAt: now,
   };

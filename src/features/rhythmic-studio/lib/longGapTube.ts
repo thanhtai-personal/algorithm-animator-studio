@@ -1,4 +1,5 @@
-import type { NoteEvent, StudioSettings } from "../types";
+import type { CourseItemOverride, NoteEvent, StudioSettings } from "../types";
+import { overrideForSegment } from "./courseGuide";
 import {
   LONG_GAP_TUBE_MS,
   longGapTubeGeometry,
@@ -121,10 +122,11 @@ export function drawLongGapTubes(
   cameraY: number,
   timeMs: number,
   settings: StudioSettings,
+  overrides: CourseItemOverride[] = [],
 ) {
   for (let index = 0; index < platforms.length - 1; index += 1) {
     const span = events[index + 1].timeMs - events[index].timeMs;
-    if (span < LONG_GAP_TUBE_MS) continue;
+    if (span < LONG_GAP_TUBE_MS || overrideForSegment(index, overrides)) continue;
     const start = platforms[index];
     const end = platforms[index + 1];
     const geometry = longGapTubeGeometry(start, end, settings);

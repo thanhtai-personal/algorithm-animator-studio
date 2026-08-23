@@ -10,19 +10,15 @@ import { parseMidi } from "./lib/midiParser";
 import { deleteRhythmicProject, listRhythmicProjects, saveRhythmicProject } from "./lib/projectStorage";
 import { buildRhythmicTimeline, timelineDuration } from "./lib/timeline";
 import { downloadRhythmicBlob, pickRecordingMimeType, transcodeWebmToMp4 } from "./lib/rhythmicExport";
-import { BACKGROUND_PRESETS, BALL_STYLES, PLATFORM_STYLES, type AudioSourceMeta, type NoteEvent, type StoredProject, type StudioSettings } from "./types";
+import { BACKGROUND_PRESETS, BALL_STYLES, PLATFORM_STYLES, type AudioSourceMeta, type CourseItemOverride, type CourseItemStyle, type NoteEvent, type StoredProject, type StudioSettings } from "./types";
 import { useRhythmicMedia } from "./useRhythmicMedia";
-
 type MessageToken = { key: RhythmicTextKey; values?: Record<string, string | number> };
-
 function prettyBytes(bytes: number) {
   return bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
-
 function safeFileName(value: string) {
   return value.trim().replace(/[^a-z0-9-_]+/gi, "-").replace(/^-+|-+$/g, "") || "rhythmic-run";
 }
-
 export function useRhythmicStudio() {
   const lang = useSystemLang();
   const [settings, setSettings] = useState<StudioSettings>(DEFAULT_SETTINGS);
@@ -43,12 +39,13 @@ export function useRhythmicStudio() {
   const [statusToken, setStatusToken] = useState<MessageToken>({ key: "status.ready" });
   const [projectName, setProjectName] = useState(() => rhythmicText(lang, "default.projectName"));
   const [projects, setProjects] = useState<StoredProject[]>(() => listRhythmicProjects());
+  const [courseOverrides, setCourseOverrides] = useState<CourseItemOverride[]>([]);
+  const [selectedNodeIndex, setSelectedNodeIndex] = useState<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const audioEngine = useRef(new AudioEngine());
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-
   const timeline = useMemo(() => buildRhythmicTimeline(sourceEvents, settings), [sourceEvents, settings]);
   const durationMs = useMemo(() => {
     const sourceEnd = source.durationMs / Math.max(0.1, settings.playbackSpeed) + settings.syncOffsetMs;
@@ -61,7 +58,6 @@ export function useRhythmicStudio() {
     return rhythmicText(lang, statusToken.key, values);
   }, [lang, statusToken]);
   const audioFileInfo = useMemo(() => rhythmicText(lang, audioInfoToken.key, audioInfoToken.values), [audioInfoToken, lang]);
-
   useEffect(() => audioEngine.current.setVolume(settings.synthVolume), [settings.synthVolume]);
   useEffect(() => audioEngine.current.setMusicVolume(settings.musicVolume), [settings.musicVolume]);
   useEffect(() => audioEngine.current.setReverb(settings.synthReverb), [settings.synthReverb]);
@@ -79,11 +75,9 @@ export function useRhythmicStudio() {
     });
     setPlaybackEndMs((value) => value <= 0 || Math.abs(value - oldDuration) < 250 ? durationMs : Math.min(value, durationMs));
   }, [durationMs]);
-
   const patch = useCallback(<K extends keyof StudioSettings>(key: K, value: StudioSettings[K]) => {
     setSettings((current) => ({ ...current, [key]: value }));
   }, []);
-
   const media = useRhythmicMedia(durationMs, patch);
   const displayLyrics = useMemo(() => {
     if (media.lyricFormat === "plain") return media.lyrics;
@@ -201,6 +195,8 @@ export function useRhythmicStudio() {
     stopPlaybackAudio();
     setAudioUrl(null);
     setSourceEvents(events);
+    setCourseOverrides([]);
+    setSelectedNodeIndex(null);
     setPlaybackToken((value) => value + 1);
     setTimeMs(0);
     setPlaying(false);
@@ -219,6 +215,8 @@ export function useRhythmicStudio() {
       stopPlaybackAudio();
       setAudioUrl(null);
       setSourceEvents(events);
+      setCourseOverrides([]);
+      setSelectedNodeIndex(null);
       setPlaying(false);
       setTimeMs(0);
       setPlaybackToken((value) => value + 1);
@@ -245,6 +243,8 @@ export function useRhythmicStudio() {
       const url = URL.createObjectURL(file);
       setAudioUrl(url);
       setSourceEvents(events);
+      setCourseOverrides([]);
+      setSelectedNodeIndex(null);
       setPlaying(false);
       setTimeMs(0);
       setPlaybackToken((value) => value + 1);
@@ -261,6 +261,29 @@ export function useRhythmicStudio() {
       toast.error(message);
     }
   }, [lang, stopPlaybackAudio]);
+
+  const selectCourseNode = useCallback((index: number | null) => {
+    if (index === null) { setSelectedNodeIndex(null); return; }
+    setSelectedNodeIndex(Math.max(0, Math.min(index, Math.max(0, timeline.length - 1))));
+  }, [timeline.length]);
+
+  const applyCourseItem = useCallback((style: CourseItemStyle, span: number) => {
+    if (selectedNodeIndex === null || !timeline.length) return;
+    const startIndex = Math.max(0, Math.min(selectedNodeIndex, timeline.length - 1));
+    const safeSpan = Math.max(1, Math.min(Math.round(span), timeline.length - startIndex));
+    const endIndex = startIndex + safeSpan - 1;
+    setCourseOverrides((current) => [
+      ...current.filter((item) => item.startIndex + item.span - 1 < startIndex || item.startIndex > endIndex),
+      { id: crypto.randomUUID(), startIndex, span: safeSpan, style },
+    ].sort((a, b) => a.startIndex - b.startIndex));
+  }, [selectedNodeIndex, timeline.length]);
+
+  const clearSelectedCourseItem = useCallback(() => {
+    if (selectedNodeIndex === null) return;
+    setCourseOverrides((current) => current.filter((item) => selectedNodeIndex < item.startIndex || selectedNodeIndex >= item.startIndex + item.span));
+  }, [selectedNodeIndex]);
+
+  const clearCourseLayout = useCallback(() => setCourseOverrides([]), []);
 
   const randomize = useCallback(() => {
     setSettings((current) => ({
@@ -290,16 +313,18 @@ export function useRhythmicStudio() {
   }, []);
 
   const saveProject = useCallback(() => {
-    const saved = saveRhythmicProject(projectName.trim() || rhythmicText(lang, "default.untitled"), settings, source);
+    const saved = saveRhythmicProject(projectName.trim() || rhythmicText(lang, "default.untitled"), settings, source, courseOverrides);
     setProjects((items) => [saved, ...items.filter((item) => item.id !== saved.id)]);
     setStatusToken({ key: "status.projectSaved" });
     toast.success(rhythmicText(lang, "toast.presetSaved"));
-  }, [lang, projectName, settings, source]);
+  }, [courseOverrides, lang, projectName, settings, source]);
 
   const removeProject = useCallback((id: string) => setProjects(deleteRhythmicProject(id)), []);
   const loadProject = useCallback((project: StoredProject) => {
     setSettings({ ...DEFAULT_SETTINGS, ...project.settings });
     setProjectName(project.name);
+    setCourseOverrides(project.courseOverrides ?? []);
+    setSelectedNodeIndex(null);
     if (project.source?.type === "builtin" && BUILTIN_MELODIES[project.source.name]) loadBuiltin(project.source.name);
     else setStatusToken({ key: project.source ? "status.presetReimport" : "status.presetLoaded" });
   }, [loadBuiltin]);
@@ -368,6 +393,5 @@ export function useRhythmicStudio() {
     else await resetAndPlay();
   }, [lang, playRange, projectName, resetAndPlay, settings.exportFps, source.type, trimEndMs, trimStartMs]);
 
-
-  return { settings, patch, sourceEvents, source, audioUrl, audioFileInfo, playing, playingClip, playbackToken, playbackStartMs, playbackEndMs, timeMs, setTimeMs, trimStartMs, trimEndMs, setTrimRange, previewTrim, recording, recordingFormat, status, projectName, setProjectName, projects, canvasRef, audioElementRef, timeline, durationMs, onNote, onEnded, togglePlayback, resetPlayback, loadBuiltin, importMidi, importAudio, randomize, saveProject, removeProject, loadProject, recordVideo, ...media, lyrics: displayLyrics };
+  return { settings, patch, sourceEvents, source, audioUrl, audioFileInfo, playing, playingClip, playbackToken, playbackStartMs, playbackEndMs, timeMs, setTimeMs, trimStartMs, trimEndMs, setTrimRange, previewTrim, recording, recordingFormat, status, projectName, setProjectName, projects, canvasRef, audioElementRef, timeline, durationMs, onNote, onEnded, togglePlayback, resetPlayback, loadBuiltin, importMidi, importAudio, randomize, saveProject, removeProject, loadProject, recordVideo, courseOverrides, selectedNodeIndex, selectCourseNode, applyCourseItem, clearSelectedCourseItem, clearCourseLayout, ...media, lyrics: displayLyrics };
 }

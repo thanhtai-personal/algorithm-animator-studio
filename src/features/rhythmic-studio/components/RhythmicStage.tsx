@@ -20,7 +20,7 @@ export function RhythmicStage({ studio }: { studio: Studio }) {
     </div>
 
     <div className="mx-auto flex max-h-[68vh] justify-center overflow-hidden rounded-2xl border bg-black p-2 shadow-2xl">
-      <RhythmicCanvas events={studio.timeline} settings={studio.settings} durationMs={studio.durationMs} playing={studio.playing} playbackToken={studio.playbackToken} playbackStartMs={studio.playbackStartMs} playbackEndMs={studio.playbackEndMs || studio.durationMs} backgroundUrl={studio.backgroundUrl} lyrics={studio.lyrics} recording={studio.recording} targetFps={studio.settings.exportFps} onNote={studio.onNote} onTime={studio.setTimeMs} onEnded={studio.onEnded} canvasRef={studio.canvasRef} />
+      <RhythmicCanvas events={studio.timeline} settings={studio.settings} durationMs={studio.durationMs} playing={studio.playing} playbackToken={studio.playbackToken} playbackStartMs={studio.playbackStartMs} playbackEndMs={studio.playbackEndMs || studio.durationMs} backgroundUrl={studio.backgroundUrl} lyrics={studio.lyrics} courseOverrides={studio.courseOverrides} selectedNodeIndex={studio.selectedNodeIndex} onSelectNode={studio.selectCourseNode} recording={studio.recording} targetFps={studio.settings.exportFps} onNote={studio.onNote} onTime={studio.setTimeMs} onEnded={studio.onEnded} canvasRef={studio.canvasRef} />
     </div>
 
     <div className="flex flex-wrap items-center justify-center gap-2">

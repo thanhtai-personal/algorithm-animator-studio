@@ -136,6 +136,43 @@ function drawTubeTunnel(ctx: CanvasRenderingContext2D, width: number, height: nu
   }
 }
 
+
+function drawToyBoard(ctx: CanvasRenderingContext2D, width: number, height: number, settings: StudioSettings, timeMs: number) {
+  const base = ctx.createLinearGradient(0, 0, 0, height);
+  base.addColorStop(0, '#7f7872');
+  base.addColorStop(0.5, '#c7b9ab');
+  base.addColorStop(1, '#706963');
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, width, height);
+  const boardX = 54;
+  const boardWidth = width - 108;
+  const board = ctx.createLinearGradient(boardX, 0, boardX + boardWidth, height);
+  board.addColorStop(0, '#d7cabd');
+  board.addColorStop(0.5, mixHex('#e8ddd2', settings.backgroundColor, 0.42));
+  board.addColorStop(1, '#d2c4b6');
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.18)';
+  ctx.shadowBlur = 22;
+  ctx.fillStyle = board;
+  ctx.fillRect(boardX, 0, boardWidth, height);
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(255,255,255,.18)';
+  ctx.lineWidth = 1;
+  const drift = Math.sin(timeMs / 3200) * 6 * settings.backgroundMotion;
+  for (let x = boardX + 18; x < boardX + boardWidth; x += 58) {
+    ctx.beginPath();
+    ctx.moveTo(x + drift, 0);
+    ctx.lineTo(x + drift, height);
+    ctx.stroke();
+  }
+  for (let y = 20; y < height; y += 58) {
+    ctx.beginPath();
+    ctx.moveTo(boardX, y - drift);
+    ctx.lineTo(boardX + boardWidth, y - drift);
+    ctx.stroke();
+  }
+}
+
 function drawSpotlight(ctx: CanvasRenderingContext2D, width: number, height: number, settings: StudioSettings, pulse: number, timeMs: number) {
   ctx.fillStyle = "#040407"; ctx.fillRect(0, 0, width, height);
   const x = width / 2 + Math.sin(timeMs / 2400) * 120 * settings.backgroundMotion;
@@ -160,6 +197,10 @@ export function drawRhythmicBackground(ctx: CanvasRenderingContext2D, width: num
   else if (settings.backgroundPreset === "deep-space") drawStarfield(ctx, width, height, settings, timeMs, true);
   else if (settings.backgroundPreset === "sunset") drawSunset(ctx, width, height, settings, timeMs);
   else if (settings.backgroundPreset === "spotlight") drawSpotlight(ctx, width, height, settings, pulse, timeMs);
+  else if (settings.backgroundPreset === "pipe-tower") drawPipeTower(ctx, width, height, settings, timeMs);
+  else if (settings.backgroundPreset === "stairway") drawStairway(ctx, width, height, settings, timeMs);
+  else if (settings.backgroundPreset === "tube-tunnel") drawTubeTunnel(ctx, width, height, settings, pulse, timeMs);
+  else if (settings.backgroundPreset === "toy-board") drawToyBoard(ctx, width, height, settings, timeMs);
   else drawNeonGrid(ctx, width, height, settings, pulse, timeMs);
 
   const vignette = ctx.createRadialGradient(width / 2, height / 2, height * 0.2, width / 2, height / 2, height * 0.75);

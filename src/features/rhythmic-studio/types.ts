@@ -41,6 +41,8 @@ export const PLATFORM_STYLES = [
   "glass-frosted",
   "glass-acrylic",
   "glass-optic",
+  "toy-peg",
+  "toy-tube",
 ] as const;
 
 export type PlatformStyle = (typeof PLATFORM_STYLES)[number];
@@ -87,6 +89,7 @@ export const BACKGROUND_PRESETS = [
   "pipe-tower",
   "stairway",
   "tube-tunnel",
+  "toy-board",
 ] as const;
 
 export type BackgroundPreset = (typeof BACKGROUND_PRESETS)[number];

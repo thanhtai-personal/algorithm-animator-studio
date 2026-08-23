@@ -203,6 +203,70 @@ function drawStairStep(ctx: CanvasRenderingContext2D, half: number, p: MarblePla
 }
 
 
+
+function drawToyPeg(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, settings: StudioSettings) {
+  const height = Math.max(p.thickness * 1.05, 24);
+  const radius = height * 0.48;
+  const glow = 10 + settings.platformGlow * 14 + impact * 10;
+  ctx.save();
+  ctx.shadowColor = p.color;
+  ctx.shadowBlur = glow;
+  const g = ctx.createLinearGradient(0, 0, 0, height);
+  g.addColorStop(0, 'rgba(255,255,255,.96)');
+  g.addColorStop(0.42, 'rgba(251,246,238,.94)');
+  g.addColorStop(1, mixHex(p.color, '#775844', 0.16));
+  roundedRect(ctx, -half, 0, p.width, height, radius);
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(38,24,12,.88)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.globalAlpha = 0.34;
+  ctx.fillStyle = p.color;
+  ctx.fillRect(-half + 4, height - 9, p.width - 8, 5);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = 'rgba(255,255,255,.55)';
+  ctx.beginPath();
+  ctx.ellipse(-half * 0.1, 7, Math.max(12, p.width * 0.18), 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawToyTube(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, settings: StudioSettings) {
+  const height = Math.max(p.thickness * 1.08, 24);
+  const radius = height * 0.5;
+  const glow = 12 + settings.platformGlow * 18 + impact * 12;
+  ctx.save();
+  ctx.shadowColor = p.color;
+  ctx.shadowBlur = glow;
+  ctx.fillStyle = mixHex(p.color, '#f4efe8', 0.08);
+  roundedRect(ctx, -half, 0, p.width, height, radius);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  const body = ctx.createLinearGradient(0, 0, 0, height);
+  body.addColorStop(0, 'rgba(255,255,255,.95)');
+  body.addColorStop(0.38, 'rgba(246,238,229,.95)');
+  body.addColorStop(1, mixHex(p.color, '#8c6b53', 0.14));
+  roundedRect(ctx, -half + 3, 2, p.width - 6, height - 4, radius - 2);
+  ctx.fillStyle = body;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(34,22,14,.9)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.globalAlpha = 0.4;
+  ctx.fillStyle = p.color;
+  ctx.beginPath();
+  ctx.ellipse(0, height - 5, Math.max(14, p.width * 0.32), 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = 'rgba(255,255,255,.55)';
+  ctx.beginPath();
+  ctx.ellipse(-half * 0.12, 7, Math.max(12, p.width * 0.2), 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
 function drawRealGlass(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, settings: StudioSettings, kind: PlatformStyle) {
   const frosted = kind === "glass-frosted";
   const acrylic = kind === "glass-acrylic";
@@ -275,6 +339,8 @@ export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: Marb
   else if (style === "tech-pad") drawTechPad(ctx, half, platform, impact, settings);
   else if (style === "pipe-rail") drawPipeRail(ctx, half, platform, impact, settings);
   else if (style === "stair-step") drawStairStep(ctx, half, platform, impact, settings);
+  else if (style === "toy-peg") drawToyPeg(ctx, half, platform, impact, settings);
+  else if (style === "toy-tube") drawToyTube(ctx, half, platform, impact, settings);
   else if (style.startsWith("glass-")) drawRealGlass(ctx, half, platform, impact, settings, style);
   else drawPrism(ctx, half, platform, impact, settings);
   ctx.restore();

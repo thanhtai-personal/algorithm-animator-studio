@@ -148,9 +148,9 @@ All colors MUST be HSL.
     width: 42rem;
     height: 42rem;
     border-radius: 9999px;
-    filter: blur(62px);
+    filter: blur(42px);
     mix-blend-mode: screen;
-    opacity: 0.55;
+    opacity: 0.48;
   }
 
   .fantastic-orb-a {
@@ -173,8 +173,8 @@ All colors MUST be HSL.
     height: 9rem;
     transform: rotate(-18deg);
     background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.22), hsl(var(--accent) / 0.18), transparent);
-    filter: blur(18px);
-    opacity: 0.48;
+    filter: blur(12px);
+    opacity: 0.4;
   }
 
   .fantastic-pulse {

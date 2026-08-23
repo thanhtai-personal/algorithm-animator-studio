@@ -1,19 +1,4 @@
 import { useEffect } from "react";
-import AOS from "aos";
-import "aos/dist/aos.css";
-
-const FRAME_SELECTOR = [
-  ".fantastic-mode main > section",
-  ".fantastic-mode main > div > section",
-  ".fantastic-mode main > div > aside",
-  ".fantastic-mode .auth-card",
-  ".fantastic-mode .auth-hero",
-  ".fantastic-mode .runtime-loading-card",
-  ".fantastic-mode .kai-agent-flow-card",
-  ".fantastic-mode [class*='rounded-lg'][class*='border'][class*='bg-card']",
-  ".fantastic-mode [class*='rounded-xl'][class*='border'][class*='bg-card']",
-  ".fantastic-mode [class*='rounded-2xl'][class*='border'][class*='bg-card']",
-].join(",");
 
 const ENTRANCE_SELECTOR = [
   ".fantastic-mode header",
@@ -35,44 +20,17 @@ const ENTRANCE_SELECTOR = [
 export function useFantasticFrameMotion(enabled: boolean, routeKey = "") {
   useEffect(() => {
     if (!enabled || typeof window === "undefined") {
-      clearAosMarkers();
       clearEntranceMarkers();
       return;
     }
 
-    let active = true;
-    const markFrames = () => {
-      if (!active) return;
-      document.querySelectorAll<HTMLElement>(FRAME_SELECTOR).forEach((element, index) => {
-        if (element.closest("[data-radix-popper-content-wrapper]")) return;
-        if (element.dataset.aos) return;
-        element.dataset.aos = index % 2 === 0 ? "fade-up" : "fade-left";
-        element.dataset.aosDuration = "520";
-        element.dataset.aosEasing = "ease-out-cubic";
-        element.dataset.aosOnce = "false";
-        element.dataset.aosAnchorPlacement = "top-bottom";
-      });
-      markEntrance();
-      AOS.refreshHard();
-    };
-
-    AOS.init({
-      disable: () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-      duration: 520,
-      easing: "ease-out-cubic",
-      offset: 24,
-      once: false,
-      mirror: false,
-    });
-
-    window.requestAnimationFrame(markFrames);
-    const observer = new MutationObserver(markFrames);
-    observer.observe(document.body, { childList: true, subtree: true });
+    // One decoration pass per route is enough. Do not observe the whole DOM:
+    // editors/timelines mutate frequently and a cosmetic observer used to turn
+    // those updates into repeated full-document AOS.refreshHard() scans.
+    const frame = window.requestAnimationFrame(markEntrance);
 
     return () => {
-      active = false;
-      observer.disconnect();
-      clearAosMarkers();
+      window.cancelAnimationFrame(frame);
       clearEntranceMarkers();
     };
   }, [enabled, routeKey]);
@@ -86,7 +44,7 @@ function markEntrance() {
     if (element.offsetParent === null && element.getBoundingClientRect().width === 0) return;
     const rect = element.getBoundingClientRect();
     element.dataset.fantasticEnter = getEntranceDirection(element, rect, order);
-    element.style.setProperty("--fantastic-enter-delay", `${Math.min(order * 24, 520)}ms`);
+    element.style.setProperty("--fantastic-enter-delay", `${Math.min(order * 24, 360)}ms`);
     order += 1;
   });
 }
@@ -100,17 +58,6 @@ function getEntranceDirection(element: HTMLElement, rect: DOMRect, index: number
   if (centerX < window.innerWidth * 0.38) return "left";
   if (centerX > window.innerWidth * 0.62) return "right";
   return index % 2 === 0 ? "bottom" : "top";
-}
-
-function clearAosMarkers() {
-  document.querySelectorAll<HTMLElement>("[data-aos]").forEach((element) => {
-    delete element.dataset.aos;
-    delete element.dataset.aosDuration;
-    delete element.dataset.aosEasing;
-    delete element.dataset.aosOnce;
-    delete element.dataset.aosAnchorPlacement;
-    element.classList.remove("aos-init", "aos-animate");
-  });
 }
 
 function clearEntranceMarkers() {

@@ -29,9 +29,8 @@ export function AppLayout({ children }: PropsWithChildren) {
 
   useEffect(() => subscribeSystemLang(setLang), []);
   useEffect(() => subscribeChillMode(setChillModeEnabled), []);
-  // Rhythmic Studio owns a continuously updated preview canvas. Running the
-  // fullscreen Fantastic backdrop plus AOS MutationObserver on the same route
-  // creates two independent animation/compositing loops and can overwhelm GPUs.
+  // Rhythmic Studio already owns a continuously updated preview canvas. Keep
+  // the decorative fullscreen Fantastic canvas off this route to avoid stacked render loops.
   useFantasticFrameMotion(fantasticVisualsEnabled, location.pathname);
 
   useEffect(() => {

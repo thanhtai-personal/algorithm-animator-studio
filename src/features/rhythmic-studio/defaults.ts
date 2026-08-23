@@ -31,6 +31,7 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   prismEnd: '#ffb84d',
   backgroundColor: '#ddd0c3',
   ballStyle: 'classic',
+  colorPaletteMode: 'duotone',
   backgroundPreset: 'toy-board',
   backgroundMotion: 0.12,
   backgroundImageOpacity: 0.86,

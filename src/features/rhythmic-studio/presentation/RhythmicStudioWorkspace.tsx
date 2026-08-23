@@ -11,6 +11,7 @@ import { useRhythmicStudioController } from "../hooks/useRhythmicStudioControlle
 import { rhythmicText } from "../i18n";
 import { layoutText } from "../layoutI18n";
 import { RhythmicLeftControls, RhythmicRightControls } from "./layouts/RhythmicControlColumns";
+import { QuickPresetBar } from "./QuickPresetBar";
 
 export const RhythmicStudioWorkspace = observer(function RhythmicStudioWorkspace() {
   const lang = useSystemLang();
@@ -31,6 +32,8 @@ export const RhythmicStudioWorkspace = observer(function RhythmicStudioWorkspace
           <Button onClick={studio.saveProject}><Save className="mr-2 h-4 w-4" />{t("page.savePreset")}</Button>
         </div>
       </header>
+
+      <QuickPresetBar studio={studio} />
 
       <div className="grid items-start gap-4 xl:grid-cols-[340px_minmax(500px,1fr)_340px]">
         <RhythmicLeftControls studio={studio} />

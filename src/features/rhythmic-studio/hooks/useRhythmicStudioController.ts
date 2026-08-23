@@ -8,6 +8,7 @@ import { useRhythmicMediaActions } from "./useRhythmicMediaActions";
 import { useRhythmicCourseActions } from "./useRhythmicCourseActions";
 import { useRhythmicProjectActions } from "./useRhythmicProjectActions";
 import { useRhythmicExportActions } from "./useRhythmicExportActions";
+import { useRhythmicPresetActions } from "./useRhythmicPresetActions";
 
 export function useRhythmicStudioController() {
   const lang = useSystemLang();
@@ -19,6 +20,7 @@ export function useRhythmicStudioController() {
   const course = useRhythmicCourseActions(store);
   const projects = useRhythmicProjectActions(store, sources.loadBuiltin);
   const exporter = useRhythmicExportActions(store, canvasRef, playback);
+  const presets = useRhythmicPresetActions(store);
 
   useEffect(() => {
     if (store.projectName === "My rhythmic run") store.setProjectName(rhythmicText(lang, "default.projectName"));
@@ -87,6 +89,7 @@ export function useRhythmicStudioController() {
     selectedNodeIndex: store.selectedNodeIndex,
     backgroundUrl: store.backgroundUrl,
     backgroundName: store.backgroundName,
+    activePresetId: store.activePresetId,
     lyricRaw: store.lyricRaw,
     setLyricRaw: store.setLyricRaw,
     lyrics: displayLyrics,
@@ -100,6 +103,7 @@ export function useRhythmicStudioController() {
     ...media,
     ...course,
     ...projects,
+    ...presets,
     ...exporter,
   };
 }

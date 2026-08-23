@@ -75,6 +75,7 @@ export const BALL_STYLES = [
 ] as const;
 
 export type BallStyle = (typeof BALL_STYLES)[number];
+export type ColorPaletteMode = "duotone" | "rainbow";
 export type MidiInstrumentMode = "auto" | "single";
 export const EXPORT_FPS_OPTIONS = [30, 60, 120] as const;
 export type ExportFps = (typeof EXPORT_FPS_OPTIONS)[number];
@@ -153,6 +154,7 @@ export interface StudioSettings {
   prismEnd: string;
   backgroundColor: string;
   ballStyle: BallStyle;
+  colorPaletteMode: ColorPaletteMode;
   backgroundPreset: BackgroundPreset;
   backgroundMotion: number;
   backgroundImageOpacity: number;

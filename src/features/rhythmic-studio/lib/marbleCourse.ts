@@ -96,6 +96,21 @@ export function mixHex(a: string, b: string, t: number) {
   return `#${channel(aa.r, bb.r)}${channel(aa.g, bb.g)}${channel(aa.b, bb.b)}`;
 }
 
+function rainbowHex(index: number, pitch: number) {
+  const hue = (188 + index * 34 + pitch * 72) % 360;
+  const c = 0.82;
+  const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+  const m = 0.92 - c;
+  let rgb: [number, number, number];
+  if (hue < 60) rgb = [c, x, 0];
+  else if (hue < 120) rgb = [x, c, 0];
+  else if (hue < 180) rgb = [0, c, x];
+  else if (hue < 240) rgb = [0, x, c];
+  else if (hue < 300) rgb = [x, 0, c];
+  else rgb = [c, 0, x];
+  return `#${rgb.map((value) => Math.round((value + m) * 255).toString(16).padStart(2, "0")).join("")}`;
+}
+
 function ease(value: number, settings: StudioSettings) {
   const t = clamp(value);
   if (!settings.decoupleBallSpeed || settings.accelerationMode === "none") return t;
@@ -151,7 +166,9 @@ export function buildMarbleCourse(events: NoteEvent[], settings: StudioSettings,
 
     if (index > 0 && terrain.kind !== "burst" && seededNoise(index + 97) > 0.76) direction *= -1;
     previousX = x;
-    const color = mixHex(settings.prismStart, settings.prismEnd, clamp(pitch * 0.74 + (index % 5) * 0.052));
+    const color = settings.colorPaletteMode === "rainbow"
+      ? rainbowHex(index, pitch)
+      : mixHex(settings.prismStart, settings.prismEnd, clamp(pitch * 0.74 + (index % 5) * 0.052));
     const tiltDirection = direction * -1;
     return {
       index,

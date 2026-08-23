@@ -4,6 +4,7 @@ import { listRhythmicProjects } from "../lib/projectStorage";
 import { buildRhythmicTimeline, timelineDuration } from "../lib/timeline";
 import type { LyricFormat } from "../lib/lyrics";
 import type { RhythmicTextKey } from "../i18n";
+import type { RhythmicPresetId } from "../lib/studioPresets";
 import type {
   AudioSourceMeta,
   CourseItemOverride,
@@ -48,6 +49,7 @@ export class RhythmicStudioStore {
   lyricRaw = "";
   lyrics: LyricCue[] = [];
   lyricFormat: LyricFormat | null = null;
+  activePresetId: RhythmicPresetId | null = "toy-pegboard";
 
   constructor() {
     makeAutoObservable(this, {}, { autoBind: true });
@@ -66,10 +68,17 @@ export class RhythmicStudioStore {
 
   patch<K extends keyof StudioSettings>(key: K, value: StudioSettings[K]) {
     this.settings = { ...this.settings, [key]: value };
+    this.activePresetId = null;
+  }
+
+  applyVisualPreset(id: RhythmicPresetId, settings: Partial<StudioSettings>) {
+    this.settings = { ...this.settings, ...settings };
+    this.activePresetId = id;
   }
 
   replaceSettings(settings: StudioSettings) {
     this.settings = { ...DEFAULT_SETTINGS, ...settings };
+    this.activePresetId = null;
   }
 
   setSource(events: NoteEvent[], source: AudioSourceMeta, info: MessageToken, audioUrl: string | null = null) {

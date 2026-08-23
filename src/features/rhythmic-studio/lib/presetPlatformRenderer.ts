@@ -176,31 +176,52 @@ function drawCometPad(ctx: CanvasRenderingContext2D, half: number, p: MarblePlat
 
 function drawInstrumentKey(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, lowPower: boolean) {
   const h = Math.max(13, p.thickness);
+  const depth = Math.max(8, h * 0.55);
   ctx.save();
   ctx.shadowColor = "rgba(32,35,45,.42)";
-  ctx.shadowBlur = lowPower ? 0 : 12;
+  ctx.shadowBlur = lowPower ? 0 : 16;
   ctx.shadowOffsetX = lowPower ? 0 : -10;
-  ctx.shadowOffsetY = lowPower ? 0 : 15;
-  roundedRect(ctx, -half + 3, 5, p.width, h, 4);
-  ctx.fillStyle = mixHex(p.color, "#252832", 0.48);
+  ctx.shadowOffsetY = lowPower ? 0 : 18;
+  roundedRect(ctx, -half + 5, depth, p.width, h, 4);
+  ctx.fillStyle = mixHex(p.color, "#222730", 0.6);
   ctx.fill();
   ctx.shadowBlur = 0;
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = 0;
-  roundedRect(ctx, -half, 0, p.width, h, 4);
-  ctx.fillStyle = p.color;
+
+  ctx.fillStyle = mixHex(p.color, "#232833", 0.48);
+  ctx.beginPath();
+  ctx.moveTo(-half, h);
+  ctx.lineTo(half, h);
+  ctx.lineTo(half + 5, h + depth);
+  ctx.lineTo(-half + 5, h + depth);
+  ctx.closePath();
   ctx.fill();
-  const shine = ctx.createLinearGradient(0, 0, 0, h);
-  shine.addColorStop(0, "rgba(255,255,255,.72)");
-  shine.addColorStop(0.28, "rgba(255,255,255,.18)");
-  shine.addColorStop(0.78, "rgba(0,0,0,.08)");
-  shine.addColorStop(1, "rgba(0,0,0,.22)");
-  roundedRect(ctx, -half, 0, p.width, h, 4);
-  ctx.fillStyle = shine;
+
+  ctx.fillStyle = mixHex(p.color, "#ffffff", 0.1);
+  ctx.beginPath();
+  ctx.moveTo(half, 0);
+  ctx.lineTo(half + 5, depth);
+  ctx.lineTo(half + 5, h + depth);
+  ctx.lineTo(half, h);
+  ctx.closePath();
   ctx.fill();
-  ctx.strokeStyle = impact > 0 ? "rgba(255,255,255,.94)" : "rgba(44,47,55,.72)";
-  ctx.lineWidth = impact > 0 ? 2 : 1.1;
+
+  roundedRect(ctx, -half, 0, p.width, h, 4);
+  const top = ctx.createLinearGradient(0, 0, 0, h);
+  top.addColorStop(0, mixHex(p.color, "#ffffff", 0.38));
+  top.addColorStop(0.25, mixHex(p.color, "#ffffff", 0.14));
+  top.addColorStop(0.78, mixHex(p.color, "#171a22", 0.08));
+  top.addColorStop(1, mixHex(p.color, "#05070d", 0.24));
+  ctx.fillStyle = top;
+  ctx.fill();
+  ctx.strokeStyle = impact > 0 ? "rgba(255,255,255,.96)" : "rgba(44,47,55,.72)";
+  ctx.lineWidth = impact > 0 ? 2.1 : 1.1;
   ctx.stroke();
+
+  ctx.fillStyle = "rgba(255,255,255,.68)";
+  roundedRect(ctx, -half + 8, 3, p.width - 22, 4, 2);
+  ctx.fill();
   for (const x of [-half + 13, half - 13]) {
     ctx.fillStyle = "rgba(25,28,35,.72)";
     ctx.beginPath(); ctx.arc(x, h / 2, 2.4, 0, Math.PI * 2); ctx.fill();
@@ -214,26 +235,32 @@ function drawInstrumentCymbal(ctx: CanvasRenderingContext2D, p: MarblePlatform, 
   const rx = Math.max(28, p.width * 0.32);
   const ry = Math.max(8, p.thickness * 0.62);
   ctx.save();
-  ctx.strokeStyle = "rgba(80,82,88,.7)";
-  ctx.lineWidth = 2.2;
-  ctx.beginPath(); ctx.moveTo(0, ry * 0.4); ctx.lineTo(5, ry * 3.1); ctx.stroke();
-  ctx.fillStyle = "#60646d";
-  ctx.beginPath(); ctx.arc(5, ry * 3.1, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = "rgba(90,92,98,.78)";
+  ctx.lineWidth = 2.4;
+  ctx.beginPath(); ctx.moveTo(2, ry * 0.35); ctx.lineTo(5, ry * 3.3); ctx.stroke();
+  ctx.fillStyle = "#5b616b";
+  ctx.beginPath(); ctx.arc(5, ry * 3.3, 3, 0, Math.PI * 2); ctx.fill();
   ctx.shadowColor = "rgba(25,28,36,.42)";
-  ctx.shadowBlur = lowPower ? 0 : 14;
+  ctx.shadowBlur = lowPower ? 0 : 16;
   ctx.shadowOffsetX = lowPower ? 0 : -12;
-  ctx.shadowOffsetY = lowPower ? 0 : 17;
-  const metal = ctx.createRadialGradient(-rx * 0.25, -ry * 0.2, 2, 0, 0, rx);
-  metal.addColorStop(0, "#fff9df");
-  metal.addColorStop(0.28, mixHex(p.color, "#f6d48a", 0.35));
-  metal.addColorStop(0.75, mixHex(p.color, "#6f5b3f", 0.34));
-  metal.addColorStop(1, "#3b342c");
+  ctx.shadowOffsetY = lowPower ? 0 : 18;
+  const metal = ctx.createRadialGradient(-rx * 0.24, -ry * 0.25, 2, 0, 0, rx);
+  metal.addColorStop(0, "#fffbe2");
+  metal.addColorStop(0.24, mixHex(p.color, "#f6d48a", 0.35));
+  metal.addColorStop(0.72, mixHex(p.color, "#7c6242", 0.32));
+  metal.addColorStop(1, "#352d24");
   ctx.fillStyle = metal;
   ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
   ctx.shadowBlur = 0;
-  ctx.strokeStyle = impact > 0 ? "rgba(255,255,255,.9)" : "rgba(75,62,46,.8)";
-  ctx.lineWidth = 1.4;
+  ctx.fillStyle = "rgba(96,76,48,.58)";
+  ctx.beginPath(); ctx.ellipse(0, ry * 0.22, rx * 0.96, ry * 0.42, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = metal;
+  ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = impact > 0 ? "rgba(255,255,255,.92)" : "rgba(75,62,46,.8)";
+  ctx.lineWidth = 1.45;
   ctx.stroke();
+  ctx.strokeStyle = "rgba(255,255,255,.22)";
+  ctx.beginPath(); ctx.ellipse(0, -ry * 0.03, rx * 0.68, ry * 0.42, 0, 0, Math.PI * 2); ctx.stroke();
   ctx.fillStyle = "rgba(255,255,255,.34)";
   ctx.beginPath(); ctx.ellipse(-rx * 0.18, -ry * 0.2, rx * 0.22, ry * 0.18, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = "rgba(72,61,46,.78)";
@@ -243,18 +270,32 @@ function drawInstrumentCymbal(ctx: CanvasRenderingContext2D, p: MarblePlatform, 
 
 function drawInstrumentRail(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, lowPower: boolean) {
   const h = Math.max(8, p.thickness * 0.62);
+  const depth = Math.max(5, h * 0.8);
   ctx.save();
   ctx.shadowColor = "rgba(30,34,44,.4)";
-  ctx.shadowBlur = lowPower ? 0 : 9;
+  ctx.shadowBlur = lowPower ? 0 : 11;
   ctx.shadowOffsetX = lowPower ? 0 : -8;
-  ctx.shadowOffsetY = lowPower ? 0 : 12;
+  ctx.shadowOffsetY = lowPower ? 0 : 14;
+  roundedRect(ctx, -half + 3, depth, p.width, h, h / 2);
+  ctx.fillStyle = "rgba(74,80,92,.82)";
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(70,78,92,.65)";
+  ctx.beginPath();
+  ctx.moveTo(-half, h);
+  ctx.lineTo(half, h);
+  ctx.lineTo(half + 3, h + depth);
+  ctx.lineTo(-half + 3, h + depth);
+  ctx.closePath();
+  ctx.fill();
   roundedRect(ctx, -half, 0, p.width, h, h / 2);
   const rail = ctx.createLinearGradient(0, 0, 0, h);
-  rail.addColorStop(0, "#fbfcff"); rail.addColorStop(0.35, "#a9afba"); rail.addColorStop(1, "#3f4651");
+  rail.addColorStop(0, "#fbfcff"); rail.addColorStop(0.35, "#b8c0cd"); rail.addColorStop(1, "#495466");
   ctx.fillStyle = rail; ctx.fill();
-  ctx.shadowBlur = 0;
   ctx.strokeStyle = impact > 0 ? p.color : "rgba(45,49,58,.8)";
   ctx.lineWidth = 1.2; ctx.stroke();
+  ctx.fillStyle = "rgba(255,255,255,.56)";
+  ctx.fillRect(-half + 10, 2, p.width - 20, 2);
   for (const x of [-half + 4, half - 4]) {
     ctx.fillStyle = "#d9dde4";
     ctx.beginPath(); ctx.arc(x, h / 2, h * 0.42, 0, Math.PI * 2); ctx.fill();
@@ -265,27 +306,38 @@ function drawInstrumentRail(ctx: CanvasRenderingContext2D, half: number, p: Marb
 
 function drawInstrumentPad(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, lowPower: boolean) {
   const h = Math.max(14, p.thickness);
+  const depth = Math.max(8, h * 0.5);
   ctx.save();
   ctx.shadowColor = "rgba(28,32,40,.4)";
-  ctx.shadowBlur = lowPower ? 0 : 11;
+  ctx.shadowBlur = lowPower ? 0 : 13;
   ctx.shadowOffsetX = lowPower ? 0 : -9;
-  ctx.shadowOffsetY = lowPower ? 0 : 14;
-  roundedRect(ctx, -half + 4, 5, p.width, h, 7);
-  ctx.fillStyle = mixHex(p.color, "#252832", 0.5);
+  ctx.shadowOffsetY = lowPower ? 0 : 16;
+  roundedRect(ctx, -half + 5, depth, p.width, h, 7);
+  ctx.fillStyle = mixHex(p.color, "#252832", 0.58);
   ctx.fill();
   ctx.shadowBlur = 0;
+  ctx.fillStyle = mixHex(p.color, "#1f2430", 0.42);
+  ctx.beginPath();
+  ctx.moveTo(-half, h);
+  ctx.lineTo(half, h);
+  ctx.lineTo(half + 5, h + depth);
+  ctx.lineTo(-half + 5, h + depth);
+  ctx.closePath();
+  ctx.fill();
   roundedRect(ctx, -half, 0, p.width, h, 7);
-  ctx.fillStyle = mixHex(p.color, "#ffffff", impact > 0 ? 0.18 : 0.04);
+  const top = ctx.createLinearGradient(0, 0, 0, h);
+  top.addColorStop(0, mixHex(p.color, "#ffffff", impact > 0 ? 0.24 : 0.08));
+  top.addColorStop(1, mixHex(p.color, "#111827", 0.16));
+  ctx.fillStyle = top;
   ctx.fill();
   ctx.strokeStyle = "rgba(45,48,56,.76)";
   ctx.lineWidth = 1.4; ctx.stroke();
-  ctx.fillStyle = "rgba(255,255,255,.34)";
+  ctx.fillStyle = "rgba(255,255,255,.38)";
   roundedRect(ctx, -half + 6, 3, p.width - 12, 4, 2); ctx.fill();
   ctx.fillStyle = "rgba(30,32,38,.58)";
   ctx.beginPath(); ctx.arc(half - 12, h / 2, 2.5, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
-
 
 function drawInstrumentWire(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, lowPower: boolean) {
   const railGap = Math.max(12, p.thickness * 0.9);
@@ -309,18 +361,23 @@ function drawInstrumentWire(ctx: CanvasRenderingContext2D, half: number, p: Marb
   for (let x = -half + 18; x < half - 8; x += 32) {
     ctx.beginPath();
     ctx.moveTo(x, -railGap / 2);
-    ctx.lineTo(x + 5, railGap / 2);
+    ctx.lineTo(x + 6, railGap / 2);
     ctx.stroke();
   }
   ctx.fillStyle = "rgba(225,232,242,.9)";
   for (const x of [-half, half]) {
     ctx.beginPath(); ctx.arc(x, 0, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "rgba(20,24,32,.42)";
+    ctx.beginPath(); ctx.arc(x + 1.5, 3.5, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "rgba(225,232,242,.9)";
   }
   ctx.restore();
 }
 
 function drawXylophoneKey(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, settings: StudioSettings, lowPower: boolean) {
-  drawInstrumentKey(ctx, half, p, settings.platformGlow > 1 ? 0.4 : 0, lowPower);
+  const original = p.color;
+  const tint = mixHex(original, "#f6c453", 0.22);
+  drawInstrumentKey(ctx, half, { ...p, color: tint }, settings.platformGlow > 1 ? 0.4 : 0, lowPower);
 }
 
 export function drawPresetPlatform(

@@ -1,13 +1,14 @@
 import { ChevronLeft, ChevronRight, Eraser, Replace, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { layoutText } from "../layoutI18n";
 import { rhythmicText, type RhythmicTextKey } from "../i18n";
 import { COURSE_LONG_ITEMS, PLATFORM_STYLES, type CourseItemOverride, type CourseItemStyle } from "../types";
 import { useMemo, useState } from "react";
+import { PreviewChoiceGrid } from "../presentation/atoms/PreviewChoiceGrid";
+import { CourseItemPreview } from "../presentation/atoms/RhythmicOptionPreviews";
 
 const NEW_GLASS = new Set(["glass-borosilicate", "glass-tempered", "glass-frosted", "glass-acrylic", "glass-optic"]);
 
@@ -35,6 +36,7 @@ export function RhythmicCourseEditor({ nodeCount, selectedNodeIndex, overrides, 
   const current = useMemo(() => selectedNodeIndex === null ? undefined : overrides.find((item) => selectedNodeIndex >= item.startIndex && selectedNodeIndex < item.startIndex + item.span), [overrides, selectedNodeIndex]);
   const allStyles = [...PLATFORM_STYLES, ...COURSE_LONG_ITEMS] as CourseItemStyle[];
   const maxSpan = Math.max(1, Math.min(12, nodeCount - (selectedNodeIndex ?? 0)));
+  const previewOptions = allStyles.map((value) => ({ value, label: itemLabel(lang, value), preview: <CourseItemPreview style={value} /> }));
 
   return <div className="space-y-4">
     <div className="rounded-xl border border-cyan-500/25 bg-cyan-500/[0.05] p-3">
@@ -53,12 +55,8 @@ export function RhythmicCourseEditor({ nodeCount, selectedNodeIndex, overrides, 
 
     {current && <div className="rounded-lg border border-primary/25 bg-primary/[0.04] px-3 py-2 text-xs text-muted-foreground">{t("editor.current", { style: itemLabel(lang, current.style), span: current.span })}</div>}
 
-    <div className="space-y-2">
-      <Label className="text-xs text-muted-foreground">{t("editor.item")}</Label>
-      <Select value={style} onValueChange={(value) => setStyle(value as CourseItemStyle)}>
-        <SelectTrigger><SelectValue /></SelectTrigger>
-        <SelectContent>{allStyles.map((value) => <SelectItem key={value} value={value}>{itemLabel(lang, value)}</SelectItem>)}</SelectContent>
-      </Select>
+    <div className="max-h-[420px] overflow-y-auto pr-1">
+      <PreviewChoiceGrid label={t("editor.item")} value={style} options={previewOptions} columns="grid-cols-2" onChange={(value) => setStyle(value as CourseItemStyle)} />
     </div>
 
     <div className="space-y-2">

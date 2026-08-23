@@ -11,6 +11,8 @@ import { useSystemLang } from "@/hooks/use-system-lang";
 import { BACKGROUND_PRESETS, type StudioSettings } from "../types";
 import type { LyricFormat } from "../lib/lyrics";
 import { mediaText, type MediaTextKey } from "../mediaI18n";
+import { PreviewChoiceGrid } from "../presentation/atoms/PreviewChoiceGrid";
+import { BackgroundPresetPreview } from "../presentation/atoms/RhythmicOptionPreviews";
 
 type Patch = <K extends keyof StudioSettings>(key: K, value: StudioSettings[K]) => void;
 
@@ -59,13 +61,13 @@ function FileCard({ icon: Icon, title, hint, accept, onFile }: { icon: typeof Im
 export function RhythmicMediaAccordionItems(props: Props) {
   const lang = useSystemLang();
   const t = (key: MediaTextKey, values?: Record<string, string | number>) => mediaText(lang, key, values);
-  const backgroundOptions = BACKGROUND_PRESETS.map((value) => ({ value, label: t(`background.${value}` as MediaTextKey) }));
+  const backgroundOptions = BACKGROUND_PRESETS.map((value) => ({ value, label: t(`background.${value}` as MediaTextKey), preview: <BackgroundPresetPreview preset={value} /> }));
   const lyricStyles = (["karaoke", "minimal", "boxed"] as const).map((value) => ({ value, label: t(`lyrics.style.${value}` as MediaTextKey) }));
   const lyricPositions = (["top", "middle", "bottom"] as const).map((value) => ({ value, label: t(`lyrics.position.${value}` as MediaTextKey) }));
 
   return <>
     <AccordionItem value="background"><AccordionTrigger>{t("section.background")}</AccordionTrigger><AccordionContent className="space-y-4 px-1">
-      <SelectField label={t("background.preset")} value={props.settings.backgroundPreset} options={backgroundOptions} onChange={(value) => props.patch("backgroundPreset", value as StudioSettings["backgroundPreset"])} />
+      <div className="max-h-[360px] overflow-y-auto pr-1"><PreviewChoiceGrid label={t("background.preset")} value={props.settings.backgroundPreset} options={backgroundOptions} columns="grid-cols-2" onChange={(value) => props.patch("backgroundPreset", value as StudioSettings["backgroundPreset"])} /></div>
       <RangeField label={t("background.motion")} value={props.settings.backgroundMotion} min={0} max={1.5} step={0.05} onChange={(value) => props.patch("backgroundMotion", value)} />
       <FileCard icon={Image} title={props.backgroundName ? t("background.replace") : t("background.upload")} hint={t("background.uploadHint")} accept="image/png,image/jpeg,image/webp" onFile={props.importBackground} />
       <p className="rounded-lg border border-dashed bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground">{props.backgroundName ? t("background.current", { name: props.backgroundName }) : t("background.none")}</p>

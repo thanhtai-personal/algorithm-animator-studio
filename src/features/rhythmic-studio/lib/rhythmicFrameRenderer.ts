@@ -159,6 +159,20 @@ function drawLyrics(ctx: CanvasRenderingContext2D, width: number, height: number
   ctx.restore();
 }
 
+
+function trailProfile(settings: StudioSettings) {
+  if (settings.terrainProfile === "comet") {
+    return { count: Math.round(Math.min(44, settings.trailLength * 1.35)), stepMs: 15 };
+  }
+  if (settings.terrainProfile === "xylophone") {
+    return { count: Math.round(Math.min(16, settings.trailLength * 0.9)), stepMs: 19 };
+  }
+  if (settings.terrainProfile === "tube-board") {
+    return { count: Math.round(Math.min(12, settings.trailLength * 0.85)), stepMs: 21 };
+  }
+  return { count: Math.round(Math.min(28, settings.trailLength)), stepMs: 18 };
+}
+
 function shouldShowPlatform(platform: MarblePlatform, timeMs: number, settings: StudioSettings) {
   if (settings.terrainProfile === "comet") return platform.event.timeMs >= timeMs - 1450 && platform.event.timeMs <= timeMs + 3300;
   if (settings.terrainProfile === "xylophone") return platform.event.timeMs >= timeMs - 1700 && platform.event.timeMs <= timeMs + 3400;
@@ -200,10 +214,10 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
   }
   const marble = marbleAtTime(timeMs, events, platforms, settings, courseOverrides);
   if (live) {
-    const trailCount = settings.terrainProfile === "comet" ? Math.max(104, Math.floor(settings.trailLength * 2.15)) : Math.max(0, Math.floor(settings.trailLength));
+    const { count: trailCount, stepMs } = trailProfile(settings);
     const trailPoints = Array.from({ length: trailCount }, (_, index) => {
       const i = trailCount - index;
-      return { ...marbleAtTime(Math.max(0, timeMs - i * 19), events, platforms, settings, courseOverrides), age: i / Math.max(1, trailCount) };
+      return { ...marbleAtTime(Math.max(0, timeMs - i * stepMs), events, platforms, settings, courseOverrides), age: i / Math.max(1, trailCount) };
     });
     if (!drawPresetTrail(ctx, trailPoints, cameraY, settings)) {
       trailPoints.forEach((point) => {

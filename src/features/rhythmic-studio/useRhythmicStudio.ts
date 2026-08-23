@@ -9,7 +9,8 @@ import { AudioEngine } from "./lib/audioEngine";
 import { parseMidi } from "./lib/midiParser";
 import { deleteRhythmicProject, listRhythmicProjects, saveRhythmicProject } from "./lib/projectStorage";
 import { buildRhythmicTimeline, timelineDuration } from "./lib/timeline";
-import { BACKGROUND_PRESETS, PLATFORM_STYLES, type AudioSourceMeta, type NoteEvent, type StoredProject, type StudioSettings } from "./types";
+import { downloadRhythmicBlob, pickRecordingMimeType, transcodeWebmToMp4 } from "./lib/rhythmicExport";
+import { BACKGROUND_PRESETS, BALL_STYLES, PLATFORM_STYLES, type AudioSourceMeta, type NoteEvent, type StoredProject, type StudioSettings } from "./types";
 import { useRhythmicMedia } from "./useRhythmicMedia";
 
 type MessageToken = { key: RhythmicTextKey; values?: Record<string, string | number> };
@@ -189,9 +190,9 @@ export function useRhythmicStudio() {
   const onEnded = useCallback(() => {
     setPlaying(false);
     setPlayingClip(false);
-    stopPlaybackAudio();
     setStatusToken({ key: recording ? "status.finalizing" : "status.finished" });
     if (recording) finishRecording();
+    stopPlaybackAudio();
   }, [finishRecording, recording, stopPlaybackAudio]);
 
   const loadBuiltin = useCallback((name: string) => {
@@ -317,7 +318,7 @@ export function useRhythmicStudio() {
       return;
     }
     const exportFormat = getExportFormat(format);
-    const mimeType = exportFormat.mimeCandidates.find((candidate) => MediaRecorder.isTypeSupported(candidate));
+    const mimeType = pickRecordingMimeType(format);
     if (!mimeType) {
       const message = rhythmicText(lang, "status.exportUnsupported", { format: exportFormat.label });
       setStatusToken({ key: "status.exportUnsupported", values: { format: exportFormat.label } });
@@ -326,26 +327,30 @@ export function useRhythmicStudio() {
     }
 
     await audioEngine.current.ensure();
-    const stream = canvas.captureStream(60);
-    audioEngine.current.getRecordStream()?.getAudioTracks().forEach((track) => stream.addTrack(track));
-    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 9_000_000 });
+    if (source.type === "audio" && audioElementRef.current) await audioEngine.current.attachOriginalAudio(audioElementRef.current);
+    const videoStream = canvas.captureStream(settings.exportFps);
+    const audioTracks = audioEngine.current.getRecordStream()?.getAudioTracks() ?? [];
+    const stream = new MediaStream([...videoStream.getVideoTracks(), ...audioTracks]);
+    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: settings.exportFps >= 120 ? 14_000_000 : 9_000_000 });
     recorderRef.current = recorder;
     chunksRef.current = [];
     recorder.ondataavailable = (event) => { if (event.data.size) chunksRef.current.push(event.data); };
-    recorder.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: recorder.mimeType || mimeType });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      const clipSuffix = clipOnly ? `-clip-${Math.round(trimStartMs / 1000)}-${Math.round(trimEndMs / 1000)}` : "";
-      link.download = `${safeFileName(projectName)}${clipSuffix}.${exportFormat.id}`;
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
-      stream.getTracks().forEach((track) => track.stop());
-      setRecording(false);
-      setRecordingFormat(null);
-      setStatusToken({ key: "status.exported", values: { format: exportFormat.label, size: (blob.size / (1024 * 1024)).toFixed(1) } });
-      toast.success(rhythmicText(lang, "toast.exported", { format: exportFormat.label }));
+    recorder.onstop = async () => {
+      try {
+        const intermediate = new Blob(chunksRef.current, { type: recorder.mimeType || mimeType });
+        const blob = format === "mp4" ? await transcodeWebmToMp4(intermediate) : intermediate;
+        const clipSuffix = clipOnly ? `-clip-${Math.round(trimStartMs / 1000)}-${Math.round(trimEndMs / 1000)}` : "";
+        downloadRhythmicBlob(blob, `${safeFileName(projectName)}${clipSuffix}.${exportFormat.id}`);
+        setStatusToken({ key: "status.exported", values: { format: exportFormat.label, size: (blob.size / (1024 * 1024)).toFixed(1) } });
+        toast.success(rhythmicText(lang, "toast.exported", { format: exportFormat.label }));
+      } catch (error) {
+        setStatusToken({ key: "status.exportFailed", values: { format: exportFormat.label } });
+        toast.error(error instanceof Error ? error.message : rhythmicText(lang, "status.exportFailed", { format: exportFormat.label }));
+      } finally {
+        stream.getTracks().forEach((track) => track.stop());
+        setRecording(false);
+        setRecordingFormat(null);
+      }
     };
     recorder.onerror = () => {
       stream.getTracks().forEach((track) => track.stop());
@@ -354,13 +359,15 @@ export function useRhythmicStudio() {
       setStatusToken({ key: "status.exportFailed", values: { format: exportFormat.label } });
       toast.error(rhythmicText(lang, "status.exportFailed", { format: exportFormat.label }));
     };
-    recorder.start(1000);
+    recorder.start(250);
     setRecording(true);
     setRecordingFormat(format);
-    setStatusToken({ key: "status.recording", values: { format: exportFormat.label } });
+    setStatusToken({ key: "status.recording", values: { format: exportFormat.label, fps: settings.exportFps } });
+    await new Promise((resolve) => window.setTimeout(resolve, 80));
     if (clipOnly) await playRange(trimStartMs, trimEndMs, true);
     else await resetAndPlay();
-  }, [lang, playRange, projectName, resetAndPlay, trimEndMs, trimStartMs]);
+  }, [lang, playRange, projectName, resetAndPlay, settings.exportFps, source.type, trimEndMs, trimStartMs]);
+
 
   return { settings, patch, sourceEvents, source, audioUrl, audioFileInfo, playing, playingClip, playbackToken, playbackStartMs, playbackEndMs, timeMs, setTimeMs, trimStartMs, trimEndMs, setTrimRange, previewTrim, recording, recordingFormat, status, projectName, setProjectName, projects, canvasRef, audioElementRef, timeline, durationMs, onNote, onEnded, togglePlayback, resetPlayback, loadBuiltin, importMidi, importAudio, randomize, saveProject, removeProject, loadProject, recordVideo, ...media, lyrics: displayLyrics };
 }

@@ -51,6 +51,8 @@ export const BALL_STYLES = [
 
 export type BallStyle = (typeof BALL_STYLES)[number];
 export type MidiInstrumentMode = "auto" | "single";
+export const EXPORT_FPS_OPTIONS = [30, 60, 120] as const;
+export type ExportFps = (typeof EXPORT_FPS_OPTIONS)[number];
 
 export const BACKGROUND_PRESETS = [
   "neon-grid",
@@ -95,6 +97,7 @@ export interface AudioSourceMeta {
 }
 
 export interface StudioSettings {
+  exportFps: ExportFps;
   playbackSpeed: number;
   syncOffsetMs: number;
   minBounceSpacingMs: number;

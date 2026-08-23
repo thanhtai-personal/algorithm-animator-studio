@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { randomUUID } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import { Router, type Request, type Response } from "express";
@@ -14,6 +15,7 @@ import {
   normalizeVideoFitMode,
 } from "../services/VideoService";
 import { listGeneratedVideos } from "../utils/videoOutput";
+import { runFfmpeg } from "../utils/ffmpeg";
 import { readEnvValues } from "../services/EnvFileService";
 import { resolveGeneratedResource } from "../services/ResourceService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
@@ -44,6 +46,29 @@ export function createVideoRouter() {
 
   router.get("/video/remotion/health", (req, res) => {
     res.json(getRemotionHealth(readRuntimeEnvFromRequest(req)));
+  });
+
+  router.post("/video/transcode-mp4", upload.single("video"), async (req, res) => {
+    if (!req.file?.path) return res.status(400).json({ error: "Chưa nhận được video để chuyển sang MP4." });
+    const outputPath = path.join(uploadDirectory, `${randomUUID()}.mp4`);
+    const cleanup = () => {
+      fs.rm(req.file?.path || "", { force: true }, () => undefined);
+      fs.rm(outputPath, { force: true }, () => undefined);
+    };
+    try {
+      await runFfmpeg([
+        "-y", "-i", req.file.path,
+        "-map", "0:v:0", "-map", "0:a:0?",
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", outputPath,
+      ], readRuntimeEnvFromRequest(req));
+      res.once("finish", cleanup);
+      res.once("close", cleanup);
+      return res.sendFile(outputPath);
+    } catch (error) {
+      cleanup();
+      return sendError(res, error);
+    }
   });
 
   router.post("/video/render-remotion", async (req: Request<unknown, unknown, RemotionVideoRenderBody>, res: Response) => {

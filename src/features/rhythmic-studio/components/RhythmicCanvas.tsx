@@ -27,6 +27,8 @@ interface Props {
   playbackEndMs: number;
   backgroundUrl: string | null;
   lyrics: LyricCue[];
+  recording: boolean;
+  targetFps: number;
   onNote: (event: NoteEvent) => void;
   onTime: (timeMs: number) => void;
   onEnded: () => void;
@@ -243,7 +245,7 @@ function firstEventAtOrAfter(events: NoteEvent[], timeMs: number) {
   return low;
 }
 
-export function RhythmicCanvas({ events, settings, durationMs, playing, playbackToken, playbackStartMs, playbackEndMs, backgroundUrl, lyrics, onNote, onTime, onEnded, canvasRef }: Props) {
+export function RhythmicCanvas({ events, settings, durationMs, playing, playbackToken, playbackStartMs, playbackEndMs, backgroundUrl, lyrics, recording, targetFps, onNote, onTime, onEnded, canvasRef }: Props) {
   const lang = useSystemLang();
   const beatLabel = rhythmicText(lang, "canvas.beats");
   const [backgroundImage, setBackgroundImage] = useState<HTMLImageElement | null>(null);
@@ -255,6 +257,8 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
   const nextNoteIndex = useRef(0);
   const cameraY = useRef(0);
   const frameRef = useRef<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastUiUpdate = useRef(0);
   const previousToken = useRef(playbackToken);
 
   useEffect(() => {
@@ -285,13 +289,20 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
   }, [events, onTime, playbackStartMs, playbackToken, platforms, settings]);
 
   useEffect(() => {
-    if (!playing) {
+    const cancelScheduled = () => {
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
-      return;
-    }
+      if (timerRef.current) clearTimeout(timerRef.current);
+      frameRef.current = null;
+      timerRef.current = null;
+    };
+    if (!playing) { cancelScheduled(); return; }
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
     const start = performance.now() - currentTime.current;
+    const scheduleNext = (loop: (now: number) => void) => {
+      if (recording) timerRef.current = setTimeout(() => loop(performance.now()), 1000 / Math.max(1, targetFps));
+      else frameRef.current = requestAnimationFrame(loop);
+    };
     const loop = (now: number) => {
       const time = now - start;
       currentTime.current = time;
@@ -303,13 +314,13 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
       const targetCamera = marble.y - HEIGHT * settings.cameraAnchor;
       cameraY.current += (targetCamera - cameraY.current) * clamp(settings.cameraSmoothing, 0.03, 1);
       drawFrame(ctx, time, events, platforms, cameraY.current, durationMs, settings, beatLabel, backgroundImage, lyrics);
-      onTime(time);
+      if (now - lastUiUpdate.current >= 64) { lastUiUpdate.current = now; onTime(time); }
       if (time >= playbackEndMs) { onTime(playbackEndMs); onEnded(); return; }
-      frameRef.current = requestAnimationFrame(loop);
+      scheduleNext(loop);
     };
-    frameRef.current = requestAnimationFrame(loop);
-    return () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); };
-  }, [backgroundImage, beatLabel, canvasRef, durationMs, events, lyrics, onEnded, onNote, onTime, playbackEndMs, platforms, playing, playbackToken, settings]);
+    scheduleNext(loop);
+    return cancelScheduled;
+  }, [backgroundImage, beatLabel, canvasRef, durationMs, events, lyrics, onEnded, onNote, onTime, playbackEndMs, platforms, playing, playbackToken, recording, settings, targetFps]);
 
   return <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} className="block h-auto max-h-[66vh] w-auto max-w-full rounded-xl" />;
 }

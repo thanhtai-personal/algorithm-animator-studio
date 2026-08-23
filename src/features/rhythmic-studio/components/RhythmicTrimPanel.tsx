@@ -1,9 +1,11 @@
 import { Clapperboard, FileVideo2, Play, Scissors, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { formatClipTime, trimText } from "../trimI18n";
 import type { ExportFormat } from "@/pages/studio/exportFormats";
+import { EXPORT_FPS_OPTIONS, type ExportFps } from "../types";
 
 interface Props {
   durationMs: number;
@@ -12,9 +14,11 @@ interface Props {
   trimEndMs: number;
   playingClip: boolean;
   recording: boolean;
+  exportFps: ExportFps;
   onRangeChange: (startMs: number, endMs: number) => void;
   onPreview: () => void;
   onExport: (format: ExportFormat) => void;
+  onFpsChange: (fps: ExportFps) => void;
 }
 
 const MIN_CLIP_MS = 1000;
@@ -58,7 +62,14 @@ export function RhythmicTrimPanel(props: Props) {
       <Button type="button" size="sm" variant="ghost" onClick={() => setEnd(props.timeMs)}>{t("setEnd")}</Button>
     </div>
 
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap items-end gap-3">
+      <div className="w-36 space-y-1.5">
+        <span className="text-xs text-muted-foreground">{t("fps")}</span>
+        <Select value={String(props.exportFps)} onValueChange={(value) => props.onFpsChange(Number(value) as ExportFps)}>
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>{EXPORT_FPS_OPTIONS.map((fps) => <SelectItem key={fps} value={String(fps)}>{fps} FPS</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
       <Button type="button" variant="outline" disabled={props.recording} onClick={props.onPreview}>
         {props.playingClip ? <Clapperboard className="mr-2 h-4 w-4 animate-pulse" /> : <Play className="mr-2 h-4 w-4" />}{props.playingClip ? t("previewing") : t("preview")}
       </Button>

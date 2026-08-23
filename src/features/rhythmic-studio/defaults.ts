@@ -1,6 +1,7 @@
 import type { NoteEvent, StudioSettings } from './types';
 
 export const DEFAULT_SETTINGS: StudioSettings = {
+  exportFps: 60,
   playbackSpeed: 1,
   syncOffsetMs: 0,
   minBounceSpacingMs: 110,

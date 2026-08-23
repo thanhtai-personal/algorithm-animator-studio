@@ -18,56 +18,108 @@ function contactLocalX(p: MarblePlatform) {
   return dx * Math.cos(p.tiltRad) + dy * Math.sin(p.tiltRad);
 }
 
-function drawTubeCylinder(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, settings: StudioSettings) {
-  const h = Math.max(20, p.thickness);
+function drawTubeCylinder(
+  ctx: CanvasRenderingContext2D,
+  half: number,
+  p: MarblePlatform,
+  impact: number,
+  ageMs: number,
+  settings: StudioSettings,
+) {
+  const h = Math.max(24, p.thickness);
   const radius = h * 0.5;
+  const active = ageMs >= 0;
+  const litColor = active ? p.color : "#80858d";
   const contactX = contactLocalX(p) < 0 ? -half : half;
   const farX = -contactX;
+
   ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,.56)";
-  ctx.shadowBlur = 15;
-  ctx.shadowOffsetX = -12;
-  ctx.shadowOffsetY = 18;
+  const underGlow = ctx.createRadialGradient(0, h * 0.55, 4, 0, h * 0.55, p.width * 0.78);
+  underGlow.addColorStop(0, active ? `${litColor}${impact > 0 ? "4f" : "24"}` : "rgba(120,126,140,.08)");
+  underGlow.addColorStop(1, active ? `${litColor}00` : "rgba(120,126,140,0)");
+  ctx.fillStyle = underGlow;
+  ctx.fillRect(-p.width, -p.width * 0.45, p.width * 2, p.width * 1.15);
+
+  ctx.shadowColor = "rgba(8,9,13,.58)";
+  ctx.shadowBlur = 13;
+  ctx.shadowOffsetX = -22;
+  ctx.shadowOffsetY = 28;
   roundedRect(ctx, -half, -h / 2, p.width, h, radius);
-  ctx.fillStyle = "rgba(8,9,12,.72)";
+  ctx.fillStyle = "rgba(13,14,19,.72)";
   ctx.fill();
-  ctx.shadowColor = p.color;
-  ctx.shadowBlur = 5 + settings.platformGlow * 11 + impact * 7;
+
+  ctx.shadowColor = active ? litColor : "rgba(190,198,210,.18)";
+  ctx.shadowBlur = active ? 4 + settings.platformGlow * 10 + impact * 8 : 1.5;
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = 0;
   const body = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
-  body.addColorStop(0, mixHex(p.color, "#ffffff", 0.38));
-  body.addColorStop(0.25, mixHex(p.color, "#ffffff", 0.12));
-  body.addColorStop(0.7, mixHex(p.color, "#161821", 0.28));
-  body.addColorStop(1, mixHex(p.color, "#050608", 0.54));
+  if (active) {
+    body.addColorStop(0, mixHex(litColor, "#ffffff", 0.52));
+    body.addColorStop(0.2, mixHex(litColor, "#ffffff", 0.2));
+    body.addColorStop(0.58, litColor);
+    body.addColorStop(0.82, mixHex(litColor, "#1c2028", 0.24));
+    body.addColorStop(1, mixHex(litColor, "#090b10", 0.5));
+  } else {
+    body.addColorStop(0, "#d6d9df");
+    body.addColorStop(0.18, "#aeb3bb");
+    body.addColorStop(0.55, "#777d87");
+    body.addColorStop(0.82, "#4b5059");
+    body.addColorStop(1, "#282b31");
+  }
   roundedRect(ctx, -half, -h / 2, p.width, h, radius);
   ctx.fillStyle = body;
   ctx.fill();
   ctx.shadowBlur = 0;
-  ctx.strokeStyle = "rgba(10,10,12,.96)";
+  ctx.strokeStyle = "rgba(10,10,13,.94)";
+  ctx.lineWidth = 1.8;
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(255,255,255,.34)";
+  ctx.lineWidth = 1.15;
+  ctx.beginPath();
+  ctx.moveTo(-half + radius * 0.85, -h * 0.34);
+  ctx.lineTo(half - radius * 0.85, -h * 0.34);
+  ctx.stroke();
+
+  const farCap = ctx.createLinearGradient(farX - radius * 0.32, 0, farX + radius * 0.32, 0);
+  farCap.addColorStop(0, "#101217");
+  farCap.addColorStop(0.55, active ? mixHex(litColor, "#11151c", 0.65) : "#4b5058");
+  farCap.addColorStop(1, "#090a0d");
+  ctx.fillStyle = farCap;
+  ctx.beginPath();
+  ctx.ellipse(farX, 0, radius * 0.38, radius * 0.88, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#08090c";
+  ctx.lineWidth = 1.8;
+  ctx.stroke();
+
+  const cap = ctx.createRadialGradient(contactX - radius * 0.25, -radius * 0.28, 1, contactX, 0, radius);
+  if (active) {
+    cap.addColorStop(0, mixHex(litColor, "#ffffff", 0.7));
+    cap.addColorStop(0.62, litColor);
+    cap.addColorStop(1, mixHex(litColor, "#07080a", 0.48));
+  } else {
+    cap.addColorStop(0, "#30343b");
+    cap.addColorStop(0.62, "#111318");
+    cap.addColorStop(1, "#050608");
+  }
+  ctx.fillStyle = cap;
+  ctx.beginPath();
+  ctx.arc(contactX, 0, radius - 1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#08090c";
   ctx.lineWidth = 2.2;
   ctx.stroke();
 
-  for (const capX of [farX, contactX]) {
-    const isContact = capX === contactX;
-    const cap = ctx.createRadialGradient(capX - radius * 0.24, -radius * 0.24, 1, capX, 0, radius);
-    cap.addColorStop(0, isContact ? mixHex(p.color, "#ffffff", 0.56) : "#4f535a");
-    cap.addColorStop(0.66, isContact ? p.color : "#26282d");
-    cap.addColorStop(1, isContact ? mixHex(p.color, "#08090b", 0.46) : "#08090b");
-    ctx.fillStyle = cap;
+  if (active) {
+    ctx.fillStyle = "rgba(255,255,255,.58)";
     ctx.beginPath();
-    ctx.arc(capX, 0, radius - 1.3, 0, Math.PI * 2);
+    ctx.ellipse(contactX - radius * 0.24, -radius * 0.28, radius * 0.22, radius * 0.13, -0.35, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = "#0a0a0c";
-    ctx.lineWidth = 2.1;
-    ctx.stroke();
   }
-  ctx.fillStyle = "rgba(255,255,255,.38)";
-  ctx.beginPath();
-  ctx.ellipse(0, -h * 0.23, Math.max(7, p.width * 0.18), 2, 0, 0, Math.PI * 2);
-  ctx.fill();
   ctx.restore();
 }
+
 
 function drawCometPad(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, settings: StudioSettings) {
   const h = Math.max(10, p.thickness);
@@ -227,9 +279,10 @@ export function drawPresetPlatform(
   half: number,
   platform: MarblePlatform,
   impact: number,
+  ageMs: number,
   settings: StudioSettings,
 ) {
-  if (style === "tube-cylinder") { drawTubeCylinder(ctx, half, platform, impact, settings); return true; }
+  if (style === "tube-cylinder") { drawTubeCylinder(ctx, half, platform, impact, ageMs, settings); return true; }
   if (style === "comet-pad") { drawCometPad(ctx, half, platform, impact, settings); return true; }
   if (style === "xylophone-key") { drawXylophoneKey(ctx, half, platform, settings); return true; }
   if (style === "instrument-key") { drawInstrumentKey(ctx, half, platform, impact); return true; }

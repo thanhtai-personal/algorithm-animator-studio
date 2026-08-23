@@ -334,7 +334,7 @@ export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: Marb
   ctx.save();
   ctx.translate(platform.x, screenY);
   ctx.rotate(platform.tiltRad);
-  if (drawPresetPlatform(ctx, style, half, platform, impact, settings)) {
+  if (drawPresetPlatform(ctx, style, half, platform, impact, age, settings)) {
     // preset renderer already drew the item
   } else if (style === "neon-tube") drawNeonTube(ctx, half, platform, impact, settings);
   else if (style === "neon-bar") drawNeonBar(ctx, half, platform, impact, settings);

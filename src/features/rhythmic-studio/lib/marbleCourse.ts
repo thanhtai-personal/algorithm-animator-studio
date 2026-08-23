@@ -115,9 +115,8 @@ function rainbowHex(index: number, pitch: number) {
 function paletteColor(index: number, pitch: number, settings: StudioSettings) {
   if (settings.colorPaletteMode === "rainbow") return rainbowHex(index, pitch);
   if (settings.colorPaletteMode === "tube-accent") {
-    const accents = ["#5fa8ff", "#ff414c", "#ffd52f", "#3be76f", "#639cff"];
-    if (index % 4 === 1 || index % 9 === 0) return accents[index % accents.length];
-    return mixHex("#4a4e56", "#9ba2aa", 0.26 + (index % 3) * 0.12);
+    const accents = ["#58a9ff", "#65b8ff", "#ff3e49", "#5aaeff", "#ffd52b", "#62adff", "#32e96b", "#56a8ff"];
+    return accents[index % accents.length];
   }
   if (settings.colorPaletteMode === "neon-galaxy") {
     const colors = ["#5677ff", "#5bd8ff", "#ff4fc7", "#785cff"];

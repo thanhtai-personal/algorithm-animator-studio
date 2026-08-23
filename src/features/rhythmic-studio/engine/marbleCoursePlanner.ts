@@ -31,6 +31,7 @@ interface SearchState {
   score: number;
   node: PlanNode | null;
   recentHits: Vec2[];
+  recentPlatforms: MarblePlatform[];
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -92,10 +93,12 @@ function worldBounds(settings: StudioSettings, width: number) {
   return { min: -width * 1.2, max: width * 2.2 };
 }
 
-function orientationPenalty(normal: Vec2, settings: StudioSettings) {
+function orientationPenalty(index: number, normal: Vec2, settings: StudioSettings) {
   if (settings.terrainProfile === "tube-board") {
     const axis = Math.abs(axisAngle(Math.atan2(-normal.y, -normal.x)) * 180 / Math.PI);
-    return Math.abs(axis - 70) * 0.34;
+    const targetAngles = [14, 28, 44, 58, 72, 82, 36, 66, 20, 52, 78, 32];
+    const desired = targetAngles[index % targetAngles.length];
+    return Math.abs(axis - desired) * 2.4;
   }
   const tangent = Math.abs(axisAngle(Math.atan2(normal.x, -normal.y)) * 180 / Math.PI);
   return tangent * (settings.terrainProfile === "comet" ? 0.38 : 0.22);
@@ -153,7 +156,7 @@ function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: numb
       if (target.x < bounds.min || target.x > bounds.max) continue;
       if (dy < Math.max(3, baseDrop * 0.2) || dy > Math.max(190, baseDrop * 1.9)) continue;
       const apex = reflected.velocity.y < 0 ? reflected.velocity.y ** 2 / (2 * profile.gravity) : 0;
-      const directionPenalty = Math.sign(dx || preferredDirection) === Math.sign(preferredDirection) ? 0 : (settings.terrainProfile === "tube-board" ? 20 : 30);
+      const directionPenalty = Math.sign(dx || preferredDirection) === Math.sign(preferredDirection) ? 0 : (settings.terrainProfile === "tube-board" ? 8 : 30);
       const horizontalPenalty = Math.abs(Math.abs(dx) - desiredHorizontal) * 0.16;
       const dropPenalty = Math.abs(dy - desiredDrop) * 0.24;
       const apexPenalty = Math.abs(apex - targetApex) * 0.2;
@@ -165,7 +168,7 @@ function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: numb
         normal: reflected.normal,
         outgoing: reflected.velocity,
         target,
-        score: directionPenalty + horizontalPenalty + dropPenalty + apexPenalty + speedPenalty + edgePenalty + orientationPenalty(reflected.normal, settings) + randomTieBreak,
+        score: directionPenalty + horizontalPenalty + dropPenalty + apexPenalty + speedPenalty + edgePenalty + orientationPenalty(index, reflected.normal, settings) + randomTieBreak,
       });
     }
   }
@@ -221,8 +224,46 @@ function obstacleFromImpact(index: number, hit: Vec2, normal: Vec2, outgoing: Ve
   };
 }
 
+function pointSegmentDistance(point: Vec2, a: Vec2, b: Vec2) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const lengthSq = dx * dx + dy * dy;
+  if (lengthSq < 1e-6) return Math.hypot(point.x - a.x, point.y - a.y);
+  const t = clamp(((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSq, 0, 1);
+  return Math.hypot(point.x - (a.x + dx * t), point.y - (a.y + dy * t));
+}
+
+function platformSegment(platform: MarblePlatform) {
+  const dx = Math.cos(platform.tiltRad) * platform.width * 0.5;
+  const dy = Math.sin(platform.tiltRad) * platform.width * 0.5;
+  return {
+    a: { x: platform.x - dx, y: platform.y - dy },
+    b: { x: platform.x + dx, y: platform.y + dy },
+  };
+}
+
+function tubeOverlapPenalty(platform: MarblePlatform, recent: MarblePlatform[], settings: StudioSettings) {
+  if (settings.terrainProfile !== "tube-board") return 0;
+  const segment = platformSegment(platform);
+  const safeDistance = Math.max(30, settings.platformThickness * 1.25);
+  let penalty = 0;
+  for (const other of recent) {
+    const previous = platformSegment(other);
+    const distance = Math.min(
+      pointSegmentDistance(segment.a, previous.a, previous.b),
+      pointSegmentDistance(segment.b, previous.a, previous.b),
+      pointSegmentDistance(previous.a, segment.a, segment.b),
+      pointSegmentDistance(previous.b, segment.a, segment.b),
+    );
+    if (distance < safeDistance) penalty += (safeDistance - distance) * 4.5;
+  }
+  return penalty;
+}
+
 function separationPenalty(target: Vec2, recentHits: Vec2[], settings: StudioSettings) {
-  const threshold = Math.max(22, settings.ballSize * 2.4);
+  const threshold = settings.terrainProfile === "tube-board"
+    ? Math.max(52, settings.platformThickness * 1.9)
+    : Math.max(22, settings.ballSize * 2.4);
   let penalty = 0;
   for (const point of recentHits) {
     const distance = Math.hypot(target.x - point.x, target.y - point.y);
@@ -245,7 +286,7 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
   const beamWidth = events.length > 1200 ? 2 : events.length > 500 ? 3 : 5;
   let states: SearchState[] = [{
     hit: { x: width / 2, y: 220 }, incoming: { x: 0, y: profile.initialDownSpeed },
-    preferredDirection: seeded(events.length, 41) >= 0 ? 1 : -1, score: 0, node: null, recentHits: [],
+    preferredDirection: seeded(events.length, 41) >= 0 ? 1 : -1, score: 0, node: null, recentHits: [], recentPlatforms: [],
   }];
 
   for (let index = 0; index < events.length; index += 1) {
@@ -277,14 +318,17 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
         const bounds = worldBounds(settings, width);
         const edgeInset = Math.max(90, settings.laneSpread * 0.28);
         if (nextHit.x < bounds.min + edgeInset || nextHit.x > bounds.max - edgeInset || index % Math.max(2, profile.directionHold) === profile.directionHold - 1) nextDirection *= -1;
-        const recentHits = [...state.recentHits, state.hit].slice(-6);
+        const recentHits = [...state.recentHits, state.hit].slice(-7);
+        const recentPlatforms = [...state.recentPlatforms, platform].slice(-7);
         expanded.push({
           hit: nextHit,
           incoming: nextIncoming,
           preferredDirection: nextDirection,
-          score: state.score + bounce.score + separationPenalty(nextHit, recentHits, settings),
+          score: state.score + bounce.score + separationPenalty(nextHit, recentHits, settings)
+            + tubeOverlapPenalty(platform, state.recentPlatforms, settings),
           node: { platform, parent: state.node },
           recentHits,
+          recentPlatforms,
         });
       }
     }

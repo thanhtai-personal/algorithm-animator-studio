@@ -4,7 +4,7 @@ export interface CameraPoint { x: number; y: number }
 
 function matrix(settings: StudioSettings) {
   if (settings.cameraProfile === "xylophone") return { a: 0.92, b: -0.115, c: 0, d: 0.72 };
-  if (settings.cameraProfile === "tube-board") return { a: 1.02, b: -0.06, c: 0, d: 0.86 };
+  if (settings.cameraProfile === "tube-board") return { a: 1.0, b: -0.015, c: 0, d: 0.96 };
   if (settings.cameraProfile === "comet") return { a: 1.015, b: 0, c: 0, d: 1.0 };
   return { a: 1, b: 0, c: 0, d: 1 };
 }

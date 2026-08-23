@@ -8,8 +8,9 @@ export function isLongCourseItem(style: CourseItemStyle): style is CourseLongIte
   return LONG_ITEMS.has(style);
 }
 
-export function overrideForSegment(index: number, overrides: CourseItemOverride[]) {
-  return overrides.find((override) => isLongCourseItem(override.style) && index >= override.startIndex && index < override.startIndex + Math.max(0, override.span - 1));
+export function overrideForSegment(index: number, overrides: CourseItemOverride[]): (CourseItemOverride & { style: CourseLongItem }) | undefined {
+  const match = overrides.find((override) => isLongCourseItem(override.style) && index >= override.startIndex && index < override.startIndex + Math.max(0, override.span - 1));
+  return match && isLongCourseItem(match.style) ? (match as CourseItemOverride & { style: CourseLongItem }) : undefined;
 }
 
 export function guidedCoursePoint(start: CourseGuideNode, end: CourseGuideNode, t: number, style: CourseLongItem, settings: StudioSettings) {

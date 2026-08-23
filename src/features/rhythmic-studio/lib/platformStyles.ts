@@ -275,7 +275,7 @@ export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: Marb
   else if (style === "tech-pad") drawTechPad(ctx, half, platform, impact, settings);
   else if (style === "pipe-rail") drawPipeRail(ctx, half, platform, impact, settings);
   else if (style === "stair-step") drawStairStep(ctx, half, platform, impact, settings);
-  else if (style.startsWith("glass-") && style !== "glass") drawRealGlass(ctx, half, platform, impact, settings, style);
+  else if (style.startsWith("glass-")) drawRealGlass(ctx, half, platform, impact, settings, style);
   else drawPrism(ctx, half, platform, impact, settings);
   ctx.restore();
 

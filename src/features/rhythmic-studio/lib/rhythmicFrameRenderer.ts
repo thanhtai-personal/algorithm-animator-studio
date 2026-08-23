@@ -96,48 +96,10 @@ function drawParticles(ctx: CanvasRenderingContext2D, platforms: MarblePlatform[
   ctx.globalAlpha = 1;
 }
 
-function drawFallbackMarble(ctx: CanvasRenderingContext2D, point: MarblePoint, cameraY: number, pulse: number, settings: StudioSettings) {
-  const x = point.x;
-  const y = point.y - cameraY;
-  const radius = settings.ballSize * (1 + pulse * 0.08);
-  const baseColor = settings.ballStyle === "prism" ? point.color : settings.ballBaseColor;
-  if (settings.glowAnimation) {
-    const glowRadius = radius * (3.4 + pulse * 2.2);
-    const glow = ctx.createRadialGradient(x, y, 2, x, y, glowRadius);
-    glow.addColorStop(0, `${baseColor}b8`);
-    glow.addColorStop(0.42, `${baseColor}38`);
-    glow.addColorStop(1, `${point.color}00`);
-    ctx.fillStyle = glow;
-    ctx.beginPath(); ctx.arc(x, y, glowRadius, 0, Math.PI * 2); ctx.fill();
-  }
-  ctx.save();
-  ctx.shadowBlur = 18 + pulse * 28;
-  ctx.shadowColor = baseColor;
-  const sphere = ctx.createRadialGradient(x - radius * 0.32, y - radius * 0.4, radius * 0.08, x, y, radius);
-  sphere.addColorStop(0, "#ffffff");
-  sphere.addColorStop(0.34, mixHex("#ffffff", baseColor, 0.24));
-  sphere.addColorStop(1, mixHex(baseColor, "#050712", 0.35));
-  ctx.fillStyle = sphere;
-  ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
-  if (settings.ballStyle === "striped") {
-    ctx.strokeStyle = settings.ballStripeColor;
-    ctx.lineWidth = Math.max(2, radius * 0.22);
-    ctx.beginPath(); ctx.arc(x, y, radius * 0.7, Math.PI * 0.18, Math.PI * 0.94); ctx.stroke();
-  }
-  ctx.restore();
-}
-
 function drawIdleMarble(ctx: CanvasRenderingContext2D, point: MarblePoint, cameraY: number, settings: StudioSettings) {
-  const radius = settings.ballSize;
-  const x = point.x;
-  const y = point.y - cameraY;
-  ctx.save();
-  ctx.fillStyle = settings.terrainProfile === "tube-board" ? settings.ballBaseColor : point.color;
-  ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = "rgba(255,255,255,.72)";
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  ctx.restore();
+  // Idle preview must use the exact same material renderer as playback so changing
+  // Marble style is visible immediately instead of falling back to a plain circle.
+  drawPresetMarble(ctx, point, cameraY, 0, settings);
 }
 
 function wrapLyric(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
@@ -252,7 +214,7 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
     }
     ctx.globalAlpha = 1;
     drawParticles(ctx, platforms, cameraY, timeMs, settings);
-    if (!drawPresetMarble(ctx, marble, cameraY, pulse, settings)) drawFallbackMarble(ctx, marble, cameraY, pulse, settings);
+    drawPresetMarble(ctx, marble, cameraY, pulse, settings);
   } else drawIdleMarble(ctx, marble, cameraY, settings);
   ctx.restore();
   drawLyrics(ctx, width, height, timeMs, lyrics, settings);

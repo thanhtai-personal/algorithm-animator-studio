@@ -30,7 +30,7 @@ interface Props {
 
 const WIDTH = 720;
 const HEIGHT = 1280;
-const PREVIEW_FPS = 30;
+const PREVIEW_FPS = 45;
 
 function contextFor(canvas: HTMLCanvasElement | null) {
   const ctx = canvas?.getContext("2d", { alpha: false }) ?? null;
@@ -119,7 +119,8 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
     };
     const loop = (now: number) => {
       if (!recording && document.visibilityState !== "visible") { scheduleNext(loop); return; }
-      if (!recording && now - lastRenderAt.current < 1000 / PREVIEW_FPS - 0.5) { scheduleNext(loop); return; }
+      const frameDeltaMs = lastRenderAt.current > 0 ? now - lastRenderAt.current : 1000 / PREVIEW_FPS;
+      if (!recording && frameDeltaMs < 1000 / PREVIEW_FPS - 0.5) { scheduleNext(loop); return; }
       lastRenderAt.current = now;
       const time = now - start;
       currentTime.current = time;
@@ -130,7 +131,11 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
       const marble = marbleAtTime(time, events, platforms, settings, courseOverrides);
       const targetCameraX = marble.x - WIDTH * presetCameraAnchorX(settings);
       const targetCameraY = marble.y - HEIGHT * settings.cameraAnchor;
-      const cameraEase = clamp(settings.cameraSmoothing, 0.03, 1);
+      // Treat cameraSmoothing as a 60fps response value, then normalize it for
+      // the actual frame duration. This removes the slow/floaty camera at 30-45fps.
+      const baseCameraEase = clamp(settings.cameraSmoothing, 0.03, 1);
+      const frameScale = clamp(frameDeltaMs / (1000 / 60), 0.5, 3);
+      const cameraEase = 1 - Math.pow(1 - baseCameraEase, frameScale);
       cameraX.current += (targetCameraX - cameraX.current) * cameraEase;
       cameraY.current += (targetCameraY - cameraY.current) * cameraEase;
       drawRhythmicFrame({

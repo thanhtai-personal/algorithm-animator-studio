@@ -262,7 +262,7 @@ function platformSegment(platform: MarblePlatform) {
 function tubeOverlapPenalty(platform: MarblePlatform, recent: MarblePlatform[], settings: StudioSettings) {
   if (settings.terrainProfile !== "tube-board") return 0;
   const segment = platformSegment(platform);
-  const safeDistance = Math.max(30, settings.platformThickness * 1.25);
+  const safeDistance = Math.max(46, settings.platformThickness * 1.65, settings.platformGap * 0.28);
   let penalty = 0;
   for (const other of recent) {
     const previous = platformSegment(other);
@@ -272,19 +272,43 @@ function tubeOverlapPenalty(platform: MarblePlatform, recent: MarblePlatform[], 
       pointSegmentDistance(previous.a, segment.a, segment.b),
       pointSegmentDistance(previous.b, segment.a, segment.b),
     );
-    if (distance < safeDistance) penalty += (safeDistance - distance) * 4.5;
+    if (distance < safeDistance) penalty += (safeDistance - distance) * 6.2;
   }
   return penalty;
 }
 
+function adjacentSpacingPenalty(target: Vec2, current: Vec2, settings: StudioSettings) {
+  const profileScale = settings.terrainProfile === "xylophone" ? 0.58
+    : settings.terrainProfile === "tube-board" ? 0.54
+      : settings.terrainProfile === "comet" ? 0.5
+        : 0.48;
+  const preferred = Math.max(settings.ballSize * 3.4, settings.platformGap * profileScale);
+  const distance = Math.hypot(target.x - current.x, target.y - current.y);
+  if (distance >= preferred) return 0;
+  const shortfall = preferred - distance;
+  return shortfall * 7.5 + shortfall * shortfall * 0.11;
+}
+
 function separationPenalty(target: Vec2, recentHits: Vec2[], settings: StudioSettings) {
-  const threshold = settings.terrainProfile === "tube-board"
-    ? Math.max(52, settings.platformThickness * 1.9)
-    : Math.max(22, settings.ballSize * 2.4);
+  // platformGap used to barely affect the actual minimum distance, so dense note
+  // clusters collapsed into a stack of almost-touching bars. Keep collisions on
+  // the exact note timestamps, but strongly prefer a larger spatial route.
+  const profileScale = settings.terrainProfile === "tube-board" ? 0.5
+    : settings.terrainProfile === "xylophone" ? 0.46
+      : settings.terrainProfile === "comet" ? 0.4
+        : 0.42;
+  const threshold = Math.max(
+    settings.ballSize * 3.1,
+    settings.platformThickness * 2.15,
+    settings.platformGap * profileScale,
+  );
   let penalty = 0;
   for (const point of recentHits) {
     const distance = Math.hypot(target.x - point.x, target.y - point.y);
-    if (distance < threshold) penalty += (threshold - distance) * 1.8;
+    if (distance < threshold) {
+      const overlap = threshold - distance;
+      penalty += overlap * 3.8 + overlap * overlap * 0.045;
+    }
   }
   return penalty;
 }
@@ -342,7 +366,8 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
           hit: nextHit,
           incoming: nextIncoming,
           preferredDirection: nextDirection,
-          score: state.score + bounce.score + separationPenalty(nextHit, recentHits, settings)
+          score: state.score + bounce.score + adjacentSpacingPenalty(nextHit, state.hit, settings)
+            + separationPenalty(nextHit, recentHits, settings)
             + tubeOverlapPenalty(platform, state.recentPlatforms, settings),
           node: { platform, parent: state.node },
           recentHits,

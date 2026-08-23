@@ -49,9 +49,9 @@ function baseStep(span: number): RhythmTerrainStep {
 }
 
 function profileScale(profile: TerrainProfile) {
-  if (profile === "tube-board") return { v: 1.04, h: 0.62, b: 0.64, c: 0.5 };
-  if (profile === "comet") return { v: 0.92, h: 1.28, b: 1.22, c: 1.35 };
-  if (profile === "xylophone") return { v: 0.78, h: 0.48, b: 0.56, c: 0.36 };
+  if (profile === "tube-board") return { v: 1.12, h: 0.78, b: 0.72, c: 0.5 };
+  if (profile === "comet") return { v: 1.02, h: 1.42, b: 1.3, c: 1.35 };
+  if (profile === "xylophone") return { v: 1.28, h: 0.9, b: 0.76, c: 0.36 };
   return { v: 1, h: 1, b: 1, c: 1 };
 }
 

@@ -1,51 +1,140 @@
-import { useMemo } from "react";
+import { Suspense, useEffect, useMemo } from "react";
+import { Environment, Lightformer, RoundedBox } from "@react-three/drei";
+import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { StudioSettings } from "../types";
+import { RhythmicBackplate3D } from "./RhythmicBackplate3D";
+
+function radialTexture() {
+  const size = 96;
+  const data = new Uint8Array(size * size * 4);
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const dx = (x + 0.5) / size * 2 - 1;
+      const dy = (y + 0.5) / size * 2 - 1;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const alpha = Math.pow(Math.max(0, 1 - distance), 2.2);
+      const offset = (y * size + x) * 4;
+      data[offset] = 255;
+      data[offset + 1] = 255;
+      data[offset + 2] = 255;
+      data[offset + 3] = Math.round(alpha * 255);
+    }
+  }
+  const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function GlowSprite({ position, scale, color, opacity = 0.32 }: {
+  position: [number, number, number];
+  scale: [number, number, number];
+  color: string;
+  opacity?: number;
+}) {
+  const texture = useMemo(() => radialTexture(), []);
+  useEffect(() => () => texture.dispose(), [texture]);
+  return (
+    <sprite position={position} scale={scale}>
+      <spriteMaterial map={texture} color={color} transparent opacity={opacity} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </sprite>
+  );
+}
+
+function SceneAtmosphere({ settings }: { settings: StudioSettings }) {
+  const { scene } = useThree();
+  useEffect(() => {
+    const previousBackground = scene.background;
+    const previousFog = scene.fog;
+    const background = settings.terrainProfile === "comet" ? "#040611"
+      : settings.terrainProfile === "xylophone" ? "#8d775f"
+        : settings.terrainProfile === "tube-board" ? "#10141a"
+          : settings.backgroundColor;
+    scene.background = new THREE.Color(background);
+    scene.fog = settings.terrainProfile === "comet"
+      ? new THREE.FogExp2("#07091a", 0.027)
+      : new THREE.Fog(background, 13, 28);
+    return () => {
+      scene.background = previousBackground;
+      scene.fog = previousFog;
+    };
+  }, [scene, settings.backgroundColor, settings.terrainProfile]);
+  return null;
+}
+
+function ReflectionRig({ settings }: { settings: StudioSettings }) {
+  const warm = settings.terrainProfile === "xylophone";
+  const comet = settings.terrainProfile === "comet";
+  return (
+    <Environment resolution={64} frames={1}>
+      <Lightformer form="rect" intensity={4.8} color={warm ? "#fff0d2" : "#eaf5ff"} position={[-4, 4, 6]} rotation={[0, 0.38, 0]} scale={[5, 2.2, 1]} />
+      <Lightformer form="rect" intensity={3.4} color={comet ? "#536fff" : warm ? "#ffc47a" : "#7fc7ff"} position={[5, -3, 4]} rotation={[0, -0.45, 0]} scale={[3, 5, 1]} />
+      <Lightformer form="ring" intensity={comet ? 5.4 : 2.4} color={comet ? "#e95aea" : "#ffffff"} position={[0, 1, -5]} scale={[6, 6, 1]} />
+    </Environment>
+  );
+}
 
 function TubeBoardRoom() {
-  const rows = useMemo(() => Array.from({ length: 18 }, (_, i) => i), []);
+  const sections = useMemo(() => Array.from({ length: 12 }, (_, i) => i), []);
   return (
     <group>
-      <mesh position={[0, -54, -3.4]} receiveShadow>
-        <planeGeometry args={[18, 128]} />
-        <meshStandardMaterial color="#16191f" roughness={0.82} metalness={0.2} />
-      </mesh>
-      {[-7.2, 7.2].map((x) => (
-        <mesh key={x} position={[x, -54, -0.6]} rotation={[0, x < 0 ? Math.PI / 2 : -Math.PI / 2, 0]} receiveShadow>
-          <planeGeometry args={[7.2, 128]} />
-          <meshStandardMaterial color="#20242b" roughness={0.68} metalness={0.34} />
+      <RoundedBox position={[0, -54, -4.15]} args={[16.5, 136, 0.7]} radius={0.14} smoothness={4} receiveShadow>
+        <meshStandardMaterial color="#151a21" roughness={0.72} metalness={0.26} />
+      </RoundedBox>
+      {[-7.9, 7.9].map((x) => (
+        <mesh key={x} position={[x, -54, -0.9]} rotation={[0, x < 0 ? Math.PI / 2.55 : -Math.PI / 2.55, 0]} receiveShadow>
+          <planeGeometry args={[7.6, 136]} />
+          <meshStandardMaterial color="#242a31" roughness={0.62} metalness={0.32} side={THREE.DoubleSide} />
         </mesh>
       ))}
-      {rows.map((row) => (
-        <group key={row} position={[0, -row * 7 + 2, -3.05]}>
-          <mesh>
-            <boxGeometry args={[15.2, 0.065, 0.08]} />
-            <meshStandardMaterial color="#454b54" roughness={0.42} metalness={0.64} />
-          </mesh>
-          {[-5.8, -2.9, 0, 2.9, 5.8].map((x, peg) => (
-            <mesh key={x} position={[x, (peg % 2 ? 0.7 : -0.55), 0.18]} rotation={[Math.PI / 2, 0, 0]}>
-              <cylinderGeometry args={[0.09, 0.09, 0.38, 14]} />
-              <meshStandardMaterial color={peg === 2 ? "#d34c50" : "#9ca4af"} roughness={0.3} metalness={0.7} />
-            </mesh>
-          ))}
-        </group>
+      {[-6.55, 6.55].map((x) => (
+        <mesh key={x} position={[x, -54, 0.85]} castShadow>
+          <cylinderGeometry args={[0.095, 0.095, 136, 16]} />
+          <meshStandardMaterial color="#49525d" roughness={0.24} metalness={0.84} />
+        </mesh>
       ))}
+      {sections.map((index) => {
+        const y = 5 - index * 11.2;
+        const accent = index % 4 === 0 ? "#dc5058" : "#98a4b3";
+        return (
+          <group key={index} position={[0, y, -3.58]}>
+            <RoundedBox args={[14.8, 0.18, 0.2]} radius={0.05} smoothness={3} castShadow>
+              <meshStandardMaterial color="#515a65" roughness={0.32} metalness={0.72} />
+            </RoundedBox>
+            {[-5.6, -2.8, 0, 2.8, 5.6].map((x, peg) => (
+              <group key={x} position={[x, peg % 2 ? 0.62 : -0.58, 0.42]}>
+                <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
+                  <cylinderGeometry args={[0.105, 0.105, 0.55, 18]} />
+                  <meshStandardMaterial color={peg === 2 ? accent : "#a7b0ba"} roughness={0.22} metalness={0.78} />
+                </mesh>
+                <mesh position={[0, 0, 0.2]}>
+                  <sphereGeometry args={[0.055, 12, 8]} />
+                  <meshStandardMaterial color="#e9eef3" roughness={0.2} metalness={0.72} />
+                </mesh>
+              </group>
+            ))}
+          </group>
+        );
+      })}
+      <GlowSprite position={[-5.4, -22, -2.6]} scale={[8, 18, 1]} color="#4b8fd8" opacity={0.14} />
+      <GlowSprite position={[5.8, -72, -2.7]} scale={[7, 16, 1]} color="#ffb064" opacity={0.1} />
     </group>
   );
 }
 
 function StarField() {
   const positions = useMemo(() => {
-    const data = new Float32Array(240 * 3);
+    const data = new Float32Array(360 * 3);
     let seed = 14723;
     const random = () => {
       seed = (seed * 16807) % 2147483647;
       return (seed - 1) / 2147483646;
     };
-    for (let i = 0; i < 240; i += 1) {
-      data[i * 3] = (random() - 0.5) * 24;
-      data[i * 3 + 1] = -random() * 150 + 12;
-      data[i * 3 + 2] = -3 - random() * 12;
+    for (let i = 0; i < 360; i += 1) {
+      data[i * 3] = (random() - 0.5) * 28;
+      data[i * 3 + 1] = -random() * 155 + 14;
+      data[i * 3 + 2] = -2.5 - random() * 15;
     }
     return data;
   }, []);
@@ -54,63 +143,86 @@ function StarField() {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <pointsMaterial color="#b9d8ff" size={0.055} sizeAttenuation transparent opacity={0.82} />
+      <pointsMaterial color="#cce5ff" size={0.045} sizeAttenuation transparent opacity={0.86} depthWrite={false} />
     </points>
   );
 }
 
 function CometSpace() {
-  const rings = useMemo(() => Array.from({ length: 14 }, (_, i) => i), []);
+  const rings = useMemo(() => Array.from({ length: 12 }, (_, i) => i), []);
   return (
     <group>
       <StarField />
-      <mesh position={[0, -58, -7]}>
-        <planeGeometry args={[25, 145]} />
-        <meshBasicMaterial color="#050714" />
+      <mesh position={[0, -58, -9]}>
+        <planeGeometry args={[34, 155]} />
+        <meshBasicMaterial color="#040611" />
       </mesh>
-      {rings.map((index) => (
-        <group key={index} position={[index % 2 ? 2.7 : -2.4, 5 - index * 10.5, -4.2]} rotation={[0.16, 0.22 * Math.sin(index), 0.2 * Math.cos(index * 0.7)]}>
-          <mesh>
-            <torusGeometry args={[2.4 + (index % 3) * 0.34, 0.035, 8, 72, Math.PI * 1.5]} />
-            <meshStandardMaterial color={index % 2 ? "#5f78ff" : "#e15be8"} emissive={index % 2 ? "#4a68ff" : "#d14ad9"} emissiveIntensity={0.75} roughness={0.28} metalness={0.26} />
-          </mesh>
-        </group>
-      ))}
+      {rings.map((index) => {
+        const left = index % 2 === 0;
+        return (
+          <group key={index} position={[left ? -3.1 : 3.3, 7 - index * 12.4, -5 - (index % 3) * 0.7]} rotation={[0.08, left ? -0.14 : 0.14, left ? -0.28 : 0.28]}>
+            <mesh>
+              <torusGeometry args={[2.8 + (index % 3) * 0.34, 0.045, 10, 80, Math.PI * 1.55]} />
+              <meshStandardMaterial
+                color={left ? "#6680ff" : "#e35fe8"}
+                emissive={left ? "#526eff" : "#d74cdf"}
+                emissiveIntensity={1.15}
+                roughness={0.24}
+                metalness={0.36}
+              />
+            </mesh>
+          </group>
+        );
+      })}
+      <GlowSprite position={[-4.7, -24, -6.5]} scale={[13, 26, 1]} color="#365cff" opacity={0.25} />
+      <GlowSprite position={[5.2, -64, -7]} scale={[14, 30, 1]} color="#da45e9" opacity={0.22} />
+      <GlowSprite position={[0, -112, -8]} scale={[18, 24, 1]} color="#49b8ff" opacity={0.12} />
     </group>
   );
 }
 
 function XylophoneRoom() {
-  const panels = useMemo(() => Array.from({ length: 16 }, (_, i) => i), []);
+  const sections = useMemo(() => Array.from({ length: 11 }, (_, i) => i), []);
   const accents = ["#d95f59", "#e69a4d", "#d6b94c", "#5ea96d", "#5e91bb", "#8d70bc"];
   return (
     <group>
-      <mesh position={[0, -54, -3.6]} receiveShadow>
-        <planeGeometry args={[18, 128]} />
-        <meshStandardMaterial color="#c8b89f" roughness={0.78} metalness={0.02} />
-      </mesh>
-      {[-7.5, 7.5].map((x) => (
-        <mesh key={x} position={[x, -54, -0.6]} rotation={[0, x < 0 ? Math.PI / 2 : -Math.PI / 2, 0]} receiveShadow>
-          <planeGeometry args={[7, 128]} />
-          <meshStandardMaterial color="#897a68" roughness={0.72} metalness={0.04} />
+      <RoundedBox position={[0, -54, -4.1]} args={[16.8, 136, 0.72]} radius={0.16} smoothness={4} receiveShadow>
+        <meshStandardMaterial color="#9a846c" roughness={0.76} metalness={0.02} />
+      </RoundedBox>
+      {[-7.95, 7.95].map((x) => (
+        <mesh key={x} position={[x, -54, -0.8]} rotation={[0, x < 0 ? Math.PI / 2.55 : -Math.PI / 2.55, 0]} receiveShadow>
+          <planeGeometry args={[7.8, 136]} />
+          <meshStandardMaterial color="#665746" roughness={0.72} metalness={0.02} side={THREE.DoubleSide} />
         </mesh>
       ))}
-      {panels.map((index) => (
-        <group key={index} position={[0, 4 - index * 8.2, -3.12]}>
-          <mesh>
-            <boxGeometry args={[15.3, 0.1, 0.12]} />
-            <meshStandardMaterial color="#7a6c5d" roughness={0.54} metalness={0.08} />
-          </mesh>
-          <mesh position={[-5.8, 0.65, 0.18]} rotation={[0, 0, -0.04]}>
-            <boxGeometry args={[2.1, 0.16, 0.18]} />
-            <meshStandardMaterial color={accents[index % accents.length]} roughness={0.36} metalness={0.12} />
-          </mesh>
-          <mesh position={[5.6, -0.52, 0.16]} rotation={[0, 0, 0.05]}>
-            <boxGeometry args={[2.6, 0.12, 0.15]} />
-            <meshStandardMaterial color={accents[(index + 3) % accents.length]} roughness={0.4} metalness={0.08} />
-          </mesh>
-        </group>
+      {[-6.5, -3.25, 0, 3.25, 6.5].map((x, index) => (
+        <mesh key={x} position={[x, -54, -3.62]} castShadow>
+          <boxGeometry args={[0.12, 136, 0.12]} />
+          <meshStandardMaterial color={index % 2 ? "#7b6853" : "#b29b7e"} roughness={0.64} metalness={0.02} />
+        </mesh>
       ))}
+      {sections.map((index) => {
+        const y = 5 - index * 12.1;
+        const color = accents[index % accents.length];
+        return (
+          <group key={index} position={[0, y, -3.48]}>
+            <RoundedBox position={[-5.2, 0.72, 0.28]} args={[2.5, 0.24, 0.26]} radius={0.07} smoothness={4} castShadow>
+              <meshPhysicalMaterial color={color} roughness={0.3} clearcoat={0.55} />
+            </RoundedBox>
+            <RoundedBox position={[4.8, -0.62, 0.3]} args={[3.2, 0.2, 0.24]} radius={0.06} smoothness={4} castShadow>
+              <meshPhysicalMaterial color={accents[(index + 3) % accents.length]} roughness={0.32} clearcoat={0.5} />
+            </RoundedBox>
+            {[-2.2, 0, 2.2].map((x, tube) => (
+              <mesh key={x} position={[x, tube % 2 ? 1.15 : -1.05, 0.08]} castShadow>
+                <cylinderGeometry args={[0.055, 0.055, 1.1 + tube * 0.12, 14]} />
+                <meshStandardMaterial color="#b39468" roughness={0.25} metalness={0.62} />
+              </mesh>
+            ))}
+          </group>
+        );
+      })}
+      <GlowSprite position={[-5.2, -28, -2.9]} scale={[8, 18, 1]} color="#ffd18a" opacity={0.15} />
+      <GlowSprite position={[5.6, -84, -2.8]} scale={[7, 16, 1]} color="#ff9c6b" opacity={0.11} />
     </group>
   );
 }
@@ -118,16 +230,16 @@ function XylophoneRoom() {
 function NeutralStudio({ color }: { color: string }) {
   return (
     <group>
-      <mesh position={[0, -54, -3.5]} receiveShadow>
-        <planeGeometry args={[19, 130]} />
-        <meshStandardMaterial color={color} roughness={0.86} metalness={0.08} />
-      </mesh>
-      {[-7.6, 7.6].map((x) => (
-        <mesh key={x} position={[x, -54, -0.6]} rotation={[0, x < 0 ? Math.PI / 2 : -Math.PI / 2, 0]} receiveShadow>
-          <planeGeometry args={[7, 130]} />
-          <meshStandardMaterial color="#10151f" roughness={0.75} metalness={0.2} />
+      <RoundedBox position={[0, -54, -4]} args={[17, 136, 0.65]} radius={0.14} smoothness={4} receiveShadow>
+        <meshStandardMaterial color={color} roughness={0.76} metalness={0.14} />
+      </RoundedBox>
+      {[-7.9, 7.9].map((x) => (
+        <mesh key={x} position={[x, -54, -0.75]} rotation={[0, x < 0 ? Math.PI / 2.55 : -Math.PI / 2.55, 0]} receiveShadow>
+          <planeGeometry args={[7.8, 136]} />
+          <meshStandardMaterial color="#111722" roughness={0.72} metalness={0.22} side={THREE.DoubleSide} />
         </mesh>
       ))}
+      <GlowSprite position={[-4.8, -42, -2.8]} scale={[9, 22, 1]} color="#65a6ff" opacity={0.12} />
     </group>
   );
 }
@@ -136,43 +248,71 @@ export function RhythmicLightingRig3D({ settings }: { settings: StudioSettings }
   if (settings.terrainProfile === "xylophone") {
     return (
       <>
-        <hemisphereLight args={["#fff2d4", "#3b332c", 1.25]} />
-        <directionalLight position={[-3, 7, 9]} intensity={2.2} castShadow shadow-mapSize-width={768} shadow-mapSize-height={768} />
-        <pointLight position={[5, -4, 5]} color="#ffc88c" intensity={16} distance={20} decay={2} />
+        <ReflectionRig settings={settings} />
+        <hemisphereLight args={["#fff0d7", "#403529", 1.05]} />
+        <directionalLight
+          position={[-4, 7, 9]}
+          intensity={2.35}
+          castShadow
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+          shadow-bias={-0.0003}
+          shadow-normalBias={0.035}
+        />
+        <pointLight position={[5, -4, 5]} color="#ffc17f" intensity={14} distance={22} decay={2} />
+        <pointLight position={[-5, -8, 3]} color="#7db7ff" intensity={4.5} distance={18} decay={2} />
       </>
     );
   }
   if (settings.terrainProfile === "comet") {
     return (
       <>
-        <ambientLight intensity={0.22} />
-        <directionalLight position={[4, 6, 8]} intensity={1.4} castShadow shadow-mapSize-width={512} shadow-mapSize-height={512} />
-        <pointLight position={[-4, 1, 4]} color="#5474ff" intensity={24} distance={24} decay={2} />
-        <pointLight position={[4, -6, 3]} color="#d64ee5" intensity={18} distance={20} decay={2} />
+        <ReflectionRig settings={settings} />
+        <ambientLight intensity={0.16} />
+        <directionalLight position={[4, 6, 8]} intensity={1.25} castShadow shadow-mapSize-width={768} shadow-mapSize-height={768} shadow-bias={-0.0003} />
+        <pointLight position={[-4.5, 1, 4]} color="#5776ff" intensity={20} distance={25} decay={2} />
+        <pointLight position={[4.5, -6, 3]} color="#df54e5" intensity={16} distance={22} decay={2} />
       </>
     );
   }
   if (settings.terrainProfile === "tube-board") {
     return (
       <>
-        <hemisphereLight args={["#dce8f6", "#16191e", 0.88]} />
-        <directionalLight position={[-5, 8, 9]} intensity={2.35} castShadow shadow-mapSize-width={768} shadow-mapSize-height={768} />
-        <pointLight position={[5, -5, 5]} color="#ffcc9d" intensity={12} distance={18} decay={2} />
+        <ReflectionRig settings={settings} />
+        <hemisphereLight args={["#dcecff", "#14171c", 0.82]} />
+        <directionalLight
+          position={[-5, 8, 9]}
+          intensity={2.4}
+          castShadow
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+          shadow-bias={-0.00035}
+          shadow-normalBias={0.04}
+        />
+        <pointLight position={[5, -5, 5]} color="#ffc28c" intensity={10} distance={19} decay={2} />
+        <pointLight position={[-5, -10, 3]} color="#5aa7ff" intensity={6} distance={18} decay={2} />
       </>
     );
   }
   return (
     <>
-      <ambientLight intensity={0.48} />
-      <directionalLight position={[5, 7, 9]} intensity={2} castShadow shadow-mapSize-width={512} shadow-mapSize-height={512} />
-      <pointLight position={[-4, 1, 6]} intensity={14} distance={22} decay={2} color="#7dd3fc" />
+      <ReflectionRig settings={settings} />
+      <ambientLight intensity={0.34} />
+      <directionalLight position={[5, 7, 9]} intensity={2.05} castShadow shadow-mapSize-width={768} shadow-mapSize-height={768} />
+      <pointLight position={[-4, 1, 6]} intensity={12} distance={22} decay={2} color="#7dd3fc" />
     </>
   );
 }
 
-export function RhythmicEnvironment3D({ settings }: { settings: StudioSettings }) {
-  if (settings.terrainProfile === "tube-board") return <TubeBoardRoom />;
-  if (settings.terrainProfile === "comet") return <CometSpace />;
-  if (settings.terrainProfile === "xylophone") return <XylophoneRoom />;
-  return <NeutralStudio color={settings.backgroundColor} />;
+export function RhythmicEnvironment3D({ settings, backgroundUrl }: { settings: StudioSettings; backgroundUrl?: string }) {
+  return (
+    <>
+      <SceneAtmosphere settings={settings} />
+      {backgroundUrl ? <Suspense fallback={null}><RhythmicBackplate3D url={backgroundUrl} settings={settings} /></Suspense> : null}
+      {settings.terrainProfile === "tube-board" && <TubeBoardRoom />}
+      {settings.terrainProfile === "comet" && <CometSpace />}
+      {settings.terrainProfile === "xylophone" && <XylophoneRoom />}
+      {settings.terrainProfile === "balanced" && <NeutralStudio color={settings.backgroundColor} />}
+    </>
+  );
 }

@@ -3,16 +3,21 @@ import * as THREE from "three";
 import type { BallStyle, StudioSettings } from "../types";
 
 function stripedTexture(base: string, stripe: string) {
-  const width = 128;
-  const height = 64;
+  const width = 384;
+  const height = 192;
   const data = new Uint8Array(width * height * 4);
   const baseColor = new THREE.Color(base);
   const stripeColor = new THREE.Color(stripe);
+  const highlight = new THREE.Color("#fff8ef");
   for (let y = 0; y < height; y += 1) {
+    const v = (y + 0.5) / height;
     for (let x = 0; x < width; x += 1) {
-      const diagonal = (x + y * 2) % 34;
-      const useStripe = diagonal < 12;
-      const color = useStripe ? stripeColor : baseColor;
+      const u = (x + 0.5) / width;
+      const wave = Math.sin((u * Math.PI * 2 + Math.sin(v * Math.PI) * 0.82) * 2.5);
+      const edge = Math.abs(wave);
+      const useStripe = wave > 0.18;
+      const color = useStripe ? stripeColor.clone() : baseColor.clone();
+      if (edge < 0.12) color.lerp(highlight, 0.22);
       const offset = (y * width + x) * 4;
       data[offset] = Math.round(color.r * 255);
       data[offset + 1] = Math.round(color.g * 255);
@@ -23,8 +28,10 @@ function stripedTexture(base: string, stripe: string) {
   const texture = new THREE.DataTexture(data, width, height, THREE.RGBAFormat);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
-  texture.repeat.set(1.4, 1);
   texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = true;
   texture.needsUpdate = true;
   return texture;
 }
@@ -43,12 +50,12 @@ function MarbleMaterial({ style, settings, liveColor }: {
   if (style === "chrome") {
     return (
       <meshPhysicalMaterial
-        color="#dbe8f5"
+        color="#e4edf5"
         metalness={1}
-        roughness={0.08}
+        roughness={0.055}
         clearcoat={1}
-        clearcoatRoughness={0.06}
-        envMapIntensity={1.4}
+        clearcoatRoughness={0.025}
+        envMapIntensity={1.9}
       />
     );
   }
@@ -56,28 +63,29 @@ function MarbleMaterial({ style, settings, liveColor }: {
     return (
       <meshPhysicalMaterial
         color={settings.ballBaseColor}
-        metalness={0.02}
-        roughness={0.04}
-        transmission={0.9}
-        thickness={0.85}
-        ior={1.46}
+        metalness={0}
+        roughness={0.025}
+        transmission={0.96}
+        thickness={1.08}
+        ior={1.48}
         clearcoat={1}
-        clearcoatRoughness={0.03}
+        clearcoatRoughness={0.018}
         attenuationColor={settings.ballBaseColor}
-        attenuationDistance={2.4}
-        transparent
-        opacity={0.94}
+        attenuationDistance={2.1}
+        envMapIntensity={1.75}
       />
     );
   }
   if (style === "neon") {
     return (
-      <meshStandardMaterial
+      <meshPhysicalMaterial
         color={settings.ballBaseColor}
         emissive={settings.ballBaseColor}
-        emissiveIntensity={1.45}
-        metalness={0.18}
-        roughness={0.22}
+        emissiveIntensity={1.08}
+        metalness={0.15}
+        roughness={0.16}
+        clearcoat={0.88}
+        clearcoatRoughness={0.08}
       />
     );
   }
@@ -85,41 +93,39 @@ function MarbleMaterial({ style, settings, liveColor }: {
     return (
       <meshPhysicalMaterial
         map={stripeMap}
-        metalness={0.08}
-        roughness={0.28}
-        clearcoat={0.72}
-        clearcoatRoughness={0.14}
+        metalness={0.04}
+        roughness={0.2}
+        clearcoat={0.92}
+        clearcoatRoughness={0.08}
+        envMapIntensity={1.35}
       />
     );
   }
   if (style === "prism") {
     return (
       <meshPhysicalMaterial
-        color="#d8e7ff"
-        metalness={0.38}
-        roughness={0.12}
+        color="#e5efff"
+        metalness={0.26}
+        roughness={0.075}
         clearcoat={1}
-        clearcoatRoughness={0.05}
+        clearcoatRoughness={0.025}
         iridescence={1}
-        iridescenceIOR={1.55}
-        iridescenceThicknessRange={[180, 720]}
-        envMapIntensity={1.35}
+        iridescenceIOR={1.52}
+        iridescenceThicknessRange={[160, 820]}
+        envMapIntensity={1.8}
       />
     );
   }
   return (
     <meshPhysicalMaterial
       color={liveColor}
-      metalness={0.08}
-      roughness={0.27}
-      clearcoat={0.55}
-      clearcoatRoughness={0.16}
+      metalness={0.05}
+      roughness={0.2}
+      clearcoat={0.86}
+      clearcoatRoughness={0.09}
+      envMapIntensity={1.35}
     />
   );
-}
-
-export interface RhythmicMarbleHandle extends THREE.Group {
-  impactStrength?: number;
 }
 
 export const RhythmicMarble3D = forwardRef<THREE.Group, {
@@ -129,17 +135,35 @@ export const RhythmicMarble3D = forwardRef<THREE.Group, {
   return (
     <group ref={ref}>
       <mesh castShadow receiveShadow>
-        <sphereGeometry args={[1, 48, 32]} />
+        <sphereGeometry args={[1, 64, 48]} />
         <MarbleMaterial style={settings.ballStyle} settings={settings} liveColor={liveColor} />
       </mesh>
       {settings.ballStyle === "glass" && (
-        <mesh scale={0.82}>
-          <sphereGeometry args={[1, 28, 20]} />
-          <meshBasicMaterial color="#ffffff" transparent opacity={0.055} side={THREE.BackSide} />
+        <>
+          <mesh scale={0.34}>
+            <sphereGeometry args={[1, 32, 24]} />
+            <meshPhysicalMaterial color={settings.ballStripeColor} roughness={0.22} metalness={0.08} clearcoat={0.8} transparent opacity={0.72} />
+          </mesh>
+          <mesh scale={0.79}>
+            <sphereGeometry args={[1, 32, 24]} />
+            <meshBasicMaterial color="#dff7ff" transparent opacity={0.025} side={THREE.BackSide} />
+          </mesh>
+        </>
+      )}
+      {settings.ballStyle === "prism" && (
+        <mesh scale={0.32}>
+          <icosahedronGeometry args={[1, 2]} />
+          <meshStandardMaterial color={settings.ballBaseColor} emissive={settings.ballBaseColor} emissiveIntensity={0.18} roughness={0.2} metalness={0.55} />
         </mesh>
       )}
       {settings.ballStyle === "neon" && (
-        <pointLight color={settings.ballBaseColor} intensity={8} distance={4.5} decay={2} />
+        <>
+          <mesh scale={0.78}>
+            <sphereGeometry args={[1, 32, 24]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.09} />
+          </mesh>
+          <pointLight color={settings.ballBaseColor} intensity={4.8} distance={4.2} decay={2} />
+        </>
       )}
     </group>
   );

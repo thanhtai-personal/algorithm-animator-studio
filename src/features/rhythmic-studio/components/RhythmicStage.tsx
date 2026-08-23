@@ -79,6 +79,7 @@ export function RhythmicStage({ studio }: { studio: Studio }) {
           playbackStartMs={studio.playbackStartMs}
           playbackEndMs={studio.playbackEndMs || studio.durationMs}
           courseOverrides={studio.courseOverrides}
+          backgroundUrl={studio.backgroundUrl}
           selectedNodeIndex={studio.selectedNodeIndex}
           onSelectNode={studio.selectCourseNode}
           onNote={studio.onNote}

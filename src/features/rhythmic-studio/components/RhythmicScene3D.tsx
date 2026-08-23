@@ -3,12 +3,20 @@ import { PerspectiveCamera } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { CourseItemOverride, NoteEvent, StudioSettings } from "../types";
-import type { MarblePlatform, MarblePoint } from "../lib/marbleCourse";
-import { buildMarbleCourse, marbleAtTime } from "../lib/marbleCourse";
+import type { MarblePlatform } from "../lib/marbleCourse";
+import { buildMarbleCourse } from "../lib/marbleCourse";
 import { RhythmicMarble3D } from "./RhythmicMarble3D";
 import { RhythmicPlatformField3D } from "./RhythmicPlatformField3D";
+import { RhythmicCourseItems3D } from "./RhythmicCourseItems3D";
 import { RhythmicEnvironment3D, RhythmicLightingRig3D } from "./RhythmicEnvironment3D";
 import { RhythmicVfx3D, type RhythmicVfxHandle } from "./RhythmicVfx3D";
+import {
+  impactSquash,
+  RHYTHMIC_COURSE_WIDTH,
+  RHYTHMIC_WORLD_SCALE,
+  setWorldPoint,
+  visualMarbleAtTime,
+} from "./RhythmicMotion3D";
 
 interface Props {
   events: NoteEvent[];
@@ -20,6 +28,7 @@ interface Props {
   playbackStartMs: number;
   playbackEndMs: number;
   courseOverrides: CourseItemOverride[];
+  backgroundUrl?: string;
   selectedNodeIndex: number | null;
   onSelectNode: (index: number | null) => void;
   onNote: (event: NoteEvent) => void;
@@ -27,10 +36,8 @@ interface Props {
   onEnded: () => void;
 }
 
-const COURSE_WIDTH = 720;
-const WORLD_SCALE = 0.012;
-const CAMERA_Z = 10.5;
-const CAMERA_FOV = 39;
+const CAMERA_Z = 10.15;
+const CAMERA_FOV = 37;
 const UI_UPDATE_MS = 64;
 
 function firstEventAtOrAfter(events: NoteEvent[], timeMs: number) {
@@ -55,96 +62,189 @@ function noteDensity(events: NoteEvent[], timeMs: number, windowMs = 900) {
 }
 
 function cameraLookAheadMs(settings: StudioSettings) {
-  if (settings.cameraProfile === "comet") return 620;
-  if (settings.cameraProfile === "xylophone") return 520;
-  if (settings.cameraProfile === "tube-board") return 440;
-  return 380;
-}
-
-function worldPoint(point: Pick<MarblePoint, "x" | "y">) {
-  return new THREE.Vector3((point.x - COURSE_WIDTH / 2) * WORLD_SCALE, -point.y * WORLD_SCALE, 0);
+  if (settings.cameraProfile === "comet") return 650;
+  if (settings.cameraProfile === "xylophone") return 540;
+  if (settings.cameraProfile === "tube-board") return 470;
+  return 420;
 }
 
 function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSettings; platforms: MarblePlatform[] }) {
   const { camera, invalidate } = useThree();
+  const marbleMotionRef = useRef<THREE.Group>(null);
   const marbleRef = useRef<THREE.Group>(null);
   const vfxRef = useRef<RhythmicVfxHandle>(null);
   const marbleColor = useMemo(() => new THREE.Color(props.settings.ballBaseColor), [props.settings.ballBaseColor]);
-  const initialMarble = useMemo(() => marbleAtTime(props.timeMs, props.events, props.platforms, props.settings, props.courseOverrides), [props.courseOverrides, props.events, props.platforms, props.settings, props.timeMs]);
-  const [focusIndex, setFocusIndex] = useState(initialMarble.platformIndex);
-  const focusIndexRef = useRef(initialMarble.platformIndex);
+  const initialSample = useMemo(
+    () => visualMarbleAtTime(props.timeMs, props.events, props.platforms, props.settings, props.courseOverrides),
+    [props.courseOverrides, props.events, props.platforms, props.settings, props.timeMs],
+  );
+  const [focusIndex, setFocusIndex] = useState(initialSample.platformIndex);
+  const focusIndexRef = useRef(initialSample.platformIndex);
   const currentTimeRef = useRef(props.timeMs);
   const playbackEpochRef = useRef(performance.now() - props.playbackStartMs);
   const nextNoteIndex = useRef(firstEventAtOrAfter(props.events, props.playbackStartMs));
   const lastUiUpdate = useRef(0);
   const endedToken = useRef<number | null>(null);
-  const previousWorld = useRef(new THREE.Vector3());
+  const previousTimeRef = useRef(props.timeMs);
+  const previousWorld = useMemo(() => new THREE.Vector3(), []);
+  const world = useMemo(() => new THREE.Vector3(), []);
+  const aheadWorld = useMemo(() => new THREE.Vector3(), []);
+  const beforeWorld = useMemo(() => new THREE.Vector3(), []);
+  const afterWorld = useMemo(() => new THREE.Vector3(), []);
+  const displacement = useMemo(() => new THREE.Vector3(), []);
+  const velocity = useMemo(() => new THREE.Vector3(), []);
+  const rollAxis = useMemo(() => new THREE.Vector3(), []);
+  const rollQuaternion = useRef(new THREE.Quaternion());
+  const deltaQuaternion = useMemo(() => new THREE.Quaternion(), []);
   const cameraTarget = useMemo(() => new THREE.Vector3(), []);
   const lookTarget = useMemo(() => new THREE.Vector3(), []);
+  const smoothedLook = useMemo(() => new THREE.Vector3(), []);
+  const initializedRef = useRef(false);
 
   const syncScene = useCallback((timeMs: number, deltaSeconds: number, snapCamera = false) => {
-    const marble = marbleAtTime(timeMs, props.events, props.platforms, props.settings, props.courseOverrides);
+    const sample = visualMarbleAtTime(timeMs, props.events, props.platforms, props.settings, props.courseOverrides);
     const lookAheadMs = cameraLookAheadMs(props.settings);
-    const ahead = marbleAtTime(Math.min(props.durationMs, timeMs + lookAheadMs), props.events, props.platforms, props.settings, props.courseOverrides);
-    if (marble.platformIndex !== focusIndexRef.current) {
-      focusIndexRef.current = marble.platformIndex;
-      setFocusIndex(marble.platformIndex);
+    const ahead = visualMarbleAtTime(
+      Math.min(props.durationMs, timeMs + lookAheadMs),
+      props.events,
+      props.platforms,
+      props.settings,
+      props.courseOverrides,
+    );
+    const sampleWindow = 10;
+    const before = visualMarbleAtTime(
+      Math.max(0, timeMs - sampleWindow),
+      props.events,
+      props.platforms,
+      props.settings,
+      props.courseOverrides,
+    );
+    const after = visualMarbleAtTime(
+      Math.min(props.durationMs, timeMs + sampleWindow),
+      props.events,
+      props.platforms,
+      props.settings,
+      props.courseOverrides,
+    );
+
+    if (sample.platformIndex !== focusIndexRef.current) {
+      focusIndexRef.current = sample.platformIndex;
+      setFocusIndex(sample.platformIndex);
     }
-    const world = worldPoint(marble);
-    const aheadWorld = worldPoint(ahead);
+
+    setWorldPoint(world, sample);
+    setWorldPoint(aheadWorld, ahead);
+    setWorldPoint(beforeWorld, before);
+    setWorldPoint(afterWorld, after);
+    velocity.copy(afterWorld).sub(beforeWorld).multiplyScalar(1000 / Math.max(1, sampleWindow * 2));
+
+    const marbleMotion = marbleMotionRef.current;
     const marbleMesh = marbleRef.current;
-    if (marbleMesh) {
-      const distance = world.distanceTo(previousWorld.current);
-      const radius = Math.max(0.12, props.settings.ballSize * WORLD_SCALE);
-      const impactIndex = firstEventAtOrAfter(props.events, timeMs);
-      const nextImpact = props.events[impactIndex]?.timeMs ?? Number.POSITIVE_INFINITY;
-      const previousImpact = props.events[impactIndex - 1]?.timeMs ?? Number.NEGATIVE_INFINITY;
-      const impactDistance = Math.min(Math.abs(nextImpact - timeMs), Math.abs(timeMs - previousImpact));
-      const impact = Math.exp(-Math.max(0, impactDistance) / 62);
-      marbleMesh.position.copy(world);
-      marbleMesh.rotation.x += distance / radius * 0.58;
-      marbleMesh.rotation.z -= (world.x - previousWorld.current.x) / radius * 0.52;
-      marbleMesh.scale.set(
-        radius * (1 + impact * 0.045),
-        radius * (1 - impact * 0.085),
-        radius * (1 + impact * 0.045),
+    if (marbleMotion && marbleMesh) {
+      const radius = Math.max(0.12, props.settings.ballSize * RHYTHMIC_WORLD_SCALE);
+      const timeDelta = timeMs - previousTimeRef.current;
+      displacement.copy(world).sub(previousWorld);
+      const distance = displacement.length();
+      if (initializedRef.current && timeDelta > 0 && timeDelta < 120 && distance > 0.0001 && distance < 2.5) {
+        rollAxis.set(displacement.y, -displacement.x, 0);
+        if (rollAxis.lengthSq() > 1e-7) {
+          rollAxis.normalize();
+          deltaQuaternion.setFromAxisAngle(rollAxis, Math.min(1.18, distance / radius));
+          rollQuaternion.current.premultiply(deltaQuaternion).normalize();
+        }
+      }
+
+      // Keep impact deformation in world space and spin on an inner group. Scaling
+      // the same rotating group made the squash axis whirl around the sphere.
+      marbleMotion.position.copy(world);
+      const squash = impactSquash(sample.impactAgeMs);
+      marbleMotion.scale.set(
+        radius * (1 + squash * 0.32),
+        radius * (1 - squash),
+        radius * (1 + squash * 0.32),
       );
-      marbleColor.set(marble.color);
+      marbleMesh.quaternion.copy(rollQuaternion.current);
+      marbleColor.set(sample.color);
       const surface = marbleMesh.children[0] as THREE.Mesh | undefined;
       const material = surface?.material as THREE.MeshStandardMaterial | undefined;
       if (material && props.settings.ballStyle === "classic") material.color.copy(marbleColor);
     }
-    previousWorld.current.copy(world);
+
+    previousWorld.copy(world);
+    previousTimeRef.current = timeMs;
+    initializedRef.current = true;
     vfxRef.current?.update(timeMs);
 
     const jumpDistance = world.distanceTo(aheadWorld);
     const density = noteDensity(props.events, timeMs);
-    const profileZoom = props.settings.cameraProfile === "xylophone" ? -0.5 : (props.settings.cameraProfile === "comet" ? 0.45 : 0);
-    const adaptiveZ = THREE.MathUtils.clamp(CAMERA_Z + profileZoom + jumpDistance * 0.22 - Math.min(1.1, density * 0.045), 8.7, 13.2);
-    const anchorOffset = (0.5 - props.settings.cameraAnchor) * 8.2;
-    const lateralLead = THREE.MathUtils.clamp((aheadWorld.x - world.x) * 0.22, -0.7, 0.7);
-    cameraTarget.set(world.x + lateralLead, world.y + anchorOffset, adaptiveZ);
-    const baseEase = THREE.MathUtils.clamp(props.settings.cameraSmoothing, 0.03, 0.65);
-    const followEase = snapCamera ? 1 : 1 - Math.pow(1 - baseEase, Math.max(0.25, deltaSeconds * 60));
-    camera.position.lerp(cameraTarget, followEase);
-    lookTarget.set(
-      THREE.MathUtils.lerp(world.x, aheadWorld.x, 0.5),
-      THREE.MathUtils.lerp(world.y - 0.45, aheadWorld.y, 0.58),
-      0,
+    const speed = velocity.length();
+    const profileZoom = props.settings.cameraProfile === "xylophone" ? -0.45 : (props.settings.cameraProfile === "comet" ? 0.5 : 0);
+    const adaptiveZ = THREE.MathUtils.clamp(
+      CAMERA_Z + profileZoom + jumpDistance * 0.18 + Math.min(0.45, speed * 0.018) - Math.min(0.75, density * 0.035),
+      8.8,
+      12.8,
     );
-    camera.lookAt(lookTarget);
+    const anchorOffset = (0.5 - props.settings.cameraAnchor) * 7.2;
+    const lateralLead = THREE.MathUtils.clamp((aheadWorld.x - world.x) * 0.28 + velocity.x * 0.018, -0.95, 0.95);
+    const verticalLag = THREE.MathUtils.clamp(velocity.y * 0.012, -0.32, 0.32);
+    cameraTarget.set(world.x + lateralLead, world.y + anchorOffset - verticalLag, adaptiveZ + world.z * 0.18);
+
+    const damping = 4.8 + THREE.MathUtils.clamp(props.settings.cameraSmoothing, 0.03, 0.65) * 14;
+    if (snapCamera || !Number.isFinite(camera.position.x)) {
+      camera.position.copy(cameraTarget);
+    } else {
+      camera.position.x = THREE.MathUtils.damp(camera.position.x, cameraTarget.x, damping, deltaSeconds);
+      camera.position.y = THREE.MathUtils.damp(camera.position.y, cameraTarget.y, damping, deltaSeconds);
+      camera.position.z = THREE.MathUtils.damp(camera.position.z, cameraTarget.z, damping * 0.82, deltaSeconds);
+    }
+
+    lookTarget.set(
+      THREE.MathUtils.lerp(world.x, aheadWorld.x, 0.58),
+      THREE.MathUtils.lerp(world.y - 0.36, aheadWorld.y, 0.46),
+      THREE.MathUtils.lerp(world.z, aheadWorld.z, 0.42),
+    );
+    if (snapCamera || smoothedLook.lengthSq() === 0) smoothedLook.copy(lookTarget);
+    else {
+      smoothedLook.x = THREE.MathUtils.damp(smoothedLook.x, lookTarget.x, damping * 1.18, deltaSeconds);
+      smoothedLook.y = THREE.MathUtils.damp(smoothedLook.y, lookTarget.y, damping * 1.18, deltaSeconds);
+      smoothedLook.z = THREE.MathUtils.damp(smoothedLook.z, lookTarget.z, damping * 1.18, deltaSeconds);
+    }
+    camera.lookAt(smoothedLook);
+
     const perspective = camera as THREE.PerspectiveCamera;
-    const targetFov = THREE.MathUtils.clamp(CAMERA_FOV + jumpDistance * 0.7 - density * 0.09, 34, 46);
-    perspective.fov = THREE.MathUtils.lerp(perspective.fov, targetFov, followEase * 0.45);
+    const targetFov = THREE.MathUtils.clamp(CAMERA_FOV + jumpDistance * 0.56 - density * 0.055, 34.5, 43.5);
+    perspective.fov = snapCamera ? targetFov : THREE.MathUtils.damp(perspective.fov, targetFov, 5.5, deltaSeconds);
     perspective.updateProjectionMatrix();
-    const bankTarget = THREE.MathUtils.clamp((aheadWorld.x - world.x) * -0.018, -0.055, 0.055);
-    perspective.rotation.z = THREE.MathUtils.lerp(perspective.rotation.z, bankTarget, followEase * 0.32);
-  }, [camera, cameraTarget, lookTarget, props.courseOverrides, props.durationMs, props.events, props.platforms, props.settings, marbleColor]);
+    const bankTarget = THREE.MathUtils.clamp(-velocity.x * 0.006, -0.042, 0.042);
+    perspective.rotation.z = snapCamera ? bankTarget : THREE.MathUtils.damp(perspective.rotation.z, bankTarget, 4.2, deltaSeconds);
+  }, [
+    afterWorld,
+    aheadWorld,
+    beforeWorld,
+    camera,
+    cameraTarget,
+    deltaQuaternion,
+    displacement,
+    lookTarget,
+    marbleColor,
+    previousWorld,
+    props.courseOverrides,
+    props.durationMs,
+    props.events,
+    props.platforms,
+    props.settings,
+    rollAxis,
+    smoothedLook,
+    velocity,
+    world,
+  ]);
 
   useEffect(() => {
     currentTimeRef.current = props.playbackStartMs;
     playbackEpochRef.current = performance.now() - props.playbackStartMs;
     nextNoteIndex.current = firstEventAtOrAfter(props.events, props.playbackStartMs);
+    previousTimeRef.current = props.playbackStartMs;
+    initializedRef.current = false;
     endedToken.current = null;
   }, [props.events, props.playbackStartMs, props.playbackToken]);
 
@@ -189,10 +289,17 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
     <>
       <PerspectiveCamera makeDefault fov={CAMERA_FOV} near={0.1} far={180} position={[0, 0, CAMERA_Z]} />
       <RhythmicLightingRig3D settings={props.settings} />
-      <RhythmicEnvironment3D settings={props.settings} />
+      <RhythmicEnvironment3D settings={props.settings} backgroundUrl={props.backgroundUrl} />
+      <RhythmicCourseItems3D
+        platforms={props.platforms}
+        overrides={props.courseOverrides}
+        settings={props.settings}
+        focusIndex={focusIndex}
+      />
       <RhythmicPlatformField3D
         platforms={props.platforms}
         settings={props.settings}
+        courseOverrides={props.courseOverrides}
         focusIndex={focusIndex}
         selectedNodeIndex={props.selectedNodeIndex}
         onSelectNode={props.onSelectNode}
@@ -204,7 +311,9 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
         settings={props.settings}
         courseOverrides={props.courseOverrides}
       />
-      <RhythmicMarble3D ref={marbleRef} settings={props.settings} liveColor={marbleColor} />
+      <group ref={marbleMotionRef}>
+        <RhythmicMarble3D ref={marbleRef} settings={props.settings} liveColor={marbleColor} />
+      </group>
     </>
   );
 }
@@ -222,7 +331,7 @@ export function hasRhythmicWebGLSupport() {
 
 export function RhythmicScene3D(props: Props) {
   const platforms = useMemo(
-    () => buildMarbleCourse(props.events, props.settings, COURSE_WIDTH),
+    () => buildMarbleCourse(props.events, props.settings, RHYTHMIC_COURSE_WIDTH),
     [props.events, props.settings.platformGap, props.settings.platformWidth, props.settings.platformThickness, props.settings.platformTilt, props.settings.laneSpread, props.settings.minBounceDistance, props.settings.bounceHeight, props.settings.ballSize, props.settings.prismStart, props.settings.prismEnd, props.settings.autoSyncGaps, props.settings.terrainProfile, props.settings.colorPaletteMode],
   );
 
@@ -230,16 +339,22 @@ export function RhythmicScene3D(props: Props) {
     <div className="relative h-[66vh] max-h-[1280px] max-w-full aspect-[9/16] overflow-hidden rounded-xl bg-slate-950">
       <Canvas
         frameloop={props.playing ? "always" : "demand"}
-        dpr={props.playing ? [0.9, 1.2] : [0.75, 1]}
-        shadows={props.playing}
-        gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+        dpr={props.playing ? [1, 1.25] : [0.85, 1]}
+        shadows
+        gl={{ antialias: true, alpha: false, powerPreference: "high-performance", stencil: false }}
+        onCreated={({ gl }) => {
+          gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = 1.04;
+          gl.shadowMap.enabled = true;
+          gl.shadowMap.type = THREE.PCFSoftShadowMap;
+        }}
         onPointerMissed={() => props.onSelectNode(null)}
       >
         <color attach="background" args={[props.settings.backgroundColor]} />
         <SceneContent {...props} platforms={platforms} />
       </Canvas>
       <div className="pointer-events-none absolute left-2 top-2 rounded-md border border-white/10 bg-black/45 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70 backdrop-blur">
-        WebGL · {props.playing ? "adaptive preview" : "demand idle"}
+        WebGL · {props.playing ? "cinematic preview" : "quality idle"}
       </div>
     </div>
   );

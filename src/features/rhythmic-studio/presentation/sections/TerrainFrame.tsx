@@ -18,12 +18,12 @@ export function TerrainFrame({ studio }: { studio: RhythmicStudioController }) {
     <SelectField label={t("course.platformMix")} value={s.platformMixMode} options={mixOptions} onChange={(value) => studio.patch("platformMixMode", value as StudioSettings["platformMixMode"])} />
     <SelectField label={t("course.primaryStyle")} value={s.platformPrimaryStyle} options={platformOptions} onChange={(value) => studio.patch("platformPrimaryStyle", value as StudioSettings["platformPrimaryStyle"])} />
     <SelectField label={t("course.secondaryStyle")} value={s.platformSecondaryStyle} options={platformOptions} onChange={(value) => studio.patch("platformSecondaryStyle", value as StudioSettings["platformSecondaryStyle"])} />
-    <RangeField label={t("course.platformWidth")} value={s.platformWidth} min={120} max={360} step={4} unit="px" onChange={(value) => studio.patch("platformWidth", value)} />
+    <RangeField label={t("course.platformWidth")} value={s.platformWidth} min={50} max={420} step={4} unit="px" onChange={(value) => studio.patch("platformWidth", value)} />
     <RangeField label={t("course.platformThickness")} value={s.platformThickness} min={8} max={34} step={1} unit="px" onChange={(value) => studio.patch("platformThickness", value)} />
     <RangeField label={t("course.verticalGap")} value={s.platformGap} min={70} max={300} step={5} unit="px" onChange={(value) => studio.patch("platformGap", value)} />
-    <RangeField label={t("course.laneSpread")} value={s.laneSpread} min={220} max={600} step={5} unit="px" onChange={(value) => studio.patch("laneSpread", value)} />
+    <RangeField label={t("course.laneSpread")} value={s.laneSpread} min={80} max={600} step={5} unit="px" onChange={(value) => studio.patch("laneSpread", value)} />
     <RangeField label={t("course.minJump")} value={s.minBounceDistance} min={8} max={160} step={2} unit="px" onChange={(value) => studio.patch("minBounceDistance", value)} />
-    <RangeField label={t("course.platformTilt")} value={s.platformTilt} min={0} max={18} step={1} unit="°" onChange={(value) => studio.patch("platformTilt", value)} />
+    <RangeField label={t("course.platformTilt")} value={s.platformTilt} min={0} max={90} step={1} unit="°" onChange={(value) => studio.patch("platformTilt", value)} />
     <RangeField label={t("course.platformGlow")} value={s.platformGlow} min={0} max={1.5} step={0.05} onChange={(value) => studio.patch("platformGlow", value)} />
     <ToggleField label={t("course.impactRipple")} checked={s.impactRipple} onChange={(value) => studio.patch("impactRipple", value)} />
   </ControlFrame>;

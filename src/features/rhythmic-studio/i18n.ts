@@ -1,5 +1,4 @@
 import type { Lang } from "@/lib/i18n";
-
 const EN = {
   "page.title": "Marble Music Studio",
   "page.subtitle": "MIDI/audio → beat platforms → bouncing marble video",
@@ -51,6 +50,9 @@ const EN = {
   "platformStyle.stair-step": "Stair step pad",
   "platformStyle.toy-peg": "Toy peg",
   "platformStyle.toy-tube": "Toy tube",
+  "platformStyle.tube-cylinder": "3D tube cylinder",
+  "platformStyle.comet-pad": "Comet launch pad",
+  "platformStyle.xylophone-key": "Xylophone key",
   "platformMix.single": "Single style",
   "platformMix.alternate": "Alternate two styles",
   "platformMix.accent": "Main + accent beats",
@@ -191,7 +193,6 @@ const EN = {
   "default.projectName": "My rhythmic run",
   "default.untitled": "Untitled run",
 } as const;
-
 const VI: Record<keyof typeof EN, string> = {
   "page.title": "Marble Music Studio",
   "page.subtitle": "MIDI/âm thanh → bệ theo nhịp → video viên bi nảy theo nhạc",
@@ -243,6 +244,9 @@ const VI: Record<keyof typeof EN, string> = {
   "platformStyle.stair-step": "Bậc thang",
   "platformStyle.toy-peg": "Chốt đồ chơi",
   "platformStyle.toy-tube": "Ống đồ chơi",
+  "platformStyle.tube-cylinder": "Ống trụ 3D",
+  "platformStyle.comet-pad": "Bệ phóng sao chổi",
+  "platformStyle.xylophone-key": "Phím xylophone",
   "platformMix.single": "Một kiểu duy nhất",
   "platformMix.alternate": "Xen kẽ hai kiểu",
   "platformMix.accent": "Bệ chính + bệ nhấn",
@@ -383,7 +387,6 @@ const VI: Record<keyof typeof EN, string> = {
   "default.projectName": "Bản Marble Music của tôi",
   "default.untitled": "Đường chạy chưa đặt tên",
 };
-
 export type RhythmicTextKey = keyof typeof EN;
 
 export function rhythmicText(lang: Lang, key: RhythmicTextKey, values?: Record<string, string | number>) {

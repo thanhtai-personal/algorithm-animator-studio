@@ -1,4 +1,4 @@
-import type { StudioSettings } from "../types";
+import type { StudioSettings, TerrainProfile } from "../types";
 
 export type RhythmTerrainKind = "burst" | "steady" | "open" | "rest";
 
@@ -31,45 +31,42 @@ function controlScales(settings: StudioSettings) {
   return { vertical, horizontal, bounce };
 }
 
-function scaledStep(
-  kind: RhythmTerrainKind,
-  settings: StudioSettings,
-  verticalDrop: number,
-  horizontalDistance: number,
-  bounceHeight: number,
-  curveScale: number,
-  platformScale: number,
-): RhythmTerrainStep {
-  const scale = controlScales(settings);
-  return {
-    kind,
-    verticalDrop: clamp(verticalDrop * scale.vertical, 24, 760),
-    horizontalDistance: clamp(horizontalDistance * scale.horizontal, 24, 330),
-    bounceHeight: clamp(bounceHeight * scale.bounce, 24, 300),
-    curveScale,
-    platformScale,
-  };
+function baseStep(span: number): RhythmTerrainStep {
+  if (span >= REST_GAP_MS) {
+    const t = clamp((span - REST_GAP_MS) / 1800, 0, 1);
+    return { kind: "rest", verticalDrop: lerp(310, 520, t), horizontalDistance: lerp(58, 92, t), bounceHeight: lerp(54, 82, t), curveScale: 0.18, platformScale: 1.04 };
+  }
+  if (span <= BURST_GAP_MS) {
+    const t = clamp(span / BURST_GAP_MS, 0, 1);
+    return { kind: "burst", verticalDrop: lerp(44, 78, t), horizontalDistance: lerp(50, 92, t), bounceHeight: lerp(46, 74, t), curveScale: 0.34, platformScale: 0.9 };
+  }
+  if (span <= STEADY_GAP_MS) {
+    const t = (span - BURST_GAP_MS) / (STEADY_GAP_MS - BURST_GAP_MS);
+    return { kind: "steady", verticalDrop: lerp(88, 182, t), horizontalDistance: lerp(94, 184, t), bounceHeight: lerp(76, 132, t), curveScale: lerp(0.48, 0.74, t), platformScale: lerp(0.94, 1.02, t) };
+  }
+  const t = (span - STEADY_GAP_MS) / (REST_GAP_MS - STEADY_GAP_MS);
+  return { kind: "open", verticalDrop: lerp(190, 300, t), horizontalDistance: lerp(176, 276, t), bounceHeight: lerp(132, 174, t), curveScale: lerp(0.78, 1.04, t), platformScale: lerp(1.02, 1.08, t) };
+}
+
+function profileScale(profile: TerrainProfile) {
+  if (profile === "tube-board") return { v: 1.04, h: 0.62, b: 0.64, c: 0.5 };
+  if (profile === "comet") return { v: 0.92, h: 1.28, b: 1.22, c: 1.35 };
+  if (profile === "xylophone") return { v: 0.78, h: 0.48, b: 0.56, c: 0.36 };
+  return { v: 1, h: 1, b: 1, c: 1 };
 }
 
 export function rhythmTerrainForGap(spanMs: number, settings: StudioSettings): RhythmTerrainStep {
-  const span = Math.max(1, spanMs);
-  if (span >= REST_GAP_MS) {
-    const t = clamp((span - REST_GAP_MS) / 1800, 0, 1);
-    return scaledStep("rest", settings, lerp(310, 520, t), lerp(58, 92, t), lerp(54, 82, t), 0.18, 1.04);
-  }
-
-  if (span <= BURST_GAP_MS) {
-    const t = clamp(span / BURST_GAP_MS, 0, 1);
-    return scaledStep("burst", settings, lerp(44, 78, t), lerp(50, 92, t), lerp(46, 74, t), 0.34, 0.9);
-  }
-
-  if (span <= STEADY_GAP_MS) {
-    const t = (span - BURST_GAP_MS) / (STEADY_GAP_MS - BURST_GAP_MS);
-    return scaledStep("steady", settings, lerp(88, 182, t), lerp(94, 184, t), lerp(76, 132, t), lerp(0.48, 0.74, t), lerp(0.94, 1.02, t));
-  }
-
-  const t = (span - STEADY_GAP_MS) / (REST_GAP_MS - STEADY_GAP_MS);
-  return scaledStep("open", settings, lerp(190, 300, t), lerp(176, 276, t), lerp(132, 174, t), lerp(0.78, 1.04, t), lerp(1.02, 1.08, t));
+  const base = baseStep(Math.max(1, spanMs));
+  const control = controlScales(settings);
+  const profile = profileScale(settings.terrainProfile);
+  return {
+    kind: base.kind,
+    verticalDrop: clamp(base.verticalDrop * control.vertical * profile.v, 22, 760),
+    horizontalDistance: clamp(base.horizontalDistance * control.horizontal * profile.h, 14, 330),
+    bounceHeight: clamp(base.bounceHeight * control.bounce * profile.b, 16, 300),
+    curveScale: base.curveScale * profile.c,
+    platformScale: base.platformScale,
+  };
 }
 
 export function ballisticArcOffset(t: number, height: number) {

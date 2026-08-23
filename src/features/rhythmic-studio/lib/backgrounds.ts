@@ -1,5 +1,6 @@
 import type { StudioSettings } from "../types";
 import { mixHex } from "./marbleCourse";
+import { drawPresetBackground } from "./presetBackgrounds";
 
 function drawImageCover(ctx: CanvasRenderingContext2D, image: HTMLImageElement, width: number, height: number, fit: StudioSettings["backgroundImageFit"]) {
   const scale = fit === "contain" ? Math.min(width / image.width, height / image.height) : Math.max(width / image.width, height / image.height);
@@ -192,6 +193,8 @@ export function drawRhythmicBackground(ctx: CanvasRenderingContext2D, width: num
     const tint = ctx.createLinearGradient(0, 0, 0, height);
     tint.addColorStop(0, "rgba(3,4,12,.14)"); tint.addColorStop(1, "rgba(2,3,8,.58)");
     ctx.fillStyle = tint; ctx.fillRect(0, 0, width, height);
+  } else if (drawPresetBackground(ctx, width, height, settings)) {
+    // preset-specific background rendered
   } else if (settings.backgroundPreset === "aurora") drawAurora(ctx, width, height, settings, pulse, timeMs);
   else if (settings.backgroundPreset === "starfield") drawStarfield(ctx, width, height, settings, timeMs);
   else if (settings.backgroundPreset === "deep-space") drawStarfield(ctx, width, height, settings, timeMs, true);

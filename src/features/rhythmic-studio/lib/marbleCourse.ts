@@ -10,7 +10,14 @@ export interface MarblePlatform {
   thickness: number;
   tiltRad: number;
   color: string;
+  contactX: number;
   event: NoteEvent;
+}
+
+export function platformContactPoint(platform: MarblePlatform) {
+  const x = platform.contactX ?? platform.x;
+  const localX = x - platform.x;
+  return { x, y: platform.y + localX * Math.sin(platform.tiltRad) };
 }
 
 export const LONG_GAP_TUBE_MS = REST_GAP_MS;
@@ -31,12 +38,16 @@ export interface LongGapTubeGeometry {
 }
 
 export function longGapTubeGeometry(start: MarblePlatform, end: MarblePlatform, settings: StudioSettings): LongGapTubeGeometry {
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  const entryX = start.x + dx * TUBE_ENTRY_T;
-  const entryY = start.y + dy * TUBE_ENTRY_T - settings.ballSize - 22;
-  const exitX = start.x + dx * TUBE_EXIT_T;
-  const exitY = start.y + dy * TUBE_EXIT_T - settings.ballSize - 22;
+  const startContact = platformContactPoint(start);
+  const endContact = platformContactPoint(end);
+  const startX = startContact.x;
+  const endX = endContact.x;
+  const dx = endX - startX;
+  const dy = endContact.y - startContact.y;
+  const entryX = startX + dx * TUBE_ENTRY_T;
+  const entryY = startContact.y + dy * TUBE_ENTRY_T - settings.ballSize - 22;
+  const exitX = startX + dx * TUBE_EXIT_T;
+  const exitY = startContact.y + dy * TUBE_EXIT_T - settings.ballSize - 22;
   const tubeDy = exitY - entryY;
   const direction = seededNoise(start.index + 311) >= 0 ? 1 : -1;
   const lateral = clamp(Math.abs(tubeDy) * 0.14, 42, 72);
@@ -111,6 +122,34 @@ function rainbowHex(index: number, pitch: number) {
   return `#${rgb.map((value) => Math.round((value + m) * 255).toString(16).padStart(2, "0")).join("")}`;
 }
 
+function paletteColor(index: number, pitch: number, settings: StudioSettings) {
+  if (settings.colorPaletteMode === "rainbow") return rainbowHex(index, pitch);
+  if (settings.colorPaletteMode === "tube-accent") {
+    const accents = ["#5fa8ff", "#ff414c", "#ffd52f", "#3be76f", "#639cff"];
+    if (index % 4 === 1 || index % 9 === 0) return accents[index % accents.length];
+    return mixHex("#4a4e56", "#9ba2aa", 0.26 + (index % 3) * 0.12);
+  }
+  if (settings.colorPaletteMode === "neon-galaxy") {
+    const colors = ["#5677ff", "#5bd8ff", "#ff4fc7", "#785cff"];
+    return mixHex(colors[index % colors.length], colors[(index + 1) % colors.length], 0.32 + pitch * 0.44);
+  }
+  if (settings.colorPaletteMode === "key-rainbow") {
+    const colors = ["#ff4f59", "#ff9238", "#ffdb45", "#62e572", "#4bdcff", "#5f86ff", "#cf6dff"];
+    return colors[index % colors.length];
+  }
+  return mixHex(settings.prismStart, settings.prismEnd, clamp(pitch * 0.74 + (index % 5) * 0.052));
+}
+
+function platformAngle(index: number, direction: number, settings: StudioSettings) {
+  if (settings.terrainProfile === "tube-board") {
+    const sign = seededNoise(index + 301) >= 0 ? 1 : -1;
+    return sign * (56 + Math.abs(seededNoise(index + 37)) * 27) * Math.PI / 180;
+  }
+  if (settings.terrainProfile === "xylophone") return seededNoise(index + 7) * 1.4 * Math.PI / 180;
+  const tiltDirection = direction === 0 ? (index % 2 === 0 ? 1 : -1) : direction * -1;
+  return (tiltDirection * settings.platformTilt * 0.24 + seededNoise(index + 7) * settings.platformTilt * 0.2) * Math.PI / 180;
+}
+
 function ease(value: number, settings: StudioSettings) {
   const t = clamp(value);
   if (!settings.decoupleBallSpeed || settings.accelerationMode === "none") return t;
@@ -132,52 +171,57 @@ export function buildMarbleCourse(events: NoteEvent[], settings: StudioSettings,
   const maxMidi = Math.max(...events.map((event) => event.midi));
   const center = width / 2;
   const laneHalf = Math.min(width * 0.39, settings.laneSpread / 2);
-  let previousX = center;
+  let previousContactX = center;
   let currentY = 230;
-  let direction = seededNoise(events.length + 41) >= 0 ? 1 : -1;
+  let direction = settings.terrainProfile === "xylophone" ? 0 : (seededNoise(events.length + 41) >= 0 ? 1 : -1);
 
   return events.map((event, index) => {
     const span = index > 0 ? Math.max(1, event.timeMs - events[index - 1].timeMs) : 0;
     const terrain = rhythmTerrainForGap(span || 420, settings);
     if (index > 0) currentY += terrain.verticalDrop;
-
     const pitch = maxMidi === minMidi ? 0.5 : (event.midi - minMidi) / (maxMidi - minMidi);
-    const platformWidth = settings.platformWidth * (0.88 + event.velocity * 0.18) * terrain.platformScale;
-    const margin = Math.min(width / 2 - 24, platformWidth / 2 + 22);
-    const pitchBias = (pitch - 0.5) * laneHalf * (terrain.kind === "burst" ? 0.12 : 0.22);
-    const noise = seededNoise(index + 17) * terrain.horizontalDistance * 0.1;
+    const widthScale = settings.terrainProfile === "xylophone" ? 1.12 : settings.terrainProfile === "tube-board" ? 0.92 : 1;
+    const platformWidth = settings.platformWidth * (0.9 + event.velocity * 0.16) * terrain.platformScale * widthScale;
+    const margin = Math.min(width / 2 - 24, platformWidth / 2 + 24);
+    const pitchBias = settings.terrainProfile === "comet" ? (pitch - 0.5) * laneHalf * 0.34 : (pitch - 0.5) * laneHalf * 0.12;
+    const noiseScale = settings.terrainProfile === "tube-board" ? 0.025 : 0.075;
+    const noise = seededNoise(index + 17) * terrain.horizontalDistance * noiseScale;
 
-    let x = index === 0 ? center + pitchBias * 0.35 : previousX + direction * terrain.horizontalDistance + pitchBias + noise;
-    if (terrain.kind === "rest") x = previousX + direction * terrain.horizontalDistance * 0.55 + pitchBias * 0.24;
-
-    if (x < margin || x > width - margin) {
-      direction *= -1;
-      x = previousX + direction * terrain.horizontalDistance + pitchBias * 0.35;
-    }
-    x = clamp(x, margin, width - margin);
-
-    if (index > 0 && terrain.kind !== "rest") {
-      const actualDistance = Math.abs(x - previousX);
-      const minimum = Math.min(terrain.horizontalDistance * 0.58, laneHalf * 0.72);
-      if (actualDistance < minimum) {
-        x = clamp(previousX + direction * minimum, margin, width - margin);
-      }
+    let contactX = center;
+    if (index === 0) contactX = center + pitchBias * 0.25;
+    else if (settings.terrainProfile === "xylophone") {
+      const stride = Math.min(laneHalf * 0.34, terrain.horizontalDistance * 0.28);
+      contactX = center + (index % 2 === 0 ? stride : -stride) + pitchBias * 0.18;
+    } else {
+      const distanceScale = settings.terrainProfile === "tube-board" ? 0.72 : 1;
+      contactX = previousContactX + direction * terrain.horizontalDistance * distanceScale + pitchBias + noise;
+      if (terrain.kind === "rest") contactX = previousContactX + direction * terrain.horizontalDistance * 0.38 + pitchBias * 0.2;
     }
 
-    if (index > 0 && terrain.kind !== "burst" && seededNoise(index + 97) > 0.76) direction *= -1;
-    previousX = x;
-    const color = settings.colorPaletteMode === "rainbow"
-      ? rainbowHex(index, pitch)
-      : mixHex(settings.prismStart, settings.prismEnd, clamp(pitch * 0.74 + (index % 5) * 0.052));
-    const tiltDirection = direction * -1;
+    if (contactX < margin || contactX > width - margin) {
+      direction = direction === 0 ? (contactX > center ? -1 : 1) : direction * -1;
+      contactX = previousContactX + (direction || 1) * terrain.horizontalDistance * (settings.terrainProfile === "tube-board" ? 0.62 : 0.9);
+    }
+    contactX = clamp(contactX, margin, width - margin);
+    if (index > 0 && settings.terrainProfile === "tube-board" && terrain.kind !== "burst" && seededNoise(index + 90) > 0.58) direction *= -1;
+    if (index > 0 && settings.terrainProfile === "comet" && terrain.kind !== "burst" && seededNoise(index + 97) > 0.76) direction *= -1;
+
+    const contactOffset = settings.terrainProfile === "tube-board"
+      ? seededNoise(index + 141) * platformWidth * 0.26
+      : settings.terrainProfile === "xylophone" ? seededNoise(index + 141) * platformWidth * 0.06 : 0;
+    let x = clamp(contactX - contactOffset, margin, width - margin);
+    const resolvedContactX = clamp(x + contactOffset, 28, width - 28);
+    previousContactX = resolvedContactX;
+
     return {
       index,
       x,
       y: currentY,
       width: platformWidth,
       thickness: settings.platformThickness,
-      tiltRad: (tiltDirection * settings.platformTilt * 0.24 + seededNoise(index + 7) * settings.platformTilt * 0.28) * Math.PI / 180,
-      color,
+      tiltRad: platformAngle(index, direction, settings),
+      color: paletteColor(index, pitch, settings),
+      contactX: resolvedContactX,
       event,
     };
   });
@@ -189,12 +233,13 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
   }
 
   const first = platforms[0];
+  const firstContact = platformContactPoint(first);
   if (timeMs < events[0].timeMs) {
     const span = Math.max(280, events[0].timeMs || 620);
     const t = ease(timeMs / span, settings);
     return {
-      x: first.x,
-      y: first.y - settings.ballSize - settings.bounceHeight * (1 - t),
+      x: firstContact.x,
+      y: firstContact.y - settings.ballSize - settings.bounceHeight * (1 - t),
       color: first.color,
       platformIndex: 0,
     };
@@ -209,11 +254,18 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
   }
   if (index >= events.length - 1) {
     const last = platforms[platforms.length - 1];
-    return { x: last.x, y: last.y - settings.ballSize, color: last.color, platformIndex: last.index };
+    const contact = platformContactPoint(last);
+    return { x: contact.x, y: contact.y - settings.ballSize, color: last.color, platformIndex: last.index };
   }
 
   const start = platforms[index];
   const end = platforms[index + 1];
+  const startContact = platformContactPoint(start);
+  const endContact = platformContactPoint(end);
+  const startX = startContact.x;
+  const endX = endContact.x;
+  const startY = startContact.y;
+  const endY = endContact.y;
   const span = Math.max(1, events[index + 1].timeMs - events[index].timeMs);
   const t = ease((timeMs - events[index].timeMs) / span, settings);
   const segmentOverride = overrideForSegment(index, overrides);
@@ -226,8 +278,8 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
     if (t < TUBE_ENTRY_T) {
       const phase = t / TUBE_ENTRY_T;
       return {
-        x: start.x + (entryX - start.x) * phase,
-        y: start.y - settings.ballSize + (entryY - (start.y - settings.ballSize)) * phase - Math.sin(Math.PI * phase) * settings.bounceHeight * 0.42,
+        x: startX + (entryX - startX) * phase,
+        y: startY - settings.ballSize + (entryY - (startY - settings.ballSize)) * phase - Math.sin(Math.PI * phase) * settings.bounceHeight * 0.42,
         color: mixHex(start.color, end.color, t),
         platformIndex: index,
       };
@@ -244,23 +296,23 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
     }
     const phase = (t - TUBE_EXIT_T) / (1 - TUBE_EXIT_T);
     return {
-      x: exitX + (end.x - exitX) * phase,
-      y: exitY + (end.y - settings.ballSize - exitY) * phase - Math.sin(Math.PI * phase) * settings.bounceHeight * 0.22,
+      x: exitX + (endX - exitX) * phase,
+      y: exitY + (endY - settings.ballSize - exitY) * phase - Math.sin(Math.PI * phase) * settings.bounceHeight * 0.22,
       color: mixHex(start.color, end.color, t),
       platformIndex: index,
     };
   }
 
   const terrain = rhythmTerrainForGap(span, settings);
-  const drop = end.y - start.y;
+  const drop = endY - startY;
   const minimumBallisticHeight = drop * 0.28;
   const bounceHeight = Math.max(terrain.bounceHeight, minimumBallisticHeight);
   const arc = ballisticArcOffset(t, bounceHeight);
-  const curveSign = end.x >= start.x ? 1 : -1;
+  const curveSign = endX >= startX ? 1 : -1;
   const horizontalCurve = 4 * t * (1 - t) * settings.curveIntensity * settings.curvePathLength * 32 * terrain.curveScale * curveSign;
   return {
-    x: start.x + (end.x - start.x) * t + horizontalCurve,
-    y: start.y + (end.y - start.y) * t - arc - settings.ballSize,
+    x: startX + (endX - startX) * t + horizontalCurve,
+    y: startY + (endY - startY) * t - arc - settings.ballSize,
     color: mixHex(start.color, end.color, t),
     platformIndex: index,
   };

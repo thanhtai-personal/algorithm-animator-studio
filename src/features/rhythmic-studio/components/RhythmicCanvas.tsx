@@ -17,6 +17,7 @@ import { drawLongGapTubes } from "../lib/longGapTube";
 import { drawCourseLongItems, isPlatformCourseItem, overrideForNode } from "../lib/courseItems";
 import { drawRhythmicBackground } from "../lib/backgrounds";
 import { activeLyricAt } from "../lib/lyrics";
+import { applyPresetCamera, unprojectPresetCamera } from "../lib/presetCamera";
 
 interface Props {
   events: NoteEvent[];
@@ -80,33 +81,35 @@ function drawMarble(ctx: CanvasRenderingContext2D, point: MarblePoint, cameraY: 
   const x = point.x;
   const y = point.y - cameraY;
   const radius = settings.ballSize * (1 + pulse * 0.08);
+  const baseColor = settings.ballStyle === "prism" ? point.color : settings.ballBaseColor;
+  const stripeColor = settings.ballStripeColor;
   if (settings.glowAnimation) {
     const glowRadius = radius * (3.4 + pulse * 2.2);
     const glow = ctx.createRadialGradient(x, y, 2, x, y, glowRadius);
-    glow.addColorStop(0, `${point.color}b8`);
-    glow.addColorStop(0.42, `${point.color}38`);
+    glow.addColorStop(0, `${baseColor}b8`);
+    glow.addColorStop(0.42, `${baseColor}38`);
     glow.addColorStop(1, `${point.color}00`);
     ctx.fillStyle = glow;
     ctx.beginPath(); ctx.arc(x, y, glowRadius, 0, Math.PI * 2); ctx.fill();
   }
   ctx.save();
   ctx.shadowBlur = 24 + pulse * 34;
-  ctx.shadowColor = point.color;
+  ctx.shadowColor = baseColor;
   if (settings.ballStyle === "chrome") {
     const g = ctx.createRadialGradient(x - radius * 0.5, y - radius * 0.6, radius * 0.12, x, y, radius);
-    g.addColorStop(0, '#ffffff'); g.addColorStop(0.18, '#dfe6ef'); g.addColorStop(0.42, point.color); g.addColorStop(1, '#111827');
+    g.addColorStop(0, '#ffffff'); g.addColorStop(0.18, '#dfe6ef'); g.addColorStop(0.42, baseColor); g.addColorStop(1, '#111827');
     ctx.fillStyle = g;
   } else if (settings.ballStyle === "glass") {
     const g = ctx.createRadialGradient(x - radius * 0.25, y - radius * 0.35, radius * 0.08, x, y, radius);
-    g.addColorStop(0, '#ffffff'); g.addColorStop(0.32, 'rgba(255,255,255,.68)'); g.addColorStop(1, mixHex(point.color, '#040814', 0.16));
+    g.addColorStop(0, '#ffffff'); g.addColorStop(0.32, 'rgba(255,255,255,.68)'); g.addColorStop(1, mixHex(baseColor, '#040814', 0.16));
     ctx.fillStyle = g;
   } else if (settings.ballStyle === "neon") {
     const g = ctx.createRadialGradient(x, y, 2, x, y, radius);
-    g.addColorStop(0, '#ffffff'); g.addColorStop(0.28, mixHex('#ffffff', point.color, 0.14)); g.addColorStop(1, mixHex(point.color, '#0a0d18', 0.18));
+    g.addColorStop(0, '#ffffff'); g.addColorStop(0.28, mixHex('#ffffff', baseColor, 0.14)); g.addColorStop(1, mixHex(baseColor, '#0a0d18', 0.18));
     ctx.fillStyle = g;
   } else if (settings.ballStyle === "striped") {
     const g = ctx.createRadialGradient(x - radius * 0.25, y - radius * 0.32, radius * 0.06, x, y, radius);
-    g.addColorStop(0, '#ffffff'); g.addColorStop(1, mixHex(point.color, '#0f172a', 0.24));
+    g.addColorStop(0, '#ffffff'); g.addColorStop(1, mixHex(baseColor, '#0f172a', 0.24));
     ctx.fillStyle = g;
   } else if (settings.ballStyle === "prism") {
     const g = ctx.createLinearGradient(x - radius, y - radius, x + radius, y + radius);
@@ -114,15 +117,15 @@ function drawMarble(ctx: CanvasRenderingContext2D, point: MarblePoint, cameraY: 
     ctx.fillStyle = g;
   } else {
     const g = ctx.createRadialGradient(x - radius * 0.35, y - radius * 0.45, radius * 0.12, x, y, radius);
-    g.addColorStop(0, '#ffffff'); g.addColorStop(0.38, mixHex('#ffffff', point.color, 0.22)); g.addColorStop(1, mixHex(point.color, '#050712', 0.35));
+    g.addColorStop(0, '#ffffff'); g.addColorStop(0.38, mixHex('#ffffff', baseColor, 0.22)); g.addColorStop(1, mixHex(baseColor, '#050712', 0.35));
     ctx.fillStyle = g;
   }
   ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
   if (settings.ballStyle === 'striped') {
-    ctx.strokeStyle = mixHex(settings.prismEnd, '#ffffff', 0.18);
+    ctx.strokeStyle = stripeColor;
     ctx.lineWidth = Math.max(2, radius * 0.22);
     ctx.beginPath(); ctx.arc(x, y, radius * 0.7, Math.PI * 0.18, Math.PI * 0.94); ctx.stroke();
-    ctx.strokeStyle = mixHex(settings.prismStart, '#ffffff', 0.18);
+    ctx.strokeStyle = stripeColor;
     ctx.beginPath(); ctx.arc(x, y, radius * 0.36, Math.PI * 1.08, Math.PI * 1.88); ctx.stroke();
   }
   if (settings.ballStyle === 'glass') {
@@ -202,6 +205,8 @@ function drawLyrics(ctx: CanvasRenderingContext2D, timeMs: number, lyrics: Lyric
 function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEvent[], platforms: MarblePlatform[], cameraY: number, durationMs: number, settings: StudioSettings, beatLabel: string, backgroundImage: HTMLImageElement | null, lyrics: LyricCue[], courseOverrides: CourseItemOverride[], selectedNodeIndex: number | null, recording: boolean) {
   const pulse = settings.pulseAnimation ? collisionStrength(timeMs, events) * settings.animationSensitivity : 0;
   drawRhythmicBackground(ctx, WIDTH, HEIGHT, settings, pulse, timeMs, backgroundImage);
+  ctx.save();
+  applyPresetCamera(ctx, settings, WIDTH, HEIGHT);
   drawLongGapTubes(ctx, platforms, events, cameraY, timeMs, settings, courseOverrides);
   drawCourseLongItems(ctx, platforms, courseOverrides, cameraY, settings);
   for (const platform of platforms) {
@@ -242,6 +247,7 @@ function drawFrame(ctx: CanvasRenderingContext2D, timeMs: number, events: NoteEv
   ctx.globalAlpha = 1;
   drawParticles(ctx, platforms, cameraY, timeMs, settings);
   drawMarble(ctx, marbleAtTime(timeMs, events, platforms, settings, courseOverrides), cameraY, pulse, settings);
+  ctx.restore();
   drawLyrics(ctx, timeMs, lyrics, settings);
 
   const progress = clamp(timeMs / Math.max(1, durationMs));
@@ -285,7 +291,7 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
   const [backgroundImage, setBackgroundImage] = useState<HTMLImageElement | null>(null);
   const platforms = useMemo(
     () => buildMarbleCourse(events, settings, WIDTH),
-    [events, settings.platformGap, settings.platformWidth, settings.platformThickness, settings.platformTilt, settings.laneSpread, settings.minBounceDistance, settings.prismStart, settings.prismEnd, settings.autoSyncGaps],
+    [events, settings.platformGap, settings.platformWidth, settings.platformThickness, settings.platformTilt, settings.laneSpread, settings.minBounceDistance, settings.prismStart, settings.prismEnd, settings.autoSyncGaps, settings.terrainProfile, settings.colorPaletteMode],
   );
   const currentTime = useRef(0);
   const nextNoteIndex = useRef(0);
@@ -360,9 +366,11 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const x = (clientX - rect.left) * WIDTH / rect.width;
+    const screenX = (clientX - rect.left) * WIDTH / rect.width;
     const screenY = (clientY - rect.top) * HEIGHT / rect.height;
-    const worldY = screenY + cameraY.current;
+    const projected = unprojectPresetCamera({ x: screenX, y: screenY }, settings, WIDTH, HEIGHT);
+    const x = projected.x;
+    const worldY = projected.y + cameraY.current;
     let bestIndex: number | null = null;
     let bestScore = Infinity;
     for (const platform of platforms) {

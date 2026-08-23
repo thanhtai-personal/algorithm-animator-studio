@@ -43,6 +43,9 @@ export const PLATFORM_STYLES = [
   "glass-optic",
   "toy-peg",
   "toy-tube",
+  "tube-cylinder",
+  "comet-pad",
+  "xylophone-key",
 ] as const;
 
 export type PlatformStyle = (typeof PLATFORM_STYLES)[number];
@@ -75,7 +78,9 @@ export const BALL_STYLES = [
 ] as const;
 
 export type BallStyle = (typeof BALL_STYLES)[number];
-export type ColorPaletteMode = "duotone" | "rainbow";
+export type ColorPaletteMode = "duotone" | "rainbow" | "tube-accent" | "neon-galaxy" | "key-rainbow";
+export type TerrainProfile = "balanced" | "tube-board" | "comet" | "xylophone";
+export type CameraProfile = "follow" | "tube-board" | "comet" | "xylophone";
 export type MidiInstrumentMode = "auto" | "single";
 export const EXPORT_FPS_OPTIONS = [30, 60, 120] as const;
 export type ExportFps = (typeof EXPORT_FPS_OPTIONS)[number];
@@ -91,6 +96,9 @@ export const BACKGROUND_PRESETS = [
   "stairway",
   "tube-tunnel",
   "toy-board",
+  "tube-board-dark",
+  "comet-void",
+  "xylophone-room",
 ] as const;
 
 export type BackgroundPreset = (typeof BACKGROUND_PRESETS)[number];
@@ -154,7 +162,11 @@ export interface StudioSettings {
   prismEnd: string;
   backgroundColor: string;
   ballStyle: BallStyle;
+  ballBaseColor: string;
+  ballStripeColor: string;
   colorPaletteMode: ColorPaletteMode;
+  terrainProfile: TerrainProfile;
+  cameraProfile: CameraProfile;
   backgroundPreset: BackgroundPreset;
   backgroundMotion: number;
   backgroundImageOpacity: number;

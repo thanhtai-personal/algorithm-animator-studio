@@ -1,5 +1,6 @@
 import type { PlatformMixMode, PlatformStyle, StudioSettings } from "../types";
 import { clamp, hexToRgb, mixHex, type MarblePlatform } from "./marbleCourse";
+import { drawPresetPlatform } from "./presetPlatformRenderer";
 
 function hash(index: number, salt = 0) {
   const raw = Math.sin((index + salt) * 12.9898 + 78.233) * 43758.5453;
@@ -330,7 +331,9 @@ export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: Marb
   ctx.save();
   ctx.translate(platform.x, screenY);
   ctx.rotate(platform.tiltRad);
-  if (style === "neon-tube") drawNeonTube(ctx, half, platform, impact, settings);
+  if (drawPresetPlatform(ctx, style, half, platform, impact, settings)) {
+    // preset renderer already drew the item
+  } else if (style === "neon-tube") drawNeonTube(ctx, half, platform, impact, settings);
   else if (style === "neon-bar") drawNeonBar(ctx, half, platform, impact, settings);
   else if (style === "glass") drawGlass(ctx, half, platform, impact, settings);
   else if (style === "metal-rail") drawMetalRail(ctx, half, platform, impact, settings);

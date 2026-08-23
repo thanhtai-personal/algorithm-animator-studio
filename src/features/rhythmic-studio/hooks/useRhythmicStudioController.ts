@@ -90,6 +90,8 @@ export function useRhythmicStudioController() {
     backgroundUrl: store.backgroundUrl,
     backgroundName: store.backgroundName,
     activePresetId: store.activePresetId,
+    rendererMode: store.rendererMode,
+    setRendererMode: store.setRendererMode,
     lyricRaw: store.lyricRaw,
     setLyricRaw: store.setLyricRaw,
     lyrics: displayLyrics,

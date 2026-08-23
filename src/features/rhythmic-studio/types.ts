@@ -88,6 +88,7 @@ export type TerrainProfile = "balanced" | "tube-board" | "comet" | "xylophone";
 export type CameraProfile = "follow" | "tube-board" | "comet" | "xylophone";
 export type MidiInstrumentMode = "auto" | "single";
 export type RenderQuality = "idle" | "live";
+export type RhythmicRendererMode = "legacy" | "three";
 export const EXPORT_FPS_OPTIONS = [30, 60, 120] as const;
 export type ExportFps = (typeof EXPORT_FPS_OPTIONS)[number];
 

@@ -12,6 +12,7 @@ import type {
   NoteEvent,
   StoredProject,
   StudioSettings,
+  RhythmicRendererMode,
 } from "../types";
 
 export type MessageToken = { key: RhythmicTextKey; values?: Record<string, string | number> };
@@ -50,6 +51,7 @@ export class RhythmicStudioStore {
   lyrics: LyricCue[] = [];
   lyricFormat: LyricFormat | null = null;
   activePresetId: RhythmicPresetId | null = "toy-pegboard";
+  rendererMode: RhythmicRendererMode = "legacy";
 
   constructor() {
     makeAutoObservable(this, {}, { autoBind: true });
@@ -156,6 +158,7 @@ export class RhythmicStudioStore {
   setBackground(url: string | null, name: string | null) { this.backgroundUrl = url; this.backgroundName = name; }
   setLyrics(raw: string, cues: LyricCue[], format: LyricFormat | null) { this.lyricRaw = raw; this.lyrics = cues; this.lyricFormat = format; }
   setLyricRaw(raw: string) { this.lyricRaw = raw; }
+  setRendererMode(mode: RhythmicRendererMode) { this.rendererMode = mode; }
   setSelectedNode(index: number | null) { this.selectedNodeIndex = index; }
   setOverrides(overrides: CourseItemOverride[]) { this.courseOverrides = overrides; }
 }

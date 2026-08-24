@@ -3,6 +3,23 @@ import { rhythmTerrainForGap } from "../lib/rhythmTerrain";
 import type { MarblePlatform, Vec2 } from "./marblePhysicsTypes";
 import { marbleEntrySpeed, marblePhysicsProfile, type MarblePhysicsProfile } from "./marblePhysicsProfiles";
 import { presetObstaclePlan } from "./presetObstaclePlan";
+import {
+  adjacentSpacingPenalty,
+  courseWorldBounds,
+  platformOverlapPenalty,
+  separationPenalty,
+  wallClearancePenalty,
+} from "./marbleCourseConstraints";
+import {
+  chordClusters,
+  chordSegmentMap,
+  decorateChordClusters,
+  decorateDenseInstrumentRuns,
+  denseInstrumentRuns,
+  denseRunSegmentMap,
+  holdRouteCandidate,
+  rollingRouteCandidate,
+} from "./denseInstrumentRuns";
 
 // Physics-first course planner. It borrows the useful constraint-solving idea from
 // the MIT-licensed AndrewB330/MusicMarbles project: note timestamps are collision
@@ -99,16 +116,6 @@ function collisionAngles(profile: MarblePhysicsProfile, dt: number) {
   return result;
 }
 
-function worldBounds(settings: StudioSettings, width: number) {
-  // Wall scenes need a hard safe aperture. Allowing the planner to route outside
-  // the visible wall made marbles and instruments pass through the side panels.
-  if (settings.instrumentFamily !== "auto") return { min: width * 0.14, max: width * 0.86 };
-  if (settings.terrainProfile === "balanced") return { min: 62, max: width - 62 };
-  if (settings.terrainProfile === "xylophone") return { min: 72, max: width - 72 };
-  if (settings.terrainProfile === "tube-board") return { min: 64, max: width - 64 };
-  return { min: -width * 0.55, max: width * 1.55 };
-}
-
 function orientationPenalty(index: number, normal: Vec2, settings: StudioSettings) {
   const tangent = Math.abs(axisAngle(Math.atan2(normal.x, -normal.y)) * 180 / Math.PI);
   if (settings.instrumentFamily !== "auto") {
@@ -125,14 +132,25 @@ function orientationPenalty(index: number, normal: Vec2, settings: StudioSetting
 function fallbackCandidate(hit: Vec2, incoming: Vec2, spanMs: number, direction: number, settings: StudioSettings, width: number): BounceCandidate {
   const profile = marblePhysicsProfile(settings);
   const dt = Math.max(0.08, spanMs / 1000);
-  const bounds = worldBounds(settings, width);
+  const bounds = courseWorldBounds(settings, width);
   const sign = direction || (incoming.x >= 0 ? 1 : -1) || 1;
   const angle = dt < 0.16 ? 0.7 : dt < 0.24 ? 0.54 : dt < 0.36 ? 0.36 : (settings.instrumentFamily !== "auto" ? 0.18 : 0.24);
   const normalInput = normalForAngle(sign * angle);
   const reflected = outgoingForNormal(incoming, normalInput, naturalRestitution(profile, settings), 0.95);
   reflected.velocity.x = clamp(reflected.velocity.x, -520, 520);
+  const naturalX = hit.x + reflected.velocity.x * dt;
+  const targetX = clamp(naturalX, bounds.min, bounds.max);
+  // The renderer integrates outgoing velocity directly. If fallback routing clamps
+  // only the destination, the marble reaches naturalX and then snaps to targetX
+  // exactly on the next note. Keep the stored velocity and endpoint consistent.
+  if (Math.abs(targetX - naturalX) > 1e-6) reflected.velocity.x = (targetX - hit.x) / dt;
+  const minimumDrop = dt < 0.16 ? 2 : dt < 0.24 ? 4 : 8;
+  const naturalY = hit.y + reflected.velocity.y * dt + 0.5 * profile.gravity * dt * dt;
+  if (naturalY < hit.y + minimumDrop) {
+    reflected.velocity.y = (minimumDrop - 0.5 * profile.gravity * dt * dt) / dt;
+  }
   const target = {
-    x: clamp(hit.x + reflected.velocity.x * dt, bounds.min, bounds.max),
+    x: targetX,
     y: hit.y + reflected.velocity.y * dt + 0.5 * profile.gravity * dt * dt,
   };
   return { normal: reflected.normal, outgoing: reflected.velocity, target, score: 1000 };
@@ -157,7 +175,7 @@ function obstacleSpacingScale(index: number, spanMs: number, settings: StudioSet
 function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: number, preferredDirection: number, pitch: number, settings: StudioSettings, width: number) {
   const profile = marblePhysicsProfile(settings);
   const dt = Math.max(0.08, spanMs / 1000);
-  const bounds = worldBounds(settings, width);
+  const bounds = courseWorldBounds(settings, width);
   const terrain = rhythmTerrainForGap(spanMs, settings);
   const spacing = obstacleSpacingScale(index + 1, spanMs, settings);
   const naturalHorizontal = Math.max(8, terrain.horizontalDistance * profile.horizontalScale * spacing.horizontal * 0.42);
@@ -225,47 +243,6 @@ function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: numb
   return result.length ? result.slice(0, 9) : [fallbackCandidate(hit, incoming, spanMs, preferredDirection, settings, width)];
 }
 
-function denseKeyboardRuns(events: NoteEvent[], settings: StudioSettings, resolveSettings?: StudioSettingsResolver) {
-  const runs: Array<{ start: number; end: number }> = [];
-  let index = 0;
-  while (index < events.length - 3) {
-    const frameSettings = resolveSettings?.(index) ?? settings;
-    if (frameSettings.instrumentFamily === "auto") { index += 1; continue; }
-    let end = index;
-    while (end < events.length - 1) {
-      const localSettings = resolveSettings?.(end) ?? settings;
-      const gap = events[end + 1].timeMs - events[end].timeMs;
-      if (localSettings.instrumentFamily === "auto" || gap > 185 || end - index >= 13) break;
-      end += 1;
-    }
-    if (end - index >= 3) {
-      runs.push({ start: index, end });
-      index = end + 1;
-    } else index += 1;
-  }
-  return runs;
-}
-
-function decorateDenseKeyboardRuns(platforms: MarblePlatform[], events: NoteEvent[], settings: StudioSettings, resolveSettings?: StudioSettingsResolver) {
-  if (!platforms.length) return platforms;
-  const decorated = platforms.map((platform) => ({ ...platform }));
-  for (const run of denseKeyboardRuns(events, settings, resolveSettings)) {
-    const first = decorated[run.start];
-    const last = decorated[Math.min(run.end, decorated.length - 1)];
-    if (!first || !last) continue;
-    const dx = last.hitX - first.hitX;
-    const dy = last.hitY - first.hitY;
-    const runDistance = Math.hypot(dx, dy);
-    first.visualStyle = "piano-keyboard";
-    first.visualX = (first.hitX + last.hitX) * 0.5;
-    first.visualY = (first.hitY + last.hitY) * 0.5 + 5;
-    first.visualWidth = clamp(runDistance + 72, 220, 360);
-    first.visualTiltRad = clamp(Math.atan2(dy, dx), -0.22, 0.22);
-    for (let index = run.start + 1; index <= run.end && index < decorated.length; index += 1) decorated[index].visualHidden = true;
-  }
-  return decorated;
-}
-
 function obstacleFromImpact(index: number, hit: Vec2, normal: Vec2, outgoing: Vec2, settings: StudioSettings, event: NoteEvent, color: string, platformWidth: number, gravity: number): MarblePlatform {
   const profile = marblePhysicsProfile(settings);
   const surface = { x: hit.x - normal.x * settings.ballSize, y: hit.y - normal.y * settings.ballSize };
@@ -303,123 +280,6 @@ function obstacleFromImpact(index: number, hit: Vec2, normal: Vec2, outgoing: Ve
   };
 }
 
-function pointSegmentDistance(point: Vec2, a: Vec2, b: Vec2) {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const lengthSq = dx * dx + dy * dy;
-  if (lengthSq < 1e-6) return Math.hypot(point.x - a.x, point.y - a.y);
-  const t = clamp(((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSq, 0, 1);
-  return Math.hypot(point.x - (a.x + dx * t), point.y - (a.y + dy * t));
-}
-
-function cross(a: Vec2, b: Vec2, c: Vec2) {
-  return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-}
-
-function segmentIntersects(a: Vec2, b: Vec2, c: Vec2, d: Vec2) {
-  const abC = cross(a, b, c);
-  const abD = cross(a, b, d);
-  const cdA = cross(c, d, a);
-  const cdB = cross(c, d, b);
-  return ((abC <= 0 && abD >= 0) || (abC >= 0 && abD <= 0))
-    && ((cdA <= 0 && cdB >= 0) || (cdA >= 0 && cdB <= 0));
-}
-
-function segmentDistance(a: Vec2, b: Vec2, c: Vec2, d: Vec2) {
-  if (segmentIntersects(a, b, c, d)) return 0;
-  return Math.min(
-    pointSegmentDistance(a, c, d),
-    pointSegmentDistance(b, c, d),
-    pointSegmentDistance(c, a, b),
-    pointSegmentDistance(d, a, b),
-  );
-}
-
-function platformSegment(platform: MarblePlatform) {
-  const dx = Math.cos(platform.tiltRad) * platform.width * 0.5;
-  const dy = Math.sin(platform.tiltRad) * platform.width * 0.5;
-  return {
-    a: { x: platform.x - dx, y: platform.y - dy },
-    b: { x: platform.x + dx, y: platform.y + dy },
-  };
-}
-
-function platformOverlapPenalty(platform: MarblePlatform, recent: MarblePlatform[], settings: StudioSettings) {
-  const collisionCritical = settings.terrainProfile === "tube-board"
-    || settings.terrainProfile === "xylophone"
-    || settings.instrumentFamily !== "auto";
-  if (!collisionCritical) return 0;
-  const segment = platformSegment(platform);
-  let penalty = 0;
-  for (const other of recent) {
-    const previous = platformSegment(other);
-    const distance = segmentDistance(segment.a, segment.b, previous.a, previous.b);
-    const safeDistance = Math.max(
-      settings.instrumentFamily !== "auto" ? 22 : 18,
-      settings.ballSize * (settings.instrumentFamily !== "auto" ? 1.45 : 0.95),
-      (platform.thickness + other.thickness) * 0.62,
-    );
-    if (distance < safeDistance) {
-      const overlap = safeDistance - distance;
-      const crossingBoost = distance < 0.5 ? 9000 : 0;
-      penalty += crossingBoost + overlap * 22 + overlap * overlap * 0.8;
-    }
-  }
-  return penalty;
-}
-
-function wallClearancePenalty(platform: MarblePlatform, settings: StudioSettings, width: number) {
-  if (settings.instrumentFamily === "auto") return 0;
-  const bounds = worldBounds(settings, width);
-  const segment = platformSegment(platform);
-  const overhang = Math.max(
-    0,
-    bounds.min - Math.min(segment.a.x, segment.b.x),
-    Math.max(segment.a.x, segment.b.x) - bounds.max,
-  );
-  if (overhang <= 0) return 0;
-  return 3000 + overhang * 52 + overhang * overhang * 2.1;
-}
-
-function adjacentSpacingPenalty(target: Vec2, current: Vec2, settings: StudioSettings) {
-  const profileScale = settings.instrumentFamily !== "auto" ? 0.68
-    : settings.terrainProfile === "xylophone" ? 0.58
-    : settings.terrainProfile === "tube-board" ? 0.54
-      : settings.terrainProfile === "comet" ? 0.5
-        : 0.48;
-  const preferred = Math.max(settings.ballSize * 3.4, settings.platformGap * profileScale, settings.minBounceDistance);
-  const distance = Math.hypot(target.x - current.x, target.y - current.y);
-  if (distance >= preferred) return 0;
-  const shortfall = preferred - distance;
-  return shortfall * 7.5 + shortfall * shortfall * 0.11;
-}
-
-function separationPenalty(target: Vec2, recentHits: Vec2[], settings: StudioSettings) {
-  // platformGap used to barely affect the actual minimum distance, so dense note
-  // clusters collapsed into a stack of almost-touching bars. Keep collisions on
-  // the exact note timestamps, but strongly prefer a larger spatial route.
-  const profileScale = settings.instrumentFamily !== "auto" ? 0.6
-    : settings.terrainProfile === "tube-board" ? 0.5
-    : settings.terrainProfile === "xylophone" ? 0.46
-      : settings.terrainProfile === "comet" ? 0.4
-        : 0.42;
-  const threshold = Math.max(
-    settings.ballSize * 3.1,
-    settings.platformThickness * 2.15,
-    settings.platformGap * profileScale,
-    settings.minBounceDistance * 0.85,
-  );
-  let penalty = 0;
-  for (const point of recentHits) {
-    const distance = Math.hypot(target.x - point.x, target.y - point.y);
-    if (distance < threshold) {
-      const overlap = threshold - distance;
-      penalty += overlap * 3.8 + overlap * overlap * 0.045;
-    }
-  }
-  return penalty;
-}
-
 function reconstruct(node: PlanNode | null) {
   const result: MarblePlatform[] = [];
   for (let current = node; current; current = current.parent) result.push(current.platform);
@@ -435,6 +295,10 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
   const minMidi = Math.min(...events.map((event) => event.midi));
   const maxMidi = Math.max(...events.map((event) => event.midi));
   const showcaseCourse = initialSettings.instrumentFamily !== "auto";
+  const denseRuns = denseInstrumentRuns(events, settings, resolveSettings);
+  const denseSegments = denseRunSegmentMap(denseRuns);
+  const chords = chordClusters(events);
+  const chordSegments = chordSegmentMap(chords);
   const beamWidth = showcaseCourse
     ? (events.length > 1800 ? 3 : events.length > 700 ? 4 : 6)
     : events.length > 1200 ? 2 : events.length > 500 ? 3 : 5;
@@ -455,20 +319,31 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
     const expanded: SearchState[] = [];
 
     for (const state of states) {
-      const candidates = bounceCandidates(index, state.hit, state.incoming, spanMs, state.preferredDirection, pitch, stepSettings, width);
+      const denseRun = denseSegments.get(index);
+      const chord = chordSegments.get(index);
+      const candidates = chord
+        ? [holdRouteCandidate(state.hit, state.incoming)]
+        : denseRun
+          ? [rollingRouteCandidate(state.hit, spanMs, state.preferredDirection, stepSettings, width, denseRun.end - index)]
+          : bounceCandidates(index, state.hit, state.incoming, spanMs, state.preferredDirection, pitch, stepSettings, width);
       for (const bounce of candidates) {
         const platform = obstacleFromImpact(index, state.hit, bounce.normal, bounce.outgoing, stepSettings, event, resolveColor(index, pitch), platformWidth, profile.gravity);
+        platform.motionMode = chord ? "hold" : denseRun ? "roll" : "ballistic";
+        platform.denseRunId = denseRun?.id;
+        platform.chordClusterId = chord?.id;
         if (index === events.length - 1) {
           expanded.push({ ...state, score: state.score + bounce.score, node: { platform, parent: state.node } });
           continue;
         }
         const nextHit = bounce.target;
         const dt = Math.max(0.08, spanMs / 1000);
-        const nextIncoming = { x: bounce.outgoing.x, y: bounce.outgoing.y + profile.gravity * dt };
+        const constrainedMotion = Boolean(chord || denseRun);
+        const nextIncoming = constrainedMotion
+          ? { ...bounce.outgoing }
+          : { x: bounce.outgoing.x, y: bounce.outgoing.y + profile.gravity * dt };
         let nextDirection = Math.abs(nextIncoming.x) > 18 ? Math.sign(nextIncoming.x) : state.preferredDirection;
-        const bounds = worldBounds(stepSettings, width);
+        const bounds = courseWorldBounds(stepSettings, width);
         const edgeInset = Math.max(72, stepSettings.laneSpread * 0.24);
-        const denseTransition = stepSettings.instrumentFamily !== "auto" && spanMs <= 185;
         // Do not flip direction on a decorative cadence. The marble keeps its
         // horizontal momentum until the physical route approaches a wall.
         if (nextHit.x < bounds.min + edgeInset) nextDirection = 1;
@@ -480,9 +355,10 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
           hit: nextHit,
           incoming: nextIncoming,
           preferredDirection: nextDirection,
-          score: state.score + bounce.score + (denseTransition ? 0 : adjacentSpacingPenalty(nextHit, state.hit, stepSettings))
-            + (denseTransition ? 0 : separationPenalty(nextHit, recentHits, stepSettings))
-            + (denseTransition ? 0 : platformOverlapPenalty(platform, state.recentPlatforms, stepSettings))
+          score: state.score + bounce.score
+            + (constrainedMotion ? 0 : adjacentSpacingPenalty(nextHit, state.hit, stepSettings))
+            + (constrainedMotion ? 0 : separationPenalty(nextHit, recentHits, stepSettings))
+            + (constrainedMotion ? 0 : platformOverlapPenalty(platform, state.recentPlatforms, stepSettings))
             + wallClearancePenalty(platform, stepSettings, width),
           node: { platform, parent: state.node },
           recentHits,
@@ -495,5 +371,6 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
     states = expanded.slice(0, beamWidth);
   }
 
-  return decorateDenseKeyboardRuns(reconstruct(states[0]?.node ?? null), events, settings, resolveSettings);
+  const denseDecorated = decorateDenseInstrumentRuns(reconstruct(states[0]?.node ?? null), denseRuns, settings, resolveSettings);
+  return decorateChordClusters(denseDecorated, chords);
 }

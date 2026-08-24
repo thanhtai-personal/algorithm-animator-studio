@@ -215,6 +215,22 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
     if (guided) return { x: guided.x, y: guided.y, color: mixHex(start.color, end.color, rawT), platformIndex: index };
   }
 
+  if (start.motionMode === "hold") {
+    return { x: startHit.x, y: startHit.y, color: mixHex(start.color, end.color, rawT), platformIndex: index };
+  }
+
+  if (start.motionMode === "roll") {
+    const endHit = marbleHitPoint(end);
+    // Dense passages use a continuous keyboard/pad surface. Keep the marble
+    // constrained to that surface instead of forcing impossible micro-bounces.
+    return {
+      x: startHit.x + (endHit.x - startHit.x) * rawT,
+      y: startHit.y + (endHit.y - startHit.y) * rawT,
+      color: mixHex(start.color, end.color, rawT),
+      platformIndex: index,
+    };
+  }
+
   // Automatic tube interpolation used to replace the real ballistic arc on long
   // gaps. That made the marble visibly change acceleration mid-flight. Long gaps
   // now remain pure gravity motion; only an explicit course override may guide it.

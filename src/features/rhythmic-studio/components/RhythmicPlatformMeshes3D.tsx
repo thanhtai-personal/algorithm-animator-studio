@@ -308,6 +308,137 @@ function StairStepMesh({ w, h, d, color, style, selected, glow }: MeshProps) {
   );
 }
 
+
+function BoomwhackerMesh({ w, h, color, selected, glow, detail }: MeshProps) {
+  const radius = Math.max(0.11, h * 0.5);
+  const segments = Math.round(24 + detail * 18);
+  return (
+    <group>
+      <mesh rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
+        <cylinderGeometry args={[radius, radius, w, segments, 1, true]} />
+        <meshPhysicalMaterial
+          color={selectedColor(color, selected)}
+          roughness={0.24}
+          metalness={0.02}
+          clearcoat={0.72}
+          clearcoatRoughness={0.12}
+          emissive={color}
+          emissiveIntensity={THREE.MathUtils.clamp(glow, 0, 1.5) * 0.72}
+        />
+      </mesh>
+      <mesh rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[radius * 0.72, radius * 0.72, w * 1.012, segments, 1, true]} />
+        <meshStandardMaterial color="#191919" roughness={0.76} side={THREE.BackSide} />
+      </mesh>
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[side * w * 0.505, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+          <torusGeometry args={[radius * 0.87, radius * 0.055, 10, 30]} />
+          <meshStandardMaterial color={selectedColor(color, selected)} roughness={0.2} metalness={0.04} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function XylophoneBarMesh({ w, h, d, color, selected, glow }: MeshProps) {
+  const bodyH = Math.max(h, 0.12);
+  return (
+    <group>
+      <RoundedBox args={[w, bodyH, d * 0.82]} radius={Math.min(0.07, bodyH * 0.3)} smoothness={5} castShadow receiveShadow>
+        <meshPhysicalMaterial color={selectedColor(color, selected)} roughness={0.28} clearcoat={0.62} emissive={color} emissiveIntensity={glow * 0.62} />
+      </RoundedBox>
+      {[-0.34, 0.34].map((ratio) => <EndBolt key={ratio} x={w * ratio} y={0} z={d * 0.43} color="#f3ead8" />)}
+      <mesh position={[0, bodyH * 0.82, -d * 0.34]} rotation={[0, 0, Math.PI / 2]} castShadow>
+        <cylinderGeometry args={[0.055, 0.055, w * 0.74, 18]} />
+        <meshStandardMaterial color="#5b4a3a" roughness={0.38} metalness={0.22} />
+      </mesh>
+    </group>
+  );
+}
+
+function PianoKeyMesh({ w, h, d, color, selected, glow }: MeshProps) {
+  const bright = new THREE.Color(color).getHSL({ h: 0, s: 0, l: 0 }).l > 0.55;
+  const base = bright ? selectedColor(color, selected) : selectedColor(new THREE.Color(color).lerp(new THREE.Color("#d8d8d8"), 0.08).getStyle(), selected);
+  return (
+    <group>
+      <RoundedBox args={[w, Math.max(h, 0.13), d * 0.92]} radius={0.035} smoothness={3} castShadow receiveShadow>
+        <meshPhysicalMaterial color={base} roughness={0.22} metalness={bright ? 0.18 : 0.42} clearcoat={0.46} emissive={color} emissiveIntensity={glow * 0.42} />
+      </RoundedBox>
+      <mesh position={[0, -h * 0.32, d * 0.47]}>
+        <boxGeometry args={[w * 0.82, 0.018, 0.012]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.22} />
+      </mesh>
+      <mesh position={[0, h * 0.52, -d * 0.25]} castShadow>
+        <boxGeometry args={[w * 0.72, Math.max(0.035, h * 0.22), d * 0.3]} />
+        <meshStandardMaterial color="#242424" roughness={0.36} metalness={0.5} />
+      </mesh>
+    </group>
+  );
+}
+
+function MarimbaBarMesh({ w, h, d, color, selected, glow }: MeshProps) {
+  const wood = new THREE.Color(color).lerp(new THREE.Color("#7f492c"), 0.34).getStyle();
+  return (
+    <group>
+      <RoundedBox args={[w, Math.max(h, 0.13), d * 0.82]} radius={0.045} smoothness={4} castShadow receiveShadow>
+        <meshPhysicalMaterial color={selectedColor(wood, selected)} roughness={0.38} metalness={0.02} clearcoat={0.34} emissive={color} emissiveIntensity={glow * 0.26} />
+      </RoundedBox>
+      {[-0.37, 0.37].map((ratio) => <EndBolt key={ratio} x={w * ratio} y={0} z={d * 0.43} color="#bfb8ae" />)}
+      <mesh position={[0, h * 0.78, -d * 0.28]} castShadow>
+        <boxGeometry args={[w * 0.64, Math.max(0.04, h * 0.28), d * 0.22]} />
+        <meshStandardMaterial color="#4b3225" roughness={0.62} metalness={0.02} />
+      </mesh>
+    </group>
+  );
+}
+
+function PluckPadMesh({ w, h, d, color, selected, glow }: MeshProps) {
+  return (
+    <group>
+      <RoundedBox args={[w * 0.78, Math.max(h, 0.12), d * 0.78]} radius={0.06} smoothness={4} castShadow receiveShadow>
+        <meshPhysicalMaterial color={selectedColor(color, selected)} roughness={0.3} clearcoat={0.58} emissive={color} emissiveIntensity={glow * 0.58} />
+      </RoundedBox>
+      <mesh position={[0, h * 0.7, -d * 0.36]} rotation={[0, 0, Math.PI / 2]} castShadow>
+        <cylinderGeometry args={[0.025, 0.025, w * 0.58, 12]} />
+        <meshStandardMaterial color="#6b6f75" roughness={0.25} metalness={0.78} />
+      </mesh>
+      <EndBolt x={0} y={0} z={d * 0.42} color="#e8edf2" />
+    </group>
+  );
+}
+
+function VibraphoneBarMesh({ w, h, d, color, selected, glow }: MeshProps) {
+  const metal = new THREE.Color("#b8bab9").lerp(new THREE.Color(color), 0.12).getStyle();
+  return (
+    <group>
+      <RoundedBox args={[w, Math.max(h, 0.12), d * 0.8]} radius={0.055} smoothness={5} castShadow receiveShadow>
+        <meshPhysicalMaterial color={selectedColor(metal, selected)} roughness={0.2} metalness={0.78} clearcoat={0.54} emissive={color} emissiveIntensity={glow * 0.36} />
+      </RoundedBox>
+      {[-0.34, 0.34].map((ratio) => <EndBolt key={ratio} x={w * ratio} y={0} z={d * 0.42} color="#44484d" />)}
+      <mesh position={[0, h * 0.72, -d * 0.3]} castShadow>
+        <boxGeometry args={[w * 0.54, Math.max(0.045, h * 0.3), d * 0.18]} />
+        <meshStandardMaterial color="#73787d" roughness={0.3} metalness={0.72} />
+      </mesh>
+    </group>
+  );
+}
+
+function DrumDiscMesh({ w, h, d, color, selected, glow }: MeshProps) {
+  const radius = Math.max(0.2, w * 0.38);
+  return (
+    <group>
+      <mesh rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[radius, radius, Math.max(0.08, h), 32]} />
+        <meshPhysicalMaterial color={selectedColor("#252525", selected)} roughness={0.5} metalness={0.12} clearcoat={0.28} emissive={color} emissiveIntensity={glow * 0.42} />
+      </mesh>
+      <mesh position={[0, 0, d * 0.14]}>
+        <ringGeometry args={[radius * 0.72, radius * 0.9, 32]} />
+        <meshStandardMaterial color={color} roughness={0.32} metalness={0.28} emissive={color} emissiveIntensity={glow * 0.48} />
+      </mesh>
+    </group>
+  );
+}
+
 export function PlatformMesh(props: MeshProps) {
   const style = props.style;
   if (style === "neon-tube") return <NeonTubeMesh {...props} />;
@@ -323,6 +454,13 @@ export function PlatformMesh(props: MeshProps) {
   if (style === "tube-cylinder" || style === "toy-tube") return <TubeMesh {...props} />;
   if (style === "instrument-key" || style === "xylophone-key" || style === "instrument-pad") return <KeyMesh {...props} />;
   if (style === "instrument-cymbal") return <CymbalMesh {...props} />;
+  if (style === "boomwhacker-tube") return <BoomwhackerMesh {...props} />;
+  if (style === "xylophone-bar") return <XylophoneBarMesh {...props} />;
+  if (style === "piano-key") return <PianoKeyMesh {...props} />;
+  if (style === "marimba-bar") return <MarimbaBarMesh {...props} />;
+  if (style === "pluck-pad") return <PluckPadMesh {...props} />;
+  if (style === "vibraphone-bar") return <VibraphoneBarMesh {...props} />;
+  if (style === "drum-disc") return <DrumDiscMesh {...props} />;
   if (style === "comet-pad") return <CometPadMesh {...props} />;
   return <StandardBarMesh {...props} />;
 }

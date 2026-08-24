@@ -7,6 +7,7 @@ import { MediaFrame } from "../sections/MediaFrame";
 import { MotionFrame } from "../sections/MotionFrame";
 import { SoundFrame } from "../sections/SoundFrame";
 import { SourceFrame } from "../sections/SourceFrame";
+import { ShowcaseFrame } from "../sections/ShowcaseFrame";
 import { TerrainFrame } from "../sections/TerrainFrame";
 import { VisualFrame } from "../sections/VisualFrame";
 
@@ -21,6 +22,7 @@ export function RhythmicPrimaryControls({ studio }: { studio: RhythmicStudioCont
     <QuickPresetBar studio={studio} />
 
     <div className="space-y-3">
+      <ShowcaseFrame studio={studio} />
       <SourceFrame studio={studio} />
       <TerrainFrame studio={studio} />
       <MotionFrame studio={studio} />

@@ -89,7 +89,10 @@ function restitutionForDrop(incoming: Vec2, normalInput: Vec2, drop: number, dt:
 
 function worldBounds(settings: StudioSettings, width: number) {
   if (settings.terrainProfile === "balanced") return { min: 62, max: width - 62 };
-  if (settings.terrainProfile === "xylophone") return { min: -width * 0.7, max: width * 1.7 };
+  if (settings.terrainProfile === "xylophone") {
+    if (settings.instrumentFamily !== "auto") return { min: width * 0.08, max: width * 0.92 };
+    return { min: -width * 0.7, max: width * 1.7 };
+  }
   return { min: -width * 1.2, max: width * 2.2 };
 }
 
@@ -364,8 +367,14 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
           : { x: bounce.outgoing.x, y: bounce.outgoing.y + profile.gravity * dt };
         let nextDirection = state.preferredDirection;
         const bounds = worldBounds(stepSettings, width);
-        const edgeInset = Math.max(90, stepSettings.laneSpread * 0.28);
-        if (nextHit.x < bounds.min + edgeInset || nextHit.x > bounds.max - edgeInset || index % Math.max(2, profile.directionHold) === profile.directionHold - 1) nextDirection *= -1;
+        const edgeInset = Math.max(72, stepSettings.laneSpread * 0.24);
+        const showcaseHold = stepSettings.instrumentFamily === "auto"
+          ? profile.directionHold
+          : stepSettings.instrumentLayout === "fan" ? 6
+            : stepSettings.instrumentLayout === "gallery" ? 4
+              : stepSettings.instrumentLayout === "split" ? 2
+                : 5;
+        if (nextHit.x < bounds.min + edgeInset || nextHit.x > bounds.max - edgeInset || index % Math.max(2, showcaseHold) === showcaseHold - 1) nextDirection *= -1;
         const recentHits = [...state.recentHits, state.hit].slice(-7);
         const recentPlatforms = [...state.recentPlatforms, platform].slice(-7);
         expanded.push({

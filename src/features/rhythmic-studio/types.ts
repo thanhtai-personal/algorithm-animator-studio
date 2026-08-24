@@ -51,10 +51,32 @@ export const PLATFORM_STYLES = [
   "instrument-rail",
   "instrument-pad",
   "instrument-wire",
+  "boomwhacker-tube",
+  "xylophone-bar",
+  "piano-key",
+  "marimba-bar",
+  "pluck-pad",
+  "vibraphone-bar",
+  "drum-disc",
 ] as const;
 
 export type PlatformStyle = (typeof PLATFORM_STYLES)[number];
 export type PlatformMixMode = "single" | "alternate" | "accent" | "shuffle";
+
+export const INSTRUMENT_FAMILIES = [
+  "auto",
+  "boomwhacker",
+  "xylophone",
+  "piano",
+  "marimba",
+  "pluck",
+  "vibraphone",
+  "mixed",
+] as const;
+export type InstrumentFamily = (typeof INSTRUMENT_FAMILIES)[number];
+
+export const INSTRUMENT_LAYOUTS = ["cascade", "fan", "gallery", "split"] as const;
+export type InstrumentLayout = (typeof INSTRUMENT_LAYOUTS)[number];
 
 export const COURSE_LONG_ITEMS = [
   "glass-tube",
@@ -217,6 +239,12 @@ export interface StudioSettings {
   platformMixMode: PlatformMixMode;
   platformAccentEvery: number;
   platformDetail: number;
+  instrumentFamily: InstrumentFamily;
+  instrumentLayout: InstrumentLayout;
+  showcaseRails: boolean;
+  showcaseRailDensity: number;
+  showcaseDuet: boolean;
+  showcaseSecondaryBallColor: string;
   impactRipple: boolean;
   impactPlatformLight: boolean;
   showBeatLabels: boolean;

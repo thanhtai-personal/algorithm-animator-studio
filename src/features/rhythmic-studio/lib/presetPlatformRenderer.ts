@@ -399,5 +399,9 @@ export function drawPresetPlatform(
   if (style === "instrument-rail") { drawInstrumentRail(ctx, half, platform, impact, lowPower); return true; }
   if (style === "instrument-pad") { drawInstrumentPad(ctx, half, platform, impact, lowPower); return true; }
   if (style === "instrument-wire") { drawInstrumentWire(ctx, half, platform, impact, lowPower); return true; }
+  if (style === "boomwhacker-tube") { drawTubeCylinder(ctx, half, platform, impact, ageMs, settings, lowPower); return true; }
+  if (style === "xylophone-bar" || style === "piano-key" || style === "marimba-bar" || style === "vibraphone-bar") { drawInstrumentKey(ctx, half, platform, impact, lowPower); return true; }
+  if (style === "pluck-pad") { drawInstrumentPad(ctx, half, platform, impact, lowPower); return true; }
+  if (style === "drum-disc") { drawInstrumentCymbal(ctx, platform, impact, lowPower); return true; }
   return false;
 }

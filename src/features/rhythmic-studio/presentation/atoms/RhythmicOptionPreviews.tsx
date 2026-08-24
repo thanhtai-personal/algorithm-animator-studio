@@ -153,6 +153,18 @@ export function PresetThumbnail({ presetId }: { presetId: RhythmicPresetId }) {
     <div className="absolute right-4 top-4 h-6 w-6 rounded-full bg-[linear-gradient(145deg,#7dd3fc,#7c3aed_40%,#ec4899_85%)] shadow-[0_0_18px_rgba(236,72,153,.45)]" />
     <div className="absolute left-5 right-14 top-[34px] h-1.5 rounded-full bg-cyan-300/85 blur-[1px]" />
   </SceneFrame>;
+  if (presetId === "boomwhacker-wall") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#d8d2cb,#bcb5ae)]">
+    {[0,1,2,3].map((index) => <div key={index} className="absolute h-3 w-10 rounded-full shadow-[0_5px_8px_rgba(0,0,0,.2)]" style={{ left: `${12 + index * 10}px`, top: `${12 + index * 10}px`, transform: `rotate(${18 + index * 7}deg)`, background: ["#f97316","#65a30d","#2563eb","#dc2626"][index] }} />)}
+    <div className="absolute right-3 top-3 h-5 w-5 rounded-full bg-[radial-gradient(circle_at_35%_30%,#fff,#7c3aed_45%,#34145c)]" />
+  </SceneFrame>;
+  if (presetId === "instrument-showcase") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#d6d0c9,#bdb7b1)]">
+    {[0,1,2].map((index) => <div key={index} className="absolute h-3 w-12 rounded-sm shadow-[0_5px_8px_rgba(0,0,0,.18)]" style={{ left: `${10 + index * 18}px`, top: `${15 + index * 12}px`, transform: `rotate(${-12 + index * 13}deg)`, background: index === 0 ? "#9a5d38" : index === 1 ? "#555" : "#4f8de8" }} />)}
+    <div className="absolute left-3 bottom-2 h-4 w-4 rounded-full bg-green-500" /><div className="absolute right-4 top-3 h-4 w-4 rounded-full bg-violet-600" />
+  </SceneFrame>;
+  if (presetId === "vibraphone-wall") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#d9d5d0,#c3beb8)]">
+    {[0,1,2,3].map((index) => <div key={index} className="absolute h-3 w-11 rounded-sm border border-white/30 bg-gradient-to-b from-slate-200 to-slate-500 shadow-[0_5px_8px_rgba(0,0,0,.18)]" style={{ left: `${12 + index * 12}px`, top: `${10 + index * 11}px`, transform: `rotate(${index % 2 ? -8 : 8}deg)` }} />)}
+    <div className="absolute right-3 bottom-2 h-4 w-4 rounded-full bg-green-500" />
+  </SceneFrame>;
   return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#f2ede6,#d0d7e4)]">
     <div className="absolute inset-x-0 bottom-0 h-7 bg-[linear-gradient(180deg,#d3a673,#936846)]" style={{ clipPath: "polygon(0 100%,100% 100%,76% 0,24% 0)" }} />
     {[0, 1, 2].map((index) => <div key={index} className="absolute top-[26px] h-4 w-10 rounded-md border border-white/35 shadow-[0_8px_10px_rgba(15,23,42,.16)]" style={{ left: `${12 + index * 20}px`, background: ["linear-gradient(180deg,#fef08a,#f59e0b)", "linear-gradient(180deg,#a7f3d0,#14b8a6)", "linear-gradient(180deg,#bfdbfe,#3b82f6)"][index] }} />)}

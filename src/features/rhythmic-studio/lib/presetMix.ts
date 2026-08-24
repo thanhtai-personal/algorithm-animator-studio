@@ -46,6 +46,8 @@ const MIXABLE_KEYS = [
   "platformMixMode",
   "platformAccentEvery",
   "platformDetail",
+  "instrumentFamily",
+  "instrumentLayout",
 ] as const satisfies readonly (keyof StudioSettings)[];
 
 function hash(seed: number) {

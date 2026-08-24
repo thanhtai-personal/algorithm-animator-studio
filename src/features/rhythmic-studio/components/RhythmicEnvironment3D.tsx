@@ -79,46 +79,50 @@ function TubeBoardRoom() {
   const sections = useMemo(() => Array.from({ length: 12 }, (_, i) => i), []);
   return (
     <group>
-      <RoundedBox position={[0, -54, -4.15]} args={[16.5, 136, 0.7]} radius={0.14} smoothness={4} receiveShadow>
-        <meshStandardMaterial color="#151a21" roughness={0.72} metalness={0.26} />
+      <RoundedBox position={[0, -54, -4.45]} args={[16.9, 136, 0.56]} radius={0.14} smoothness={4} receiveShadow renderOrder={-30}>
+        <meshStandardMaterial color="#0f1620" roughness={0.78} metalness={0.18} depthWrite={false} />
       </RoundedBox>
-      {[-7.9, 7.9].map((x) => (
-        <mesh key={x} position={[x, -54, -0.9]} rotation={[0, x < 0 ? Math.PI / 2.55 : -Math.PI / 2.55, 0]} receiveShadow>
-          <planeGeometry args={[7.6, 136]} />
-          <meshStandardMaterial color="#242a31" roughness={0.62} metalness={0.32} side={THREE.DoubleSide} />
+      <RoundedBox position={[0, -54, -4.08]} args={[12.9, 126, 0.12]} radius={0.1} smoothness={4} receiveShadow renderOrder={-28}>
+        <meshStandardMaterial color="#132232" roughness={0.7} metalness={0.08} depthWrite={false} />
+      </RoundedBox>
+      {[-8.9, 8.9].map((x) => (
+        <mesh key={x} position={[x, -54, -4.06]} rotation={[0, x < 0 ? Math.PI / 2.86 : -Math.PI / 2.86, 0]} receiveShadow renderOrder={-26}>
+          <planeGeometry args={[5.4, 136]} />
+          <meshStandardMaterial color="#1d2a36" roughness={0.7} metalness={0.22} side={THREE.DoubleSide} depthWrite={false} />
         </mesh>
       ))}
-      {[-6.55, 6.55].map((x) => (
-        <mesh key={x} position={[x, -54, 0.85]} castShadow>
-          <cylinderGeometry args={[0.095, 0.095, 136, 16]} />
-          <meshStandardMaterial color="#49525d" roughness={0.24} metalness={0.84} />
+      {[-6.95, 6.95].map((x) => (
+        <mesh key={x} position={[x, -54, -3.84]} castShadow renderOrder={-24}>
+          <cylinderGeometry args={[0.065, 0.065, 136, 16]} />
+          <meshStandardMaterial color="#41515f" roughness={0.26} metalness={0.82} depthWrite={false} />
         </mesh>
       ))}
       {sections.map((index) => {
         const y = 5 - index * 11.2;
         const accent = index % 4 === 0 ? "#dc5058" : "#98a4b3";
         return (
-          <group key={index} position={[0, y, -3.58]}>
-            <RoundedBox args={[14.8, 0.18, 0.2]} radius={0.05} smoothness={3} castShadow>
-              <meshStandardMaterial color="#515a65" roughness={0.32} metalness={0.72} />
+          <group key={index} position={[0, y, -3.7]} renderOrder={-22}>
+            <RoundedBox args={[14.2, 0.16, 0.16]} radius={0.05} smoothness={3} castShadow>
+              <meshStandardMaterial color="#4b5866" roughness={0.34} metalness={0.72} depthWrite={false} />
             </RoundedBox>
-            {[-5.6, -2.8, 0, 2.8, 5.6].map((x, peg) => (
-              <group key={x} position={[x, peg % 2 ? 0.62 : -0.58, 0.42]}>
+            {[-5.4, -2.7, 0, 2.7, 5.4].map((x, peg) => (
+              <group key={x} position={[x, peg % 2 ? 0.58 : -0.56, 0.26]}>
                 <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
-                  <cylinderGeometry args={[0.105, 0.105, 0.55, 18]} />
-                  <meshStandardMaterial color={peg === 2 ? accent : "#a7b0ba"} roughness={0.22} metalness={0.78} />
+                  <cylinderGeometry args={[0.095, 0.095, 0.44, 18]} />
+                  <meshStandardMaterial color={peg === 2 ? accent : "#a7b0ba"} roughness={0.22} metalness={0.78} depthWrite={false} />
                 </mesh>
-                <mesh position={[0, 0, 0.2]}>
-                  <sphereGeometry args={[0.055, 12, 8]} />
-                  <meshStandardMaterial color="#e9eef3" roughness={0.2} metalness={0.72} />
+                <mesh position={[0, 0, 0.12]}>
+                  <sphereGeometry args={[0.045, 12, 8]} />
+                  <meshStandardMaterial color="#e9eef3" roughness={0.2} metalness={0.72} depthWrite={false} />
                 </mesh>
               </group>
             ))}
           </group>
         );
       })}
-      <GlowSprite position={[-5.4, -22, -2.6]} scale={[8, 18, 1]} color="#4b8fd8" opacity={0.14} />
-      <GlowSprite position={[5.8, -72, -2.7]} scale={[7, 16, 1]} color="#ffb064" opacity={0.1} />
+      <GlowSprite position={[-5.4, -22, -2.8]} scale={[8, 18, 1]} color="#4b8fd8" opacity={0.14} />
+      <GlowSprite position={[5.8, -72, -2.9]} scale={[7, 16, 1]} color="#ffb064" opacity={0.1} />
+      <GlowSprite position={[0, -60, -3.9]} scale={[10, 28, 1]} color="#153e75" opacity={0.14} />
     </group>
   );
 }

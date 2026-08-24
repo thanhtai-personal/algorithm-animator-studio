@@ -2,9 +2,9 @@ import { useMemo } from "react";
 import { RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
 import type { CourseItemOverride, CourseLongItem, StudioSettings } from "../types";
-import type { MarblePlatform } from "../lib/marbleCourse";
-import { guidedCoursePoint } from "../lib/courseGuide";
-import { isLongCourseItem } from "../lib/courseGuide";
+import { LONG_GAP_TUBE_MS, longGapTubeGeometry, longGapTubePoint, type MarblePlatform } from "../lib/marbleCourse";
+import { guidedCoursePoint, isLongCourseItem, overrideForSegment } from "../lib/courseGuide";
+import type { NoteEvent } from "../types";
 import { RHYTHMIC_COURSE_WIDTH, RHYTHMIC_WORLD_SCALE } from "./RhythmicMotion3D";
 
 function worldPoint(x: number, y: number, z = 0) {
@@ -29,6 +29,53 @@ function segmentCurve(start: MarblePlatform, end: MarblePlatform, style: CourseL
   return new THREE.CatmullRomCurve3(points, false, "catmullrom", 0.32);
 }
 
+
+function autoTubeCurve(start: MarblePlatform, end: MarblePlatform, settings: StudioSettings) {
+  const geometry = longGapTubeGeometry(start, end, settings);
+  const points: THREE.Vector3[] = [];
+  const steps = 28;
+  for (let index = 0; index <= steps; index += 1) {
+    const point = longGapTubePoint(geometry, index / steps);
+    points.push(worldPoint(point.x, point.y, 0));
+  }
+  return new THREE.CatmullRomCurve3(points, false, "catmullrom", 0.34);
+}
+
+function AutoGlassTubeSegment({ start, end, settings, color }: Omit<SegmentProps, "style">) {
+  const curve = useMemo(() => autoTubeCurve(start, end, settings), [end, settings, start]);
+  const radius = settings.terrainProfile === "tube-board" ? 0.19 : 0.17;
+  return (
+    <group>
+      <mesh castShadow receiveShadow>
+        <tubeGeometry args={[curve, 64, radius, 18, false]} />
+        <meshPhysicalMaterial
+          color={color}
+          transmission={0.92}
+          roughness={0.035}
+          thickness={0.42}
+          ior={1.46}
+          clearcoat={1}
+          clearcoatRoughness={0.018}
+          attenuationColor={color}
+          attenuationDistance={3.2}
+          envMapIntensity={1.65}
+          transparent
+          opacity={0.94}
+        />
+      </mesh>
+      <mesh>
+        <tubeGeometry args={[curve, 64, radius * 0.68, 12, false]} />
+        <meshPhysicalMaterial color="#edf9ff" transparent opacity={0.08} roughness={0.04} side={THREE.BackSide} />
+      </mesh>
+      {[start, end].map((platform, index) => (
+        <mesh key={index} position={worldPoint(platform.hitX, platform.hitY, 0)} rotation={[0, 0, Math.PI / 2]}>
+          <torusGeometry args={[radius * 0.94, radius * 0.1, 10, 24]} />
+          <meshStandardMaterial color="#dceaf4" roughness={0.18} metalness={0.74} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
 function GlassTubeSegment({ start, end, style, settings, color }: SegmentProps) {
   const curve = useMemo(() => segmentCurve(start, end, style, settings), [end, settings, start, style]);
   const radius = style === "acrylic-pipe" ? 0.18 : 0.21;
@@ -139,11 +186,12 @@ function LongSegment(props: SegmentProps) {
   return <GlassTubeSegment {...props} />;
 }
 
-export function RhythmicCourseItems3D({ platforms, overrides, settings, focusIndex }: {
+export function RhythmicCourseItems3D({ platforms, overrides, settings, focusIndex, events }: {
   platforms: MarblePlatform[];
   overrides: CourseItemOverride[];
   settings: StudioSettings;
   focusIndex: number;
+  events: NoteEvent[];
 }) {
   const visibleOverrides = useMemo(() => overrides.filter((override) => {
     if (!isLongCourseItem(override.style)) return false;
@@ -152,8 +200,25 @@ export function RhythmicCourseItems3D({ platforms, overrides, settings, focusInd
     return end >= focusIndex - 20 && start <= focusIndex + 20;
   }), [focusIndex, overrides, platforms.length]);
 
+  const autoTubeSegments = useMemo(() => {
+    if (settings.terrainProfile === "comet" || settings.terrainProfile === "xylophone") return [];
+    const segments: { start: MarblePlatform; end: MarblePlatform; color: string; key: string }[] = [];
+    for (let index = 0; index < platforms.length - 1; index += 1) {
+      const span = events[index + 1].timeMs - events[index].timeMs;
+      if (span < LONG_GAP_TUBE_MS || overrideForSegment(index, overrides)) continue;
+      const start = platforms[index];
+      const end = platforms[index + 1];
+      if (!start || !end) continue;
+      if (index < focusIndex - 18 || index > focusIndex + 18) continue;
+      const color = `#${new THREE.Color(start.color).lerp(new THREE.Color(end.color), 0.5).getHexString()}`;
+      segments.push({ start, end, color, key: `auto-gap:${index}` });
+    }
+    return segments;
+  }, [events, focusIndex, overrides, platforms, settings]);
+
   return (
     <group>
+      {autoTubeSegments.map((segment) => <AutoGlassTubeSegment key={segment.key} start={segment.start} end={segment.end} settings={settings} color={segment.color} />)}
       {visibleOverrides.flatMap((override) => {
         if (!isLongCourseItem(override.style)) return [];
         const startIndex = Math.max(0, Math.min(platforms.length - 1, override.startIndex));

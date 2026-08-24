@@ -23,6 +23,15 @@ function hash(index: number, salt: number) {
   return raw - Math.floor(raw);
 }
 
+
+function effectColorFromBall(target: THREE.Color, settings: StudioSettings, fallback: string, white: THREE.Color) {
+  target.set(settings.ballBaseColor || fallback);
+  if (settings.ballStyle === "striped") target.lerp(new THREE.Color(settings.ballStripeColor), 0.28);
+  if (settings.ballStyle === "glass" || settings.ballStyle === "chrome") target.lerp(white, 0.34);
+  if (settings.ballStyle === "prism") target.offsetHSL(0.04, 0.08, 0.06);
+  if (settings.ballStyle === "classic") target.lerp(white, 0.08);
+  return target;
+}
 function trailProfile(settings: StudioSettings) {
   let duration = 165;
   let count = 7;
@@ -87,9 +96,8 @@ export const RhythmicVfx3D = forwardRef<RhythmicVfxHandle, {
           helper.rotation.set(0, 0, Math.atan2(delta.y, delta.x));
           helper.updateMatrix();
           trail.setMatrixAt(index, helper.matrix);
-          color.set(sample.color);
-          if (settings.terrainProfile === "xylophone") color.lerp(white, 0.62);
-          if (settings.ballStyle === "chrome" || settings.ballStyle === "glass") color.lerp(white, 0.42);
+          effectColorFromBall(color, settings, sample.color, white);
+          if (settings.terrainProfile === "xylophone") color.lerp(white, 0.22);
           trail.setColorAt(index, color);
         }
         trail.instanceMatrix.needsUpdate = true;
@@ -112,7 +120,8 @@ export const RhythmicVfx3D = forwardRef<RhythmicVfxHandle, {
       const impactSample = visualMarbleAtTime(event.timeMs, events, platforms, settings, courseOverrides);
       const impactPoint = setWorldPoint(pointA, impactSample);
       const life = THREE.MathUtils.clamp(age / 220, 0, 1);
-      const impactColor = platforms[Math.min(impactIndex, platforms.length - 1)]?.color ?? settings.ballBaseColor;
+      const impactPlatformColor = platforms[Math.min(impactIndex, platforms.length - 1)]?.color ?? settings.ballBaseColor;
+      const impactColor = `#${effectColorFromBall(new THREE.Color(), settings, impactPlatformColor, white).getHexString()}`;
       if (particles) {
         for (let index = 0; index < PARTICLES; index += 1) {
           const angle = hash(impactIndex + 1, index + 11) * Math.PI * 2;

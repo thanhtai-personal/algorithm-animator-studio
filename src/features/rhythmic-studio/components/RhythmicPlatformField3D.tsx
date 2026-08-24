@@ -28,10 +28,15 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
         const w = Math.max(0.3, platform.width * RHYTHMIC_WORLD_SCALE);
         const h = Math.max(0.09, platform.thickness * RHYTHMIC_WORLD_SCALE);
         const d = style === "instrument-cymbal" ? 0.5 : style.includes("rail") ? 0.46 : style === "tube-cylinder" ? 0.62 : 0.54;
+        const normalInset = platform.contactMode === "surface"
+          ? Math.max(0.04, platform.thickness * 0.5) * RHYTHMIC_WORLD_SCALE
+          : 0;
+        const worldX = ((platform.x - platform.normalX * normalInset / RHYTHMIC_WORLD_SCALE) - RHYTHMIC_COURSE_WIDTH / 2) * RHYTHMIC_WORLD_SCALE;
+        const worldY = -(platform.y - platform.normalY * normalInset / RHYTHMIC_WORLD_SCALE) * RHYTHMIC_WORLD_SCALE;
         return (
           <group
             key={platform.index}
-            position={[(platform.x - RHYTHMIC_COURSE_WIDTH / 2) * RHYTHMIC_WORLD_SCALE, -platform.y * RHYTHMIC_WORLD_SCALE, 0]}
+            position={[worldX, worldY, 0]}
             rotation={[0, 0, -platform.tiltRad]}
             onClick={(event) => {
               event.stopPropagation();

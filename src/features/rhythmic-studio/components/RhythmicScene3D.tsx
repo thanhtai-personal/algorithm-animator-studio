@@ -186,9 +186,11 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
       props.settings.cameraProfile === "xylophone" ? 15.8 : 12.8,
     );
     const anchorOffset = (0.5 - props.settings.cameraAnchor) * 7.2;
-    const lateralFactor = props.settings.cameraProfile === "xylophone" ? 0.18 : 0.28;
-    const lateralClamp = props.settings.cameraProfile === "xylophone" ? 0.56 : 0.95;
-    const verticalFactor = props.settings.cameraProfile === "xylophone" ? 0.009 : 0.012;
+    const isXylophone = props.settings.cameraProfile === "xylophone";
+    const isTubeBoard = props.settings.cameraProfile === "tube-board";
+    const lateralFactor = isXylophone ? 0.18 : isTubeBoard ? 0.2 : 0.28;
+    const lateralClamp = isXylophone ? 0.56 : isTubeBoard ? 0.62 : 0.95;
+    const verticalFactor = isXylophone ? 0.009 : isTubeBoard ? 0.01 : 0.012;
     const lateralLead = THREE.MathUtils.clamp((aheadWorld.x - world.x) * lateralFactor + velocity.x * (lateralFactor * 0.06), -lateralClamp, lateralClamp);
     const verticalLag = THREE.MathUtils.clamp(velocity.y * verticalFactor, -0.26, 0.32);
     cameraTarget.set(world.x + lateralLead, world.y + anchorOffset - verticalLag, adaptiveZ + world.z * 0.18);
@@ -219,8 +221,8 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
     const targetFov = THREE.MathUtils.clamp(CAMERA_FOV + jumpDistance * (props.settings.cameraProfile === "xylophone" ? 0.5 : 0.56) - density * 0.055, props.settings.cameraProfile === "xylophone" ? 37 : 34.5, props.settings.cameraProfile === "xylophone" ? 44.5 : 43.5);
     perspective.fov = snapCamera ? targetFov : THREE.MathUtils.damp(perspective.fov, targetFov, 5.5, deltaSeconds);
     perspective.updateProjectionMatrix();
-    const bankStrength = props.settings.cameraProfile === "xylophone" ? 0.0035 : 0.006;
-    const bankLimit = props.settings.cameraProfile === "xylophone" ? 0.024 : 0.042;
+    const bankStrength = props.settings.cameraProfile === "xylophone" ? 0.0035 : props.settings.cameraProfile === "tube-board" ? 0.0042 : 0.006;
+    const bankLimit = props.settings.cameraProfile === "xylophone" ? 0.024 : props.settings.cameraProfile === "tube-board" ? 0.028 : 0.042;
     const bankTarget = THREE.MathUtils.clamp(-velocity.x * bankStrength, -bankLimit, bankLimit);
     perspective.rotation.z = snapCamera ? bankTarget : THREE.MathUtils.damp(perspective.rotation.z, bankTarget, 4.2, deltaSeconds);
   }, [
@@ -301,6 +303,7 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
         overrides={props.courseOverrides}
         settings={props.settings}
         focusIndex={focusIndex}
+        events={props.events}
       />
       <RhythmicPlatformField3D
         platforms={props.platforms}

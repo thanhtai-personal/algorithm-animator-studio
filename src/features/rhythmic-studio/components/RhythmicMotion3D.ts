@@ -116,6 +116,8 @@ export function setWorldPoint(target: THREE.Vector3, point: Pick<RhythmicVisualP
 
 export function impactSquash(ageMs: number) {
   if (ageMs < 0 || ageMs > 125) return 0;
-  const envelope = Math.exp(-ageMs / 44);
-  return 0.072 * envelope * Math.cos((ageMs / 46) * Math.PI);
+  const envelope = Math.exp(-ageMs / 34);
+  // A hard 7% squash made glass/chrome marbles look rubbery. Keep just enough
+  // deformation to communicate contact without overriding the ballistic motion.
+  return 0.032 * envelope * Math.cos((ageMs / 40) * Math.PI);
 }

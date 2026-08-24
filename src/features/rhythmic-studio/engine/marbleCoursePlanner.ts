@@ -1,5 +1,5 @@
 import type { NoteEvent, StudioSettings } from "../types";
-import { REST_GAP_MS, rhythmTerrainForGap } from "../lib/rhythmTerrain";
+import { rhythmTerrainForGap } from "../lib/rhythmTerrain";
 import type { MarblePlatform, Vec2 } from "./marblePhysicsTypes";
 import { marbleEntrySpeed, marblePhysicsProfile, type MarblePhysicsProfile } from "./marblePhysicsProfiles";
 import { presetObstaclePlan } from "./presetObstaclePlan";
@@ -81,10 +81,22 @@ function outgoingForNormal(incoming: Vec2, normalInput: Vec2, restitution: numbe
   };
 }
 
-function naturalRestitution(profile: MarblePhysicsProfile, settings: StudioSettings, factor = 1) {
+function naturalRestitution(profile: MarblePhysicsProfile, settings: StudioSettings) {
   const userBounce = clamp((settings.bounceHeight - 48) / 96, 0, 1);
   const center = profile.restitutionMin + (profile.restitutionMax - profile.restitutionMin) * (0.42 + userBounce * 0.28);
-  return clamp(center * factor, profile.restitutionMin, profile.restitutionMax);
+  return clamp(center, profile.restitutionMin, profile.restitutionMax);
+}
+
+function collisionAngles(profile: MarblePhysicsProfile, dt: number) {
+  const result = [...profile.normalAngles];
+  // Very short note gaps cannot produce a believable high arc. Add steeper
+  // glancing surfaces so the same restitution redirects momentum sideways and
+  // lets gravity keep pulling the ball down instead of forcing another upward
+  // teleport-like bounce.
+  if (dt < 0.32) result.push(0.34, -0.34, 0.44, -0.44);
+  if (dt < 0.22) result.push(0.54, -0.54, 0.64, -0.64);
+  if (dt < 0.15) result.push(0.72, -0.72);
+  return result;
 }
 
 function worldBounds(settings: StudioSettings, width: number) {
@@ -115,7 +127,8 @@ function fallbackCandidate(hit: Vec2, incoming: Vec2, spanMs: number, direction:
   const dt = Math.max(0.08, spanMs / 1000);
   const bounds = worldBounds(settings, width);
   const sign = direction || (incoming.x >= 0 ? 1 : -1) || 1;
-  const normalInput = normalForAngle(sign * (settings.instrumentFamily !== "auto" ? 0.18 : 0.24));
+  const angle = dt < 0.16 ? 0.7 : dt < 0.24 ? 0.54 : dt < 0.36 ? 0.36 : (settings.instrumentFamily !== "auto" ? 0.18 : 0.24);
+  const normalInput = normalForAngle(sign * angle);
   const reflected = outgoingForNormal(incoming, normalInput, naturalRestitution(profile, settings), 0.95);
   reflected.velocity.x = clamp(reflected.velocity.x, -520, 520);
   const target = {
@@ -155,10 +168,10 @@ function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: numb
   // destination. A collision keeps a stable material restitution; the next
   // instrument is placed where that real ballistic arc naturally arrives at the
   // next note timestamp.
-  for (const restitutionFactor of [0.92, 1, 1.08]) {
-    for (let order = 0; order < profile.normalAngles.length; order += 1) {
-      const normalInput = normalForAngle(profile.normalAngles[order]);
-      const restitution = naturalRestitution(profile, settings, restitutionFactor);
+  const restitution = naturalRestitution(profile, settings);
+  const angles = collisionAngles(profile, dt);
+  for (let order = 0; order < angles.length; order += 1) {
+      const normalInput = normalForAngle(angles[order]);
       const tangentRetention = settings.terrainProfile === "comet" ? 0.93 : settings.instrumentFamily !== "auto" ? 0.955 : 0.965;
       const reflected = outgoingForNormal(incoming, normalInput, restitution, tangentRetention);
       if (settings.terrainProfile === "comet") {
@@ -177,29 +190,35 @@ function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: numb
       // descending. Very dense note runs may be almost level, but never require
       // the ball to teleport upward to make the timestamp.
       const nextIncomingY = reflected.velocity.y + profile.gravity * dt;
-      const minimumDrop = dt < 0.18 ? -4 : dt < 0.28 ? 0 : 4;
+      const minimumDrop = dt < 0.16 ? -1.5 : dt < 0.24 ? 0 : 4;
       if (dy < minimumDrop || dy > Math.max(260, profile.longGapDropPerSecond * dt * 1.8)) continue;
-      if (dt >= 0.2 && nextIncomingY < 18) continue;
+      // Every ordinary strike should happen on the descending half of the arc.
+      // Dense passages may be almost tangent to the surface, but still must not
+      // hit the next instrument while the ball is visibly climbing.
+      if (nextIncomingY < (dt < 0.16 ? -2 : 8)) continue;
       const apex = reflected.velocity.y < 0 ? reflected.velocity.y ** 2 / (2 * profile.gravity) : 0;
       const apexTime = reflected.velocity.y < 0 ? -reflected.velocity.y / profile.gravity : 0;
-      const flightArcPenalty = apexTime > dt * 0.72 ? (apexTime - dt * 0.72) * 180 : 0;
-      const directionPenalty = Math.sign(dx || preferredDirection) === Math.sign(preferredDirection) ? 0 : 5;
+      const latestApexRatio = dt < 0.18 ? 0.42 : dt < 0.3 ? 0.5 : 0.6;
+      const flightArcPenalty = apexTime > dt * latestApexRatio ? (apexTime - dt * latestApexRatio) * 420 : 0;
+      const directionPenalty = Math.sign(dx || preferredDirection) === Math.sign(preferredDirection) ? 0 : 12;
       const horizontalPenalty = Math.abs(Math.abs(dx) - naturalHorizontal) * 0.035;
       const pitchPenalty = Math.abs(dx - (preferredDirection * naturalHorizontal + pitchBias)) * 0.008;
       const excessiveApexPenalty = Math.max(0, apex - Math.max(12, settings.bounceHeight * 0.95)) * 0.3;
-      const speedPenalty = Math.max(0, length(reflected.velocity) - 760) * 0.18;
-      const landingSpeedPenalty = Math.max(0, nextIncomingY - 900) * 0.14;
+      const incomingSpeed = length(incoming);
+      const outgoingSpeed = length(reflected.velocity);
+      const energyGainPenalty = Math.max(0, outgoingSpeed - incomingSpeed * 1.03) * 1.1;
+      const speedPenalty = Math.max(0, outgoingSpeed - 720) * 0.22;
+      const landingSpeedPenalty = Math.max(0, nextIncomingY - 840) * 0.18;
       const edgeDistance = Math.min(target.x - bounds.min, bounds.max - target.x);
       const edgePenalty = Math.max(0, width * 0.1 - edgeDistance) * 0.16;
-      const randomTieBreak = Math.abs(seeded(index * 31 + order, Math.round(restitutionFactor * 100))) * 0.8;
+      const randomTieBreak = Math.abs(seeded(index * 31 + order, 97)) * 0.45;
       result.push({
         normal: reflected.normal,
         outgoing: reflected.velocity,
         target,
         score: directionPenalty + horizontalPenalty + pitchPenalty + flightArcPenalty + excessiveApexPenalty
-          + speedPenalty + landingSpeedPenalty + edgePenalty + orientationPenalty(index, reflected.normal, settings) + randomTieBreak,
+          + energyGainPenalty + speedPenalty + landingSpeedPenalty + edgePenalty + orientationPenalty(index, reflected.normal, settings) + randomTieBreak,
       });
-    }
   }
 
   result.sort((a, b) => a.score - b.score);
@@ -245,18 +264,6 @@ function decorateDenseKeyboardRuns(platforms: MarblePlatform[], events: NoteEven
     for (let index = run.start + 1; index <= run.end && index < decorated.length; index += 1) decorated[index].visualHidden = true;
   }
   return decorated;
-}
-
-function longGapTarget(index: number, hit: Vec2, spanMs: number, direction: number, pitch: number, settings: StudioSettings, width: number) {
-  const profile = marblePhysicsProfile(settings);
-  const dt = spanMs / 1000;
-  const bounds = worldBounds(settings, width);
-  const lateralScale = settings.terrainProfile === "comet" ? 62 : settings.terrainProfile === "tube-board" ? 48 : 40;
-  const lateral = lateralScale * direction + (pitch - 0.5) * settings.laneSpread * 0.08;
-  return {
-    x: clamp(hit.x + lateral + seeded(index, 301) * 16, bounds.min + 18, bounds.max - 18),
-    y: hit.y + clamp(profile.longGapDropPerSecond * dt, 150, 430),
-  };
 }
 
 function obstacleFromImpact(index: number, hit: Vec2, normal: Vec2, outgoing: Vec2, settings: StudioSettings, event: NoteEvent, color: string, platformWidth: number, gravity: number): MarblePlatform {
@@ -448,22 +455,16 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
     const expanded: SearchState[] = [];
 
     for (const state of states) {
-      const useGuideTube = spanMs >= REST_GAP_MS && (stepSettings.terrainProfile === "tube-board" || stepSettings.terrainProfile === "balanced");
-      const effectiveSpan = useGuideTube ? Math.min(spanMs, 680) : spanMs;
-      const candidates = bounceCandidates(index, state.hit, state.incoming, effectiveSpan, state.preferredDirection, pitch, stepSettings, width);
+      const candidates = bounceCandidates(index, state.hit, state.incoming, spanMs, state.preferredDirection, pitch, stepSettings, width);
       for (const bounce of candidates) {
         const platform = obstacleFromImpact(index, state.hit, bounce.normal, bounce.outgoing, stepSettings, event, resolveColor(index, pitch), platformWidth, profile.gravity);
         if (index === events.length - 1) {
           expanded.push({ ...state, score: state.score + bounce.score, node: { platform, parent: state.node } });
           continue;
         }
-        const nextHit = useGuideTube
-          ? longGapTarget(index, state.hit, spanMs, state.preferredDirection, pitch, stepSettings, width)
-          : bounce.target;
+        const nextHit = bounce.target;
         const dt = Math.max(0.08, spanMs / 1000);
-        const nextIncoming = useGuideTube
-          ? { x: (nextHit.x - state.hit.x) / dt * 0.24, y: Math.max(190, profile.gravity * Math.min(dt, 0.7) * 0.58) }
-          : { x: bounce.outgoing.x, y: bounce.outgoing.y + profile.gravity * dt };
+        const nextIncoming = { x: bounce.outgoing.x, y: bounce.outgoing.y + profile.gravity * dt };
         let nextDirection = Math.abs(nextIncoming.x) > 18 ? Math.sign(nextIncoming.x) : state.preferredDirection;
         const bounds = worldBounds(stepSettings, width);
         const edgeInset = Math.max(72, stepSettings.laneSpread * 0.24);

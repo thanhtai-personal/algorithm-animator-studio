@@ -207,7 +207,6 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
   const start = platforms[index];
   const end = platforms[index + 1];
   const startHit = marbleHitPoint(start);
-  const endHit = marbleHitPoint(end);
   const span = Math.max(1, events[index + 1].timeMs - events[index].timeMs);
   const rawT = clamp((timeMs - events[index].timeMs) / span);
   const segmentOverride = overrideForSegment(index, overrides);
@@ -216,31 +215,9 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
     if (guided) return { x: guided.x, y: guided.y, color: mixHex(start.color, end.color, rawT), platformIndex: index };
   }
 
-  if (span >= LONG_GAP_TUBE_MS && segmentSettings.terrainProfile !== "comet" && segmentSettings.terrainProfile !== "xylophone") {
-    const geometry = longGapTubeGeometry(start, end, segmentSettings);
-    if (rawT < TUBE_ENTRY_T) {
-      const phase = rawT / TUBE_ENTRY_T;
-      return {
-        x: startHit.x + (geometry.entryX - startHit.x) * phase,
-        y: startHit.y + (geometry.entryY - startHit.y) * phase - Math.sin(Math.PI * phase) * segmentSettings.bounceHeight * 0.28,
-        color: mixHex(start.color, end.color, rawT),
-        platformIndex: index,
-      };
-    }
-    if (rawT <= TUBE_EXIT_T) {
-      const phase = (rawT - TUBE_ENTRY_T) / (TUBE_EXIT_T - TUBE_ENTRY_T);
-      const point = longGapTubePoint(geometry, phase);
-      return { ...point, color: mixHex(start.color, end.color, rawT), platformIndex: index };
-    }
-    const phase = (rawT - TUBE_EXIT_T) / (1 - TUBE_EXIT_T);
-    return {
-      x: geometry.exitX + (endHit.x - geometry.exitX) * phase,
-      y: geometry.exitY + (endHit.y - geometry.exitY) * phase - Math.sin(Math.PI * phase) * segmentSettings.bounceHeight * 0.16,
-      color: mixHex(start.color, end.color, rawT),
-      platformIndex: index,
-    };
-  }
-
+  // Automatic tube interpolation used to replace the real ballistic arc on long
+  // gaps. That made the marble visibly change acceleration mid-flight. Long gaps
+  // now remain pure gravity motion; only an explicit course override may guide it.
   const elapsed = (timeMs - events[index].timeMs) / 1000;
   return {
     x: startHit.x + start.outVX * elapsed,

@@ -51,6 +51,7 @@ export class RhythmicStudioStore {
   lyrics: LyricCue[] = [];
   lyricFormat: LyricFormat | null = null;
   activePresetId: RhythmicPresetId | null = "toy-pegboard";
+  presetMixEnabled = false;
   rendererMode: RhythmicRendererMode = "legacy";
 
   constructor() {
@@ -159,6 +160,7 @@ export class RhythmicStudioStore {
   setLyrics(raw: string, cues: LyricCue[], format: LyricFormat | null) { this.lyricRaw = raw; this.lyrics = cues; this.lyricFormat = format; }
   setLyricRaw(raw: string) { this.lyricRaw = raw; }
   setRendererMode(mode: RhythmicRendererMode) { this.rendererMode = mode; }
+  setPresetMixEnabled(enabled: boolean) { this.presetMixEnabled = enabled; }
   setSelectedNode(index: number | null) { this.selectedNodeIndex = index; }
   setOverrides(overrides: CourseItemOverride[]) { this.courseOverrides = overrides; }
 }

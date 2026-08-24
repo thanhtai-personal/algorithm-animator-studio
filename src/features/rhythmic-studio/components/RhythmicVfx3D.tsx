@@ -3,6 +3,7 @@ import * as THREE from "three";
 import type { CourseItemOverride, NoteEvent, StudioSettings } from "../types";
 import type { MarblePlatform } from "../lib/marbleCourse";
 import { RHYTHMIC_WORLD_SCALE, setWorldPoint, visualMarbleAtTime } from "./RhythmicMotion3D";
+import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 
 const MAX_TRAIL = 12;
 const PARTICLES = 14;
@@ -53,7 +54,8 @@ export const RhythmicVfx3D = forwardRef<RhythmicVfxHandle, {
   platforms: MarblePlatform[];
   settings: StudioSettings;
   courseOverrides: CourseItemOverride[];
-}>(function RhythmicVfx3D({ events, platforms, settings, courseOverrides }, ref) {
+  resolveSettings?: StudioSettingsResolver;
+}>(function RhythmicVfx3D({ events, platforms, settings, courseOverrides, resolveSettings }, ref) {
   const trailRef = useRef<THREE.InstancedMesh>(null);
   const particleRef = useRef<THREE.InstancedMesh>(null);
   const ringRef = useRef<THREE.Mesh>(null);
@@ -83,8 +85,8 @@ export const RhythmicVfx3D = forwardRef<RhythmicVfxHandle, {
           }
           const t = profile.count <= 1 ? 0 : index / (profile.count - 1);
           const sampleTime = Math.max(0, timeMs - t * profile.duration);
-          const sample = visualMarbleAtTime(sampleTime, events, platforms, settings, courseOverrides);
-          const previous = visualMarbleAtTime(Math.max(0, sampleTime - sampleStep), events, platforms, settings, courseOverrides);
+          const sample = visualMarbleAtTime(sampleTime, events, platforms, settings, courseOverrides, resolveSettings);
+          const previous = visualMarbleAtTime(Math.max(0, sampleTime - sampleStep), events, platforms, settings, courseOverrides, resolveSettings);
           setWorldPoint(pointA, sample);
           setWorldPoint(pointB, previous);
           midpoint.copy(pointA).add(pointB).multiplyScalar(0.5);
@@ -117,7 +119,7 @@ export const RhythmicVfx3D = forwardRef<RhythmicVfxHandle, {
         return;
       }
 
-      const impactSample = visualMarbleAtTime(event.timeMs, events, platforms, settings, courseOverrides);
+      const impactSample = visualMarbleAtTime(event.timeMs, events, platforms, settings, courseOverrides, resolveSettings);
       const impactPoint = setWorldPoint(pointA, impactSample);
       const life = THREE.MathUtils.clamp(age / 220, 0, 1);
       const impactPlatformColor = platforms[Math.min(impactIndex, platforms.length - 1)]?.color ?? settings.ballBaseColor;
@@ -152,7 +154,7 @@ export const RhythmicVfx3D = forwardRef<RhythmicVfxHandle, {
         material.opacity = (1 - life) * (settings.terrainProfile === "xylophone" ? 0.24 : 0.42);
       }
     },
-  }), [color, courseOverrides, delta, events, helper, hidden, midpoint, platforms, pointA, pointB, settings, white]);
+  }), [color, courseOverrides, delta, events, helper, hidden, midpoint, platforms, pointA, pointB, resolveSettings, settings, white]);
 
   return (
     <group>

@@ -1,5 +1,5 @@
 import { observer } from "mobx-react-lite";
-import { Check } from "lucide-react";
+import { Check, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import type { RhythmicStudioController } from "../hooks/useRhythmicStudioController";
@@ -31,5 +31,18 @@ export const QuickPresetBar = observer(function QuickPresetBar({ studio }: { stu
         </Button>;
       })}
     </div>
+    <Button
+      type="button"
+      variant={studio.presetMixEnabled ? "secondary" : "outline"}
+      className="mt-2 h-auto w-full justify-start gap-3 px-3 py-2.5 text-left"
+      onClick={studio.togglePresetMix}
+      aria-pressed={studio.presetMixEnabled}
+    >
+      <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${studio.presetMixEnabled ? "bg-primary text-primary-foreground" : "bg-muted"}`}><Shuffle className="h-4 w-4" /></span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2 text-sm font-semibold">{presetText(lang, "mix")}<span className="text-[10px] font-medium text-muted-foreground">{presetText(lang, studio.presetMixEnabled ? "mix.on" : "mix.off")}</span></span>
+        <span className="mt-0.5 block whitespace-normal text-xs font-normal leading-relaxed text-muted-foreground">{presetText(lang, "mix.hint")}</span>
+      </span>
+    </Button>
   </section>;
 });

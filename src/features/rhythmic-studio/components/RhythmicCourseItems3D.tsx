@@ -6,6 +6,7 @@ import { LONG_GAP_TUBE_MS, longGapTubeGeometry, longGapTubePoint, type MarblePla
 import { guidedCoursePoint, isLongCourseItem, overrideForSegment } from "../lib/courseGuide";
 import type { NoteEvent } from "../types";
 import { RHYTHMIC_COURSE_WIDTH, RHYTHMIC_WORLD_SCALE } from "./RhythmicMotion3D";
+import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 
 function worldPoint(x: number, y: number, z = 0) {
   return new THREE.Vector3(
@@ -186,12 +187,13 @@ function LongSegment(props: SegmentProps) {
   return <GlassTubeSegment {...props} />;
 }
 
-export function RhythmicCourseItems3D({ platforms, overrides, settings, focusIndex, events }: {
+export function RhythmicCourseItems3D({ platforms, overrides, settings, focusIndex, events, resolveSettings }: {
   platforms: MarblePlatform[];
   overrides: CourseItemOverride[];
   settings: StudioSettings;
   focusIndex: number;
   events: NoteEvent[];
+  resolveSettings?: StudioSettingsResolver;
 }) {
   const visibleOverrides = useMemo(() => overrides.filter((override) => {
     if (!isLongCourseItem(override.style)) return false;
@@ -201,9 +203,10 @@ export function RhythmicCourseItems3D({ platforms, overrides, settings, focusInd
   }), [focusIndex, overrides, platforms.length]);
 
   const autoTubeSegments = useMemo(() => {
-    if (settings.terrainProfile === "comet" || settings.terrainProfile === "xylophone") return [];
-    const segments: { start: MarblePlatform; end: MarblePlatform; color: string; key: string }[] = [];
+    const segments: { start: MarblePlatform; end: MarblePlatform; color: string; key: string; settings: StudioSettings }[] = [];
     for (let index = 0; index < platforms.length - 1; index += 1) {
+      const segmentSettings = resolveSettings?.(index) ?? settings;
+      if (segmentSettings.terrainProfile === "comet" || segmentSettings.terrainProfile === "xylophone") continue;
       const span = events[index + 1].timeMs - events[index].timeMs;
       if (span < LONG_GAP_TUBE_MS || overrideForSegment(index, overrides)) continue;
       const start = platforms[index];
@@ -211,14 +214,14 @@ export function RhythmicCourseItems3D({ platforms, overrides, settings, focusInd
       if (!start || !end) continue;
       if (index < focusIndex - 18 || index > focusIndex + 18) continue;
       const color = `#${new THREE.Color(start.color).lerp(new THREE.Color(end.color), 0.5).getHexString()}`;
-      segments.push({ start, end, color, key: `auto-gap:${index}` });
+      segments.push({ start, end, color, key: `auto-gap:${index}`, settings: segmentSettings });
     }
     return segments;
-  }, [events, focusIndex, overrides, platforms, settings]);
+  }, [events, focusIndex, overrides, platforms, resolveSettings, settings]);
 
   return (
     <group>
-      {autoTubeSegments.map((segment) => <AutoGlassTubeSegment key={segment.key} start={segment.start} end={segment.end} settings={settings} color={segment.color} />)}
+      {autoTubeSegments.map((segment) => <AutoGlassTubeSegment key={segment.key} start={segment.start} end={segment.end} settings={segment.settings} color={segment.color} />)}
       {visibleOverrides.flatMap((override) => {
         if (!isLongCourseItem(override.style)) return [];
         const startIndex = Math.max(0, Math.min(platforms.length - 1, override.startIndex));
@@ -229,8 +232,9 @@ export function RhythmicCourseItems3D({ platforms, overrides, settings, focusInd
           const end = platforms[index + 1];
           if (!start || !end) continue;
           const color = `#${new THREE.Color(start.color).lerp(new THREE.Color(end.color), 0.5).getHexString()}`;
+          const segmentSettings = resolveSettings?.(index) ?? settings;
           segments.push(
-            <LongSegment key={`${override.id}:${index}`} start={start} end={end} style={override.style} settings={settings} color={color} />,
+            <LongSegment key={`${override.id}:${index}`} start={start} end={end} style={override.style} settings={segmentSettings} color={color} />,
           );
         }
         return segments;

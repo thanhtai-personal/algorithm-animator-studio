@@ -34,6 +34,7 @@ export class AudioEngine {
   private reverbSend: GainNode | null = null;
   private reverbWet: GainNode | null = null;
   private recordDestination: MediaStreamAudioDestinationNode | null = null;
+  private outputCompressor: DynamicsCompressorNode | null = null;
   private mediaElement: HTMLAudioElement | null = null;
   private mediaSource: MediaElementAudioSourceNode | null = null;
   private midiSession: GainNode | null = null;
@@ -59,6 +60,7 @@ export class AudioEngine {
       const reverb = this.context.createConvolver();
       reverb.buffer = createRoomImpulse(this.context);
       const compressor = this.context.createDynamicsCompressor();
+      this.outputCompressor = compressor;
       compressor.threshold.value = -18;
       compressor.knee.value = 18;
       compressor.ratio.value = 3.2;
@@ -118,7 +120,19 @@ export class AudioEngine {
     this.stereoWidth = Math.max(0, Math.min(1, value));
   }
 
+  private refreshRecordDestination() {
+    if (!this.context || !this.outputCompressor) return;
+    const currentTrack = this.recordDestination?.stream.getAudioTracks()[0];
+    if (currentTrack?.readyState === "live") return;
+    if (this.recordDestination) {
+      try { this.outputCompressor.disconnect(this.recordDestination); } catch { /* already disconnected */ }
+    }
+    this.recordDestination = this.context.createMediaStreamDestination();
+    this.outputCompressor.connect(this.recordDestination);
+  }
+
   getRecordStream() {
+    this.refreshRecordDestination();
     return this.recordDestination?.stream ?? null;
   }
 

@@ -3,6 +3,9 @@ import { PerspectiveCamera } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { CourseItemOverride, NoteEvent, StudioSettings } from "../types";
+import type { RhythmicPresetId } from "../lib/studioPresets";
+import { buildPresetMixPlan, createPresetMixSettingsResolver } from "../lib/presetMix";
+import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 import type { MarblePlatform } from "../lib/marbleCourse";
 import { buildMarbleCourse } from "../lib/marbleCourse";
 import { RhythmicMarble3D } from "./RhythmicMarble3D";
@@ -35,6 +38,8 @@ interface Props {
   onTime: (timeMs: number) => void;
   onEnded: () => void;
   canvasRef?: MutableRefObject<HTMLCanvasElement | null>;
+  presetMixEnabled: boolean;
+  activePresetId: RhythmicPresetId | null;
 }
 
 const CAMERA_Z = 10.15;
@@ -69,16 +74,19 @@ function cameraLookAheadMs(settings: StudioSettings) {
   return 420;
 }
 
-function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSettings; platforms: MarblePlatform[] }) {
+function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSettings: StudioSettingsResolver }) {
   const { camera, invalidate } = useThree();
   const marbleMotionRef = useRef<THREE.Group>(null);
   const marbleRef = useRef<THREE.Group>(null);
   const vfxRef = useRef<RhythmicVfxHandle>(null);
   const marbleColor = useMemo(() => new THREE.Color(props.settings.ballBaseColor), [props.settings.ballBaseColor]);
   const initialSample = useMemo(
-    () => visualMarbleAtTime(props.timeMs, props.events, props.platforms, props.settings, props.courseOverrides),
-    [props.courseOverrides, props.events, props.platforms, props.settings, props.timeMs],
+    () => visualMarbleAtTime(props.timeMs, props.events, props.platforms, props.settings, props.courseOverrides, props.resolveSettings),
+    [props.courseOverrides, props.events, props.platforms, props.resolveSettings, props.settings, props.timeMs],
   );
+  const initialVisualSettings = useMemo(() => props.resolveSettings(initialSample.segmentIndex), [initialSample.segmentIndex, props.resolveSettings]);
+  const [activeVisualSettings, setActiveVisualSettings] = useState(initialVisualSettings);
+  const activeSettingsRef = useRef(initialVisualSettings);
   const [focusIndex, setFocusIndex] = useState(initialSample.platformIndex);
   const focusIndexRef = useRef(initialSample.platformIndex);
   const currentTimeRef = useRef(props.timeMs);
@@ -103,14 +111,20 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
   const initializedRef = useRef(false);
 
   const syncScene = useCallback((timeMs: number, deltaSeconds: number, snapCamera = false) => {
-    const sample = visualMarbleAtTime(timeMs, props.events, props.platforms, props.settings, props.courseOverrides);
-    const lookAheadMs = cameraLookAheadMs(props.settings);
+    const sample = visualMarbleAtTime(timeMs, props.events, props.platforms, props.settings, props.courseOverrides, props.resolveSettings);
+    const frameSettings = props.resolveSettings(sample.segmentIndex);
+    if (frameSettings !== activeSettingsRef.current) {
+      activeSettingsRef.current = frameSettings;
+      setActiveVisualSettings(frameSettings);
+    }
+    const lookAheadMs = cameraLookAheadMs(frameSettings);
     const ahead = visualMarbleAtTime(
       Math.min(props.durationMs, timeMs + lookAheadMs),
       props.events,
       props.platforms,
       props.settings,
       props.courseOverrides,
+      props.resolveSettings,
     );
     const sampleWindow = 10;
     const before = visualMarbleAtTime(
@@ -119,6 +133,7 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
       props.platforms,
       props.settings,
       props.courseOverrides,
+      props.resolveSettings,
     );
     const after = visualMarbleAtTime(
       Math.min(props.durationMs, timeMs + sampleWindow),
@@ -126,6 +141,7 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
       props.platforms,
       props.settings,
       props.courseOverrides,
+      props.resolveSettings,
     );
 
     if (sample.platformIndex !== focusIndexRef.current) {
@@ -142,7 +158,7 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
     const marbleMotion = marbleMotionRef.current;
     const marbleMesh = marbleRef.current;
     if (marbleMotion && marbleMesh) {
-      const radius = Math.max(0.12, props.settings.ballSize * RHYTHMIC_WORLD_SCALE);
+      const radius = Math.max(0.12, frameSettings.ballSize * RHYTHMIC_WORLD_SCALE);
       const timeDelta = timeMs - previousTimeRef.current;
       displacement.copy(world).sub(previousWorld);
       const distance = displacement.length();
@@ -168,7 +184,7 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
       marbleColor.set(sample.color);
       const surface = marbleMesh.children[0] as THREE.Mesh | undefined;
       const material = surface?.material as THREE.MeshStandardMaterial | undefined;
-      if (material && props.settings.ballStyle === "classic") material.color.copy(marbleColor);
+      if (material && frameSettings.ballStyle === "classic") material.color.copy(marbleColor);
     }
 
     previousWorld.copy(world);
@@ -179,15 +195,15 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
     const jumpDistance = world.distanceTo(aheadWorld);
     const density = noteDensity(props.events, timeMs);
     const speed = velocity.length();
-    const profileZoom = props.settings.cameraProfile === "xylophone" ? 1.55 : (props.settings.cameraProfile === "comet" ? 0.5 : 0);
+    const profileZoom = frameSettings.cameraProfile === "xylophone" ? 1.55 : (frameSettings.cameraProfile === "comet" ? 0.5 : 0);
     const adaptiveZ = THREE.MathUtils.clamp(
       CAMERA_Z + profileZoom + jumpDistance * 0.18 + Math.min(0.45, speed * 0.018) - Math.min(0.75, density * 0.035),
-      props.settings.cameraProfile === "xylophone" ? 11.2 : 8.8,
-      props.settings.cameraProfile === "xylophone" ? 15.8 : 12.8,
+      frameSettings.cameraProfile === "xylophone" ? 11.2 : 8.8,
+      frameSettings.cameraProfile === "xylophone" ? 15.8 : 12.8,
     );
-    const anchorOffset = (0.5 - props.settings.cameraAnchor) * 7.2;
-    const isXylophone = props.settings.cameraProfile === "xylophone";
-    const isTubeBoard = props.settings.cameraProfile === "tube-board";
+    const anchorOffset = (0.5 - frameSettings.cameraAnchor) * 7.2;
+    const isXylophone = frameSettings.cameraProfile === "xylophone";
+    const isTubeBoard = frameSettings.cameraProfile === "tube-board";
     const lateralFactor = isXylophone ? 0.18 : isTubeBoard ? 0.2 : 0.28;
     const lateralClamp = isXylophone ? 0.56 : isTubeBoard ? 0.62 : 0.95;
     const verticalFactor = isXylophone ? 0.009 : isTubeBoard ? 0.01 : 0.012;
@@ -195,7 +211,7 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
     const verticalLag = THREE.MathUtils.clamp(velocity.y * verticalFactor, -0.26, 0.32);
     cameraTarget.set(world.x + lateralLead, world.y + anchorOffset - verticalLag, adaptiveZ + world.z * 0.18);
 
-    const damping = 4.8 + THREE.MathUtils.clamp(props.settings.cameraSmoothing, 0.03, 0.65) * 14;
+    const damping = 4.8 + THREE.MathUtils.clamp(frameSettings.cameraSmoothing, 0.03, 0.65) * 14;
     if (snapCamera || !Number.isFinite(camera.position.x)) {
       camera.position.copy(cameraTarget);
     } else {
@@ -218,11 +234,11 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
     camera.lookAt(smoothedLook);
 
     const perspective = camera as THREE.PerspectiveCamera;
-    const targetFov = THREE.MathUtils.clamp(CAMERA_FOV + jumpDistance * (props.settings.cameraProfile === "xylophone" ? 0.5 : 0.56) - density * 0.055, props.settings.cameraProfile === "xylophone" ? 37 : 34.5, props.settings.cameraProfile === "xylophone" ? 44.5 : 43.5);
+    const targetFov = THREE.MathUtils.clamp(CAMERA_FOV + jumpDistance * (frameSettings.cameraProfile === "xylophone" ? 0.5 : 0.56) - density * 0.055, frameSettings.cameraProfile === "xylophone" ? 37 : 34.5, frameSettings.cameraProfile === "xylophone" ? 44.5 : 43.5);
     perspective.fov = snapCamera ? targetFov : THREE.MathUtils.damp(perspective.fov, targetFov, 5.5, deltaSeconds);
     perspective.updateProjectionMatrix();
-    const bankStrength = props.settings.cameraProfile === "xylophone" ? 0.0035 : props.settings.cameraProfile === "tube-board" ? 0.0042 : 0.006;
-    const bankLimit = props.settings.cameraProfile === "xylophone" ? 0.024 : props.settings.cameraProfile === "tube-board" ? 0.028 : 0.042;
+    const bankStrength = frameSettings.cameraProfile === "xylophone" ? 0.0035 : frameSettings.cameraProfile === "tube-board" ? 0.0042 : 0.006;
+    const bankLimit = frameSettings.cameraProfile === "xylophone" ? 0.024 : frameSettings.cameraProfile === "tube-board" ? 0.028 : 0.042;
     const bankTarget = THREE.MathUtils.clamp(-velocity.x * bankStrength, -bankLimit, bankLimit);
     perspective.rotation.z = snapCamera ? bankTarget : THREE.MathUtils.damp(perspective.rotation.z, bankTarget, 4.2, deltaSeconds);
   }, [
@@ -240,6 +256,7 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
     props.durationMs,
     props.events,
     props.platforms,
+    props.resolveSettings,
     props.settings,
     rollAxis,
     smoothedLook,
@@ -304,6 +321,7 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
         settings={props.settings}
         focusIndex={focusIndex}
         events={props.events}
+        resolveSettings={props.resolveSettings}
       />
       <RhythmicPlatformField3D
         platforms={props.platforms}
@@ -312,16 +330,18 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
         focusIndex={focusIndex}
         selectedNodeIndex={props.selectedNodeIndex}
         onSelectNode={props.onSelectNode}
+        resolveSettings={props.resolveSettings}
       />
       <RhythmicVfx3D
         ref={vfxRef}
         events={props.events}
         platforms={props.platforms}
-        settings={props.settings}
+        settings={activeVisualSettings}
         courseOverrides={props.courseOverrides}
+        resolveSettings={props.resolveSettings}
       />
       <group ref={marbleMotionRef}>
-        <RhythmicMarble3D ref={marbleRef} settings={props.settings} liveColor={marbleColor} />
+        <RhythmicMarble3D ref={marbleRef} settings={activeVisualSettings} liveColor={marbleColor} />
       </group>
     </>
   );
@@ -343,9 +363,17 @@ export function RhythmicScene3D(props: Props) {
     if (props.canvasRef) props.canvasRef.current = null;
   }, [props.canvasRef]);
 
+  const mixPlan = useMemo(
+    () => buildPresetMixPlan(props.events, props.presetMixEnabled, props.activePresetId),
+    [props.activePresetId, props.events, props.presetMixEnabled],
+  );
+  const resolveSettings = useMemo(
+    () => createPresetMixSettingsResolver(props.settings, mixPlan),
+    [mixPlan, props.settings],
+  );
   const platforms = useMemo(
-    () => buildMarbleCourse(props.events, props.settings, RHYTHMIC_COURSE_WIDTH),
-    [props.events, props.settings.platformGap, props.settings.platformWidth, props.settings.platformThickness, props.settings.platformTilt, props.settings.laneSpread, props.settings.minBounceDistance, props.settings.bounceHeight, props.settings.ballSize, props.settings.prismStart, props.settings.prismEnd, props.settings.autoSyncGaps, props.settings.terrainProfile, props.settings.colorPaletteMode],
+    () => buildMarbleCourse(props.events, props.settings, RHYTHMIC_COURSE_WIDTH, resolveSettings),
+    [props.events, props.settings, resolveSettings],
   );
 
   return (
@@ -365,10 +393,10 @@ export function RhythmicScene3D(props: Props) {
         onPointerMissed={() => props.onSelectNode(null)}
       >
         <color attach="background" args={[props.settings.backgroundColor]} />
-        <SceneContent {...props} platforms={platforms} />
+        <SceneContent {...props} platforms={platforms} resolveSettings={resolveSettings} />
       </Canvas>
       <div className="pointer-events-none absolute left-2 top-2 rounded-md border border-white/10 bg-black/45 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70 backdrop-blur">
-        WebGL · {props.playing ? "cinematic preview" : "quality idle"}
+        WebGL · {props.presetMixEnabled ? "preset mix" : props.playing ? "cinematic preview" : "quality idle"}
       </div>
     </div>
   );

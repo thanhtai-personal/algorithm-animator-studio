@@ -12,7 +12,7 @@ export function useRhythmicProjectActions(store: RhythmicStudioStore, loadBuilti
 
   const saveProject = useCallback(() => {
     const name = store.projectName.trim() || rhythmicText(lang, "default.untitled");
-    const saved = saveRhythmicProject(name, store.settings, store.source, store.courseOverrides);
+    const saved = saveRhythmicProject(name, store.settings, store.source, store.courseOverrides, store.presetMixEnabled);
     store.setProjects([saved, ...store.projects.filter((item) => item.id !== saved.id)]);
     store.setStatus({ key: "status.projectSaved" });
     toast.success(rhythmicText(lang, "toast.presetSaved"));
@@ -24,6 +24,7 @@ export function useRhythmicProjectActions(store: RhythmicStudioStore, loadBuilti
     store.replaceSettings(project.settings);
     store.setProjectName(project.name);
     store.setOverrides(project.courseOverrides ?? []);
+    store.setPresetMixEnabled(project.presetMixEnabled ?? false);
     store.setSelectedNode(null);
     if (project.source?.type === "builtin" && BUILTIN_MELODIES[project.source.name]) loadBuiltin(project.source.name);
     else store.setStatus({ key: project.source ? "status.presetReimport" : "status.presetLoaded" });

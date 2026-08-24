@@ -5,26 +5,30 @@ import { resolvePlatformStyle } from "../lib/platformStyles";
 import { isPlatformCourseItem, overrideForNode } from "../lib/courseItems";
 import { RHYTHMIC_COURSE_WIDTH, RHYTHMIC_WORLD_SCALE } from "./RhythmicMotion3D";
 import { PlatformMesh } from "./RhythmicPlatformMeshes3D";
+import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 
-export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, focusIndex, selectedNodeIndex, onSelectNode }: {
+export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, focusIndex, selectedNodeIndex, onSelectNode, resolveSettings }: {
   platforms: MarblePlatform[];
   settings: StudioSettings;
   courseOverrides: CourseItemOverride[];
   focusIndex: number;
   selectedNodeIndex: number | null;
   onSelectNode: (index: number | null) => void;
+  resolveSettings?: StudioSettingsResolver;
 }) {
   const visible = useMemo(() => {
-    const radius = settings.terrainProfile === "xylophone" ? 20 : 17;
+    const focusSettings = resolveSettings?.(focusIndex) ?? settings;
+    const radius = focusSettings.terrainProfile === "xylophone" ? 20 : 18;
     return platforms.filter((platform) => Math.abs(platform.index - focusIndex) <= radius);
-  }, [focusIndex, platforms, settings.terrainProfile]);
+  }, [focusIndex, platforms, resolveSettings, settings]);
 
   return (
     <group>
       {visible.map((platform) => {
         const override = overrideForNode(platform.index, courseOverrides);
         if (override && !isPlatformCourseItem(override.style) && override.span > 1) return null;
-        const style = override && isPlatformCourseItem(override.style) ? override.style : resolvePlatformStyle(platform.index, settings);
+        const platformSettings = resolveSettings?.(platform.index) ?? settings;
+        const style = override && isPlatformCourseItem(override.style) ? override.style : resolvePlatformStyle(platform.index, platformSettings);
         const w = Math.max(0.3, platform.width * RHYTHMIC_WORLD_SCALE);
         const h = Math.max(0.09, platform.thickness * RHYTHMIC_WORLD_SCALE);
         const d = style === "instrument-cymbal" ? 0.5 : style.includes("rail") ? 0.46 : style === "tube-cylinder" ? 0.62 : 0.54;

@@ -3,6 +3,7 @@ import type { CourseItemOverride, NoteEvent, StudioSettings } from "../types";
 import type { MarblePlatform, MarblePoint } from "../lib/marbleCourse";
 import { clamp, marbleAtTime } from "../lib/marbleCourse";
 import { overrideForSegment } from "../lib/courseGuide";
+import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 
 export const RHYTHMIC_COURSE_WIDTH = 720;
 export const RHYTHMIC_WORLD_SCALE = 0.012;
@@ -48,14 +49,15 @@ export function visualMarbleAtTime(
   platforms: MarblePlatform[],
   settings: StudioSettings,
   overrides: CourseItemOverride[],
+  resolveSettings?: StudioSettingsResolver,
 ): RhythmicVisualPoint {
   if (!events.length || !platforms.length) {
-    const empty = marbleAtTime(timeMs, events, platforms, settings, overrides);
+    const empty = marbleAtTime(timeMs, events, platforms, settings, overrides, resolveSettings);
     return { ...empty, z: 0, segmentIndex: 0, phase: 0, impactAgeMs: Number.POSITIVE_INFINITY, renderedTimeMs: timeMs };
   }
 
   if (timeMs < events[0].timeMs || events.length === 1) {
-    const point = marbleAtTime(timeMs, events, platforms, settings, overrides);
+    const point = marbleAtTime(timeMs, events, platforms, settings, overrides, resolveSettings);
     return {
       ...point,
       z: 0,
@@ -68,7 +70,7 @@ export function visualMarbleAtTime(
 
   const index = Math.min(eventIndexAtOrBefore(events, timeMs), events.length - 1);
   if (index >= events.length - 1) {
-    const point = marbleAtTime(timeMs, events, platforms, settings, overrides);
+    const point = marbleAtTime(timeMs, events, platforms, settings, overrides, resolveSettings);
     return {
       ...point,
       z: 0,
@@ -87,10 +89,11 @@ export function visualMarbleAtTime(
   // + gravity so each landing occurs exactly on the next note. Do not time-warp that
   // trajectory in the presentation layer: doing so makes acceleration feel synthetic.
   const renderedTimeMs = timeMs;
-  const point = marbleAtTime(renderedTimeMs, events, platforms, settings, overrides);
+  const segmentSettings = resolveSettings?.(index) ?? settings;
+  const point = marbleAtTime(renderedTimeMs, events, platforms, settings, overrides, resolveSettings);
   return {
     ...point,
-    z: overrideForSegment(index, overrides) ? 0 : depthForSegment(index, phase, settings),
+    z: overrideForSegment(index, overrides) ? 0 : depthForSegment(index, phase, segmentSettings),
     segmentIndex: index,
     phase,
     impactAgeMs: timeMs - start,

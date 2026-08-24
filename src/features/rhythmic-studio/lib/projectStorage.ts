@@ -12,7 +12,7 @@ export function listRhythmicProjects(): StoredProject[] {
   }
 }
 
-export function saveRhythmicProject(name: string, settings: StudioSettings, source?: AudioSourceMeta, courseOverrides: CourseItemOverride[] = []): StoredProject {
+export function saveRhythmicProject(name: string, settings: StudioSettings, source?: AudioSourceMeta, courseOverrides: CourseItemOverride[] = [], presetMixEnabled = false): StoredProject {
   const now = new Date().toISOString();
   const project: StoredProject = {
     id: crypto.randomUUID(),
@@ -20,6 +20,7 @@ export function saveRhythmicProject(name: string, settings: StudioSettings, sour
     settings,
     source,
     courseOverrides,
+    presetMixEnabled,
     createdAt: now,
     updatedAt: now,
   };

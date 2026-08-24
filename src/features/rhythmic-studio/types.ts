@@ -227,6 +227,7 @@ export interface StoredProject {
   settings: StudioSettings;
   source?: AudioSourceMeta;
   courseOverrides?: CourseItemOverride[];
+  presetMixEnabled?: boolean;
   createdAt: string;
   updatedAt: string;
 }

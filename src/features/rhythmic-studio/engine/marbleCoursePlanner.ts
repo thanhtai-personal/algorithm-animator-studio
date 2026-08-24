@@ -319,46 +319,51 @@ function reconstruct(node: PlanNode | null) {
   return result.reverse();
 }
 
-export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings, width: number, resolveColor: PlatformColorResolver): MarblePlatform[] {
+export type StudioSettingsResolver = (index: number) => StudioSettings;
+
+export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings, width: number, resolveColor: PlatformColorResolver, resolveSettings?: StudioSettingsResolver): MarblePlatform[] {
   if (!events.length) return [];
-  const profile = marblePhysicsProfile(settings);
+  const initialSettings = resolveSettings?.(0) ?? settings;
+  const initialProfile = marblePhysicsProfile(initialSettings);
   const minMidi = Math.min(...events.map((event) => event.midi));
   const maxMidi = Math.max(...events.map((event) => event.midi));
   const beamWidth = events.length > 1200 ? 2 : events.length > 500 ? 3 : 5;
   let states: SearchState[] = [{
-    hit: { x: width / 2, y: 220 }, incoming: { x: 0, y: profile.initialDownSpeed },
+    hit: { x: width / 2, y: 220 }, incoming: { x: 0, y: initialProfile.initialDownSpeed },
     preferredDirection: seeded(events.length, 41) >= 0 ? 1 : -1, score: 0, node: null, recentHits: [], recentPlatforms: [],
   }];
 
   for (let index = 0; index < events.length; index += 1) {
     const event = events[index];
+    const stepSettings = resolveSettings?.(index) ?? settings;
+    const profile = marblePhysicsProfile(stepSettings);
     const pitch = pitchRatio(event, minMidi, maxMidi);
     const spanMs = index < events.length - 1 ? Math.max(1, events[index + 1].timeMs - event.timeMs) : 420;
-    const obstaclePlan = presetObstaclePlan(index, settings);
-    const baseWidthScale = settings.terrainProfile === "tube-board" ? 0.9 : settings.terrainProfile === "xylophone" ? 1.02 : 0.92;
-    const platformWidth = settings.platformWidth * baseWidthScale * (obstaclePlan?.widthScale ?? 1) * (0.9 + event.velocity * 0.14);
+    const obstaclePlan = presetObstaclePlan(index, stepSettings);
+    const baseWidthScale = stepSettings.terrainProfile === "tube-board" ? 0.9 : stepSettings.terrainProfile === "xylophone" ? 1.02 : 0.92;
+    const platformWidth = stepSettings.platformWidth * baseWidthScale * (obstaclePlan?.widthScale ?? 1) * (0.9 + event.velocity * 0.14);
     const expanded: SearchState[] = [];
 
     for (const state of states) {
-      const useGuideTube = spanMs >= REST_GAP_MS && (settings.terrainProfile === "tube-board" || settings.terrainProfile === "balanced");
+      const useGuideTube = spanMs >= REST_GAP_MS && (stepSettings.terrainProfile === "tube-board" || stepSettings.terrainProfile === "balanced");
       const effectiveSpan = useGuideTube ? Math.min(spanMs, 680) : spanMs;
-      const candidates = bounceCandidates(index, state.hit, state.incoming, effectiveSpan, state.preferredDirection, pitch, settings, width);
+      const candidates = bounceCandidates(index, state.hit, state.incoming, effectiveSpan, state.preferredDirection, pitch, stepSettings, width);
       for (const bounce of candidates) {
-        const platform = obstacleFromImpact(index, state.hit, bounce.normal, bounce.outgoing, settings, event, resolveColor(index, pitch), platformWidth, profile.gravity);
+        const platform = obstacleFromImpact(index, state.hit, bounce.normal, bounce.outgoing, stepSettings, event, resolveColor(index, pitch), platformWidth, profile.gravity);
         if (index === events.length - 1) {
           expanded.push({ ...state, score: state.score + bounce.score, node: { platform, parent: state.node } });
           continue;
         }
         const nextHit = useGuideTube
-          ? longGapTarget(index, state.hit, spanMs, state.preferredDirection, pitch, settings, width)
+          ? longGapTarget(index, state.hit, spanMs, state.preferredDirection, pitch, stepSettings, width)
           : bounce.target;
         const dt = Math.max(0.08, spanMs / 1000);
         const nextIncoming = useGuideTube
           ? { x: (nextHit.x - state.hit.x) / dt * 0.24, y: Math.max(190, profile.gravity * Math.min(dt, 0.7) * 0.58) }
           : { x: bounce.outgoing.x, y: bounce.outgoing.y + profile.gravity * dt };
         let nextDirection = state.preferredDirection;
-        const bounds = worldBounds(settings, width);
-        const edgeInset = Math.max(90, settings.laneSpread * 0.28);
+        const bounds = worldBounds(stepSettings, width);
+        const edgeInset = Math.max(90, stepSettings.laneSpread * 0.28);
         if (nextHit.x < bounds.min + edgeInset || nextHit.x > bounds.max - edgeInset || index % Math.max(2, profile.directionHold) === profile.directionHold - 1) nextDirection *= -1;
         const recentHits = [...state.recentHits, state.hit].slice(-7);
         const recentPlatforms = [...state.recentPlatforms, platform].slice(-7);
@@ -366,9 +371,9 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
           hit: nextHit,
           incoming: nextIncoming,
           preferredDirection: nextDirection,
-          score: state.score + bounce.score + adjacentSpacingPenalty(nextHit, state.hit, settings)
-            + separationPenalty(nextHit, recentHits, settings)
-            + tubeOverlapPenalty(platform, state.recentPlatforms, settings),
+          score: state.score + bounce.score + adjacentSpacingPenalty(nextHit, state.hit, stepSettings)
+            + separationPenalty(nextHit, recentHits, stepSettings)
+            + tubeOverlapPenalty(platform, state.recentPlatforms, stepSettings),
           node: { platform, parent: state.node },
           recentHits,
           recentPlatforms,

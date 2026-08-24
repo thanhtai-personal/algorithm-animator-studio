@@ -1,7 +1,7 @@
 import type { CourseItemOverride, NoteEvent, StudioSettings } from "../types";
 import { REST_GAP_MS } from "./rhythmTerrain";
 import { guidedCoursePoint, overrideForSegment } from "./courseGuide";
-import { buildPhysicsCourse } from "../engine/marbleCoursePlanner";
+import { buildPhysicsCourse, type StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 import type { MarblePlatform, MarblePoint } from "../engine/marblePhysicsTypes";
 import { presetObstaclePlan } from "../engine/presetObstaclePlan";
 import { instrumentScenePlan } from "../engine/instrumentScenePlan";
@@ -166,21 +166,28 @@ function seededNoise(index: number) {
   return (raw - Math.floor(raw)) * 2 - 1;
 }
 
-export function buildMarbleCourse(events: NoteEvent[], settings: StudioSettings, width: number): MarblePlatform[] {
-  return buildPhysicsCourse(events, settings, width, (index, pitch) => paletteColor(index, pitch, settings));
+export function buildMarbleCourse(events: NoteEvent[], settings: StudioSettings, width: number, resolveSettings?: StudioSettingsResolver): MarblePlatform[] {
+  return buildPhysicsCourse(
+    events,
+    settings,
+    width,
+    (index, pitch) => paletteColor(index, pitch, resolveSettings?.(index) ?? settings),
+    resolveSettings,
+  );
 }
 
-export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: MarblePlatform[], settings: StudioSettings, overrides: CourseItemOverride[] = []): MarblePoint {
+export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: MarblePlatform[], settings: StudioSettings, overrides: CourseItemOverride[] = [], resolveSettings?: StudioSettingsResolver): MarblePoint {
   if (!events.length || !platforms.length) return { x: 360, y: 180, color: settings.prismStart, platformIndex: 0 };
 
   const first = platforms[0];
   const firstHit = marbleHitPoint(first);
   if (timeMs < events[0].timeMs) {
+    const initialSettings = resolveSettings?.(0) ?? settings;
     const span = Math.max(280, events[0].timeMs || 620);
-    const t = ease(timeMs / span, settings);
+    const t = ease(timeMs / span, initialSettings);
     return {
       x: firstHit.x,
-      y: firstHit.y - Math.max(52, settings.bounceHeight * 0.82) * (1 - t),
+      y: firstHit.y - Math.max(52, initialSettings.bounceHeight * 0.82) * (1 - t),
       color: first.color,
       platformIndex: 0,
     };
@@ -200,6 +207,7 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
     return { x: hit.x, y: hit.y, color: last.color, platformIndex: last.index };
   }
 
+  const segmentSettings = resolveSettings?.(index) ?? settings;
   const start = platforms[index];
   const end = platforms[index + 1];
   const startHit = marbleHitPoint(start);
@@ -208,17 +216,17 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
   const rawT = clamp((timeMs - events[index].timeMs) / span);
   const segmentOverride = overrideForSegment(index, overrides);
   if (segmentOverride) {
-    const guided = guidedCoursePoint(start, end, rawT, segmentOverride.style, settings);
+    const guided = guidedCoursePoint(start, end, rawT, segmentOverride.style, segmentSettings);
     if (guided) return { x: guided.x, y: guided.y, color: mixHex(start.color, end.color, rawT), platformIndex: index };
   }
 
-  if (span >= LONG_GAP_TUBE_MS && settings.terrainProfile !== "comet" && settings.terrainProfile !== "xylophone") {
-    const geometry = longGapTubeGeometry(start, end, settings);
+  if (span >= LONG_GAP_TUBE_MS && segmentSettings.terrainProfile !== "comet" && segmentSettings.terrainProfile !== "xylophone") {
+    const geometry = longGapTubeGeometry(start, end, segmentSettings);
     if (rawT < TUBE_ENTRY_T) {
       const phase = rawT / TUBE_ENTRY_T;
       return {
         x: startHit.x + (geometry.entryX - startHit.x) * phase,
-        y: startHit.y + (geometry.entryY - startHit.y) * phase - Math.sin(Math.PI * phase) * settings.bounceHeight * 0.28,
+        y: startHit.y + (geometry.entryY - startHit.y) * phase - Math.sin(Math.PI * phase) * segmentSettings.bounceHeight * 0.28,
         color: mixHex(start.color, end.color, rawT),
         platformIndex: index,
       };
@@ -231,7 +239,7 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
     const phase = (rawT - TUBE_EXIT_T) / (1 - TUBE_EXIT_T);
     return {
       x: geometry.exitX + (endHit.x - geometry.exitX) * phase,
-      y: geometry.exitY + (endHit.y - geometry.exitY) * phase - Math.sin(Math.PI * phase) * settings.bounceHeight * 0.16,
+      y: geometry.exitY + (endHit.y - geometry.exitY) * phase - Math.sin(Math.PI * phase) * segmentSettings.bounceHeight * 0.16,
       color: mixHex(start.color, end.color, rawT),
       platformIndex: index,
     };

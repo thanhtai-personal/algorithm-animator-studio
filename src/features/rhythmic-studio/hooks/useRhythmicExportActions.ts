@@ -54,7 +54,11 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, refs: Canva
       await playback.audioEngineRef.current.attachOriginalAudio(playback.audioElementRef.current);
     }
     const videoStream = canvas.captureStream(store.settings.exportFps);
-    const audioTracks = playback.audioEngineRef.current.getRecordStream()?.getAudioTracks() ?? [];
+    // Never put the AudioEngine's shared destination track directly into the export
+    // stream: stopping that stream would permanently end audio for later exports.
+    const audioTracks = (playback.audioEngineRef.current.getRecordStream()?.getAudioTracks() ?? [])
+      .filter((track) => track.readyState === "live")
+      .map((track) => track.clone());
     const stream = new MediaStream([...videoStream.getVideoTracks(), ...audioTracks]);
     const recorder = new MediaRecorder(stream, {
       mimeType,

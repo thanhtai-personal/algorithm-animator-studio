@@ -38,11 +38,11 @@ const BASE: Record<TerrainProfile, Omit<MarblePhysicsProfile, "terrain">> = {
     verticalScale: 0.9,
     apexScale: 0.66,
     longGapDropPerSecond: 150,
-    directionHold: 2,
+    directionHold: 3,
     contactMode: "cap",
     normalAngles: [
-      0.14, -0.14, 0.3, -0.3, 0.48, -0.48, 0.66, -0.66,
-      0.84, -0.84, 1.02, -1.02, 1.18, -1.18, 1.32, -1.32, 1.42, -1.42, 0,
+      0.12, -0.12, 0.28, -0.28, 0.44, -0.44, 0.62, -0.62,
+      0.8, -0.8, 0.96, -0.96, 0,
     ],
   },
   comet: {

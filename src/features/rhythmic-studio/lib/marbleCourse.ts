@@ -116,7 +116,7 @@ function rainbowHex(index: number, pitch: number) {
 function paletteColor(index: number, pitch: number, settings: StudioSettings) {
   if (settings.colorPaletteMode === "rainbow") return rainbowHex(index, pitch);
   if (settings.colorPaletteMode === "tube-accent") {
-    const accents = ["#58a9ff", "#65b8ff", "#ff3e49", "#5aaeff", "#ffd52b", "#62adff", "#32e96b", "#56a8ff"];
+    const accents = ["#6baeff", "#7cc4ff", "#ff6f5f", "#7aa4ff", "#f7cf6a", "#67a6f2", "#66d78a", "#86b5ff"];
     return accents[index % accents.length];
   }
   if (settings.colorPaletteMode === "neon-galaxy") {
@@ -133,10 +133,10 @@ function paletteColor(index: number, pitch: number, settings: StudioSettings) {
     if (style === "instrument-pad") {
       const pads = scene.sceneId === "bars"
         ? ["#30333a", "#4a4d55", "#e9edf1", "#202329"]
-        : ["#ff4fa6", "#ff5b76", "#42dfba", "#f8f8f5", "#2f333c"];
+        : ["#e9789c", "#ff8b73", "#67d8ba", "#f2efe8", "#4a4d56"];
       return pads[index % pads.length];
     }
-    const colors = ["#ff4f59", "#ff9238", "#ffdb45", "#62e572", "#4bdcff", "#5f86ff", "#cf6dff"];
+    const colors = ["#e86a6e", "#efab58", "#d6c75e", "#78cc76", "#63c5dd", "#7c8fe6", "#b985dc"];
     return colors[index % colors.length];
   }
   return mixHex(settings.prismStart, settings.prismEnd, clamp(pitch * 0.74 + (index % 5) * 0.052));

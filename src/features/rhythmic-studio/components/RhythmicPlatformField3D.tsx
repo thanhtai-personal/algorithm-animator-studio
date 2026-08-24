@@ -50,7 +50,7 @@ function PhysicalMount({ terrain, w, h, detail }: {
   return null;
 }
 
-export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, focusIndex, selectedNodeIndex, onSelectNode, resolveSettings, impactIndex, impactStrength }: {
+export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, focusIndex, selectedNodeIndex, onSelectNode, resolveSettings, impactIndex, impactStrength, timeMs }: {
   platforms: MarblePlatform[];
   settings: StudioSettings;
   courseOverrides: CourseItemOverride[];
@@ -60,6 +60,7 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
   resolveSettings?: StudioSettingsResolver;
   impactIndex: number;
   impactStrength: number;
+  timeMs: number;
 }) {
   const visible = useMemo(() => {
     const focusSettings = resolveSettings?.(focusIndex) ?? settings;
@@ -82,11 +83,13 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
           : 0;
         const worldX = ((platform.x - platform.normalX * normalInset / RHYTHMIC_WORLD_SCALE) - RHYTHMIC_COURSE_WIDTH / 2) * RHYTHMIC_WORLD_SCALE;
         const worldY = -(platform.y - platform.normalY * normalInset / RHYTHMIC_WORLD_SCALE) * RHYTHMIC_WORLD_SCALE;
-        const hit = platformSettings.impactPlatformLight && platform.index === impactIndex
-          ? Math.max(0, impactStrength)
+        const hasBeenHit = platform.event.timeMs <= timeMs;
+        const immediateHit = platform.index === impactIndex ? Math.max(0, impactStrength) : 0;
+        const latchedHit = platformSettings.impactPlatformLight && hasBeenHit
+          ? 0.62 + immediateHit * 0.38
           : 0;
         const effectiveGlow = platformSettings.impactPlatformLight
-          ? hit * (0.78 + platformSettings.platformGlow * 0.92)
+          ? latchedHit * (0.82 + platformSettings.platformGlow * 0.98)
           : platformSettings.platformGlow;
         const depth = d * (0.92 + platformSettings.platformDetail * 0.12);
         return (
@@ -101,15 +104,6 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
           >
             <PhysicalMount terrain={platformSettings.terrainProfile} w={w} h={h} detail={platformSettings.platformDetail} />
             <PlatformMesh w={w} h={h} d={depth} color={platform.color} style={style} selected={platform.index === selectedNodeIndex} glow={effectiveGlow} detail={platformSettings.platformDetail} />
-            {hit > 0.015 && (
-              <pointLight
-                position={[0, -h * 0.18, depth * 0.65]}
-                color={platform.color}
-                intensity={hit * (2.2 + platformSettings.platformGlow * 3.8)}
-                distance={2.7 + platformSettings.platformGlow * 1.5}
-                decay={2}
-              />
-            )}
           </group>
         );
       })}

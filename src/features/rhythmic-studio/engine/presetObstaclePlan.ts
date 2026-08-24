@@ -25,10 +25,10 @@ export function presetObstaclePlan(index: number, settings: StudioSettings): Pre
     const accentEvery = Math.max(4, settings.platformAccentEvery);
     const style = index > 0 && index % accentEvery === 0
       ? settings.platformAccentStyle
-      : index % 4 === 2
+      : index % 5 === 3 || index % 7 === 2
         ? settings.platformSecondaryStyle
         : settings.platformPrimaryStyle;
-    const scale = style === "toy-peg" ? 0.68 : style === "toy-tube" ? 0.88 : 0.96 + (index % 5 === 0 ? 0.08 : 0);
+    const scale = style === "toy-peg" ? 0.58 : style === "toy-tube" ? 0.82 : 1 + (index % 6 === 0 ? 0.04 : 0);
     return { style, widthScale: scale };
   }
   if (settings.terrainProfile === "comet" && settings.platformPrimaryStyle === "comet-pad") {
@@ -38,7 +38,7 @@ export function presetObstaclePlan(index: number, settings: StudioSettings): Pre
       : index % 4 === 2
         ? settings.platformSecondaryStyle
         : settings.platformPrimaryStyle;
-    return { style, widthScale: style === "comet-pad" ? widthScale("comet-pad") : style === "light-pods" ? 0.82 : 0.94 };
+    return { style, widthScale: style === "comet-pad" ? 0.94 : style === "light-pods" ? 0.78 : 0.9 };
   }
   if (settings.terrainProfile === "xylophone" && settings.platformPrimaryStyle.startsWith("instrument-")) {
     const scene = instrumentScenePlan(index);

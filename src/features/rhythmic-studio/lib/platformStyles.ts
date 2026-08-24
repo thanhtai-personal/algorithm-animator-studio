@@ -329,7 +329,9 @@ function drawPrism(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatfor
 export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: MarblePlatform, screenY: number, timeMs: number, settings: StudioSettings, forcedStyle?: PlatformStyle, renderQuality: RenderQuality = "live") {
   const age = timeMs - platform.event.timeMs;
   const impact = age >= 0 && age < 320 ? 1 - age / 320 : 0;
-  const lightImpact = settings.impactPlatformLight ? impact : 0;
+  const lightImpact = settings.impactPlatformLight
+    ? (age >= 0 ? 0.68 + impact * 0.32 : 0)
+    : impact;
   const half = platform.width / 2;
   const style = forcedStyle ?? resolvePlatformStyle(platform.index, settings);
   ctx.save();

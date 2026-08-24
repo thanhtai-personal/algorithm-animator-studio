@@ -391,6 +391,7 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
         resolveSettings={props.resolveSettings}
         impactIndex={impactLight.index}
         impactStrength={impactLight.strength}
+        timeMs={props.timeMs}
       />
       <RhythmicVfx3D
         ref={vfxRef}

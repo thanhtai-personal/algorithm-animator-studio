@@ -7,6 +7,7 @@ type PresetTextKey = RhythmicPresetId
   | "mix"
   | "mix.on"
   | "mix.off"
+  | "mix.wait"
   | "mix.hint"
   | "toy-pegboard.hint"
   | "neon-comet.hint"
@@ -18,7 +19,8 @@ const EN: Record<PresetTextKey, string> = {
   mix: "Auto preset mix",
   "mix.on": "Mix on",
   "mix.off": "Mix off",
-  "mix.hint": "Runs each preset for a full phrase, then changes only after a clear musical rest. The background stays locked.",
+  "mix.wait": "Finding phrase breaks",
+  "mix.hint": "Runs each preset for a full phrase. It prefers real rests; dense songs use the quietest phrase boundary near the target duration. The background stays locked.",
   "toy-pegboard": "Dark Tube Board",
   "neon-comet": "Neon Ribbon Bounce",
   "rainbow-xylophone": "Instrument Playground",
@@ -33,7 +35,8 @@ const VI: typeof EN = {
   mix: "Mix preset tự động",
   "mix.on": "Đang Mix",
   "mix.off": "Tắt Mix",
-  "mix.hint": "Mỗi preset chạy trọn một quãng đủ dài rồi chỉ đổi sau khoảng nghỉ rõ của nhạc. Phông nền được khóa nguyên.",
+  "mix.wait": "Đang tìm điểm chuyển",
+  "mix.hint": "Mỗi preset chạy trọn một quãng đủ dài. Ưu tiên khoảng nghỉ thật; với MIDI dày sẽ chọn điểm thở thưa nốt tốt nhất gần mốc chuyển. Phông nền được khóa nguyên.",
   "toy-pegboard": "Dark Tube Board",
   "neon-comet": "Neon Ribbon Bounce",
   "rainbow-xylophone": "Instrument Playground",

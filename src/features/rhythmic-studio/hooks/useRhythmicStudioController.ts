@@ -9,6 +9,7 @@ import { useRhythmicCourseActions } from "./useRhythmicCourseActions";
 import { useRhythmicProjectActions } from "./useRhythmicProjectActions";
 import { useRhythmicExportActions } from "./useRhythmicExportActions";
 import { useRhythmicPresetActions } from "./useRhythmicPresetActions";
+import { buildPresetMixPlan, presetMixSegmentForTime } from "../lib/presetMix";
 
 export function useRhythmicStudioController() {
   const lang = useSystemLang();
@@ -48,6 +49,20 @@ export function useRhythmicStudioController() {
     [lang, store.audioInfoToken],
   );
 
+
+  const timeline = store.timeline;
+  const presetMixPlan = useMemo(
+    () => buildPresetMixPlan(timeline, store.presetMixEnabled, store.activePresetId),
+    [timeline, store.activePresetId, store.presetMixEnabled],
+  );
+  const currentMixSegment = useMemo(
+    () => presetMixSegmentForTime(presetMixPlan, timeline, store.timeMs),
+    [presetMixPlan, store.timeMs, timeline],
+  );
+  const currentPresetId = store.presetMixEnabled
+    ? (currentMixSegment?.presetId ?? store.activePresetId)
+    : store.activePresetId;
+
   const displayLyrics = useMemo(() => {
     if (store.lyricFormat === "plain") return store.lyrics;
     const speed = Math.max(0.1, store.settings.playbackSpeed);
@@ -85,13 +100,16 @@ export function useRhythmicStudioController() {
     canvasRef,
     threeCanvasRef,
     audioElementRef: playback.audioElementRef,
-    timeline: store.timeline,
+    timeline,
     durationMs: store.durationMs,
     courseOverrides: store.courseOverrides,
     selectedNodeIndex: store.selectedNodeIndex,
     backgroundUrl: store.backgroundUrl,
     backgroundName: store.backgroundName,
     activePresetId: store.activePresetId,
+    currentPresetId,
+    presetMixSegmentCount: presetMixPlan.segments.length,
+    presetMixPlanActive: presetMixPlan.enabled,
     presetMixEnabled: store.presetMixEnabled,
     rendererMode: store.rendererMode,
     setRendererMode: store.setRendererMode,

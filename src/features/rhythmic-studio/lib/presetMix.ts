@@ -5,7 +5,8 @@ export const PRESET_MIX_MIN_RUN_MS = 18_000;
 export const PRESET_MIX_TARGET_RUN_MS = 28_000;
 export const PRESET_MIX_MAX_RUN_MS = 42_000;
 export const PRESET_MIX_PREFERRED_REST_MS = 1_350;
-export const PRESET_MIX_FALLBACK_REST_MS = 850;
+export const PRESET_MIX_FALLBACK_REST_MS = 650;
+export const PRESET_MIX_SOFT_BREATH_MS = 260;
 
 export interface PresetMixSegment {
   presetId: RhythmicPresetId;
@@ -71,32 +72,77 @@ function gapAfter(events: NoteEvent[], index: number) {
   return Math.max(0, events[index + 1].timeMs - events[index].timeMs);
 }
 
+function releaseGapAfter(events: NoteEvent[], index: number) {
+  if (index < 0 || index >= events.length - 1) return 0;
+  const nextMs = events[index + 1].timeMs;
+  const scanStart = Math.max(0, index - 48);
+  let activeUntil = events[index].timeMs;
+  for (let cursor = scanStart; cursor <= index; cursor += 1) {
+    const event = events[cursor];
+    activeUntil = Math.max(activeUntil, event.timeMs + Math.max(0, event.durationMs || 0));
+  }
+  return Math.max(0, nextMs - activeUntil);
+}
+
+function localOnsetDensity(events: NoteEvent[], index: number, windowMs = 900) {
+  const center = events[Math.max(0, Math.min(events.length - 1, index + 1))]?.timeMs ?? 0;
+  const minMs = center - windowMs * 0.5;
+  const maxMs = center + windowMs * 0.5;
+  let count = 0;
+  for (let cursor = Math.max(0, index - 96); cursor < events.length && events[cursor].timeMs <= maxMs; cursor += 1) {
+    if (events[cursor].timeMs >= minMs) count += 1;
+  }
+  return count / Math.max(0.2, windowMs / 1000);
+}
+
+interface BoundaryCandidate {
+  index: number;
+  score: number;
+  onsetGap: number;
+  releaseGap: number;
+}
+
+function boundaryCandidate(events: NoteEvent[], index: number, segmentStartMs: number): BoundaryCandidate {
+  const nextMs = events[index + 1].timeMs;
+  const runMs = nextMs - segmentStartMs;
+  const onsetGap = gapAfter(events, index);
+  const releaseGap = releaseGapAfter(events, index);
+  const density = localOnsetDensity(events, index);
+  const quietGap = Math.max(onsetGap, releaseGap);
+  // Prefer a real silence first. When a dense MIDI has continuous accompaniment,
+  // prefer the sparsest onset boundary near the target run length rather than
+  // leaving Auto Mix stuck on one preset for the whole song.
+  const score = Math.abs(runMs - PRESET_MIX_TARGET_RUN_MS)
+    + density * 34
+    - Math.min(1800, quietGap) * 0.2
+    - Math.min(900, onsetGap) * 0.08;
+  return { index, score, onsetGap, releaseGap };
+}
+
 function chooseBoundary(events: NoteEvent[], segmentStartIndex: number) {
   const segmentStartMs = events[segmentStartIndex]?.timeMs ?? 0;
-  let preferred: { index: number; score: number } | null = null;
-  let fallback: { index: number; score: number } | null = null;
+  let preferred: BoundaryCandidate | null = null;
+  let fallback: BoundaryCandidate | null = null;
+  let softBreath: BoundaryCandidate | null = null;
+  let bestAvailable: BoundaryCandidate | null = null;
 
   for (let index = segmentStartIndex; index < events.length - 1; index += 1) {
     const nextMs = events[index + 1].timeMs;
     const runMs = nextMs - segmentStartMs;
     if (runMs < PRESET_MIX_MIN_RUN_MS) continue;
-    const gap = gapAfter(events, index);
-    const score = Math.abs(runMs - PRESET_MIX_TARGET_RUN_MS) - Math.min(1800, gap) * 0.16;
-    if (gap >= PRESET_MIX_PREFERRED_REST_MS && (!preferred || score < preferred.score)) preferred = { index, score };
-    if (gap >= PRESET_MIX_FALLBACK_REST_MS && (!fallback || score < fallback.score)) fallback = { index, score };
+    const candidate = boundaryCandidate(events, index, segmentStartMs);
+    const quietGap = Math.max(candidate.onsetGap, candidate.releaseGap);
+    if (quietGap >= PRESET_MIX_PREFERRED_REST_MS && (!preferred || candidate.score < preferred.score)) preferred = candidate;
+    if (quietGap >= PRESET_MIX_FALLBACK_REST_MS && (!fallback || candidate.score < fallback.score)) fallback = candidate;
+    if (quietGap >= PRESET_MIX_SOFT_BREATH_MS && (!softBreath || candidate.score < softBreath.score)) softBreath = candidate;
+    if (!bestAvailable || candidate.score < bestAvailable.score) bestAvailable = candidate;
     if (runMs >= PRESET_MIX_MAX_RUN_MS) break;
   }
 
   if (preferred) return preferred.index;
   if (fallback) return fallback.index;
-
-  // If a song has no clear rest inside the target window, keep the current preset
-  // until the first genuine pause rather than cutting in the middle of a phrase.
-  for (let index = segmentStartIndex; index < events.length - 1; index += 1) {
-    const runMs = events[index + 1].timeMs - segmentStartMs;
-    if (runMs < PRESET_MIX_MAX_RUN_MS) continue;
-    if (gapAfter(events, index) >= PRESET_MIX_FALLBACK_REST_MS) return index;
-  }
+  if (softBreath) return softBreath.index;
+  if (bestAvailable) return bestAvailable.index;
   return null;
 }
 

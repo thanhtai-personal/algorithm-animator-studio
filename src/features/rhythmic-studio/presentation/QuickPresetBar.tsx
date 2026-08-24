@@ -17,7 +17,7 @@ export const QuickPresetBar = observer(function QuickPresetBar({ studio }: { stu
     <div className="-mx-1 overflow-x-auto px-1 pb-1">
       <div className="flex min-w-max gap-2">
         {RHYTHMIC_PRESET_IDS.map((id) => {
-          const active = studio.activePresetId === id;
+          const active = studio.currentPresetId === id;
           return <Button
             key={id}
             type="button"
@@ -42,7 +42,7 @@ export const QuickPresetBar = observer(function QuickPresetBar({ studio }: { stu
     >
       <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${studio.presetMixEnabled ? "bg-primary text-primary-foreground" : "bg-muted"}`}><Shuffle className="h-4 w-4" /></span>
       <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-2 text-sm font-semibold">{presetText(lang, "mix")}<span className="text-[10px] font-medium text-muted-foreground">{presetText(lang, studio.presetMixEnabled ? "mix.on" : "mix.off")}</span></span>
+        <span className="flex items-center gap-2 text-sm font-semibold">{presetText(lang, "mix")}<span className="text-[10px] font-medium text-muted-foreground">{studio.presetMixEnabled && studio.presetMixPlanActive ? `${presetText(lang, "mix.on")} · ${studio.presetMixSegmentCount}` : presetText(lang, studio.presetMixEnabled ? "mix.wait" : "mix.off")}</span></span>
         <span className="mt-0.5 block whitespace-normal text-xs font-normal leading-relaxed text-muted-foreground">{presetText(lang, "mix.hint")}</span>
       </span>
     </Button>

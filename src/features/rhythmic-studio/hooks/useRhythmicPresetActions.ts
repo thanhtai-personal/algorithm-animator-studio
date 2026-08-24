@@ -7,7 +7,6 @@ export function useRhythmicPresetActions(store: RhythmicStudioStore) {
     // Manual selection must take ownership immediately. Leaving Auto Mix enabled
     // would make the UI look unresponsive because the time-based resolver keeps
     // replacing the manually selected preset on the next render frame.
-    if (store.presetMixEnabled) store.setPresetMixEnabled(false);
     const preset = presetById(id).settings;
     const lockedBackground = {
       backgroundPreset: store.settings.backgroundPreset,
@@ -17,9 +16,7 @@ export function useRhythmicPresetActions(store: RhythmicStudioStore) {
       backgroundImageBlur: store.settings.backgroundImageBlur,
       backgroundImageFit: store.settings.backgroundImageFit,
     };
-    store.applyVisualPreset(id, { ...store.settings, ...preset, ...lockedBackground });
-    store.setOverrides([]);
-    store.setSelectedNode(null);
+    store.selectPreset(id, { ...store.settings, ...preset, ...lockedBackground });
   }, [store]);
 
   const togglePresetMix = useCallback(() => {

@@ -50,6 +50,14 @@ function PhysicalMount({ terrain, w, h, detail }: {
   return null;
 }
 
+
+function frontDepthForStyle(style: string, h: number, d: number) {
+  if (style === "boomwhacker-tube" || style === "tube-cylinder" || style === "toy-tube" || style === "toy-peg" || style.includes("tube")) return Math.max(0.1, h * 0.56);
+  if (style === "instrument-cymbal" || style === "drum-disc") return Math.max(0.08, h * 0.6);
+  if (style.includes("rail") || style === "instrument-wire") return Math.max(0.055, h * 0.24);
+  return d * 0.5;
+}
+
 export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, focusIndex, selectedNodeIndex, onSelectNode, resolveSettings, impactIndex, impactStrength, timeMs }: {
   platforms: MarblePlatform[];
   settings: StudioSettings;
@@ -92,10 +100,13 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
           ? latchedHit * (0.82 + platformSettings.platformGlow * 0.98)
           : platformSettings.platformGlow;
         const depth = d * (0.92 + platformSettings.platformDetail * 0.12);
+        const frontDepth = frontDepthForStyle(style, h, depth);
         return (
           <group
             key={platform.index}
-            position={[worldX, worldY, 0]}
+            // The visible striking face sits exactly on z=0. The instrument body
+            // and wall mount extend behind it, matching the reference installation.
+            position={[worldX, worldY, -frontDepth]}
             rotation={[0, 0, -platform.tiltRad]}
             onClick={(event) => {
               event.stopPropagation();

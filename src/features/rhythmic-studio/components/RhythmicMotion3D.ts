@@ -34,16 +34,17 @@ function seededDirection(index: number) {
 }
 
 function depthForSegment(index: number, phase: number, settings: StudioSettings) {
-  const amplitude = settings.terrainProfile === "comet" ? 0.16
-    : settings.terrainProfile === "tube-board" ? 0.022
-      : settings.terrainProfile === "xylophone" ? 0.014
-        : 0.04;
-  const curveScale = 1 + THREE.MathUtils.clamp(settings.curveIntensity, 0, 1.2) * 0.35;
-  const pathScale = 1 + THREE.MathUtils.clamp(settings.curvePathLength, 0, 1.2) * 0.22;
+  // Wall-mounted instruments are designed around a single physical collision
+  // plane. A signed decorative Z weave made the marble periodically move behind
+  // the instrument face and read as penetration. Keep those courses planar.
+  if (settings.instrumentFamily !== "auto" || settings.terrainProfile === "tube-board" || settings.terrainProfile === "xylophone") return 0;
+  const amplitude = settings.terrainProfile === "comet" ? 0.14 : 0.025;
+  const curveScale = 1 + THREE.MathUtils.clamp(settings.curveIntensity, 0, 1.2) * 0.25;
+  const pathScale = 1 + THREE.MathUtils.clamp(settings.curvePathLength, 0, 1.2) * 0.18;
   const arc = Math.sin(Math.PI * clamp(phase));
-  const weaveScale = (settings.terrainProfile === "comet" ? 0.1 : 0.03) * pathScale;
-  const weave = Math.sin(Math.PI * 2 * clamp(phase)) * amplitude * weaveScale;
-  return seededDirection(index) * arc * amplitude * curveScale + weave;
+  const weave = Math.sin(Math.PI * 2 * clamp(phase)) * amplitude * 0.06 * pathScale;
+  // Always bias toward the camera; never send the marble behind the platform face.
+  return Math.max(0, arc * amplitude * curveScale + weave);
 }
 
 export function visualMarbleAtTime(

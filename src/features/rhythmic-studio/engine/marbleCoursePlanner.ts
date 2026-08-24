@@ -88,12 +88,13 @@ function restitutionForDrop(incoming: Vec2, normalInput: Vec2, drop: number, dt:
 }
 
 function worldBounds(settings: StudioSettings, width: number) {
+  // Wall scenes need a hard safe aperture. Allowing the planner to route outside
+  // the visible wall made marbles and instruments pass through the side panels.
+  if (settings.instrumentFamily !== "auto") return { min: width * 0.1, max: width * 0.9 };
   if (settings.terrainProfile === "balanced") return { min: 62, max: width - 62 };
-  if (settings.terrainProfile === "xylophone") {
-    if (settings.instrumentFamily !== "auto") return { min: width * 0.08, max: width * 0.92 };
-    return { min: -width * 0.7, max: width * 1.7 };
-  }
-  return { min: -width * 1.2, max: width * 2.2 };
+  if (settings.terrainProfile === "xylophone") return { min: 72, max: width - 72 };
+  if (settings.terrainProfile === "tube-board") return { min: 64, max: width - 64 };
+  return { min: -width * 0.55, max: width * 1.55 };
 }
 
 function orientationPenalty(index: number, normal: Vec2, settings: StudioSettings) {
@@ -253,6 +254,29 @@ function pointSegmentDistance(point: Vec2, a: Vec2, b: Vec2) {
   return Math.hypot(point.x - (a.x + dx * t), point.y - (a.y + dy * t));
 }
 
+function cross(a: Vec2, b: Vec2, c: Vec2) {
+  return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+}
+
+function segmentIntersects(a: Vec2, b: Vec2, c: Vec2, d: Vec2) {
+  const abC = cross(a, b, c);
+  const abD = cross(a, b, d);
+  const cdA = cross(c, d, a);
+  const cdB = cross(c, d, b);
+  return ((abC <= 0 && abD >= 0) || (abC >= 0 && abD <= 0))
+    && ((cdA <= 0 && cdB >= 0) || (cdA >= 0 && cdB <= 0));
+}
+
+function segmentDistance(a: Vec2, b: Vec2, c: Vec2, d: Vec2) {
+  if (segmentIntersects(a, b, c, d)) return 0;
+  return Math.min(
+    pointSegmentDistance(a, c, d),
+    pointSegmentDistance(b, c, d),
+    pointSegmentDistance(c, a, b),
+    pointSegmentDistance(d, a, b),
+  );
+}
+
 function platformSegment(platform: MarblePlatform) {
   const dx = Math.cos(platform.tiltRad) * platform.width * 0.5;
   const dy = Math.sin(platform.tiltRad) * platform.width * 0.5;
@@ -262,26 +286,33 @@ function platformSegment(platform: MarblePlatform) {
   };
 }
 
-function tubeOverlapPenalty(platform: MarblePlatform, recent: MarblePlatform[], settings: StudioSettings) {
-  if (settings.terrainProfile !== "tube-board") return 0;
+function platformOverlapPenalty(platform: MarblePlatform, recent: MarblePlatform[], settings: StudioSettings) {
+  const collisionCritical = settings.terrainProfile === "tube-board"
+    || settings.terrainProfile === "xylophone"
+    || settings.instrumentFamily !== "auto";
+  if (!collisionCritical) return 0;
   const segment = platformSegment(platform);
-  const safeDistance = Math.max(46, settings.platformThickness * 1.65, settings.platformGap * 0.28);
   let penalty = 0;
   for (const other of recent) {
     const previous = platformSegment(other);
-    const distance = Math.min(
-      pointSegmentDistance(segment.a, previous.a, previous.b),
-      pointSegmentDistance(segment.b, previous.a, previous.b),
-      pointSegmentDistance(previous.a, segment.a, segment.b),
-      pointSegmentDistance(previous.b, segment.a, segment.b),
+    const distance = segmentDistance(segment.a, segment.b, previous.a, previous.b);
+    const safeDistance = Math.max(
+      18,
+      settings.ballSize * (settings.instrumentFamily !== "auto" ? 1.15 : 0.95),
+      (platform.thickness + other.thickness) * 0.62,
     );
-    if (distance < safeDistance) penalty += (safeDistance - distance) * 6.2;
+    if (distance < safeDistance) {
+      const overlap = safeDistance - distance;
+      const crossingBoost = distance < 0.5 ? 9000 : 0;
+      penalty += crossingBoost + overlap * 22 + overlap * overlap * 0.8;
+    }
   }
   return penalty;
 }
 
 function adjacentSpacingPenalty(target: Vec2, current: Vec2, settings: StudioSettings) {
-  const profileScale = settings.terrainProfile === "xylophone" ? 0.58
+  const profileScale = settings.instrumentFamily !== "auto" ? 0.68
+    : settings.terrainProfile === "xylophone" ? 0.58
     : settings.terrainProfile === "tube-board" ? 0.54
       : settings.terrainProfile === "comet" ? 0.5
         : 0.48;
@@ -296,7 +327,8 @@ function separationPenalty(target: Vec2, recentHits: Vec2[], settings: StudioSet
   // platformGap used to barely affect the actual minimum distance, so dense note
   // clusters collapsed into a stack of almost-touching bars. Keep collisions on
   // the exact note timestamps, but strongly prefer a larger spatial route.
-  const profileScale = settings.terrainProfile === "tube-board" ? 0.5
+  const profileScale = settings.instrumentFamily !== "auto" ? 0.6
+    : settings.terrainProfile === "tube-board" ? 0.5
     : settings.terrainProfile === "xylophone" ? 0.46
       : settings.terrainProfile === "comet" ? 0.4
         : 0.42;
@@ -331,7 +363,10 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
   const initialProfile = marblePhysicsProfile(initialSettings);
   const minMidi = Math.min(...events.map((event) => event.midi));
   const maxMidi = Math.max(...events.map((event) => event.midi));
-  const beamWidth = events.length > 1200 ? 2 : events.length > 500 ? 3 : 5;
+  const showcaseCourse = initialSettings.instrumentFamily !== "auto";
+  const beamWidth = showcaseCourse
+    ? (events.length > 1800 ? 3 : events.length > 700 ? 4 : 6)
+    : events.length > 1200 ? 2 : events.length > 500 ? 3 : 5;
   let states: SearchState[] = [{
     hit: { x: width / 2, y: 220 }, incoming: { x: 0, y: initialProfile.initialDownSpeed },
     preferredDirection: seeded(events.length, 41) >= 0 ? 1 : -1, score: 0, node: null, recentHits: [], recentPlatforms: [],
@@ -375,15 +410,16 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
               : stepSettings.instrumentLayout === "split" ? 2
                 : 5;
         if (nextHit.x < bounds.min + edgeInset || nextHit.x > bounds.max - edgeInset || index % Math.max(2, showcaseHold) === showcaseHold - 1) nextDirection *= -1;
-        const recentHits = [...state.recentHits, state.hit].slice(-7);
-        const recentPlatforms = [...state.recentPlatforms, platform].slice(-7);
+        const historySize = stepSettings.instrumentFamily !== "auto" ? 12 : 7;
+        const recentHits = [...state.recentHits, state.hit].slice(-historySize);
+        const recentPlatforms = [...state.recentPlatforms, platform].slice(-historySize);
         expanded.push({
           hit: nextHit,
           incoming: nextIncoming,
           preferredDirection: nextDirection,
           score: state.score + bounce.score + adjacentSpacingPenalty(nextHit, state.hit, stepSettings)
             + separationPenalty(nextHit, recentHits, stepSettings)
-            + tubeOverlapPenalty(platform, state.recentPlatforms, stepSettings),
+            + platformOverlapPenalty(platform, state.recentPlatforms, stepSettings),
           node: { platform, parent: state.node },
           recentHits,
           recentPlatforms,

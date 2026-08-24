@@ -75,7 +75,20 @@ export class RhythmicStudioStore {
     const next = { ...this.settings, [key]: value };
     next.backgroundPreset = normalizeBackgroundPreset(next.backgroundPreset);
     this.settings = next;
-    this.activePresetId = null;
+    // Keep the selected preset identity while the user fine-tunes it. Clearing the
+    // id here made preset cards appear impossible to select when a controlled field
+    // emitted a follow-up change after the preset was applied.
+  }
+
+
+  selectPreset(id: RhythmicPresetId, settings: Partial<StudioSettings>) {
+    const next = { ...this.settings, ...settings };
+    next.backgroundPreset = normalizeBackgroundPreset(next.backgroundPreset);
+    this.presetMixEnabled = false;
+    this.settings = next;
+    this.activePresetId = id;
+    this.courseOverrides = [];
+    this.selectedNodeIndex = null;
   }
 
   applyVisualPreset(id: RhythmicPresetId, settings: Partial<StudioSettings>) {

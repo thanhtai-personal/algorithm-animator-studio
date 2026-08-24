@@ -504,9 +504,16 @@ export function RhythmicScene3D(props: Props) {
     () => createPresetMixSettingsResolver(props.settings, mixPlan),
     [mixPlan, props.settings],
   );
-  const platforms = useMemo(
+  const basePlatforms = useMemo(
     () => buildMarbleCourse(props.events, props.settings, RHYTHMIC_COURSE_WIDTH, resolveSettings),
     [props.events, props.settings, resolveSettings],
+  );
+  const duetLaneSeparation = props.settings.showcaseDuet
+    ? THREE.MathUtils.clamp(Math.max(176, props.settings.laneSpread * 0.72), 176, 236)
+    : 0;
+  const platforms = useMemo(
+    () => duetLaneSeparation > 0 ? shiftCourse(basePlatforms, -duetLaneSeparation * 0.5) : basePlatforms,
+    [basePlatforms, duetLaneSeparation],
   );
   const secondaryEvents = useMemo(
     () => props.settings.showcaseDuet ? secondaryVoiceEvents(props.events) : [],
@@ -515,9 +522,8 @@ export function RhythmicScene3D(props: Props) {
   const secondaryPlatforms = useMemo(() => {
     if (!secondaryEvents.length) return [];
     const course = buildMarbleCourse(secondaryEvents, props.settings, RHYTHMIC_COURSE_WIDTH, resolveSettings);
-    const direction = props.settings.instrumentLayout === "split" ? 1 : -1;
-    return shiftCourse(course, direction * Math.max(72, props.settings.laneSpread * 0.22));
-  }, [props.settings, resolveSettings, secondaryEvents]);
+    return shiftCourse(course, duetLaneSeparation * 0.5);
+  }, [duetLaneSeparation, props.settings, resolveSettings, secondaryEvents]);
 
   return (
     <div className="relative h-[66vh] max-h-[1280px] max-w-full aspect-[9/16] overflow-hidden rounded-xl bg-slate-950">

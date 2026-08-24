@@ -60,6 +60,8 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   bounceHeight: 88,
   cameraAnchor: 0.42,
   cameraSmoothing: 0.1,
+  cameraDistance: 1,
+  cameraLookAhead: 1,
   platformGlow: 0.38,
   platformPrimaryStyle: 'tube-cylinder',
   platformSecondaryStyle: 'tube-cylinder',

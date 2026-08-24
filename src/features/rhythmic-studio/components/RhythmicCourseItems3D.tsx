@@ -48,7 +48,7 @@ function AutoGlassTubeSegment({ start, end, settings, color }: Omit<SegmentProps
   return (
     <group>
       <mesh castShadow receiveShadow>
-        <tubeGeometry args={[curve, 64, radius, 18, false]} />
+        <tubeGeometry args={[curve, Math.round(44 + settings.platformDetail * 24), radius, Math.round(12 + settings.platformDetail * 8), false]} />
         <meshPhysicalMaterial
           color={color}
           transmission={0.92}
@@ -60,12 +60,14 @@ function AutoGlassTubeSegment({ start, end, settings, color }: Omit<SegmentProps
           attenuationColor={color}
           attenuationDistance={3.2}
           envMapIntensity={1.65}
+          emissive={color}
+          emissiveIntensity={settings.platformGlow * 0.08}
           transparent
           opacity={0.94}
         />
       </mesh>
       <mesh>
-        <tubeGeometry args={[curve, 64, radius * 0.68, 12, false]} />
+        <tubeGeometry args={[curve, Math.round(44 + settings.platformDetail * 24), radius * 0.68, Math.round(10 + settings.platformDetail * 6), false]} />
         <meshPhysicalMaterial color="#edf9ff" transparent opacity={0.08} roughness={0.04} side={THREE.BackSide} />
       </mesh>
       {[start, end].map((platform, index) => (
@@ -83,7 +85,7 @@ function GlassTubeSegment({ start, end, style, settings, color }: SegmentProps) 
   return (
     <group>
       <mesh castShadow receiveShadow>
-        <tubeGeometry args={[curve, 48, radius, 16, false]} />
+        <tubeGeometry args={[curve, Math.round(36 + settings.platformDetail * 20), radius, Math.round(10 + settings.platformDetail * 8), false]} />
         <meshPhysicalMaterial
           color={color}
           transmission={style === "acrylic-pipe" ? 0.78 : 0.93}
@@ -95,6 +97,8 @@ function GlassTubeSegment({ start, end, style, settings, color }: SegmentProps) 
           attenuationColor={color}
           attenuationDistance={3}
           envMapIntensity={1.55}
+          emissive={color}
+          emissiveIntensity={settings.platformGlow * 0.07}
           transparent
           opacity={0.92}
         />
@@ -115,7 +119,7 @@ function GlassChannelSegment({ start, end, style, settings, color }: SegmentProp
     <group>
       {[left, right].map((curve, index) => (
         <mesh key={index} castShadow receiveShadow>
-          <tubeGeometry args={[curve, 44, 0.075, 12, false]} />
+          <tubeGeometry args={[curve, Math.round(34 + settings.platformDetail * 18), 0.075, Math.round(8 + settings.platformDetail * 6), false]} />
           <meshPhysicalMaterial color={color} transmission={0.82} roughness={0.07} thickness={0.36} ior={1.46} clearcoat={1} envMapIntensity={1.5} />
         </mesh>
       ))}
@@ -135,7 +139,7 @@ function NeonBridgeSegment({ start, end, style, settings, color }: SegmentProps)
       {[left, right].map((curve, index) => (
         <mesh key={index} castShadow>
           <tubeGeometry args={[curve, 44, 0.045, 10, false]} />
-          <meshPhysicalMaterial color={color} emissive={color} emissiveIntensity={0.72} roughness={0.16} metalness={0.38} clearcoat={0.65} />
+          <meshPhysicalMaterial color={color} emissive={color} emissiveIntensity={0.32 + settings.platformGlow * 0.62} roughness={0.16} metalness={0.38} clearcoat={0.65} />
         </mesh>
       ))}
     </group>

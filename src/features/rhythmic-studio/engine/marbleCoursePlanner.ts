@@ -282,7 +282,7 @@ function adjacentSpacingPenalty(target: Vec2, current: Vec2, settings: StudioSet
     : settings.terrainProfile === "tube-board" ? 0.54
       : settings.terrainProfile === "comet" ? 0.5
         : 0.48;
-  const preferred = Math.max(settings.ballSize * 3.4, settings.platformGap * profileScale);
+  const preferred = Math.max(settings.ballSize * 3.4, settings.platformGap * profileScale, settings.minBounceDistance);
   const distance = Math.hypot(target.x - current.x, target.y - current.y);
   if (distance >= preferred) return 0;
   const shortfall = preferred - distance;
@@ -301,6 +301,7 @@ function separationPenalty(target: Vec2, recentHits: Vec2[], settings: StudioSet
     settings.ballSize * 3.1,
     settings.platformThickness * 2.15,
     settings.platformGap * profileScale,
+    settings.minBounceDistance * 0.85,
   );
   let penalty = 0;
   for (const point of recentHits) {

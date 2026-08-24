@@ -47,7 +47,7 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
               onSelectNode(platform.index);
             }}
           >
-            <PlatformMesh w={w} h={h} d={d} color={platform.color} style={style} selected={platform.index === selectedNodeIndex} />
+            <PlatformMesh w={w} h={h} d={d * (0.92 + platformSettings.platformDetail * 0.12)} color={platform.color} style={style} selected={platform.index === selectedNodeIndex} glow={platformSettings.platformGlow} detail={platformSettings.platformDetail} />
           </group>
         );
       })}

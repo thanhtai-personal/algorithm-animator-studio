@@ -120,7 +120,8 @@ function paletteColor(index: number, pitch: number, settings: StudioSettings) {
     return accents[index % accents.length];
   }
   if (settings.colorPaletteMode === "neon-galaxy") {
-    const colors = ["#5677ff", "#5bd8ff", "#ff4fc7", "#785cff"];
+    const midpoint = mixHex(settings.prismStart, settings.prismEnd, 0.5);
+    const colors = [settings.prismStart, mixHex(settings.prismStart, "#ffffff", 0.22), settings.prismEnd, midpoint];
     return mixHex(colors[index % colors.length], colors[(index + 1) % colors.length], 0.32 + pitch * 0.44);
   }
   if (settings.colorPaletteMode === "key-rainbow") {

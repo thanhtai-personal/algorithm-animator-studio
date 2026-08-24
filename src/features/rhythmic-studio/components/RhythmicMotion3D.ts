@@ -38,10 +38,12 @@ function depthForSegment(index: number, phase: number, settings: StudioSettings)
     : settings.terrainProfile === "tube-board" ? 0.022
       : settings.terrainProfile === "xylophone" ? 0.014
         : 0.04;
+  const curveScale = 1 + THREE.MathUtils.clamp(settings.curveIntensity, 0, 1.2) * 0.35;
+  const pathScale = 1 + THREE.MathUtils.clamp(settings.curvePathLength, 0, 1.2) * 0.22;
   const arc = Math.sin(Math.PI * clamp(phase));
-  const weaveScale = settings.terrainProfile === "comet" ? 0.1 : 0.03;
+  const weaveScale = (settings.terrainProfile === "comet" ? 0.1 : 0.03) * pathScale;
   const weave = Math.sin(Math.PI * 2 * clamp(phase)) * amplitude * weaveScale;
-  return seededDirection(index) * arc * amplitude + weave;
+  return seededDirection(index) * arc * amplitude * curveScale + weave;
 }
 
 export function visualMarbleAtTime(

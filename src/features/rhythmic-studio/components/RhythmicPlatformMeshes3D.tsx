@@ -11,13 +11,15 @@ interface MeshProps {
   color: string;
   style: PlatformStyle;
   selected: boolean;
+  glow: number;
+  detail: number;
 }
 
-function StandardBarMesh({ w, h, d, color, style, selected }: MeshProps) {
+function StandardBarMesh({ w, h, d, color, style, selected, glow }: MeshProps) {
   return (
     <group>
       <RoundedBox args={[w, h, d]} radius={Math.min(0.11, h * 0.36)} smoothness={4} castShadow receiveShadow>
-        <SurfaceMaterial style={style} color={color} selected={selected} />
+        <SurfaceMaterial style={style} color={color} selected={selected} glow={glow} />
       </RoundedBox>
       <mesh position={[0, -h * 0.34, d * 0.505]}>
         <boxGeometry args={[w * 0.82, Math.max(0.018, h * 0.08), 0.012]} />
@@ -27,17 +29,17 @@ function StandardBarMesh({ w, h, d, color, style, selected }: MeshProps) {
   );
 }
 
-function NeonTubeMesh({ w, h, d, color, style, selected }: MeshProps) {
+function NeonTubeMesh({ w, h, d, color, style, selected, glow, detail }: MeshProps) {
   const radius = Math.max(0.075, h * 0.42);
   return (
     <group>
       <mesh rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
-        <cylinderGeometry args={[radius, radius, w, 28, 1]} />
+        <cylinderGeometry args={[radius, radius, w, Math.round(18 + detail * 14), 1]} />
         <meshPhysicalMaterial color="#d9efff" transparent opacity={0.2} roughness={0.08} transmission={0.58} thickness={0.22} clearcoat={1} />
       </mesh>
       <mesh rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[radius * 0.58, radius * 0.58, w * 0.95, 20, 1]} />
-        <SurfaceMaterial style={style} color={color} selected={selected} />
+        <cylinderGeometry args={[radius * 0.58, radius * 0.58, w * 0.95, Math.round(14 + detail * 12), 1]} />
+        <SurfaceMaterial style={style} color={color} selected={selected} glow={glow} />
       </mesh>
       {[-1, 1].map((side) => (
         <group key={side} position={[side * w * 0.49, 0, 0]}>
@@ -56,7 +58,7 @@ function NeonTubeMesh({ w, h, d, color, style, selected }: MeshProps) {
 }
 
 function GlassBarMesh(props: MeshProps) {
-  const { w, h, d, color, style, selected } = props;
+  const { w, h, d, color, style, selected, glow } = props;
   const optic = style === "glass-optic";
   const tempered = style === "glass-tempered";
   const acrylic = style === "glass-acrylic";
@@ -65,7 +67,7 @@ function GlassBarMesh(props: MeshProps) {
   return (
     <group>
       <RoundedBox args={[w, bodyHeight, bodyDepth]} radius={acrylic ? Math.min(0.16, bodyHeight * 0.48) : Math.min(0.1, h * 0.3)} smoothness={5} castShadow receiveShadow>
-        <SurfaceMaterial style={style} color={color} selected={selected} />
+        <SurfaceMaterial style={style} color={color} selected={selected} glow={glow} />
       </RoundedBox>
       <mesh position={[0, -h * 0.33, d * 0.506]}>
         <boxGeometry args={[w * 0.86, Math.max(0.012, h * 0.07), 0.012]} />
@@ -85,16 +87,16 @@ function GlassBarMesh(props: MeshProps) {
   );
 }
 
-function GlassTubeMesh({ w, h, d, color, style, selected }: MeshProps) {
+function GlassTubeMesh({ w, h, d, color, style, selected, glow, detail }: MeshProps) {
   const radius = Math.max(0.09, h * 0.43);
   return (
     <group>
       <mesh rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
-        <cylinderGeometry args={[radius, radius, w, 36, 1, true]} />
-        <SurfaceMaterial style={style} color={color} selected={selected} />
+        <cylinderGeometry args={[radius, radius, w, Math.round(22 + detail * 18), 1, true]} />
+        <SurfaceMaterial style={style} color={color} selected={selected} glow={glow} />
       </mesh>
       <mesh rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[radius * 0.68, radius * 0.68, w * 1.012, 30, 1, true]} />
+        <cylinderGeometry args={[radius * 0.68, radius * 0.68, w * 1.012, Math.round(18 + detail * 16), 1, true]} />
         <meshPhysicalMaterial color="#dff7ff" transparent opacity={0.12} roughness={0.05} transmission={0.45} side={THREE.BackSide} />
       </mesh>
       {[-1, 1].map((side) => (
@@ -107,8 +109,8 @@ function GlassTubeMesh({ w, h, d, color, style, selected }: MeshProps) {
   );
 }
 
-function CurvedRail({ w, y, radius, color, style, selected, bend = 0.035 }: {
-  w: number; y: number; radius: number; color: string; style: PlatformStyle; selected: boolean; bend?: number;
+function CurvedRail({ w, y, radius, color, style, selected, glow, bend = 0.035 }: {
+  w: number; y: number; radius: number; color: string; style: PlatformStyle; selected: boolean; glow: number; bend?: number;
 }) {
   const curve = useMemo(() => new THREE.CatmullRomCurve3([
     new THREE.Vector3(-w / 2, y, 0),
@@ -119,12 +121,12 @@ function CurvedRail({ w, y, radius, color, style, selected, bend = 0.035 }: {
   return (
     <mesh castShadow receiveShadow>
       <tubeGeometry args={[curve, 28, radius, 10, false]} />
-      <SurfaceMaterial style={style} color={color} selected={selected} />
+      <SurfaceMaterial style={style} color={color} selected={selected} glow={glow} />
     </mesh>
   );
 }
 
-function RailMesh({ w, h, d, color, style, selected }: MeshProps) {
+function RailMesh({ w, h, d, color, style, selected, glow, detail }: MeshProps) {
   const wire = style === "instrument-wire";
   const pipe = style === "pipe-rail";
   const dual = style === "dual-rail" || style === "instrument-rail" || wire;
@@ -133,7 +135,7 @@ function RailMesh({ w, h, d, color, style, selected }: MeshProps) {
   const strands = dual ? [-gap, gap] : [0];
   return (
     <group>
-      {strands.map((y) => <CurvedRail key={y} w={w} y={y} radius={radius} color={color} style={style} selected={selected} bend={wire ? 0.018 : 0.035} />)}
+      {strands.map((y) => <CurvedRail key={y} w={w} y={y} radius={radius} color={color} style={style} selected={selected} glow={glow} bend={wire ? 0.018 : 0.035} />)}
       {[-w * 0.37, 0, w * 0.37].map((x) => (
         <group key={x} position={[x, 0, -d * 0.18]}>
           <RoundedBox args={[Math.max(0.045, radius * 1.2), dual ? gap * 2.5 : Math.max(h * 0.7, 0.12), d * 0.42]} radius={0.018} smoothness={3} castShadow>
@@ -146,7 +148,7 @@ function RailMesh({ w, h, d, color, style, selected }: MeshProps) {
   );
 }
 
-function LightPodsMesh({ w, h, d, color, selected }: MeshProps) {
+function LightPodsMesh({ w, h, d, color, selected, glow }: MeshProps) {
   const count = Math.max(4, Math.min(7, Math.round(w / 0.32)));
   const positions = Array.from({ length: count }, (_, index) => -w * 0.42 + (w * 0.84 * index) / Math.max(1, count - 1));
   return (
@@ -157,21 +159,21 @@ function LightPodsMesh({ w, h, d, color, selected }: MeshProps) {
       {positions.map((x, index) => (
         <mesh key={x} position={[x, 0, d * 0.49]} scale={index % 2 ? 0.92 : 1}>
           <sphereGeometry args={[Math.min(0.09, h * 0.3), 18, 12]} />
-          <meshPhysicalMaterial color={selectedColor(color, selected)} emissive={color} emissiveIntensity={selected ? 1.7 : 0.85} roughness={0.14} clearcoat={1} />
+          <meshPhysicalMaterial color={selectedColor(color, selected)} emissive={color} emissiveIntensity={(selected ? 1.25 : 0.48) + THREE.MathUtils.clamp(glow, 0, 1.5) * 0.65} roughness={0.14} clearcoat={1} />
         </mesh>
       ))}
     </group>
   );
 }
 
-function TechPadMesh({ w, h, d, color, style, selected }: MeshProps) {
+function TechPadMesh({ w, h, d, color, style, selected, glow }: MeshProps) {
   return (
     <group>
       <RoundedBox args={[w, Math.max(h, 0.13), d]} radius={0.09} smoothness={5} castShadow receiveShadow>
         <meshPhysicalMaterial color="#111823" roughness={0.24} metalness={0.62} clearcoat={0.4} />
       </RoundedBox>
       <RoundedBox position={[0, -h * 0.12, d * 0.515]} args={[w * 0.72, h * 0.34, 0.035]} radius={0.022} smoothness={3}>
-        <SurfaceMaterial style={style} color={color} selected={selected} />
+        <SurfaceMaterial style={style} color={color} selected={selected} glow={glow} />
       </RoundedBox>
       {[-1, 1].flatMap((sx) => [-1, 1].map((sy) => (
         <EndBolt key={`${sx}:${sy}`} x={sx * w * 0.39} y={sy * h * 0.25} z={d * 0.515} />
@@ -180,11 +182,11 @@ function TechPadMesh({ w, h, d, color, style, selected }: MeshProps) {
   );
 }
 
-function KeyMesh({ w, h, d, color, style, selected }: MeshProps) {
+function KeyMesh({ w, h, d, color, style, selected, glow, detail }: MeshProps) {
   return (
     <group>
       <RoundedBox args={[w, Math.max(h, 0.11), d]} radius={Math.min(0.085, h * 0.32)} smoothness={5} castShadow receiveShadow>
-        <SurfaceMaterial style={style} color={color} selected={selected} />
+        <SurfaceMaterial style={style} color={color} selected={selected} glow={glow} />
       </RoundedBox>
       <mesh position={[0, h * 0.76, -d * 0.18]} rotation={[0, 0, Math.PI / 2]} castShadow>
         <cylinderGeometry args={[Math.min(0.08, h * 0.28), Math.min(0.08, h * 0.28), w * 0.72, 18]} />
@@ -214,13 +216,13 @@ const CYMBAL_PROFILE = [
   new THREE.Vector2(0.02, 0.09),
 ];
 
-function CymbalMesh({ w, h, d, color, style, selected }: MeshProps) {
+function CymbalMesh({ w, h, d, color, style, selected, glow, detail }: MeshProps) {
   const radius = Math.max(0.24, w * 0.44);
   return (
     <group>
       <mesh rotation={[Math.PI / 2, 0, 0]} scale={[radius, Math.max(0.22, h * 1.2), radius]} castShadow receiveShadow>
-        <latheGeometry args={[CYMBAL_PROFILE, 48]} />
-        <SurfaceMaterial style={style} color={color} selected={selected} />
+        <latheGeometry args={[CYMBAL_PROFILE, Math.round(28 + detail * 24)]} />
+        <SurfaceMaterial style={style} color={color} selected={selected} glow={glow} />
       </mesh>
       <mesh position={[0, 0, -d * 0.42]} rotation={[Math.PI / 2, 0, 0]} castShadow>
         <cylinderGeometry args={[0.05, 0.05, Math.max(0.22, d * 0.9), 18]} />
@@ -234,13 +236,13 @@ function CymbalMesh({ w, h, d, color, style, selected }: MeshProps) {
   );
 }
 
-function TubeMesh({ w, h, d, color, style, selected }: MeshProps) {
+function TubeMesh({ w, h, d, color, style, selected, glow, detail }: MeshProps) {
   const radius = Math.max(h * 0.5, 0.11);
   return (
     <group>
       <mesh rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
-        <cylinderGeometry args={[radius, radius, w, 36, 1]} />
-        <SurfaceMaterial style={style} color={color} selected={selected} />
+        <cylinderGeometry args={[radius, radius, w, Math.round(22 + detail * 18), 1]} />
+        <SurfaceMaterial style={style} color={color} selected={selected} glow={glow} />
       </mesh>
       <mesh rotation={[0, 0, Math.PI / 2]} position={[0, -radius * 0.18, d * 0.34]}>
         <cylinderGeometry args={[radius * 0.7, radius * 0.7, w * 0.96, 28, 1]} />
@@ -256,13 +258,13 @@ function TubeMesh({ w, h, d, color, style, selected }: MeshProps) {
   );
 }
 
-function ToyPegMesh({ w, h, d, color, style, selected }: MeshProps) {
+function ToyPegMesh({ w, h, d, color, style, selected, glow, detail }: MeshProps) {
   const radius = Math.max(0.12, h * 0.56);
   return (
     <group>
       <mesh rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
-        <cylinderGeometry args={[radius, radius, Math.max(w * 0.72, 0.28), 32]} />
-        <SurfaceMaterial style={style} color={color} selected={selected} />
+        <cylinderGeometry args={[radius, radius, Math.max(w * 0.72, 0.28), Math.round(20 + detail * 16)]} />
+        <SurfaceMaterial style={style} color={color} selected={selected} glow={glow} />
       </mesh>
       <mesh position={[0, 0, d * 0.36]} rotation={[0, 0, Math.PI / 2]}>
         <torusGeometry args={[radius * 0.72, radius * 0.09, 8, 28]} />
@@ -272,14 +274,14 @@ function ToyPegMesh({ w, h, d, color, style, selected }: MeshProps) {
   );
 }
 
-function CometPadMesh({ w, h, d, color, style, selected }: MeshProps) {
+function CometPadMesh({ w, h, d, color, style, selected, glow }: MeshProps) {
   return (
     <group>
       <RoundedBox args={[w, Math.max(h, 0.12), d]} radius={Math.min(0.16, Math.max(h * 0.48, 0.08))} smoothness={6} castShadow receiveShadow>
         <meshPhysicalMaterial color="#15162a" roughness={0.2} metalness={0.5} clearcoat={0.8} clearcoatRoughness={0.08} />
       </RoundedBox>
       <RoundedBox position={[0, 0, d * 0.515]} args={[w * 0.77, h * 0.46, 0.035]} radius={0.035} smoothness={4}>
-        <SurfaceMaterial style={style} color={color} selected={selected} />
+        <SurfaceMaterial style={style} color={color} selected={selected} glow={glow} />
       </RoundedBox>
       {[-1, 1].map((side) => (
         <mesh key={side} position={[side * w * 0.4, 0, d * 0.51]}>
@@ -291,14 +293,14 @@ function CometPadMesh({ w, h, d, color, style, selected }: MeshProps) {
   );
 }
 
-function StairStepMesh({ w, h, d, color, style, selected }: MeshProps) {
+function StairStepMesh({ w, h, d, color, style, selected, glow }: MeshProps) {
   return (
     <group>
       {[0, 1, 2].map((index) => {
         const stepW = w / 3.1;
         return (
           <RoundedBox key={index} position={[-w * 0.32 + index * stepW, index * h * 0.13, 0]} args={[stepW * 0.94, h * (0.75 + index * 0.13), d]} radius={0.045} smoothness={3} castShadow receiveShadow>
-            <SurfaceMaterial style={style} color={color} selected={selected} />
+            <SurfaceMaterial style={style} color={color} selected={selected} glow={glow} />
           </RoundedBox>
         );
       })}

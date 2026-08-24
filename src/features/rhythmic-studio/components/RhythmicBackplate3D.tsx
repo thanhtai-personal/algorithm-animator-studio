@@ -39,6 +39,7 @@ const fragmentShader = `
   void main() {
     vec4 source = blurredSample(vUv);
     gl_FragColor = vec4(source.rgb, source.a * uOpacity);
+    #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }
 `;

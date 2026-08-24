@@ -6,8 +6,9 @@ export function selectedColor(color: string, selected: boolean) {
   return `#${new THREE.Color(color).lerp(new THREE.Color("#ffffff"), 0.38).getHexString()}`;
 }
 
-export function SurfaceMaterial({ style, color, selected }: { style: PlatformStyle; color: string; selected: boolean }) {
+export function SurfaceMaterial({ style, color, selected, glow = 0 }: { style: PlatformStyle; color: string; selected: boolean; glow?: number }) {
   const value = selectedColor(color, selected);
+  const glowStrength = THREE.MathUtils.clamp(glow, 0, 1.5);
   if (style.startsWith("glass") || style === "glass") {
     const frosted = style === "glass-frosted";
     const acrylic = style === "glass-acrylic";
@@ -24,6 +25,8 @@ export function SurfaceMaterial({ style, color, selected }: { style: PlatformSty
         attenuationColor={value}
         attenuationDistance={2.8}
         envMapIntensity={1.45}
+        emissive={value}
+        emissiveIntensity={glowStrength * 0.08}
       />
     );
   }
@@ -39,6 +42,8 @@ export function SurfaceMaterial({ style, color, selected }: { style: PlatformSty
         iridescenceIOR={1.5}
         iridescenceThicknessRange={[180, 680]}
         envMapIntensity={1.55}
+        emissive={value}
+        emissiveIntensity={glowStrength * 0.14}
       />
     );
   }
@@ -47,7 +52,7 @@ export function SurfaceMaterial({ style, color, selected }: { style: PlatformSty
       <meshPhysicalMaterial
         color={value}
         emissive={value}
-        emissiveIntensity={selected ? 1.15 : 0.48}
+        emissiveIntensity={(selected ? 0.9 : 0.22) + glowStrength * 0.72}
         roughness={0.2}
         metalness={0.16}
         clearcoat={0.72}
@@ -56,7 +61,7 @@ export function SurfaceMaterial({ style, color, selected }: { style: PlatformSty
     );
   }
   if (style.includes("rail") || style === "instrument-cymbal" || style === "instrument-wire" || style === "pipe-rail") {
-    return <meshStandardMaterial color={value} roughness={0.18} metalness={0.86} envMapIntensity={1.35} />;
+    return <meshStandardMaterial color={value} roughness={0.18} metalness={0.86} envMapIntensity={1.35} emissive={value} emissiveIntensity={glowStrength * 0.05} />;
   }
   return (
     <meshPhysicalMaterial
@@ -66,6 +71,8 @@ export function SurfaceMaterial({ style, color, selected }: { style: PlatformSty
       clearcoat={0.62}
       clearcoatRoughness={0.12}
       envMapIntensity={1.2}
+      emissive={value}
+      emissiveIntensity={glowStrength * 0.06}
     />
   );
 }

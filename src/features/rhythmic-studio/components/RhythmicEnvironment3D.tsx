@@ -1,9 +1,30 @@
-import { Suspense, useEffect, useMemo } from "react";
+import { Suspense, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { Environment, Lightformer, RoundedBox } from "@react-three/drei";
-import { useThree } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { StudioSettings } from "../types";
 import { RhythmicBackplate3D } from "./RhythmicBackplate3D";
+
+type EnvironmentKind = "tube-board" | "comet" | "xylophone" | "neutral";
+
+function environmentKind(settings: StudioSettings): EnvironmentKind {
+  if (settings.backgroundPreset === "tube-board-dark") return "tube-board";
+  if (settings.backgroundPreset === "comet-void" || settings.backgroundPreset === "deep-space") return "comet";
+  if (settings.backgroundPreset === "xylophone-room" || settings.backgroundPreset === "instrument-room") return "xylophone";
+  if (settings.backgroundPreset === "spotlight") return "neutral";
+  if (settings.terrainProfile === "tube-board" || settings.terrainProfile === "comet" || settings.terrainProfile === "xylophone") return settings.terrainProfile;
+  return "neutral";
+}
+
+function artBackgroundColor(settings: StudioSettings) {
+  const kind = environmentKind(settings);
+  const artColor = kind === "comet" ? new THREE.Color("#040611")
+    : kind === "xylophone" ? new THREE.Color("#b9afa2")
+      : kind === "tube-board" ? new THREE.Color("#10141a")
+        : new THREE.Color(settings.backgroundColor);
+  if (kind !== "neutral") artColor.lerp(new THREE.Color(settings.backgroundColor), 0.22);
+  return artColor;
+}
 
 function radialTexture() {
   const size = 96;
@@ -47,25 +68,24 @@ function SceneAtmosphere({ settings }: { settings: StudioSettings }) {
   useEffect(() => {
     const previousBackground = scene.background;
     const previousFog = scene.fog;
-    const background = settings.terrainProfile === "comet" ? "#040611"
-      : settings.terrainProfile === "xylophone" ? "#8d775f"
-        : settings.terrainProfile === "tube-board" ? "#10141a"
-          : settings.backgroundColor;
-    scene.background = new THREE.Color(background);
-    scene.fog = settings.terrainProfile === "comet"
-      ? new THREE.FogExp2("#07091a", 0.027)
-      : new THREE.Fog(background, 13, 28);
+    const kind = environmentKind(settings);
+    const background = artBackgroundColor(settings);
+    scene.background = background;
+    scene.fog = kind === "comet"
+      ? new THREE.FogExp2(background.clone().lerp(new THREE.Color("#07091a"), 0.62), 0.024)
+      : new THREE.Fog(background, kind === "xylophone" ? 15 : 13, kind === "xylophone" ? 34 : 30);
     return () => {
       scene.background = previousBackground;
       scene.fog = previousFog;
     };
-  }, [scene, settings.backgroundColor, settings.terrainProfile]);
+  }, [scene, settings.backgroundColor, settings.backgroundPreset, settings.terrainProfile]);
   return null;
 }
 
 function ReflectionRig({ settings }: { settings: StudioSettings }) {
-  const warm = settings.terrainProfile === "xylophone";
-  const comet = settings.terrainProfile === "comet";
+  const kind = environmentKind(settings);
+  const warm = kind === "xylophone";
+  const comet = kind === "comet";
   return (
     <Environment resolution={64} frames={1}>
       <Lightformer form="rect" intensity={4.8} color={warm ? "#fff0d2" : "#eaf5ff"} position={[-4, 4, 6]} rotation={[0, 0.38, 0]} scale={[5, 2.2, 1]} />
@@ -73,6 +93,22 @@ function ReflectionRig({ settings }: { settings: StudioSettings }) {
       <Lightformer form="ring" intensity={comet ? 5.4 : 2.4} color={comet ? "#e95aea" : "#ffffff"} position={[0, 1, -5]} scale={[6, 6, 1]} />
     </Environment>
   );
+}
+
+function BackgroundMotion({ settings, children }: { settings: StudioSettings; children: ReactNode }) {
+  const ref = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    const group = ref.current;
+    if (!group) return;
+    const kind = environmentKind(settings);
+    const motion = THREE.MathUtils.clamp(settings.backgroundMotion, 0, 1.5);
+    const strength = kind === "comet" ? 1 : kind === "tube-board" ? 0.16 : kind === "xylophone" ? 0.06 : 0.1;
+    const time = clock.elapsedTime;
+    group.position.x = Math.sin(time * 0.11) * 0.12 * motion * strength;
+    group.position.z = Math.cos(time * 0.08) * 0.05 * motion * strength;
+    group.rotation.z = Math.sin(time * 0.07) * 0.003 * motion * strength;
+  });
+  return <group ref={ref}>{children}</group>;
 }
 
 function TubeBoardRoom() {
@@ -194,20 +230,20 @@ function XylophoneRoom() {
   return (
     <group>
       <RoundedBox position={[0, -54, -4.45]} args={[17.6, 136, 0.55]} radius={0.18} smoothness={4} receiveShadow renderOrder={-30}>
-        <meshStandardMaterial color="#d6c0a6" roughness={0.82} metalness={0.02} depthWrite={false} />
+        <meshStandardMaterial color="#d8d1c8" roughness={0.82} metalness={0.02} depthWrite={false} />
       </RoundedBox>
       {[-8.9, 8.9].map((x) => (
         <mesh key={x} position={[x, -54, -4.1]} rotation={[0, x < 0 ? Math.PI / 2.82 : -Math.PI / 2.82, 0]} receiveShadow renderOrder={-28}>
           <planeGeometry args={[5.2, 136]} />
-          <meshStandardMaterial color="#8c725c" roughness={0.78} metalness={0.02} side={THREE.DoubleSide} depthWrite={false} />
+          <meshStandardMaterial color="#958778" roughness={0.78} metalness={0.02} side={THREE.DoubleSide} depthWrite={false} />
         </mesh>
       ))}
       <RoundedBox position={[0, -54, -4.08]} args={[12.8, 96, 0.16]} radius={0.12} smoothness={4} receiveShadow renderOrder={-26}>
-        <meshStandardMaterial color="#f4eadc" roughness={0.7} metalness={0.02} depthWrite={false} />
+        <meshStandardMaterial color="#f2eee8" roughness={0.7} metalness={0.02} depthWrite={false} />
       </RoundedBox>
       {[-4.15, 4.15].map((x, index) => (
         <RoundedBox key={`accent-panel-${x}`} position={[x, -54, -3.96]} args={[1.7, 92, 0.14]} radius={0.08} smoothness={4} receiveShadow renderOrder={-24}>
-          <meshStandardMaterial color={index === 0 ? "#e3d1be" : "#ddd9e2"} roughness={0.64} metalness={0.02} depthWrite={false} />
+          <meshStandardMaterial color={index === 0 ? "#d9cec2" : "#cfd4da"} roughness={0.64} metalness={0.02} depthWrite={false} />
         </RoundedBox>
       ))}
       <RoundedBox position={[0, 9.1, -3.72]} args={[8.6, 1.05, 0.22]} radius={0.08} smoothness={4} receiveShadow renderOrder={-22}>
@@ -220,12 +256,12 @@ function XylophoneRoom() {
         </mesh>
       ))}
       <RoundedBox position={[0, -55, -3.02]} args={[11.8, 92, 0.32]} radius={0.08} smoothness={4} receiveShadow>
-        <meshStandardMaterial color="#aa7648" roughness={0.74} metalness={0.02} />
+        <meshStandardMaterial color="#9f724d" roughness={0.74} metalness={0.02} />
       </RoundedBox>
       {floorSlats.map((index) => (
         <mesh key={index} position={[0, 8 - index * 10.4, -2.82]} castShadow>
           <boxGeometry args={[10.3 - Math.min(index, 6) * 0.16, 0.2, 0.06]} />
-          <meshStandardMaterial color={index % 2 ? "#c38d58" : "#a26e42"} roughness={0.64} metalness={0.02} />
+          <meshStandardMaterial color={index % 2 ? "#b9865d" : "#986945"} roughness={0.64} metalness={0.02} />
         </mesh>
       ))}
       {[0, 1].map((line) => (
@@ -294,7 +330,8 @@ function NeutralStudio({ color }: { color: string }) {
 }
 
 export function RhythmicLightingRig3D({ settings }: { settings: StudioSettings }) {
-  if (settings.terrainProfile === "xylophone") {
+  const kind = environmentKind(settings);
+  if (kind === "xylophone") {
     return (
       <>
         <ReflectionRig settings={settings} />
@@ -313,7 +350,7 @@ export function RhythmicLightingRig3D({ settings }: { settings: StudioSettings }
       </>
     );
   }
-  if (settings.terrainProfile === "comet") {
+  if (kind === "comet") {
     return (
       <>
         <ReflectionRig settings={settings} />
@@ -324,7 +361,7 @@ export function RhythmicLightingRig3D({ settings }: { settings: StudioSettings }
       </>
     );
   }
-  if (settings.terrainProfile === "tube-board") {
+  if (kind === "tube-board") {
     return (
       <>
         <ReflectionRig settings={settings} />
@@ -354,14 +391,17 @@ export function RhythmicLightingRig3D({ settings }: { settings: StudioSettings }
 }
 
 export function RhythmicEnvironment3D({ settings, backgroundUrl }: { settings: StudioSettings; backgroundUrl?: string }) {
+  const kind = environmentKind(settings);
   return (
     <>
       <SceneAtmosphere settings={settings} />
       {backgroundUrl ? <Suspense fallback={null}><RhythmicBackplate3D url={backgroundUrl} settings={settings} /></Suspense> : null}
-      {settings.terrainProfile === "tube-board" && <TubeBoardRoom />}
-      {settings.terrainProfile === "comet" && <CometSpace />}
-      {settings.terrainProfile === "xylophone" && <XylophoneRoom />}
-      {settings.terrainProfile === "balanced" && <NeutralStudio color={settings.backgroundColor} />}
+      <BackgroundMotion settings={settings}>
+        {kind === "tube-board" && <TubeBoardRoom />}
+        {kind === "comet" && <CometSpace />}
+        {kind === "xylophone" && <XylophoneRoom />}
+        {kind === "neutral" && <NeutralStudio color={settings.backgroundColor} />}
+      </BackgroundMotion>
     </>
   );
 }

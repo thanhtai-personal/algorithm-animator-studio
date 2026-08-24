@@ -22,23 +22,15 @@ export interface PresetMixPlan {
   segments: PresetMixSegment[];
 }
 
+// Auto Mix owns the course presentation only. Marble identity and marble VFX are
+// user-owned settings and must stay stable across every preset transition.
 const MIXABLE_KEYS = [
   "minBounceDistance",
   "curveIntensity",
   "curvePathLength",
-  "animationSensitivity",
-  "spectralDensity",
-  "prismStart",
-  "prismEnd",
-  "ballStyle",
-  "ballBaseColor",
-  "ballStripeColor",
   "colorPaletteMode",
   "terrainProfile",
   "cameraProfile",
-  "trailLength",
-  "ballSize",
-  "particleCount",
   "platformWidth",
   "platformThickness",
   "platformGap",
@@ -54,7 +46,6 @@ const MIXABLE_KEYS = [
   "platformMixMode",
   "platformAccentEvery",
   "platformDetail",
-  "impactRipple",
 ] as const satisfies readonly (keyof StudioSettings)[];
 
 function hash(seed: number) {

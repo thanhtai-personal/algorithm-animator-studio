@@ -202,6 +202,8 @@ export interface StudioSettings {
   bounceHeight: number;
   cameraAnchor: number;
   cameraSmoothing: number;
+  cameraDistance: number;
+  cameraLookAhead: number;
   platformGlow: number;
   platformPrimaryStyle: PlatformStyle;
   platformSecondaryStyle: PlatformStyle;

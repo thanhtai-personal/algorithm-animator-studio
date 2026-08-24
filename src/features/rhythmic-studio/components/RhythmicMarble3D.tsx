@@ -36,11 +36,7 @@ function stripedTexture(base: string, stripe: string) {
   return texture;
 }
 
-function MarbleMaterial({ style, settings, liveColor }: {
-  style: BallStyle;
-  settings: StudioSettings;
-  liveColor: THREE.Color;
-}) {
+function MarbleMaterial({ style, settings }: { style: BallStyle; settings: StudioSettings }) {
   const stripeMap = useMemo(
     () => stripedTexture(settings.ballBaseColor, settings.ballStripeColor),
     [settings.ballBaseColor, settings.ballStripeColor],
@@ -50,12 +46,12 @@ function MarbleMaterial({ style, settings, liveColor }: {
   if (style === "chrome") {
     return (
       <meshPhysicalMaterial
-        color="#e4edf5"
+        color={settings.ballBaseColor}
         metalness={1}
-        roughness={0.055}
+        roughness={0.065}
         clearcoat={1}
         clearcoatRoughness={0.025}
-        envMapIntensity={1.9}
+        envMapIntensity={2.05}
       />
     );
   }
@@ -65,14 +61,14 @@ function MarbleMaterial({ style, settings, liveColor }: {
         color={settings.ballBaseColor}
         metalness={0}
         roughness={0.025}
-        transmission={0.96}
+        transmission={0.92}
         thickness={1.08}
         ior={1.48}
         clearcoat={1}
         clearcoatRoughness={0.018}
         attenuationColor={settings.ballBaseColor}
-        attenuationDistance={2.1}
-        envMapIntensity={1.75}
+        attenuationDistance={1.45}
+        envMapIntensity={1.85}
       />
     );
   }
@@ -81,11 +77,12 @@ function MarbleMaterial({ style, settings, liveColor }: {
       <meshPhysicalMaterial
         color={settings.ballBaseColor}
         emissive={settings.ballBaseColor}
-        emissiveIntensity={1.08}
-        metalness={0.15}
-        roughness={0.16}
-        clearcoat={0.88}
-        clearcoatRoughness={0.08}
+        emissiveIntensity={settings.glowAnimation ? 0.92 : 0.28}
+        metalness={0.12}
+        roughness={0.14}
+        clearcoat={0.9}
+        clearcoatRoughness={0.07}
+        envMapIntensity={1.25}
       />
     );
   }
@@ -97,46 +94,49 @@ function MarbleMaterial({ style, settings, liveColor }: {
         roughness={0.2}
         clearcoat={0.92}
         clearcoatRoughness={0.08}
-        envMapIntensity={1.35}
+        envMapIntensity={1.4}
       />
     );
   }
   if (style === "prism") {
     return (
       <meshPhysicalMaterial
-        color="#e5efff"
-        metalness={0.26}
-        roughness={0.075}
+        color={settings.ballBaseColor}
+        metalness={0.22}
+        roughness={0.07}
         clearcoat={1}
         clearcoatRoughness={0.025}
         iridescence={1}
         iridescenceIOR={1.52}
         iridescenceThicknessRange={[160, 820]}
-        envMapIntensity={1.8}
+        envMapIntensity={1.9}
       />
     );
   }
   return (
     <meshPhysicalMaterial
-      color={liveColor}
-      metalness={0.05}
-      roughness={0.2}
-      clearcoat={0.86}
-      clearcoatRoughness={0.09}
-      envMapIntensity={1.35}
+      color={settings.ballBaseColor}
+      metalness={0.04}
+      roughness={0.19}
+      clearcoat={0.9}
+      clearcoatRoughness={0.08}
+      envMapIntensity={1.45}
     />
   );
 }
 
 export const RhythmicMarble3D = forwardRef<THREE.Group, {
   settings: StudioSettings;
-  liveColor: THREE.Color;
-}>(function RhythmicMarble3D({ settings, liveColor }, ref) {
+}>(function RhythmicMarble3D({ settings }, ref) {
+  const glowStrength = THREE.MathUtils.clamp(settings.animationSensitivity, 0, 1.5);
+  const haloOpacity = settings.ballStyle === "neon" ? 0.09 : 0.025 + glowStrength * 0.012;
+  const lightIntensity = settings.ballStyle === "neon" ? 3.4 : 0.35 + glowStrength * 0.25;
+
   return (
     <group ref={ref}>
       <mesh castShadow receiveShadow>
         <sphereGeometry args={[1, 64, 48]} />
-        <MarbleMaterial style={settings.ballStyle} settings={settings} liveColor={liveColor} />
+        <MarbleMaterial style={settings.ballStyle} settings={settings} />
       </mesh>
       {settings.ballStyle === "glass" && (
         <>
@@ -146,23 +146,31 @@ export const RhythmicMarble3D = forwardRef<THREE.Group, {
           </mesh>
           <mesh scale={0.79}>
             <sphereGeometry args={[1, 32, 24]} />
-            <meshBasicMaterial color="#dff7ff" transparent opacity={0.025} side={THREE.BackSide} />
+            <meshBasicMaterial color="#dff7ff" transparent opacity={0.025} side={THREE.BackSide} depthWrite={false} />
           </mesh>
         </>
       )}
       {settings.ballStyle === "prism" && (
-        <mesh scale={0.32}>
+        <mesh scale={0.3}>
           <icosahedronGeometry args={[1, 2]} />
-          <meshStandardMaterial color={settings.ballBaseColor} emissive={settings.ballBaseColor} emissiveIntensity={0.18} roughness={0.2} metalness={0.55} />
+          <meshStandardMaterial color={settings.ballStripeColor} emissive={settings.ballBaseColor} emissiveIntensity={0.1} roughness={0.18} metalness={0.52} />
         </mesh>
       )}
-      {settings.ballStyle === "neon" && (
+      {settings.glowAnimation && (
         <>
-          <mesh scale={0.78}>
+          <mesh scale={settings.ballStyle === "neon" ? 1.07 : 1.035}>
             <sphereGeometry args={[1, 32, 24]} />
-            <meshBasicMaterial color="#ffffff" transparent opacity={0.09} />
+            <meshBasicMaterial
+              color={settings.ballBaseColor}
+              transparent
+              opacity={haloOpacity}
+              side={THREE.BackSide}
+              depthWrite={false}
+              blending={THREE.AdditiveBlending}
+              toneMapped={false}
+            />
           </mesh>
-          <pointLight color={settings.ballBaseColor} intensity={4.8} distance={4.2} decay={2} />
+          <pointLight color={settings.ballBaseColor} intensity={lightIntensity} distance={settings.ballStyle === "neon" ? 4.2 : 2.4} decay={2} />
         </>
       )}
     </group>

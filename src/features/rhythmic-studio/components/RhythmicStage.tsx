@@ -22,7 +22,7 @@ export function RhythmicStage({ studio }: { studio: Studio }) {
   return <section className="min-w-0 space-y-3">
     <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card/60 px-3 py-2">
       <div className="flex items-center gap-2"><span className={`h-2.5 w-2.5 rounded-full ${studio.playing ? "animate-pulse bg-emerald-500" : "bg-muted-foreground/40"}`} /><span className="text-sm font-medium">{studio.status}</span></div>
-      <div className="flex gap-2"><Badge variant="secondary">9:16</Badge><Badge variant="outline">720×1280</Badge><Badge variant="outline">{studio.settings.exportFps} FPS</Badge>{studio.presetMixEnabled ? <Badge variant="secondary">Preset Mix</Badge> : null}{useThreeRenderer ? <Badge variant="secondary">3D export beta</Badge> : null}</div>
+      <div className="flex gap-2"><Badge variant="secondary">9:16</Badge><Badge variant="outline">720×1280</Badge><Badge variant="outline">{studio.settings.exportFps} FPS</Badge>{studio.presetMixEnabled ? <Badge variant="secondary">Preset Mix</Badge> : null}{useThreeRenderer ? <Badge variant="secondary">3D WebGL</Badge> : null}</div>
     </div>
 
     <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card/45 px-3 py-2">
@@ -50,6 +50,7 @@ export function RhythmicStage({ studio }: { studio: Studio }) {
           durationMs={studio.durationMs}
           timeMs={studio.timeMs}
           playing={studio.playing}
+          recording={studio.recording}
           playbackToken={studio.playbackToken}
           playbackStartMs={studio.playbackStartMs}
           playbackEndMs={studio.playbackEndMs || studio.durationMs}

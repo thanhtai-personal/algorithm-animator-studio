@@ -1,14 +1,22 @@
 import { useCallback } from "react";
 import type { RhythmicStudioStore } from "../store/RhythmicStudioStore";
-import { type RhythmicPresetId } from "../lib/studioPresets";
-import { mixedPresetSettings } from "../lib/presetMix";
+import { presetById, type RhythmicPresetId } from "../lib/studioPresets";
 
 export function useRhythmicPresetActions(store: RhythmicStudioStore) {
   const applyQuickPreset = useCallback((id: RhythmicPresetId) => {
-    // Presets now change the run, not the backdrop. Keeping the current background
-    // avoids a hard scene cut and makes manual preset changes match Auto Mix.
-    const nextSettings = mixedPresetSettings(store.settings, id);
-    store.applyVisualPreset(id, nextSettings);
+    // A manual preset choice is allowed to establish its designed marble identity.
+    // The backdrop stays locked. Once Auto Mix is running, the marble/VFX are then
+    // treated as user-owned and remain unchanged across subsequent preset segments.
+    const preset = presetById(id).settings;
+    const lockedBackground = {
+      backgroundPreset: store.settings.backgroundPreset,
+      backgroundColor: store.settings.backgroundColor,
+      backgroundMotion: store.settings.backgroundMotion,
+      backgroundImageOpacity: store.settings.backgroundImageOpacity,
+      backgroundImageBlur: store.settings.backgroundImageBlur,
+      backgroundImageFit: store.settings.backgroundImageFit,
+    };
+    store.applyVisualPreset(id, { ...store.settings, ...preset, ...lockedBackground });
     store.setOverrides([]);
     store.setSelectedNode(null);
   }, [store]);

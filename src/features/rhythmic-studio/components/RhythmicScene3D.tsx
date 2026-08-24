@@ -27,6 +27,7 @@ interface Props {
   durationMs: number;
   timeMs: number;
   playing: boolean;
+  recording: boolean;
   playbackToken: number;
   playbackStartMs: number;
   playbackEndMs: number;
@@ -68,10 +69,19 @@ function noteDensity(events: NoteEvent[], timeMs: number, windowMs = 900) {
 }
 
 function cameraLookAheadMs(settings: StudioSettings) {
-  if (settings.cameraProfile === "comet") return 560;
-  if (settings.cameraProfile === "xylophone") return 460;
-  if (settings.cameraProfile === "tube-board") return 380;
-  return 420;
+  const base = settings.cameraProfile === "comet" ? 560
+    : settings.cameraProfile === "xylophone" ? 460
+      : settings.cameraProfile === "tube-board" ? 380
+        : 420;
+  return base * THREE.MathUtils.clamp(settings.cameraLookAhead, 0.5, 1.5);
+}
+
+function RendererQuality({ recording }: { recording: boolean }) {
+  const { gl } = useThree();
+  useEffect(() => {
+    gl.transmissionResolutionScale = recording ? 1 : 0.72;
+  }, [gl, recording]);
+  return null;
 }
 
 function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSettings: StudioSettingsResolver }) {
@@ -79,7 +89,6 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
   const marbleMotionRef = useRef<THREE.Group>(null);
   const marbleRef = useRef<THREE.Group>(null);
   const vfxRef = useRef<RhythmicVfxHandle>(null);
-  const marbleColor = useMemo(() => new THREE.Color(props.settings.ballBaseColor), [props.settings.ballBaseColor]);
   const initialSample = useMemo(
     () => visualMarbleAtTime(props.timeMs, props.events, props.platforms, props.settings, props.courseOverrides, props.resolveSettings),
     [props.courseOverrides, props.events, props.platforms, props.resolveSettings, props.settings, props.timeMs],
@@ -158,7 +167,7 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
     const marbleMotion = marbleMotionRef.current;
     const marbleMesh = marbleRef.current;
     if (marbleMotion && marbleMesh) {
-      const radius = Math.max(0.12, frameSettings.ballSize * RHYTHMIC_WORLD_SCALE);
+      const radius = Math.max(0.06, frameSettings.ballSize * RHYTHMIC_WORLD_SCALE);
       const timeDelta = timeMs - previousTimeRef.current;
       displacement.copy(world).sub(previousWorld);
       const distance = displacement.length();
@@ -174,17 +183,15 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
       // Keep impact deformation in world space and spin on an inner group. Scaling
       // the same rotating group made the squash axis whirl around the sphere.
       marbleMotion.position.copy(world);
-      const squash = impactSquash(sample.impactAgeMs);
+      const squash = frameSettings.pulseAnimation
+        ? impactSquash(sample.impactAgeMs) * THREE.MathUtils.clamp(frameSettings.animationSensitivity, 0, 1.5)
+        : 0;
       marbleMotion.scale.set(
         radius * (1 + squash * 0.32),
         radius * (1 - squash),
         radius * (1 + squash * 0.32),
       );
       marbleMesh.quaternion.copy(rollQuaternion.current);
-      marbleColor.set(sample.color);
-      const surface = marbleMesh.children[0] as THREE.Mesh | undefined;
-      const material = surface?.material as THREE.MeshStandardMaterial | undefined;
-      if (material && frameSettings.ballStyle === "classic") material.color.copy(marbleColor);
     }
 
     previousWorld.copy(world);
@@ -203,16 +210,19 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
       CAMERA_Z + profileZoom + jumpDistance * (isComet ? 0.15 : 0.13) + Math.min(0.42, speed * 0.015) - Math.min(0.58, density * 0.028),
       isXylophone ? 11.9 : isTubeBoard ? 10.1 : 9.6,
       isXylophone ? 15.9 : isTubeBoard ? 13.7 : 13.6,
-    );
+    ) * THREE.MathUtils.clamp(frameSettings.cameraDistance, 0.8, 1.3);
     const anchorOffset = (0.5 - frameSettings.cameraAnchor) * 6.4;
     const lateralFactor = isXylophone ? 0.13 : isTubeBoard ? 0.16 : 0.2;
     const lateralClamp = isXylophone ? 0.42 : isTubeBoard ? 0.48 : 0.62;
     const verticalFactor = isXylophone ? 0.006 : isTubeBoard ? 0.0075 : 0.009;
+    const frameLead = isComet ? 0.22 : isTubeBoard ? 0.16 : isXylophone ? 0.14 : 0.16;
+    const framedX = THREE.MathUtils.lerp(world.x, aheadWorld.x, frameLead);
+    const framedY = THREE.MathUtils.lerp(world.y, aheadWorld.y, frameLead * 0.7);
     const lateralLead = THREE.MathUtils.clamp((aheadWorld.x - world.x) * lateralFactor + velocity.x * (lateralFactor * 0.04), -lateralClamp, lateralClamp);
     const verticalLag = THREE.MathUtils.clamp(velocity.y * verticalFactor, -0.18, 0.24);
-    const observerOffsetX = isXylophone ? 0.16 : isTubeBoard ? 0.22 : -0.12;
-    const observerLiftY = isXylophone ? 0.18 : isTubeBoard ? 0.12 : 0.06;
-    cameraTarget.set(world.x + lateralLead + observerOffsetX, world.y + anchorOffset - verticalLag + observerLiftY, adaptiveZ + world.z * (isComet ? 0.14 : 0.08));
+    const observerOffsetX = isXylophone ? 0.62 : isTubeBoard ? 0.52 : isComet ? -0.38 : 0.3;
+    const observerLiftY = isXylophone ? 0.34 : isTubeBoard ? 0.22 : isComet ? 0.12 : 0.16;
+    cameraTarget.set(framedX + lateralLead + observerOffsetX, framedY + anchorOffset - verticalLag + observerLiftY, adaptiveZ + world.z * (isComet ? 0.14 : 0.08));
 
     const damping = 5.4 + THREE.MathUtils.clamp(frameSettings.cameraSmoothing, 0.03, 0.65) * 12.5;
     if (snapCamera || !Number.isFinite(camera.position.x)) {
@@ -257,7 +267,6 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
     deltaQuaternion,
     displacement,
     lookTarget,
-    marbleColor,
     previousWorld,
     props.courseOverrides,
     props.durationMs,
@@ -319,6 +328,7 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
 
   return (
     <>
+      <RendererQuality recording={props.recording} />
       <PerspectiveCamera makeDefault fov={CAMERA_FOV} near={0.1} far={180} position={[0, 0, CAMERA_Z]} />
       <RhythmicLightingRig3D settings={props.settings} />
       <RhythmicEnvironment3D settings={props.settings} backgroundUrl={props.backgroundUrl} />
@@ -348,7 +358,7 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
         resolveSettings={props.resolveSettings}
       />
       <group ref={marbleMotionRef}>
-        <RhythmicMarble3D ref={marbleRef} settings={activeVisualSettings} liveColor={marbleColor} />
+        <RhythmicMarble3D ref={marbleRef} settings={activeVisualSettings} />
       </group>
     </>
   );
@@ -387,12 +397,13 @@ export function RhythmicScene3D(props: Props) {
     <div className="relative h-[66vh] max-h-[1280px] max-w-full aspect-[9/16] overflow-hidden rounded-xl bg-slate-950">
       <Canvas
         frameloop={props.playing ? "always" : "demand"}
-        dpr={props.playing ? [1, 1.25] : [0.85, 1]}
+        dpr={props.recording ? 2 : props.playing ? [1, 1.35] : [1, 1.15]}
         shadows
         gl={{ antialias: true, alpha: false, powerPreference: "high-performance", stencil: false }}
         onCreated={({ gl }) => {
+          gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.04;
+          gl.toneMappingExposure = 1.0;
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
           if (props.canvasRef) props.canvasRef.current = gl.domElement;
@@ -403,7 +414,7 @@ export function RhythmicScene3D(props: Props) {
         <SceneContent {...props} platforms={platforms} resolveSettings={resolveSettings} />
       </Canvas>
       <div className="pointer-events-none absolute left-2 top-2 rounded-md border border-white/10 bg-black/45 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70 backdrop-blur">
-        WebGL · {props.presetMixEnabled ? "preset mix" : props.playing ? "cinematic preview" : "quality idle"}
+        WebGL 3D · {props.presetMixEnabled ? "preset mix" : props.recording ? "recording" : props.playing ? "live" : "ready"}
       </div>
     </div>
   );

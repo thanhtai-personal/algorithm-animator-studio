@@ -5,7 +5,7 @@ import { layoutText } from "../../layoutI18n";
 import { PLATFORM_STYLES, type StudioSettings } from "../../types";
 import type { RhythmicStudioController } from "../../hooks/useRhythmicStudioController";
 import { ControlFrame } from "../atoms/ControlFrame";
-import { RangeField, SelectField, ToggleField } from "../atoms/ControlFields";
+import { RangeField, SelectField } from "../atoms/ControlFields";
 
 export function TerrainFrame({ studio }: { studio: RhythmicStudioController }) {
   const lang = useSystemLang();
@@ -25,6 +25,5 @@ export function TerrainFrame({ studio }: { studio: RhythmicStudioController }) {
     <RangeField label={t("course.minJump")} value={s.minBounceDistance} min={8} max={160} step={2} unit="px" onChange={(value) => studio.patch("minBounceDistance", value)} />
     <RangeField label={t("course.platformTilt")} value={s.platformTilt} min={0} max={90} step={1} unit="°" onChange={(value) => studio.patch("platformTilt", value)} />
     <RangeField label={t("course.platformGlow")} value={s.platformGlow} min={0} max={1.5} step={0.05} onChange={(value) => studio.patch("platformGlow", value)} />
-    <ToggleField label={t("course.impactRipple")} checked={s.impactRipple} onChange={(value) => studio.patch("impactRipple", value)} />
   </ControlFrame>;
 }

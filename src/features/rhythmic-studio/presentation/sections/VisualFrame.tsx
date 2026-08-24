@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { rhythmicText, type RhythmicTextKey } from "../../i18n";
 import { BALL_STYLES } from "../../types";
+import { ballStyleText } from "../../ballStyleI18n";
 import type { RhythmicStudioController } from "../../hooks/useRhythmicStudioController";
 import { ControlFrame } from "../atoms/ControlFrame";
 import { BallStylePreview } from "../atoms/RhythmicOptionPreviews";
@@ -15,7 +16,7 @@ export function VisualFrame({ studio }: { studio: RhythmicStudioController }) {
   const t = (key: RhythmicTextKey) => rhythmicText(lang, key);
   const ballOptions = BALL_STYLES.map((value) => ({
     value,
-    label: t(`ball.${value}` as RhythmicTextKey),
+    label: ballStyleText(lang, value),
     preview: <BallStylePreview style={value} />,
   }));
   const s = studio.settings;

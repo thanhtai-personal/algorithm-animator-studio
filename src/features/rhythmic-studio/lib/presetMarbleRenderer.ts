@@ -212,11 +212,72 @@ function drawPrism(ctx: CanvasRenderingContext2D, x: number, y: number, radius: 
   glossyHighlight(ctx, x, y, radius, 0.84);
 }
 
+function drawFlower(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, pulse: number, base: string, accent: string, spin: number) {
+  drawClassic(ctx, x, y, radius, pulse, base);
+  ctx.save();
+  circle(ctx, x, y, radius * 0.94); ctx.clip();
+  ctx.translate(x, y); ctx.rotate(spin * 0.35);
+  for (let flower = 0; flower < 4; flower += 1) {
+    const cx = (flower % 2 ? 0.34 : -0.34) * radius;
+    const cy = (flower < 2 ? -0.31 : 0.32) * radius;
+    for (let petal = 0; petal < 5; petal += 1) {
+      const angle = petal * Math.PI * 0.4;
+      ctx.fillStyle = "rgba(255,255,255,.9)";
+      ctx.beginPath();
+      ctx.ellipse(cx + Math.cos(angle) * radius * 0.12, cy + Math.sin(angle) * radius * 0.12, radius * 0.09, radius * 0.055, angle, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = accent; circle(ctx, cx, cy, radius * 0.07); ctx.fill();
+  }
+  ctx.restore();
+  glossyHighlight(ctx, x, y, radius, 0.78);
+}
+
+function drawFire(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, pulse: number) {
+  ctx.save();
+  const aura = ctx.createRadialGradient(x, y, radius * 0.3, x, y, radius * (2.4 + pulse * 0.45));
+  aura.addColorStop(0, "rgba(255,210,40,.72)"); aura.addColorStop(0.35, "rgba(255,72,12,.38)"); aura.addColorStop(1, "rgba(120,8,0,0)");
+  ctx.fillStyle = aura; circle(ctx, x, y, radius * 2.5); ctx.fill();
+  const core = ctx.createRadialGradient(x - radius * 0.28, y - radius * 0.34, radius * 0.03, x, y, radius);
+  core.addColorStop(0, "#ffffff"); core.addColorStop(0.16, "#fff39a"); core.addColorStop(0.44, "#ffad13"); core.addColorStop(0.74, "#ed3612"); core.addColorStop(1, "#5c0703");
+  ctx.fillStyle = core; ctx.shadowColor = "#ff4b12"; ctx.shadowBlur = 13 + pulse * 16; circle(ctx, x, y, radius); ctx.fill();
+  ctx.clip();
+  ctx.strokeStyle = "rgba(255,244,164,.7)"; ctx.lineWidth = Math.max(1.4, radius * 0.1);
+  for (let band = 0; band < 3; band += 1) {
+    ctx.beginPath(); ctx.arc(x - radius * 0.25, y + radius * (0.16 - band * 0.22), radius * (0.58 + band * 0.12), -1.1, 1.05); ctx.stroke();
+  }
+  ctx.restore();
+  rim(ctx, x, y, radius, "rgba(255,226,135,.78)", 1.2); glossyHighlight(ctx, x, y, radius, 0.8);
+}
+
+function drawWater(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, pulse: number, base: string, accent: string, spin: number) {
+  drawGlass(ctx, x, y, radius, pulse, base, accent);
+  ctx.save(); circle(ctx, x, y, radius * 0.9); ctx.clip(); ctx.translate(x, y); ctx.rotate(spin * 0.18);
+  ctx.strokeStyle = "rgba(220,252,255,.72)"; ctx.lineWidth = Math.max(1.2, radius * 0.08);
+  for (let band = -1; band <= 1; band += 1) {
+    ctx.beginPath(); ctx.arc(0, band * radius * 0.28, radius * (0.58 + band * 0.04), 0.2, Math.PI * 1.2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawRainbow(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, pulse: number, spin: number) {
+  groundShadow(ctx, x, y, radius, 0.3);
+  const colors = ["#ff3b30", "#ffcc00", "#34c759", "#22d3ee", "#3478f6", "#af52de"];
+  ctx.save(); ctx.translate(x, y); ctx.rotate(spin * 0.25); ctx.shadowColor = "#7c74ff"; ctx.shadowBlur = 6 + pulse * 8;
+  for (let index = 0; index < colors.length; index += 1) {
+    ctx.fillStyle = colors[index]; ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, radius, index * Math.PI * 2 / colors.length, (index + 1) * Math.PI * 2 / colors.length); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore(); rim(ctx, x, y, radius, "rgba(255,255,255,.74)", 1.3); glossyHighlight(ctx, x, y, radius, 0.82);
+}
+
 function paletteFor(style: BallStyle, point: MarblePoint, settings: StudioSettings) {
   const pointColor = point.color || settings.prismEnd;
   if (style === "chrome") return { base: "#a9b7c8", accent: pointColor };
   if (style === "glass") return { base: mixHex(settings.ballBaseColor, "#bcecff", 0.62), accent: mixHex(pointColor, "#6de6ff", 0.48) };
   if (style === "neon") return { base: mixHex(settings.ballBaseColor, pointColor, 0.5), accent: pointColor };
+  if (style === "fire") return { base: "#ff5418", accent: "#ffd84a" };
+  if (style === "water") return { base: "#36dff2", accent: "#d8fcff" };
+  if (style === "flower") return { base: settings.ballBaseColor, accent: settings.ballStripeColor };
   if (style === "prism") return { base: mixHex(settings.prismStart, pointColor, 0.45), accent: mixHex(settings.prismEnd, pointColor, 0.38) };
   return { base: settings.ballBaseColor, accent: pointColor };
 }
@@ -247,6 +308,10 @@ export function drawPresetMarble(
   else if (style === "glass") drawGlass(ctx, x, y, radius, pulse, base, accent);
   else if (style === "neon") drawNeon(ctx, x, y, radius, pulse, base, accent);
   else if (style === "prism") drawPrism(ctx, x, y, radius, pulse, base, accent, spin);
+  else if (style === "flower") drawFlower(ctx, x, y, radius, pulse, base, accent, spin);
+  else if (style === "fire") drawFire(ctx, x, y, radius, pulse);
+  else if (style === "water") drawWater(ctx, x, y, radius, pulse, base, accent, spin);
+  else if (style === "rainbow") drawRainbow(ctx, x, y, radius, pulse, spin);
   else drawStriped(ctx, x, y, radius, pulse, base, settings.ballStripeColor, spin);
   ctx.restore();
   return true;

@@ -103,6 +103,10 @@ export const BALL_STYLES = [
   "neon",
   "striped",
   "prism",
+  "flower",
+  "fire",
+  "water",
+  "rainbow",
 ] as const;
 
 export type BallStyle = (typeof BALL_STYLES)[number];

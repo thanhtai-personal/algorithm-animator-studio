@@ -216,27 +216,31 @@ export function rollingRouteCandidate(
   const spanMs = Math.max(1, events[index + 1].timeMs - events[index].timeMs);
   const dt = Math.max(0.001, spanMs / 1000);
   const bounds = courseWorldBounds(settings, width);
-  const margin = Math.max(settings.ballSize * 2.2, 28);
+  // Use the same center clearance as ballistic routes. A larger lane-only inset
+  // can put a valid incoming hit outside the rolling bounds; clamping the next
+  // key then moves backward and creates an impulse that no instrument explains.
+  const margin = Math.max(settings.ballSize * 1.25, settings.platformThickness * 0.72, 14);
   const minX = bounds.min + margin;
   const maxX = bounds.max - margin;
   const speed = rollSpeed(incoming, surfaceEntry, settings);
-  let step = clamp(speed * dt, Math.max(2.2, settings.ballSize * 0.16), 34);
-  let direction = preferredDirection || (incoming.x >= 0 ? 1 : -1) || 1;
+  const minimumStep = Math.max(2.2, settings.ballSize * 0.16);
+  let step = clamp(speed * dt, minimumStep, 34);
+  const incomingDirection = Math.abs(incoming.x) > 1 ? Math.sign(incoming.x) : 0;
+  const direction = incomingDirection || preferredDirection || 1;
 
-  // Pick the lane direction once at entry using the room required by the whole
-  // run. Subsequent keys inherit the outgoing velocity sign, so the strip never
-  // zig-zags merely because one local key is close to a wall.
+  // A passive lane cannot reverse the tangential component of the incoming
+  // velocity. Preserve its direction and compress the run when the forward side
+  // is short; an actual change of direction must be produced by a visible bounce.
   if (surfaceEntry && !lockDirection) {
     const totalNeed = runHorizontalNeed(events, index, run, speed, settings.ballSize)
       + runExitReserve(events, run, speed, settings.ballSize);
     const forwardRoom = direction > 0 ? maxX - hit.x : hit.x - minX;
-    const reverseRoom = direction > 0 ? hit.x - minX : maxX - hit.x;
-    if (forwardRoom < totalNeed && reverseRoom > forwardRoom) direction *= -1;
+    if (forwardRoom < totalNeed) step *= clamp(forwardRoom / Math.max(totalNeed, 1), 0.2, 1);
   }
 
   const remaining = Math.max(1, run.end - index);
   const availableRoom = direction > 0 ? maxX - hit.x : hit.x - minX;
-  step = Math.min(step, Math.max(settings.ballSize * 0.95, availableRoom / remaining));
+  step = Math.min(step, Math.max(minimumStep, availableRoom / remaining));
   const dx = direction * step;
   const dy = Math.abs(dx) * ROLL_SLOPE;
   const target = { x: clamp(hit.x + dx, minX, maxX), y: hit.y + dy };

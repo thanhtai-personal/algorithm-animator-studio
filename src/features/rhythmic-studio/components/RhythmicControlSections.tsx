@@ -11,6 +11,7 @@ import { useSystemLang } from "@/hooks/use-system-lang";
 import { BUILTIN_MELODIES } from "../defaults";
 import { melodyLabel, rhythmicText, type RhythmicTextKey } from "../i18n";
 import { layoutText } from "../layoutI18n";
+import { ballStyleText } from "../ballStyleI18n";
 import { BALL_STYLES, PLATFORM_STYLES, SYNTH_PRESETS, type AudioSourceMeta, type CourseItemOverride, type CourseItemStyle, type StudioSettings } from "../types";
 import type { LyricFormat } from "../lib/lyrics";
 import { RhythmicCourseEditor } from "./RhythmicCourseEditor";
@@ -51,7 +52,7 @@ export function RhythmicControlSections(props: Props) {
   const lt = (key: Parameters<typeof layoutText>[1]) => layoutText(lang, key);
   const platformLabel = (value: string) => value.startsWith("glass-") && value !== "glass" ? layoutText(lang, `platform.${value}` as Parameters<typeof layoutText>[1]) : t(`platformStyle.${value}` as RhythmicTextKey);
   const platformOptions = PLATFORM_STYLES.map((value) => ({ value, label: platformLabel(value) }));
-  const ballOptions = BALL_STYLES.map((value) => ({ value, label: t(`ball.${value}` as RhythmicTextKey) }));
+  const ballOptions = BALL_STYLES.map((value) => ({ value, label: ballStyleText(lang, value) }));
   const synthOptions = SYNTH_PRESETS.map((value) => ({ value, label: t(`synth.${value}` as RhythmicTextKey) }));
   const accelOptions = (["none", "ease-in", "ease-out", "pulse"] as const).map((value) => ({ value, label: t(`acceleration.${value}` as RhythmicTextKey) }));
   const mixOptions = (["single", "alternate", "accent", "shuffle"] as const).map((value) => ({ value, label: t(`platformMix.${value}` as RhythmicTextKey) }));

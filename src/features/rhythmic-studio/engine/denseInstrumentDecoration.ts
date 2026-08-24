@@ -56,7 +56,7 @@ function decorateRollingSegment(platform: MarblePlatform, next: MarblePlatform, 
   platform.visualThickness = denseSurfaceThickness(kind, settings);
   platform.visualX = faceCenter.x - frame.normal.x * settings.ballSize;
   platform.visualY = faceCenter.y - frame.normal.y * settings.ballSize;
-  platform.visualWidth = Math.max(settings.ballSize * 0.92, distance + Math.max(1.6, settings.ballSize * 0.18));
+  platform.visualWidth = Math.max(settings.ballSize * 1.05, distance + Math.max(1.6, settings.ballSize * 0.18));
   platform.visualTiltRad = frame.angle;
   platform.visualHidden = false;
 }
@@ -69,6 +69,16 @@ function decorateTerminalStrike(platform: MarblePlatform, frame: ReturnType<type
   platform.visualY = platform.hitY - frame.normal.y * settings.ballSize;
   platform.visualWidth = Math.max(settings.ballSize * 1.05, 13);
   platform.visualTiltRad = frame.angle;
+  platform.visualHidden = false;
+}
+
+function decoratePhysicalTerminalStrike(platform: MarblePlatform, kind: DenseInstrumentKind, settings: StudioSettings) {
+  // This terminal note redirects the marble instead of merely extending the
+  // preceding lane. Keep the planner's collision-derived center and angle so the
+  // visible face explains the impulse, while retaining a readable key body.
+  platform.visualStyle = kind === "keyboard" ? "piano-key" : "instrument-pad";
+  platform.visualThickness = denseSurfaceThickness(kind, settings);
+  platform.visualWidth = Math.max(platform.visualWidth ?? 0, settings.ballSize * 1.05, 13);
   platform.visualHidden = false;
 }
 
@@ -93,7 +103,9 @@ export function decorateDenseInstrumentRuns(platforms: MarblePlatform[], runs: D
       const localSettings = resolveSettings?.(index) ?? settings;
       const next = offset < strikes.length - 1 ? decorated[strikes[offset + 1]] : undefined;
       if (next) decorateRollingSegment(decorated[index], next, surface.kind, localSettings);
-      else decorateTerminalStrike(decorated[index], terminalSurfaceFrame(decorated, strikes, offset), surface.kind, localSettings);
+      else if (decorated[index].motionMode === "roll") {
+        decorateTerminalStrike(decorated[index], terminalSurfaceFrame(decorated, strikes, offset), surface.kind, localSettings);
+      } else decoratePhysicalTerminalStrike(decorated[index], surface.kind, localSettings);
     }
   }
   return decorated;

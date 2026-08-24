@@ -1,10 +1,13 @@
 import type { StudioSettings } from "../types";
+import { REFERENCE_VIDEO_PRESETS, REFERENCE_VIDEO_PRESET_IDS } from "./referenceVideoPresets";
 
-export const RHYTHMIC_PRESET_IDS = ["toy-pegboard", "neon-comet", "rainbow-xylophone", "boomwhacker-wall", "instrument-showcase", "vibraphone-wall"] as const;
+const ORIGINAL_PRESET_IDS = ["toy-pegboard", "neon-comet", "rainbow-xylophone", "boomwhacker-wall", "instrument-showcase", "vibraphone-wall"] as const;
+export const RHYTHMIC_PRESET_IDS = [...ORIGINAL_PRESET_IDS, ...REFERENCE_VIDEO_PRESET_IDS] as const;
 export type RhythmicPresetId = (typeof RHYTHMIC_PRESET_IDS)[number];
 
 export interface RhythmicStudioPreset {
   id: RhythmicPresetId;
+  referenceClipId?: string;
   settings: Partial<StudioSettings>;
 }
 
@@ -227,7 +230,7 @@ export const RHYTHMIC_STUDIO_PRESETS: RhythmicStudioPreset[] = [
       platformDetail: 1,
     },
   },
-
+  ...REFERENCE_VIDEO_PRESETS,
 ];
 
 export function presetById(id: RhythmicPresetId) {

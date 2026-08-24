@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { RhythmicPresetId } from "../../lib/studioPresets";
+import type { ReferenceVideoPresetId } from "../../lib/referenceVideoPresets";
 import type { BackgroundPreset, BallStyle, CourseItemStyle } from "../../types";
 import { cn } from "@/lib/utils";
 
@@ -14,18 +15,30 @@ export function BallStylePreview({ style }: { style: BallStyle }) {
       ? "radial-gradient(circle at 32% 28%, rgba(255,255,255,.95) 0 12%, rgba(224,247,255,.7) 18%, rgba(125,210,255,.35) 46%, rgba(92,160,255,.22) 64%, rgba(11,18,40,.75) 100%)"
       : style === "neon"
         ? "radial-gradient(circle at 32% 28%, #ffffff 0 8%, #aaf8ff 15%, #5fe8ff 32%, #2645ff 58%, #080916 100%)"
+        : style === "fire"
+          ? "radial-gradient(circle at 34% 30%, #ffffff 0 7%, #fff59d 14%, #ffb000 36%, #f13b14 68%, #5b0904 100%)"
+          : style === "water"
+            ? "radial-gradient(circle at 30% 25%, #ffffff 0 9%, #c9fbff 17%, #37dff2 42%, #138bc8 68%, #073457 100%)"
+            : style === "rainbow"
+              ? "conic-gradient(from 35deg,#ff3b30,#ffcc00,#34c759,#22d3ee,#3478f6,#af52de,#ff3b30)"
+              : style === "flower"
+                ? "radial-gradient(circle at 32% 28%,#fff 0 8%,#ffdc73 14%,#ff6b3d 42%,#a91f2a 100%)"
         : style === "striped"
           ? "linear-gradient(160deg, #fefefe 0 15%, #d7332d 16% 42%, #ffffff 43% 55%, #d7332d 56% 82%, #7e1311 100%)"
           : style === "prism"
             ? "linear-gradient(145deg, #6ffcff 0%, #6573ff 24%, #ff61d4 48%, #ffd45d 72%, #67f0b9 100%)"
             : "radial-gradient(circle at 32% 28%, #ffffff 0 10%, #ffd7d1 20%, #ea564b 46%, #6d1110 100%)";
-  const shellGlow = style === "neon" ? "shadow-[0_0_22px_rgba(95,232,255,.55)]" : style === "prism" ? "shadow-[0_0_20px_rgba(130,120,255,.35)]" : "shadow-[0_10px_18px_rgba(15,23,42,.22)]";
+  const shellGlow = style === "neon" || style === "water" ? "shadow-[0_0_22px_rgba(95,232,255,.55)]" : style === "fire" ? "shadow-[0_0_24px_rgba(255,91,24,.65)]" : style === "prism" || style === "rainbow" ? "shadow-[0_0_20px_rgba(130,120,255,.35)]" : "shadow-[0_10px_18px_rgba(15,23,42,.22)]";
   return <SceneFrame className="bg-[radial-gradient(circle_at_50%_20%,rgba(255,255,255,.24),rgba(0,0,0,0)_45%),linear-gradient(180deg,#0b1220,#151f34)]">
     <div className="absolute inset-x-3 bottom-2 h-3 rounded-full bg-black/25 blur-sm" />
     <div className={cn("absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/20", shellGlow)} style={{ background: sphere }}>
       <div className="absolute left-[10px] top-[8px] h-3 w-4 rounded-full bg-white/70 blur-[1px]" />
       {(style === "glass" || style === "prism") && <div className="absolute left-[22px] top-[24px] h-3 w-3 rounded-full bg-white/20 blur-[1px]" />}
       {style === "neon" && <div className="absolute inset-[6px] rounded-full border border-cyan-200/70" />}
+      {style === "flower" && <><div className="absolute left-[17px] top-[17px] h-3 w-3 rounded-full bg-yellow-300" />{[0, 1, 2, 3, 4].map((index) => <span key={index} className="absolute left-[18px] top-[11px] h-3 w-2 origin-[3px_11px] rounded-full bg-white/90" style={{ transform: `rotate(${index * 72}deg)` }} />)}</>}
+      {style === "fire" && <div className="absolute inset-[7px] rounded-full border-2 border-orange-200/70 shadow-[inset_0_0_10px_rgba(255,255,255,.8)]" />}
+      {style === "water" && <><div className="absolute inset-[5px] rounded-full border border-cyan-100/75" /><div className="absolute bottom-[9px] right-[8px] h-2 w-2 rounded-full border border-white/70" /></>}
+      {style === "rainbow" && <div className="absolute inset-[5px] rounded-full border border-white/45 bg-white/10" />}
     </div>
   </SceneFrame>;
 }
@@ -143,6 +156,7 @@ export function BackgroundPresetPreview({ preset }: { preset: BackgroundPreset }
 }
 
 export function PresetThumbnail({ presetId }: { presetId: RhythmicPresetId }) {
+  if (presetId.startsWith("reference-")) return <ReferencePresetThumbnail presetId={presetId as ReferenceVideoPresetId} />;
   if (presetId === "toy-pegboard") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#8d8f97,#4b505c)]">
     <div className="absolute inset-2 rounded-xl bg-[linear-gradient(180deg,#6b7280,#464b56)] shadow-[inset_0_0_0_1px_rgba(255,255,255,.08)]" />
     {Array.from({ length: 3 }).map((_, index) => <div key={index} className="absolute top-[18px] h-8 w-6 rounded-full border border-white/20 bg-[linear-gradient(180deg,#faf9f6,#bbb39b_55%,#6f533f)]" style={{ left: `${16 + index * 24}px` }} />)}
@@ -169,5 +183,33 @@ export function PresetThumbnail({ presetId }: { presetId: RhythmicPresetId }) {
     <div className="absolute inset-x-0 bottom-0 h-7 bg-[linear-gradient(180deg,#d3a673,#936846)]" style={{ clipPath: "polygon(0 100%,100% 100%,76% 0,24% 0)" }} />
     {[0, 1, 2].map((index) => <div key={index} className="absolute top-[26px] h-4 w-10 rounded-md border border-white/35 shadow-[0_8px_10px_rgba(15,23,42,.16)]" style={{ left: `${12 + index * 20}px`, background: ["linear-gradient(180deg,#fef08a,#f59e0b)", "linear-gradient(180deg,#a7f3d0,#14b8a6)", "linear-gradient(180deg,#bfdbfe,#3b82f6)"][index] }} />)}
     <div className="absolute right-4 top-4 h-5 w-5 rounded-full bg-[radial-gradient(circle_at_35%_30%,#fff,rgba(255,255,255,.65)_16%,rgba(125,211,252,.45)_42%,rgba(8,47,73,.85))]" />
+  </SceneFrame>;
+}
+
+function ReferencePresetThumbnail({ presetId }: { presetId: ReferenceVideoPresetId }) {
+  if (presetId === "reference-color-pegs") return <SceneFrame className="h-16 bg-[#c9b9a8]">
+    {["#f97316", "#84cc16", "#0891b2", "#7c3aed", "#171717"].map((color, index) => <div key={color} className="absolute h-7 w-3 rounded-full shadow-[5px_7px_6px_rgba(0,0,0,.25)]" style={{ background: color, left: `${12 + index * 16}px`, top: `${10 + (index % 3) * 11}px` }} />)}
+  </SceneFrame>;
+  if (presetId === "reference-rainbow-boomwhackers") return <SceneFrame className="h-16 bg-[#8393a0]">
+    {["#ff2727", "#ffef24", "#13df69", "#1ec8ff", "#d42cff"].map((color, index) => <div key={color} className="absolute h-4 w-12 rounded-full border-r-4 border-black/70 shadow-[5px_7px_7px_rgba(0,0,0,.3)]" style={{ background: color, left: `${5 + index * 15}px`, top: `${6 + index * 10}px`, transform: `rotate(${index % 2 ? -16 : 14}deg)` }} />)}
+  </SceneFrame>;
+  if (presetId === "reference-midnight-vibraphone") return <SceneFrame className="h-16 bg-[radial-gradient(circle_at_60%_35%,#48515d,#171a20_58%)]">
+    {[0, 1, 2, 3].map((index) => <div key={index} className="absolute h-2.5 w-12 rounded-sm bg-gradient-to-b from-slate-100 to-slate-600 shadow-[6px_8px_8px_rgba(0,0,0,.65)]" style={{ left: `${8 + index * 17}px`, top: `${10 + index * 12}px`, transform: `rotate(${index % 2 ? -18 : 12}deg)` }} />)}
+  </SceneFrame>;
+  if (presetId === "reference-pastel-percussion") return <SceneFrame className="h-16 bg-[#c8a9dd]">
+    {[0, 1, 2].map((index) => <div key={index} className="absolute h-6 w-6 rounded-full border-2 border-slate-700 bg-cyan-300 shadow-[6px_8px_7px_rgba(0,0,0,.28)]" style={{ left: `${12 + index * 29}px`, top: `${10 + index * 12}px` }} />)}
+    <div className="absolute bottom-2 left-5 h-2 w-14 rotate-[-10deg] rounded-full bg-slate-100" />
+  </SceneFrame>;
+  if (presetId === "reference-candy-drumline") return <SceneFrame className="h-16 bg-[#8f9da8]">
+    {["#ff3030", "#ffdc2f", "#20dc88", "#20c7ff", "#e536e9"].map((color, index) => <div key={color} className="absolute h-6 w-6 rounded-full border-[3px] border-slate-800 shadow-[5px_7px_7px_rgba(0,0,0,.3)]" style={{ background: color, left: `${7 + index * 17}px`, top: `${8 + (index % 2) * 22}px` }} />)}
+  </SceneFrame>;
+  if (presetId === "reference-wooden-marimba") return <SceneFrame className="h-16 bg-[#d9e4e5]">
+    {[0, 1, 2, 3].map((index) => <div key={index} className="absolute h-3 w-12 rounded-sm border border-amber-950/30 bg-gradient-to-b from-amber-700 to-amber-950 shadow-[5px_7px_7px_rgba(0,0,0,.25)]" style={{ left: `${7 + index * 17}px`, top: `${7 + index * 13}px`, transform: `rotate(${index % 2 ? 12 : -8}deg)` }} />)}
+  </SceneFrame>;
+  if (presetId === "reference-cyan-piano") return <SceneFrame className="h-16 bg-[radial-gradient(circle_at_50%_45%,#17d7d4,#07557a_62%)]">
+    {[0, 1, 2, 3].map((index) => <div key={index} className="absolute h-4 w-14 rounded-sm border border-cyan-100/50 bg-slate-100 shadow-[6px_8px_7px_rgba(0,0,0,.35)]" style={{ left: `${4 + index * 19}px`, top: `${6 + index * 13}px`, transform: `rotate(${index % 2 ? -12 : 9}deg)` }} />)}
+  </SceneFrame>;
+  return <SceneFrame className="h-16 bg-[radial-gradient(circle_at_55%_40%,#31159b,#090022_65%)]">
+    {[0, 1, 2].map((row) => <div key={row} className="absolute flex h-3 w-16 -rotate-12 overflow-hidden rounded-full shadow-[0_0_12px_rgba(32,233,255,.7)]" style={{ left: `${10 + row * 13}px`, top: `${9 + row * 17}px` }}>{Array.from({ length: 8 }, (_, index) => <span key={index} className={`h-full flex-1 ${index % 2 ? "bg-blue-700" : "bg-cyan-300"}`} />)}</div>)}
   </SceneFrame>;
 }

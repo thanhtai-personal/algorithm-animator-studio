@@ -54,7 +54,7 @@ export class RhythmicStudioStore {
   activePresetId: RhythmicPresetId | null = "toy-pegboard";
   presetMixEnabled = false;
   presetMixSeed = 1;
-  rendererMode: RhythmicRendererMode = "legacy";
+  rendererMode: RhythmicRendererMode = "three";
 
   constructor() {
     makeAutoObservable(this, {}, { autoBind: true });

@@ -30,7 +30,7 @@ function currentCanvas(store: RhythmicStudioStore, refs: CanvasRefs) {
   return refs.legacyCanvasRef.current;
 }
 
-function createFixedExportSurface(source: HTMLCanvasElement, rendererMode: RhythmicStudioStore["rendererMode"], fps: number) {
+function createFixedExportSurface(source: HTMLCanvasElement) {
   const output = document.createElement("canvas");
   output.width = 720;
   output.height = 1280;
@@ -41,9 +41,6 @@ function createFixedExportSurface(source: HTMLCanvasElement, rendererMode: Rhyth
 
   let stopped = false;
   let raf = 0;
-  let frameCallback = 0;
-  let relay: HTMLVideoElement | null = null;
-  let relayStream: MediaStream | null = null;
 
   const paint = (image: CanvasImageSource) => {
     context.fillStyle = "#000000";
@@ -51,60 +48,21 @@ function createFixedExportSurface(source: HTMLCanvasElement, rendererMode: Rhyth
     context.drawImage(image, 0, 0, output.width, output.height);
   };
 
-  if (rendererMode !== "three") {
-    const copy = () => {
-      if (stopped) return;
-      paint(source);
-      raf = window.requestAnimationFrame(copy);
-    };
-    copy();
-    return {
-      canvas: output,
-      stop: () => {
-        stopped = true;
-        window.cancelAnimationFrame(raf);
-      },
-    };
-  }
-
-  // Reading a WebGL canvas with drawImage() on a later RAF is not reliable when
-  // preserveDrawingBuffer=false (the normal high-performance Three.js setup).
-  // The compositor is allowed to clear the drawing buffer after presenting it,
-  // which produced valid WebM files whose every video pixel was black. Capture
-  // the presented WebGL frames first, relay that MediaStream through a video
-  // element, then scale the live video into the fixed 720x1280 export surface.
-  // This keeps the live renderer fast and avoids permanently enabling the costly
-  // preserveDrawingBuffer option just for recording.
-  relayStream = source.captureStream(Math.max(24, Math.min(120, fps)));
-  relay = document.createElement("video");
-  relay.muted = true;
-  relay.playsInline = true;
-  relay.autoplay = true;
-  relay.srcObject = relayStream;
-  void relay.play().catch(() => undefined);
-
-  const copyVideo = () => {
-    if (stopped || !relay) return;
-    if (relay.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) paint(relay);
-    if (typeof relay.requestVideoFrameCallback === "function") {
-      frameCallback = relay.requestVideoFrameCallback(copyVideo);
-    } else {
-      raf = window.requestAnimationFrame(copyVideo);
-    }
+  // Both renderers preserve a complete presented frame. Copying that frame
+  // directly avoids a WebGL canvas -> MediaStream -> video relay, which dropped
+  // most frames on otherwise capable GPUs and could produce a zero-byte export.
+  const copy = () => {
+    if (stopped) return;
+    paint(source);
+    raf = window.requestAnimationFrame(copy);
   };
-  copyVideo();
+  copy();
 
   return {
     canvas: output,
     stop: () => {
       stopped = true;
       window.cancelAnimationFrame(raf);
-      if (relay && frameCallback && typeof relay.cancelVideoFrameCallback === "function") {
-        relay.cancelVideoFrameCallback(frameCallback);
-      }
-      relay?.pause();
-      if (relay) relay.srcObject = null;
-      relayStream?.getTracks().forEach((track) => track.stop());
     },
   };
 }
@@ -135,7 +93,7 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, refs: Canva
     // Record from a fixed 720x1280 surface instead of the responsive WebGL
     // drawing buffer. The latter follows CSS size × DPR and produced files such
     // as 744x1324 depending on the browser window.
-    const exportSurface = createFixedExportSurface(canvas, store.rendererMode, store.settings.exportFps);
+    const exportSurface = createFixedExportSurface(canvas);
     const videoStream = exportSurface.canvas.captureStream(store.settings.exportFps);
     // Never put the AudioEngine's shared destination track directly into the export
     // stream: stopping that stream would permanently end audio for later exports.

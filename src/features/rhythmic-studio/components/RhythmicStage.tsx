@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { rhythmicText } from "../i18n";
+import { layoutText } from "../layoutI18n";
+import { RhythmicProductionStrip } from "../presentation/RhythmicProductionStrip";
 import { RhythmicCanvas } from "./RhythmicCanvas";
 import { hasRhythmicWebGLSupport, RhythmicScene3D } from "./RhythmicScene3D";
 import { RhythmicTimeline } from "./RhythmicTimeline";
@@ -61,12 +63,16 @@ function StageStatus({ studio, preparing, statusLabel, useThreeRenderer }: {
   );
 }
 
-function RendererSelector({ studio, webglAvailable, useThreeRenderer, locked, t }: {
+function RendererSelector({ studio, webglAvailable, useThreeRenderer, locked, t, twoDLabel, threeDLabel, twoDHint, threeDHint }: {
   studio: Studio;
   webglAvailable: boolean;
   useThreeRenderer: boolean;
   locked: boolean;
   t: Translate;
+  twoDLabel: string;
+  threeDLabel: string;
+  twoDHint: string;
+  threeDHint: string;
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card/45 px-3 py-2">
@@ -75,11 +81,11 @@ function RendererSelector({ studio, webglAvailable, useThreeRenderer, locked, t 
         <Badge variant={useThreeRenderer ? "secondary" : "outline"}>{useThreeRenderer ? "WebGL" : "Canvas 2D"}</Badge>
       </div>
       <div className="inline-flex rounded-lg border bg-muted/30 p-1">
-        <Button type="button" size="sm" variant={studio.rendererMode === "legacy" ? "secondary" : "ghost"} disabled={locked} aria-pressed={studio.rendererMode === "legacy"} onClick={() => studio.setRendererMode("legacy")} className="h-8">
-          <Image className="mr-1.5 h-3.5 w-3.5" />{t("renderer.legacy")}
+        <Button type="button" size="sm" variant={studio.rendererMode === "legacy" ? "secondary" : "ghost"} disabled={locked} aria-pressed={studio.rendererMode === "legacy"} onClick={() => studio.setRendererMode("legacy")} className="h-8" title={twoDHint}>
+          <Image className="mr-1.5 h-3.5 w-3.5" />{twoDLabel}
         </Button>
-        <Button type="button" size="sm" variant={studio.rendererMode === "three" ? "secondary" : "ghost"} disabled={locked || !webglAvailable} aria-pressed={studio.rendererMode === "three"} onClick={() => studio.setRendererMode("three")} className="h-8" title={webglAvailable ? undefined : t("renderer.unavailable")}>
-          <Box className="mr-1.5 h-3.5 w-3.5" />{t("renderer.three")}
+        <Button type="button" size="sm" variant={studio.rendererMode === "three" ? "secondary" : "ghost"} disabled={locked || !webglAvailable} aria-pressed={studio.rendererMode === "three"} onClick={() => studio.setRendererMode("three")} className="h-8" title={webglAvailable ? threeDHint : t("renderer.unavailable")}>
+          <Box className="mr-1.5 h-3.5 w-3.5" />{threeDLabel}
         </Button>
       </div>
     </div>
@@ -181,15 +187,26 @@ export function RhythmicStage({ studio }: { studio: Studio }) {
   const rendererLocked = studio.playing || studio.recording || course.isPreparing;
   const preparingLabel = t("status.preparingCourse");
 
-  return <section className="min-w-0 space-y-3">
+  return <section className="rhythmic-stage min-w-0 space-y-3">
     <StageStatus studio={studio} preparing={course.isPreparing} statusLabel={preparingLabel} useThreeRenderer={useThreeRenderer} />
-    <RendererSelector studio={studio} webglAvailable={webglAvailable} useThreeRenderer={useThreeRenderer} locked={rendererLocked} t={t} />
+    <RhythmicProductionStrip events={studio.timeline} timeMs={studio.timeMs} durationMs={studio.durationMs} sourceType={studio.source.type} rendererMode={studio.rendererMode} webglAvailable={webglAvailable} exportFps={studio.settings.exportFps} />
+    <RendererSelector
+      studio={studio}
+      webglAvailable={webglAvailable}
+      useThreeRenderer={useThreeRenderer}
+      locked={rendererLocked}
+      t={t}
+      twoDLabel={layoutText(lang, "lab.twoD")}
+      threeDLabel={layoutText(lang, "lab.threeD")}
+      twoDHint={layoutText(lang, "lab.twoDHint")}
+      threeDHint={layoutText(lang, "lab.threeDHint")}
+    />
     {!webglAvailable && studio.rendererMode === "three" ? <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">{t("renderer.unavailable")}</p> : null}
     <div className="mx-auto flex max-h-[68vh] justify-center overflow-hidden rounded-2xl border bg-black p-2 shadow-2xl">
       <PreparedScene studio={studio} course={course} courseReady={courseReady} useThreeRenderer={useThreeRenderer} resolveSettings={resolveSettings} preparingLabel={preparingLabel} />
     </div>
     <TransportControls studio={studio} courseReady={courseReady} t={t} />
-    <RhythmicTimeline events={studio.timeline} timeMs={studio.timeMs} durationMs={studio.durationMs} trimStartMs={studio.trimStartMs} trimEndMs={studio.trimEndMs} />
+    <RhythmicTimeline events={studio.timeline} timeMs={studio.timeMs} durationMs={studio.durationMs} trimStartMs={studio.trimStartMs} trimEndMs={studio.trimEndMs} onSeek={studio.recording ? undefined : (timeMs) => void studio.seekPlayback(timeMs)} />
     <RhythmicTrimPanel durationMs={studio.durationMs} timeMs={studio.timeMs} trimStartMs={studio.trimStartMs} trimEndMs={studio.trimEndMs} playingClip={studio.playingClip} recording={studio.recording} exportFps={studio.settings.exportFps} onFpsChange={(fps) => studio.patch("exportFps", fps)} onRangeChange={studio.setTrimRange} onPreview={() => void studio.previewTrim()} onExport={(format) => void studio.recordVideo(format, true)} />
     {course.isPreparing ? <CoursePreparationOverlay progress={course.progress} label={preparingLabel} /> : null}
   </section>;

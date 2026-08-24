@@ -1,4 +1,13 @@
 import type { MidiInstrumentMode, NoteEvent, SynthPreset } from "../types";
+import {
+  cleanMusicGain,
+  COLLISION_VOICE_GAIN,
+  DEFAULT_COLLISION_VOLUME,
+  MIDI_DRUM_GAIN,
+  MIDI_SESSION_GAIN,
+  MIDI_VOICE_GAIN,
+  RHYTHMIC_MASTER_GAIN,
+} from "./audioMix";
 import { playSynthVoice, presetForMidiEvent } from "./synthVoices";
 
 interface MidiScheduleOptions {
@@ -26,13 +35,6 @@ function createRoomImpulse(context: AudioContext, seconds = 1.05, decay = 3.4) {
   return impulse;
 }
 
-function cleanMusicGain(value: number) {
-  // The UI intentionally allows >100% music volume. Keep that perceived boost,
-  // but reserve encoder headroom so mastered source audio + impact SFX do not
-  // arrive at MediaRecorder already clipped.
-  return Math.min(1.16, Math.max(0, value) * 0.82);
-}
-
 export class AudioEngine {
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
@@ -51,7 +53,7 @@ export class AudioEngine {
   private brightness = 0.62;
   private stereoWidth = 0.34;
   private musicVolume = 1.3;
-  private sfxVolume = 0.26;
+  private sfxVolume = DEFAULT_COLLISION_VOLUME;
   private reverbAmount = 0.22;
 
   async ensure() {
@@ -91,7 +93,7 @@ export class AudioEngine {
       compressor.connect(this.context.destination);
       compressor.connect(this.recordDestination);
 
-      this.master.gain.value = 0.78;
+      this.master.gain.value = RHYTHMIC_MASTER_GAIN;
       this.musicBus.gain.value = cleanMusicGain(this.musicVolume);
       this.sfxInput.gain.value = this.sfxVolume;
       this.sfxDry.gain.value = 1 - this.reverbAmount * 0.18;
@@ -161,7 +163,7 @@ export class AudioEngine {
     playSynthVoice(context, this.sfxInput, midi, velocity, durationMs, preset, {
       brightness: this.brightness,
       stereoWidth: this.stereoWidth,
-      gainScale: 0.82,
+      gainScale: COLLISION_VOICE_GAIN,
     });
   }
 
@@ -191,7 +193,7 @@ export class AudioEngine {
     if (!this.musicBus) return;
     this.stopMidi();
     const session = context.createGain();
-    session.gain.value = 0.72;
+    session.gain.value = MIDI_SESSION_GAIN;
     session.connect(this.musicBus);
     this.midiSession = session;
     const speed = Math.max(0.1, options.playbackSpeed);
@@ -215,7 +217,7 @@ export class AudioEngine {
           when,
           brightness: Math.min(0.82, options.brightness * 0.9 + 0.08),
           stereoWidth: options.stereoWidth,
-          gainScale: event.isDrum ? 0.34 : 0.26,
+          gainScale: event.isDrum ? MIDI_DRUM_GAIN : MIDI_VOICE_GAIN,
         });
       }
       if (index >= events.length && this.midiTimer) { clearInterval(this.midiTimer); this.midiTimer = null; }

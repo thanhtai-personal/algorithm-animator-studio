@@ -1,0 +1,63 @@
+{
+  "runDir": "C:\\DATA\\working\\sources\\video-creator-tools\\algorithm-animator-studio-pro\\artifacts\\rhythmic-runtime\\run-1787584579744",
+  "initial": {
+    "title": "KAI STUDIO — Visual Content Studio",
+    "bodyHasThreeReady": true,
+    "active3D": true,
+    "canvasCount": 1,
+    "canvases": [
+      {
+        "width": 445,
+        "height": 792,
+        "clientWidth": 446,
+        "clientHeight": 792
+      }
+    ],
+    "webgl2": true,
+    "timecode": "00:02.933 / 00:05.650"
+  },
+  "browserErrors": {
+    "expected": [
+      "WebSocket connection to 'ws://localhost:5050/api/background-jobs/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED (https://localhost:3000/src/lib/backgroundJobsRealtime.ts)",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED (http://localhost:5050/api/youtube-tools/jobs)",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED (http://localhost:5050/api/ai-video-agent/jobs)"
+    ],
+    "unexpected": []
+  },
+  "threeScreenshot": "C:\\DATA\\working\\sources\\video-creator-tools\\algorithm-animator-studio-pro\\artifacts\\rhythmic-runtime\\run-1787584579744\\three-mid-song.png",
+  "twoScreenshot": "C:\\DATA\\working\\sources\\video-creator-tools\\algorithm-animator-studio-pro\\artifacts\\rhythmic-runtime\\run-1787584579744\\two-mid-song.png",
+  "threeExport": {
+    "path": "C:\\DATA\\working\\sources\\video-creator-tools\\algorithm-animator-studio-pro\\artifacts\\rhythmic-runtime\\run-1787584579744\\rhythmic-3d.webm",
+    "bytes": 4317070
+  },
+  "twoExport": {
+    "path": "C:\\DATA\\working\\sources\\video-creator-tools\\algorithm-animator-studio-pro\\artifacts\\rhythmic-runtime\\run-1787584579744\\rhythmic-2d.webm",
+    "bytes": 4852784
+  },
+  "media": {
+    "three": {
+      "videoCodec": "vp9",
+      "width": 720,
+      "height": 1280,
+      "frameCount": 325,
+      "durationSeconds": 5.725,
+      "effectiveFps": 56.6,
+      "audioCodec": "opus",
+      "sampleRate": 48000,
+      "channels": 2,
+      "maxVolumeDb": -18
+    },
+    "two": {
+      "videoCodec": "vp9",
+      "width": 720,
+      "height": 1280,
+      "frameCount": 295,
+      "durationSeconds": 5.724,
+      "effectiveFps": 51.4,
+      "audioCodec": "opus",
+      "sampleRate": 48000,
+      "channels": 2,
+      "maxVolumeDb": -17.9
+    }
+  }
+}

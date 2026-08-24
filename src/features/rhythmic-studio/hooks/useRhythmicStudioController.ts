@@ -121,6 +121,7 @@ export function useRhythmicStudioController() {
     onNote: playback.onNote,
     onEnded: playback.onEnded,
     togglePlayback: playback.togglePlayback,
+    seekPlayback: playback.seekPlayback,
     resetPlayback: playback.resetPlayback,
     previewTrim: playback.previewTrim,
     ...sources,

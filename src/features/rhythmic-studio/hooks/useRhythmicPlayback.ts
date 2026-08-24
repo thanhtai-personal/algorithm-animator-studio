@@ -102,6 +102,20 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
     store.setStatus({ key: "status.reset" });
   }, [stopPlaybackAudio, store]);
 
+  const seekPlayback = useCallback(async (requestedMs: number) => {
+    const nextMs = Math.max(0, Math.min(requestedMs, store.durationMs));
+    const wasPlaying = store.playing;
+    const activeEnd = store.playbackEndMs || store.durationMs;
+    const playingClip = store.playingClip;
+    stopPlaybackAudio();
+    if (!wasPlaying || nextMs >= activeEnd - 1) {
+      store.setTimeMs(nextMs);
+      if (nextMs >= activeEnd - 1) store.setPlaying(false);
+      return;
+    }
+    await playRange(nextMs, activeEnd, playingClip);
+  }, [playRange, stopPlaybackAudio, store]);
+
   const onNote = useCallback((event: NoteEvent) => {
     // MIDI playback is already sample-accurately scheduled by scheduleMidi().
     // Triggering another synth voice here doubles every note and can overload the
@@ -128,6 +142,7 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
     previewTrim,
     togglePlayback,
     resetPlayback,
+    seekPlayback,
     onNote,
     onEnded,
   };

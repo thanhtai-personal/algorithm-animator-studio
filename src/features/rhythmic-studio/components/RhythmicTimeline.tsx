@@ -8,11 +8,12 @@ interface Props {
   durationMs?: number;
   trimStartMs?: number;
   trimEndMs?: number;
+  onSeek?: (timeMs: number) => void;
 }
 
 const clampPct = (value: number) => Math.min(100, Math.max(0, value));
 
-export function RhythmicTimeline({ events, timeMs, durationMs, trimStartMs = 0, trimEndMs }: Props) {
+export function RhythmicTimeline({ events, timeMs, durationMs, trimStartMs = 0, trimEndMs, onSeek }: Props) {
   const duration = Math.max(durationMs ?? 0, timelineDuration(events), 1);
   const progress = clampPct(timeMs / duration * 100);
   const startPct = clampPct(trimStartMs / duration * 100);
@@ -22,9 +23,31 @@ export function RhythmicTimeline({ events, timeMs, durationMs, trimStartMs = 0, 
     const height = 24 + event.velocity * 34;
     return `M${x.toFixed(2)} 64V${(64 - height).toFixed(2)}`;
   }).join(""), [duration, events]);
+  const seek = (value: number) => onSeek?.(Math.round(Math.min(duration, Math.max(0, value))));
   return <div className="space-y-2 rounded-xl border bg-card/50 p-3">
     <div className="flex justify-between text-xs text-muted-foreground"><span>{(timeMs / 1000).toFixed(2)}s</span><span>{(duration / 1000).toFixed(2)}s</span></div>
-    <div className="relative h-16 overflow-hidden rounded-lg bg-muted/50">
+    <div
+      className={`relative h-16 overflow-hidden rounded-lg bg-muted/50 outline-none ${onSeek ? "cursor-crosshair focus-visible:ring-2 focus-visible:ring-primary" : ""}`}
+      role={onSeek ? "slider" : undefined}
+      tabIndex={onSeek ? 0 : undefined}
+      aria-label={onSeek ? "Marble music timeline" : undefined}
+      aria-valuemin={onSeek ? 0 : undefined}
+      aria-valuemax={onSeek ? Math.round(duration) : undefined}
+      aria-valuenow={onSeek ? Math.round(timeMs) : undefined}
+      onClick={onSeek ? (event) => {
+        const bounds = event.currentTarget.getBoundingClientRect();
+        if (bounds.width > 0) seek((event.clientX - bounds.left) / bounds.width * duration);
+      } : undefined}
+      onKeyDown={onSeek ? (event) => {
+        const step = event.shiftKey ? 1_000 : 250;
+        if (event.key === "ArrowLeft") seek(timeMs - step);
+        else if (event.key === "ArrowRight") seek(timeMs + step);
+        else if (event.key === "Home") seek(0);
+        else if (event.key === "End") seek(duration);
+        else return;
+        event.preventDefault();
+      } : undefined}
+    >
       <svg className="absolute inset-0 h-full w-full text-primary/80" viewBox="0 0 1000 64" preserveAspectRatio="none" aria-hidden="true">
         <path d={beatPath} fill="none" stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />
       </svg>

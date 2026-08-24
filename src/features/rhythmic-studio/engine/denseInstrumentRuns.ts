@@ -1,33 +1,12 @@
 import type { NoteEvent, StudioSettings } from "../types";
-import type { MarblePlatform, Vec2 } from "./marblePhysicsTypes";
+import type { Vec2 } from "./marblePhysicsTypes";
 import { courseWorldBounds } from "./marbleCourseConstraints";
+import type { DenseInstrumentKind, DenseInstrumentRun, DenseSettingsResolver, ChordCluster, RollingRouteCandidate } from "./denseInstrumentTypes";
+import { CHORD_GAP_MS } from "./denseInstrumentTypes";
 
-export type DenseInstrumentKind = "keyboard" | "pad-strip";
-
-export interface DenseInstrumentRun {
-  id: number;
-  surfaceId: number;
-  start: number;
-  end: number;
-  kind: DenseInstrumentKind;
-}
-
-export interface ChordCluster {
-  id: number;
-  start: number;
-  end: number;
-}
-
-export interface RollingRouteCandidate {
-  normal: Vec2;
-  outgoing: Vec2;
-  target: Vec2;
-  score: number;
-}
-
-type SettingsResolver = (index: number) => StudioSettings;
-
-export const CHORD_GAP_MS = 10;
+export type { DenseInstrumentKind, DenseInstrumentRun, ChordCluster, RollingRouteCandidate } from "./denseInstrumentTypes";
+export { CHORD_GAP_MS } from "./denseInstrumentTypes";
+export { decorateChordClusters, decorateDenseInstrumentRuns } from "./denseInstrumentDecoration";
 const DENSE_GAP_MS = 185;
 const MIN_RUN_STRIKES = 3;
 const MICRO_BURST_GAP_MS = 90;
@@ -72,7 +51,7 @@ function denseInstrumentKind(events: NoteEvent[], start: number, end: number): D
   return drumGroups >= Math.ceil(strikeGroups * 0.6) ? "pad-strip" : "keyboard";
 }
 
-export function denseInstrumentRuns(events: NoteEvent[], settings: StudioSettings, resolveSettings?: SettingsResolver) {
+export function denseInstrumentRuns(events: NoteEvent[], settings: StudioSettings, resolveSettings?: DenseSettingsResolver) {
   const runs: DenseInstrumentRun[] = [];
   let nextSurfaceId = 0;
   let index = 0;
@@ -302,156 +281,3 @@ export function rollingExitCandidate(
   };
 }
 
-function platformPositionsForSurface(platforms: MarblePlatform[], surface: DenseInstrumentRun) {
-  // Dense-run bounds are event indices. The solved platform array may be shorter
-  // after a planner dead-end/recovery, so map by platform.index instead of
-  // assuming event index === array position.
-  const positions: number[] = [];
-  for (let position = 0; position < platforms.length; position += 1) {
-    const eventIndex = platforms[position]?.index;
-    if (eventIndex === undefined) continue;
-    if (eventIndex >= surface.start && eventIndex <= surface.end) positions.push(position);
-  }
-  return positions;
-}
-
-function strikePositionsForSurface(platforms: MarblePlatform[], positions: number[]) {
-  const result: number[] = [];
-  let strikeAnchorMs = Number.NEGATIVE_INFINITY;
-  for (const position of positions) {
-    const eventTimeMs = platforms[position]?.event.timeMs;
-    if (eventTimeMs === undefined) continue;
-    if (!result.length || eventTimeMs - strikeAnchorMs > CHORD_GAP_MS) {
-      result.push(position);
-      strikeAnchorMs = eventTimeMs;
-    }
-  }
-  return result;
-}
-
-function markSurfacePlatforms(platforms: MarblePlatform[], positions: number[], surfaceId: number) {
-  for (const position of positions) platforms[position].denseSurfaceId = surfaceId;
-}
-
-function canonicalSurfaceFrame(from: MarblePlatform, to: MarblePlatform) {
-  let tangent = normalize({ x: to.hitX - from.hitX, y: to.hitY - from.hitY });
-  if (tangent.x < 0) tangent = { x: -tangent.x, y: -tangent.y };
-  return {
-    tangent,
-    normal: { x: tangent.y, y: -tangent.x },
-    angle: Math.atan2(tangent.y, tangent.x),
-  };
-}
-
-function terminalSurfaceFrame(platforms: MarblePlatform[], strikeIndices: number[], offset: number) {
-  const current = platforms[strikeIndices[offset]];
-  const previous = offset > 0 ? platforms[strikeIndices[offset - 1]] : undefined;
-  if (!current) return null;
-  if (previous) return canonicalSurfaceFrame(previous, current);
-  return { tangent: { x: 1, y: 0 }, normal: { x: 0, y: -1 }, angle: 0 };
-}
-
-function denseSurfaceThickness(kind: DenseInstrumentKind, settings: StudioSettings) {
-  const scale = kind === "keyboard" ? 0.38 : 0.44;
-  return Math.max(5.5, settings.ballSize * scale);
-}
-
-function decorateRollingSegment(
-  platform: MarblePlatform,
-  next: MarblePlatform,
-  kind: DenseInstrumentKind,
-  settings: StudioSettings,
-) {
-  const frame = canonicalSurfaceFrame(platform, next);
-  const distance = Math.hypot(next.hitX - platform.hitX, next.hitY - platform.hitY);
-  const overlap = Math.max(1.6, settings.ballSize * 0.18);
-  const faceCenter = {
-    x: (platform.hitX + next.hitX) * 0.5,
-    y: (platform.hitY + next.hitY) * 0.5,
-  };
-  platform.visualStyle = kind === "keyboard" ? "piano-key" : "instrument-pad";
-  platform.visualThickness = denseSurfaceThickness(kind, settings);
-  platform.visualX = faceCenter.x - frame.normal.x * settings.ballSize;
-  platform.visualY = faceCenter.y - frame.normal.y * settings.ballSize;
-  platform.visualWidth = Math.max(settings.ballSize * 0.92, distance + overlap);
-  platform.visualTiltRad = frame.angle;
-  platform.visualHidden = false;
-}
-
-function decorateTerminalStrike(
-  platform: MarblePlatform,
-  frame: ReturnType<typeof terminalSurfaceFrame>,
-  kind: DenseInstrumentKind,
-  settings: StudioSettings,
-) {
-  if (!frame) return;
-  const width = Math.max(settings.ballSize * 1.05, 13);
-  platform.visualStyle = kind === "keyboard" ? "piano-key" : "instrument-pad";
-  platform.visualThickness = denseSurfaceThickness(kind, settings);
-  platform.visualX = platform.hitX - frame.normal.x * settings.ballSize;
-  platform.visualY = platform.hitY - frame.normal.y * settings.ballSize;
-  platform.visualWidth = width;
-  platform.visualTiltRad = frame.angle;
-  platform.visualHidden = false;
-}
-
-export function decorateDenseInstrumentRuns(
-  platforms: MarblePlatform[],
-  runs: DenseInstrumentRun[],
-  settings: StudioSettings,
-  resolveSettings?: SettingsResolver,
-) {
-  if (!platforms.length || !runs.length) return platforms;
-  const decorated = platforms.map((platform) => ({ ...platform }));
-
-  // Planner modules remain bounded for search cost, but all modules carrying the
-  // same surfaceId are one playable phrase. Geometry follows the actual hit
-  // polyline; it must never be projected onto a straight first-to-last chord.
-  const surfaces = new Map<number, DenseInstrumentRun>();
-  for (const run of runs) {
-    const current = surfaces.get(run.surfaceId);
-    if (!current) surfaces.set(run.surfaceId, { ...run });
-    else {
-      current.start = Math.min(current.start, run.start);
-      current.end = Math.max(current.end, run.end);
-    }
-  }
-
-  for (const surface of surfaces.values()) {
-    const surfacePositions = platformPositionsForSurface(decorated, surface);
-    const strikeIndices = strikePositionsForSurface(decorated, surfacePositions);
-    markSurfacePlatforms(decorated, surfacePositions, surface.surfaceId);
-    if (!strikeIndices.length) continue;
-
-    for (let offset = 0; offset < strikeIndices.length; offset += 1) {
-      const index = strikeIndices[offset];
-      const localSettings = resolveSettings?.(index) ?? settings;
-      const platform = decorated[index];
-      const next = offset < strikeIndices.length - 1 ? decorated[strikeIndices[offset + 1]] : undefined;
-      if (next) decorateRollingSegment(platform, next, surface.kind, localSettings);
-      else decorateTerminalStrike(platform, terminalSurfaceFrame(decorated, strikeIndices, offset), surface.kind, localSettings);
-    }
-  }
-  return decorated;
-}
-
-export function decorateChordClusters(platforms: MarblePlatform[], clusters: ChordCluster[]) {
-  if (!platforms.length || !clusters.length) return platforms;
-  const decorated = platforms.map((platform) => ({ ...platform }));
-  for (const cluster of clusters) {
-    const first = decorated[cluster.start];
-    if (!first) continue;
-    first.visualStyle = "instrument-pad";
-    first.visualThickness = Math.max(5.8, first.thickness * 0.24);
-    // A chord inside a rolling lane becomes a slightly wider pad in that same
-    // surface, not a huge standalone plate laid across neighbouring keys. Chords
-    // outside dense runs preserve the collision-fitted width chosen by the planner.
-    first.visualWidth = first.denseRunId !== undefined
-      ? Math.max(first.visualWidth ?? 0, Math.min(first.width * 0.27, 30))
-      : first.visualWidth ?? Math.max(first.width * 0.82, 78);
-    for (let index = cluster.start + 1; index <= cluster.end && index < decorated.length; index += 1) {
-      decorated[index].visualHidden = true;
-    }
-  }
-  return decorated;
-}

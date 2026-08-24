@@ -1,0 +1,136 @@
+.rhythmic-production {
+  --background: 216 33% 7%;
+  --foreground: 204 30% 96%;
+  --card: 214 28% 10%;
+  --card-foreground: 204 30% 96%;
+  --popover: 214 28% 9%;
+  --popover-foreground: 204 30% 96%;
+  --primary: 188 88% 48%;
+  --primary-foreground: 216 45% 7%;
+  --secondary: 213 25% 16%;
+  --secondary-foreground: 204 30% 96%;
+  --muted: 213 23% 15%;
+  --muted-foreground: 207 14% 65%;
+  --accent: 43 95% 61%;
+  --accent-foreground: 217 45% 7%;
+  --border: 209 24% 22%;
+  --input: 209 24% 22%;
+  --ring: 43 95% 61%;
+  position: relative;
+  isolation: isolate;
+  color: hsl(var(--foreground));
+  background:
+    linear-gradient(hsl(208 35% 55% / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(208 35% 55% / 0.035) 1px, transparent 1px),
+    radial-gradient(circle at 52% -12%, hsl(188 88% 48% / 0.14), transparent 34rem),
+    radial-gradient(circle at 8% 16%, hsl(43 95% 61% / 0.08), transparent 24rem),
+    hsl(216 33% 7%);
+  background-size: 32px 32px, 32px 32px, auto, auto, auto;
+}
+
+.rhythmic-production::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  opacity: 0.18;
+  background-image: repeating-linear-gradient(105deg, transparent 0 86px, hsl(0 0% 100% / 0.035) 87px, transparent 88px 174px);
+}
+
+.rhythmic-side-panel section.rounded-2xl {
+  border-color: hsl(210 24% 25% / 0.85);
+  border-radius: 0.75rem;
+  background: linear-gradient(145deg, hsl(213 27% 13% / 0.96), hsl(216 30% 9% / 0.96));
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.035);
+  backdrop-filter: none;
+}
+
+.rhythmic-side-panel section.rounded-2xl > button:hover {
+  background: hsl(188 88% 48% / 0.055);
+}
+
+.rhythmic-side-panel section.rounded-2xl > div.border-t {
+  border-color: hsl(210 24% 22% / 0.9);
+}
+
+.rhythmic-preset {
+  border-color: hsl(210 24% 25% / 0.9);
+  background: hsl(215 28% 11% / 0.96);
+  color: hsl(204 30% 92%);
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.035);
+}
+
+.rhythmic-preset:hover {
+  border-color: hsl(188 88% 48% / 0.52);
+  background: hsl(211 28% 15% / 0.98);
+}
+
+.rhythmic-preset[aria-pressed="true"] {
+  border-color: hsl(43 95% 61% / 0.8);
+  background: linear-gradient(145deg, hsl(43 88% 58% / 0.18), hsl(213 28% 12%));
+  color: hsl(43 100% 83%);
+  box-shadow: inset 3px 0 0 hsl(43 95% 61%), 0 8px 28px hsl(43 95% 45% / 0.09);
+}
+
+.rhythmic-stage > div.rounded-xl,
+.rhythmic-stage > div.space-y-2,
+.rhythmic-stage > section {
+  border-color: hsl(210 24% 24% / 0.9);
+  background-color: hsl(214 28% 10% / 0.88);
+}
+
+.rhythmic-stage > div.mx-auto {
+  position: relative;
+  border-color: hsl(188 88% 48% / 0.24);
+  background: hsl(220 40% 3%);
+  box-shadow: 0 24px 80px hsl(220 60% 2% / 0.7), inset 0 0 0 1px hsl(0 0% 100% / 0.025);
+}
+
+.rhythmic-stage > div.mx-auto::before {
+  position: absolute;
+  z-index: 1;
+  inset: 0.5rem;
+  content: "";
+  pointer-events: none;
+  border: 1px solid hsl(0 0% 100% / 0.04);
+  border-radius: 0.7rem;
+}
+
+.rhythmic-scrollbar {
+  scrollbar-color: hsl(210 20% 32%) transparent;
+  scrollbar-width: thin;
+}
+
+.rhythmic-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.rhythmic-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: hsl(210 20% 32%);
+}
+
+.rhythmic-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(188 70% 42%);
+}
+
+@media (max-width: 1279px) {
+  .rhythmic-side-panel {
+    max-height: none;
+  }
+
+  .rhythmic-side-panel .rhythmic-scrollbar {
+    max-height: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rhythmic-production *,
+  .rhythmic-production *::before,
+  .rhythmic-production *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

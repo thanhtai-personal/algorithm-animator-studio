@@ -1,4 +1,5 @@
 import type { NoteEvent, StudioSettings } from './types';
+import { DEFAULT_COLLISION_VOLUME } from './lib/audioMix';
 
 export const DEFAULT_SETTINGS: StudioSettings = {
   exportFps: 60,
@@ -45,7 +46,7 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   ballSize: 15,
   particleCount: 1,
   synthPreset: 'piano',
-  synthVolume: 0.26,
+  synthVolume: DEFAULT_COLLISION_VOLUME,
   musicVolume: 1.3,
   synthReverb: 0.18,
   synthBrightness: 0.58,

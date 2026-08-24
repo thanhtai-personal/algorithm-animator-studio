@@ -95,9 +95,7 @@ export type ExportFps = (typeof EXPORT_FPS_OPTIONS)[number];
 export const BACKGROUND_PRESETS = [
   "spotlight",
   "deep-space",
-  "tube-board-dark",
   "comet-void",
-  "xylophone-room",
   "instrument-room",
 ] as const;
 
@@ -110,9 +108,17 @@ const LEGACY_BACKGROUND_PRESETS = [
   "stairway",
   "tube-tunnel",
   "toy-board",
+  "tube-board-dark",
+  "xylophone-room",
 ] as const;
 
 export type BackgroundPreset = (typeof BACKGROUND_PRESETS)[number] | (typeof LEGACY_BACKGROUND_PRESETS)[number];
+
+export function normalizeBackgroundPreset(preset: BackgroundPreset): BackgroundPreset {
+  if (preset === "tube-board-dark") return "spotlight";
+  if (preset === "xylophone-room") return "instrument-room";
+  return preset;
+}
 export type BackgroundFit = "cover" | "contain";
 export type LyricStyle = "karaoke" | "minimal" | "boxed";
 export type LyricPosition = "top" | "middle" | "bottom";

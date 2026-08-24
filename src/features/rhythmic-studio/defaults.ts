@@ -36,7 +36,7 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   colorPaletteMode: 'tube-accent',
   terrainProfile: 'tube-board',
   cameraProfile: 'tube-board',
-  backgroundPreset: 'tube-board-dark',
+  backgroundPreset: 'spotlight',
   backgroundMotion: 0.01,
   backgroundImageOpacity: 0.86,
   backgroundImageBlur: 0,

@@ -13,6 +13,7 @@ import type {
   StoredProject,
   StudioSettings,
   RhythmicRendererMode,
+  normalizeBackgroundPreset,
 } from "../types";
 
 export type MessageToken = { key: RhythmicTextKey; values?: Record<string, string | number> };
@@ -71,17 +72,23 @@ export class RhythmicStudioStore {
   }
 
   patch<K extends keyof StudioSettings>(key: K, value: StudioSettings[K]) {
-    this.settings = { ...this.settings, [key]: value };
+    const next = { ...this.settings, [key]: value };
+    next.backgroundPreset = normalizeBackgroundPreset(next.backgroundPreset);
+    this.settings = next;
     this.activePresetId = null;
   }
 
   applyVisualPreset(id: RhythmicPresetId, settings: Partial<StudioSettings>) {
-    this.settings = { ...this.settings, ...settings };
+    const next = { ...this.settings, ...settings };
+    next.backgroundPreset = normalizeBackgroundPreset(next.backgroundPreset);
+    this.settings = next;
     this.activePresetId = id;
   }
 
   replaceSettings(settings: StudioSettings) {
-    this.settings = { ...DEFAULT_SETTINGS, ...settings };
+    const next = { ...DEFAULT_SETTINGS, ...settings };
+    next.backgroundPreset = normalizeBackgroundPreset(next.backgroundPreset);
+    this.settings = next;
     this.activePresetId = null;
   }
 

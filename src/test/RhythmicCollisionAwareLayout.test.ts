@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS } from "../features/rhythmic-studio/defaults";
-import { platformClearance } from "../features/rhythmic-studio/engine/marbleCourseConstraints";
+import { platformClearance, trajectoryPlatformClearance } from "../features/rhythmic-studio/engine/marbleCourseConstraints";
 import { buildPhysicsCourse } from "../features/rhythmic-studio/engine/marbleCoursePlanner";
 import { marbleAtTime } from "../features/rhythmic-studio/lib/marbleCourse";
 import type { NoteEvent } from "../features/rhythmic-studio/types";
@@ -79,6 +79,26 @@ describe("collision-aware marble scene layout", () => {
           if (previous.visualHidden || sharesSurface(current, previous)) continue;
           expect(platformClearance(current, previous)).toBeGreaterThan(0.5);
         }
+      }
+    }
+  });
+
+  it("looks ahead before a future instrument can cut through an existing flight", () => {
+    // CK3 had one reproducible failure in the 16x90 stress set: seed 8 routed
+    // note 56 -> 57 through the body later placed for note 58. The future body
+    // does not exist when note 56 is chosen, so only multi-step planning can
+    // avoid this without a post-hoc teleport or destructive platform move.
+    const events = stressEvents(8, 90);
+    const platforms = buildPhysicsCourse(events, settings, 720, () => "#ffffff");
+
+    for (let routeIndex = 0; routeIndex < platforms.length - 1; routeIndex += 1) {
+      const start = platforms[routeIndex];
+      const end = platforms[routeIndex + 1];
+      if (start.motionMode === "hold") continue;
+      for (let futureIndex = routeIndex + 2; futureIndex < platforms.length; futureIndex += 1) {
+        const future = platforms[futureIndex];
+        if (future.visualHidden || sharesSurface(start, future) || sharesSurface(end, future)) continue;
+        expect(trajectoryPlatformClearance(future, start, end)).toBeGreaterThan(0.5);
       }
     }
   });

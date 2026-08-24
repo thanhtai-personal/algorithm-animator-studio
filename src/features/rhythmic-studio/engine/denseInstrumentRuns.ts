@@ -2,10 +2,13 @@ import type { NoteEvent, StudioSettings } from "../types";
 import type { MarblePlatform, Vec2 } from "./marblePhysicsTypes";
 import { courseWorldBounds } from "./marbleCourseConstraints";
 
+export type DenseInstrumentKind = "keyboard" | "pad-strip";
+
 export interface DenseInstrumentRun {
   id: number;
   start: number;
   end: number;
+  kind: DenseInstrumentKind;
 }
 
 export interface ChordCluster {
@@ -27,10 +30,27 @@ const CHORD_GAP_MS = 24;
 const DENSE_GAP_MS = 185;
 const MIN_RUN_NOTES = 4;
 const MAX_RUN_NOTES = 12;
+const ROLL_SLOPE = 0.075;
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const length = (v: Vec2) => Math.hypot(v.x, v.y);
+const normalize = (v: Vec2): Vec2 => {
+  const size = length(v);
+  return size > 1e-6 ? { x: v.x / size, y: v.y / size } : { x: 1, y: 0 };
+};
 
-function supportsDenseInstrumentRun(settings: StudioSettings) {
-  return settings.instrumentFamily !== "auto" || settings.terrainProfile === "xylophone";
+function supportsDenseInstrumentRun(_settings: StudioSettings) {
+  // Dense routing is a planner decision, not a preset-only decoration. In auto
+  // mode this is exactly where we want to switch from isolated obstacles to a
+  // continuous playable surface instead of disabling collision constraints.
+  return true;
+}
+
+function denseInstrumentKind(events: NoteEvent[], start: number, end: number): DenseInstrumentKind {
+  let drumNotes = 0;
+  for (let index = start; index <= end; index += 1) {
+    if (events[index]?.isDrum) drumNotes += 1;
+  }
+  return drumNotes >= Math.ceil((end - start + 1) * 0.6) ? "pad-strip" : "keyboard";
 }
 
 export function denseInstrumentRuns(events: NoteEvent[], settings: StudioSettings, resolveSettings?: SettingsResolver) {
@@ -53,15 +73,18 @@ export function denseInstrumentRuns(events: NoteEvent[], settings: StudioSetting
     }
 
     if (end - index + 1 >= MIN_RUN_NOTES) {
-      runs.push({ id: runs.length, start: index, end });
-      index = end + 1;
+      runs.push({ id: runs.length, start: index, end, kind: denseInstrumentKind(events, index, end) });
+      const nextGap = end < events.length - 1 ? events[end + 1].timeMs - events[end].timeMs : Infinity;
+      // Long dense passages are split into manageable keyboard modules, but the
+      // modules share their boundary note. That keeps the marble rolling through
+      // the seam instead of inserting a one-note ballistic hop every 12 keys.
+      index = nextGap > CHORD_GAP_MS && nextGap <= DENSE_GAP_MS ? end : end + 1;
     } else {
       index += 1;
     }
   }
   return runs;
 }
-
 
 export function chordClusters(events: NoteEvent[]) {
   const clusters: ChordCluster[] = [];
@@ -97,36 +120,142 @@ export function denseRunSegmentMap(runs: DenseInstrumentRun[]) {
   return bySegment;
 }
 
+export function denseRunNodeMap(runs: DenseInstrumentRun[]) {
+  const byNode = new Map<number, DenseInstrumentRun>();
+  for (const run of runs) {
+    for (let index = run.start; index <= run.end; index += 1) byNode.set(index, run);
+  }
+  return byNode;
+}
+
+export function denseRunEndMap(runs: DenseInstrumentRun[]) {
+  const byEnd = new Map<number, DenseInstrumentRun>();
+  for (const run of runs) byEnd.set(run.end, run);
+  return byEnd;
+}
+
+function rollSpeed(incoming: Vec2, enteringRun: boolean, settings: StudioSettings) {
+  const base = clamp(145 + settings.laneSpread * 0.1, 150, 195);
+  if (enteringRun) {
+    // A landing transfers part of the incoming momentum into the keyboard lane.
+    // The route is then placed from that physically plausible speed rather than
+    // teleporting the ball to a pre-selected key position.
+    return clamp(Math.abs(incoming.x) * 0.58 + base * 0.62, 145, 205);
+  }
+  return clamp(length(incoming), 145, 210);
+}
+
+
+function runExitReserve(events: NoteEvent[], run: DenseInstrumentRun, speed: number, ballSize: number) {
+  if (run.end >= events.length - 1) return 0;
+  const nextGap = events[run.end + 1].timeMs - events[run.end].timeMs;
+  if (nextGap <= DENSE_GAP_MS) return 0;
+  // Leave enough horizontal room for the marble to roll off the last key and
+  // enter a free-flight arc. Without this reserve, a perfectly good keyboard can
+  // terminate at the wall and force an artificial bounce on its final key.
+  return clamp(speed * Math.min(0.48, Math.max(0.08, nextGap / 1000)) * 0.72, ballSize * 2.2, 78);
+}
+
+function runHorizontalNeed(events: NoteEvent[], index: number, run: DenseInstrumentRun, speed: number, ballSize: number) {
+  let total = 0;
+  for (let segment = index; segment < run.end; segment += 1) {
+    const dt = Math.max(0.08, (events[segment + 1].timeMs - events[segment].timeMs) / 1000);
+    total += clamp(speed * dt, ballSize * 1.08, 34);
+  }
+  return total;
+}
+
 export function rollingRouteCandidate(
   hit: Vec2,
-  spanMs: number,
+  incoming: Vec2,
+  events: NoteEvent[],
+  index: number,
+  run: DenseInstrumentRun,
   preferredDirection: number,
   settings: StudioSettings,
   width: number,
-  stepsRemaining = 1,
 ): RollingRouteCandidate {
+  const spanMs = Math.max(1, events[index + 1].timeMs - events[index].timeMs);
   const dt = Math.max(0.08, spanMs / 1000);
   const bounds = courseWorldBounds(settings, width);
   const margin = Math.max(settings.ballSize * 2.2, 28);
   const minX = bounds.min + margin;
   const maxX = bounds.max - margin;
-  const speed = clamp(145 + settings.laneSpread * 0.1, 155, 195);
-  let step = clamp(speed * dt, settings.ballSize * 1.08, 32);
-  let direction = preferredDirection || 1;
-  const forwardRoom = direction > 0 ? maxX - hit.x : hit.x - minX;
-  const reverseRoom = direction > 0 ? hit.x - minX : maxX - hit.x;
-  const neededRoom = step * Math.max(1, stepsRemaining);
-  if (forwardRoom < neededRoom && reverseRoom > forwardRoom) direction *= -1;
+  const speed = rollSpeed(incoming, index === run.start, settings);
+  let step = clamp(speed * dt, settings.ballSize * 1.08, 34);
+  let direction = preferredDirection || (incoming.x >= 0 ? 1 : -1) || 1;
+
+  // Pick the lane direction once at entry using the room required by the whole
+  // run. Subsequent keys inherit the outgoing velocity sign, so the strip never
+  // zig-zags merely because one local key is close to a wall.
+  if (index === run.start) {
+    const totalNeed = runHorizontalNeed(events, index, run, speed, settings.ballSize)
+      + runExitReserve(events, run, speed, settings.ballSize);
+    const forwardRoom = direction > 0 ? maxX - hit.x : hit.x - minX;
+    const reverseRoom = direction > 0 ? hit.x - minX : maxX - hit.x;
+    if (forwardRoom < totalNeed && reverseRoom > forwardRoom) direction *= -1;
+  }
+
+  const remaining = Math.max(1, run.end - index);
   const availableRoom = direction > 0 ? maxX - hit.x : hit.x - minX;
-  step = Math.min(step, Math.max(settings.ballSize * 0.9, availableRoom / Math.max(1, stepsRemaining)));
-  const targetX = clamp(hit.x + direction * step, minX, maxX);
-  const drop = clamp(2.2 + dt * 20, 3.2, 6.4);
-  const target = { x: targetX, y: hit.y + drop };
+  step = Math.min(step, Math.max(settings.ballSize * 0.95, availableRoom / remaining));
+  const dx = direction * step;
+  const dy = Math.abs(dx) * ROLL_SLOPE;
+  const target = { x: clamp(hit.x + dx, minX, maxX), y: hit.y + dy };
+  const actual = { x: target.x - hit.x, y: target.y - hit.y };
+  const tangent = normalize(actual);
+  const normal = { x: tangent.y, y: -tangent.x };
   return {
-    normal: { x: 0, y: -1 },
-    outgoing: { x: (target.x - hit.x) / dt, y: (target.y - hit.y) / dt },
+    normal,
+    outgoing: { x: actual.x / dt, y: actual.y / dt },
     target,
-    score: Math.abs(step - Math.abs(target.x - hit.x)) * 0.4,
+    score: Math.abs(step - Math.abs(actual.x)) * 0.45,
+  };
+}
+
+export function rollingExitCandidate(
+  hit: Vec2,
+  incoming: Vec2,
+  spanMs: number,
+  settings: StudioSettings,
+  width: number,
+  gravity: number,
+): RollingRouteCandidate | null {
+  const dt = Math.max(0.08, spanMs / 1000);
+  const bounds = courseWorldBounds(settings, width);
+  const target = {
+    x: hit.x + incoming.x * dt,
+    y: hit.y + incoming.y * dt + 0.5 * gravity * dt * dt,
+  };
+  const inset = Math.max(settings.ballSize * 1.8, 24);
+  if (target.x < bounds.min + inset || target.x > bounds.max - inset) return null;
+  const tangent = normalize(incoming);
+  const axisTangent = tangent.x >= 0 ? tangent : { x: -tangent.x, y: -tangent.y };
+  const normal = { x: axisTangent.y, y: -axisTangent.x };
+  return {
+    normal,
+    // No bounce impulse here. The final key is the edge of the continuous lane;
+    // the marble keeps its tangent velocity and gravity takes over after it rolls
+    // off, which removes the visible velocity discontinuity at dense-run exits.
+    outgoing: { ...incoming },
+    target,
+    score: 0,
+  };
+}
+
+function runAxis(platforms: MarblePlatform[], run: DenseInstrumentRun) {
+  const first = platforms[run.start];
+  const last = platforms[Math.min(run.end, platforms.length - 1)];
+  if (!first || !last) return null;
+  const dx = last.hitX - first.hitX;
+  const dy = last.hitY - first.hitY;
+  const tangent = normalize({ x: dx, y: dy });
+  const axisTangent = tangent.x >= 0 ? tangent : { x: -tangent.x, y: -tangent.y };
+  return {
+    first,
+    tangent: axisTangent,
+    normal: { x: axisTangent.y, y: -axisTangent.x },
+    angle: Math.atan2(axisTangent.y, axisTangent.x),
   };
 }
 
@@ -139,25 +268,43 @@ export function decorateDenseInstrumentRuns(
   if (!platforms.length || !runs.length) return platforms;
   const decorated = platforms.map((platform) => ({ ...platform }));
   for (const run of runs) {
-    const first = decorated[run.start];
-    const last = decorated[Math.min(run.end, decorated.length - 1)];
-    if (!first || !last) continue;
-    const firstSettings = resolveSettings?.(run.start) ?? settings;
-    const dx = last.hitX - first.hitX;
-    const dy = last.hitY - first.hitY;
-    const runDistance = Math.hypot(dx, dy);
-    first.visualStyle = "piano-keyboard";
-    first.visualX = (first.hitX + last.hitX) * 0.5;
-    first.visualY = (first.hitY + last.hitY) * 0.5 + firstSettings.ballSize;
-    first.visualWidth = clamp(runDistance + Math.max(52, firstSettings.ballSize * 3.2), 150, 430);
-    first.visualTiltRad = clamp(Math.atan2(dy, dx), -0.24, 0.24);
-    for (let index = run.start + 1; index <= run.end && index < decorated.length; index += 1) {
-      decorated[index].visualHidden = true;
+    const axis = runAxis(decorated, run);
+    if (!axis) continue;
+    const count = run.end - run.start + 1;
+    const scalar: number[] = [];
+    for (let offset = 0; offset < count; offset += 1) {
+      const platform = decorated[run.start + offset];
+      const fromStart = { x: platform.hitX - axis.first.hitX, y: platform.hitY - axis.first.hitY };
+      scalar.push(fromStart.x * axis.tangent.x + fromStart.y * axis.tangent.y);
+    }
+
+    for (let offset = 0; offset < count; offset += 1) {
+      const index = run.start + offset;
+      const platform = decorated[index];
+      if (!platform) continue;
+      const localSettings = resolveSettings?.(index) ?? settings;
+      const current = scalar[offset];
+      const previousGap = offset > 0 ? Math.max(1, current - scalar[offset - 1]) : Math.max(1, scalar[1] - current);
+      const nextGap = offset < count - 1 ? Math.max(1, scalar[offset + 1] - current) : previousGap;
+      const left = offset === 0 ? current - nextGap * 0.5 : (scalar[offset - 1] + current) * 0.5;
+      const right = offset === count - 1 ? current + previousGap * 0.5 : (current + scalar[offset + 1]) * 0.5;
+      const center = (left + right) * 0.5;
+      const seam = run.kind === "keyboard" ? 1.2 : 2.4;
+      const keyWidth = Math.max(localSettings.ballSize * 1.04, right - left - seam);
+      const lineHit = {
+        x: axis.first.hitX + axis.tangent.x * center,
+        y: axis.first.hitY + axis.tangent.y * center,
+      };
+      platform.visualStyle = run.kind === "keyboard" ? "piano-key" : "instrument-pad";
+      platform.visualX = lineHit.x - axis.normal.x * localSettings.ballSize;
+      platform.visualY = lineHit.y - axis.normal.y * localSettings.ballSize;
+      platform.visualWidth = keyWidth;
+      platform.visualTiltRad = axis.angle;
+      platform.visualHidden = false;
     }
   }
   return decorated;
 }
-
 
 export function decorateChordClusters(platforms: MarblePlatform[], clusters: ChordCluster[]) {
   if (!platforms.length || !clusters.length) return platforms;

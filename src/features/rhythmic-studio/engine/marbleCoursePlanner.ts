@@ -16,8 +16,11 @@ import {
   decorateChordClusters,
   decorateDenseInstrumentRuns,
   denseInstrumentRuns,
+  denseRunEndMap,
+  denseRunNodeMap,
   denseRunSegmentMap,
   holdRouteCandidate,
+  rollingExitCandidate,
   rollingRouteCandidate,
 } from "./denseInstrumentRuns";
 
@@ -297,6 +300,8 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
   const showcaseCourse = initialSettings.instrumentFamily !== "auto";
   const denseRuns = denseInstrumentRuns(events, settings, resolveSettings);
   const denseSegments = denseRunSegmentMap(denseRuns);
+  const denseNodes = denseRunNodeMap(denseRuns);
+  const denseEnds = denseRunEndMap(denseRuns);
   const chords = chordClusters(events);
   const chordSegments = chordSegmentMap(chords);
   const beamWidth = showcaseCourse
@@ -320,16 +325,23 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
 
     for (const state of states) {
       const denseRun = denseSegments.get(index);
+      const denseNode = denseNodes.get(index);
+      const denseEnd = denseEnds.get(index);
       const chord = chordSegments.get(index);
+      const smoothExit = denseEnd && index < events.length - 1
+        ? rollingExitCandidate(state.hit, state.incoming, spanMs, stepSettings, width, profile.gravity)
+        : null;
       const candidates = chord
         ? [holdRouteCandidate(state.hit, state.incoming)]
         : denseRun
-          ? [rollingRouteCandidate(state.hit, spanMs, state.preferredDirection, stepSettings, width, denseRun.end - index)]
-          : bounceCandidates(index, state.hit, state.incoming, spanMs, state.preferredDirection, pitch, stepSettings, width);
+          ? [rollingRouteCandidate(state.hit, state.incoming, events, index, denseRun, state.preferredDirection, stepSettings, width)]
+          : smoothExit
+            ? [smoothExit]
+            : bounceCandidates(index, state.hit, state.incoming, spanMs, state.preferredDirection, pitch, stepSettings, width);
       for (const bounce of candidates) {
         const platform = obstacleFromImpact(index, state.hit, bounce.normal, bounce.outgoing, stepSettings, event, resolveColor(index, pitch), platformWidth, profile.gravity);
         platform.motionMode = chord ? "hold" : denseRun ? "roll" : "ballistic";
-        platform.denseRunId = denseRun?.id;
+        platform.denseRunId = denseNode?.id;
         platform.chordClusterId = chord?.id;
         if (index === events.length - 1) {
           expanded.push({ ...state, score: state.score + bounce.score, node: { platform, parent: state.node } });

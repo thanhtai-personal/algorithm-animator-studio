@@ -117,12 +117,21 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
         const worldY = -(baseY - platform.normalY * normalInset / RHYTHMIC_WORLD_SCALE) * RHYTHMIC_WORLD_SCALE;
         const hasBeenHit = platform.event.timeMs <= timeMs;
         const immediateHit = platform.index === impactIndex ? Math.max(0, impactStrength) : 0;
-        const latchedHit = platformSettings.impactPlatformLight && hasBeenHit
+        const ageMs = timeMs - platform.event.timeMs;
+        const denseKeyPulse = platform.denseRunId !== undefined && ageMs >= 0 && ageMs < 280
+          ? 1 - ageMs / 280
+          : 0;
+        // A continuous keyboard is one physical lane but each key is still one
+        // note. Dense keys therefore pulse independently and fade instead of all
+        // previously touched keys remaining latched on at once.
+        const latchedHit = platformSettings.impactPlatformLight && hasBeenHit && platform.denseRunId === undefined
           ? 0.62 + immediateHit * 0.38
           : 0;
-        const effectiveGlow = platformSettings.impactPlatformLight
-          ? latchedHit * (0.82 + platformSettings.platformGlow * 0.98)
-          : platformSettings.platformGlow;
+        const effectiveGlow = platform.denseRunId !== undefined
+          ? (0.08 + Math.max(denseKeyPulse, immediateHit) * (0.9 + platformSettings.platformGlow * 0.78))
+          : platformSettings.impactPlatformLight
+            ? latchedHit * (0.82 + platformSettings.platformGlow * 0.98)
+            : platformSettings.platformGlow;
         const depth = d * (0.92 + platformSettings.platformDetail * 0.12);
         const frontDepth = frontDepthForStyle(style, h, depth);
         return (

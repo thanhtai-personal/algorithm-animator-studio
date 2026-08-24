@@ -194,13 +194,24 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
   const range = visiblePlatformRange(platforms, cameraY, height);
   for (let platformIndex = range.start; platformIndex < range.end; platformIndex += 1) {
     const platform = platforms[platformIndex];
+    if (platform.visualHidden) continue;
     if (!shouldShowPlatform(platform, timeMs, settings)) continue;
-    const y = platform.y - cameraY;
+    const displayPlatform = platform.visualX !== undefined || platform.visualY !== undefined || platform.visualWidth !== undefined || platform.visualTiltRad !== undefined
+      ? {
+          ...platform,
+          x: platform.visualX ?? platform.x,
+          y: platform.visualY ?? platform.y,
+          width: platform.visualWidth ?? platform.width,
+          tiltRad: platform.visualTiltRad ?? platform.tiltRad,
+        }
+      : platform;
+    const y = displayPlatform.y - cameraY;
     if (y < -260 || y > height + 280) continue;
     if (!live && rendered >= maxIdleItems) break;
     const override = overrideForNode(platform.index, courseOverrides);
     if (!override || isPlatformCourseItem(override.style)) {
-      drawStyledPlatform(ctx, platform, y, timeMs, settings, override && isPlatformCourseItem(override.style) ? override.style : undefined, quality);
+      const forcedStyle = platform.visualStyle ?? (override && isPlatformCourseItem(override.style) ? override.style : undefined);
+      drawStyledPlatform(ctx, displayPlatform, y, timeMs, settings, forcedStyle, quality);
       rendered += 1;
     }
   }

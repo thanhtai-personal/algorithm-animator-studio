@@ -14,7 +14,7 @@ export function TerrainFrame({ studio }: { studio: RhythmicStudioController }) {
   const platformOptions = PLATFORM_STYLES.map((value) => ({ value, label: platformLabel(value) }));
   const mixOptions = (["single", "alternate", "accent", "shuffle"] as const).map((value) => ({ value, label: t(`platformMix.${value}` as RhythmicTextKey) }));
   const s = studio.settings;
-  return <ControlFrame title={layoutText(lang, "tabs.terrain")} subtitle={`${studio.timeline.length} ${t("canvas.beats")}`} icon={<Mountain className="h-4 w-4 text-primary" />} collapsible={false}>
+  return <ControlFrame title={layoutText(lang, "tabs.terrain")} subtitle={`${studio.timeline.length} ${t("canvas.beats")}`} icon={<Mountain className="h-4 w-4 text-primary" />} defaultOpen={false}>
     <SelectField label={t("course.platformMix")} value={s.platformMixMode} options={mixOptions} onChange={(value) => studio.patch("platformMixMode", value as StudioSettings["platformMixMode"])} />
     <SelectField label={t("course.primaryStyle")} value={s.platformPrimaryStyle} options={platformOptions} onChange={(value) => studio.patch("platformPrimaryStyle", value as StudioSettings["platformPrimaryStyle"])} />
     <SelectField label={t("course.secondaryStyle")} value={s.platformSecondaryStyle} options={platformOptions} onChange={(value) => studio.patch("platformSecondaryStyle", value as StudioSettings["platformSecondaryStyle"])} />

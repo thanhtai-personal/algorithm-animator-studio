@@ -155,7 +155,7 @@ function StarField() {
 }
 
 function CometSpace() {
-  const rings = useMemo(() => Array.from({ length: 12 }, (_, i) => i), []);
+  const rings = useMemo(() => Array.from({ length: 9 }, (_, i) => i), []);
   return (
     <group>
       <StarField />
@@ -166,13 +166,13 @@ function CometSpace() {
       {rings.map((index) => {
         const left = index % 2 === 0;
         return (
-          <group key={index} position={[left ? -3.1 : 3.3, 7 - index * 12.4, -5 - (index % 3) * 0.7]} rotation={[0.08, left ? -0.14 : 0.14, left ? -0.28 : 0.28]}>
+          <group key={index} position={[left ? -5.2 : 5.4, 7 - index * 14.4, -6 - (index % 3) * 0.84]} rotation={[0.08, left ? -0.18 : 0.18, left ? -0.36 : 0.36]}>
             <mesh>
-              <torusGeometry args={[2.8 + (index % 3) * 0.34, 0.045, 10, 80, Math.PI * 1.55]} />
+              <torusGeometry args={[2.2 + (index % 3) * 0.28, 0.038, 10, 72, Math.PI * 1.3]} />
               <meshStandardMaterial
                 color={left ? "#6680ff" : "#e35fe8"}
                 emissive={left ? "#526eff" : "#d74cdf"}
-                emissiveIntensity={1.15}
+                emissiveIntensity={0.95}
                 roughness={0.24}
                 metalness={0.36}
               />
@@ -180,8 +180,8 @@ function CometSpace() {
           </group>
         );
       })}
-      <GlowSprite position={[-4.7, -24, -6.5]} scale={[13, 26, 1]} color="#365cff" opacity={0.25} />
-      <GlowSprite position={[5.2, -64, -7]} scale={[14, 30, 1]} color="#da45e9" opacity={0.22} />
+      <GlowSprite position={[-5.6, -24, -6.5]} scale={[12, 24, 1]} color="#365cff" opacity={0.2} />
+      <GlowSprite position={[5.9, -64, -7]} scale={[13, 28, 1]} color="#da45e9" opacity={0.18} />
       <GlowSprite position={[0, -112, -8]} scale={[18, 24, 1]} color="#49b8ff" opacity={0.12} />
     </group>
   );
@@ -219,28 +219,28 @@ function XylophoneRoom() {
           <meshStandardMaterial color={index % 2 ? "#8cd4ff" : "#f2cc7a"} roughness={0.34} metalness={0.06} depthWrite={false} />
         </mesh>
       ))}
-      <RoundedBox position={[0, -55, -2.72]} args={[11.8, 92, 0.32]} radius={0.08} smoothness={4} receiveShadow>
+      <RoundedBox position={[0, -55, -3.02]} args={[11.8, 92, 0.32]} radius={0.08} smoothness={4} receiveShadow>
         <meshStandardMaterial color="#aa7648" roughness={0.74} metalness={0.02} />
       </RoundedBox>
       {floorSlats.map((index) => (
-        <mesh key={index} position={[0, 8 - index * 10.4, -2.5]} castShadow>
+        <mesh key={index} position={[0, 8 - index * 10.4, -2.82]} castShadow>
           <boxGeometry args={[10.3 - Math.min(index, 6) * 0.16, 0.2, 0.06]} />
           <meshStandardMaterial color={index % 2 ? "#c38d58" : "#a26e42"} roughness={0.64} metalness={0.02} />
         </mesh>
       ))}
       {[0, 1].map((line) => (
-        <mesh key={`rail-${line}`} position={[0.18 + line * 0.62, -16.2 + line * 2.2, -2.3]} rotation={[0, 0, -0.2]} castShadow>
+        <mesh key={`rail-${line}`} position={[0.18 + line * 0.62, -16.2 + line * 2.2, -2.56]} rotation={[0, 0, -0.2]} castShadow>
           <cylinderGeometry args={[0.05, 0.05, 7.2, 16]} />
           <meshStandardMaterial color="#9c784f" roughness={0.28} metalness={0.58} />
         </mesh>
       ))}
       {[0, 1, 2, 3, 4, 5].map((index) => (
-        <RoundedBox key={`key-${index}`} position={[-3.9 + index * 1.4, -16.4 + index * 1.02, -2.16]} args={[1.5 - index * 0.07, 0.4, 0.24]} radius={0.08} smoothness={4} castShadow>
+        <RoundedBox key={`key-${index}`} position={[-3.9 + index * 1.4, -16.4 + index * 1.02, -2.42]} args={[1.5 - index * 0.07, 0.4, 0.24]} radius={0.08} smoothness={4} castShadow>
           <meshPhysicalMaterial color={accents[index]} roughness={0.28} clearcoat={0.78} />
         </RoundedBox>
       ))}
       {[-3.6, -1.6, 0.4, 2.4].map((x, index) => (
-        <mesh key={`resonator-${x}`} position={[x, -17.35 + index * 0.98, -2.42]} castShadow>
+        <mesh key={`resonator-${x}`} position={[x, -17.35 + index * 0.98, -2.68]} castShadow>
           <boxGeometry args={[0.2, 0.46 - index * 0.04, 0.18]} />
           <meshStandardMaterial color="#6a4b31" roughness={0.52} metalness={0.08} />
         </mesh>

@@ -17,7 +17,7 @@ export function VisualFrame({ studio }: { studio: RhythmicStudioController }) {
     preview: <BallStylePreview style={value} />,
   }));
   const s = studio.settings;
-  return <ControlFrame title={t("section.visual")} icon={<Sparkles className="h-4 w-4 text-primary" />} collapsible={false}>
+  return <ControlFrame title={t("section.visual")} icon={<Sparkles className="h-4 w-4 text-primary" />} defaultOpen={false}>
     <ToggleField label={t("visual.impactPulse")} checked={s.pulseAnimation} onChange={(value) => studio.patch("pulseAnimation", value)} />
     <ToggleField label={t("visual.marbleGlow")} checked={s.glowAnimation} onChange={(value) => studio.patch("glowAnimation", value)} />
     <PreviewChoiceGrid label={t("visual.ballStyle")} value={s.ballStyle} options={ballOptions} columns="grid-cols-2" onChange={(value) => studio.patch("ballStyle", value as typeof s.ballStyle)} />

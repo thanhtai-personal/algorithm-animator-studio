@@ -14,22 +14,24 @@ export const QuickPresetBar = observer(function QuickPresetBar({ studio }: { stu
       <p className="text-sm font-semibold">{presetText(lang, "title")}</p>
       <p className="text-xs leading-relaxed text-muted-foreground">{presetText(lang, "hint")}</p>
     </div>
-    <div className="grid grid-cols-3 gap-2">
-      {RHYTHMIC_PRESET_IDS.map((id) => {
-        const active = studio.activePresetId === id;
-        return <Button
-          key={id}
-          type="button"
-          variant={active ? "default" : "outline"}
-          title={`${presetText(lang, id)} — ${presetText(lang, `${id}.hint`)}`}
-          className="relative h-auto min-w-0 flex-col items-stretch gap-2 overflow-hidden px-2 py-2 text-left"
-          onClick={() => studio.applyQuickPreset(id)}
-        >
-          <span className="w-full overflow-hidden rounded-lg border border-border/60 bg-background/20"><PresetThumbnail presetId={id} /></span>
-          <span className="min-w-0 text-center text-[11px] font-semibold leading-tight">{presetText(lang, id)}</span>
-          {active && <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-background text-foreground shadow"><Check className="h-3 w-3" /></span>}
-        </Button>;
-      })}
+    <div className="-mx-1 overflow-x-auto px-1 pb-1">
+      <div className="flex min-w-max gap-2">
+        {RHYTHMIC_PRESET_IDS.map((id) => {
+          const active = studio.activePresetId === id;
+          return <Button
+            key={id}
+            type="button"
+            variant={active ? "default" : "outline"}
+            title={`${presetText(lang, id)} — ${presetText(lang, `${id}.hint`)}`}
+            className="relative h-auto w-[132px] shrink-0 flex-col items-stretch gap-2 overflow-hidden px-2 py-2 text-left"
+            onClick={() => studio.applyQuickPreset(id)}
+          >
+            <span className="w-full overflow-hidden rounded-lg border border-border/60 bg-background/20"><PresetThumbnail presetId={id} /></span>
+            <span className="min-w-0 text-center text-[11px] font-semibold leading-tight">{presetText(lang, id)}</span>
+            {active && <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-background text-foreground shadow"><Check className="h-3 w-3" /></span>}
+          </Button>;
+        })}
+      </div>
     </div>
     <Button
       type="button"

@@ -1,5 +1,3 @@
-import { Mountain, Move3d, Music2, Sparkles } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import type { RhythmicStudioController } from "../../hooks/useRhythmicStudioController";
 import { layoutText } from "../../layoutI18n";
@@ -22,18 +20,12 @@ export function RhythmicPrimaryControls({ studio }: { studio: RhythmicStudioCont
 
     <QuickPresetBar studio={studio} />
 
-    <Tabs defaultValue="source" className="min-w-0">
-      <TabsList className="grid h-auto w-full grid-cols-4 gap-1 p-1">
-        <TabsTrigger value="source" className="min-w-0 gap-1 px-2 py-2.5 text-[11px]"><Music2 className="h-4 w-4 shrink-0" />{layoutText(lang, "tabs.source")}</TabsTrigger>
-        <TabsTrigger value="terrain" className="min-w-0 gap-1 px-2 py-2.5 text-[11px]"><Mountain className="h-4 w-4 shrink-0" />{layoutText(lang, "tabs.terrain")}</TabsTrigger>
-        <TabsTrigger value="motion" className="min-w-0 gap-1 px-2 py-2.5 text-[11px]"><Move3d className="h-4 w-4 shrink-0" />{layoutText(lang, "tabs.motion")}</TabsTrigger>
-        <TabsTrigger value="visual" className="min-w-0 gap-1 px-2 py-2.5 text-[11px]"><Sparkles className="h-4 w-4 shrink-0" />{layoutText(lang, "tabs.visual")}</TabsTrigger>
-      </TabsList>
-      <TabsContent value="source" className="mt-3"><SourceFrame studio={studio} /></TabsContent>
-      <TabsContent value="terrain" className="mt-3"><TerrainFrame studio={studio} /></TabsContent>
-      <TabsContent value="motion" className="mt-3"><MotionFrame studio={studio} /></TabsContent>
-      <TabsContent value="visual" className="mt-3"><VisualFrame studio={studio} /></TabsContent>
-    </Tabs>
+    <div className="space-y-3">
+      <SourceFrame studio={studio} />
+      <TerrainFrame studio={studio} />
+      <MotionFrame studio={studio} />
+      <VisualFrame studio={studio} />
+    </div>
   </aside>;
 }
 

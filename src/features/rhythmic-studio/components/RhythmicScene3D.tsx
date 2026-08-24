@@ -68,9 +68,9 @@ function noteDensity(events: NoteEvent[], timeMs: number, windowMs = 900) {
 }
 
 function cameraLookAheadMs(settings: StudioSettings) {
-  if (settings.cameraProfile === "comet") return 650;
-  if (settings.cameraProfile === "xylophone") return 540;
-  if (settings.cameraProfile === "tube-board") return 470;
+  if (settings.cameraProfile === "comet") return 560;
+  if (settings.cameraProfile === "xylophone") return 460;
+  if (settings.cameraProfile === "tube-board") return 380;
   return 420;
 }
 
@@ -195,52 +195,59 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
     const jumpDistance = world.distanceTo(aheadWorld);
     const density = noteDensity(props.events, timeMs);
     const speed = velocity.length();
-    const profileZoom = frameSettings.cameraProfile === "xylophone" ? 1.55 : (frameSettings.cameraProfile === "comet" ? 0.5 : 0);
-    const adaptiveZ = THREE.MathUtils.clamp(
-      CAMERA_Z + profileZoom + jumpDistance * 0.18 + Math.min(0.45, speed * 0.018) - Math.min(0.75, density * 0.035),
-      frameSettings.cameraProfile === "xylophone" ? 11.2 : 8.8,
-      frameSettings.cameraProfile === "xylophone" ? 15.8 : 12.8,
-    );
-    const anchorOffset = (0.5 - frameSettings.cameraAnchor) * 7.2;
     const isXylophone = frameSettings.cameraProfile === "xylophone";
     const isTubeBoard = frameSettings.cameraProfile === "tube-board";
-    const lateralFactor = isXylophone ? 0.18 : isTubeBoard ? 0.2 : 0.28;
-    const lateralClamp = isXylophone ? 0.56 : isTubeBoard ? 0.62 : 0.95;
-    const verticalFactor = isXylophone ? 0.009 : isTubeBoard ? 0.01 : 0.012;
-    const lateralLead = THREE.MathUtils.clamp((aheadWorld.x - world.x) * lateralFactor + velocity.x * (lateralFactor * 0.06), -lateralClamp, lateralClamp);
-    const verticalLag = THREE.MathUtils.clamp(velocity.y * verticalFactor, -0.26, 0.32);
-    cameraTarget.set(world.x + lateralLead, world.y + anchorOffset - verticalLag, adaptiveZ + world.z * 0.18);
+    const isComet = frameSettings.cameraProfile === "comet";
+    const profileZoom = isXylophone ? 1.95 : isComet ? 0.92 : isTubeBoard ? 1.05 : 0.4;
+    const adaptiveZ = THREE.MathUtils.clamp(
+      CAMERA_Z + profileZoom + jumpDistance * (isComet ? 0.15 : 0.13) + Math.min(0.42, speed * 0.015) - Math.min(0.58, density * 0.028),
+      isXylophone ? 11.9 : isTubeBoard ? 10.1 : 9.6,
+      isXylophone ? 15.9 : isTubeBoard ? 13.7 : 13.6,
+    );
+    const anchorOffset = (0.5 - frameSettings.cameraAnchor) * 6.4;
+    const lateralFactor = isXylophone ? 0.13 : isTubeBoard ? 0.16 : 0.2;
+    const lateralClamp = isXylophone ? 0.42 : isTubeBoard ? 0.48 : 0.62;
+    const verticalFactor = isXylophone ? 0.006 : isTubeBoard ? 0.0075 : 0.009;
+    const lateralLead = THREE.MathUtils.clamp((aheadWorld.x - world.x) * lateralFactor + velocity.x * (lateralFactor * 0.04), -lateralClamp, lateralClamp);
+    const verticalLag = THREE.MathUtils.clamp(velocity.y * verticalFactor, -0.18, 0.24);
+    const observerOffsetX = isXylophone ? 0.16 : isTubeBoard ? 0.22 : -0.12;
+    const observerLiftY = isXylophone ? 0.18 : isTubeBoard ? 0.12 : 0.06;
+    cameraTarget.set(world.x + lateralLead + observerOffsetX, world.y + anchorOffset - verticalLag + observerLiftY, adaptiveZ + world.z * (isComet ? 0.14 : 0.08));
 
-    const damping = 4.8 + THREE.MathUtils.clamp(frameSettings.cameraSmoothing, 0.03, 0.65) * 14;
+    const damping = 5.4 + THREE.MathUtils.clamp(frameSettings.cameraSmoothing, 0.03, 0.65) * 12.5;
     if (snapCamera || !Number.isFinite(camera.position.x)) {
       camera.position.copy(cameraTarget);
     } else {
       camera.position.x = THREE.MathUtils.damp(camera.position.x, cameraTarget.x, damping, deltaSeconds);
       camera.position.y = THREE.MathUtils.damp(camera.position.y, cameraTarget.y, damping, deltaSeconds);
-      camera.position.z = THREE.MathUtils.damp(camera.position.z, cameraTarget.z, damping * 0.82, deltaSeconds);
+      camera.position.z = THREE.MathUtils.damp(camera.position.z, cameraTarget.z, damping * 0.74, deltaSeconds);
     }
 
     lookTarget.set(
-      THREE.MathUtils.lerp(world.x, aheadWorld.x, 0.58),
-      THREE.MathUtils.lerp(world.y - 0.36, aheadWorld.y, 0.46),
-      THREE.MathUtils.lerp(world.z, aheadWorld.z, 0.42),
+      THREE.MathUtils.lerp(world.x, aheadWorld.x, isComet ? 0.68 : isTubeBoard ? 0.64 : 0.6),
+      THREE.MathUtils.lerp(world.y - (isXylophone ? 0.18 : 0.28), aheadWorld.y, isComet ? 0.5 : 0.46),
+      THREE.MathUtils.lerp(world.z, aheadWorld.z, isComet ? 0.5 : 0.38),
     );
     if (snapCamera || smoothedLook.lengthSq() === 0) smoothedLook.copy(lookTarget);
     else {
-      smoothedLook.x = THREE.MathUtils.damp(smoothedLook.x, lookTarget.x, damping * 1.18, deltaSeconds);
-      smoothedLook.y = THREE.MathUtils.damp(smoothedLook.y, lookTarget.y, damping * 1.18, deltaSeconds);
-      smoothedLook.z = THREE.MathUtils.damp(smoothedLook.z, lookTarget.z, damping * 1.18, deltaSeconds);
+      smoothedLook.x = THREE.MathUtils.damp(smoothedLook.x, lookTarget.x, damping * 1.28, deltaSeconds);
+      smoothedLook.y = THREE.MathUtils.damp(smoothedLook.y, lookTarget.y, damping * 1.28, deltaSeconds);
+      smoothedLook.z = THREE.MathUtils.damp(smoothedLook.z, lookTarget.z, damping * 1.22, deltaSeconds);
     }
     camera.lookAt(smoothedLook);
 
     const perspective = camera as THREE.PerspectiveCamera;
-    const targetFov = THREE.MathUtils.clamp(CAMERA_FOV + jumpDistance * (frameSettings.cameraProfile === "xylophone" ? 0.5 : 0.56) - density * 0.055, frameSettings.cameraProfile === "xylophone" ? 37 : 34.5, frameSettings.cameraProfile === "xylophone" ? 44.5 : 43.5);
-    perspective.fov = snapCamera ? targetFov : THREE.MathUtils.damp(perspective.fov, targetFov, 5.5, deltaSeconds);
+    const targetFov = THREE.MathUtils.clamp(
+      CAMERA_FOV + jumpDistance * (isComet ? 0.48 : isXylophone ? 0.32 : 0.35) - density * 0.045,
+      isComet ? 35.5 : isXylophone ? 34 : 34.5,
+      isComet ? 43.2 : isXylophone ? 39.8 : 40.8,
+    );
+    perspective.fov = snapCamera ? targetFov : THREE.MathUtils.damp(perspective.fov, targetFov, 6.2, deltaSeconds);
     perspective.updateProjectionMatrix();
-    const bankStrength = frameSettings.cameraProfile === "xylophone" ? 0.0035 : frameSettings.cameraProfile === "tube-board" ? 0.0042 : 0.006;
-    const bankLimit = frameSettings.cameraProfile === "xylophone" ? 0.024 : frameSettings.cameraProfile === "tube-board" ? 0.028 : 0.042;
+    const bankStrength = isXylophone ? 0.0022 : isTubeBoard ? 0.0028 : 0.0042;
+    const bankLimit = isXylophone ? 0.014 : isTubeBoard ? 0.018 : 0.028;
     const bankTarget = THREE.MathUtils.clamp(-velocity.x * bankStrength, -bankLimit, bankLimit);
-    perspective.rotation.z = snapCamera ? bankTarget : THREE.MathUtils.damp(perspective.rotation.z, bankTarget, 4.2, deltaSeconds);
+    perspective.rotation.z = snapCamera ? bankTarget : THREE.MathUtils.damp(perspective.rotation.z, bankTarget, 4.8, deltaSeconds);
   }, [
     afterWorld,
     aheadWorld,

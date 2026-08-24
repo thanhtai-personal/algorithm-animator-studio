@@ -11,7 +11,7 @@ export function SourceFrame({ studio }: { studio: RhythmicStudioController }) {
   const lang = useSystemLang();
   const t = (key: Parameters<typeof rhythmicText>[1]) => rhythmicText(lang, key);
   const s = studio.settings;
-  return <ControlFrame title={t("section.song")} subtitle={studio.audioFileInfo} collapsible={false}>
+  return <ControlFrame title={t("section.song")} subtitle={studio.audioFileInfo} defaultOpen={true}>
     <SelectField label={t("song.builtin")} value={studio.source.type === "builtin" ? studio.source.name : "imported"} options={[{ value: "imported", label: t("song.imported") }, ...Object.keys(BUILTIN_MELODIES).map((name) => ({ value: name, label: melodyLabel(lang, name) }))]} onChange={(value) => value !== "imported" && studio.loadBuiltin(value)} />
     <UploadCard icon={FileMusic} title={t("song.uploadMidi")} hint={t("song.uploadMidiHint")} accept=".mid,.midi,audio/midi" onFile={studio.importMidi} />
     <UploadCard icon={Music2} title={t("song.uploadAudio")} hint={t("song.uploadAudioHint")} accept="audio/*" onFile={studio.importAudio} />

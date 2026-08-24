@@ -34,12 +34,13 @@ function seededDirection(index: number) {
 }
 
 function depthForSegment(index: number, phase: number, settings: StudioSettings) {
-  const amplitude = settings.terrainProfile === "comet" ? 0.24
-    : settings.terrainProfile === "tube-board" ? 0.07
-      : settings.terrainProfile === "xylophone" ? 0.045
-        : 0.075;
+  const amplitude = settings.terrainProfile === "comet" ? 0.16
+    : settings.terrainProfile === "tube-board" ? 0.022
+      : settings.terrainProfile === "xylophone" ? 0.014
+        : 0.04;
   const arc = Math.sin(Math.PI * clamp(phase));
-  const weave = Math.sin(Math.PI * 2 * clamp(phase)) * amplitude * 0.14;
+  const weaveScale = settings.terrainProfile === "comet" ? 0.1 : 0.03;
+  const weave = Math.sin(Math.PI * 2 * clamp(phase)) * amplitude * weaveScale;
   return seededDirection(index) * arc * amplitude + weave;
 }
 

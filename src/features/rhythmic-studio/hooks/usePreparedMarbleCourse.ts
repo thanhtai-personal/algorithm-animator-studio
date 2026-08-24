@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { NoteEvent, StudioSettings } from "../types";
 import type { MarblePlatform } from "../engine/marblePhysicsTypes";
-import type { MarbleCoursePreparationInput } from "../engine/marbleCoursePreparation";
+import { createMarbleCourseWorkerPayload, workerPostMessageError } from "../engine/marbleCourseWorkerPayload";
 
 interface WorkerProgressMessage {
   id: number;
@@ -30,18 +30,21 @@ export interface PreparedMarbleCourse {
   error: string | null;
 }
 
-function preparationInput(
-  events: NoteEvent[],
-  settings: StudioSettings,
-  width: number,
-  presetMixEnabled: boolean,
-  presetMixSeed: number,
-): MarbleCoursePreparationInput {
-  return { events, settings, width, presetMixEnabled, presetMixSeed };
-}
-
 function createCourseWorker() {
   return new Worker(new URL("../workers/marbleCourse.worker.ts", import.meta.url), { type: "module" });
+}
+
+function postCourseWorkerRequest(
+  worker: Worker,
+  id: number,
+  input: ReturnType<typeof createMarbleCourseWorkerPayload>,
+): string | null {
+  try {
+    worker.postMessage({ id, input });
+    return null;
+  } catch (error) {
+    return workerPostMessageError(error);
+  }
 }
 
 export function usePreparedMarbleCourse(
@@ -82,7 +85,12 @@ export function usePreparedMarbleCourse(
       setState((current) => ({ ...current, isPreparing: false, error: event.message || "Course worker failed" }));
       worker.terminate();
     };
-    worker.postMessage({ id, input: preparationInput(events, settings, width, presetMixEnabled, presetMixSeed) });
+    const input = createMarbleCourseWorkerPayload({ events, settings, width, presetMixEnabled, presetMixSeed });
+    const postError = postCourseWorkerRequest(worker, id, input);
+    if (postError) {
+      worker.terminate();
+      setState((current) => ({ ...current, isPreparing: false, error: postError }));
+    }
     return () => worker.terminate();
   }, [events, presetMixEnabled, presetMixSeed, settings, width]);
 

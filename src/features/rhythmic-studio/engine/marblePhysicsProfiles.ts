@@ -19,8 +19,8 @@ const BASE: Record<TerrainProfile, Omit<MarblePhysicsProfile, "terrain">> = {
   balanced: {
     gravity: 980,
     initialDownSpeed: 300,
-    restitutionMin: 0.18,
-    restitutionMax: 0.76,
+    restitutionMin: 0.56,
+    restitutionMax: 0.78,
     horizontalScale: 0.82,
     verticalScale: 0.82,
     apexScale: 0.9,
@@ -32,8 +32,8 @@ const BASE: Record<TerrainProfile, Omit<MarblePhysicsProfile, "terrain">> = {
   "tube-board": {
     gravity: 1140,
     initialDownSpeed: 334,
-    restitutionMin: 0.08,
-    restitutionMax: 0.42,
+    restitutionMin: 0.5,
+    restitutionMax: 0.72,
     horizontalScale: 1.08,
     verticalScale: 0.8,
     apexScale: 0.52,
@@ -47,8 +47,8 @@ const BASE: Record<TerrainProfile, Omit<MarblePhysicsProfile, "terrain">> = {
   comet: {
     gravity: 840,
     initialDownSpeed: 285,
-    restitutionMin: 0.24,
-    restitutionMax: 0.7,
+    restitutionMin: 0.58,
+    restitutionMax: 0.82,
     horizontalScale: 0.9,
     verticalScale: 0.56,
     apexScale: 1.12,
@@ -60,8 +60,8 @@ const BASE: Record<TerrainProfile, Omit<MarblePhysicsProfile, "terrain">> = {
   xylophone: {
     gravity: 1200,
     initialDownSpeed: 316,
-    restitutionMin: 0.1,
-    restitutionMax: 0.46,
+    restitutionMin: 0.54,
+    restitutionMax: 0.76,
     horizontalScale: 0.78,
     verticalScale: 0.86,
     apexScale: 0.54,
@@ -77,19 +77,22 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 export function marblePhysicsProfile(settings: StudioSettings): MarblePhysicsProfile {
   const base = BASE[settings.terrainProfile] ?? BASE.balanced;
   const spacingScale = clamp(settings.platformGap / 150, 0.72, 1.45);
-  const bounceScale = clamp(settings.bounceHeight / 126, 0.62, 1.42);
+  // Bounce height is a user preference, not an excuse to inject or remove huge
+  // amounts of energy on every note. Keep it within a physically believable
+  // range and let gravity + the incoming velocity drive most of the motion.
+  const bounceScale = clamp(settings.bounceHeight / 90, 0.84, 1.14);
   const laneScale = clamp(settings.laneSpread / 300, 0.68, 1.42);
   const ballProfile = settings.ballStyle === "chrome"
-    ? { gravity: 1.06, restitution: 0.84, horizontal: 0.94, vertical: 0.95 }
+    ? { gravity: 1.04, restitution: 0.84, horizontal: 0.96, vertical: 0.98 }
     : settings.ballStyle === "glass"
-      ? { gravity: 0.98, restitution: 1.08, horizontal: 0.98, vertical: 1.02 }
+      ? { gravity: 1, restitution: 0.94, horizontal: 0.99, vertical: 1 }
       : settings.ballStyle === "neon"
-        ? { gravity: 0.94, restitution: 1.18, horizontal: 1.06, vertical: 1.1 }
+        ? { gravity: 0.98, restitution: 1.08, horizontal: 1.03, vertical: 1.04 }
         : settings.ballStyle === "prism"
-          ? { gravity: 0.92, restitution: 1.22, horizontal: 1.08, vertical: 1.12 }
+          ? { gravity: 0.97, restitution: 1.1, horizontal: 1.04, vertical: 1.05 }
           : settings.ballStyle === "striped"
-            ? { gravity: 1.02, restitution: 0.92, horizontal: 0.97, vertical: 0.95 }
-            : { gravity: 1, restitution: 1, horizontal: 1, vertical: 1 };
+            ? { gravity: 1.01, restitution: 1.02, horizontal: 0.99, vertical: 1 }
+            : { gravity: 1, restitution: 0.98, horizontal: 1, vertical: 1 };
   return {
     ...base,
     terrain: settings.terrainProfile,
@@ -99,4 +102,12 @@ export function marblePhysicsProfile(settings: StudioSettings): MarblePhysicsPro
     horizontalScale: base.horizontalScale * laneScale * ballProfile.horizontal,
     verticalScale: base.verticalScale * Math.pow(spacingScale, 0.55) * ballProfile.vertical,
   };
+}
+
+export function marbleEntrySpeed(settings: StudioSettings) {
+  const profile = marblePhysicsProfile(settings);
+  return Math.max(
+    profile.initialDownSpeed,
+    Math.sqrt(2 * profile.gravity * Math.max(44, settings.ballSize * 3.4)),
+  );
 }

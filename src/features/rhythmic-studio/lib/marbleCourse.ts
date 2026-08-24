@@ -3,6 +3,7 @@ import { REST_GAP_MS } from "./rhythmTerrain";
 import { guidedCoursePoint, overrideForSegment } from "./courseGuide";
 import { buildPhysicsCourse, type StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 import type { MarblePlatform, MarblePoint } from "../engine/marblePhysicsTypes";
+import { marbleEntrySpeed, marblePhysicsProfile } from "../engine/marblePhysicsProfiles";
 import { presetObstaclePlan } from "../engine/presetObstaclePlan";
 import { instrumentScenePlan } from "../engine/instrumentScenePlan";
 
@@ -152,16 +153,6 @@ function platformAngle(index: number, direction: number, settings: StudioSetting
   return (tiltDirection * settings.platformTilt * 0.24 + seededNoise(index + 7) * settings.platformTilt * 0.2) * Math.PI / 180;
 }
 
-function ease(value: number, settings: StudioSettings) {
-  const t = clamp(value);
-  if (!settings.decoupleBallSpeed || settings.accelerationMode === "none") return t;
-  const rate = Math.max(0.35, settings.accelerationRate);
-  const factor = clamp(settings.accelerationFactor, settings.minSpeedCap, settings.maxSpeedCap);
-  if (settings.accelerationMode === "ease-in") return clamp(Math.pow(t, rate) * factor / Math.max(1, factor));
-  if (settings.accelerationMode === "ease-out") return 1 - Math.pow(1 - t, rate);
-  return clamp(t + Math.sin(t * Math.PI) * 0.08 * factor);
-}
-
 function seededNoise(index: number) {
   const raw = Math.sin(index * 12.9898 + 78.233) * 43758.5453;
   return (raw - Math.floor(raw)) * 2 - 1;
@@ -184,11 +175,15 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
   const firstHit = marbleHitPoint(first);
   if (timeMs < events[0].timeMs) {
     const initialSettings = resolveSettings?.(0) ?? settings;
-    const span = Math.max(280, events[0].timeMs || 620);
-    const t = ease(timeMs / span, initialSettings);
+    const profile = marblePhysicsProfile(initialSettings);
+    const impactSpeed = marbleEntrySpeed(initialSettings);
+    const fallDuration = impactSpeed / profile.gravity;
+    const secondsBeforeImpact = Math.max(0, (events[0].timeMs - timeMs) / 1000);
+    const elapsedSinceRelease = clamp(fallDuration - secondsBeforeImpact, 0, fallDuration);
+    const releaseHeight = 0.5 * profile.gravity * fallDuration * fallDuration;
     return {
       x: firstHit.x,
-      y: firstHit.y - Math.max(52, initialSettings.bounceHeight * 0.82) * (1 - t),
+      y: firstHit.y - releaseHeight + 0.5 * profile.gravity * elapsedSinceRelease * elapsedSinceRelease,
       color: first.color,
       platformIndex: 0,
     };

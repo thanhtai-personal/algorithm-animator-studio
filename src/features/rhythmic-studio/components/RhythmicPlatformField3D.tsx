@@ -6,6 +6,7 @@ import { isPlatformCourseItem, overrideForNode } from "../lib/courseItems";
 import { RHYTHMIC_COURSE_WIDTH, RHYTHMIC_WORLD_SCALE } from "./RhythmicMotion3D";
 import { PlatformMesh } from "./RhythmicPlatformMeshes3D";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
+import { CHORD_GAP_MS } from "../engine/denseInstrumentRuns";
 
 function PhysicalMount({ terrain, w, h, detail, showcase }: {
   terrain: StudioSettings["terrainProfile"];
@@ -105,7 +106,7 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
     for (const platform of platforms) {
       if (platform.event.timeMs < focusTimeMs - 450) continue;
       if (platform.event.timeMs > focusTimeMs + 1450) break;
-      if (platform.event.timeMs - previousStrikeMs > 24) {
+      if (platform.event.timeMs - previousStrikeMs > CHORD_GAP_MS) {
         strikes += 1;
         previousStrikeMs = platform.event.timeMs;
       }
@@ -139,25 +140,34 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
       if (!platform.visualHidden && platform.denseSurfaceId !== undefined) activeSurfaceIds.add(platform.denseSurfaceId);
     }
     return [...activeSurfaceIds].flatMap((surfaceId) => {
-      const surface = visible.filter((platform) => platform.denseSurfaceId === surfaceId && !platform.visualHidden);
+      const surface = visible
+        .filter((platform) => platform.denseSurfaceId === surfaceId && !platform.visualHidden)
+        .sort((a, b) => a.index - b.index);
       if (surface.length < 2) return [];
-      const first = surface[0];
-      const last = surface[surface.length - 1];
-      const firstX = first.visualX ?? first.x;
-      const firstY = first.visualY ?? first.y;
-      const lastX = last.visualX ?? last.x;
-      const lastY = last.visualY ?? last.y;
-      const firstWidth = first.visualWidth ?? first.width;
-      const lastWidth = last.visualWidth ?? last.width;
-      const span = Math.hypot(lastX - firstX, lastY - firstY) + (firstWidth + lastWidth) * 0.5;
-      const angle = first.visualTiltRad ?? first.tiltRad;
-      return [{
-        id: surfaceId,
-        x: ((firstX + lastX) * 0.5 - RHYTHMIC_COURSE_WIDTH / 2) * RHYTHMIC_WORLD_SCALE,
-        y: -((firstY + lastY) * 0.5) * RHYTHMIC_WORLD_SCALE,
-        width: Math.max(0.5, span * RHYTHMIC_WORLD_SCALE),
-        angle,
-      }];
+
+      // The backing follows the same polyline as the playable keys. One long rail
+      // between first/last was the visual twin of the old straight-surface bug:
+      // at a bend the marble and keys turned while the chassis cut across empty
+      // space. Segment the chassis at every physical strike instead.
+      return surface.slice(0, -1).map((first, offset) => {
+        const last = surface[offset + 1];
+        const firstX = first.visualX ?? first.x;
+        const firstY = first.visualY ?? first.y;
+        const lastX = last.visualX ?? last.x;
+        const lastY = last.visualY ?? last.y;
+        const firstWidth = first.visualWidth ?? first.width;
+        const lastWidth = last.visualWidth ?? last.width;
+        const dx = lastX - firstX;
+        const dy = lastY - firstY;
+        const span = Math.hypot(dx, dy) + Math.min(firstWidth, lastWidth) * 0.52;
+        return {
+          id: `${surfaceId}-${first.index}-${last.index}`,
+          x: ((firstX + lastX) * 0.5 - RHYTHMIC_COURSE_WIDTH / 2) * RHYTHMIC_WORLD_SCALE,
+          y: -((firstY + lastY) * 0.5) * RHYTHMIC_WORLD_SCALE,
+          width: Math.max(0.22, span * RHYTHMIC_WORLD_SCALE),
+          angle: Math.atan2(dy, dx),
+        };
+      });
     });
   }, [visible]);
 
@@ -183,15 +193,21 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
         const style = platform.visualStyle ?? (override && isPlatformCourseItem(override.style) ? override.style : resolvePlatformStyle(platform.index, platformSettings));
         const displayWidth = platform.visualWidth ?? platform.width;
         const w = Math.max(0.3, displayWidth * RHYTHMIC_WORLD_SCALE);
-        const h = Math.max(0.09, platform.thickness * RHYTHMIC_WORLD_SCALE);
+        const displayThickness = platform.visualThickness ?? platform.thickness;
+        const compactSurface = platform.denseSurfaceId !== undefined || displayThickness < 9;
+        const h = Math.max(compactSurface ? 0.055 : 0.09, displayThickness * RHYTHMIC_WORLD_SCALE);
         const d = style === "instrument-cymbal" ? 0.5 : style.includes("rail") ? 0.46 : style === "tube-cylinder" ? 0.62 : 0.54;
         const normalInset = platform.contactMode === "surface"
-          ? Math.max(0.04, platform.thickness * 0.5) * RHYTHMIC_WORLD_SCALE
+          ? Math.max(0.04, displayThickness * 0.5) * RHYTHMIC_WORLD_SCALE
           : 0;
         const baseX = platform.visualX ?? platform.x;
         const baseY = platform.visualY ?? platform.y;
-        const worldX = ((baseX - platform.normalX * normalInset / RHYTHMIC_WORLD_SCALE) - RHYTHMIC_COURSE_WIDTH / 2) * RHYTHMIC_WORLD_SCALE;
-        const worldY = -(baseY - platform.normalY * normalInset / RHYTHMIC_WORLD_SCALE) * RHYTHMIC_WORLD_SCALE;
+        const visualAngle = platform.visualTiltRad ?? platform.tiltRad;
+        const visualNormal = platform.denseSurfaceId !== undefined
+          ? { x: Math.sin(visualAngle), y: -Math.cos(visualAngle) }
+          : { x: platform.normalX, y: platform.normalY };
+        const worldX = ((baseX - visualNormal.x * normalInset / RHYTHMIC_WORLD_SCALE) - RHYTHMIC_COURSE_WIDTH / 2) * RHYTHMIC_WORLD_SCALE;
+        const worldY = -(baseY - visualNormal.y * normalInset / RHYTHMIC_WORLD_SCALE) * RHYTHMIC_WORLD_SCALE;
         const hasBeenHit = platform.event.timeMs <= timeMs;
         const immediateHit = platform.index === impactIndex ? Math.max(0, impactStrength) : 0;
         const ageMs = timeMs - platform.event.timeMs;
@@ -217,7 +233,7 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
             // The visible striking face sits exactly on z=0. The instrument body
             // and wall mount extend behind it, matching the reference installation.
             position={[worldX, worldY, -frontDepth]}
-            rotation={[0, 0, -(platform.visualTiltRad ?? platform.tiltRad)]}
+            rotation={[0, 0, -visualAngle]}
             onClick={(event) => {
               event.stopPropagation();
               onSelectNode(platform.index);

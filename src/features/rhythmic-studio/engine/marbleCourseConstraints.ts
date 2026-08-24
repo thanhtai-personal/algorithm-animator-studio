@@ -8,7 +8,12 @@ export function courseWorldBounds(settings: StudioSettings, width: number) {
   if (settings.terrainProfile === "balanced") return { min: 62, max: width - 62 };
   if (settings.terrainProfile === "xylophone") return { min: 72, max: width - 72 };
   if (settings.terrainProfile === "tube-board") return { min: 64, max: width - 64 };
-  return { min: -width * 0.55, max: width * 1.55 };
+  // NeutralStudio's real side walls sit at roughly +/-7.9 world units. The old
+  // comet range (-0.55W..1.55W) mapped past those walls, so a valid planner node
+  // could literally live behind the 3D wall and the marble disappeared with it.
+  // Keep the wide comet camera, but leave a physical safety margin inside the
+  // rendered side walls instead of treating the wall as decorative scenery.
+  return { min: -width * 0.27, max: width * 1.27 };
 }
 
 function pointSegmentDistance(point: Vec2, a: Vec2, b: Vec2) {
@@ -66,14 +71,41 @@ function visibleForCollision(platform: MarblePlatform) {
   return platform.visualHidden !== true;
 }
 
+function visualThickness(platform: MarblePlatform) {
+  return platform.visualThickness ?? platform.thickness;
+}
+
+function platformHorizontalExtent(platform: MarblePlatform) {
+  const segment = platformSegment(platform);
+  const angle = platform.visualTiltRad ?? platform.tiltRad;
+  const normalX = Math.abs(Math.sin(angle));
+  const thicknessExtent = visualThickness(platform) * 0.5 * normalX;
+  return {
+    min: Math.min(segment.a.x, segment.b.x) - thicknessExtent,
+    max: Math.max(segment.a.x, segment.b.x) + thicknessExtent,
+  };
+}
+
 export function platformRequiredClearance(platform: MarblePlatform, other: MarblePlatform, settings: StudioSettings) {
-  const bodyClearance = (platform.thickness + other.thickness) * 0.52;
+  const bodyClearance = (visualThickness(platform) + visualThickness(other)) * 0.52;
   const marbleClearance = settings.ballSize * (settings.instrumentFamily !== "auto" ? 1.28 : 1.08);
   return Math.max(
     settings.instrumentFamily !== "auto" ? 20 : 16,
     bodyClearance,
     marbleClearance,
   );
+}
+
+export function platformVisualClearanceRequirement(platform: MarblePlatform, other: MarblePlatform, gap = 2) {
+  return (visualThickness(platform) + visualThickness(other)) * 0.5 + Math.max(0, gap);
+}
+
+export function trajectoryBodyClearanceRequirement(
+  platform: MarblePlatform,
+  settings: StudioSettings,
+  safetyGap = 0.75,
+) {
+  return settings.ballSize + visualThickness(platform) * 0.5 + Math.max(0, safetyGap);
 }
 
 export function platformClearance(platform: MarblePlatform, other: MarblePlatform) {
@@ -120,13 +152,13 @@ export function trajectoryClearancePenalty(
   settings: StudioSettings,
 ) {
   if (motionMode === "hold") return 0;
-  const dt = Math.max(0.08, spanMs / 1000);
+  const dt = Math.max(0.001, spanMs / 1000);
   const steps = Math.max(5, Math.min(14, Math.ceil(dt * 18)));
   let penalty = 0;
   for (const other of recent) {
     if (!visibleForCollision(other) || sameContinuousSurface(platform, other)) continue;
     const obstacle = platformSegment(other);
-    const clearance = Math.max(settings.ballSize * 1.02 + other.thickness * 0.5, settings.ballSize + 5);
+    const clearance = Math.max(settings.ballSize * 1.02 + visualThickness(other) * 0.5, settings.ballSize + 5);
     let previous = hit;
     let minimum = Infinity;
     for (let step = 1; step <= steps; step += 1) {
@@ -146,7 +178,7 @@ export function trajectoryClearancePenalty(
 export function trajectoryPlatformClearance(platform: MarblePlatform, start: MarblePlatform, end: MarblePlatform) {
   const body = platformSegment(platform);
   const spanMs = Math.max(1, end.event.timeMs - start.event.timeMs);
-  const dt = Math.max(0.08, spanMs / 1000);
+  const dt = Math.max(0.001, spanMs / 1000);
   const steps = Math.max(5, Math.min(14, Math.ceil(dt * 18)));
   const motionMode = start.motionMode ?? "ballistic";
   if (motionMode === "hold") return Infinity;
@@ -164,7 +196,7 @@ export function trajectoryPlatformClearance(platform: MarblePlatform, start: Mar
 
 export function platformAgainstRecentTrajectoriesPenalty(platform: MarblePlatform, recent: MarblePlatform[], settings: StudioSettings) {
   if (!visibleForCollision(platform) || recent.length < 2) return 0;
-  const clearance = Math.max(settings.ballSize * 1.02 + platform.thickness * 0.5, settings.ballSize + 5);
+  const clearance = Math.max(trajectoryBodyClearanceRequirement(platform, settings), settings.ballSize + 5);
   let penalty = 0;
   for (let index = 0; index < recent.length - 1; index += 1) {
     const start = recent[index];
@@ -186,7 +218,7 @@ export function nextImpactClearancePenalty(target: Vec2, platform: MarblePlatfor
     if (!visibleForCollision(other) || sameContinuousSurface(platform, other)) continue;
     const obstacle = platformSegment(other);
     const distance = pointSegmentDistance(target, obstacle.a, obstacle.b);
-    const clearance = Math.max(settings.ballSize * 1.35 + other.thickness * 0.5, settings.ballSize * 1.7);
+    const clearance = Math.max(settings.ballSize * 1.35 + visualThickness(other) * 0.5, settings.ballSize * 1.7);
     if (distance < clearance) {
       const intrusion = clearance - distance;
       penalty += 7000 + intrusion * 28 + intrusion * intrusion;
@@ -196,16 +228,42 @@ export function nextImpactClearancePenalty(target: Vec2, platform: MarblePlatfor
 }
 
 export function wallClearancePenalty(platform: MarblePlatform, settings: StudioSettings, width: number) {
-  if (settings.instrumentFamily === "auto") return 0;
   const bounds = courseWorldBounds(settings, width);
-  const segment = platformSegment(platform);
+  const extent = platformHorizontalExtent(platform);
   const overhang = Math.max(
     0,
-    bounds.min - Math.min(segment.a.x, segment.b.x),
-    Math.max(segment.a.x, segment.b.x) - bounds.max,
+    bounds.min - extent.min,
+    extent.max - bounds.max,
   );
   if (overhang <= 0) return 0;
   return 3000 + overhang * 52 + overhang * overhang * 2.1;
+}
+
+export function platformWithinWorldBounds(platform: MarblePlatform, settings: StudioSettings, width: number, inset = 0) {
+  if (platform.visualHidden) return true;
+  const bounds = courseWorldBounds(settings, width);
+  const extent = platformHorizontalExtent(platform);
+  return extent.min >= bounds.min + inset && extent.max <= bounds.max - inset;
+}
+
+export function trajectoryWithinWorldBounds(
+  hit: Vec2,
+  outgoing: Vec2,
+  spanMs: number,
+  motionMode: MarblePlatform["motionMode"],
+  settings: StudioSettings,
+  width: number,
+  inset = 0,
+) {
+  const bounds = courseWorldBounds(settings, width);
+  const dt = Math.max(0.001, spanMs / 1000);
+  // Horizontal motion is linear for ballistic, roll and hold segments, so the
+  // extrema are the two endpoints. Keep the marble centre (plus its radius) on
+  // the playable side of the actual side-wall collider.
+  const endX = motionMode === "hold" ? hit.x : hit.x + outgoing.x * dt;
+  const minX = Math.min(hit.x, endX);
+  const maxX = Math.max(hit.x, endX);
+  return minX >= bounds.min + inset && maxX <= bounds.max - inset;
 }
 
 export function adjacentSpacingPenalty(target: Vec2, current: Vec2, settings: StudioSettings) {

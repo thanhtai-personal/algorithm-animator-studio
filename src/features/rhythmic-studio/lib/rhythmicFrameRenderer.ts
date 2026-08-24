@@ -196,12 +196,13 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
     const platform = platforms[platformIndex];
     if (platform.visualHidden) continue;
     if (!shouldShowPlatform(platform, timeMs, settings)) continue;
-    const displayPlatform = platform.visualX !== undefined || platform.visualY !== undefined || platform.visualWidth !== undefined || platform.visualTiltRad !== undefined
+    const displayPlatform = platform.visualX !== undefined || platform.visualY !== undefined || platform.visualWidth !== undefined || platform.visualThickness !== undefined || platform.visualTiltRad !== undefined
       ? {
           ...platform,
           x: platform.visualX ?? platform.x,
           y: platform.visualY ?? platform.y,
           width: platform.visualWidth ?? platform.width,
+          thickness: platform.visualThickness ?? platform.thickness,
           tiltRad: platform.visualTiltRad ?? platform.tiltRad,
         }
       : platform;

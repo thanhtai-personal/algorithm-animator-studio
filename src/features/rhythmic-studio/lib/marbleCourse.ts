@@ -36,34 +36,42 @@ export interface LongGapTubeGeometry {
   exitY: number;
 }
 
-export function longGapTubeGeometry(start: MarblePlatform, end: MarblePlatform, settings: StudioSettings): LongGapTubeGeometry {
+export function longGapTubeGeometry(start: MarblePlatform, end: MarblePlatform, _settings: StudioSettings): LongGapTubeGeometry {
   const startHit = marbleHitPoint(start);
-  const endHit = marbleHitPoint(end);
-  const startX = startHit.x;
-  const endX = endHit.x;
-  const dx = endX - startX;
-  const dy = endHit.y - startHit.y;
-  const entryX = startX + dx * TUBE_ENTRY_T;
-  const entryY = startHit.y + dy * TUBE_ENTRY_T - 18;
-  const exitX = startX + dx * TUBE_EXIT_T;
-  const exitY = startHit.y + dy * TUBE_EXIT_T - 18;
-  const tubeDy = exitY - entryY;
-  const direction = seededNoise(start.index + 311) >= 0 ? 1 : -1;
-  const lateral = clamp(Math.abs(tubeDy) * 0.14, 42, 72);
-  const waveAmplitude = clamp(Math.abs(tubeDy) * 0.22, 48, 90);
-  const control1X = entryX + (exitX - entryX) * 0.28 + direction * lateral;
-  const control2X = entryX + (exitX - entryX) * 0.72 - direction * lateral * 0.92;
+  const spanSeconds = Math.max(0.001, (end.event.timeMs - start.event.timeMs) / 1000);
+  const ballisticPoint = (ratio: number) => {
+    const t = spanSeconds * ratio;
+    return {
+      x: startHit.x + start.outVX * t,
+      y: startHit.y + start.outVY * t + 0.5 * start.gravity * t * t,
+    };
+  };
+  const ballisticVelocity = (ratio: number) => ({
+    x: start.outVX,
+    y: start.outVY + start.gravity * spanSeconds * ratio,
+  });
+
+  const entry = ballisticPoint(TUBE_ENTRY_T);
+  const exit = ballisticPoint(TUBE_EXIT_T);
+  const entryVelocity = ballisticVelocity(TUBE_ENTRY_T);
+  const exitVelocity = ballisticVelocity(TUBE_EXIT_T);
+  const tubeSeconds = spanSeconds * (TUBE_EXIT_T - TUBE_ENTRY_T);
+
+  // A ballistic parabola can be represented exactly by a cubic Bezier when the
+  // endpoint derivatives are used as the two controls. The guide/tube is now
+  // built around the marble's real gravity path instead of a decorative S-curve
+  // that the marble visibly leaves behind midway through a long gap.
   return {
-    entryX,
-    entryY,
-    control1X,
-    control1Y: entryY + tubeDy * 0.26,
-    control2X,
-    control2Y: entryY + tubeDy * 0.74,
-    waveAmplitude,
-    waveDirection: direction,
-    exitX,
-    exitY,
+    entryX: entry.x,
+    entryY: entry.y,
+    control1X: entry.x + entryVelocity.x * tubeSeconds / 3,
+    control1Y: entry.y + entryVelocity.y * tubeSeconds / 3,
+    control2X: exit.x - exitVelocity.x * tubeSeconds / 3,
+    control2Y: exit.y - exitVelocity.y * tubeSeconds / 3,
+    waveAmplitude: 0,
+    waveDirection: 1,
+    exitX: exit.x,
+    exitY: exit.y,
   };
 }
 
@@ -74,10 +82,8 @@ export function longGapTubePoint(geometry: LongGapTubeGeometry, t: number) {
   const b = 3 * inv * inv * p;
   const c = 3 * inv * p * p;
   const d = p * p * p;
-  const baseX = a * geometry.entryX + b * geometry.control1X + c * geometry.control2X + d * geometry.exitX;
-  const wave = Math.sin(p * Math.PI * 2) * Math.sin(p * Math.PI) * geometry.waveAmplitude * geometry.waveDirection;
   return {
-    x: baseX + wave,
+    x: a * geometry.entryX + b * geometry.control1X + c * geometry.control2X + d * geometry.exitX,
     y: a * geometry.entryY + b * geometry.control1Y + c * geometry.control2Y + d * geometry.exitY,
   };
 }
@@ -158,13 +164,20 @@ function seededNoise(index: number) {
   return (raw - Math.floor(raw)) * 2 - 1;
 }
 
-export function buildMarbleCourse(events: NoteEvent[], settings: StudioSettings, width: number, resolveSettings?: StudioSettingsResolver): MarblePlatform[] {
+export function buildMarbleCourse(
+  events: NoteEvent[],
+  settings: StudioSettings,
+  width: number,
+  resolveSettings?: StudioSettingsResolver,
+  onProgress?: (progress: number) => void,
+): MarblePlatform[] {
   return buildPhysicsCourse(
     events,
     settings,
     width,
     (index, pitch) => paletteColor(index, pitch, resolveSettings?.(index) ?? settings),
     resolveSettings,
+    onProgress,
   );
 }
 

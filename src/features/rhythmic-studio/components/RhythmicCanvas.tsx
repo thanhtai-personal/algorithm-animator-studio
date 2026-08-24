@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { MutableRefObject } from "react";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { rhythmicText } from "../i18n";
 import type { CourseItemOverride, LyricCue, NoteEvent, StudioSettings } from "../types";
-import { buildPresetMixPlan, createPresetMixSettingsResolver } from "../lib/presetMix";
-import { buildMarbleCourse, clamp, marbleAtTime } from "../lib/marbleCourse";
+import { clamp, marbleAtTime } from "../lib/marbleCourse";
+import type { MarblePlatform } from "../engine/marblePhysicsTypes";
+import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 import { presetCameraAnchorX, unprojectPresetCamera } from "../lib/presetCamera";
 import { drawRhythmicFrame } from "../lib/rhythmicFrameRenderer";
 
@@ -27,8 +28,8 @@ interface Props {
   onTime: (timeMs: number) => void;
   onEnded: () => void;
   canvasRef: MutableRefObject<HTMLCanvasElement | null>;
-  presetMixEnabled: boolean;
-  presetMixSeed: number;
+  platforms: MarblePlatform[];
+  resolveSettings: StudioSettingsResolver;
 }
 
 const WIDTH = 720;
@@ -52,16 +53,10 @@ function firstEventAtOrAfter(events: NoteEvent[], timeMs: number) {
   return low;
 }
 
-export function RhythmicCanvas({ events, settings, durationMs, playing, playbackToken, playbackStartMs, playbackEndMs, backgroundUrl, lyrics, courseOverrides, selectedNodeIndex, onSelectNode, recording, targetFps, onNote, onTime, onEnded, canvasRef, presetMixEnabled, presetMixSeed }: Props) {
+export function RhythmicCanvas({ events, settings, durationMs, playing, playbackToken, playbackStartMs, playbackEndMs, backgroundUrl, lyrics, courseOverrides, selectedNodeIndex, onSelectNode, recording, targetFps, onNote, onTime, onEnded, canvasRef, platforms, resolveSettings }: Props) {
   const lang = useSystemLang();
   const beatLabel = rhythmicText(lang, "canvas.beats");
   const [backgroundImage, setBackgroundImage] = useState<HTMLImageElement | null>(null);
-  const mixPlan = useMemo(() => buildPresetMixPlan(events, presetMixEnabled, presetMixSeed), [events, presetMixEnabled, presetMixSeed]);
-  const resolveSettings = useMemo(() => createPresetMixSettingsResolver(settings, mixPlan), [mixPlan, settings]);
-  const platforms = useMemo(
-    () => buildMarbleCourse(events, settings, WIDTH, resolveSettings),
-    [events, resolveSettings, settings],
-  );
   const currentTime = useRef(0);
   const nextNoteIndex = useRef(0);
   const cameraX = useRef(0);

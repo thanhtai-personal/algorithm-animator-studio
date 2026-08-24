@@ -35,6 +35,7 @@ export interface MarblePlatform {
   visualX?: number;
   visualY?: number;
   visualWidth?: number;
+  visualThickness?: number;
   visualTiltRad?: number;
   visualHidden?: boolean;
 }

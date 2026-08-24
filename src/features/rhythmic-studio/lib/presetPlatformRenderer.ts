@@ -175,7 +175,7 @@ function drawCometPad(ctx: CanvasRenderingContext2D, half: number, p: MarblePlat
 }
 
 function drawInstrumentKey(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, lowPower: boolean) {
-  const h = Math.max(13, p.thickness);
+  const h = Math.max(p.thickness < 9 ? 6 : 13, p.thickness);
   const depth = Math.max(8, h * 0.55);
   ctx.save();
   ctx.shadowColor = "rgba(32,35,45,.42)";
@@ -305,7 +305,7 @@ function drawInstrumentRail(ctx: CanvasRenderingContext2D, half: number, p: Marb
 }
 
 function drawInstrumentPad(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, lowPower: boolean) {
-  const h = Math.max(14, p.thickness);
+  const h = Math.max(p.thickness < 9 ? 6.5 : 14, p.thickness);
   const depth = Math.max(8, h * 0.5);
   ctx.save();
   ctx.shadowColor = "rgba(28,32,40,.4)";

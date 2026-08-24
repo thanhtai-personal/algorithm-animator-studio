@@ -3,10 +3,9 @@ import { PerspectiveCamera } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { CourseItemOverride, NoteEvent, StudioSettings } from "../types";
-import { buildPresetMixPlan, createPresetMixSettingsResolver } from "../lib/presetMix";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 import type { MarblePlatform } from "../lib/marbleCourse";
-import { buildMarbleCourse } from "../lib/marbleCourse";
+import { CHORD_GAP_MS } from "../engine/denseInstrumentRuns";
 import { RhythmicMarble3D } from "./RhythmicMarble3D";
 import { RhythmicPlatformField3D } from "./RhythmicPlatformField3D";
 import { RhythmicCourseItems3D } from "./RhythmicCourseItems3D";
@@ -39,8 +38,8 @@ interface Props {
   onTime: (timeMs: number) => void;
   onEnded: () => void;
   canvasRef?: MutableRefObject<HTMLCanvasElement | null>;
-  presetMixEnabled: boolean;
-  presetMixSeed: number;
+  platforms: MarblePlatform[];
+  resolveSettings: StudioSettingsResolver;
 }
 
 const CAMERA_Z = 10.15;
@@ -67,7 +66,7 @@ function noteDensity(events: NoteEvent[], timeMs: number, windowMs = 900) {
     // Ten notes in one chord still happen at one collision point. Counting every
     // note made the camera abruptly zoom/reframe on rich chords in the supplied
     // MIDI even though the marble had not increased its physical hit rate.
-    if (events[index].timeMs - previousStrikeMs > 24) {
+    if (events[index].timeMs - previousStrikeMs > CHORD_GAP_MS) {
       strikes += 1;
       previousStrikeMs = events[index].timeMs;
       if (strikes >= 16) break;
@@ -438,20 +437,6 @@ export function RhythmicScene3D(props: Props) {
     if (props.canvasRef) props.canvasRef.current = null;
   }, [props.canvasRef]);
 
-  const mixPlan = useMemo(
-    () => buildPresetMixPlan(props.events, props.presetMixEnabled, props.presetMixSeed),
-    [props.events, props.presetMixEnabled, props.presetMixSeed],
-  );
-  const resolveSettings = useMemo(
-    () => createPresetMixSettingsResolver(props.settings, mixPlan),
-    [mixPlan, props.settings],
-  );
-  const basePlatforms = useMemo(
-    () => buildMarbleCourse(props.events, props.settings, RHYTHMIC_COURSE_WIDTH, resolveSettings),
-    [props.events, props.settings, resolveSettings],
-  );
-  const platforms = basePlatforms;
-
   return (
     <div className="relative h-[66vh] max-h-[1280px] max-w-full aspect-[9/16] overflow-hidden rounded-xl bg-slate-950">
       <Canvas
@@ -470,10 +455,10 @@ export function RhythmicScene3D(props: Props) {
         onPointerMissed={() => props.onSelectNode(null)}
       >
         <color attach="background" args={[props.settings.backgroundColor]} />
-        <SceneContent {...props} platforms={platforms} resolveSettings={resolveSettings} />
+        <SceneContent {...props} platforms={props.platforms} resolveSettings={props.resolveSettings} />
       </Canvas>
       <div className="pointer-events-none absolute left-2 top-2 rounded-md border border-white/10 bg-black/45 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70 backdrop-blur">
-        WebGL 3D · {props.presetMixEnabled ? "preset mix" : props.recording ? "recording" : props.playing ? "live" : "ready"}
+        WebGL 3D · {props.recording ? "recording" : props.playing ? "live" : "ready"}
       </div>
     </div>
   );

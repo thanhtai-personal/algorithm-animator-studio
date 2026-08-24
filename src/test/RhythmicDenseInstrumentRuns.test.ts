@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS } from "../features/rhythmic-studio/defaults";
 import { buildMarbleCourse, marbleAtTime } from "../features/rhythmic-studio/lib/marbleCourse";
 import type { NoteEvent } from "../features/rhythmic-studio/types";
+import { CHORD_GAP_MS, chordClusters } from "../features/rhythmic-studio/engine/denseInstrumentRuns";
 
 function note(index: number, timeMs: number, isDrum = false): NoteEvent {
   return {
@@ -84,6 +85,56 @@ describe("rhythmic dense instrument routing", () => {
     const before = marbleAtTime(events[1].timeMs - 0.01, events, platforms, settings);
     const exact = marbleAtTime(events[1].timeMs, events, platforms, settings);
     expect(Math.hypot(before.x - exact.x, before.y - exact.y)).toBeLessThan(0.02);
+  });
+
+  it("does not chain 16.7 ms arpeggio hits into one long chord hold", () => {
+    const events = [
+      note(0, 0),
+      note(1, 16.667),
+      note(2, 33.333),
+      note(3, 50),
+      note(4, 420),
+    ];
+
+    const clusters = chordClusters(events);
+    expect(clusters.every((cluster) => events[cluster.end].timeMs - events[cluster.start].timeMs <= CHORD_GAP_MS)).toBe(true);
+
+    const platforms = buildMarbleCourse(events, settings, 720);
+    const holdSpans = platforms.slice(0, -1)
+      .filter((platform) => platform.motionMode === "hold")
+      .map((platform) => events[platform.index + 1].timeMs - events[platform.index].timeMs);
+    expect(holdSpans.every((span) => span <= CHORD_GAP_MS)).toBe(true);
+    expect(platforms.slice(0, 3).some((platform) => platform.motionMode === "roll")).toBe(true);
+
+    for (let index = 0; index < 3; index += 1) {
+      const spanSeconds = (events[index + 1].timeMs - events[index].timeMs) / 1000;
+      const speed = Math.hypot(platforms[index].outVX, platforms[index].outVY);
+      if (platforms[index].motionMode === "roll") {
+        const start = { x: platforms[index].hitX, y: platforms[index].hitY };
+        const end = { x: platforms[index + 1].hitX, y: platforms[index + 1].hitY };
+        expect(Math.hypot(end.x - start.x, end.y - start.y)).toBeCloseTo(speed * spanSeconds, 5);
+        expect(speed).toBeLessThan(240);
+      }
+    }
+  });
+
+  it("keeps dense visual faces on the actual hit polyline at bends", () => {
+    const events = Array.from({ length: 18 }, (_, index) => note(index, index * 92));
+    events.push(note(18, 2300));
+    const platforms = buildMarbleCourse(events, settings, 720);
+    const dense = platforms.filter((platform) => platform.denseSurfaceId !== undefined && !platform.visualHidden);
+    expect(dense.length).toBeGreaterThan(4);
+
+    for (const platform of dense) {
+      const angle = platform.visualTiltRad ?? platform.tiltRad;
+      let tangent = { x: Math.cos(angle), y: Math.sin(angle) };
+      if (tangent.x < 0) tangent = { x: -tangent.x, y: -tangent.y };
+      const normal = { x: tangent.y, y: -tangent.x };
+      const faceX = (platform.visualX ?? platform.x) + normal.x * settings.ballSize;
+      const faceY = (platform.visualY ?? platform.y) + normal.y * settings.ballSize;
+      const perpendicular = Math.abs((platform.hitX - faceX) * normal.x + (platform.hitY - faceY) * normal.y);
+      expect(perpendicular).toBeLessThan(1e-6);
+    }
   });
 
 });

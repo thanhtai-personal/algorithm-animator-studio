@@ -1,7 +1,7 @@
 import type { PlatformStyle } from "../types";
 
 export interface InstrumentScenePlan {
-  sceneId: "keys" | "pads" | "cymbals" | "bars" | "wires" | "finale";
+  sceneId: "keys" | "runway" | "pads" | "cymbals" | "melody" | "finale";
   sceneIndex: number;
   localIndex: number;
   sceneStart: boolean;
@@ -24,50 +24,50 @@ const SCENES: readonly SceneDefinition[] = [
   {
     id: "keys",
     length: 12,
-    pattern: ["instrument-key"],
-    widthScale: 1.12,
-    verticalScale: 0.68,
-    horizontalScale: 0.62,
+    pattern: ["instrument-key", "instrument-key", "instrument-key", "instrument-pad"],
+    widthScale: 1.08,
+    verticalScale: 0.72,
+    horizontalScale: 0.72,
+  },
+  {
+    id: "runway",
+    length: 8,
+    pattern: ["instrument-key", "instrument-rail", "instrument-key", "instrument-pad"],
+    widthScale: 0.98,
+    verticalScale: 0.78,
+    horizontalScale: 0.76,
   },
   {
     id: "pads",
-    length: 9,
-    pattern: ["instrument-pad", "instrument-pad", "instrument-rail", "instrument-pad"],
+    length: 8,
+    pattern: ["instrument-pad", "instrument-key", "instrument-pad", "instrument-rail"],
     widthScale: 0.88,
-    verticalScale: 1.06,
-    horizontalScale: 0.94,
+    verticalScale: 0.84,
+    horizontalScale: 0.82,
   },
   {
     id: "cymbals",
-    length: 7,
-    pattern: ["instrument-cymbal", "instrument-rail", "instrument-cymbal"],
-    widthScale: 0.68,
-    verticalScale: 1.28,
-    horizontalScale: 1.08,
+    length: 6,
+    pattern: ["instrument-key", "instrument-cymbal", "instrument-key", "instrument-rail"],
+    widthScale: 0.76,
+    verticalScale: 0.92,
+    horizontalScale: 0.86,
   },
   {
-    id: "bars",
-    length: 9,
-    pattern: ["instrument-pad", "instrument-rail", "instrument-pad", "instrument-rail"],
-    widthScale: 0.9,
-    verticalScale: 1.08,
-    horizontalScale: 1.02,
-  },
-  {
-    id: "wires",
+    id: "melody",
     length: 10,
-    pattern: ["instrument-wire", "instrument-wire", "instrument-rail", "instrument-wire"],
-    widthScale: 1.18,
-    verticalScale: 1.36,
-    horizontalScale: 1.18,
+    pattern: ["instrument-key", "instrument-key", "instrument-pad", "instrument-key", "instrument-rail"],
+    widthScale: 0.94,
+    verticalScale: 0.82,
+    horizontalScale: 0.8,
   },
   {
     id: "finale",
-    length: 12,
-    pattern: ["instrument-rail", "instrument-key", "instrument-wire", "instrument-cymbal", "instrument-pad"],
-    widthScale: 1,
-    verticalScale: 1.18,
-    horizontalScale: 1.08,
+    length: 10,
+    pattern: ["instrument-key", "instrument-pad", "instrument-key", "instrument-cymbal", "instrument-rail"],
+    widthScale: 0.92,
+    verticalScale: 0.9,
+    horizontalScale: 0.84,
   },
 ] as const;
 

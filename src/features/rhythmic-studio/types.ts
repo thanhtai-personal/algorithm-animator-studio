@@ -93,23 +93,26 @@ export const EXPORT_FPS_OPTIONS = [30, 60, 120] as const;
 export type ExportFps = (typeof EXPORT_FPS_OPTIONS)[number];
 
 export const BACKGROUND_PRESETS = [
-  "neon-grid",
-  "aurora",
-  "starfield",
-  "sunset",
   "spotlight",
   "deep-space",
-  "pipe-tower",
-  "stairway",
-  "tube-tunnel",
-  "toy-board",
   "tube-board-dark",
   "comet-void",
   "xylophone-room",
   "instrument-room",
 ] as const;
 
-export type BackgroundPreset = (typeof BACKGROUND_PRESETS)[number];
+const LEGACY_BACKGROUND_PRESETS = [
+  "neon-grid",
+  "aurora",
+  "starfield",
+  "sunset",
+  "pipe-tower",
+  "stairway",
+  "tube-tunnel",
+  "toy-board",
+] as const;
+
+export type BackgroundPreset = (typeof BACKGROUND_PRESETS)[number] | (typeof LEGACY_BACKGROUND_PRESETS)[number];
 export type BackgroundFit = "cover" | "contain";
 export type LyricStyle = "karaoke" | "minimal" | "boxed";
 export type LyricPosition = "top" | "middle" | "bottom";

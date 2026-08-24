@@ -14,12 +14,13 @@ export function useRhythmicStudioController() {
   const lang = useSystemLang();
   const store = useRhythmicStudioStore();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const threeCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const playback = useRhythmicPlayback(store);
   const sources = useRhythmicSourceActions(store, playback.stopPlaybackAudio);
   const media = useRhythmicMediaActions(store);
   const course = useRhythmicCourseActions(store);
   const projects = useRhythmicProjectActions(store, sources.loadBuiltin);
-  const exporter = useRhythmicExportActions(store, canvasRef, playback);
+  const exporter = useRhythmicExportActions(store, { legacyCanvasRef: canvasRef, threeCanvasRef }, playback);
   const presets = useRhythmicPresetActions(store);
 
   useEffect(() => {
@@ -82,6 +83,7 @@ export function useRhythmicStudioController() {
     setProjectName: store.setProjectName,
     projects: store.projects,
     canvasRef,
+    threeCanvasRef,
     audioElementRef: playback.audioElementRef,
     timeline: store.timeline,
     durationMs: store.durationMs,

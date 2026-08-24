@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { PerspectiveCamera } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
@@ -34,6 +34,7 @@ interface Props {
   onNote: (event: NoteEvent) => void;
   onTime: (timeMs: number) => void;
   onEnded: () => void;
+  canvasRef?: MutableRefObject<HTMLCanvasElement | null>;
 }
 
 const CAMERA_Z = 10.15;
@@ -178,11 +179,11 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
     const jumpDistance = world.distanceTo(aheadWorld);
     const density = noteDensity(props.events, timeMs);
     const speed = velocity.length();
-    const profileZoom = props.settings.cameraProfile === "xylophone" ? -0.45 : (props.settings.cameraProfile === "comet" ? 0.5 : 0);
+    const profileZoom = props.settings.cameraProfile === "xylophone" ? 1.25 : (props.settings.cameraProfile === "comet" ? 0.5 : 0);
     const adaptiveZ = THREE.MathUtils.clamp(
       CAMERA_Z + profileZoom + jumpDistance * 0.18 + Math.min(0.45, speed * 0.018) - Math.min(0.75, density * 0.035),
-      8.8,
-      12.8,
+      props.settings.cameraProfile === "xylophone" ? 10.4 : 8.8,
+      props.settings.cameraProfile === "xylophone" ? 15.1 : 12.8,
     );
     const anchorOffset = (0.5 - props.settings.cameraAnchor) * 7.2;
     const lateralLead = THREE.MathUtils.clamp((aheadWorld.x - world.x) * 0.28 + velocity.x * 0.018, -0.95, 0.95);
@@ -212,7 +213,7 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
     camera.lookAt(smoothedLook);
 
     const perspective = camera as THREE.PerspectiveCamera;
-    const targetFov = THREE.MathUtils.clamp(CAMERA_FOV + jumpDistance * 0.56 - density * 0.055, 34.5, 43.5);
+    const targetFov = THREE.MathUtils.clamp(CAMERA_FOV + jumpDistance * (props.settings.cameraProfile === "xylophone" ? 0.5 : 0.56) - density * 0.055, props.settings.cameraProfile === "xylophone" ? 37 : 34.5, props.settings.cameraProfile === "xylophone" ? 44.5 : 43.5);
     perspective.fov = snapCamera ? targetFov : THREE.MathUtils.damp(perspective.fov, targetFov, 5.5, deltaSeconds);
     perspective.updateProjectionMatrix();
     const bankTarget = THREE.MathUtils.clamp(-velocity.x * 0.006, -0.042, 0.042);
@@ -330,6 +331,10 @@ export function hasRhythmicWebGLSupport() {
 }
 
 export function RhythmicScene3D(props: Props) {
+  useEffect(() => () => {
+    if (props.canvasRef) props.canvasRef.current = null;
+  }, [props.canvasRef]);
+
   const platforms = useMemo(
     () => buildMarbleCourse(props.events, props.settings, RHYTHMIC_COURSE_WIDTH),
     [props.events, props.settings.platformGap, props.settings.platformWidth, props.settings.platformThickness, props.settings.platformTilt, props.settings.laneSpread, props.settings.minBounceDistance, props.settings.bounceHeight, props.settings.ballSize, props.settings.prismStart, props.settings.prismEnd, props.settings.autoSyncGaps, props.settings.terrainProfile, props.settings.colorPaletteMode],
@@ -347,6 +352,7 @@ export function RhythmicScene3D(props: Props) {
           gl.toneMappingExposure = 1.04;
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
+          if (props.canvasRef) props.canvasRef.current = gl.domElement;
         }}
         onPointerMissed={() => props.onSelectNode(null)}
       >

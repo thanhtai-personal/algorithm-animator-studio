@@ -182,47 +182,84 @@ function CometSpace() {
 }
 
 function XylophoneRoom() {
-  const sections = useMemo(() => Array.from({ length: 11 }, (_, i) => i), []);
-  const accents = ["#d95f59", "#e69a4d", "#d6b94c", "#5ea96d", "#5e91bb", "#8d70bc"];
+  const floorSlats = useMemo(() => Array.from({ length: 12 }, (_, i) => i), []);
+  const shelfItems = useMemo(() => Array.from({ length: 7 }, (_, i) => i), []);
+  const accents = ["#f2b457", "#ef6d7a", "#59c7a3", "#74b6ff", "#9d7bf2", "#ff9f6b"];
   return (
     <group>
-      <RoundedBox position={[0, -54, -4.1]} args={[16.8, 136, 0.72]} radius={0.16} smoothness={4} receiveShadow>
-        <meshStandardMaterial color="#9a846c" roughness={0.76} metalness={0.02} />
+      <RoundedBox position={[0, -54, -4.3]} args={[17.2, 136, 0.8]} radius={0.18} smoothness={4} receiveShadow>
+        <meshStandardMaterial color="#c8af92" roughness={0.8} metalness={0.02} />
       </RoundedBox>
-      {[-7.95, 7.95].map((x) => (
-        <mesh key={x} position={[x, -54, -0.8]} rotation={[0, x < 0 ? Math.PI / 2.55 : -Math.PI / 2.55, 0]} receiveShadow>
-          <planeGeometry args={[7.8, 136]} />
-          <meshStandardMaterial color="#665746" roughness={0.72} metalness={0.02} side={THREE.DoubleSide} />
+      {[-8.05, 8.05].map((x) => (
+        <mesh key={x} position={[x, -54, -0.8]} rotation={[0, x < 0 ? Math.PI / 2.58 : -Math.PI / 2.58, 0]} receiveShadow>
+          <planeGeometry args={[8, 136]} />
+          <meshStandardMaterial color="#8d725a" roughness={0.76} metalness={0.02} side={THREE.DoubleSide} />
         </mesh>
       ))}
-      {[-6.5, -3.25, 0, 3.25, 6.5].map((x, index) => (
-        <mesh key={x} position={[x, -54, -3.62]} castShadow>
-          <boxGeometry args={[0.12, 136, 0.12]} />
-          <meshStandardMaterial color={index % 2 ? "#7b6853" : "#b29b7e"} roughness={0.64} metalness={0.02} />
+      <RoundedBox position={[0, -54, -3.5]} args={[11.8, 68, 0.34]} radius={0.1} smoothness={4} receiveShadow>
+        <meshStandardMaterial color="#eee3d4" roughness={0.68} metalness={0.03} />
+      </RoundedBox>
+      <RoundedBox position={[0, 9.1, -3.28]} args={[8.6, 1.05, 0.26]} radius={0.08} smoothness={4} receiveShadow>
+        <meshStandardMaterial color="#9f744b" roughness={0.58} metalness={0.06} />
+      </RoundedBox>
+      {shelfItems.map((index) => (
+        <mesh key={index} position={[-3.2 + index * 1.08, 9.95, -3.12]} castShadow>
+          <boxGeometry args={[0.34, 0.7 + (index % 3) * 0.18, 0.24]} />
+          <meshStandardMaterial color={index % 2 ? "#8cd4ff" : "#f2cc7a"} roughness={0.34} metalness={0.06} />
         </mesh>
       ))}
-      {sections.map((index) => {
-        const y = 5 - index * 12.1;
-        const color = accents[index % accents.length];
-        return (
-          <group key={index} position={[0, y, -3.48]}>
-            <RoundedBox position={[-5.2, 0.72, 0.28]} args={[2.5, 0.24, 0.26]} radius={0.07} smoothness={4} castShadow>
-              <meshPhysicalMaterial color={color} roughness={0.3} clearcoat={0.55} />
-            </RoundedBox>
-            <RoundedBox position={[4.8, -0.62, 0.3]} args={[3.2, 0.2, 0.24]} radius={0.06} smoothness={4} castShadow>
-              <meshPhysicalMaterial color={accents[(index + 3) % accents.length]} roughness={0.32} clearcoat={0.5} />
-            </RoundedBox>
-            {[-2.2, 0, 2.2].map((x, tube) => (
-              <mesh key={x} position={[x, tube % 2 ? 1.15 : -1.05, 0.08]} castShadow>
-                <cylinderGeometry args={[0.055, 0.055, 1.1 + tube * 0.12, 14]} />
-                <meshStandardMaterial color="#b39468" roughness={0.25} metalness={0.62} />
-              </mesh>
-            ))}
-          </group>
-        );
-      })}
-      <GlowSprite position={[-5.2, -28, -2.9]} scale={[8, 18, 1]} color="#ffd18a" opacity={0.15} />
-      <GlowSprite position={[5.6, -84, -2.8]} scale={[7, 16, 1]} color="#ff9c6b" opacity={0.11} />
+      <RoundedBox position={[0, -55, -1.18]} args={[11.6, 92, 0.36]} radius={0.08} smoothness={4} receiveShadow>
+        <meshStandardMaterial color="#aa7648" roughness={0.74} metalness={0.02} />
+      </RoundedBox>
+      {floorSlats.map((index) => (
+        <mesh key={index} position={[0, 8 - index * 10.4, -0.98]} castShadow>
+          <boxGeometry args={[9.9 - Math.min(index, 6) * 0.14, 0.2, 0.06]} />
+          <meshStandardMaterial color={index % 2 ? "#bc8756" : "#9d683f"} roughness={0.64} metalness={0.02} />
+        </mesh>
+      ))}
+      {[0, 1].map((line) => (
+        <mesh key={`rail-${line}`} position={[0.18 + line * 0.62, -16.2 + line * 2.2, -0.96]} rotation={[0, 0, -0.2]} castShadow>
+          <cylinderGeometry args={[0.05, 0.05, 7.2, 16]} />
+          <meshStandardMaterial color="#9c784f" roughness={0.28} metalness={0.58} />
+        </mesh>
+      ))}
+      {[0, 1, 2, 3, 4, 5].map((index) => (
+        <RoundedBox key={`key-${index}`} position={[-3.9 + index * 1.4, -16.4 + index * 1.02, -0.82]} args={[1.5 - index * 0.07, 0.4, 0.24]} radius={0.08} smoothness={4} castShadow>
+          <meshPhysicalMaterial color={accents[index]} roughness={0.28} clearcoat={0.78} />
+        </RoundedBox>
+      ))}
+      {[-3.6, -1.6, 0.4, 2.4].map((x, index) => (
+        <mesh key={`resonator-${x}`} position={[x, -17.35 + index * 0.98, -1.1]} castShadow>
+          <boxGeometry args={[0.2, 0.46 - index * 0.04, 0.18]} />
+          <meshStandardMaterial color="#6a4b31" roughness={0.52} metalness={0.08} />
+        </mesh>
+      ))}
+      <mesh position={[4.65, -7.6, -0.88]} castShadow>
+        <cylinderGeometry args={[0.05, 0.05, 5.8, 14]} />
+        <meshStandardMaterial color="#9098a5" roughness={0.3} metalness={0.58} />
+      </mesh>
+      <mesh position={[4.65, -4.7, -0.72]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <torusGeometry args={[0.94, 0.06, 12, 48]} />
+        <meshStandardMaterial color="#d8b36f" roughness={0.22} metalness={0.78} />
+      </mesh>
+      <mesh position={[-4.85, -8.8, -0.95]} rotation={[0.55, 0, -0.3]} castShadow>
+        <cylinderGeometry args={[0.045, 0.045, 2.7, 12]} />
+        <meshStandardMaterial color="#c79d63" roughness={0.26} metalness={0.28} />
+      </mesh>
+      <mesh position={[-4.15, -9.2, -0.93]} rotation={[0.55, 0, 0.16]} castShadow>
+        <cylinderGeometry args={[0.045, 0.045, 2.55, 12]} />
+        <meshStandardMaterial color="#c79d63" roughness={0.26} metalness={0.28} />
+      </mesh>
+      <mesh position={[-5.3, -7.65, -0.48]} castShadow>
+        <sphereGeometry args={[0.13, 18, 12]} />
+        <meshStandardMaterial color="#7c93ff" roughness={0.16} metalness={0.4} />
+      </mesh>
+      <mesh position={[-3.72, -8.08, -0.46]} castShadow>
+        <sphereGeometry args={[0.13, 18, 12]} />
+        <meshStandardMaterial color="#ff9db9" roughness={0.16} metalness={0.4} />
+      </mesh>
+      <GlowSprite position={[-5.2, -22, -2.8]} scale={[9, 18, 1]} color="#ffe0a5" opacity={0.13} />
+      <GlowSprite position={[5.3, -70, -2.5]} scale={[8, 18, 1]} color="#ffb179" opacity={0.1} />
     </group>
   );
 }

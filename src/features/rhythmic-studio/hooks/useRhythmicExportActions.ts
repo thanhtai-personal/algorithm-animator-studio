@@ -20,13 +20,23 @@ type PlaybackDeps = {
   resetAndPlay: () => Promise<void>;
 };
 
-export function useRhythmicExportActions(store: RhythmicStudioStore, canvasRef: MutableRefObject<HTMLCanvasElement | null>, playback: PlaybackDeps) {
+type CanvasRefs = {
+  legacyCanvasRef: MutableRefObject<HTMLCanvasElement | null>;
+  threeCanvasRef: MutableRefObject<HTMLCanvasElement | null>;
+};
+
+function currentCanvas(store: RhythmicStudioStore, refs: CanvasRefs) {
+  if (store.rendererMode === "three" && refs.threeCanvasRef.current) return refs.threeCanvasRef.current;
+  return refs.legacyCanvasRef.current;
+}
+
+export function useRhythmicExportActions(store: RhythmicStudioStore, refs: CanvasRefs, playback: PlaybackDeps) {
   const lang = useSystemLang();
   const chunksRef = useRef<Blob[]>([]);
   const mp4Mutation = useRhythmicExportMutation();
 
   const recordVideo = useCallback(async (format: ExportFormat = "webm", clipOnly = false) => {
-    const canvas = canvasRef.current;
+    const canvas = currentCanvas(store, refs);
     if (!canvas || typeof canvas.captureStream !== "function" || typeof MediaRecorder === "undefined") {
       toast.error(rhythmicText(lang, "error.recordingUnsupported"));
       return;
@@ -48,7 +58,7 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, canvasRef: 
     const stream = new MediaStream([...videoStream.getVideoTracks(), ...audioTracks]);
     const recorder = new MediaRecorder(stream, {
       mimeType,
-      videoBitsPerSecond: store.settings.exportFps >= 120 ? 14_000_000 : 9_000_000,
+      videoBitsPerSecond: store.settings.exportFps >= 120 ? 16_000_000 : 10_000_000,
     });
     playback.recorderRef.current = recorder;
     chunksRef.current = [];
@@ -81,7 +91,7 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, canvasRef: 
     await new Promise((resolve) => window.setTimeout(resolve, 80));
     if (clipOnly) await playback.playRange(store.trimStartMs, store.trimEndMs, true);
     else await playback.resetAndPlay();
-  }, [canvasRef, lang, mp4Mutation, playback, store]);
+  }, [lang, mp4Mutation, playback, refs, store]);
 
   return { recordVideo };
 }

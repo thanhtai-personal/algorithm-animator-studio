@@ -125,86 +125,153 @@ function drawCometVoid(ctx: CanvasRenderingContext2D, width: number, height: num
 }
 
 function drawInstrumentRoom(ctx: CanvasRenderingContext2D, width: number, height: number, settings: StudioSettings, xylophone = false) {
-  const horizonY = fillRoom(ctx, width, height, xylophone ? "#f4efe7" : "#efe7dc", xylophone ? "#d8dde7" : "#d4d8df", "#a0734f", "#d1b08c");
+  const horizonY = fillRoom(
+    ctx,
+    width,
+    height,
+    xylophone ? "#f5f0e7" : "#efe6d9",
+    xylophone ? "#d9dfe7" : "#d6dbe1",
+    xylophone ? "#9f724e" : "#9a6d49",
+    xylophone ? "#d9bc98" : "#ceb18f",
+  );
 
-  const warm = ctx.createRadialGradient(width * 0.16, height * 0.08, 10, width * 0.22, height * 0.2, height * 0.68);
-  warm.addColorStop(0, "rgba(255,232,190,.52)");
-  warm.addColorStop(0.38, "rgba(255,218,160,.18)");
-  warm.addColorStop(1, "rgba(255,226,175,0)");
+  const warm = ctx.createRadialGradient(width * 0.18, height * 0.1, 8, width * 0.22, height * 0.18, height * 0.62);
+  warm.addColorStop(0, "rgba(255,235,198,.52)");
+  warm.addColorStop(0.42, "rgba(255,220,168,.18)");
+  warm.addColorStop(1, "rgba(255,228,175,0)");
   ctx.fillStyle = warm;
   ctx.fillRect(0, 0, width, height);
 
-  const cool = ctx.createRadialGradient(width * 0.86, height * 0.22, 14, width * 0.74, height * 0.26, height * 0.72);
-  cool.addColorStop(0, `${settings.prismStart}30`);
-  cool.addColorStop(0.48, `${settings.prismEnd}10`);
+  const cool = ctx.createRadialGradient(width * 0.82, height * 0.2, 14, width * 0.72, height * 0.26, height * 0.64);
+  cool.addColorStop(0, `${settings.prismStart}28`);
+  cool.addColorStop(0.45, `${settings.prismEnd}10`);
   cool.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = cool;
   ctx.fillRect(0, 0, width, height);
 
-  ctx.strokeStyle = "rgba(255,255,255,.15)";
-  ctx.lineWidth = 1;
-  for (let i = 0; i < 7; i += 1) {
-    ctx.beginPath();
-    ctx.moveTo(width * 0.5, horizonY);
-    ctx.lineTo(width * (0.06 + i * 0.145), height);
-    ctx.stroke();
-  }
-
-  const shelfY = height * 0.18;
-  ctx.fillStyle = "rgba(176,137,102,.86)";
-  ctx.fillRect(width * 0.2, shelfY, width * 0.6, 8);
-  ctx.fillStyle = "rgba(255,255,255,.28)";
-  ctx.fillRect(width * 0.2, shelfY, width * 0.6, 2);
-
-  for (let i = 0; i < 4; i += 1) {
-    const x = width * (0.25 + i * 0.15);
-    ctx.fillStyle = i % 2 ? "rgba(255,202,111,.86)" : "rgba(125,214,255,.82)";
-    ctx.beginPath(); ctx.roundRect(x, shelfY - 24, 18, 24, 4); ctx.fill();
-  }
-
+  const wallPanelY = height * 0.16;
+  const wallPanelH = height * 0.34;
   ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,.18)";
-  ctx.shadowBlur = 22;
+  ctx.shadowColor = "rgba(0,0,0,.12)";
+  ctx.shadowBlur = 18;
   ctx.fillStyle = "rgba(255,255,255,.16)";
   ctx.beginPath();
-  ctx.roundRect(width * 0.24, height * 0.26, width * 0.52, height * 0.28, 22);
+  ctx.roundRect(width * 0.2, wallPanelY, width * 0.6, wallPanelH, 22);
   ctx.fill();
   ctx.restore();
 
+  [0.24, 0.76].forEach((ratio, index) => {
+    const x = width * ratio;
+    const panel = ctx.createLinearGradient(x, 0, x + width * 0.08, 0);
+    panel.addColorStop(0, "rgba(255,255,255,.12)");
+    panel.addColorStop(0.5, index === 0 ? "rgba(255,211,160,.18)" : "rgba(155,215,255,.14)");
+    panel.addColorStop(1, "rgba(60,48,38,.08)");
+    ctx.fillStyle = panel;
+    ctx.beginPath();
+    ctx.roundRect(x - width * 0.04, height * 0.18, width * 0.08, height * 0.27, 12);
+    ctx.fill();
+  });
+
+  const shelfY = height * 0.2;
+  ctx.fillStyle = "rgba(170,132,96,.92)";
+  ctx.fillRect(width * 0.26, shelfY, width * 0.48, 6);
+  ctx.fillStyle = "rgba(255,255,255,.3)";
+  ctx.fillRect(width * 0.26, shelfY, width * 0.48, 2);
+  for (let i = 0; i < 5; i += 1) {
+    const x = width * (0.3 + i * 0.09);
+    ctx.fillStyle = i % 2 ? "rgba(255,197,102,.84)" : "rgba(122,204,255,.8)";
+    ctx.beginPath();
+    ctx.roundRect(x, shelfY - 18 - (i % 2 ? 0 : 2), 12, 18 + (i % 3) * 4, 4);
+    ctx.fill();
+  }
+
+  ctx.strokeStyle = "rgba(255,255,255,.16)";
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 6; i += 1) {
+    ctx.beginPath();
+    ctx.moveTo(width * 0.5, horizonY);
+    ctx.lineTo(width * (0.12 + i * 0.15), height);
+    ctx.stroke();
+  }
+
+  const deckY = height * 0.74;
+  ctx.fillStyle = "rgba(83,59,39,.22)";
+  ctx.beginPath();
+  ctx.moveTo(width * 0.2 + 8, deckY + 12);
+  ctx.lineTo(width * 0.8 + 8, deckY + 12);
+  ctx.lineTo(width * 0.68 + 8, horizonY + 28);
+  ctx.lineTo(width * 0.32 + 8, horizonY + 28);
+  ctx.closePath();
+  ctx.fill();
+
+  const floor = ctx.createLinearGradient(0, horizonY, 0, deckY);
+  floor.addColorStop(0, xylophone ? "#d4b08b" : "#ceb18e");
+  floor.addColorStop(1, xylophone ? "#a27149" : "#96633d");
+  ctx.fillStyle = floor;
+  ctx.beginPath();
+  ctx.moveTo(width * 0.18, deckY);
+  ctx.lineTo(width * 0.82, deckY);
+  ctx.lineTo(width * 0.68, horizonY + 22);
+  ctx.lineTo(width * 0.32, horizonY + 22);
+  ctx.closePath();
+  ctx.fill();
+
   if (xylophone) {
     const colors = ["#f59e0b", "#ef4444", "#22c55e", "#3b82f6", "#8b5cf6"];
+    ctx.strokeStyle = "rgba(161,122,82,.78)";
+    ctx.lineWidth = 2.8;
+    ctx.beginPath();
+    ctx.moveTo(width * 0.26, height * 0.66);
+    ctx.lineTo(width * 0.62, height * 0.58);
+    ctx.moveTo(width * 0.3, height * 0.7);
+    ctx.lineTo(width * 0.66, height * 0.62);
+    ctx.stroke();
     colors.forEach((color, index) => {
-      const x = width * 0.24 + index * (width * 0.09);
-      const y = height * 0.48 - index * 4;
-      ctx.fillStyle = "rgba(65,46,31,.32)";
-      ctx.fillRect(x + 5, y + 24, width * 0.11, 8);
+      const keyWidth = width * 0.114 - index * 2.4;
+      const x = width * 0.2 + index * (width * 0.084);
+      const y = height * 0.54 - index * 5;
+      ctx.fillStyle = "rgba(72,50,34,.24)";
+      ctx.fillRect(x + 7, y + 21, keyWidth - 10, 6);
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.roundRect(x, y, width * 0.11, 22, 8);
+      ctx.roundRect(x, y, keyWidth, 20, 8);
       ctx.fill();
-      ctx.fillStyle = "rgba(255,255,255,.34)";
-      ctx.fillRect(x + 6, y + 4, width * 0.07, 4);
+      ctx.fillStyle = "rgba(255,255,255,.28)";
+      ctx.fillRect(x + 8, y + 4, keyWidth * 0.58, 4);
     });
-  } else {
-    const instrumentX = width * 0.3;
-    const instrumentY = height * 0.5;
-    ctx.fillStyle = "rgba(45,52,72,.22)";
-    ctx.fillRect(instrumentX + 12, instrumentY + 28, width * 0.32, 12);
-    ctx.fillStyle = "#f5d890";
+    ctx.strokeStyle = "rgba(131,144,160,.72)";
+    ctx.lineWidth = 2.2;
     ctx.beginPath();
-    ctx.roundRect(instrumentX, instrumentY, width * 0.34, 26, 10);
+    ctx.ellipse(width * 0.73, height * 0.44, width * 0.072, height * 0.02, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(width * 0.73, height * 0.445);
+    ctx.lineTo(width * 0.73, height * 0.62);
+    ctx.stroke();
+  } else {
+    const instrumentX = width * 0.26;
+    const instrumentY = height * 0.53;
+    ctx.fillStyle = "rgba(55,60,72,.18)";
+    ctx.fillRect(instrumentX + 12, instrumentY + 28, width * 0.36, 12);
+    ctx.fillStyle = "#f3d484";
+    ctx.beginPath();
+    ctx.roundRect(instrumentX, instrumentY, width * 0.38, 24, 10);
     ctx.fill();
-    ctx.fillStyle = "rgba(255,255,255,.46)";
-    ctx.fillRect(instrumentX + 12, instrumentY + 4, width * 0.18, 5);
-    ctx.strokeStyle = "rgba(120,86,50,.65)";
+    ctx.fillStyle = "rgba(255,255,255,.4)";
+    ctx.fillRect(instrumentX + 12, instrumentY + 4, width * 0.19, 4);
+    ctx.strokeStyle = "rgba(127,91,52,.8)";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.ellipse(width * 0.72, height * 0.42, width * 0.09, height * 0.03, 0, 0, Math.PI * 2);
+    ctx.ellipse(width * 0.7, height * 0.44, width * 0.085, height * 0.025, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(width * 0.72, height * 0.42);
-    ctx.lineTo(width * 0.72, height * 0.6);
+    ctx.moveTo(width * 0.7, height * 0.44);
+    ctx.lineTo(width * 0.7, height * 0.62);
     ctx.stroke();
+    ctx.fillStyle = "#3b414a";
+    ctx.beginPath();
+    ctx.roundRect(width * 0.58, height * 0.56, width * 0.09, 0.03 * height, 8);
+    ctx.fill();
   }
 }
 

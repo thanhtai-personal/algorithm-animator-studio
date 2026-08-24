@@ -329,26 +329,27 @@ function drawPrism(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatfor
 export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: MarblePlatform, screenY: number, timeMs: number, settings: StudioSettings, forcedStyle?: PlatformStyle, renderQuality: RenderQuality = "live") {
   const age = timeMs - platform.event.timeMs;
   const impact = age >= 0 && age < 320 ? 1 - age / 320 : 0;
+  const lightImpact = settings.impactPlatformLight ? impact : 0;
   const half = platform.width / 2;
   const style = forcedStyle ?? resolvePlatformStyle(platform.index, settings);
   ctx.save();
   ctx.translate(platform.x, screenY);
   ctx.rotate(platform.tiltRad);
-  if (drawPresetPlatform(ctx, style, half, platform, impact, age, settings, renderQuality)) {
+  if (drawPresetPlatform(ctx, style, half, platform, lightImpact, age, settings, renderQuality)) {
     // preset renderer already drew the item
-  } else if (style === "neon-tube") drawNeonTube(ctx, half, platform, impact, settings);
-  else if (style === "neon-bar") drawNeonBar(ctx, half, platform, impact, settings);
-  else if (style === "glass") drawGlass(ctx, half, platform, impact, settings);
-  else if (style === "metal-rail") drawMetalRail(ctx, half, platform, impact, settings);
-  else if (style === "dual-rail") drawDualRail(ctx, half, platform, impact, settings);
-  else if (style === "light-pods") drawLightPods(ctx, half, platform, impact, settings);
-  else if (style === "tech-pad") drawTechPad(ctx, half, platform, impact, settings);
-  else if (style === "pipe-rail") drawPipeRail(ctx, half, platform, impact, settings);
-  else if (style === "stair-step") drawStairStep(ctx, half, platform, impact, settings);
-  else if (style === "toy-peg") drawToyPeg(ctx, half, platform, impact, settings);
-  else if (style === "toy-tube") drawToyTube(ctx, half, platform, impact, settings);
-  else if (style.startsWith("glass-")) drawRealGlass(ctx, half, platform, impact, settings, style);
-  else drawPrism(ctx, half, platform, impact, settings);
+  } else if (style === "neon-tube") drawNeonTube(ctx, half, platform, lightImpact, settings);
+  else if (style === "neon-bar") drawNeonBar(ctx, half, platform, lightImpact, settings);
+  else if (style === "glass") drawGlass(ctx, half, platform, lightImpact, settings);
+  else if (style === "metal-rail") drawMetalRail(ctx, half, platform, lightImpact, settings);
+  else if (style === "dual-rail") drawDualRail(ctx, half, platform, lightImpact, settings);
+  else if (style === "light-pods") drawLightPods(ctx, half, platform, lightImpact, settings);
+  else if (style === "tech-pad") drawTechPad(ctx, half, platform, lightImpact, settings);
+  else if (style === "pipe-rail") drawPipeRail(ctx, half, platform, lightImpact, settings);
+  else if (style === "stair-step") drawStairStep(ctx, half, platform, lightImpact, settings);
+  else if (style === "toy-peg") drawToyPeg(ctx, half, platform, lightImpact, settings);
+  else if (style === "toy-tube") drawToyTube(ctx, half, platform, lightImpact, settings);
+  else if (style.startsWith("glass-")) drawRealGlass(ctx, half, platform, lightImpact, settings, style);
+  else drawPrism(ctx, half, platform, lightImpact, settings);
   ctx.restore();
 
   if (settings.impactRipple && impact > 0) {

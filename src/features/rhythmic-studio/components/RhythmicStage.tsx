@@ -63,10 +63,10 @@ export function RhythmicStage({ studio }: { studio: Studio }) {
           onEnded={studio.onEnded}
           canvasRef={studio.threeCanvasRef}
           presetMixEnabled={studio.presetMixEnabled}
-          activePresetId={studio.activePresetId}
+          presetMixSeed={studio.presetMixSeed}
         />
       ) : (
-        <RhythmicCanvas events={studio.timeline} settings={studio.settings} durationMs={studio.durationMs} playing={studio.playing} playbackToken={studio.playbackToken} playbackStartMs={studio.playbackStartMs} playbackEndMs={studio.playbackEndMs || studio.durationMs} backgroundUrl={studio.backgroundUrl} lyrics={studio.lyrics} courseOverrides={studio.courseOverrides} selectedNodeIndex={studio.selectedNodeIndex} onSelectNode={studio.selectCourseNode} recording={studio.recording} targetFps={studio.settings.exportFps} onNote={studio.onNote} onTime={studio.setTimeMs} onEnded={studio.onEnded} canvasRef={studio.canvasRef} presetMixEnabled={studio.presetMixEnabled} activePresetId={studio.activePresetId} />
+        <RhythmicCanvas events={studio.timeline} settings={studio.settings} durationMs={studio.durationMs} playing={studio.playing} playbackToken={studio.playbackToken} playbackStartMs={studio.playbackStartMs} playbackEndMs={studio.playbackEndMs || studio.durationMs} backgroundUrl={studio.backgroundUrl} lyrics={studio.lyrics} courseOverrides={studio.courseOverrides} selectedNodeIndex={studio.selectedNodeIndex} onSelectNode={studio.selectCourseNode} recording={studio.recording} targetFps={studio.settings.exportFps} onNote={studio.onNote} onTime={studio.setTimeMs} onEnded={studio.onEnded} canvasRef={studio.canvasRef} presetMixEnabled={studio.presetMixEnabled} presetMixSeed={studio.presetMixSeed} />
       )}
     </div>
 

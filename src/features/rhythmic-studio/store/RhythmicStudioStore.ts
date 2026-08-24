@@ -52,6 +52,7 @@ export class RhythmicStudioStore {
   lyricFormat: LyricFormat | null = null;
   activePresetId: RhythmicPresetId | null = "toy-pegboard";
   presetMixEnabled = false;
+  presetMixSeed = 1;
   rendererMode: RhythmicRendererMode = "legacy";
 
   constructor() {
@@ -161,6 +162,7 @@ export class RhythmicStudioStore {
   setLyricRaw(raw: string) { this.lyricRaw = raw; }
   setRendererMode(mode: RhythmicRendererMode) { this.rendererMode = mode; }
   setPresetMixEnabled(enabled: boolean) { this.presetMixEnabled = enabled; }
+  setPresetMixSeed(seed: number) { this.presetMixSeed = Math.max(1, Math.floor(seed)); }
   setSelectedNode(index: number | null) { this.selectedNodeIndex = index; }
   setOverrides(overrides: CourseItemOverride[]) { this.courseOverrides = overrides; }
 }

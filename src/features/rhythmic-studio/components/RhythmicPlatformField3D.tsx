@@ -7,7 +7,50 @@ import { RHYTHMIC_COURSE_WIDTH, RHYTHMIC_WORLD_SCALE } from "./RhythmicMotion3D"
 import { PlatformMesh } from "./RhythmicPlatformMeshes3D";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 
-export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, focusIndex, selectedNodeIndex, onSelectNode, resolveSettings }: {
+function PhysicalMount({ terrain, w, h, detail }: {
+  terrain: StudioSettings["terrainProfile"];
+  w: number;
+  h: number;
+  detail: number;
+}) {
+  if (terrain === "tube-board") {
+    const length = 3.05;
+    return (
+      <group>
+        <mesh position={[0, h * 0.16, -length * 0.5]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+          <cylinderGeometry args={[0.035 + detail * 0.012, 0.035 + detail * 0.012, length, 12]} />
+          <meshStandardMaterial color="#65717e" roughness={0.27} metalness={0.84} />
+        </mesh>
+        <mesh position={[0, h * 0.16, -length - 0.04]} castShadow receiveShadow>
+          <boxGeometry args={[Math.min(0.72, Math.max(0.32, w * 0.28)), Math.max(0.18, h * 0.82), 0.075]} />
+          <meshStandardMaterial color="#202832" roughness={0.42} metalness={0.7} />
+        </mesh>
+      </group>
+    );
+  }
+  if (terrain === "xylophone") {
+    const supportX = Math.min(w * 0.3, 0.52);
+    return (
+      <group>
+        {[-supportX, supportX].map((x) => (
+          <group key={x} position={[x, h * 0.35, 0]}>
+            <mesh position={[0, 0, -1.2]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+              <cylinderGeometry args={[0.028, 0.028, 2.35, 12]} />
+              <meshStandardMaterial color="#77634f" roughness={0.34} metalness={0.48} />
+            </mesh>
+            <mesh position={[0, 0, -0.16]} castShadow>
+              <cylinderGeometry args={[0.065, 0.065, 0.08, 16]} />
+              <meshStandardMaterial color="#29231f" roughness={0.72} metalness={0.06} />
+            </mesh>
+          </group>
+        ))}
+      </group>
+    );
+  }
+  return null;
+}
+
+export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, focusIndex, selectedNodeIndex, onSelectNode, resolveSettings, impactIndex, impactStrength }: {
   platforms: MarblePlatform[];
   settings: StudioSettings;
   courseOverrides: CourseItemOverride[];
@@ -15,6 +58,8 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
   selectedNodeIndex: number | null;
   onSelectNode: (index: number | null) => void;
   resolveSettings?: StudioSettingsResolver;
+  impactIndex: number;
+  impactStrength: number;
 }) {
   const visible = useMemo(() => {
     const focusSettings = resolveSettings?.(focusIndex) ?? settings;
@@ -37,6 +82,13 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
           : 0;
         const worldX = ((platform.x - platform.normalX * normalInset / RHYTHMIC_WORLD_SCALE) - RHYTHMIC_COURSE_WIDTH / 2) * RHYTHMIC_WORLD_SCALE;
         const worldY = -(platform.y - platform.normalY * normalInset / RHYTHMIC_WORLD_SCALE) * RHYTHMIC_WORLD_SCALE;
+        const hit = platformSettings.impactPlatformLight && platform.index === impactIndex
+          ? Math.max(0, impactStrength)
+          : 0;
+        const effectiveGlow = platformSettings.impactPlatformLight
+          ? hit * (0.78 + platformSettings.platformGlow * 0.92)
+          : platformSettings.platformGlow;
+        const depth = d * (0.92 + platformSettings.platformDetail * 0.12);
         return (
           <group
             key={platform.index}
@@ -47,7 +99,17 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
               onSelectNode(platform.index);
             }}
           >
-            <PlatformMesh w={w} h={h} d={d * (0.92 + platformSettings.platformDetail * 0.12)} color={platform.color} style={style} selected={platform.index === selectedNodeIndex} glow={platformSettings.platformGlow} detail={platformSettings.platformDetail} />
+            <PhysicalMount terrain={platformSettings.terrainProfile} w={w} h={h} detail={platformSettings.platformDetail} />
+            <PlatformMesh w={w} h={h} d={depth} color={platform.color} style={style} selected={platform.index === selectedNodeIndex} glow={effectiveGlow} detail={platformSettings.platformDetail} />
+            {hit > 0.015 && (
+              <pointLight
+                position={[0, -h * 0.18, depth * 0.65]}
+                color={platform.color}
+                intensity={hit * (2.2 + platformSettings.platformGlow * 3.8)}
+                distance={2.7 + platformSettings.platformGlow * 1.5}
+                decay={2}
+              />
+            )}
           </group>
         );
       })}

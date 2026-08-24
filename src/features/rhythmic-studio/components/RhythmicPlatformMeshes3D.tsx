@@ -159,7 +159,7 @@ function LightPodsMesh({ w, h, d, color, selected, glow }: MeshProps) {
       {positions.map((x, index) => (
         <mesh key={x} position={[x, 0, d * 0.49]} scale={index % 2 ? 0.92 : 1}>
           <sphereGeometry args={[Math.min(0.09, h * 0.3), 18, 12]} />
-          <meshPhysicalMaterial color={selectedColor(color, selected)} emissive={color} emissiveIntensity={(selected ? 1.25 : 0.48) + THREE.MathUtils.clamp(glow, 0, 1.5) * 0.65} roughness={0.14} clearcoat={1} />
+          <meshPhysicalMaterial color={selectedColor(color, selected)} emissive={color} emissiveIntensity={(selected ? 1.05 : 0.04) + THREE.MathUtils.clamp(glow, 0, 1.5) * 0.88} roughness={0.14} clearcoat={1} />
         </mesh>
       ))}
     </group>

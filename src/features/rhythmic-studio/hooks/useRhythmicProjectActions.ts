@@ -24,7 +24,9 @@ export function useRhythmicProjectActions(store: RhythmicStudioStore, loadBuilti
     store.replaceSettings(project.settings);
     store.setProjectName(project.name);
     store.setOverrides(project.courseOverrides ?? []);
-    store.setPresetMixEnabled(project.presetMixEnabled ?? false);
+    const mixEnabled = project.presetMixEnabled ?? false;
+    if (mixEnabled) store.setPresetMixSeed(1 + Math.floor(Math.random() * 1_000_000_000));
+    store.setPresetMixEnabled(mixEnabled);
     store.setSelectedNode(null);
     if (project.source?.type === "builtin" && BUILTIN_MELODIES[project.source.name]) loadBuiltin(project.source.name);
     else store.setStatus({ key: project.source ? "status.presetReimport" : "status.presetLoaded" });

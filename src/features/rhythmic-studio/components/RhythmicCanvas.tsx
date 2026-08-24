@@ -3,7 +3,6 @@ import type { MutableRefObject } from "react";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { rhythmicText } from "../i18n";
 import type { CourseItemOverride, LyricCue, NoteEvent, StudioSettings } from "../types";
-import type { RhythmicPresetId } from "../lib/studioPresets";
 import { buildPresetMixPlan, createPresetMixSettingsResolver } from "../lib/presetMix";
 import { buildMarbleCourse, clamp, marbleAtTime } from "../lib/marbleCourse";
 import { presetCameraAnchorX, unprojectPresetCamera } from "../lib/presetCamera";
@@ -29,7 +28,7 @@ interface Props {
   onEnded: () => void;
   canvasRef: MutableRefObject<HTMLCanvasElement | null>;
   presetMixEnabled: boolean;
-  activePresetId: RhythmicPresetId | null;
+  presetMixSeed: number;
 }
 
 const WIDTH = 720;
@@ -53,11 +52,11 @@ function firstEventAtOrAfter(events: NoteEvent[], timeMs: number) {
   return low;
 }
 
-export function RhythmicCanvas({ events, settings, durationMs, playing, playbackToken, playbackStartMs, playbackEndMs, backgroundUrl, lyrics, courseOverrides, selectedNodeIndex, onSelectNode, recording, targetFps, onNote, onTime, onEnded, canvasRef, presetMixEnabled, activePresetId }: Props) {
+export function RhythmicCanvas({ events, settings, durationMs, playing, playbackToken, playbackStartMs, playbackEndMs, backgroundUrl, lyrics, courseOverrides, selectedNodeIndex, onSelectNode, recording, targetFps, onNote, onTime, onEnded, canvasRef, presetMixEnabled, presetMixSeed }: Props) {
   const lang = useSystemLang();
   const beatLabel = rhythmicText(lang, "canvas.beats");
   const [backgroundImage, setBackgroundImage] = useState<HTMLImageElement | null>(null);
-  const mixPlan = useMemo(() => buildPresetMixPlan(events, presetMixEnabled, activePresetId), [activePresetId, events, presetMixEnabled]);
+  const mixPlan = useMemo(() => buildPresetMixPlan(events, presetMixEnabled, presetMixSeed), [events, presetMixEnabled, presetMixSeed]);
   const resolveSettings = useMemo(() => createPresetMixSettingsResolver(settings, mixPlan), [mixPlan, settings]);
   const platforms = useMemo(
     () => buildMarbleCourse(events, settings, WIDTH, resolveSettings),

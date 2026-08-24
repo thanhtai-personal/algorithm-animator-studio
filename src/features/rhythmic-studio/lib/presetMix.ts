@@ -137,9 +137,13 @@ function chooseBoundary(events: NoteEvent[], segmentStartIndex: number) {
   return null;
 }
 
-export function buildPresetMixPlan(events: NoteEvent[], enabled: boolean, startPresetId: RhythmicPresetId | null): PresetMixPlan {
+export function buildPresetMixPlan(events: NoteEvent[], enabled: boolean, mixSeed = 1): PresetMixPlan {
   if (!enabled || events.length < 2) return { enabled: false, segments: [] };
-  const startPreset = startPresetId ?? RHYTHMIC_PRESET_IDS[Math.floor(hash(events.length + events[0].timeMs) * RHYTHMIC_PRESET_IDS.length) % RHYTHMIC_PRESET_IDS.length];
+  // Auto Mix owns the sequence from the first frame too: every time Mix is enabled,
+  // a fresh seed selects a random starting preset instead of inheriting the manual preset.
+  const seed = Math.max(1, Math.floor(mixSeed));
+  const startRoll = hash(seed * 17 + events.length * 31 + Math.round(events[0].timeMs));
+  const startPreset = RHYTHMIC_PRESET_IDS[Math.floor(startRoll * RHYTHMIC_PRESET_IDS.length) % RHYTHMIC_PRESET_IDS.length];
   const segments: PresetMixSegment[] = [];
   let startIndex = 0;
   let presetId = startPreset;
@@ -160,7 +164,7 @@ export function buildPresetMixPlan(events: NoteEvent[], enabled: boolean, startP
     if (boundaryIndex === null || boundaryIndex >= events.length - 2) break;
     startIndex = boundaryIndex + 1;
     sequence += 1;
-    presetId = nextPreset(presetId, events.length * 31 + startIndex * 17 + sequence * 101);
+    presetId = nextPreset(presetId, seed * 13 + events.length * 31 + startIndex * 17 + sequence * 101);
   }
   return { enabled: segments.length > 1, segments };
 }

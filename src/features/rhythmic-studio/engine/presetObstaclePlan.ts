@@ -22,10 +22,23 @@ function widthScale(style: PlatformStyle) {
 
 export function presetObstaclePlan(index: number, settings: StudioSettings): PresetObstaclePlan | null {
   if (settings.terrainProfile === "tube-board" && settings.platformPrimaryStyle === "tube-cylinder") {
-    return { style: "tube-cylinder", widthScale: 0.94 + (index % 5 === 0 ? 0.1 : 0) };
+    const accentEvery = Math.max(4, settings.platformAccentEvery);
+    const style = index > 0 && index % accentEvery === 0
+      ? settings.platformAccentStyle
+      : index % 4 === 2
+        ? settings.platformSecondaryStyle
+        : settings.platformPrimaryStyle;
+    const scale = style === "toy-peg" ? 0.68 : style === "toy-tube" ? 0.88 : 0.96 + (index % 5 === 0 ? 0.08 : 0);
+    return { style, widthScale: scale };
   }
   if (settings.terrainProfile === "comet" && settings.platformPrimaryStyle === "comet-pad") {
-    return { style: "comet-pad", widthScale: widthScale("comet-pad") };
+    const accentEvery = Math.max(4, settings.platformAccentEvery);
+    const style = index > 0 && index % accentEvery === 0
+      ? settings.platformAccentStyle
+      : index % 4 === 2
+        ? settings.platformSecondaryStyle
+        : settings.platformPrimaryStyle;
+    return { style, widthScale: style === "comet-pad" ? widthScale("comet-pad") : style === "light-pods" ? 0.82 : 0.94 };
   }
   if (settings.terrainProfile === "xylophone" && settings.platformPrimaryStyle.startsWith("instrument-")) {
     const scene = instrumentScenePlan(index);

@@ -3,7 +3,6 @@ import { PerspectiveCamera } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { CourseItemOverride, NoteEvent, StudioSettings } from "../types";
-import type { RhythmicPresetId } from "../lib/studioPresets";
 import { buildPresetMixPlan, createPresetMixSettingsResolver } from "../lib/presetMix";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 import type { MarblePlatform } from "../lib/marbleCourse";
@@ -40,7 +39,7 @@ interface Props {
   onEnded: () => void;
   canvasRef?: MutableRefObject<HTMLCanvasElement | null>;
   presetMixEnabled: boolean;
-  activePresetId: RhythmicPresetId | null;
+  presetMixSeed: number;
 }
 
 const CAMERA_Z = 10.15;
@@ -66,6 +65,13 @@ function noteDensity(events: NoteEvent[], timeMs: number, windowMs = 900) {
     if (count >= 16) break;
   }
   return count / Math.max(1, windowMs / 1000);
+}
+
+function platformImpactStrength(ageMs: number, settings: StudioSettings) {
+  if (!settings.impactPlatformLight || ageMs < 0 || ageMs > 260) return 0;
+  const t = 1 - ageMs / 260;
+  const sensitivity = THREE.MathUtils.clamp(settings.animationSensitivity, 0, 1.5);
+  return t * t * (0.8 + sensitivity * 0.35);
 }
 
 function cameraLookAheadMs(settings: StudioSettings) {
@@ -98,6 +104,10 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
   const activeSettingsRef = useRef(initialVisualSettings);
   const [focusIndex, setFocusIndex] = useState(initialSample.platformIndex);
   const focusIndexRef = useRef(initialSample.platformIndex);
+  const initialImpact = platformImpactStrength(initialSample.impactAgeMs, initialVisualSettings);
+  const [impactLight, setImpactLight] = useState({ index: initialSample.platformIndex, strength: initialImpact });
+  const impactLightRef = useRef({ index: initialSample.platformIndex, strength: initialImpact });
+  const lastImpactRenderRef = useRef(0);
   const currentTimeRef = useRef(props.timeMs);
   const playbackEpochRef = useRef(performance.now() - props.playbackStartMs);
   const nextNoteIndex = useRef(firstEventAtOrAfter(props.events, props.playbackStartMs));
@@ -107,6 +117,7 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
   const previousWorld = useMemo(() => new THREE.Vector3(), []);
   const world = useMemo(() => new THREE.Vector3(), []);
   const aheadWorld = useMemo(() => new THREE.Vector3(), []);
+  const farAheadWorld = useMemo(() => new THREE.Vector3(), []);
   const beforeWorld = useMemo(() => new THREE.Vector3(), []);
   const afterWorld = useMemo(() => new THREE.Vector3(), []);
   const displacement = useMemo(() => new THREE.Vector3(), []);
@@ -129,6 +140,14 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
     const lookAheadMs = cameraLookAheadMs(frameSettings);
     const ahead = visualMarbleAtTime(
       Math.min(props.durationMs, timeMs + lookAheadMs),
+      props.events,
+      props.platforms,
+      props.settings,
+      props.courseOverrides,
+      props.resolveSettings,
+    );
+    const farAhead = visualMarbleAtTime(
+      Math.min(props.durationMs, timeMs + lookAheadMs * 1.72),
       props.events,
       props.platforms,
       props.settings,
@@ -158,8 +177,24 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
       setFocusIndex(sample.platformIndex);
     }
 
+    const impactStrength = platformImpactStrength(sample.impactAgeMs, frameSettings);
+    const impactNow = performance.now();
+    const previousImpact = impactLightRef.current;
+    if (
+      snapCamera
+      || sample.platformIndex !== previousImpact.index
+      || (impactNow - lastImpactRenderRef.current >= 32 && Math.abs(impactStrength - previousImpact.strength) >= 0.045)
+      || (impactStrength === 0 && previousImpact.strength > 0)
+    ) {
+      const nextImpact = { index: sample.platformIndex, strength: impactStrength };
+      impactLightRef.current = nextImpact;
+      lastImpactRenderRef.current = impactNow;
+      setImpactLight(nextImpact);
+    }
+
     setWorldPoint(world, sample);
     setWorldPoint(aheadWorld, ahead);
+    setWorldPoint(farAheadWorld, farAhead);
     setWorldPoint(beforeWorld, before);
     setWorldPoint(afterWorld, after);
     velocity.copy(afterWorld).sub(beforeWorld).multiplyScalar(1000 / Math.max(1, sampleWindow * 2));
@@ -215,9 +250,12 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
     const lateralFactor = isXylophone ? 0.13 : isTubeBoard ? 0.16 : 0.2;
     const lateralClamp = isXylophone ? 0.42 : isTubeBoard ? 0.48 : 0.62;
     const verticalFactor = isXylophone ? 0.006 : isTubeBoard ? 0.0075 : 0.009;
-    const frameLead = isComet ? 0.22 : isTubeBoard ? 0.16 : isXylophone ? 0.14 : 0.16;
-    const framedX = THREE.MathUtils.lerp(world.x, aheadWorld.x, frameLead);
-    const framedY = THREE.MathUtils.lerp(world.y, aheadWorld.y, frameLead * 0.7);
+    const frameLead = isComet ? 0.2 : isTubeBoard ? 0.15 : isXylophone ? 0.13 : 0.15;
+    const nearFramedX = THREE.MathUtils.lerp(world.x, aheadWorld.x, frameLead);
+    const nearFramedY = THREE.MathUtils.lerp(world.y, aheadWorld.y, frameLead * 0.72);
+    const futureWeight = isComet ? 0.12 : 0.08;
+    const framedX = THREE.MathUtils.lerp(nearFramedX, farAheadWorld.x, futureWeight);
+    const framedY = THREE.MathUtils.lerp(nearFramedY, farAheadWorld.y, futureWeight * 0.72);
     const lateralLead = THREE.MathUtils.clamp((aheadWorld.x - world.x) * lateralFactor + velocity.x * (lateralFactor * 0.04), -lateralClamp, lateralClamp);
     const verticalLag = THREE.MathUtils.clamp(velocity.y * verticalFactor, -0.18, 0.24);
     const observerOffsetX = isXylophone ? 0.62 : isTubeBoard ? 0.52 : isComet ? -0.38 : 0.3;
@@ -233,10 +271,12 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
       camera.position.z = THREE.MathUtils.damp(camera.position.z, cameraTarget.z, damping * 0.74, deltaSeconds);
     }
 
+    const lookX = THREE.MathUtils.lerp(world.x, aheadWorld.x, isComet ? 0.62 : isTubeBoard ? 0.58 : 0.55);
+    const lookY = THREE.MathUtils.lerp(world.y - (isXylophone ? 0.18 : 0.28), aheadWorld.y, isComet ? 0.48 : 0.43);
     lookTarget.set(
-      THREE.MathUtils.lerp(world.x, aheadWorld.x, isComet ? 0.68 : isTubeBoard ? 0.64 : 0.6),
-      THREE.MathUtils.lerp(world.y - (isXylophone ? 0.18 : 0.28), aheadWorld.y, isComet ? 0.5 : 0.46),
-      THREE.MathUtils.lerp(world.z, aheadWorld.z, isComet ? 0.5 : 0.38),
+      THREE.MathUtils.lerp(lookX, farAheadWorld.x, isComet ? 0.08 : 0.05),
+      THREE.MathUtils.lerp(lookY, farAheadWorld.y, isComet ? 0.06 : 0.04),
+      THREE.MathUtils.lerp(world.z, aheadWorld.z, isComet ? 0.42 : 0.3),
     );
     if (snapCamera || smoothedLook.lengthSq() === 0) smoothedLook.copy(lookTarget);
     else {
@@ -262,6 +302,7 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
     afterWorld,
     aheadWorld,
     beforeWorld,
+    farAheadWorld,
     camera,
     cameraTarget,
     deltaQuaternion,
@@ -348,6 +389,8 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
         selectedNodeIndex={props.selectedNodeIndex}
         onSelectNode={props.onSelectNode}
         resolveSettings={props.resolveSettings}
+        impactIndex={impactLight.index}
+        impactStrength={impactLight.strength}
       />
       <RhythmicVfx3D
         ref={vfxRef}
@@ -381,8 +424,8 @@ export function RhythmicScene3D(props: Props) {
   }, [props.canvasRef]);
 
   const mixPlan = useMemo(
-    () => buildPresetMixPlan(props.events, props.presetMixEnabled, props.activePresetId),
-    [props.activePresetId, props.events, props.presetMixEnabled],
+    () => buildPresetMixPlan(props.events, props.presetMixEnabled, props.presetMixSeed),
+    [props.events, props.presetMixEnabled, props.presetMixSeed],
   );
   const resolveSettings = useMemo(
     () => createPresetMixSettingsResolver(props.settings, mixPlan),

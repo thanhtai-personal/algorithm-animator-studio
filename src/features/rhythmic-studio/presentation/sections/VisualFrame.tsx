@@ -24,6 +24,7 @@ export function VisualFrame({ studio }: { studio: RhythmicStudioController }) {
     <RangeField label={t("visual.marbleSize")} value={s.ballSize} min={6} max={28} step={1} unit="px" onChange={(value) => studio.patch("ballSize", value)} />
     <ToggleField label={t("visual.marbleGlow")} checked={s.glowAnimation} onChange={(value) => studio.patch("glowAnimation", value)} />
     <ToggleField label={t("visual.impactPulse")} checked={s.pulseAnimation} onChange={(value) => studio.patch("pulseAnimation", value)} />
+    <ToggleField label={t("visual.platformImpactLight")} checked={s.impactPlatformLight} onChange={(value) => studio.patch("impactPlatformLight", value)} />
     <ToggleField label={t("course.impactRipple")} checked={s.impactRipple} onChange={(value) => studio.patch("impactRipple", value)} />
     <RangeField label={t("visual.impactSensitivity")} value={s.animationSensitivity} min={0} max={1.5} step={0.05} onChange={(value) => studio.patch("animationSensitivity", value)} />
     <RangeField label={t("visual.rippleStrength")} value={s.ringPulseSensitivity} min={0} max={1.5} step={0.05} onChange={(value) => studio.patch("ringPulseSensitivity", value)} />

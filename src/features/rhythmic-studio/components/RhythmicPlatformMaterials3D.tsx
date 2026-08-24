@@ -52,7 +52,7 @@ export function SurfaceMaterial({ style, color, selected, glow = 0 }: { style: P
       <meshPhysicalMaterial
         color={value}
         emissive={value}
-        emissiveIntensity={(selected ? 0.9 : 0.22) + glowStrength * 0.72}
+        emissiveIntensity={(selected ? 0.82 : 0.025) + glowStrength * 0.78}
         roughness={0.2}
         metalness={0.16}
         clearcoat={0.72}

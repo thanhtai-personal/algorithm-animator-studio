@@ -22,7 +22,9 @@ export function useRhythmicPresetActions(store: RhythmicStudioStore) {
   }, [store]);
 
   const togglePresetMix = useCallback(() => {
-    store.setPresetMixEnabled(!store.presetMixEnabled);
+    const nextEnabled = !store.presetMixEnabled;
+    if (nextEnabled) store.setPresetMixSeed(1 + Math.floor(Math.random() * 1_000_000_000));
+    store.setPresetMixEnabled(nextEnabled);
     store.setSelectedNode(null);
   }, [store]);
 

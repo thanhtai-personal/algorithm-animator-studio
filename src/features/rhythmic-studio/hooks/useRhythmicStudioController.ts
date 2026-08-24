@@ -52,8 +52,8 @@ export function useRhythmicStudioController() {
 
   const timeline = store.timeline;
   const presetMixPlan = useMemo(
-    () => buildPresetMixPlan(timeline, store.presetMixEnabled, store.activePresetId),
-    [timeline, store.activePresetId, store.presetMixEnabled],
+    () => buildPresetMixPlan(timeline, store.presetMixEnabled, store.presetMixSeed),
+    [timeline, store.presetMixEnabled, store.presetMixSeed],
   );
   const currentMixSegment = useMemo(
     () => presetMixSegmentForTime(presetMixPlan, timeline, store.timeMs),
@@ -111,6 +111,7 @@ export function useRhythmicStudioController() {
     presetMixSegmentCount: presetMixPlan.segments.length,
     presetMixPlanActive: presetMixPlan.enabled,
     presetMixEnabled: store.presetMixEnabled,
+    presetMixSeed: store.presetMixSeed,
     rendererMode: store.rendererMode,
     setRendererMode: store.setRendererMode,
     lyricRaw: store.lyricRaw,

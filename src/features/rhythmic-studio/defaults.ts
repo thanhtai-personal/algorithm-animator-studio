@@ -70,6 +70,7 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   platformAccentEvery: 7,
   platformDetail: 0.68,
   impactRipple: false,
+  impactPlatformLight: true,
   showBeatLabels: false,
   lyricsEnabled: false,
   lyricStyle: 'karaoke',

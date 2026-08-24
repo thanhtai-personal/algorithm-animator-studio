@@ -212,6 +212,7 @@ export interface StudioSettings {
   platformAccentEvery: number;
   platformDetail: number;
   impactRipple: boolean;
+  impactPlatformLight: boolean;
   showBeatLabels: boolean;
   lyricsEnabled: boolean;
   lyricStyle: LyricStyle;

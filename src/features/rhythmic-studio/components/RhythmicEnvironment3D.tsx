@@ -354,18 +354,18 @@ export function RhythmicLightingRig3D({ settings }: { settings: StudioSettings }
     return (
       <>
         <ReflectionRig settings={settings} />
-        <hemisphereLight args={["#fff9ef", "#6d655e", 1.18]} />
+        <hemisphereLight args={["#fff9ef", "#746a62", 1.02]} />
         <directionalLight
-          position={[-6.5, 8.5, 8]}
-          intensity={2.45}
+          position={[-5.8, 8.2, 7.2]}
+          intensity={2.18}
           castShadow
           shadow-mapSize-width={1536}
           shadow-mapSize-height={1536}
           shadow-bias={-0.00035}
           shadow-normalBias={0.025}
-          shadow-radius={3.2}
+          shadow-radius={1.8}
         />
-        <directionalLight position={[5, -2, 5]} intensity={0.62} color="#dce7f5" />
+        <directionalLight position={[5, -2, 5]} intensity={0.42} color="#e7edf2" />
       </>
     );
   }

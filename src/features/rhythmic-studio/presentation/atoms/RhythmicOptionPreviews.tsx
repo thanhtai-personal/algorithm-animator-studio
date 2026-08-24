@@ -143,6 +143,11 @@ export function BackgroundPresetPreview({ preset }: { preset: BackgroundPreset }
 }
 
 export function PresetThumbnail({ presetId }: { presetId: RhythmicPresetId }) {
+  if (presetId === "wall-orchestra") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#d7ccc2,#bfb4aa)]">
+    {[0,1,2].map((index) => <div key={index} className="absolute h-3 rounded-md shadow-[0_5px_8px_rgba(0,0,0,.24)]" style={{ width: `${32 + index * 7}px`, left: `${10 + index * 18}px`, top: `${12 + index * 14}px`, transform: `rotate(${-18 + index * 16}deg)`, background: ["#2e3338","#f28c4b","#4c8fdc"][index] }} />)}
+    <div className="absolute right-3 top-4 h-5 w-5 rounded-full bg-[linear-gradient(145deg,#fff_0_28%,#d9443f_29%_66%,#fff_67%)] shadow-[0_5px_8px_rgba(0,0,0,.25)]" />
+    <div className="absolute bottom-2 left-7 h-4 w-4 rounded-full border-2 border-slate-600 bg-slate-300" />
+  </SceneFrame>;
   if (presetId === "toy-pegboard") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#8d8f97,#4b505c)]">
     <div className="absolute inset-2 rounded-xl bg-[linear-gradient(180deg,#6b7280,#464b56)] shadow-[inset_0_0_0_1px_rgba(255,255,255,.08)]" />
     {Array.from({ length: 3 }).map((_, index) => <div key={index} className="absolute top-[18px] h-8 w-6 rounded-full border border-white/20 bg-[linear-gradient(180deg,#faf9f6,#bbb39b_55%,#6f533f)]" style={{ left: `${16 + index * 24}px` }} />)}
@@ -164,6 +169,15 @@ export function PresetThumbnail({ presetId }: { presetId: RhythmicPresetId }) {
   if (presetId === "vibraphone-wall") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#d9d5d0,#c3beb8)]">
     {[0,1,2,3].map((index) => <div key={index} className="absolute h-3 w-11 rounded-sm border border-white/30 bg-gradient-to-b from-slate-200 to-slate-500 shadow-[0_5px_8px_rgba(0,0,0,.18)]" style={{ left: `${12 + index * 12}px`, top: `${10 + index * 11}px`, transform: `rotate(${index % 2 ? -8 : 8}deg)` }} />)}
     <div className="absolute right-3 bottom-2 h-4 w-4 rounded-full bg-green-500" />
+  </SceneFrame>;
+  if (presetId === "percussion-wall") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#d7ccc2,#bdb2a8)]">
+    {[0,1].map((index) => <div key={index} className="absolute h-5 w-9 rounded-md border border-black/20 bg-slate-700 shadow-[0_5px_8px_rgba(0,0,0,.2)]" style={{ left: `${12 + index * 30}px`, top: `${13 + index * 16}px`, transform: `rotate(${index ? 14 : -18}deg)` }} />)}
+    <div className="absolute right-3 top-4 h-6 w-6 rounded-full border-4 border-slate-500 bg-slate-200" />
+    <div className="absolute bottom-2 left-8 h-4 w-4 rounded-full bg-amber-400" />
+  </SceneFrame>;
+  if (presetId === "arcade-wall") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#d7ccc2,#bdb2a8)]">
+    {[0,1,2].map((index) => <div key={index} className="absolute h-6 w-7 rounded-md border-2 border-emerald-800 bg-emerald-500 shadow-[0_5px_8px_rgba(0,0,0,.2)]" style={{ left: `${10 + index * 22}px`, top: `${12 + index * 11}px`, transform: `rotate(${index % 2 ? 15 : -12}deg)` }} />)}
+    <div className="absolute right-3 bottom-2 h-4 w-4 rounded-full bg-red-500" />
   </SceneFrame>;
   return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#f2ede6,#d0d7e4)]">
     <div className="absolute inset-x-0 bottom-0 h-7 bg-[linear-gradient(180deg,#d3a673,#936846)]" style={{ clipPath: "polygon(0 100%,100% 100%,76% 0,24% 0)" }} />

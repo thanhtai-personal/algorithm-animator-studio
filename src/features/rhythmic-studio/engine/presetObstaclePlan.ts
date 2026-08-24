@@ -18,6 +18,9 @@ function widthScale(style: PlatformStyle) {
   if (style === "boomwhacker-tube") return 1.02;
   if (style === "pluck-pad") return 0.72;
   if (style === "drum-disc") return 0.7;
+  if (style === "cowbell-block") return 0.82;
+  if (style === "bell-cone") return 0.68;
+  if (style === "arcade-pad") return 0.74;
   if (style === "instrument-pad") return 0.78;
   if (style === "instrument-cymbal") return 0.62;
   if (style === "instrument-rail") return 0.94;
@@ -42,9 +45,17 @@ function familyPattern(family: InstrumentFamily, index: number): PlatformStyle {
   if (family === "marimba") return index % 8 === 5 ? "drum-disc" : "marimba-bar";
   if (family === "pluck") return index % 6 === 4 ? "instrument-wire" : "pluck-pad";
   if (family === "vibraphone") return index % 10 === 8 ? "instrument-rail" : "vibraphone-bar";
+  if (family === "percussion") {
+    const pattern: PlatformStyle[] = ["cowbell-block", "cowbell-block", "drum-disc", "bell-cone", "cowbell-block", "drum-disc"];
+    return pattern[index % pattern.length];
+  }
+  if (family === "arcade") {
+    const pattern: PlatformStyle[] = ["arcade-pad", "arcade-pad", "vibraphone-bar", "bell-cone", "arcade-pad", "pluck-pad"];
+    return pattern[index % pattern.length];
+  }
   if (family === "mixed") {
-    const section = Math.floor(index / 12) % 6;
-    return familyPattern((["boomwhacker", "xylophone", "piano", "marimba", "pluck", "vibraphone"] as const)[section], index);
+    const section = Math.floor(index / 8) % 8;
+    return familyPattern((["percussion", "boomwhacker", "xylophone", "marimba", "arcade", "vibraphone", "pluck", "piano"] as const)[section], index);
   }
   return "instrument-key";
 }
@@ -53,7 +64,7 @@ export function presetObstaclePlan(index: number, settings: StudioSettings): Pre
   if (settings.instrumentFamily !== "auto") {
     const style = familyPattern(settings.instrumentFamily, index);
     const layout = layoutScale(settings.instrumentLayout, index);
-    const sectionLength = settings.instrumentLayout === "gallery" ? 10 : settings.instrumentLayout === "fan" ? 14 : 12;
+    const sectionLength = settings.instrumentFamily === "mixed" ? 8 : settings.instrumentLayout === "gallery" ? 10 : settings.instrumentLayout === "fan" ? 14 : 12;
     return {
       style,
       widthScale: widthScale(style) * (index % 6 === 0 ? 1.06 : 1),

@@ -403,5 +403,8 @@ export function drawPresetPlatform(
   if (style === "xylophone-bar" || style === "piano-key" || style === "marimba-bar" || style === "vibraphone-bar") { drawInstrumentKey(ctx, half, platform, impact, lowPower); return true; }
   if (style === "pluck-pad") { drawInstrumentPad(ctx, half, platform, impact, lowPower); return true; }
   if (style === "drum-disc") { drawInstrumentCymbal(ctx, platform, impact, lowPower); return true; }
+  if (style === "cowbell-block") { drawInstrumentKey(ctx, half, { ...platform, color: mixHex(platform.color, "#34383e", 0.62) }, impact, lowPower); return true; }
+  if (style === "bell-cone") { drawInstrumentCymbal(ctx, { ...platform, color: mixHex(platform.color, "#d7b65a", 0.38) }, impact, lowPower); return true; }
+  if (style === "arcade-pad") { drawInstrumentPad(ctx, half, platform, impact, lowPower); return true; }
   return false;
 }

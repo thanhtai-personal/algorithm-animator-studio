@@ -35,7 +35,7 @@ interface Props {
   backgroundUrl?: string;
   selectedNodeIndex: number | null;
   onSelectNode: (index: number | null) => void;
-  onNote: (event: NoteEvent) => void;
+  onNote: (event: NoteEvent, index?: number) => void;
   onTime: (timeMs: number) => void;
   onEnded: () => void;
   canvasRef?: MutableRefObject<HTMLCanvasElement | null>;
@@ -353,7 +353,7 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
     currentTimeRef.current = timeMs;
 
     while (nextNoteIndex.current < props.events.length && props.events[nextNoteIndex.current].timeMs <= timeMs) {
-      props.onNote(props.events[nextNoteIndex.current]);
+      props.onNote(props.events[nextNoteIndex.current], nextNoteIndex.current);
       nextNoteIndex.current += 1;
     }
 

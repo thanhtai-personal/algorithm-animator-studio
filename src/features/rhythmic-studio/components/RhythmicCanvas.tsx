@@ -23,7 +23,7 @@ interface Props {
   onSelectNode: (index: number | null) => void;
   recording: boolean;
   targetFps: number;
-  onNote: (event: NoteEvent) => void;
+  onNote: (event: NoteEvent, index?: number) => void;
   onTime: (timeMs: number) => void;
   onEnded: () => void;
   canvasRef: MutableRefObject<HTMLCanvasElement | null>;
@@ -132,7 +132,7 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
       const time = now - start;
       currentTime.current = time;
       while (nextNoteIndex.current < events.length && events[nextNoteIndex.current].timeMs <= time) {
-        onNote(events[nextNoteIndex.current]);
+        onNote(events[nextNoteIndex.current], nextNoteIndex.current);
         nextNoteIndex.current += 1;
       }
       const marble = marbleAtTime(time, events, platforms, settings, courseOverrides, resolveSettings);

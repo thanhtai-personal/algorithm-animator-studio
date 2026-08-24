@@ -59,6 +59,9 @@ export const PLATFORM_STYLES = [
   "vibraphone-bar",
   "drum-disc",
   "piano-keyboard",
+  "cowbell-block",
+  "bell-cone",
+  "arcade-pad",
 ] as const;
 
 export type PlatformStyle = (typeof PLATFORM_STYLES)[number];
@@ -72,6 +75,8 @@ export const INSTRUMENT_FAMILIES = [
   "marimba",
   "pluck",
   "vibraphone",
+  "percussion",
+  "arcade",
   "mixed",
 ] as const;
 export type InstrumentFamily = (typeof INSTRUMENT_FAMILIES)[number];

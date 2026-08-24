@@ -92,12 +92,55 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
 }) {
   const visible = useMemo(() => {
     const focusSettings = resolveSettings?.(focusIndex) ?? settings;
-    const radius = focusSettings.terrainProfile === "xylophone" ? 20 : 18;
-    return platforms.filter((platform) => Math.abs(platform.index - focusIndex) <= radius);
+    const focusPlatform = platforms[Math.max(0, Math.min(platforms.length - 1, focusIndex))];
+    const focusTimeMs = focusPlatform?.event.timeMs ?? 0;
+    const behindMs = focusSettings.terrainProfile === "xylophone" ? 1400 : 1200;
+    const aheadMs = focusSettings.terrainProfile === "xylophone" ? 3600 : 3200;
+    // A raw-index window is unstable for multi-track MIDI: one 10-note chord can
+    // consume half of the old +/-18 node budget even though it is only one
+    // physical collision. Keep the visible course in musical time instead, so
+    // upcoming lanes do not pop in/out merely because chord voicing is dense.
+    return platforms.filter((platform) => platform.event.timeMs >= focusTimeMs - behindMs && platform.event.timeMs <= focusTimeMs + aheadMs);
   }, [focusIndex, platforms, resolveSettings, settings]);
+
+  const denseSupports = useMemo(() => {
+    const activeRunIds = new Set<number>();
+    for (const platform of visible) {
+      if (!platform.visualHidden && platform.denseRunId !== undefined) activeRunIds.add(platform.denseRunId);
+    }
+    return [...activeRunIds].flatMap((runId) => {
+      const run = platforms.filter((platform) => platform.denseRunId === runId && !platform.visualHidden);
+      if (run.length < 2) return [];
+      const first = run[0];
+      const last = run[run.length - 1];
+      const firstX = first.visualX ?? first.x;
+      const firstY = first.visualY ?? first.y;
+      const lastX = last.visualX ?? last.x;
+      const lastY = last.visualY ?? last.y;
+      const firstWidth = first.visualWidth ?? first.width;
+      const lastWidth = last.visualWidth ?? last.width;
+      const span = Math.hypot(lastX - firstX, lastY - firstY) + (firstWidth + lastWidth) * 0.5;
+      const angle = first.visualTiltRad ?? first.tiltRad;
+      return [{
+        id: runId,
+        x: ((firstX + lastX) * 0.5 - RHYTHMIC_COURSE_WIDTH / 2) * RHYTHMIC_WORLD_SCALE,
+        y: -((firstY + lastY) * 0.5) * RHYTHMIC_WORLD_SCALE,
+        width: Math.max(0.5, span * RHYTHMIC_WORLD_SCALE),
+        angle,
+      }];
+    });
+  }, [platforms, visible]);
 
   return (
     <group>
+      {denseSupports.map((support) => (
+        <group key={`dense-support-${support.id}`} position={[support.x, support.y, -0.62]} rotation={[0, 0, -support.angle]}>
+          <mesh castShadow receiveShadow>
+            <boxGeometry args={[support.width, 0.09, 0.18]} />
+            <meshStandardMaterial color="#2b3037" roughness={0.42} metalness={0.46} />
+          </mesh>
+        </group>
+      ))}
       {visible.map((platform) => {
         if (platform.visualHidden) return null;
         const override = overrideForNode(platform.index, courseOverrides);
@@ -146,7 +189,9 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
               onSelectNode(platform.index);
             }}
           >
-            <PhysicalMount terrain={platformSettings.terrainProfile} w={w} h={h} detail={platformSettings.platformDetail} showcase={platformSettings.instrumentFamily !== "auto"} />
+            {platform.denseRunId === undefined && (
+              <PhysicalMount terrain={platformSettings.terrainProfile} w={w} h={h} detail={platformSettings.platformDetail} showcase={platformSettings.instrumentFamily !== "auto"} />
+            )}
             <PlatformMesh w={w} h={h} d={depth} color={platform.color} style={style} selected={platform.index === selectedNodeIndex} glow={effectiveGlow} detail={platformSettings.platformDetail} />
           </group>
         );

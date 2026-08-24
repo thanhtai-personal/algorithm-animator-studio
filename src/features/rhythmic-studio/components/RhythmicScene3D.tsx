@@ -60,12 +60,20 @@ function firstEventAtOrAfter(events: NoteEvent[], timeMs: number) {
 
 function noteDensity(events: NoteEvent[], timeMs: number, windowMs = 900) {
   const start = firstEventAtOrAfter(events, timeMs);
-  let count = 0;
+  let strikes = 0;
+  let previousStrikeMs = Number.NEGATIVE_INFINITY;
   for (let index = start; index < events.length && events[index].timeMs <= timeMs + windowMs; index += 1) {
-    count += 1;
-    if (count >= 16) break;
+    // Camera density must represent physical marble strikes, not MIDI polyphony.
+    // Ten notes in one chord still happen at one collision point. Counting every
+    // note made the camera abruptly zoom/reframe on rich chords in the supplied
+    // MIDI even though the marble had not increased its physical hit rate.
+    if (events[index].timeMs - previousStrikeMs > 24) {
+      strikes += 1;
+      previousStrikeMs = events[index].timeMs;
+      if (strikes >= 16) break;
+    }
   }
-  return count / Math.max(1, windowMs / 1000);
+  return strikes / Math.max(1, windowMs / 1000);
 }
 
 function platformImpactStrength(ageMs: number, settings: StudioSettings) {

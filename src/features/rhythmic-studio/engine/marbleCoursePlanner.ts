@@ -10,6 +10,7 @@ import {
   platformAgainstRecentTrajectoriesPenalty,
   platformClearance,
   platformOverlapPenalty,
+  platformRequiredClearance,
   separationPenalty,
   trajectoryClearancePenalty,
   trajectoryPlatformClearance,
@@ -384,15 +385,20 @@ function fitCourseToTrajectories(platforms: MarblePlatform[], settings: StudioSe
 
     const hasStaticCrossing = () => {
       for (let otherIndex = 0; otherIndex < fitted.length; otherIndex += 1) {
-        if (otherIndex === platformIndex || Math.abs(otherIndex - platformIndex) <= 1) continue;
+        if (otherIndex === platformIndex) continue;
         const other = fitted[otherIndex];
         if (other.visualHidden || sharesSurface(platform, other)) continue;
-        if (platformClearance(platform, other) < 0.8) return true;
+        // Adjacent instruments are not allowed to visually pass through each
+        // other either. The marble may strike near an end of a bar, so the body
+        // can be shifted along its tangent while the hit point remains playable.
+        // Using the same body clearance as the planner catches the thick-mesh
+        // overlaps that a center-line-only (<0.8px) test missed in the render.
+        if (platformClearance(platform, other) < platformRequiredClearance(platform, other, localSettings) * 0.72) return true;
       }
       return false;
     };
 
-    if (routeClearance() >= 1.5) continue;
+    if (routeClearance() >= 1.5 && !hasStaticCrossing()) continue;
 
     let best: { width: number; shift: number; clearance: number } | null = null;
     const widths: number[] = [];

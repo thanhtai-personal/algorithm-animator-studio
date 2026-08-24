@@ -65,7 +65,7 @@ function visibleForCollision(platform: MarblePlatform) {
   return platform.visualHidden !== true;
 }
 
-function instrumentClearance(platform: MarblePlatform, other: MarblePlatform, settings: StudioSettings) {
+export function platformRequiredClearance(platform: MarblePlatform, other: MarblePlatform, settings: StudioSettings) {
   const bodyClearance = (platform.thickness + other.thickness) * 0.52;
   const marbleClearance = settings.ballSize * (settings.instrumentFamily !== "auto" ? 1.28 : 1.08);
   return Math.max(
@@ -89,7 +89,7 @@ export function platformOverlapPenalty(platform: MarblePlatform, recent: MarbleP
     if (!visibleForCollision(other) || sameContinuousSurface(platform, other)) continue;
     const previous = platformSegment(other);
     const distance = segmentDistance(segment.a, segment.b, previous.a, previous.b);
-    const safeDistance = instrumentClearance(platform, other, settings);
+    const safeDistance = platformRequiredClearance(platform, other, settings);
     if (distance < safeDistance) {
       const overlap = safeDistance - distance;
       const crossingBoost = distance < 0.5 ? 12000 : 0;

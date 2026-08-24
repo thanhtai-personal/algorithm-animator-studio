@@ -28,8 +28,8 @@ type SettingsResolver = (index: number) => StudioSettings;
 
 const CHORD_GAP_MS = 24;
 const DENSE_GAP_MS = 185;
-const MIN_RUN_NOTES = 4;
-const MAX_RUN_NOTES = 14;
+const MIN_RUN_STRIKES = 3;
+const MAX_RUN_STRIKES = 14;
 const ROLL_SLOPE = 0.075;
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const length = (v: Vec2) => Math.hypot(v.x, v.y);
@@ -46,17 +46,33 @@ function supportsDenseInstrumentRun(_settings: StudioSettings) {
 }
 
 function denseInstrumentKind(events: NoteEvent[], start: number, end: number): DenseInstrumentKind {
-  let drumNotes = 0;
-  for (let index = start; index <= end; index += 1) {
-    if (events[index]?.isDrum) drumNotes += 1;
+  // Classify by physical strike groups, not by raw MIDI note count. A piano chord
+  // may contain 8-12 notes at one timestamp while a hi-hat is only one note; raw
+  // counting therefore made mixed phrases look overwhelmingly melodic/percussive
+  // depending on chord voicing rather than on what the marble actually strikes.
+  let strikeGroups = 0;
+  let drumGroups = 0;
+  let groupStart = start;
+  while (groupStart <= end) {
+    let groupEnd = groupStart;
+    let drums = events[groupStart]?.isDrum ? 1 : 0;
+    let notes = 1;
+    while (groupEnd < end && events[groupEnd + 1].timeMs - events[groupEnd].timeMs <= CHORD_GAP_MS) {
+      groupEnd += 1;
+      notes += 1;
+      if (events[groupEnd]?.isDrum) drums += 1;
+    }
+    strikeGroups += 1;
+    if (drums >= Math.ceil(notes * 0.6)) drumGroups += 1;
+    groupStart = groupEnd + 1;
   }
-  return drumNotes >= Math.ceil((end - start + 1) * 0.6) ? "pad-strip" : "keyboard";
+  return drumGroups >= Math.ceil(strikeGroups * 0.6) ? "pad-strip" : "keyboard";
 }
 
 export function denseInstrumentRuns(events: NoteEvent[], settings: StudioSettings, resolveSettings?: SettingsResolver) {
   const runs: DenseInstrumentRun[] = [];
   let index = 0;
-  while (index < events.length - (MIN_RUN_NOTES - 1)) {
+  while (index < events.length) {
     const frameSettings = resolveSettings?.(index) ?? settings;
     if (!supportsDenseInstrumentRun(frameSettings)) {
       index += 1;
@@ -65,24 +81,25 @@ export function denseInstrumentRuns(events: NoteEvent[], settings: StudioSetting
 
     let end = index;
     let strikePositions = 1;
-    while (end < events.length - 1 && end - index + 1 < MAX_RUN_NOTES) {
+    // Bound modules by physical strikes instead of raw MIDI notes. The supplied
+    // production MIDI routinely has 4-14 simultaneous notes at one onset; using
+    // raw-note count consumed the old 14-note limit inside a single chord and
+    // prevented the following 159 ms hits from becoming one playable lane.
+    while (end < events.length - 1 && strikePositions < MAX_RUN_STRIKES) {
       const localSettings = resolveSettings?.(end) ?? settings;
       const nextSettings = resolveSettings?.(end + 1) ?? settings;
       const gap = events[end + 1].timeMs - events[end].timeMs;
       if (!supportsDenseInstrumentRun(localSettings) || !supportsDenseInstrumentRun(nextSettings) || gap > DENSE_GAP_MS) break;
-      // A chord is one physical strike position on the same continuous surface.
-      // Keep its simultaneous notes inside the run, but count only transitions
-      // that actually move the marble when deciding whether a dense lane exists.
       if (gap > CHORD_GAP_MS) strikePositions += 1;
       end += 1;
     }
 
-    if (strikePositions >= MIN_RUN_NOTES) {
+    if (strikePositions >= MIN_RUN_STRIKES) {
       runs.push({ id: runs.length, start: index, end, kind: denseInstrumentKind(events, index, end) });
       const nextGap = end < events.length - 1 ? events[end + 1].timeMs - events[end].timeMs : Infinity;
       // Long dense passages are split into manageable keyboard modules, but the
       // modules share their boundary note. That keeps the marble rolling through
-      // the seam instead of inserting a one-note ballistic hop every 12 keys.
+      // the seam instead of inserting a one-note ballistic hop every module.
       index = nextGap > CHORD_GAP_MS && nextGap <= DENSE_GAP_MS ? end : end + 1;
     } else {
       index += 1;

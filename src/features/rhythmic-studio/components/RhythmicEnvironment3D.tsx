@@ -196,7 +196,11 @@ function CometSpace() {
     <group>
       <StarField />
       <mesh position={[0, -58, -9]}>
-        <planeGeometry args={[34, 155]} />
+        {/* The camera follows the marble laterally by several world units. A 34u
+            comet backdrop exposed its hard vertical edge in portrait exports as a
+            giant black strip sliding across the frame. Oversize the star-space
+            plate so it remains a background, not a foreground-looking obstacle. */}
+        <planeGeometry args={[80, 170]} />
         <meshBasicMaterial color="#040611" />
       </mesh>
       {rings.map((index) => {

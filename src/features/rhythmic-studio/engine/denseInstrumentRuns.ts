@@ -301,18 +301,35 @@ export function rollingExitCandidate(
   };
 }
 
-function strikeIndicesForSurface(platforms: MarblePlatform[], surface: DenseInstrumentRun) {
+function platformPositionsForSurface(platforms: MarblePlatform[], surface: DenseInstrumentRun) {
+  // Dense-run bounds are event indices. The solved platform array may be shorter
+  // after a planner dead-end/recovery, so map by platform.index instead of
+  // assuming event index === array position.
+  const positions: number[] = [];
+  for (let position = 0; position < platforms.length; position += 1) {
+    const eventIndex = platforms[position]?.index;
+    if (eventIndex === undefined) continue;
+    if (eventIndex >= surface.start && eventIndex <= surface.end) positions.push(position);
+  }
+  return positions;
+}
+
+function strikePositionsForSurface(platforms: MarblePlatform[], positions: number[]) {
   const result: number[] = [];
   let strikeAnchorMs = Number.NEGATIVE_INFINITY;
-  for (let index = surface.start; index <= surface.end; index += 1) {
-    const eventTimeMs = platforms[index]?.event.timeMs;
+  for (const position of positions) {
+    const eventTimeMs = platforms[position]?.event.timeMs;
     if (eventTimeMs === undefined) continue;
     if (!result.length || eventTimeMs - strikeAnchorMs > CHORD_GAP_MS) {
-      result.push(index);
+      result.push(position);
       strikeAnchorMs = eventTimeMs;
     }
   }
   return result;
+}
+
+function markSurfacePlatforms(platforms: MarblePlatform[], positions: number[], surfaceId: number) {
+  for (const position of positions) platforms[position].denseSurfaceId = surfaceId;
 }
 
 function canonicalSurfaceFrame(from: MarblePlatform, to: MarblePlatform) {
@@ -400,10 +417,9 @@ export function decorateDenseInstrumentRuns(
   }
 
   for (const surface of surfaces.values()) {
-    const strikeIndices = strikeIndicesForSurface(decorated, surface);
-    for (let index = surface.start; index <= surface.end; index += 1) {
-      decorated[index].denseSurfaceId = surface.surfaceId;
-    }
+    const surfacePositions = platformPositionsForSurface(decorated, surface);
+    const strikeIndices = strikePositionsForSurface(decorated, surfacePositions);
+    markSurfacePlatforms(decorated, surfacePositions, surface.surfaceId);
     if (!strikeIndices.length) continue;
 
     for (let offset = 0; offset < strikeIndices.length; offset += 1) {

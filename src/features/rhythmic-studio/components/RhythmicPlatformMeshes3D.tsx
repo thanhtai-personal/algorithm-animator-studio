@@ -472,59 +472,6 @@ function DrumDiscMesh({ w, h, d, color, selected, glow }: MeshProps) {
   );
 }
 
-function CowbellBlockMesh({ w, h, d, color, selected, glow }: MeshProps) {
-  const bodyColor = new THREE.Color("#2f3338").lerp(new THREE.Color(color), 0.12).getStyle();
-  return (
-    <group>
-      <RoundedBox args={[w * 0.88, Math.max(h * 1.16, 0.18), d]} radius={0.055} smoothness={4} castShadow receiveShadow>
-        <meshPhysicalMaterial color={selectedColor(bodyColor, selected)} roughness={0.32} metalness={0.68} clearcoat={0.35} emissive={color} emissiveIntensity={glow * 0.16} />
-      </RoundedBox>
-      <RoundedBox position={[0, -h * 0.05, d * 0.505]} args={[w * 0.68, Math.max(h * 0.7, 0.11), 0.025]} radius={0.035} smoothness={3}>
-        <meshStandardMaterial color="#090b0e" roughness={0.52} metalness={0.38} />
-      </RoundedBox>
-      <mesh position={[0, h * 0.72, -d * 0.2]} castShadow>
-        <cylinderGeometry args={[0.028, 0.028, Math.max(0.18, h * 0.9), 12]} />
-        <meshStandardMaterial color="#7b858f" roughness={0.24} metalness={0.82} />
-      </mesh>
-    </group>
-  );
-}
-
-function BellConeMesh({ w, h, d, color, selected, glow }: MeshProps) {
-  const radius = Math.max(0.14, Math.min(w * 0.34, h * 0.95));
-  return (
-    <group>
-      <mesh rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[radius * 0.42, radius, Math.max(d, 0.34), 28, 1, true]} />
-        <meshPhysicalMaterial color={selectedColor(color, selected)} roughness={0.28} metalness={0.52} clearcoat={0.48} emissive={color} emissiveIntensity={glow * 0.22} side={THREE.DoubleSide} />
-      </mesh>
-      <mesh position={[0, 0, d * 0.49]}>
-        <torusGeometry args={[radius * 0.82, radius * 0.08, 10, 28]} />
-        <meshStandardMaterial color="#e4e7eb" roughness={0.2} metalness={0.74} />
-      </mesh>
-      <mesh position={[0, 0, -d * 0.32]} castShadow>
-        <sphereGeometry args={[radius * 0.18, 16, 10]} />
-        <meshStandardMaterial color="#252a30" roughness={0.3} metalness={0.62} />
-      </mesh>
-    </group>
-  );
-}
-
-function ArcadePadMesh({ w, h, d, color, selected, glow }: MeshProps) {
-  const side = Math.max(0.36, Math.min(w * 0.78, 0.92));
-  return (
-    <group>
-      <RoundedBox args={[side, side * 0.8, d]} radius={0.12} smoothness={5} castShadow receiveShadow>
-        <meshPhysicalMaterial color={selectedColor("#17251d", selected)} roughness={0.34} metalness={0.28} clearcoat={0.5} />
-      </RoundedBox>
-      <RoundedBox position={[0, 0, d * 0.51]} args={[side * 0.68, side * 0.52, 0.035]} radius={0.08} smoothness={4}>
-        <meshPhysicalMaterial color={color} emissive={color} emissiveIntensity={0.15 + glow * 0.72} roughness={0.24} metalness={0.16} clearcoat={0.75} />
-      </RoundedBox>
-      {[-1, 1].flatMap((sx) => [-1, 1].map((sy) => <EndBolt key={`${sx}:${sy}`} x={sx * side * 0.36} y={sy * side * 0.28} z={d * 0.515} color="#87938d" />))}
-    </group>
-  );
-}
-
 export function PlatformMesh(props: MeshProps) {
   const style = props.style;
   if (style === "neon-tube") return <NeonTubeMesh {...props} />;
@@ -548,9 +495,6 @@ export function PlatformMesh(props: MeshProps) {
   if (style === "pluck-pad") return <PluckPadMesh {...props} />;
   if (style === "vibraphone-bar") return <VibraphoneBarMesh {...props} />;
   if (style === "drum-disc") return <DrumDiscMesh {...props} />;
-  if (style === "cowbell-block") return <CowbellBlockMesh {...props} />;
-  if (style === "bell-cone") return <BellConeMesh {...props} />;
-  if (style === "arcade-pad") return <ArcadePadMesh {...props} />;
   if (style === "comet-pad") return <CometPadMesh {...props} />;
   return <StandardBarMesh {...props} />;
 }

@@ -16,8 +16,6 @@ export type ShowcaseTextKey =
   | "family.marimba"
   | "family.pluck"
   | "family.vibraphone"
-  | "family.percussion"
-  | "family.arcade"
   | "family.mixed"
   | "layout.cascade"
   | "layout.fan"
@@ -26,7 +24,7 @@ export type ShowcaseTextKey =
 
 const EN: Record<ShowcaseTextKey, string> = {
   title: "3D instrument showcase",
-  hint: "Build a single-marble wall performance from real instrument families and natural falling motion.",
+  hint: "Build wall-mounted instrument scenes with physical rails and optional duet marbles.",
   family: "Instrument family",
   layout: "Wall layout",
   rails: "Guide rails",
@@ -40,8 +38,6 @@ const EN: Record<ShowcaseTextKey, string> = {
   "family.marimba": "Marimba wood bars",
   "family.pluck": "Pluck organ pads",
   "family.vibraphone": "Vibraphone metal bars",
-  "family.percussion": "Bells, drums & cowbells",
-  "family.arcade": "Arcade / electronic pads",
   "family.mixed": "Mixed instrument sections",
   "layout.cascade": "Natural cascade",
   "layout.fan": "Fan / radial wall",
@@ -51,7 +47,7 @@ const EN: Record<ShowcaseTextKey, string> = {
 
 const VI: typeof EN = {
   title: "Showcase nhạc cụ 3D",
-  hint: "Tạo màn trình diễn một viên bi với nhiều họ nhạc cụ gắn tường và chuyển động rơi tự nhiên.",
+  hint: "Tạo cảnh nhạc cụ gắn tường, có rail vật lý và tùy chọn hai viên bi chạy song song.",
   family: "Họ nhạc cụ",
   layout: "Cách bố trí trên tường",
   rails: "Rail dẫn hướng",
@@ -65,8 +61,6 @@ const VI: typeof EN = {
   "family.marimba": "Thanh gỗ Marimba",
   "family.pluck": "Pad Pluck Organ",
   "family.vibraphone": "Thanh kim loại Vibraphone",
-  "family.percussion": "Chuông, trống & cowbell",
-  "family.arcade": "Pad điện tử / arcade",
   "family.mixed": "Phối nhiều nhạc cụ theo đoạn",
   "layout.cascade": "Dòng chảy tự nhiên",
   "layout.fan": "Quạt / tỏa tròn trên tường",

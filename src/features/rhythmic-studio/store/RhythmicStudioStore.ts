@@ -51,10 +51,10 @@ export class RhythmicStudioStore {
   lyricRaw = "";
   lyrics: LyricCue[] = [];
   lyricFormat: LyricFormat | null = null;
-  activePresetId: RhythmicPresetId | null = "wall-orchestra";
+  activePresetId: RhythmicPresetId | null = "toy-pegboard";
   presetMixEnabled = false;
   presetMixSeed = 1;
-  rendererMode: RhythmicRendererMode = "three";
+  rendererMode: RhythmicRendererMode = "legacy";
 
   constructor() {
     makeAutoObservable(this, {}, { autoBind: true });

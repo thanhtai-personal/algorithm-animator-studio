@@ -30,7 +30,7 @@ function currentCanvas(store: RhythmicStudioStore, refs: CanvasRefs) {
   return refs.legacyCanvasRef.current;
 }
 
-function createFixedExportSurface(source: HTMLCanvasElement) {
+function createFixedExportSurface(source: HTMLCanvasElement, rendererMode: RhythmicStudioStore["rendererMode"], fps: number) {
   const output = document.createElement("canvas");
   output.width = 720;
   output.height = 1280;
@@ -38,13 +38,75 @@ function createFixedExportSurface(source: HTMLCanvasElement) {
   if (!context) return { canvas: source, stop: () => undefined };
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
+
+  let stopped = false;
   let raf = 0;
-  const copy = () => {
-    context.drawImage(source, 0, 0, output.width, output.height);
-    raf = window.requestAnimationFrame(copy);
+  let frameCallback = 0;
+  let relay: HTMLVideoElement | null = null;
+  let relayStream: MediaStream | null = null;
+
+  const paint = (image: CanvasImageSource) => {
+    context.fillStyle = "#000000";
+    context.fillRect(0, 0, output.width, output.height);
+    context.drawImage(image, 0, 0, output.width, output.height);
   };
-  copy();
-  return { canvas: output, stop: () => window.cancelAnimationFrame(raf) };
+
+  if (rendererMode !== "three") {
+    const copy = () => {
+      if (stopped) return;
+      paint(source);
+      raf = window.requestAnimationFrame(copy);
+    };
+    copy();
+    return {
+      canvas: output,
+      stop: () => {
+        stopped = true;
+        window.cancelAnimationFrame(raf);
+      },
+    };
+  }
+
+  // Reading a WebGL canvas with drawImage() on a later RAF is not reliable when
+  // preserveDrawingBuffer=false (the normal high-performance Three.js setup).
+  // The compositor is allowed to clear the drawing buffer after presenting it,
+  // which produced valid WebM files whose every video pixel was black. Capture
+  // the presented WebGL frames first, relay that MediaStream through a video
+  // element, then scale the live video into the fixed 720x1280 export surface.
+  // This keeps the live renderer fast and avoids permanently enabling the costly
+  // preserveDrawingBuffer option just for recording.
+  relayStream = source.captureStream(Math.max(24, Math.min(120, fps)));
+  relay = document.createElement("video");
+  relay.muted = true;
+  relay.playsInline = true;
+  relay.autoplay = true;
+  relay.srcObject = relayStream;
+  void relay.play().catch(() => undefined);
+
+  const copyVideo = () => {
+    if (stopped || !relay) return;
+    if (relay.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) paint(relay);
+    if (typeof relay.requestVideoFrameCallback === "function") {
+      frameCallback = relay.requestVideoFrameCallback(copyVideo);
+    } else {
+      raf = window.requestAnimationFrame(copyVideo);
+    }
+  };
+  copyVideo();
+
+  return {
+    canvas: output,
+    stop: () => {
+      stopped = true;
+      window.cancelAnimationFrame(raf);
+      if (relay && frameCallback && typeof relay.cancelVideoFrameCallback === "function") {
+        relay.cancelVideoFrameCallback(frameCallback);
+      }
+      relay?.pause();
+      if (relay) relay.srcObject = null;
+      relayStream?.getTracks().forEach((track) => track.stop());
+    },
+  };
 }
 
 export function useRhythmicExportActions(store: RhythmicStudioStore, refs: CanvasRefs, playback: PlaybackDeps) {
@@ -73,7 +135,7 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, refs: Canva
     // Record from a fixed 720x1280 surface instead of the responsive WebGL
     // drawing buffer. The latter follows CSS size × DPR and produced files such
     // as 744x1324 depending on the browser window.
-    const exportSurface = createFixedExportSurface(canvas);
+    const exportSurface = createFixedExportSurface(canvas, store.rendererMode, store.settings.exportFps);
     const videoStream = exportSurface.canvas.captureStream(store.settings.exportFps);
     // Never put the AudioEngine's shared destination track directly into the export
     // stream: stopping that stream would permanently end audio for later exports.

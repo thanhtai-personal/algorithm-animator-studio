@@ -30,6 +30,7 @@ type SettingsResolver = (index: number) => StudioSettings;
 const CHORD_GAP_MS = 24;
 const DENSE_GAP_MS = 185;
 const MIN_RUN_STRIKES = 3;
+const MICRO_BURST_GAP_MS = 90;
 const MAX_RUN_STRIKES = 14;
 const ROLL_SLOPE = 0.075;
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -83,6 +84,7 @@ export function denseInstrumentRuns(events: NoteEvent[], settings: StudioSetting
 
     let end = index;
     let strikePositions = 1;
+    let tightestStrikeGap = Number.POSITIVE_INFINITY;
     // Bound modules by physical strikes instead of raw MIDI notes. The supplied
     // production MIDI routinely has 4-14 simultaneous notes at one onset; using
     // raw-note count consumed the old 14-note limit inside a single chord and
@@ -92,11 +94,15 @@ export function denseInstrumentRuns(events: NoteEvent[], settings: StudioSetting
       const nextSettings = resolveSettings?.(end + 1) ?? settings;
       const gap = events[end + 1].timeMs - events[end].timeMs;
       if (!supportsDenseInstrumentRun(localSettings) || !supportsDenseInstrumentRun(nextSettings) || gap > DENSE_GAP_MS) break;
-      if (gap > CHORD_GAP_MS) strikePositions += 1;
+      if (gap > CHORD_GAP_MS) {
+        strikePositions += 1;
+        tightestStrikeGap = Math.min(tightestStrikeGap, gap);
+      }
       end += 1;
     }
 
-    if (strikePositions >= MIN_RUN_STRIKES) {
+    const microBurst = strikePositions === 2 && tightestStrikeGap <= MICRO_BURST_GAP_MS;
+    if (strikePositions >= MIN_RUN_STRIKES || microBurst) {
       const kind = denseInstrumentKind(events, index, end);
       const previous = runs[runs.length - 1];
       const continuesPreviousSurface = Boolean(previous && previous.end === index && previous.kind === kind);

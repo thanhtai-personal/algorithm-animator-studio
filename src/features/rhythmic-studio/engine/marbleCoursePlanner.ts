@@ -363,10 +363,13 @@ function fitCourseToTrajectories(platforms: MarblePlatform[], settings: StudioSe
 
   for (let platformIndex = 0; platformIndex < fitted.length; platformIndex += 1) {
     const platform = fitted[platformIndex];
-    if (platform.visualHidden || platform.denseRunId !== undefined) continue;
+    if (platform.visualHidden) continue;
     const localSettings = resolveSettings?.(platform.index) ?? settings;
+    const denseSurface = platform.denseRunId !== undefined;
     const originalWidth = platform.visualWidth ?? platform.width;
-    const minimumWidth = Math.max(32, localSettings.ballSize * 2.35);
+    const minimumWidth = denseSurface
+      ? Math.max(14, localSettings.ballSize * 1.04)
+      : Math.max(32, localSettings.ballSize * 2.35);
     const originalX = platform.visualX ?? platform.x;
     const originalY = platform.visualY ?? platform.y;
     const angle = platform.visualTiltRad ?? platform.tiltRad;
@@ -398,6 +401,22 @@ function fitCourseToTrajectories(platforms: MarblePlatform[], settings: StudioSe
       }
       return false;
     };
+
+    // Dense lanes are collision-fitted after their visual decoration. Decoration
+    // can widen/recenter a chord key at a module seam, so a scene that was clean
+    // during planning may gain a visible crossing afterwards. For a rolling
+    // surface only shrink the playable face; never shift it away from the
+    // physics hit point or alter the marble trajectory.
+    if (denseSurface) {
+      if (!hasStaticCrossing()) continue;
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        const width = platform.visualWidth ?? platform.width;
+        if (width <= minimumWidth + 0.01) break;
+        platform.visualWidth = Math.max(minimumWidth, width * 0.82);
+        if (!hasStaticCrossing()) break;
+      }
+      continue;
+    }
 
     if (routeClearance() >= 1.5 && !hasStaticCrossing()) continue;
 

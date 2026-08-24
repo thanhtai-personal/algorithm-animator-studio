@@ -69,4 +69,21 @@ describe("rhythmic dense instrument routing", () => {
     expect(dense.filter((platform) => !platform.visualHidden).every((platform) => (platform.visualWidth ?? 0) >= settings.ballSize)).toBe(true);
   });
 
+  it("treats a two-hit micro-burst as one short playable surface instead of a teleporting bounce", () => {
+    const events = [
+      note(0, 0),
+      note(1, 33.333),
+      note(2, 420),
+    ];
+
+    const platforms = buildMarbleCourse(events, settings, 720);
+    expect(platforms[0].denseRunId).toBeDefined();
+    expect(platforms[1].denseRunId).toBeDefined();
+    expect(platforms[0].motionMode).toBe("roll");
+
+    const before = marbleAtTime(events[1].timeMs - 0.01, events, platforms, settings);
+    const exact = marbleAtTime(events[1].timeMs, events, platforms, settings);
+    expect(Math.hypot(before.x - exact.x, before.y - exact.y)).toBeLessThan(0.02);
+  });
+
 });

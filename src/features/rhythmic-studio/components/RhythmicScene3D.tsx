@@ -179,15 +179,18 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
     const jumpDistance = world.distanceTo(aheadWorld);
     const density = noteDensity(props.events, timeMs);
     const speed = velocity.length();
-    const profileZoom = props.settings.cameraProfile === "xylophone" ? 1.25 : (props.settings.cameraProfile === "comet" ? 0.5 : 0);
+    const profileZoom = props.settings.cameraProfile === "xylophone" ? 1.55 : (props.settings.cameraProfile === "comet" ? 0.5 : 0);
     const adaptiveZ = THREE.MathUtils.clamp(
       CAMERA_Z + profileZoom + jumpDistance * 0.18 + Math.min(0.45, speed * 0.018) - Math.min(0.75, density * 0.035),
-      props.settings.cameraProfile === "xylophone" ? 10.4 : 8.8,
-      props.settings.cameraProfile === "xylophone" ? 15.1 : 12.8,
+      props.settings.cameraProfile === "xylophone" ? 11.2 : 8.8,
+      props.settings.cameraProfile === "xylophone" ? 15.8 : 12.8,
     );
     const anchorOffset = (0.5 - props.settings.cameraAnchor) * 7.2;
-    const lateralLead = THREE.MathUtils.clamp((aheadWorld.x - world.x) * 0.28 + velocity.x * 0.018, -0.95, 0.95);
-    const verticalLag = THREE.MathUtils.clamp(velocity.y * 0.012, -0.32, 0.32);
+    const lateralFactor = props.settings.cameraProfile === "xylophone" ? 0.18 : 0.28;
+    const lateralClamp = props.settings.cameraProfile === "xylophone" ? 0.56 : 0.95;
+    const verticalFactor = props.settings.cameraProfile === "xylophone" ? 0.009 : 0.012;
+    const lateralLead = THREE.MathUtils.clamp((aheadWorld.x - world.x) * lateralFactor + velocity.x * (lateralFactor * 0.06), -lateralClamp, lateralClamp);
+    const verticalLag = THREE.MathUtils.clamp(velocity.y * verticalFactor, -0.26, 0.32);
     cameraTarget.set(world.x + lateralLead, world.y + anchorOffset - verticalLag, adaptiveZ + world.z * 0.18);
 
     const damping = 4.8 + THREE.MathUtils.clamp(props.settings.cameraSmoothing, 0.03, 0.65) * 14;
@@ -216,7 +219,9 @@ function SceneContent(props: Omit<Props, "settings"> & { settings: StudioSetting
     const targetFov = THREE.MathUtils.clamp(CAMERA_FOV + jumpDistance * (props.settings.cameraProfile === "xylophone" ? 0.5 : 0.56) - density * 0.055, props.settings.cameraProfile === "xylophone" ? 37 : 34.5, props.settings.cameraProfile === "xylophone" ? 44.5 : 43.5);
     perspective.fov = snapCamera ? targetFov : THREE.MathUtils.damp(perspective.fov, targetFov, 5.5, deltaSeconds);
     perspective.updateProjectionMatrix();
-    const bankTarget = THREE.MathUtils.clamp(-velocity.x * 0.006, -0.042, 0.042);
+    const bankStrength = props.settings.cameraProfile === "xylophone" ? 0.0035 : 0.006;
+    const bankLimit = props.settings.cameraProfile === "xylophone" ? 0.024 : 0.042;
+    const bankTarget = THREE.MathUtils.clamp(-velocity.x * bankStrength, -bankLimit, bankLimit);
     perspective.rotation.z = snapCamera ? bankTarget : THREE.MathUtils.damp(perspective.rotation.z, bankTarget, 4.2, deltaSeconds);
   }, [
     afterWorld,

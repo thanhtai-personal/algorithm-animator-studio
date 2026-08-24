@@ -187,34 +187,39 @@ function XylophoneRoom() {
   const accents = ["#f2b457", "#ef6d7a", "#59c7a3", "#74b6ff", "#9d7bf2", "#ff9f6b"];
   return (
     <group>
-      <RoundedBox position={[0, -54, -4.3]} args={[17.2, 136, 0.8]} radius={0.18} smoothness={4} receiveShadow>
-        <meshStandardMaterial color="#c8af92" roughness={0.8} metalness={0.02} />
+      <RoundedBox position={[0, -54, -4.45]} args={[17.6, 136, 0.55]} radius={0.18} smoothness={4} receiveShadow renderOrder={-30}>
+        <meshStandardMaterial color="#d6c0a6" roughness={0.82} metalness={0.02} depthWrite={false} />
       </RoundedBox>
-      {[-8.05, 8.05].map((x) => (
-        <mesh key={x} position={[x, -54, -0.8]} rotation={[0, x < 0 ? Math.PI / 2.58 : -Math.PI / 2.58, 0]} receiveShadow>
-          <planeGeometry args={[8, 136]} />
-          <meshStandardMaterial color="#8d725a" roughness={0.76} metalness={0.02} side={THREE.DoubleSide} />
+      {[-8.9, 8.9].map((x) => (
+        <mesh key={x} position={[x, -54, -4.1]} rotation={[0, x < 0 ? Math.PI / 2.82 : -Math.PI / 2.82, 0]} receiveShadow renderOrder={-28}>
+          <planeGeometry args={[5.2, 136]} />
+          <meshStandardMaterial color="#8c725c" roughness={0.78} metalness={0.02} side={THREE.DoubleSide} depthWrite={false} />
         </mesh>
       ))}
-      <RoundedBox position={[0, -54, -3.5]} args={[11.8, 68, 0.34]} radius={0.1} smoothness={4} receiveShadow>
-        <meshStandardMaterial color="#eee3d4" roughness={0.68} metalness={0.03} />
+      <RoundedBox position={[0, -54, -4.08]} args={[12.8, 96, 0.16]} radius={0.12} smoothness={4} receiveShadow renderOrder={-26}>
+        <meshStandardMaterial color="#f4eadc" roughness={0.7} metalness={0.02} depthWrite={false} />
       </RoundedBox>
-      <RoundedBox position={[0, 9.1, -3.28]} args={[8.6, 1.05, 0.26]} radius={0.08} smoothness={4} receiveShadow>
-        <meshStandardMaterial color="#9f744b" roughness={0.58} metalness={0.06} />
+      {[-4.15, 4.15].map((x, index) => (
+        <RoundedBox key={`accent-panel-${x}`} position={[x, -54, -3.96]} args={[1.7, 92, 0.14]} radius={0.08} smoothness={4} receiveShadow renderOrder={-24}>
+          <meshStandardMaterial color={index === 0 ? "#e3d1be" : "#ddd9e2"} roughness={0.64} metalness={0.02} depthWrite={false} />
+        </RoundedBox>
+      ))}
+      <RoundedBox position={[0, 9.1, -3.72]} args={[8.6, 1.05, 0.22]} radius={0.08} smoothness={4} receiveShadow renderOrder={-22}>
+        <meshStandardMaterial color="#9f744b" roughness={0.58} metalness={0.06} depthWrite={false} />
       </RoundedBox>
       {shelfItems.map((index) => (
-        <mesh key={index} position={[-3.2 + index * 1.08, 9.95, -3.12]} castShadow>
+        <mesh key={index} position={[-3.2 + index * 1.08, 9.95, -3.54]} castShadow renderOrder={-20}>
           <boxGeometry args={[0.34, 0.7 + (index % 3) * 0.18, 0.24]} />
-          <meshStandardMaterial color={index % 2 ? "#8cd4ff" : "#f2cc7a"} roughness={0.34} metalness={0.06} />
+          <meshStandardMaterial color={index % 2 ? "#8cd4ff" : "#f2cc7a"} roughness={0.34} metalness={0.06} depthWrite={false} />
         </mesh>
       ))}
-      <RoundedBox position={[0, -55, -1.18]} args={[11.6, 92, 0.36]} radius={0.08} smoothness={4} receiveShadow>
+      <RoundedBox position={[0, -55, -1.28]} args={[11.8, 92, 0.32]} radius={0.08} smoothness={4} receiveShadow>
         <meshStandardMaterial color="#aa7648" roughness={0.74} metalness={0.02} />
       </RoundedBox>
       {floorSlats.map((index) => (
-        <mesh key={index} position={[0, 8 - index * 10.4, -0.98]} castShadow>
-          <boxGeometry args={[9.9 - Math.min(index, 6) * 0.14, 0.2, 0.06]} />
-          <meshStandardMaterial color={index % 2 ? "#bc8756" : "#9d683f"} roughness={0.64} metalness={0.02} />
+        <mesh key={index} position={[0, 8 - index * 10.4, -1.06]} castShadow>
+          <boxGeometry args={[10.3 - Math.min(index, 6) * 0.16, 0.2, 0.06]} />
+          <meshStandardMaterial color={index % 2 ? "#c38d58" : "#a26e42"} roughness={0.64} metalness={0.02} />
         </mesh>
       ))}
       {[0, 1].map((line) => (
@@ -260,6 +265,7 @@ function XylophoneRoom() {
       </mesh>
       <GlowSprite position={[-5.2, -22, -2.8]} scale={[9, 18, 1]} color="#ffe0a5" opacity={0.13} />
       <GlowSprite position={[5.3, -70, -2.5]} scale={[8, 18, 1]} color="#ffb179" opacity={0.1} />
+      <GlowSprite position={[0, -56, -3.5]} scale={[11, 34, 1]} color="#fff0d0" opacity={0.08} />
     </group>
   );
 }

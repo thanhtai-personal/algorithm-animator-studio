@@ -247,19 +247,21 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
     const jumpDistance = world.distanceTo(aheadWorld);
     const density = noteDensity(props.events, timeMs);
     const speed = velocity.length();
+    const motionPlatform = props.platforms[Math.max(0, Math.min(props.platforms.length - 1, sample.platformIndex))];
+    const rollingSurface = motionPlatform?.motionMode === "roll" || motionPlatform?.denseSurfaceId !== undefined;
     const isXylophone = frameSettings.cameraProfile === "xylophone";
     const isTubeBoard = frameSettings.cameraProfile === "tube-board";
     const isComet = frameSettings.cameraProfile === "comet";
     const isShowcase = frameSettings.instrumentFamily !== "auto";
     const profileZoom = isShowcase ? 2.75 : isXylophone ? 1.95 : isComet ? 0.92 : isTubeBoard ? 1.05 : 0.4;
     const adaptiveZ = THREE.MathUtils.clamp(
-      CAMERA_Z + profileZoom + jumpDistance * (isComet ? 0.15 : 0.13) + Math.min(0.42, speed * 0.015) - Math.min(0.58, density * 0.028),
+      CAMERA_Z + profileZoom + jumpDistance * (isComet ? 0.15 : 0.13) + Math.min(0.42, speed * 0.015) - Math.min(rollingSurface ? 0.24 : 0.58, density * (rollingSurface ? 0.012 : 0.028)),
       isShowcase ? 13.0 : isXylophone ? 11.9 : isTubeBoard ? 10.1 : 9.6,
       isShowcase ? 17.2 : isXylophone ? 15.9 : isTubeBoard ? 13.7 : 13.6,
     ) * THREE.MathUtils.clamp(frameSettings.cameraDistance, 0.8, 1.3);
     const anchorOffset = (0.5 - frameSettings.cameraAnchor) * 6.4;
-    const lateralFactor = isShowcase ? 0.09 : isXylophone ? 0.13 : isTubeBoard ? 0.16 : 0.2;
-    const lateralClamp = isShowcase ? 0.3 : isXylophone ? 0.42 : isTubeBoard ? 0.48 : 0.62;
+    const lateralFactor = rollingSurface ? 0.075 : isShowcase ? 0.09 : isXylophone ? 0.13 : isTubeBoard ? 0.16 : 0.2;
+    const lateralClamp = rollingSurface ? 0.26 : isShowcase ? 0.3 : isXylophone ? 0.42 : isTubeBoard ? 0.48 : 0.62;
     const verticalFactor = isXylophone ? 0.006 : isTubeBoard ? 0.0075 : 0.009;
     const frameLead = isShowcase ? 0.2 : isComet ? 0.2 : isTubeBoard ? 0.15 : isXylophone ? 0.13 : 0.15;
     const nearFramedX = THREE.MathUtils.lerp(world.x, aheadWorld.x, frameLead);
@@ -299,14 +301,14 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
 
     const perspective = camera as THREE.PerspectiveCamera;
     const targetFov = THREE.MathUtils.clamp(
-      CAMERA_FOV + jumpDistance * (isShowcase ? 0.24 : isComet ? 0.48 : isXylophone ? 0.32 : 0.35) - density * 0.045,
+      CAMERA_FOV + jumpDistance * (isShowcase ? 0.24 : isComet ? 0.48 : isXylophone ? 0.32 : 0.35) - density * (rollingSurface ? 0.018 : 0.045),
       isShowcase ? 35 : isComet ? 35.5 : isXylophone ? 34 : 34.5,
       isShowcase ? 41.5 : isComet ? 43.2 : isXylophone ? 39.8 : 40.8,
     );
     perspective.fov = snapCamera ? targetFov : THREE.MathUtils.damp(perspective.fov, targetFov, 6.2, deltaSeconds);
     perspective.updateProjectionMatrix();
-    const bankStrength = isShowcase ? 0.0012 : isXylophone ? 0.0022 : isTubeBoard ? 0.0028 : 0.0042;
-    const bankLimit = isShowcase ? 0.008 : isXylophone ? 0.014 : isTubeBoard ? 0.018 : 0.028;
+    const bankStrength = rollingSurface ? 0.0007 : isShowcase ? 0.0012 : isXylophone ? 0.0022 : isTubeBoard ? 0.0028 : 0.0042;
+    const bankLimit = rollingSurface ? 0.006 : isShowcase ? 0.008 : isXylophone ? 0.014 : isTubeBoard ? 0.018 : 0.028;
     const bankTarget = THREE.MathUtils.clamp(-velocity.x * bankStrength, -bankLimit, bankLimit);
     perspective.rotation.z = snapCamera ? bankTarget : THREE.MathUtils.damp(perspective.rotation.z, bankTarget, 4.8, deltaSeconds);
   }, [

@@ -6,6 +6,7 @@ export type DenseInstrumentKind = "keyboard" | "pad-strip";
 
 export interface DenseInstrumentRun {
   id: number;
+  surfaceId: number;
   start: number;
   end: number;
   kind: DenseInstrumentKind;
@@ -71,6 +72,7 @@ function denseInstrumentKind(events: NoteEvent[], start: number, end: number): D
 
 export function denseInstrumentRuns(events: NoteEvent[], settings: StudioSettings, resolveSettings?: SettingsResolver) {
   const runs: DenseInstrumentRun[] = [];
+  let nextSurfaceId = 0;
   let index = 0;
   while (index < events.length) {
     const frameSettings = resolveSettings?.(index) ?? settings;
@@ -95,7 +97,11 @@ export function denseInstrumentRuns(events: NoteEvent[], settings: StudioSetting
     }
 
     if (strikePositions >= MIN_RUN_STRIKES) {
-      runs.push({ id: runs.length, start: index, end, kind: denseInstrumentKind(events, index, end) });
+      const kind = denseInstrumentKind(events, index, end);
+      const previous = runs[runs.length - 1];
+      const continuesPreviousSurface = Boolean(previous && previous.end === index && previous.kind === kind);
+      const surfaceId = continuesPreviousSurface ? previous.surfaceId : nextSurfaceId++;
+      runs.push({ id: runs.length, surfaceId, start: index, end, kind });
       const nextGap = end < events.length - 1 ? events[end + 1].timeMs - events[end].timeMs : Infinity;
       // Long dense passages are split into manageable keyboard modules, but the
       // modules share their boundary note. That keeps the marble rolling through
@@ -300,35 +306,63 @@ export function decorateDenseInstrumentRuns(
 ) {
   if (!platforms.length || !runs.length) return platforms;
   const decorated = platforms.map((platform) => ({ ...platform }));
-  for (const run of runs) {
-    const axis = runAxis(decorated, run);
-    if (!axis) continue;
-    const count = run.end - run.start + 1;
-    const scalar: number[] = [];
-    for (let offset = 0; offset < count; offset += 1) {
-      const platform = decorated[run.start + offset];
-      const fromStart = { x: platform.hitX - axis.first.hitX, y: platform.hitY - axis.first.hitY };
-      scalar.push(fromStart.x * axis.tangent.x + fromStart.y * axis.tangent.y);
-    }
 
-    for (let offset = 0; offset < count; offset += 1) {
-      const index = run.start + offset;
+  // Planner modules are intentionally bounded so search remains cheap, but a long
+  // rapid phrase can span several modules. Render and fit that phrase as one
+  // physical surface; otherwise every 14 strikes produce a visible chassis seam
+  // and the collision solver treats two halves of the same keyboard as obstacles.
+  const surfaces = new Map<number, DenseInstrumentRun>();
+  for (const run of runs) {
+    const current = surfaces.get(run.surfaceId);
+    if (!current) surfaces.set(run.surfaceId, { ...run });
+    else {
+      current.start = Math.min(current.start, run.start);
+      current.end = Math.max(current.end, run.end);
+    }
+  }
+
+  for (const surface of surfaces.values()) {
+    const axis = runAxis(decorated, surface);
+    if (!axis) continue;
+
+    // One chord is one physical strike. The older decorator allocated geometry
+    // for every raw MIDI note and hid the duplicate nodes later; the remaining
+    // visible chord key therefore inherited a micro-width from those zero-gap
+    // duplicates. Work only with strike representatives from the beginning.
+    const strikeIndices: number[] = [];
+    for (let index = surface.start; index <= surface.end; index += 1) {
+      const previousIndex = strikeIndices[strikeIndices.length - 1];
+      if (previousIndex === undefined || decorated[index].event.timeMs - decorated[previousIndex].event.timeMs > CHORD_GAP_MS) {
+        strikeIndices.push(index);
+      }
+      decorated[index].denseSurfaceId = surface.surfaceId;
+    }
+    if (!strikeIndices.length) continue;
+
+    const scalar = strikeIndices.map((index) => {
       const platform = decorated[index];
-      if (!platform) continue;
+      const fromStart = { x: platform.hitX - axis.first.hitX, y: platform.hitY - axis.first.hitY };
+      return fromStart.x * axis.tangent.x + fromStart.y * axis.tangent.y;
+    });
+
+    for (let offset = 0; offset < strikeIndices.length; offset += 1) {
+      const index = strikeIndices[offset];
+      const platform = decorated[index];
       const localSettings = resolveSettings?.(index) ?? settings;
       const current = scalar[offset];
-      const previousGap = offset > 0 ? Math.max(1, current - scalar[offset - 1]) : Math.max(1, scalar[1] - current);
-      const nextGap = offset < count - 1 ? Math.max(1, scalar[offset + 1] - current) : previousGap;
+      const fallbackGap = Math.max(localSettings.ballSize * 1.12, 18);
+      const previousGap = offset > 0 ? Math.max(1, current - scalar[offset - 1]) : (scalar[1] !== undefined ? Math.max(1, scalar[1] - current) : fallbackGap);
+      const nextGap = offset < scalar.length - 1 ? Math.max(1, scalar[offset + 1] - current) : previousGap;
       const left = offset === 0 ? current - nextGap * 0.5 : (scalar[offset - 1] + current) * 0.5;
-      const right = offset === count - 1 ? current + previousGap * 0.5 : (current + scalar[offset + 1]) * 0.5;
+      const right = offset === scalar.length - 1 ? current + previousGap * 0.5 : (current + scalar[offset + 1]) * 0.5;
       const center = (left + right) * 0.5;
-      const seam = run.kind === "keyboard" ? 1.2 : 2.4;
+      const seam = surface.kind === "keyboard" ? 1.2 : 2.4;
       const keyWidth = Math.max(localSettings.ballSize * 1.04, right - left - seam);
       const lineHit = {
         x: axis.first.hitX + axis.tangent.x * center,
         y: axis.first.hitY + axis.tangent.y * center,
       };
-      platform.visualStyle = run.kind === "keyboard" ? "piano-key" : "instrument-pad";
+      platform.visualStyle = surface.kind === "keyboard" ? "piano-key" : "instrument-pad";
       platform.visualX = lineHit.x - axis.normal.x * localSettings.ballSize;
       platform.visualY = lineHit.y - axis.normal.y * localSettings.ballSize;
       platform.visualWidth = keyWidth;

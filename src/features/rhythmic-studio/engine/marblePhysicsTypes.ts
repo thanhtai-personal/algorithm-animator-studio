@@ -29,6 +29,7 @@ export interface MarblePlatform {
   event: NoteEvent;
   motionMode?: SegmentMotionMode;
   denseRunId?: number;
+  denseSurfaceId?: number;
   chordClusterId?: number;
   visualStyle?: PlatformStyle;
   visualX?: number;

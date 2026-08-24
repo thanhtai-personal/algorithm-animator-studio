@@ -368,9 +368,9 @@ function PianoKeyMesh({ w, h, d, color, selected, glow }: MeshProps) {
         <boxGeometry args={[w * 0.82, 0.018, 0.012]} />
         <meshBasicMaterial color="#ffffff" transparent opacity={0.22} />
       </mesh>
-      <mesh position={[0, h * 0.52, -d * 0.25]} castShadow>
-        <boxGeometry args={[w * 0.72, Math.max(0.035, h * 0.22), d * 0.3]} />
-        <meshStandardMaterial color="#242424" roughness={0.36} metalness={0.5} />
+      <mesh position={[0, h * 0.43, d * 0.47]}>
+        <boxGeometry args={[w * 0.68, Math.max(0.014, h * 0.07), 0.014]} />
+        <meshBasicMaterial color={color} transparent opacity={0.3 + Math.min(0.42, glow * 0.2)} />
       </mesh>
     </group>
   );

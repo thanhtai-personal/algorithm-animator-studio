@@ -357,7 +357,8 @@ function fitCourseToTrajectories(platforms: MarblePlatform[], settings: StudioSe
   if (platforms.length < 3) return platforms;
   const fitted = platforms.map((platform) => ({ ...platform }));
   const sharesSurface = (a: MarblePlatform, b: MarblePlatform) =>
-    (a.denseRunId !== undefined && a.denseRunId === b.denseRunId)
+    (a.denseSurfaceId !== undefined && a.denseSurfaceId === b.denseSurfaceId)
+    || (a.denseRunId !== undefined && a.denseRunId === b.denseRunId)
     || (a.chordClusterId !== undefined && a.chordClusterId === b.chordClusterId);
 
   for (let platformIndex = 0; platformIndex < fitted.length; platformIndex += 1) {
@@ -529,6 +530,7 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
       const platform = obstacleFromImpact(index, state.hit, bounce.normal, bounce.outgoing, stepSettings, event, resolveColor(index, pitch), platformWidth, profile.gravity);
       platform.motionMode = chord ? "hold" : denseRun ? "roll" : "ballistic";
       platform.denseRunId = denseNode?.id;
+      platform.denseSurfaceId = denseNode?.surfaceId;
       platform.chordClusterId = chordNode?.id;
 
       // Give the collision solver the footprint that will actually be rendered.

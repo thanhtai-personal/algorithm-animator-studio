@@ -55,4 +55,18 @@ describe("rhythmic dense instrument routing", () => {
     const platforms = buildMarbleCourse(events, settings, 720);
     expect(platforms.slice(0, 6).every((platform) => platform.visualStyle === "instrument-pad")).toBe(true);
   });
+  it("keeps planner modules on one physical dense surface", () => {
+    const events = Array.from({ length: 30 }, (_, index) => note(index, index * 125));
+    events.push(note(30, 30 * 125 + 620));
+
+    const platforms = buildMarbleCourse(events, settings, 720);
+    const dense = platforms.slice(0, 30);
+    const runIds = new Set(dense.flatMap((platform) => platform.denseRunId === undefined ? [] : [platform.denseRunId]));
+    const surfaceIds = new Set(dense.flatMap((platform) => platform.denseSurfaceId === undefined ? [] : [platform.denseSurfaceId]));
+
+    expect(runIds.size).toBeGreaterThan(1);
+    expect(surfaceIds.size).toBe(1);
+    expect(dense.filter((platform) => !platform.visualHidden).every((platform) => (platform.visualWidth ?? 0) >= settings.ballSize)).toBe(true);
+  });
+
 });

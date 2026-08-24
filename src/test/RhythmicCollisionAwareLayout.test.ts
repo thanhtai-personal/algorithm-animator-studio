@@ -49,7 +49,8 @@ function stressEvents(seed: number, count = 72): NoteEvent[] {
 }
 
 function sharesSurface(a: ReturnType<typeof buildPhysicsCourse>[number], b: ReturnType<typeof buildPhysicsCourse>[number]) {
-  return (a.denseRunId !== undefined && a.denseRunId === b.denseRunId)
+  return (a.denseSurfaceId !== undefined && a.denseSurfaceId === b.denseSurfaceId)
+    || (a.denseRunId !== undefined && a.denseRunId === b.denseRunId)
     || (a.chordClusterId !== undefined && a.chordClusterId === b.chordClusterId);
 }
 

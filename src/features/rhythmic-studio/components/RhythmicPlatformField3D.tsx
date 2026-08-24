@@ -34,14 +34,18 @@ function PhysicalMount({ terrain, w, h, detail, showcase }: {
     );
   }
   if (terrain === "tube-board") {
-    const length = 3.05;
+    // Auto-generated scenes do not have a visible wall exactly three world units
+    // behind every obstacle. Long stems therefore read as black spikes floating in
+    // space. Use a compact self-contained bracket; showcase instruments keep their
+    // dedicated mounting treatment above.
+    const length = 0.82;
     return (
       <group>
         <mesh position={[0, h * 0.16, -length * 0.5]} rotation={[Math.PI / 2, 0, 0]} castShadow>
           <cylinderGeometry args={[0.035 + detail * 0.012, 0.035 + detail * 0.012, length, 12]} />
           <meshStandardMaterial color="#65717e" roughness={0.27} metalness={0.84} />
         </mesh>
-        <mesh position={[0, h * 0.16, -length - 0.04]} castShadow receiveShadow>
+        <mesh position={[0, h * 0.16, -length - 0.08]} castShadow receiveShadow>
           <boxGeometry args={[Math.min(0.72, Math.max(0.32, w * 0.28)), Math.max(0.18, h * 0.82), 0.075]} />
           <meshStandardMaterial color="#202832" roughness={0.42} metalness={0.7} />
         </mesh>
@@ -50,12 +54,13 @@ function PhysicalMount({ terrain, w, h, detail, showcase }: {
   }
   if (terrain === "xylophone") {
     const supportX = Math.min(w * 0.3, 0.52);
+    const stemLength = 0.78;
     return (
       <group>
         {[-supportX, supportX].map((x) => (
           <group key={x} position={[x, h * 0.35, 0]}>
-            <mesh position={[0, 0, -1.2]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-              <cylinderGeometry args={[0.028, 0.028, 2.35, 12]} />
+            <mesh position={[0, 0, -stemLength * 0.5]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+              <cylinderGeometry args={[0.028, 0.028, stemLength, 12]} />
               <meshStandardMaterial color="#77634f" roughness={0.34} metalness={0.48} />
             </mesh>
             <mesh position={[0, 0, -0.16]} castShadow>
@@ -94,25 +99,50 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
     const focusSettings = resolveSettings?.(focusIndex) ?? settings;
     const focusPlatform = platforms[Math.max(0, Math.min(platforms.length - 1, focusIndex))];
     const focusTimeMs = focusPlatform?.event.timeMs ?? 0;
-    const behindMs = focusSettings.terrainProfile === "xylophone" ? 1400 : 1200;
-    const aheadMs = focusSettings.terrainProfile === "xylophone" ? 3600 : 3200;
-    // A raw-index window is unstable for multi-track MIDI: one 10-note chord can
-    // consume half of the old +/-18 node budget even though it is only one
-    // physical collision. Keep the visible course in musical time instead, so
-    // upcoming lanes do not pop in/out merely because chord voicing is dense.
-    return platforms.filter((platform) => platform.event.timeMs >= focusTimeMs - behindMs && platform.event.timeMs <= focusTimeMs + aheadMs);
+
+    let strikes = 0;
+    let previousStrikeMs = Number.NEGATIVE_INFINITY;
+    for (const platform of platforms) {
+      if (platform.event.timeMs < focusTimeMs - 450) continue;
+      if (platform.event.timeMs > focusTimeMs + 1450) break;
+      if (platform.event.timeMs - previousStrikeMs > 24) {
+        strikes += 1;
+        previousStrikeMs = platform.event.timeMs;
+      }
+    }
+    const strikeRate = strikes / 1.9;
+    const crowding = Math.min(1, Math.max(0, (strikeRate - 3.2) / 4.8));
+    const profileAhead = focusSettings.terrainProfile === "xylophone" ? 3300 : 3000;
+    const behindMs = Math.round(1150 - crowding * 260);
+    const aheadMs = Math.round(profileAhead - crowding * 760);
+    const startMs = focusTimeMs - behindMs;
+    const endMs = focusTimeMs + aheadMs;
+    const base = platforms.filter((platform) => platform.event.timeMs >= startMs && platform.event.timeMs <= endMs);
+
+    // Keep a small overscan for a dense surface already entering the frame, but do
+    // not reveal an entire long MIDI phrase. This prevents support rails from
+    // popping at each planner-module seam without restoring the old screen clutter.
+    const activeSurfaceIds = new Set(base.flatMap((platform) => platform.denseSurfaceId === undefined ? [] : [platform.denseSurfaceId]));
+    if (!activeSurfaceIds.size) return base;
+    return platforms.filter((platform) => {
+      if (platform.event.timeMs >= startMs && platform.event.timeMs <= endMs) return true;
+      return platform.denseSurfaceId !== undefined
+        && activeSurfaceIds.has(platform.denseSurfaceId)
+        && platform.event.timeMs >= startMs - 260
+        && platform.event.timeMs <= endMs + 420;
+    });
   }, [focusIndex, platforms, resolveSettings, settings]);
 
   const denseSupports = useMemo(() => {
-    const activeRunIds = new Set<number>();
+    const activeSurfaceIds = new Set<number>();
     for (const platform of visible) {
-      if (!platform.visualHidden && platform.denseRunId !== undefined) activeRunIds.add(platform.denseRunId);
+      if (!platform.visualHidden && platform.denseSurfaceId !== undefined) activeSurfaceIds.add(platform.denseSurfaceId);
     }
-    return [...activeRunIds].flatMap((runId) => {
-      const run = platforms.filter((platform) => platform.denseRunId === runId && !platform.visualHidden);
-      if (run.length < 2) return [];
-      const first = run[0];
-      const last = run[run.length - 1];
+    return [...activeSurfaceIds].flatMap((surfaceId) => {
+      const surface = visible.filter((platform) => platform.denseSurfaceId === surfaceId && !platform.visualHidden);
+      if (surface.length < 2) return [];
+      const first = surface[0];
+      const last = surface[surface.length - 1];
       const firstX = first.visualX ?? first.x;
       const firstY = first.visualY ?? first.y;
       const lastX = last.visualX ?? last.x;
@@ -122,22 +152,26 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
       const span = Math.hypot(lastX - firstX, lastY - firstY) + (firstWidth + lastWidth) * 0.5;
       const angle = first.visualTiltRad ?? first.tiltRad;
       return [{
-        id: runId,
+        id: surfaceId,
         x: ((firstX + lastX) * 0.5 - RHYTHMIC_COURSE_WIDTH / 2) * RHYTHMIC_WORLD_SCALE,
         y: -((firstY + lastY) * 0.5) * RHYTHMIC_WORLD_SCALE,
         width: Math.max(0.5, span * RHYTHMIC_WORLD_SCALE),
         angle,
       }];
     });
-  }, [platforms, visible]);
+  }, [visible]);
 
   return (
     <group>
       {denseSupports.map((support) => (
         <group key={`dense-support-${support.id}`} position={[support.x, support.y, -0.62]} rotation={[0, 0, -support.angle]}>
           <mesh castShadow receiveShadow>
-            <boxGeometry args={[support.width, 0.09, 0.18]} />
-            <meshStandardMaterial color="#2b3037" roughness={0.42} metalness={0.46} />
+            <boxGeometry args={[support.width, 0.1, 0.22]} />
+            <meshStandardMaterial color="#272c33" roughness={0.38} metalness={0.52} />
+          </mesh>
+          <mesh position={[0, -0.055, 0.118]}>
+            <boxGeometry args={[Math.max(0.2, support.width * 0.96), 0.018, 0.018]} />
+            <meshStandardMaterial color="#747d87" roughness={0.28} metalness={0.72} />
           </mesh>
         </group>
       ))}

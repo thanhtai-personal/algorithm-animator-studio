@@ -130,9 +130,9 @@ function paletteColor(index: number, pitch: number, settings: StudioSettings) {
     const scene = instrumentScenePlan(index);
     if (style === "instrument-cymbal") return scene.sceneId === "finale" ? "#d5d9df" : (index % 2 ? "#c89f5a" : "#e4c88f");
     if (style === "instrument-rail") return scene.sceneId === "finale" && index % 3 === 0 ? "#70e5f1" : "#737985";
-    if (style === "instrument-wire") return scene.sceneId === "wires" && index % 4 === 0 ? "#69c9d7" : "#7a808a";
+    if (style === "instrument-wire") return scene.sceneId === "runway" && index % 4 === 0 ? "#69c9d7" : "#7a808a";
     if (style === "instrument-pad") {
-      const pads = scene.sceneId === "bars"
+      const pads = scene.sceneId === "pads"
         ? ["#30333a", "#4a4d55", "#e9edf1", "#202329"]
         : ["#e9789c", "#ff8b73", "#67d8ba", "#f2efe8", "#4a4d56"];
       return pads[index % pads.length];

@@ -57,7 +57,8 @@ export function platformSegment(platform: MarblePlatform) {
 }
 
 function sameContinuousSurface(a: MarblePlatform, b: MarblePlatform) {
-  return (a.denseRunId !== undefined && a.denseRunId === b.denseRunId)
+  return (a.denseSurfaceId !== undefined && a.denseSurfaceId === b.denseSurfaceId)
+    || (a.denseRunId !== undefined && a.denseRunId === b.denseRunId)
     || (a.chordClusterId !== undefined && a.chordClusterId === b.chordClusterId);
 }
 

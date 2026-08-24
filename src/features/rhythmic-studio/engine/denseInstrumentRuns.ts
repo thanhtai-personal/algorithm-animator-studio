@@ -189,9 +189,9 @@ export function denseRunEndMap(runs: DenseInstrumentRun[]) {
   return byEnd;
 }
 
-function rollSpeed(incoming: Vec2, enteringRun: boolean, settings: StudioSettings) {
+function rollSpeed(incoming: Vec2, surfaceEntry: boolean, settings: StudioSettings) {
   const base = clamp(145 + settings.laneSpread * 0.1, 150, 195);
-  if (enteringRun) {
+  if (surfaceEntry) {
     // A landing transfers part of the incoming momentum into the keyboard lane.
     // The route is then placed from that physically plausible speed rather than
     // teleporting the ball to a pre-selected key position.
@@ -231,6 +231,7 @@ export function rollingRouteCandidate(
   preferredDirection: number,
   settings: StudioSettings,
   width: number,
+  surfaceEntry = true,
   lockDirection = false,
 ): RollingRouteCandidate {
   const spanMs = Math.max(1, events[index + 1].timeMs - events[index].timeMs);
@@ -239,14 +240,14 @@ export function rollingRouteCandidate(
   const margin = Math.max(settings.ballSize * 2.2, 28);
   const minX = bounds.min + margin;
   const maxX = bounds.max - margin;
-  const speed = rollSpeed(incoming, index === run.start, settings);
+  const speed = rollSpeed(incoming, surfaceEntry, settings);
   let step = clamp(speed * dt, Math.max(2.2, settings.ballSize * 0.16), 34);
   let direction = preferredDirection || (incoming.x >= 0 ? 1 : -1) || 1;
 
   // Pick the lane direction once at entry using the room required by the whole
   // run. Subsequent keys inherit the outgoing velocity sign, so the strip never
   // zig-zags merely because one local key is close to a wall.
-  if (index === run.start && !lockDirection) {
+  if (surfaceEntry && !lockDirection) {
     const totalNeed = runHorizontalNeed(events, index, run, speed, settings.ballSize)
       + runExitReserve(events, run, speed, settings.ballSize);
     const forwardRoom = direction > 0 ? maxX - hit.x : hit.x - minX;

@@ -732,13 +732,14 @@ function platformWidthForStep(index: number, event: NoteEvent, settings: StudioS
 
 function denseRouteCandidates(context: PlannerContext, index: number, state: SearchState, run: DenseInstrumentRun) {
   const settings = plannerSettingsAt(context, index);
-  const freshEntry = index === run.start && !context.denseNodes.has(index - 1);
+  const previousDense = context.denseNodes.get(index - 1);
+  const surfaceEntry = !previousDense || previousDense.surfaceId !== run.surfaceId;
   const candidates = [
-    rollingRouteCandidate(state.hit, state.incoming, context.events, index, run, state.preferredDirection, settings, context.width),
-    ...(freshEntry
+    rollingRouteCandidate(state.hit, state.incoming, context.events, index, run, state.preferredDirection, settings, context.width, surfaceEntry),
+    ...(surfaceEntry
       ? [
-          rollingRouteCandidate(state.hit, state.incoming, context.events, index, run, state.preferredDirection, settings, context.width, true),
-          rollingRouteCandidate(state.hit, state.incoming, context.events, index, run, -state.preferredDirection, settings, context.width, true),
+          rollingRouteCandidate(state.hit, state.incoming, context.events, index, run, state.preferredDirection, settings, context.width, surfaceEntry, true),
+          rollingRouteCandidate(state.hit, state.incoming, context.events, index, run, -state.preferredDirection, settings, context.width, surfaceEntry, true),
         ]
       : []),
   ];

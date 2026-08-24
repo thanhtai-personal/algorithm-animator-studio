@@ -6,12 +6,18 @@ import { presetObstaclePlan } from "./presetObstaclePlan";
 import {
   adjacentSpacingPenalty,
   courseWorldBounds,
+  nextImpactClearancePenalty,
+  platformAgainstRecentTrajectoriesPenalty,
+  platformClearance,
   platformOverlapPenalty,
   separationPenalty,
+  trajectoryClearancePenalty,
+  trajectoryPlatformClearance,
   wallClearancePenalty,
 } from "./marbleCourseConstraints";
 import {
   chordClusters,
+  chordNodeMap,
   chordSegmentMap,
   decorateChordClusters,
   decorateDenseInstrumentRuns,
@@ -37,6 +43,7 @@ interface BounceCandidate {
   outgoing: Vec2;
   target: Vec2;
   score: number;
+  impactStyle?: "instrument-pad";
 }
 
 interface PlanNode {
@@ -116,6 +123,13 @@ function collisionAngles(profile: MarblePhysicsProfile, dt: number) {
   if (dt < 0.32) result.push(0.34, -0.34, 0.44, -0.44);
   if (dt < 0.22) result.push(0.54, -0.54, 0.64, -0.64);
   if (dt < 0.15) result.push(0.72, -0.72);
+  // Keep a few stronger redirect surfaces available for collision avoidance.
+  // They carry an orientation/energy cost, so ordinary routes still win, but
+  // near a wall or an older instrument the beam search has a real escape route.
+  if (profile.terrain === "balanced" || profile.terrain === "tube-board") {
+    if (dt >= 0.2) result.push(0.76, -0.76);
+    if (dt >= 0.36) result.push(0.9, -0.9);
+  }
   return result;
 }
 
@@ -242,8 +256,43 @@ function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: numb
       });
   }
 
+  const edgeRoom = Math.min(hit.x - bounds.min, bounds.max - hit.x);
+  if (edgeRoom < Math.max(84, width * 0.13)) {
+    const inwardAngle = hit.x > (bounds.min + bounds.max) * 0.5 ? -0.58 : 0.58;
+    const absorberAngles = dt >= 0.28
+      ? [inwardAngle, inwardAngle * 1.28]
+      : [inwardAngle * 1.55, inwardAngle * 1.9];
+    const absorberRestitution = dt >= 0.28 ? 0.35 : 0.2;
+    const absorberTangent = dt >= 0.28 ? 0.5 : 0.45;
+    for (const angle of absorberAngles) {
+      // A rubber/mallet absorber is intentionally less bouncy than the ordinary
+      // instrument material. For very short edge gaps it also acts as a compact
+      // turning pad, redirecting the marble inward instead of clamping the next
+      // hit to the wall and making the following instrument sit in the incoming path.
+      const reflected = outgoingForNormal(incoming, normalForAngle(angle), absorberRestitution, absorberTangent);
+      const target = {
+        x: hit.x + reflected.velocity.x * dt,
+        y: hit.y + reflected.velocity.y * dt + 0.5 * profile.gravity * dt * dt,
+      };
+      const nextIncomingY = reflected.velocity.y + profile.gravity * dt;
+      const dy = target.y - hit.y;
+      const minimumDrop = dt >= 0.28 ? 2 : 0.5;
+      if (target.x < bounds.min || target.x > bounds.max || dy < minimumDrop || nextIncomingY < 5) continue;
+      result.push({
+        normal: reflected.normal,
+        outgoing: reflected.velocity,
+        target,
+        score: 32 + Math.abs(target.x - hit.x) * 0.025 + orientationPenalty(index, reflected.normal, settings),
+        impactStyle: "instrument-pad",
+      });
+    }
+  }
+
   result.sort((a, b) => a.score - b.score);
-  return result.length ? result.slice(0, 9) : [fallbackCandidate(hit, incoming, spanMs, preferredDirection, settings, width)];
+  // Scene collision penalties are applied after this function. Keep enough
+  // physically valid alternatives so a collision-free route is not discarded
+  // merely because it had a slightly higher local bounce score.
+  return result.length ? result.slice(0, 15) : [fallbackCandidate(hit, incoming, spanMs, preferredDirection, settings, width)];
 }
 
 function obstacleFromImpact(index: number, hit: Vec2, normal: Vec2, outgoing: Vec2, settings: StudioSettings, event: NoteEvent, color: string, platformWidth: number, gravity: number): MarblePlatform {
@@ -283,6 +332,106 @@ function obstacleFromImpact(index: number, hit: Vec2, normal: Vec2, outgoing: Ve
   };
 }
 
+
+function fitVisualWidthForScene(platform: MarblePlatform, recent: MarblePlatform[], settings: StudioSettings) {
+  if (platform.visualHidden || settings.instrumentFamily !== "auto") return;
+  const startingWidth = platform.visualWidth ?? platform.width;
+  const minimumWidth = Math.max(settings.ballSize * (platform.chordClusterId !== undefined ? 2.4 : 2.6), 34);
+  let width = startingWidth;
+  platform.visualWidth = width;
+  // A deterministic hold/chord route has no alternate landing point to search.
+  // If its body crosses an older instrument, fit the playable face into the
+  // available pocket before accepting a visibly intersecting scene. Ballistic
+  // routes still keep the large overlap penalty and prefer another angle first.
+  for (let attempt = 0; attempt < 7 && width > minimumWidth; attempt += 1) {
+    if (platformOverlapPenalty(platform, recent, settings) < 8000) break;
+    width = Math.max(minimumWidth, width * 0.82);
+    platform.visualWidth = width;
+  }
+}
+
+function fitCourseToTrajectories(platforms: MarblePlatform[], settings: StudioSettings, resolveSettings?: StudioSettingsResolver) {
+  if (platforms.length < 3) return platforms;
+  const fitted = platforms.map((platform) => ({ ...platform }));
+  const sharesSurface = (a: MarblePlatform, b: MarblePlatform) =>
+    (a.denseRunId !== undefined && a.denseRunId === b.denseRunId)
+    || (a.chordClusterId !== undefined && a.chordClusterId === b.chordClusterId);
+
+  for (let platformIndex = 0; platformIndex < fitted.length; platformIndex += 1) {
+    const platform = fitted[platformIndex];
+    if (platform.visualHidden || platform.denseRunId !== undefined) continue;
+    const localSettings = resolveSettings?.(platform.index) ?? settings;
+    const originalWidth = platform.visualWidth ?? platform.width;
+    const minimumWidth = Math.max(32, localSettings.ballSize * 2.35);
+    const originalX = platform.visualX ?? platform.x;
+    const originalY = platform.visualY ?? platform.y;
+    const angle = platform.visualTiltRad ?? platform.tiltRad;
+    const tangent = { x: Math.cos(angle), y: Math.sin(angle) };
+
+    const routeClearance = () => {
+      let minimum = Infinity;
+      for (let routeIndex = 0; routeIndex < fitted.length - 1; routeIndex += 1) {
+        if (platformIndex === routeIndex || platformIndex === routeIndex + 1 || platformIndex === routeIndex - 1) continue;
+        const start = fitted[routeIndex];
+        const end = fitted[routeIndex + 1];
+        if (start.visualHidden || sharesSurface(platform, start) || sharesSurface(platform, end)) continue;
+        minimum = Math.min(minimum, trajectoryPlatformClearance(platform, start, end));
+      }
+      return minimum;
+    };
+
+    const hasStaticCrossing = () => {
+      for (let otherIndex = 0; otherIndex < fitted.length; otherIndex += 1) {
+        if (otherIndex === platformIndex || Math.abs(otherIndex - platformIndex) <= 1) continue;
+        const other = fitted[otherIndex];
+        if (other.visualHidden || sharesSurface(platform, other)) continue;
+        if (platformClearance(platform, other) < 0.8) return true;
+      }
+      return false;
+    };
+
+    if (routeClearance() >= 1.5) continue;
+
+    let best: { width: number; shift: number; clearance: number } | null = null;
+    const widths: number[] = [];
+    for (let width = originalWidth, attempt = 0; attempt < 7; attempt += 1) {
+      widths.push(Math.max(minimumWidth, width));
+      if (width <= minimumWidth + 0.01) break;
+      width = Math.max(minimumWidth, width * 0.82);
+    }
+
+    outer: for (const width of widths) {
+      const maxShift = Math.max(0, width * 0.5 - localSettings.ballSize * 1.08);
+      const shifts = maxShift > 0.5
+        ? [0, maxShift * 0.38, -maxShift * 0.38, maxShift * 0.72, -maxShift * 0.72, maxShift, -maxShift]
+        : [0];
+      for (const shift of shifts) {
+        platform.visualWidth = width;
+        platform.visualX = originalX + tangent.x * shift;
+        platform.visualY = originalY + tangent.y * shift;
+        if (hasStaticCrossing()) continue;
+        const clearance = routeClearance();
+        if (!best || clearance > best.clearance) best = { width, shift, clearance };
+        if (clearance >= 1.5) {
+          best = { width, shift, clearance };
+          break outer;
+        }
+      }
+    }
+
+    if (best) {
+      platform.visualWidth = best.width;
+      platform.visualX = originalX + tangent.x * best.shift;
+      platform.visualY = originalY + tangent.y * best.shift;
+    } else {
+      platform.visualWidth = originalWidth;
+      platform.visualX = originalX;
+      platform.visualY = originalY;
+    }
+  }
+  return fitted;
+}
+
 function reconstruct(node: PlanNode | null) {
   const result: MarblePlatform[] = [];
   for (let current = node; current; current = current.parent) result.push(current.platform);
@@ -304,6 +453,7 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
   const denseEnds = denseRunEndMap(denseRuns);
   const chords = chordClusters(events);
   const chordSegments = chordSegmentMap(chords);
+  const chordNodes = chordNodeMap(chords);
   const beamWidth = showcaseCourse
     ? (events.length > 1800 ? 3 : events.length > 700 ? 4 : 6)
     : events.length > 1200 ? 2 : events.length > 500 ? 3 : 5;
@@ -328,13 +478,26 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
       const denseNode = denseNodes.get(index);
       const denseEnd = denseEnds.get(index);
       const chord = chordSegments.get(index);
+      const chordNode = chordNodes.get(index);
       const smoothExit = denseEnd && index < events.length - 1
         ? rollingExitCandidate(state.hit, state.incoming, spanMs, stepSettings, width, profile.gravity)
         : null;
+      const freshDenseEntry = Boolean(denseRun && index === denseRun.start && !denseNodes.has(index - 1));
+      const denseCandidates = denseRun
+        ? [
+            rollingRouteCandidate(state.hit, state.incoming, events, index, denseRun, state.preferredDirection, stepSettings, width),
+            ...(freshDenseEntry
+              ? [
+                  rollingRouteCandidate(state.hit, state.incoming, events, index, denseRun, state.preferredDirection, stepSettings, width, true),
+                  rollingRouteCandidate(state.hit, state.incoming, events, index, denseRun, -state.preferredDirection, stepSettings, width, true),
+                ]
+              : []),
+          ].filter((candidate, candidateIndex, all) => all.findIndex((other) => Math.hypot(other.target.x - candidate.target.x, other.target.y - candidate.target.y) < 0.5) === candidateIndex)
+        : [];
       const candidates = chord
         ? [holdRouteCandidate(state.hit, state.incoming)]
         : denseRun
-          ? [rollingRouteCandidate(state.hit, state.incoming, events, index, denseRun, state.preferredDirection, stepSettings, width)]
+          ? denseCandidates
           : smoothExit
             ? [smoothExit]
             : bounceCandidates(index, state.hit, state.incoming, spanMs, state.preferredDirection, pitch, stepSettings, width);
@@ -342,7 +505,49 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
         const platform = obstacleFromImpact(index, state.hit, bounce.normal, bounce.outgoing, stepSettings, event, resolveColor(index, pitch), platformWidth, profile.gravity);
         platform.motionMode = chord ? "hold" : denseRun ? "roll" : "ballistic";
         platform.denseRunId = denseNode?.id;
-        platform.chordClusterId = chord?.id;
+        platform.chordClusterId = chordNode?.id;
+
+        // Give the collision solver the footprint that will actually be rendered.
+        // Dense notes are narrow contiguous keys/pads, while a chord is one wide
+        // pad with the later note-nodes hidden. Without these hints the planner
+        // either falsely rejects a valid keyboard seam or overlooks a real visual
+        // overlap that only appears after decoration.
+        if (denseNode) {
+          platform.visualStyle = denseNode.kind === "keyboard" ? "piano-key" : "instrument-pad";
+          const routeDistance = Math.hypot(bounce.target.x - state.hit.x, bounce.target.y - state.hit.y);
+          const seam = denseNode.kind === "keyboard" ? 1.2 : 2.4;
+          const previousDense = [...state.recentPlatforms].reverse().find((item) => item.denseRunId === denseNode.id);
+          platform.visualWidth = denseRun
+            ? Math.max(stepSettings.ballSize * 1.04, routeDistance - seam)
+            : previousDense?.visualWidth ?? Math.max(stepSettings.ballSize * 1.04, 24);
+          platform.visualTiltRad = axisAngle(Math.atan2(-bounce.normal.x, bounce.normal.y));
+        }
+        if (chordNode) {
+          platform.visualStyle = "instrument-pad";
+          // Chords need one readable striking surface, not a full-width bar that
+          // consumes the space needed by the next run. Scale the pad with the
+          // marble while keeping enough area to read as one physical instrument.
+          platform.visualWidth = Math.max(stepSettings.ballSize * 3.4, Math.min(platform.width * 0.72, 68));
+          if (index > chordNode.start) platform.visualHidden = true;
+        } else if (!denseNode && stepSettings.instrumentFamily === "auto") {
+          const previousGapMs = index > 0 ? Math.max(1, event.timeMs - events[index - 1].timeMs) : spanMs;
+          const localGapMs = Math.min(spanMs, previousGapMs);
+          // Two- and three-note bursts are too short for a full keyboard run but
+          // still do not have enough room for wide standalone bars. Use compact
+          // playable objects instead of squeezing full instruments together.
+          if (localGapMs <= 230) {
+            platform.visualStyle = event.isDrum ? "instrument-pad" : "instrument-key";
+            platform.visualWidth = Math.max(stepSettings.ballSize * 2.7, Math.min(platform.width * 0.5, 58));
+          } else if (localGapMs <= 360) {
+            platform.visualStyle = event.isDrum ? "instrument-pad" : "instrument-key";
+            platform.visualWidth = Math.max(stepSettings.ballSize * 3, Math.min(platform.width * 0.64, 72));
+          } else if (localGapMs <= 520) {
+            platform.visualWidth = Math.max(stepSettings.ballSize * 3.2, platform.width * 0.78);
+          }
+        }
+        const impactStyle = "impactStyle" in bounce ? bounce.impactStyle : undefined;
+        if (impactStyle === "instrument-pad" && !denseNode && !chordNode) platform.visualStyle = impactStyle;
+        fitVisualWidthForScene(platform, state.recentPlatforms, stepSettings);
         if (index === events.length - 1) {
           expanded.push({ ...state, score: state.score + bounce.score, node: { platform, parent: state.node } });
           continue;
@@ -360,7 +565,10 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
         // horizontal momentum until the physical route approaches a wall.
         if (nextHit.x < bounds.min + edgeInset) nextDirection = 1;
         else if (nextHit.x > bounds.max - edgeInset) nextDirection = -1;
-        const historySize = stepSettings.instrumentFamily !== "auto" ? 12 : 7;
+        // Keep enough spatial history to prevent the route from curling back
+        // through instruments that are still visible on screen. The old 7-node
+        // window missed collisions after a short musical phrase.
+        const historySize = stepSettings.instrumentFamily !== "auto" ? 28 : 22;
         const recentHits = [...state.recentHits, state.hit].slice(-historySize);
         const recentPlatforms = [...state.recentPlatforms, platform].slice(-historySize);
         expanded.push({
@@ -370,7 +578,10 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
           score: state.score + bounce.score
             + (constrainedMotion ? 0 : adjacentSpacingPenalty(nextHit, state.hit, stepSettings))
             + (constrainedMotion ? 0 : separationPenalty(nextHit, recentHits, stepSettings))
-            + (constrainedMotion ? 0 : platformOverlapPenalty(platform, state.recentPlatforms, stepSettings))
+            + platformOverlapPenalty(platform, state.recentPlatforms, stepSettings)
+            + platformAgainstRecentTrajectoriesPenalty(platform, state.recentPlatforms, stepSettings)
+            + trajectoryClearancePenalty(state.hit, bounce.outgoing, spanMs, profile.gravity, platform.motionMode, platform, state.recentPlatforms, stepSettings)
+            + nextImpactClearancePenalty(nextHit, platform, state.recentPlatforms, stepSettings)
             + wallClearancePenalty(platform, stepSettings, width),
           node: { platform, parent: state.node },
           recentHits,
@@ -384,5 +595,6 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
   }
 
   const denseDecorated = decorateDenseInstrumentRuns(reconstruct(states[0]?.node ?? null), denseRuns, settings, resolveSettings);
-  return decorateChordClusters(denseDecorated, chords);
+  const chordDecorated = decorateChordClusters(denseDecorated, chords);
+  return fitCourseToTrajectories(chordDecorated, settings, resolveSettings);
 }

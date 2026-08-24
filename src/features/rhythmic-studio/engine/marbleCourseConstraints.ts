@@ -43,34 +43,152 @@ function segmentDistance(a: Vec2, b: Vec2, c: Vec2, d: Vec2) {
   );
 }
 
-function platformSegment(platform: MarblePlatform) {
-  const dx = Math.cos(platform.tiltRad) * platform.width * 0.5;
-  const dy = Math.sin(platform.tiltRad) * platform.width * 0.5;
+export function platformSegment(platform: MarblePlatform) {
+  const x = platform.visualX ?? platform.x;
+  const y = platform.visualY ?? platform.y;
+  const width = platform.visualWidth ?? platform.width;
+  const tiltRad = platform.visualTiltRad ?? platform.tiltRad;
+  const dx = Math.cos(tiltRad) * width * 0.5;
+  const dy = Math.sin(tiltRad) * width * 0.5;
   return {
-    a: { x: platform.x - dx, y: platform.y - dy },
-    b: { x: platform.x + dx, y: platform.y + dy },
+    a: { x: x - dx, y: y - dy },
+    b: { x: x + dx, y: y + dy },
   };
 }
 
+function sameContinuousSurface(a: MarblePlatform, b: MarblePlatform) {
+  return (a.denseRunId !== undefined && a.denseRunId === b.denseRunId)
+    || (a.chordClusterId !== undefined && a.chordClusterId === b.chordClusterId);
+}
+
+function visibleForCollision(platform: MarblePlatform) {
+  return platform.visualHidden !== true;
+}
+
+function instrumentClearance(platform: MarblePlatform, other: MarblePlatform, settings: StudioSettings) {
+  const bodyClearance = (platform.thickness + other.thickness) * 0.52;
+  const marbleClearance = settings.ballSize * (settings.instrumentFamily !== "auto" ? 1.28 : 1.08);
+  return Math.max(
+    settings.instrumentFamily !== "auto" ? 20 : 16,
+    bodyClearance,
+    marbleClearance,
+  );
+}
+
+export function platformClearance(platform: MarblePlatform, other: MarblePlatform) {
+  const segment = platformSegment(platform);
+  const previous = platformSegment(other);
+  return segmentDistance(segment.a, segment.b, previous.a, previous.b);
+}
+
 export function platformOverlapPenalty(platform: MarblePlatform, recent: MarblePlatform[], settings: StudioSettings) {
-  const collisionCritical = settings.terrainProfile === "tube-board"
-    || settings.terrainProfile === "xylophone"
-    || settings.instrumentFamily !== "auto";
-  if (!collisionCritical) return 0;
+  if (!visibleForCollision(platform)) return 0;
   const segment = platformSegment(platform);
   let penalty = 0;
   for (const other of recent) {
+    if (!visibleForCollision(other) || sameContinuousSurface(platform, other)) continue;
     const previous = platformSegment(other);
     const distance = segmentDistance(segment.a, segment.b, previous.a, previous.b);
-    const safeDistance = Math.max(
-      settings.instrumentFamily !== "auto" ? 22 : 18,
-      settings.ballSize * (settings.instrumentFamily !== "auto" ? 1.45 : 0.95),
-      (platform.thickness + other.thickness) * 0.62,
-    );
+    const safeDistance = instrumentClearance(platform, other, settings);
     if (distance < safeDistance) {
       const overlap = safeDistance - distance;
-      const crossingBoost = distance < 0.5 ? 9000 : 0;
-      penalty += crossingBoost + overlap * 22 + overlap * overlap * 0.8;
+      const crossingBoost = distance < 0.5 ? 12000 : 0;
+      penalty += crossingBoost + overlap * 28 + overlap * overlap * 1.15;
+    }
+  }
+  return penalty;
+}
+
+function trajectoryPoint(hit: Vec2, outgoing: Vec2, gravity: number, t: number, motionMode: MarblePlatform["motionMode"]): Vec2 {
+  if (motionMode === "hold") return hit;
+  if (motionMode === "roll") return { x: hit.x + outgoing.x * t, y: hit.y + outgoing.y * t };
+  return {
+    x: hit.x + outgoing.x * t,
+    y: hit.y + outgoing.y * t + 0.5 * gravity * t * t,
+  };
+}
+
+export function trajectoryClearancePenalty(
+  hit: Vec2,
+  outgoing: Vec2,
+  spanMs: number,
+  gravity: number,
+  motionMode: MarblePlatform["motionMode"],
+  platform: MarblePlatform,
+  recent: MarblePlatform[],
+  settings: StudioSettings,
+) {
+  if (motionMode === "hold") return 0;
+  const dt = Math.max(0.08, spanMs / 1000);
+  const steps = Math.max(5, Math.min(14, Math.ceil(dt * 18)));
+  let penalty = 0;
+  for (const other of recent) {
+    if (!visibleForCollision(other) || sameContinuousSurface(platform, other)) continue;
+    const obstacle = platformSegment(other);
+    const clearance = Math.max(settings.ballSize * 1.02 + other.thickness * 0.5, settings.ballSize + 5);
+    let previous = hit;
+    let minimum = Infinity;
+    for (let step = 1; step <= steps; step += 1) {
+      const point = trajectoryPoint(hit, outgoing, gravity, dt * (step / steps), motionMode);
+      minimum = Math.min(minimum, segmentDistance(previous, point, obstacle.a, obstacle.b));
+      previous = point;
+    }
+    if (minimum < clearance) {
+      const intrusion = clearance - minimum;
+      const crossingBoost = minimum < Math.max(1.5, settings.ballSize * 0.18) ? 18000 : 0;
+      penalty += crossingBoost + intrusion * 34 + intrusion * intrusion * 1.4;
+    }
+  }
+  return penalty;
+}
+
+export function trajectoryPlatformClearance(platform: MarblePlatform, start: MarblePlatform, end: MarblePlatform) {
+  const body = platformSegment(platform);
+  const spanMs = Math.max(1, end.event.timeMs - start.event.timeMs);
+  const dt = Math.max(0.08, spanMs / 1000);
+  const steps = Math.max(5, Math.min(14, Math.ceil(dt * 18)));
+  const motionMode = start.motionMode ?? "ballistic";
+  if (motionMode === "hold") return Infinity;
+  const outgoing = { x: start.outVX, y: start.outVY };
+  const origin = { x: start.hitX, y: start.hitY };
+  let previous = origin;
+  let minimum = Infinity;
+  for (let step = 1; step <= steps; step += 1) {
+    const point = trajectoryPoint(origin, outgoing, start.gravity, dt * (step / steps), motionMode);
+    minimum = Math.min(minimum, segmentDistance(previous, point, body.a, body.b));
+    previous = point;
+  }
+  return minimum;
+}
+
+export function platformAgainstRecentTrajectoriesPenalty(platform: MarblePlatform, recent: MarblePlatform[], settings: StudioSettings) {
+  if (!visibleForCollision(platform) || recent.length < 2) return 0;
+  const clearance = Math.max(settings.ballSize * 1.02 + platform.thickness * 0.5, settings.ballSize + 5);
+  let penalty = 0;
+  for (let index = 0; index < recent.length - 1; index += 1) {
+    const start = recent[index];
+    const end = recent[index + 1];
+    if (!visibleForCollision(start) || sameContinuousSurface(platform, start) || sameContinuousSurface(platform, end)) continue;
+    const minimum = trajectoryPlatformClearance(platform, start, end);
+    if (minimum < clearance) {
+      const intrusion = clearance - minimum;
+      const crossingBoost = minimum < Math.max(1.5, settings.ballSize * 0.18) ? 16000 : 0;
+      penalty += crossingBoost + intrusion * 30 + intrusion * intrusion * 1.25;
+    }
+  }
+  return penalty;
+}
+
+export function nextImpactClearancePenalty(target: Vec2, platform: MarblePlatform, recent: MarblePlatform[], settings: StudioSettings) {
+  let penalty = 0;
+  for (const other of recent) {
+    if (!visibleForCollision(other) || sameContinuousSurface(platform, other)) continue;
+    const obstacle = platformSegment(other);
+    const distance = pointSegmentDistance(target, obstacle.a, obstacle.b);
+    const clearance = Math.max(settings.ballSize * 1.35 + other.thickness * 0.5, settings.ballSize * 1.7);
+    if (distance < clearance) {
+      const intrusion = clearance - distance;
+      penalty += 7000 + intrusion * 28 + intrusion * intrusion;
     }
   }
   return penalty;

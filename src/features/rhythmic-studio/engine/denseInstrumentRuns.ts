@@ -29,7 +29,7 @@ type SettingsResolver = (index: number) => StudioSettings;
 const CHORD_GAP_MS = 24;
 const DENSE_GAP_MS = 185;
 const MIN_RUN_NOTES = 4;
-const MAX_RUN_NOTES = 12;
+const MAX_RUN_NOTES = 14;
 const ROLL_SLOPE = 0.075;
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const length = (v: Vec2) => Math.hypot(v.x, v.y);
@@ -64,15 +64,20 @@ export function denseInstrumentRuns(events: NoteEvent[], settings: StudioSetting
     }
 
     let end = index;
+    let strikePositions = 1;
     while (end < events.length - 1 && end - index + 1 < MAX_RUN_NOTES) {
       const localSettings = resolveSettings?.(end) ?? settings;
       const nextSettings = resolveSettings?.(end + 1) ?? settings;
       const gap = events[end + 1].timeMs - events[end].timeMs;
-      if (!supportsDenseInstrumentRun(localSettings) || !supportsDenseInstrumentRun(nextSettings) || gap <= CHORD_GAP_MS || gap > DENSE_GAP_MS) break;
+      if (!supportsDenseInstrumentRun(localSettings) || !supportsDenseInstrumentRun(nextSettings) || gap > DENSE_GAP_MS) break;
+      // A chord is one physical strike position on the same continuous surface.
+      // Keep its simultaneous notes inside the run, but count only transitions
+      // that actually move the marble when deciding whether a dense lane exists.
+      if (gap > CHORD_GAP_MS) strikePositions += 1;
       end += 1;
     }
 
-    if (end - index + 1 >= MIN_RUN_NOTES) {
+    if (strikePositions >= MIN_RUN_NOTES) {
       runs.push({ id: runs.length, start: index, end, kind: denseInstrumentKind(events, index, end) });
       const nextGap = end < events.length - 1 ? events[end + 1].timeMs - events[end].timeMs : Infinity;
       // Long dense passages are split into manageable keyboard modules, but the
@@ -106,6 +111,14 @@ export function chordSegmentMap(clusters: ChordCluster[]) {
     for (let index = cluster.start; index < cluster.end; index += 1) bySegment.set(index, cluster);
   }
   return bySegment;
+}
+
+export function chordNodeMap(clusters: ChordCluster[]) {
+  const byNode = new Map<number, ChordCluster>();
+  for (const cluster of clusters) {
+    for (let index = cluster.start; index <= cluster.end; index += 1) byNode.set(index, cluster);
+  }
+  return byNode;
 }
 
 export function holdRouteCandidate(hit: Vec2, incoming: Vec2): RollingRouteCandidate {
@@ -159,7 +172,9 @@ function runExitReserve(events: NoteEvent[], run: DenseInstrumentRun, speed: num
 function runHorizontalNeed(events: NoteEvent[], index: number, run: DenseInstrumentRun, speed: number, ballSize: number) {
   let total = 0;
   for (let segment = index; segment < run.end; segment += 1) {
-    const dt = Math.max(0.08, (events[segment + 1].timeMs - events[segment].timeMs) / 1000);
+    const gapMs = events[segment + 1].timeMs - events[segment].timeMs;
+    if (gapMs <= CHORD_GAP_MS) continue;
+    const dt = Math.max(0.08, gapMs / 1000);
     total += clamp(speed * dt, ballSize * 1.08, 34);
   }
   return total;
@@ -174,6 +189,7 @@ export function rollingRouteCandidate(
   preferredDirection: number,
   settings: StudioSettings,
   width: number,
+  lockDirection = false,
 ): RollingRouteCandidate {
   const spanMs = Math.max(1, events[index + 1].timeMs - events[index].timeMs);
   const dt = Math.max(0.08, spanMs / 1000);
@@ -188,7 +204,7 @@ export function rollingRouteCandidate(
   // Pick the lane direction once at entry using the room required by the whole
   // run. Subsequent keys inherit the outgoing velocity sign, so the strip never
   // zig-zags merely because one local key is close to a wall.
-  if (index === run.start) {
+  if (index === run.start && !lockDirection) {
     const totalNeed = runHorizontalNeed(events, index, run, speed, settings.ballSize)
       + runExitReserve(events, run, speed, settings.ballSize);
     const forwardRoom = direction > 0 ? maxX - hit.x : hit.x - minX;
@@ -313,7 +329,12 @@ export function decorateChordClusters(platforms: MarblePlatform[], clusters: Cho
     const first = decorated[cluster.start];
     if (!first) continue;
     first.visualStyle = "instrument-pad";
-    first.visualWidth = Math.max(first.width * 0.82, 78);
+    // A chord inside a rolling lane becomes a slightly wider pad in that same
+    // surface, not a huge standalone plate laid across neighbouring keys. Chords
+    // outside dense runs preserve the collision-fitted width chosen by the planner.
+    first.visualWidth = first.denseRunId !== undefined
+      ? Math.max(first.visualWidth ?? 0, Math.min(first.width * 0.27, 30))
+      : first.visualWidth ?? Math.max(first.width * 0.82, 78);
     for (let index = cluster.start + 1; index <= cluster.end && index < decorated.length; index += 1) {
       decorated[index].visualHidden = true;
     }

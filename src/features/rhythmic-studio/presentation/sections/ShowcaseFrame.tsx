@@ -4,7 +4,7 @@ import { INSTRUMENT_FAMILIES, INSTRUMENT_LAYOUTS, type InstrumentFamily, type In
 import type { RhythmicStudioController } from "../../hooks/useRhythmicStudioController";
 import { showcaseText } from "../../showcaseI18n";
 import { ControlFrame } from "../atoms/ControlFrame";
-import { ColorField, RangeField, SelectField, ToggleField } from "../atoms/ControlFields";
+import { SelectField } from "../atoms/ControlFields";
 
 export function ShowcaseFrame({ studio }: { studio: RhythmicStudioController }) {
   const lang = useSystemLang();
@@ -24,10 +24,6 @@ export function ShowcaseFrame({ studio }: { studio: RhythmicStudioController }) 
         options={INSTRUMENT_LAYOUTS.map((value) => ({ value, label: t(`layout.${value}` as Parameters<typeof showcaseText>[1]) }))}
         onChange={(value) => studio.patch("instrumentLayout", value as InstrumentLayout)}
       />
-      <ToggleField label={t("rails")} checked={s.showcaseRails} onChange={(value) => studio.patch("showcaseRails", value)} />
-      {s.showcaseRails && <RangeField label={t("railDensity")} value={s.showcaseRailDensity} min={0.15} max={1} step={0.05} onChange={(value) => studio.patch("showcaseRailDensity", value)} />}
-      <ToggleField label={t("duet")} checked={s.showcaseDuet} onChange={(value) => studio.patch("showcaseDuet", value)} />
-      {s.showcaseDuet && <ColorField label={t("secondBall")} value={s.showcaseSecondaryBallColor} onChange={(value) => studio.patch("showcaseSecondaryBallColor", value)} />}
     </ControlFrame>
   );
 }

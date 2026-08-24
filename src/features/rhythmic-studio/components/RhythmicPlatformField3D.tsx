@@ -7,12 +7,32 @@ import { RHYTHMIC_COURSE_WIDTH, RHYTHMIC_WORLD_SCALE } from "./RhythmicMotion3D"
 import { PlatformMesh } from "./RhythmicPlatformMeshes3D";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 
-function PhysicalMount({ terrain, w, h, detail }: {
+function PhysicalMount({ terrain, w, h, detail, showcase }: {
   terrain: StudioSettings["terrainProfile"];
   w: number;
   h: number;
   detail: number;
+  showcase: boolean;
 }) {
+  if (showcase) {
+    const supportX = Math.min(w * 0.3, 0.46);
+    return (
+      <group>
+        {[-supportX, supportX].map((x) => (
+          <group key={x} position={[x, h * 0.28, 0]}>
+            <mesh position={[0, 0, -0.56]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+              <cylinderGeometry args={[0.024, 0.024, 1.02, 12]} />
+              <meshStandardMaterial color="#5c6066" roughness={0.3} metalness={0.74} />
+            </mesh>
+            <mesh position={[0, 0, -1.08]} castShadow receiveShadow>
+              <cylinderGeometry args={[0.072, 0.072, 0.08, 16]} />
+              <meshStandardMaterial color="#33363b" roughness={0.48} metalness={0.46} />
+            </mesh>
+          </group>
+        ))}
+      </group>
+    );
+  }
   if (terrain === "tube-board") {
     const length = 3.05;
     return (
@@ -79,18 +99,22 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
   return (
     <group>
       {visible.map((platform) => {
+        if (platform.visualHidden) return null;
         const override = overrideForNode(platform.index, courseOverrides);
         if (override && !isPlatformCourseItem(override.style) && override.span > 1) return null;
         const platformSettings = resolveSettings?.(platform.index) ?? settings;
-        const style = override && isPlatformCourseItem(override.style) ? override.style : resolvePlatformStyle(platform.index, platformSettings);
-        const w = Math.max(0.3, platform.width * RHYTHMIC_WORLD_SCALE);
+        const style = platform.visualStyle ?? (override && isPlatformCourseItem(override.style) ? override.style : resolvePlatformStyle(platform.index, platformSettings));
+        const displayWidth = platform.visualWidth ?? platform.width;
+        const w = Math.max(0.3, displayWidth * RHYTHMIC_WORLD_SCALE);
         const h = Math.max(0.09, platform.thickness * RHYTHMIC_WORLD_SCALE);
         const d = style === "instrument-cymbal" ? 0.5 : style.includes("rail") ? 0.46 : style === "tube-cylinder" ? 0.62 : 0.54;
         const normalInset = platform.contactMode === "surface"
           ? Math.max(0.04, platform.thickness * 0.5) * RHYTHMIC_WORLD_SCALE
           : 0;
-        const worldX = ((platform.x - platform.normalX * normalInset / RHYTHMIC_WORLD_SCALE) - RHYTHMIC_COURSE_WIDTH / 2) * RHYTHMIC_WORLD_SCALE;
-        const worldY = -(platform.y - platform.normalY * normalInset / RHYTHMIC_WORLD_SCALE) * RHYTHMIC_WORLD_SCALE;
+        const baseX = platform.visualX ?? platform.x;
+        const baseY = platform.visualY ?? platform.y;
+        const worldX = ((baseX - platform.normalX * normalInset / RHYTHMIC_WORLD_SCALE) - RHYTHMIC_COURSE_WIDTH / 2) * RHYTHMIC_WORLD_SCALE;
+        const worldY = -(baseY - platform.normalY * normalInset / RHYTHMIC_WORLD_SCALE) * RHYTHMIC_WORLD_SCALE;
         const hasBeenHit = platform.event.timeMs <= timeMs;
         const immediateHit = platform.index === impactIndex ? Math.max(0, impactStrength) : 0;
         const latchedHit = platformSettings.impactPlatformLight && hasBeenHit
@@ -107,13 +131,13 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
             // The visible striking face sits exactly on z=0. The instrument body
             // and wall mount extend behind it, matching the reference installation.
             position={[worldX, worldY, -frontDepth]}
-            rotation={[0, 0, -platform.tiltRad]}
+            rotation={[0, 0, -(platform.visualTiltRad ?? platform.tiltRad)]}
             onClick={(event) => {
               event.stopPropagation();
               onSelectNode(platform.index);
             }}
           >
-            <PhysicalMount terrain={platformSettings.terrainProfile} w={w} h={h} detail={platformSettings.platformDetail} />
+            <PhysicalMount terrain={platformSettings.terrainProfile} w={w} h={h} detail={platformSettings.platformDetail} showcase={platformSettings.instrumentFamily !== "auto"} />
             <PlatformMesh w={w} h={h} d={depth} color={platform.color} style={style} selected={platform.index === selectedNodeIndex} glow={effectiveGlow} detail={platformSettings.platformDetail} />
           </group>
         );

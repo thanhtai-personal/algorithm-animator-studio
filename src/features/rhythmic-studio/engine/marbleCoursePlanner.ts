@@ -90,7 +90,7 @@ function restitutionForDrop(incoming: Vec2, normalInput: Vec2, drop: number, dt:
 function worldBounds(settings: StudioSettings, width: number) {
   // Wall scenes need a hard safe aperture. Allowing the planner to route outside
   // the visible wall made marbles and instruments pass through the side panels.
-  if (settings.instrumentFamily !== "auto") return { min: width * 0.1, max: width * 0.9 };
+  if (settings.instrumentFamily !== "auto") return { min: width * 0.14, max: width * 0.86 };
   if (settings.terrainProfile === "balanced") return { min: 62, max: width - 62 };
   if (settings.terrainProfile === "xylophone") return { min: 72, max: width - 72 };
   if (settings.terrainProfile === "tube-board") return { min: 64, max: width - 64 };
@@ -98,6 +98,14 @@ function worldBounds(settings: StudioSettings, width: number) {
 }
 
 function orientationPenalty(index: number, normal: Vec2, settings: StudioSettings) {
+  if (settings.instrumentFamily !== "auto") {
+    const tangent = Math.abs(axisAngle(Math.atan2(normal.x, -normal.y)) * 180 / Math.PI);
+    const desired = settings.instrumentLayout === "fan" ? 36
+      : settings.instrumentLayout === "gallery" ? 22
+        : settings.instrumentLayout === "split" ? 28
+          : 30;
+    return Math.abs(tangent - desired) * 0.68 + Math.max(0, tangent - 64) * 14;
+  }
   if (settings.terrainProfile === "tube-board") {
     const axis = Math.abs(axisAngle(Math.atan2(-normal.y, -normal.x)) * 180 / Math.PI);
     const targetAngles = [14, 28, 44, 58, 72, 82, 36, 66, 20, 52, 78, 32];
@@ -143,12 +151,17 @@ function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: numb
   const terrain = rhythmTerrainForGap(spanMs, settings);
   const dt = Math.max(0.08, spanMs / 1000);
   const bounds = worldBounds(settings, width);
+  const denseKeyboardTransition = settings.instrumentFamily !== "auto" && spanMs <= 185;
   // This bounce lands on index + 1, so scene-boundary spacing belongs to the
   // upcoming obstacle rather than the obstacle we are currently leaving.
   const spacing = obstacleSpacingScale(index + 1, spanMs, settings);
-  const baseDrop = Math.max(8, terrain.verticalDrop * profile.verticalScale * spacing.vertical);
-  const desiredHorizontal = Math.max(12, terrain.horizontalDistance * profile.horizontalScale * spacing.horizontal);
-  const targetApex = terrain.bounceHeight * profile.apexScale;
+  const baseDrop = denseKeyboardTransition
+    ? clamp(spanMs * 0.035, 4, 8)
+    : Math.max(10, terrain.verticalDrop * profile.verticalScale * spacing.vertical * (settings.instrumentFamily !== "auto" ? 1.08 : 1));
+  const desiredHorizontal = denseKeyboardTransition
+    ? clamp(spanMs * 0.2, 18, 34)
+    : Math.max(12, terrain.horizontalDistance * profile.horizontalScale * spacing.horizontal * (settings.instrumentFamily !== "auto" ? 0.88 : 1));
+  const targetApex = denseKeyboardTransition ? 2.5 : terrain.bounceHeight * profile.apexScale;
   const pitchBias = (pitch - 0.5) * settings.laneSpread * (settings.terrainProfile === "comet" ? 0.12 : 0.05);
   const result: BounceCandidate[] = [];
 
@@ -172,9 +185,9 @@ function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: numb
       const dx = target.x - hit.x;
       const dy = target.y - hit.y;
       if (target.x < bounds.min || target.x > bounds.max) continue;
-      if (dy < Math.max(3, baseDrop * 0.2) || dy > Math.max(190, baseDrop * 1.9)) continue;
+      if (dy < (denseKeyboardTransition ? 1 : Math.max(4, baseDrop * 0.2)) || dy > (denseKeyboardTransition ? 18 : Math.max(190, baseDrop * 1.9))) continue;
       const apex = reflected.velocity.y < 0 ? reflected.velocity.y ** 2 / (2 * profile.gravity) : 0;
-      const directionPenalty = Math.sign(dx || preferredDirection) === Math.sign(preferredDirection) ? 0 : (settings.terrainProfile === "tube-board" ? 8 : 30);
+      const directionPenalty = Math.sign(dx || preferredDirection) === Math.sign(preferredDirection) ? 0 : (denseKeyboardTransition ? 120 : settings.terrainProfile === "tube-board" ? 8 : 30);
       const cometMinimum = settings.terrainProfile === "comet" ? desiredHorizontal * 0.5 : 0;
       const shortJumpPenalty = Math.max(0, cometMinimum - Math.abs(dx)) * (settings.terrainProfile === "comet" ? 1.4 : 0);
       const horizontalPenalty = Math.abs(Math.abs(dx) - desiredHorizontal) * (settings.terrainProfile === "comet" ? 0.28 : 0.16);
@@ -196,6 +209,47 @@ function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: numb
 
   result.sort((a, b) => a.score - b.score);
   return result.length ? result.slice(0, 9) : [fallbackCandidate(hit, incoming, spanMs, preferredDirection, settings, width)];
+}
+
+function denseKeyboardRuns(events: NoteEvent[], settings: StudioSettings, resolveSettings?: StudioSettingsResolver) {
+  const runs: Array<{ start: number; end: number }> = [];
+  let index = 0;
+  while (index < events.length - 3) {
+    const frameSettings = resolveSettings?.(index) ?? settings;
+    if (frameSettings.instrumentFamily === "auto") { index += 1; continue; }
+    let end = index;
+    while (end < events.length - 1) {
+      const localSettings = resolveSettings?.(end) ?? settings;
+      const gap = events[end + 1].timeMs - events[end].timeMs;
+      if (localSettings.instrumentFamily === "auto" || gap > 185 || end - index >= 13) break;
+      end += 1;
+    }
+    if (end - index >= 3) {
+      runs.push({ start: index, end });
+      index = end + 1;
+    } else index += 1;
+  }
+  return runs;
+}
+
+function decorateDenseKeyboardRuns(platforms: MarblePlatform[], events: NoteEvent[], settings: StudioSettings, resolveSettings?: StudioSettingsResolver) {
+  if (!platforms.length) return platforms;
+  const decorated = platforms.map((platform) => ({ ...platform }));
+  for (const run of denseKeyboardRuns(events, settings, resolveSettings)) {
+    const first = decorated[run.start];
+    const last = decorated[Math.min(run.end, decorated.length - 1)];
+    if (!first || !last) continue;
+    const dx = last.hitX - first.hitX;
+    const dy = last.hitY - first.hitY;
+    const runDistance = Math.hypot(dx, dy);
+    first.visualStyle = "piano-keyboard";
+    first.visualX = (first.hitX + last.hitX) * 0.5;
+    first.visualY = (first.hitY + last.hitY) * 0.5 + 5;
+    first.visualWidth = clamp(runDistance + 72, 220, 360);
+    first.visualTiltRad = clamp(Math.atan2(dy, dx), -0.22, 0.22);
+    for (let index = run.start + 1; index <= run.end && index < decorated.length; index += 1) decorated[index].visualHidden = true;
+  }
+  return decorated;
 }
 
 function longGapTarget(index: number, hit: Vec2, spanMs: number, direction: number, pitch: number, settings: StudioSettings, width: number) {
@@ -236,9 +290,11 @@ function obstacleFromImpact(index: number, hit: Vec2, normal: Vec2, outgoing: Ve
     };
   }
   const tangent = { x: -normal.y, y: normal.x };
+  let tiltRad = axisAngle(Math.atan2(tangent.y, tangent.x));
+  if (settings.instrumentFamily !== "auto") tiltRad = clamp(tiltRad, -Math.PI * 0.38, Math.PI * 0.38);
   return {
     index, x: surface.x, y: surface.y, width: platformWidth, thickness: settings.platformThickness,
-    tiltRad: axisAngle(Math.atan2(tangent.y, tangent.x)), color,
+    tiltRad, color,
     contactX: surface.x, contactY: surface.y, hitX: hit.x, hitY: hit.y,
     normalX: normal.x, normalY: normal.y, outVX: outgoing.x, outVY: outgoing.y,
     gravity, contactMode: "surface", event,
@@ -297,8 +353,8 @@ function platformOverlapPenalty(platform: MarblePlatform, recent: MarblePlatform
     const previous = platformSegment(other);
     const distance = segmentDistance(segment.a, segment.b, previous.a, previous.b);
     const safeDistance = Math.max(
-      18,
-      settings.ballSize * (settings.instrumentFamily !== "auto" ? 1.15 : 0.95),
+      settings.instrumentFamily !== "auto" ? 22 : 18,
+      settings.ballSize * (settings.instrumentFamily !== "auto" ? 1.45 : 0.95),
       (platform.thickness + other.thickness) * 0.62,
     );
     if (distance < safeDistance) {
@@ -308,6 +364,19 @@ function platformOverlapPenalty(platform: MarblePlatform, recent: MarblePlatform
     }
   }
   return penalty;
+}
+
+function wallClearancePenalty(platform: MarblePlatform, settings: StudioSettings, width: number) {
+  if (settings.instrumentFamily === "auto") return 0;
+  const bounds = worldBounds(settings, width);
+  const segment = platformSegment(platform);
+  const overhang = Math.max(
+    0,
+    bounds.min - Math.min(segment.a.x, segment.b.x),
+    Math.max(segment.a.x, segment.b.x) - bounds.max,
+  );
+  if (overhang <= 0) return 0;
+  return 3000 + overhang * 52 + overhang * overhang * 2.1;
 }
 
 function adjacentSpacingPenalty(target: Vec2, current: Vec2, settings: StudioSettings) {
@@ -403,13 +472,14 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
         let nextDirection = state.preferredDirection;
         const bounds = worldBounds(stepSettings, width);
         const edgeInset = Math.max(72, stepSettings.laneSpread * 0.24);
+        const denseTransition = stepSettings.instrumentFamily !== "auto" && spanMs <= 185;
         const showcaseHold = stepSettings.instrumentFamily === "auto"
           ? profile.directionHold
           : stepSettings.instrumentLayout === "fan" ? 6
             : stepSettings.instrumentLayout === "gallery" ? 4
               : stepSettings.instrumentLayout === "split" ? 2
                 : 5;
-        if (nextHit.x < bounds.min + edgeInset || nextHit.x > bounds.max - edgeInset || index % Math.max(2, showcaseHold) === showcaseHold - 1) nextDirection *= -1;
+        if (nextHit.x < bounds.min + edgeInset || nextHit.x > bounds.max - edgeInset || (!denseTransition && index % Math.max(2, showcaseHold) === showcaseHold - 1)) nextDirection *= -1;
         const historySize = stepSettings.instrumentFamily !== "auto" ? 12 : 7;
         const recentHits = [...state.recentHits, state.hit].slice(-historySize);
         const recentPlatforms = [...state.recentPlatforms, platform].slice(-historySize);
@@ -417,9 +487,10 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
           hit: nextHit,
           incoming: nextIncoming,
           preferredDirection: nextDirection,
-          score: state.score + bounce.score + adjacentSpacingPenalty(nextHit, state.hit, stepSettings)
-            + separationPenalty(nextHit, recentHits, stepSettings)
-            + platformOverlapPenalty(platform, state.recentPlatforms, stepSettings),
+          score: state.score + bounce.score + (denseTransition ? 0 : adjacentSpacingPenalty(nextHit, state.hit, stepSettings))
+            + (denseTransition ? 0 : separationPenalty(nextHit, recentHits, stepSettings))
+            + (denseTransition ? 0 : platformOverlapPenalty(platform, state.recentPlatforms, stepSettings))
+            + wallClearancePenalty(platform, stepSettings, width),
           node: { platform, parent: state.node },
           recentHits,
           recentPlatforms,
@@ -431,5 +502,5 @@ export function buildPhysicsCourse(events: NoteEvent[], settings: StudioSettings
     states = expanded.slice(0, beamWidth);
   }
 
-  return reconstruct(states[0]?.node ?? null);
+  return decorateDenseKeyboardRuns(reconstruct(states[0]?.node ?? null), events, settings, resolveSettings);
 }

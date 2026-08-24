@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import type { RhythmicStudioStore } from "../store/RhythmicStudioStore";
 import { presetById, type RhythmicPresetId } from "../lib/studioPresets";
+import { DEFAULT_SETTINGS } from "../defaults";
 
 export function useRhythmicPresetActions(store: RhythmicStudioStore) {
   const applyQuickPreset = useCallback((id: RhythmicPresetId) => {
@@ -16,7 +17,30 @@ export function useRhythmicPresetActions(store: RhythmicStudioStore) {
       backgroundImageBlur: store.settings.backgroundImageBlur,
       backgroundImageFit: store.settings.backgroundImageFit,
     };
-    store.selectPreset(id, { ...store.settings, ...preset, ...lockedBackground });
+    const persistentRuntime = {
+      titleText: store.settings.titleText,
+      playbackSpeed: store.settings.playbackSpeed,
+      syncOffsetMs: store.settings.syncOffsetMs,
+      playOriginalSong: store.settings.playOriginalSong,
+      midiPlaybackEnabled: store.settings.midiPlaybackEnabled,
+      midiInstrumentMode: store.settings.midiInstrumentMode,
+      instrumentNativeAudio: store.settings.instrumentNativeAudio,
+      synthPreset: store.settings.synthPreset,
+      synthVolume: store.settings.synthVolume,
+      musicVolume: store.settings.musicVolume,
+      synthReverb: store.settings.synthReverb,
+      synthBrightness: store.settings.synthBrightness,
+      synthStereoWidth: store.settings.synthStereoWidth,
+      lyricsEnabled: store.settings.lyricsEnabled,
+      lyricStyle: store.settings.lyricStyle,
+      lyricPosition: store.settings.lyricPosition,
+      lyricFontSize: store.settings.lyricFontSize,
+      lyricColor: store.settings.lyricColor,
+      lyricAccentColor: store.settings.lyricAccentColor,
+      lyricShadow: store.settings.lyricShadow,
+      lyricShowNext: store.settings.lyricShowNext,
+    };
+    store.selectPreset(id, { ...DEFAULT_SETTINGS, ...persistentRuntime, ...preset, ...lockedBackground });
   }, [store]);
 
   const togglePresetMix = useCallback(() => {

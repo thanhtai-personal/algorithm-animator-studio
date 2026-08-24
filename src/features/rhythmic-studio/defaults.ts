@@ -52,6 +52,7 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   synthStereoWidth: 0.28,
   midiPlaybackEnabled: true,
   midiInstrumentMode: 'single',
+  instrumentNativeAudio: false,
   platformWidth: 104,
   platformThickness: 28,
   platformGap: 152,

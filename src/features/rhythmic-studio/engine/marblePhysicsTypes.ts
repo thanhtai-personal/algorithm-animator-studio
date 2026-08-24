@@ -1,4 +1,4 @@
-import type { NoteEvent } from "../types";
+import type { NoteEvent, PlatformStyle } from "../types";
 
 export interface Vec2 {
   x: number;
@@ -26,6 +26,12 @@ export interface MarblePlatform {
   gravity: number;
   contactMode: ContactMode;
   event: NoteEvent;
+  visualStyle?: PlatformStyle;
+  visualX?: number;
+  visualY?: number;
+  visualWidth?: number;
+  visualTiltRad?: number;
+  visualHidden?: boolean;
 }
 
 export interface MarblePoint {

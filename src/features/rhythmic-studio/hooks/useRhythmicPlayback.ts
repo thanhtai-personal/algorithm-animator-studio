@@ -1,7 +1,24 @@
 import { useCallback, useEffect, useRef } from "react";
 import { AudioEngine } from "../lib/audioEngine";
-import type { NoteEvent } from "../types";
+import type { NoteEvent, SynthPreset } from "../types";
 import type { RhythmicStudioStore } from "../store/RhythmicStudioStore";
+
+function presetForInstrumentCollision(store: RhythmicStudioStore, event: NoteEvent): SynthPreset {
+  const { settings } = store;
+  if (!settings.instrumentNativeAudio) return settings.synthPreset;
+  if (settings.instrumentFamily === "boomwhacker") return event.velocity > 0.88 ? "marimba" : "woodblock";
+  if (settings.instrumentFamily === "xylophone") return "marimba";
+  if (settings.instrumentFamily === "piano") return "piano";
+  if (settings.instrumentFamily === "marimba") return "marimba";
+  if (settings.instrumentFamily === "pluck") return "pluck";
+  if (settings.instrumentFamily === "vibraphone") return "vibraphone";
+  if (settings.instrumentFamily === "mixed") {
+    const palette: SynthPreset[] = ["woodblock", "marimba", "piano", "kalimba", "vibraphone", "bell"];
+    return palette[Math.abs(event.midi) % palette.length] ?? settings.synthPreset;
+  }
+  if (settings.terrainProfile === "xylophone") return settings.platformAccentStyle === "instrument-cymbal" ? "marimba" : "vibraphone";
+  return settings.synthPreset;
+}
 
 export function useRhythmicPlayback(store: RhythmicStudioStore) {
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
@@ -30,6 +47,7 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
 
   const startMidiAudio = useCallback(async (resumeMs = 0) => {
     if (store.source.type !== "midi" || !store.settings.midiPlaybackEnabled) return;
+    if (store.settings.instrumentNativeAudio) return;
     await audioEngineRef.current.scheduleMidi(store.sourceEvents, resumeMs, {
       playbackSpeed: store.settings.playbackSpeed,
       syncOffsetMs: store.settings.syncOffsetMs,
@@ -88,9 +106,9 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
     // MIDI playback is already sample-accurately scheduled by scheduleMidi().
     // Triggering another synth voice here doubles every note and can overload the
     // recorded mix. Keep collision-triggered SFX for built-in/audio sources only.
-    if (store.source.type === "midi" && store.settings.midiPlaybackEnabled) return;
-    void audioEngineRef.current.playNote(event.midi, event.velocity, event.durationMs, store.settings.synthPreset);
-  }, [store.settings.midiPlaybackEnabled, store.settings.synthPreset, store.source.type]);
+    if (store.source.type === "midi" && store.settings.midiPlaybackEnabled && !store.settings.instrumentNativeAudio) return;
+    void audioEngineRef.current.playNote(event.midi, event.velocity, event.durationMs, presetForInstrumentCollision(store, event));
+  }, [store]);
 
   const onEnded = useCallback(() => {
     store.finishPlayback();

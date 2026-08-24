@@ -30,6 +30,23 @@ function currentCanvas(store: RhythmicStudioStore, refs: CanvasRefs) {
   return refs.legacyCanvasRef.current;
 }
 
+function createFixedExportSurface(source: HTMLCanvasElement) {
+  const output = document.createElement("canvas");
+  output.width = 720;
+  output.height = 1280;
+  const context = output.getContext("2d", { alpha: false });
+  if (!context) return { canvas: source, stop: () => undefined };
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+  let raf = 0;
+  const copy = () => {
+    context.drawImage(source, 0, 0, output.width, output.height);
+    raf = window.requestAnimationFrame(copy);
+  };
+  copy();
+  return { canvas: output, stop: () => window.cancelAnimationFrame(raf) };
+}
+
 export function useRhythmicExportActions(store: RhythmicStudioStore, refs: CanvasRefs, playback: PlaybackDeps) {
   const lang = useSystemLang();
   const chunksRef = useRef<Blob[]>([]);
@@ -53,7 +70,11 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, refs: Canva
     if (store.source.type === "audio" && playback.audioElementRef.current) {
       await playback.audioEngineRef.current.attachOriginalAudio(playback.audioElementRef.current);
     }
-    const videoStream = canvas.captureStream(store.settings.exportFps);
+    // Record from a fixed 720x1280 surface instead of the responsive WebGL
+    // drawing buffer. The latter follows CSS size × DPR and produced files such
+    // as 744x1324 depending on the browser window.
+    const exportSurface = createFixedExportSurface(canvas);
+    const videoStream = exportSurface.canvas.captureStream(store.settings.exportFps);
     // Never put the AudioEngine's shared destination track directly into the export
     // stream: stopping that stream would permanently end audio for later exports.
     const audioTracks = (playback.audioEngineRef.current.getRecordStream()?.getAudioTracks() ?? [])
@@ -80,11 +101,13 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, refs: Canva
         store.setStatus({ key: "status.exportFailed", values: { format: exportFormat.label } });
         toast.error(error instanceof Error ? error.message : rhythmicText(lang, "status.exportFailed", { format: exportFormat.label }));
       } finally {
+        exportSurface.stop();
         stream.getTracks().forEach((track) => track.stop());
         store.setRecording(false);
       }
     };
     recorder.onerror = () => {
+      exportSurface.stop();
       stream.getTracks().forEach((track) => track.stop());
       store.setRecording(false);
       store.setStatus({ key: "status.exportFailed", values: { format: exportFormat.label } });

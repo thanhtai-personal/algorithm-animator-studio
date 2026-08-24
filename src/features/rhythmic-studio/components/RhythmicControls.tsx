@@ -141,6 +141,7 @@ export function RhythmicControls({ settings, source, sourceInfo, usableHits, pat
         <RangeField label={t("sound.musicVolume")} value={settings.musicVolume} min={0} max={1.15} step={0.02} onChange={(value) => patch("musicVolume", value)} />
         <ToggleField label={t("sound.midiPlayback")} checked={settings.midiPlaybackEnabled} onChange={(value) => patch("midiPlaybackEnabled", value)} />
         <SelectField label={t("sound.midiMode")} value={settings.midiInstrumentMode} options={midiModeOptions} onChange={(value) => patch("midiInstrumentMode", value as StudioSettings["midiInstrumentMode"])} />
+        <ToggleField label={t("sound.instrumentNativeAudio")} checked={settings.instrumentNativeAudio} onChange={(value) => patch("instrumentNativeAudio", value)} />
         <SelectField label={t("sound.hitSynth")} value={settings.synthPreset} options={synthOptions} onChange={(value) => patch("synthPreset", value as StudioSettings["synthPreset"])} />
         <p className="rounded-lg border border-dashed bg-muted/20 px-3 py-2 text-[11px] leading-4 text-muted-foreground">{t("sound.effectsHint")}</p>
         <RangeField label={t("sound.synthVolume")} value={settings.synthVolume} min={0} max={0.75} step={0.01} onChange={(value) => patch("synthVolume", value)} />

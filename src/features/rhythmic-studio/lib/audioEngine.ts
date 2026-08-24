@@ -10,15 +10,17 @@ interface MidiScheduleOptions {
   stereoWidth: number;
 }
 
-function createRoomImpulse(context: AudioContext, seconds = 1.25, decay = 3.1) {
+function createRoomImpulse(context: AudioContext, seconds = 1.05, decay = 3.4) {
   const length = Math.floor(context.sampleRate * seconds);
   const impulse = context.createBuffer(2, length, context.sampleRate);
   for (let channel = 0; channel < 2; channel += 1) {
     const data = impulse.getChannelData(channel);
     for (let i = 0; i < length; i += 1) {
       const envelope = Math.pow(1 - i / length, decay);
-      const early = i < context.sampleRate * 0.075 ? 1.08 : 1;
-      data[i] = (Math.random() * 2 - 1) * envelope * early * 0.3;
+      const early = i < context.sampleRate * 0.05 ? 1.02 : 1;
+      // Keep the room tail subtle. A hot white-noise impulse made repeated note
+      // attacks read as crackle/paper-pop once encoded to Opus.
+      data[i] = (Math.random() * 2 - 1) * envelope * early * 0.16;
     }
   }
   return impulse;
@@ -89,12 +91,12 @@ export class AudioEngine {
       compressor.connect(this.context.destination);
       compressor.connect(this.recordDestination);
 
-      this.master.gain.value = 0.82;
+      this.master.gain.value = 0.78;
       this.musicBus.gain.value = cleanMusicGain(this.musicVolume);
       this.sfxInput.gain.value = this.sfxVolume;
       this.sfxDry.gain.value = 1 - this.reverbAmount * 0.18;
-      this.reverbSend.gain.value = this.reverbAmount * 0.62;
-      this.reverbWet.gain.value = this.reverbAmount * 0.68;
+      this.reverbSend.gain.value = this.reverbAmount * 0.42;
+      this.reverbWet.gain.value = this.reverbAmount * 0.48;
       this.sfxTone.frequency.value = 3400 + this.brightness * 10800;
     }
     if (this.context.state === "suspended") await this.context.resume();
@@ -113,8 +115,8 @@ export class AudioEngine {
 
   setReverb(value: number) {
     this.reverbAmount = Math.max(0, Math.min(1, value));
-    if (this.reverbSend) this.reverbSend.gain.value = this.reverbAmount * 0.62;
-    if (this.reverbWet) this.reverbWet.gain.value = this.reverbAmount * 0.68;
+    if (this.reverbSend) this.reverbSend.gain.value = this.reverbAmount * 0.42;
+    if (this.reverbWet) this.reverbWet.gain.value = this.reverbAmount * 0.48;
     if (this.sfxDry) this.sfxDry.gain.value = 1 - this.reverbAmount * 0.18;
   }
 
@@ -167,7 +169,19 @@ export class AudioEngine {
     if (this.midiTimer) clearInterval(this.midiTimer);
     this.midiTimer = null;
     if (this.midiSession) {
-      try { this.midiSession.disconnect(); } catch { /* already disconnected */ }
+      const session = this.midiSession;
+      const context = this.context;
+      if (context) {
+        const now = context.currentTime;
+        try {
+          session.gain.cancelScheduledValues(now);
+          session.gain.setValueAtTime(Math.max(0.0001, session.gain.value), now);
+          session.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
+          setTimeout(() => { try { session.disconnect(); } catch { /* already disconnected */ } }, 55);
+        } catch { try { session.disconnect(); } catch { /* already disconnected */ } }
+      } else {
+        try { session.disconnect(); } catch { /* already disconnected */ }
+      }
     }
     this.midiSession = null;
   }

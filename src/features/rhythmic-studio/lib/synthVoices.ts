@@ -54,7 +54,11 @@ function noise(context: AudioContext, seconds: number) {
   const frames = Math.max(1, Math.ceil(context.sampleRate * seconds));
   const buffer = context.createBuffer(1, frames, context.sampleRate);
   const data = buffer.getChannelData(0);
-  for (let i = 0; i < frames; i += 1) data[i] = Math.random() * 2 - 1;
+  const fadeFrames = Math.max(8, Math.min(Math.round(context.sampleRate * 0.008), Math.floor(frames / 3)));
+  for (let i = 0; i < frames; i += 1) {
+    const edge = Math.min(1, i / fadeFrames, (frames - 1 - i) / fadeFrames);
+    data[i] = (Math.random() * 2 - 1) * Math.max(0, edge);
+  }
   const source = context.createBufferSource();
   source.buffer = buffer;
   return source;
@@ -63,7 +67,7 @@ function noise(context: AudioContext, seconds: number) {
 function noiseBurst(context: AudioContext, target: AudioNode, when: number, duration: number, peak: number, type: BiquadFilterType, frequency: number, q = 0.8) {
   const source = noise(context, duration);
   const filter = context.createBiquadFilter();
-  const env = envelope(context, target, when, peak, 0.003, 0.006, Math.max(0.03, duration - 0.009));
+  const env = envelope(context, target, when, peak, 0.009, 0.004, Math.max(0.03, duration - 0.013));
   filter.type = type;
   filter.frequency.setValueAtTime(frequency, when);
   filter.Q.value = q;
@@ -79,7 +83,7 @@ function partials(context: AudioContext, target: AudioNode, when: number, hz: nu
 }
 
 function pianoVoice(context: AudioContext, target: AudioNode, when: number, hz: number, duration: number, peak: number) {
-  const env = envelope(context, target, when, peak, 0.004, 0.025, Math.min(1.7, Math.max(0.28, duration * 1.25)));
+  const env = envelope(context, target, when, peak, 0.009, 0.02, Math.min(1.55, Math.max(0.26, duration * 1.18)));
   const filter = context.createBiquadFilter();
   filter.type = "lowpass";
   filter.frequency.setValueAtTime(Math.min(9800, 2600 + hz * 5.5), when);
@@ -89,12 +93,11 @@ function pianoVoice(context: AudioContext, target: AudioNode, when: number, hz: 
   osc(context, filter, when, hz, duration + 0.9, "triangle", 0.78, -2.5);
   osc(context, filter, when, hz, duration + 0.82, "sine", 0.5, 2.2);
   osc(context, filter, when, hz * 2, duration + 0.56, "sine", 0.13);
-  noiseBurst(context, env, when, 0.025, peak * 0.08, "highpass", 2600, 0.55);
 }
 
 function malletVoice(context: AudioContext, target: AudioNode, when: number, hz: number, peak: number, kind: "marimba" | "kalimba" | "wood") {
   const duration = kind === "wood" ? 0.12 : kind === "marimba" ? 0.52 : 0.74;
-  const env = envelope(context, target, when, peak, 0.002, 0.006, duration);
+  const env = envelope(context, target, when, peak, kind === "wood" ? 0.005 : 0.006, 0.006, duration);
   const body = context.createBiquadFilter();
   body.type = "bandpass";
   body.frequency.value = kind === "wood" ? Math.max(680, hz * 2.4) : hz;
@@ -102,7 +105,6 @@ function malletVoice(context: AudioContext, target: AudioNode, when: number, hz:
   body.connect(env);
   osc(context, body, when, kind === "wood" ? Math.max(650, hz * 2.2) : hz, duration + 0.08, "sine", 1);
   osc(context, body, when, hz * (kind === "marimba" ? 4 : 2.02), duration * 0.72, "sine", kind === "wood" ? 0.1 : 0.14);
-  noiseBurst(context, env, when, 0.018, peak * 0.1, "highpass", 1800, 0.7);
 }
 
 function percussion(context: AudioContext, target: AudioNode, when: number, preset: SynthPreset, peak: number) {

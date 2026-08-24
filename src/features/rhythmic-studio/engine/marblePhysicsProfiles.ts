@@ -79,13 +79,24 @@ export function marblePhysicsProfile(settings: StudioSettings): MarblePhysicsPro
   const spacingScale = clamp(settings.platformGap / 150, 0.72, 1.45);
   const bounceScale = clamp(settings.bounceHeight / 126, 0.62, 1.42);
   const laneScale = clamp(settings.laneSpread / 300, 0.68, 1.42);
+  const ballProfile = settings.ballStyle === "chrome"
+    ? { gravity: 1.06, restitution: 0.84, horizontal: 0.94, vertical: 0.95 }
+    : settings.ballStyle === "glass"
+      ? { gravity: 0.98, restitution: 1.08, horizontal: 0.98, vertical: 1.02 }
+      : settings.ballStyle === "neon"
+        ? { gravity: 0.94, restitution: 1.18, horizontal: 1.06, vertical: 1.1 }
+        : settings.ballStyle === "prism"
+          ? { gravity: 0.92, restitution: 1.22, horizontal: 1.08, vertical: 1.12 }
+          : settings.ballStyle === "striped"
+            ? { gravity: 1.02, restitution: 0.92, horizontal: 0.97, vertical: 0.95 }
+            : { gravity: 1, restitution: 1, horizontal: 1, vertical: 1 };
   return {
     ...base,
     terrain: settings.terrainProfile,
-    gravity: base.gravity * Math.pow(spacingScale, 0.62),
-    restitutionMin: clamp(base.restitutionMin * bounceScale, 0.04, 0.95),
-    restitutionMax: clamp(base.restitutionMax * bounceScale, 0.12, 0.98),
-    horizontalScale: base.horizontalScale * laneScale,
-    verticalScale: base.verticalScale * Math.pow(spacingScale, 0.55),
+    gravity: base.gravity * Math.pow(spacingScale, 0.62) * ballProfile.gravity,
+    restitutionMin: clamp(base.restitutionMin * bounceScale * ballProfile.restitution, 0.04, 0.95),
+    restitutionMax: clamp(base.restitutionMax * bounceScale * ballProfile.restitution, 0.12, 0.98),
+    horizontalScale: base.horizontalScale * laneScale * ballProfile.horizontal,
+    verticalScale: base.verticalScale * Math.pow(spacingScale, 0.55) * ballProfile.vertical,
   };
 }

@@ -20,17 +20,19 @@ function widthScale(style: PlatformStyle) {
   if (style === "drum-disc") return 0.7;
   if (style === "instrument-pad") return 0.78;
   if (style === "instrument-cymbal") return 0.62;
-  if (style === "instrument-rail") return 1.05;
-  if (style === "instrument-wire") return 1.28;
+  if (style === "instrument-rail") return 0.94;
+  if (style === "instrument-wire") return 1.08;
   if (style === "comet-pad") return 0.88;
   return 1;
 }
 
 function layoutScale(layout: InstrumentLayout, index: number) {
-  if (layout === "fan") return { vertical: 0.68 + (index % 5) * 0.025, horizontal: 0.76 + (index % 4) * 0.035 };
-  if (layout === "gallery") return { vertical: 0.82, horizontal: 0.58 + (index % 3) * 0.04 };
-  if (layout === "split") return { vertical: 0.76, horizontal: 0.92 + (index % 2) * 0.08 };
-  return { vertical: 0.72 + (index % 4) * 0.018, horizontal: 0.64 + (index % 3) * 0.025 };
+  // Reference-style wall installations read best when gravity is the dominant
+  // direction. Keep lateral travel restrained and let the course descend.
+  if (layout === "fan") return { vertical: 0.9 + (index % 5) * 0.018, horizontal: 0.56 + (index % 4) * 0.025 };
+  if (layout === "gallery") return { vertical: 0.94, horizontal: 0.5 + (index % 3) * 0.03 };
+  if (layout === "split") return { vertical: 0.88, horizontal: 0.62 + (index % 2) * 0.05 };
+  return { vertical: 0.92 + (index % 4) * 0.014, horizontal: 0.54 + (index % 3) * 0.02 };
 }
 
 function familyPattern(family: InstrumentFamily, index: number): PlatformStyle {

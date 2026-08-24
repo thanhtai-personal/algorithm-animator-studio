@@ -12,7 +12,6 @@ import { RhythmicPlatformField3D } from "./RhythmicPlatformField3D";
 import { RhythmicCourseItems3D } from "./RhythmicCourseItems3D";
 import { RhythmicEnvironment3D, RhythmicLightingRig3D } from "./RhythmicEnvironment3D";
 import { RhythmicVfx3D, type RhythmicVfxHandle } from "./RhythmicVfx3D";
-import { RhythmicGuideRails3D } from "./RhythmicGuideRails3D";
 import { RhythmicTitle3D } from "./RhythmicTitle3D";
 import {
   impactSquash,
@@ -93,57 +92,7 @@ function RendererQuality({ recording }: { recording: boolean }) {
 }
 
 
-function secondaryVoiceEvents(events: NoteEvent[]) {
-  const channelCounts = new Map<number, number>();
-  for (const event of events) {
-    if (event.isDrum || event.channel === undefined) continue;
-    channelCounts.set(event.channel, (channelCounts.get(event.channel) ?? 0) + 1);
-  }
-  const channels = [...channelCounts.entries()].filter(([, count]) => count >= 6).sort((a, b) => b[1] - a[1]);
-  if (channels.length >= 2) {
-    const secondaryChannel = channels[1][0];
-    const voice = events.filter((event) => event.channel === secondaryChannel);
-    if (voice.length >= 4) return voice;
-  }
-  return events.filter((_, index) => index % 2 === 1);
-}
-
-function shiftCourse(platforms: MarblePlatform[], dx: number) {
-  return platforms.map((platform) => ({
-    ...platform,
-    x: platform.x + dx,
-    contactX: platform.contactX + dx,
-    hitX: platform.hitX + dx,
-  }));
-}
-
-function SecondaryMarbleLayer({ timeRef, events, platforms, settings }: {
-  timeRef: React.MutableRefObject<number>;
-  events: NoteEvent[];
-  platforms: MarblePlatform[];
-  settings: StudioSettings;
-}) {
-  const groupRef = useRef<THREE.Group>(null);
-  const point = useMemo(() => new THREE.Vector3(), []);
-  const secondarySettings = useMemo(() => ({
-    ...settings,
-    ballBaseColor: settings.showcaseSecondaryBallColor,
-    ballStripeColor: "#ffffff",
-    glowAnimation: false,
-    trailLength: 0,
-    particleCount: 0,
-  }), [settings]);
-  useFrame(() => {
-    if (!groupRef.current || !events.length || !platforms.length) return;
-    const sample = visualMarbleAtTime(timeRef.current, events, platforms, settings, []);
-    setWorldPoint(point, sample);
-    groupRef.current.position.copy(point);
-  });
-  if (!events.length || !platforms.length) return null;
-  return <group ref={groupRef}><RhythmicMarble3D settings={secondarySettings} /></group>;
-}
-
-function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSettings: StudioSettingsResolver; secondaryEvents: NoteEvent[]; secondaryPlatforms: MarblePlatform[] }) {
+function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSettings: StudioSettingsResolver }) {
   const { camera, invalidate } = useThree();
   const marbleMotionRef = useRef<THREE.Group>(null);
   const marbleRef = useRef<THREE.Group>(null);
@@ -294,11 +243,11 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
     const isTubeBoard = frameSettings.cameraProfile === "tube-board";
     const isComet = frameSettings.cameraProfile === "comet";
     const isShowcase = frameSettings.instrumentFamily !== "auto";
-    const profileZoom = isShowcase ? 2.4 : isXylophone ? 1.95 : isComet ? 0.92 : isTubeBoard ? 1.05 : 0.4;
+    const profileZoom = isShowcase ? 2.75 : isXylophone ? 1.95 : isComet ? 0.92 : isTubeBoard ? 1.05 : 0.4;
     const adaptiveZ = THREE.MathUtils.clamp(
       CAMERA_Z + profileZoom + jumpDistance * (isComet ? 0.15 : 0.13) + Math.min(0.42, speed * 0.015) - Math.min(0.58, density * 0.028),
-      isShowcase ? 12.4 : isXylophone ? 11.9 : isTubeBoard ? 10.1 : 9.6,
-      isShowcase ? 16.3 : isXylophone ? 15.9 : isTubeBoard ? 13.7 : 13.6,
+      isShowcase ? 13.0 : isXylophone ? 11.9 : isTubeBoard ? 10.1 : 9.6,
+      isShowcase ? 17.2 : isXylophone ? 15.9 : isTubeBoard ? 13.7 : 13.6,
     ) * THREE.MathUtils.clamp(frameSettings.cameraDistance, 0.8, 1.3);
     const anchorOffset = (0.5 - frameSettings.cameraAnchor) * 6.4;
     const lateralFactor = isShowcase ? 0.09 : isXylophone ? 0.13 : isTubeBoard ? 0.16 : 0.2;
@@ -307,7 +256,7 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
     const frameLead = isShowcase ? 0.2 : isComet ? 0.2 : isTubeBoard ? 0.15 : isXylophone ? 0.13 : 0.15;
     const nearFramedX = THREE.MathUtils.lerp(world.x, aheadWorld.x, frameLead);
     const nearFramedY = THREE.MathUtils.lerp(world.y, aheadWorld.y, frameLead * 0.72);
-    const futureWeight = isShowcase ? 0.14 : isComet ? 0.12 : 0.08;
+    const futureWeight = isShowcase ? 0.19 : isComet ? 0.12 : 0.08;
     const framedX = THREE.MathUtils.lerp(nearFramedX, farAheadWorld.x, futureWeight);
     const framedY = THREE.MathUtils.lerp(nearFramedY, farAheadWorld.y, futureWeight * 0.72);
     const lateralLead = THREE.MathUtils.clamp((aheadWorld.x - world.x) * lateralFactor + velocity.x * (lateralFactor * 0.04), -lateralClamp, lateralClamp);
@@ -343,8 +292,8 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
     const perspective = camera as THREE.PerspectiveCamera;
     const targetFov = THREE.MathUtils.clamp(
       CAMERA_FOV + jumpDistance * (isShowcase ? 0.24 : isComet ? 0.48 : isXylophone ? 0.32 : 0.35) - density * 0.045,
-      isShowcase ? 32.5 : isComet ? 35.5 : isXylophone ? 34 : 34.5,
-      isShowcase ? 38.5 : isComet ? 43.2 : isXylophone ? 39.8 : 40.8,
+      isShowcase ? 35 : isComet ? 35.5 : isXylophone ? 34 : 34.5,
+      isShowcase ? 41.5 : isComet ? 43.2 : isXylophone ? 39.8 : 40.8,
     );
     perspective.fov = snapCamera ? targetFov : THREE.MathUtils.damp(perspective.fov, targetFov, 6.2, deltaSeconds);
     perspective.updateProjectionMatrix();
@@ -448,23 +397,6 @@ function SceneContent(props: Props & { platforms: MarblePlatform[]; resolveSetti
         impactStrength={impactLight.strength}
         timeMs={props.timeMs}
       />
-      <RhythmicGuideRails3D platforms={props.platforms} settings={activeVisualSettings} focusIndex={focusIndex} />
-      {props.settings.showcaseDuet && props.secondaryPlatforms.length > 0 && <>
-        <RhythmicPlatformField3D
-          platforms={props.secondaryPlatforms}
-          settings={props.settings}
-          courseOverrides={[]}
-          focusIndex={Math.min(focusIndex, Math.max(0, props.secondaryPlatforms.length - 1))}
-          selectedNodeIndex={null}
-          onSelectNode={() => undefined}
-          resolveSettings={props.resolveSettings}
-          impactIndex={-1}
-          impactStrength={0}
-          timeMs={props.timeMs}
-        />
-        <RhythmicGuideRails3D platforms={props.secondaryPlatforms} settings={activeVisualSettings} focusIndex={Math.min(focusIndex, Math.max(0, props.secondaryPlatforms.length - 1))} />
-        <SecondaryMarbleLayer timeRef={currentTimeRef} events={props.secondaryEvents} platforms={props.secondaryPlatforms} settings={activeVisualSettings} />
-      </>}
       <RhythmicVfx3D
         ref={vfxRef}
         events={props.events}
@@ -508,22 +440,7 @@ export function RhythmicScene3D(props: Props) {
     () => buildMarbleCourse(props.events, props.settings, RHYTHMIC_COURSE_WIDTH, resolveSettings),
     [props.events, props.settings, resolveSettings],
   );
-  const duetLaneSeparation = props.settings.showcaseDuet
-    ? THREE.MathUtils.clamp(Math.max(176, props.settings.laneSpread * 0.72), 176, 236)
-    : 0;
-  const platforms = useMemo(
-    () => duetLaneSeparation > 0 ? shiftCourse(basePlatforms, -duetLaneSeparation * 0.5) : basePlatforms,
-    [basePlatforms, duetLaneSeparation],
-  );
-  const secondaryEvents = useMemo(
-    () => props.settings.showcaseDuet ? secondaryVoiceEvents(props.events) : [],
-    [props.events, props.settings.showcaseDuet],
-  );
-  const secondaryPlatforms = useMemo(() => {
-    if (!secondaryEvents.length) return [];
-    const course = buildMarbleCourse(secondaryEvents, props.settings, RHYTHMIC_COURSE_WIDTH, resolveSettings);
-    return shiftCourse(course, duetLaneSeparation * 0.5);
-  }, [duetLaneSeparation, props.settings, resolveSettings, secondaryEvents]);
+  const platforms = basePlatforms;
 
   return (
     <div className="relative h-[66vh] max-h-[1280px] max-w-full aspect-[9/16] overflow-hidden rounded-xl bg-slate-950">
@@ -543,7 +460,7 @@ export function RhythmicScene3D(props: Props) {
         onPointerMissed={() => props.onSelectNode(null)}
       >
         <color attach="background" args={[props.settings.backgroundColor]} />
-        <SceneContent {...props} platforms={platforms} resolveSettings={resolveSettings} secondaryEvents={secondaryEvents} secondaryPlatforms={secondaryPlatforms} />
+        <SceneContent {...props} platforms={platforms} resolveSettings={resolveSettings} />
       </Canvas>
       <div className="pointer-events-none absolute left-2 top-2 rounded-md border border-white/10 bg-black/45 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70 backdrop-blur">
         WebGL 3D · {props.presetMixEnabled ? "preset mix" : props.recording ? "recording" : props.playing ? "live" : "ready"}

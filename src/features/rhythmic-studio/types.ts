@@ -58,6 +58,7 @@ export const PLATFORM_STYLES = [
   "pluck-pad",
   "vibraphone-bar",
   "drum-disc",
+  "piano-keyboard",
 ] as const;
 
 export type PlatformStyle = (typeof PLATFORM_STYLES)[number];
@@ -222,6 +223,7 @@ export interface StudioSettings {
   synthStereoWidth: number;
   midiPlaybackEnabled: boolean;
   midiInstrumentMode: MidiInstrumentMode;
+  instrumentNativeAudio: boolean;
   platformWidth: number;
   platformThickness: number;
   platformGap: number;

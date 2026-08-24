@@ -70,7 +70,6 @@ export function RhythmicStage({ studio }: { studio: Studio }) {
       )}
     </div>
 
-    {studio.rendererMode === "three" ? <p className="text-center text-xs text-muted-foreground">{t("renderer.exportLegacy")}</p> : null}
 
     <div className="flex flex-wrap items-center justify-center gap-2">
       <Button variant="outline" size="icon" onClick={studio.resetPlayback} aria-label={t("stage.reset")} title={t("stage.reset")}><RefreshCcw className="h-4 w-4" /></Button>

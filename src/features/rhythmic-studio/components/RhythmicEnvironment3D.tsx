@@ -320,11 +320,10 @@ function ShowcaseWall({ color }: { color: string }) {
       <RoundedBox position={[0, -54, -4.45]} args={[18.8, 140, 0.42]} radius={0.12} smoothness={4} receiveShadow>
         <meshStandardMaterial color={wall} roughness={0.86} metalness={0.01} />
       </RoundedBox>
-      {[-9.5, 9.5].map((x) => (
-        <mesh key={x} position={[x, -54, -2.4]} rotation={[0, x < 0 ? Math.PI / 2.82 : -Math.PI / 2.82, 0]} receiveShadow>
-          <planeGeometry args={[4.8, 140]} />
-          <meshStandardMaterial color="#b8b1aa" roughness={0.9} metalness={0.01} side={THREE.DoubleSide} />
-        </mesh>
+      {[-8.85, 8.85].map((x) => (
+        <RoundedBox key={x} position={[x, -54, -4.62]} args={[0.34, 140, 0.18]} radius={0.08} smoothness={3} receiveShadow>
+          <meshStandardMaterial color="#b8b1aa" roughness={0.9} metalness={0.01} />
+        </RoundedBox>
       ))}
       <GlowSprite position={[-5.8, -28, -3.95]} scale={[10, 22, 1]} color="#fff4e8" opacity={0.12} />
       <GlowSprite position={[5.5, -82, -4.0]} scale={[9, 24, 1]} color="#e8eef5" opacity={0.08} />
@@ -358,12 +357,13 @@ export function RhythmicLightingRig3D({ settings }: { settings: StudioSettings }
         <hemisphereLight args={["#fff9ef", "#6d655e", 1.18]} />
         <directionalLight
           position={[-6.5, 8.5, 8]}
-          intensity={2.7}
+          intensity={2.45}
           castShadow
           shadow-mapSize-width={1536}
           shadow-mapSize-height={1536}
           shadow-bias={-0.00035}
           shadow-normalBias={0.025}
+          shadow-radius={3.2}
         />
         <directionalLight position={[5, -2, 5]} intensity={0.62} color="#dce7f5" />
       </>

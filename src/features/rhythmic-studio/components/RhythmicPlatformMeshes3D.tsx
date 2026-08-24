@@ -376,6 +376,39 @@ function PianoKeyMesh({ w, h, d, color, selected, glow }: MeshProps) {
   );
 }
 
+function PianoKeyboardMesh({ w, h, d, color, selected, glow }: MeshProps) {
+  const whiteCount = Math.max(8, Math.min(18, Math.round(w / 0.28)));
+  const keyW = w / whiteCount;
+  const blackPattern = new Set([0, 1, 3, 4, 5]);
+  return (
+    <group>
+      <RoundedBox position={[0, h * 0.18, -d * 0.22]} args={[w * 1.04, Math.max(0.18, h * 1.8), d * 1.06]} radius={0.055} smoothness={4} castShadow receiveShadow>
+        <meshPhysicalMaterial color="#272a30" roughness={0.34} metalness={0.18} clearcoat={0.42} />
+      </RoundedBox>
+      {Array.from({ length: whiteCount }, (_, index) => {
+        const x = -w / 2 + keyW * (index + 0.5);
+        return <RoundedBox key={`white-${index}`} position={[x, -h * 0.06, d * 0.33]} args={[keyW * 0.94, Math.max(0.13, h * 0.95), d * 0.44]} radius={0.018} smoothness={2} castShadow receiveShadow>
+          <meshPhysicalMaterial
+            color={selected ? "#ffffff" : "#eeeae2"}
+            roughness={0.24}
+            metalness={0.02}
+            clearcoat={0.34}
+            emissive={color}
+            emissiveIntensity={glow * 0.12}
+          />
+        </RoundedBox>;
+      })}
+      {Array.from({ length: whiteCount - 1 }, (_, index) => {
+        if (!blackPattern.has(index % 7)) return null;
+        const x = -w / 2 + keyW * (index + 1);
+        return <RoundedBox key={`black-${index}`} position={[x, h * 0.2, d * 0.48]} args={[keyW * 0.58, Math.max(0.105, h * 0.72), d * 0.38]} radius={0.016} smoothness={2} castShadow>
+          <meshPhysicalMaterial color="#15171b" roughness={0.28} metalness={0.18} clearcoat={0.4} />
+        </RoundedBox>;
+      })}
+    </group>
+  );
+}
+
 function MarimbaBarMesh({ w, h, d, color, selected, glow }: MeshProps) {
   const wood = new THREE.Color(color).lerp(new THREE.Color("#7f492c"), 0.34).getStyle();
   return (
@@ -457,6 +490,7 @@ export function PlatformMesh(props: MeshProps) {
   if (style === "boomwhacker-tube") return <BoomwhackerMesh {...props} />;
   if (style === "xylophone-bar") return <XylophoneBarMesh {...props} />;
   if (style === "piano-key") return <PianoKeyMesh {...props} />;
+  if (style === "piano-keyboard") return <PianoKeyboardMesh {...props} />;
   if (style === "marimba-bar") return <MarimbaBarMesh {...props} />;
   if (style === "pluck-pad") return <PluckPadMesh {...props} />;
   if (style === "vibraphone-bar") return <VibraphoneBarMesh {...props} />;

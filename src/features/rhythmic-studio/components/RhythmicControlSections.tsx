@@ -119,6 +119,7 @@ export function RhythmicControlSections(props: Props) {
         <Range label={t("sound.musicVolume")} value={props.settings.musicVolume} min={0} max={1.15} step={0.02} onChange={(v) => props.patch("musicVolume", v)} />
         <Toggle label={t("sound.midiPlayback")} checked={props.settings.midiPlaybackEnabled} onChange={(v) => props.patch("midiPlaybackEnabled", v)} />
         <Choice label={t("sound.midiMode")} value={props.settings.midiInstrumentMode} options={midiOptions} onChange={(v) => props.patch("midiInstrumentMode", v as StudioSettings["midiInstrumentMode"])} />
+        <Toggle label={t("sound.instrumentNativeAudio")} checked={props.settings.instrumentNativeAudio} onChange={(v) => props.patch("instrumentNativeAudio", v)} />
         <Choice label={t("sound.hitSynth")} value={props.settings.synthPreset} options={synthOptions} onChange={(v) => props.patch("synthPreset", v as StudioSettings["synthPreset"])} />
         <Range label={t("sound.synthVolume")} value={props.settings.synthVolume} min={0} max={0.75} step={0.01} onChange={(v) => props.patch("synthVolume", v)} />
         <Range label={t("sound.reverb")} value={props.settings.synthReverb} min={0} max={0.8} step={0.02} onChange={(v) => props.patch("synthReverb", v)} />

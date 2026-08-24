@@ -10,18 +10,25 @@ interface MidiScheduleOptions {
   stereoWidth: number;
 }
 
-function createRoomImpulse(context: AudioContext, seconds = 1.45, decay = 2.8) {
+function createRoomImpulse(context: AudioContext, seconds = 1.25, decay = 3.1) {
   const length = Math.floor(context.sampleRate * seconds);
   const impulse = context.createBuffer(2, length, context.sampleRate);
   for (let channel = 0; channel < 2; channel += 1) {
     const data = impulse.getChannelData(channel);
     for (let i = 0; i < length; i += 1) {
       const envelope = Math.pow(1 - i / length, decay);
-      const early = i < context.sampleRate * 0.09 ? 1.18 : 1;
-      data[i] = (Math.random() * 2 - 1) * envelope * early * 0.46;
+      const early = i < context.sampleRate * 0.075 ? 1.08 : 1;
+      data[i] = (Math.random() * 2 - 1) * envelope * early * 0.3;
     }
   }
   return impulse;
+}
+
+function cleanMusicGain(value: number) {
+  // The UI intentionally allows >100% music volume. Keep that perceived boost,
+  // but reserve encoder headroom so mastered source audio + impact SFX do not
+  // arrive at MediaRecorder already clipped.
+  return Math.min(1.16, Math.max(0, value) * 0.82);
 }
 
 export class AudioEngine {
@@ -61,11 +68,11 @@ export class AudioEngine {
       reverb.buffer = createRoomImpulse(this.context);
       const compressor = this.context.createDynamicsCompressor();
       this.outputCompressor = compressor;
-      compressor.threshold.value = -18;
-      compressor.knee.value = 18;
-      compressor.ratio.value = 3.2;
-      compressor.attack.value = 0.004;
-      compressor.release.value = 0.24;
+      compressor.threshold.value = -9;
+      compressor.knee.value = 12;
+      compressor.ratio.value = 2.1;
+      compressor.attack.value = 0.008;
+      compressor.release.value = 0.18;
 
       this.sfxTone.type = "lowpass";
       this.sfxTone.frequency.value = 9900;
@@ -82,12 +89,12 @@ export class AudioEngine {
       compressor.connect(this.context.destination);
       compressor.connect(this.recordDestination);
 
-      this.master.gain.value = 0.94;
-      this.musicBus.gain.value = this.musicVolume;
+      this.master.gain.value = 0.82;
+      this.musicBus.gain.value = cleanMusicGain(this.musicVolume);
       this.sfxInput.gain.value = this.sfxVolume;
       this.sfxDry.gain.value = 1 - this.reverbAmount * 0.18;
-      this.reverbSend.gain.value = this.reverbAmount * 0.8;
-      this.reverbWet.gain.value = this.reverbAmount * 0.92;
+      this.reverbSend.gain.value = this.reverbAmount * 0.62;
+      this.reverbWet.gain.value = this.reverbAmount * 0.68;
       this.sfxTone.frequency.value = 3400 + this.brightness * 10800;
     }
     if (this.context.state === "suspended") await this.context.resume();
@@ -96,7 +103,7 @@ export class AudioEngine {
 
   setMusicVolume(value: number) {
     this.musicVolume = Math.max(0, Math.min(1.6, value));
-    if (this.musicBus) this.musicBus.gain.value = this.musicVolume;
+    if (this.musicBus) this.musicBus.gain.value = cleanMusicGain(this.musicVolume);
   }
 
   setVolume(value: number) {
@@ -106,8 +113,8 @@ export class AudioEngine {
 
   setReverb(value: number) {
     this.reverbAmount = Math.max(0, Math.min(1, value));
-    if (this.reverbSend) this.reverbSend.gain.value = this.reverbAmount * 0.8;
-    if (this.reverbWet) this.reverbWet.gain.value = this.reverbAmount * 0.92;
+    if (this.reverbSend) this.reverbSend.gain.value = this.reverbAmount * 0.62;
+    if (this.reverbWet) this.reverbWet.gain.value = this.reverbAmount * 0.68;
     if (this.sfxDry) this.sfxDry.gain.value = 1 - this.reverbAmount * 0.18;
   }
 

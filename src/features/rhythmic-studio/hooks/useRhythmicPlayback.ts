@@ -85,8 +85,12 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
   }, [stopPlaybackAudio, store]);
 
   const onNote = useCallback((event: NoteEvent) => {
+    // MIDI playback is already sample-accurately scheduled by scheduleMidi().
+    // Triggering another synth voice here doubles every note and can overload the
+    // recorded mix. Keep collision-triggered SFX for built-in/audio sources only.
+    if (store.source.type === "midi" && store.settings.midiPlaybackEnabled) return;
     void audioEngineRef.current.playNote(event.midi, event.velocity, event.durationMs, store.settings.synthPreset);
-  }, [store.settings.synthPreset]);
+  }, [store.settings.midiPlaybackEnabled, store.settings.synthPreset, store.source.type]);
 
   const onEnded = useCallback(() => {
     store.finishPlayback();

@@ -4,9 +4,10 @@ import { presetById, type RhythmicPresetId } from "../lib/studioPresets";
 
 export function useRhythmicPresetActions(store: RhythmicStudioStore) {
   const applyQuickPreset = useCallback((id: RhythmicPresetId) => {
-    // A manual preset choice is allowed to establish its designed marble identity.
-    // The backdrop stays locked. Once Auto Mix is running, the marble/VFX are then
-    // treated as user-owned and remain unchanged across subsequent preset segments.
+    // Manual selection must take ownership immediately. Leaving Auto Mix enabled
+    // would make the UI look unresponsive because the time-based resolver keeps
+    // replacing the manually selected preset on the next render frame.
+    if (store.presetMixEnabled) store.setPresetMixEnabled(false);
     const preset = presetById(id).settings;
     const lockedBackground = {
       backgroundPreset: store.settings.backgroundPreset,

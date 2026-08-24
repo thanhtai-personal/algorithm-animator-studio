@@ -5,6 +5,7 @@ import { buildRhythmicTimeline, timelineDuration } from "../lib/timeline";
 import type { LyricFormat } from "../lib/lyrics";
 import type { RhythmicTextKey } from "../i18n";
 import type { RhythmicPresetId } from "../lib/studioPresets";
+import { normalizeBackgroundPreset } from "../types";
 import type {
   AudioSourceMeta,
   CourseItemOverride,
@@ -13,7 +14,6 @@ import type {
   StoredProject,
   StudioSettings,
   RhythmicRendererMode,
-  normalizeBackgroundPreset,
 } from "../types";
 
 export type MessageToken = { key: RhythmicTextKey; values?: Record<string, string | number> };

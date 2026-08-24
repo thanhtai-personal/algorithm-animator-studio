@@ -63,6 +63,7 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, refs: Canva
     const recorder = new MediaRecorder(stream, {
       mimeType,
       videoBitsPerSecond: store.settings.exportFps >= 120 ? 16_000_000 : 10_000_000,
+      audioBitsPerSecond: 192_000,
     });
     playback.recorderRef.current = recorder;
     chunksRef.current = [];

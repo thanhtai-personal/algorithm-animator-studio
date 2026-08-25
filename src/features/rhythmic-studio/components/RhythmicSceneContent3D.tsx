@@ -21,6 +21,7 @@ import {
   RHYTHMIC_CAMERA_Z,
   RHYTHMIC_UI_UPDATE_MS,
 } from "./rhythmicSceneMath3D";
+import { instrumentHitForPlatform } from "../lib/instrumentHitEvent";
 
 function RendererQuality({ recording }: { recording: boolean }) {
   const { gl } = useThree();
@@ -235,7 +236,8 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     const timeMs = Math.min(endMs, Math.max(0, performance.now() - playbackEpochRef.current));
     currentTimeRef.current = timeMs;
     while (nextNoteIndex.current < props.events.length && props.events[nextNoteIndex.current].timeMs <= timeMs) {
-      props.onNote(props.events[nextNoteIndex.current]);
+      const index = nextNoteIndex.current;
+      props.onNote(instrumentHitForPlatform(index, props.platforms, props.resolveSettings(index), props.courseOverrides));
       nextNoteIndex.current += 1;
     }
     syncScene(timeMs, delta);

@@ -13,6 +13,7 @@ import {
   VibraphoneBarMesh,
   XylophoneBarMesh,
 } from "./RhythmicShowcaseInstrumentMeshes3D";
+import { FlutePipeMesh, GongDiscMesh } from "./RhythmicWindMetalMeshes3D";
 
 export interface MeshProps {
   w: number;
@@ -374,6 +375,8 @@ export function PlatformMesh(props: MeshProps) {
   if (style === "pluck-pad") return <PluckPadMesh {...props} />;
   if (style === "vibraphone-bar") return <VibraphoneBarMesh {...props} />;
   if (style === "drum-disc") return <DrumDiscMesh {...props} />;
+  if (style === "gong-disc") return <GongDiscMesh {...props} />;
+  if (style === "flute-pipe") return <FlutePipeMesh {...props} />;
   if (style === "comet-pad") return <CometPadMesh {...props} />;
   return <StandardBarMesh {...props} />;
 }

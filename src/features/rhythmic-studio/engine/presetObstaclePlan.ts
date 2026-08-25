@@ -18,6 +18,8 @@ function widthScale(style: PlatformStyle) {
   if (style === "boomwhacker-tube") return 1.02;
   if (style === "pluck-pad") return 0.72;
   if (style === "drum-disc") return 0.7;
+  if (style === "gong-disc") return 0.76;
+  if (style === "flute-pipe") return 1.06;
   if (style === "instrument-pad") return 0.78;
   if (style === "instrument-cymbal") return 0.62;
   if (style === "instrument-rail") return 0.94;
@@ -37,11 +39,13 @@ function layoutScale(layout: InstrumentLayout, index: number) {
 }
 
 function corridorPattern(index: number): PlatformStyle {
-  const section = Math.floor(index / 8) % 4;
+  const section = Math.floor(index / 8) % 6;
   if (section === 0) return index % 4 === 0 ? "instrument-cymbal" : "instrument-rail";
   if (section === 1) return index % 5 === 0 ? "vibraphone-bar" : "instrument-pad";
   if (section === 2) return index % 4 === 3 ? "pluck-pad" : "piano-key";
-  return index % 3 === 1 ? "instrument-wire" : "instrument-pad";
+  if (section === 3) return index % 3 === 1 ? "instrument-wire" : "instrument-pad";
+  if (section === 4) return index % 3 === 0 ? "gong-disc" : "instrument-cymbal";
+  return index % 3 === 1 ? "flute-pipe" : "xylophone-bar";
 }
 
 function familyPattern(family: InstrumentFamily, index: number): PlatformStyle {
@@ -51,9 +55,11 @@ function familyPattern(family: InstrumentFamily, index: number): PlatformStyle {
   if (family === "marimba") return index % 8 === 5 ? "drum-disc" : "marimba-bar";
   if (family === "pluck") return index % 6 === 4 ? "instrument-wire" : "pluck-pad";
   if (family === "vibraphone") return index % 10 === 8 ? "instrument-rail" : "vibraphone-bar";
+  if (family === "gong") return "gong-disc";
+  if (family === "flute") return "flute-pipe";
   if (family === "mixed") {
-    const section = Math.floor(index / 12) % 6;
-    return familyPattern((["boomwhacker", "xylophone", "piano", "marimba", "pluck", "vibraphone"] as const)[section], index);
+    const section = Math.floor(index / 12) % 8;
+    return familyPattern((["boomwhacker", "xylophone", "piano", "marimba", "pluck", "vibraphone", "gong", "flute"] as const)[section], index);
   }
   return "instrument-key";
 }

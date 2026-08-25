@@ -2,17 +2,20 @@ import { useEffect, useRef, useState } from "react";
 import type { MutableRefObject } from "react";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { rhythmicText } from "../i18n";
-import type { CourseItemOverride, LyricCue, NoteEvent, StudioSettings } from "../types";
+import type { CourseItemOverride, InstrumentHitEvent, LyricCue, NoteEvent, StudioSettings } from "../types";
 import { clamp, marbleAtTime } from "../lib/marbleCourse";
 import type { MarblePlatform } from "../engine/marblePhysicsTypes";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 import { presetCameraAnchorX, unprojectPresetCamera } from "../lib/presetCamera";
 import { drawRhythmicFrame } from "../lib/rhythmicFrameRenderer";
+import { instrumentHitForPlatform } from "../lib/instrumentHitEvent";
 
 interface Props {
   events: NoteEvent[];
   settings: StudioSettings;
   durationMs: number;
+  frameWidth: number;
+  frameHeight: number;
   playing: boolean;
   playbackToken: number;
   playbackStartMs: number;
@@ -24,7 +27,7 @@ interface Props {
   onSelectNode: (index: number | null) => void;
   recording: boolean;
   targetFps: number;
-  onNote: (event: NoteEvent) => void;
+  onNote: (hit: InstrumentHitEvent) => void;
   onTime: (timeMs: number) => void;
   onEnded: () => void;
   canvasRef: MutableRefObject<HTMLCanvasElement | null>;
@@ -32,8 +35,6 @@ interface Props {
   resolveSettings: StudioSettingsResolver;
 }
 
-const WIDTH = 720;
-const HEIGHT = 1280;
 const PREVIEW_FPS = 45;
 
 function contextFor(canvas: HTMLCanvasElement | null) {
@@ -53,7 +54,7 @@ function firstEventAtOrAfter(events: NoteEvent[], timeMs: number) {
   return low;
 }
 
-export function RhythmicCanvas({ events, settings, durationMs, playing, playbackToken, playbackStartMs, playbackEndMs, backgroundUrl, lyrics, courseOverrides, selectedNodeIndex, onSelectNode, recording, targetFps, onNote, onTime, onEnded, canvasRef, platforms, resolveSettings }: Props) {
+export function RhythmicCanvas({ events, settings, durationMs, frameWidth, frameHeight, playing, playbackToken, playbackStartMs, playbackEndMs, backgroundUrl, lyrics, courseOverrides, selectedNodeIndex, onSelectNode, recording, targetFps, onNote, onTime, onEnded, canvasRef, platforms, resolveSettings }: Props) {
   const lang = useSystemLang();
   const beatLabel = rhythmicText(lang, "canvas.beats");
   const [backgroundImage, setBackgroundImage] = useState<HTMLImageElement | null>(null);
@@ -81,15 +82,15 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
     if (!ctx) return;
     const point = marbleAtTime(currentTime.current, events, platforms, settings, courseOverrides, resolveSettings);
     const frameSettings = resolveSettings(point.platformIndex);
-    cameraX.current = point.x - WIDTH * presetCameraAnchorX(frameSettings);
-    cameraY.current = point.y - HEIGHT * frameSettings.cameraAnchor;
+    cameraX.current = point.x - frameWidth * presetCameraAnchorX(frameSettings);
+    cameraY.current = point.y - frameHeight * frameSettings.cameraAnchor;
     const frame = requestAnimationFrame(() => drawRhythmicFrame({
-      ctx, width: WIDTH, height: HEIGHT, timeMs: currentTime.current, events, platforms,
+      ctx, width: frameWidth, height: frameHeight, timeMs: currentTime.current, events, platforms,
       cameraX: cameraX.current, cameraY: cameraY.current, durationMs, settings: frameSettings, beatLabel,
       backgroundImage, lyrics, courseOverrides, selectedNodeIndex, recording, quality: "idle",
     }));
     return () => cancelAnimationFrame(frame);
-  }, [backgroundImage, beatLabel, canvasRef, courseOverrides, durationMs, events, lyrics, platforms, recording, resolveSettings, selectedNodeIndex, settings]);
+  }, [backgroundImage, beatLabel, canvasRef, courseOverrides, durationMs, events, frameHeight, frameWidth, lyrics, platforms, recording, resolveSettings, selectedNodeIndex, settings]);
 
   useEffect(() => {
     if (previousToken.current === playbackToken) return;
@@ -98,10 +99,10 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
     nextNoteIndex.current = firstEventAtOrAfter(events, playbackStartMs);
     const point = marbleAtTime(playbackStartMs, events, platforms, settings, courseOverrides, resolveSettings);
     const frameSettings = resolveSettings(point.platformIndex);
-    cameraX.current = point.x - WIDTH * presetCameraAnchorX(frameSettings);
-    cameraY.current = point.y - HEIGHT * frameSettings.cameraAnchor;
+    cameraX.current = point.x - frameWidth * presetCameraAnchorX(frameSettings);
+    cameraY.current = point.y - frameHeight * frameSettings.cameraAnchor;
     onTime(playbackStartMs);
-  }, [courseOverrides, events, onTime, playbackStartMs, playbackToken, platforms, resolveSettings, settings]);
+  }, [courseOverrides, events, frameHeight, frameWidth, onTime, playbackStartMs, playbackToken, platforms, resolveSettings, settings]);
 
   useEffect(() => {
     const cancelScheduled = () => {
@@ -127,13 +128,14 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
       const time = now - start;
       currentTime.current = time;
       while (nextNoteIndex.current < events.length && events[nextNoteIndex.current].timeMs <= time) {
-        onNote(events[nextNoteIndex.current]);
+        const index = nextNoteIndex.current;
+        onNote(instrumentHitForPlatform(index, platforms, resolveSettings(index), courseOverrides));
         nextNoteIndex.current += 1;
       }
       const marble = marbleAtTime(time, events, platforms, settings, courseOverrides, resolveSettings);
       const frameSettings = resolveSettings(marble.platformIndex);
-      const targetCameraX = marble.x - WIDTH * presetCameraAnchorX(frameSettings);
-      const targetCameraY = marble.y - HEIGHT * frameSettings.cameraAnchor;
+      const targetCameraX = marble.x - frameWidth * presetCameraAnchorX(frameSettings);
+      const targetCameraY = marble.y - frameHeight * frameSettings.cameraAnchor;
       // Treat cameraSmoothing as a 60fps response value, then normalize it for
       // the actual frame duration. This removes the slow/floaty camera at 30-45fps.
       const baseCameraEase = clamp(frameSettings.cameraSmoothing, 0.03, 1);
@@ -142,7 +144,7 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
       cameraX.current += (targetCameraX - cameraX.current) * cameraEase;
       cameraY.current += (targetCameraY - cameraY.current) * cameraEase;
       drawRhythmicFrame({
-        ctx, width: WIDTH, height: HEIGHT, timeMs: time, events, platforms,
+        ctx, width: frameWidth, height: frameHeight, timeMs: time, events, platforms,
         cameraX: cameraX.current, cameraY: cameraY.current, durationMs, settings: frameSettings, beatLabel,
         backgroundImage, lyrics, courseOverrides, selectedNodeIndex, recording, quality: "live",
       });
@@ -152,17 +154,17 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
     };
     scheduleNext(loop);
     return cancelScheduled;
-  }, [backgroundImage, beatLabel, canvasRef, courseOverrides, durationMs, events, lyrics, onEnded, onNote, onTime, playbackEndMs, platforms, playing, playbackToken, recording, resolveSettings, selectedNodeIndex, settings, targetFps]);
+  }, [backgroundImage, beatLabel, canvasRef, courseOverrides, durationMs, events, frameHeight, frameWidth, lyrics, onEnded, onNote, onTime, playbackEndMs, platforms, playing, playbackToken, recording, resolveSettings, selectedNodeIndex, settings, targetFps]);
 
   const selectAtPointer = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const screenX = (clientX - rect.left) * WIDTH / rect.width;
-    const screenY = (clientY - rect.top) * HEIGHT / rect.height;
+    const screenX = (clientX - rect.left) * frameWidth / rect.width;
+    const screenY = (clientY - rect.top) * frameHeight / rect.height;
     const currentPoint = marbleAtTime(currentTime.current, events, platforms, settings, courseOverrides, resolveSettings);
     const frameSettings = resolveSettings(currentPoint.platformIndex);
-    const projected = unprojectPresetCamera({ x: screenX, y: screenY }, frameSettings, WIDTH, HEIGHT);
+    const projected = unprojectPresetCamera({ x: screenX, y: screenY }, frameSettings, frameWidth, frameHeight);
     const x = projected.x + cameraX.current;
     const worldY = projected.y + cameraY.current;
     let bestIndex: number | null = null;
@@ -176,5 +178,5 @@ export function RhythmicCanvas({ events, settings, durationMs, playing, playback
     onSelectNode(bestIndex);
   };
 
-  return <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} onClick={(event) => selectAtPointer(event.clientX, event.clientY)} className="block h-auto max-h-[66vh] w-auto max-w-full cursor-crosshair rounded-xl" />;
+  return <canvas ref={canvasRef} width={frameWidth} height={frameHeight} onClick={(event) => selectAtPointer(event.clientX, event.clientY)} className="block h-auto max-h-[66vh] w-auto max-w-full cursor-crosshair rounded-xl" />;
 }

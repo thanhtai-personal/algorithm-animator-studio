@@ -2,9 +2,11 @@
 
 ## Status
 
-Awaiting human approval before implementation.
+Approved and implemented on 2026-08-25.
 
-## Assumptions to approve
+Acceptance evidence: all 166 repository tests and the production build pass. A targeted browser export was probed as VP9 1280×720 with stereo Opus audio; the 2D backing canvas and 3D preview both use 16:9 framing without stretching. Portrait and explicit 2D mode remain available.
+
+## Approved decisions
 
 1. The new horizontal option is 16:9 at 1280×720. The existing portrait option remains 9:16 at 720×1280.
 2. Selecting an output size changes the stage preview immediately so the recorded framing is visible before export.
@@ -202,19 +204,19 @@ Run one deliberate automated-browser session after unit/integration tests and bu
 
 ## Implementation tasks
 
-- [ ] Task 1: Add failing tests and the canonical output-size contract.
+- [x] Task 1: Add failing tests and the canonical output-size contract.
   - Acceptance: tests prove exact size mapping and backward-compatible normalization.
   - Verify: focused unit test command.
   - Files: output-size helper, settings types/defaults, unit tests.
-- [ ] Task 2: Add the localized selector and responsive preview dimensions.
+- [x] Task 2: Add the localized selector and responsive preview dimensions.
   - Acceptance: paused preview switches between exact portrait and landscape framing; recording locks the choice.
   - Verify: component tests and focused build.
   - Files: trim panel, stage, 2D/3D wrappers, translations, component tests split into increments.
-- [ ] Task 3: Make export surface and status dimension-aware.
+- [x] Task 3: Make export surface and status dimension-aware.
   - Acceptance: both full and clipped exports use the selected native dimensions.
   - Verify: export helper tests and build.
   - Files: export hook/helper, production status, tests.
-- [ ] Task 4: Run regression and encoded-output verification.
+- [x] Task 4: Run regression and encoded-output verification.
   - Acceptance: portrait and landscape files report correct dimensions; 2D/3D framing and audio remain valid; no artifacts remain.
   - Verify: focused tests, full `npm test`, `npm run build`, one cleaned browser run and ffprobe evidence.
 
@@ -228,7 +230,3 @@ Run one deliberate automated-browser session after unit/integration tests and bu
 - Older projects open as portrait; saved landscape projects reopen as landscape.
 - MIDI timing, collision audio, shadows and note-colored lighting do not regress.
 - Tests and production build pass, and browser/export artifacts are removed.
-
-## Open question
-
-Human approval is required before implementation. Reply `Duyệt đặc tả` to approve both this landscape-export spec and the pending instrument-audio/note-lighting spec, or state any requested change (for example, add 1920×1080 now).

@@ -5,7 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { formatClipTime, trimText } from "../trimI18n";
 import type { ExportFormat } from "@/pages/studio/exportFormats";
-import { EXPORT_FPS_OPTIONS, type ExportFps } from "../types";
+import { EXPORT_FPS_OPTIONS, type ExportFps, type RhythmicOutputPreset } from "../types";
 
 interface Props {
   durationMs: number;
@@ -14,11 +14,14 @@ interface Props {
   trimEndMs: number;
   playingClip: boolean;
   recording: boolean;
+  outputLocked?: boolean;
   exportFps: ExportFps;
+  outputPreset: RhythmicOutputPreset;
   onRangeChange: (startMs: number, endMs: number) => void;
   onPreview: () => void;
   onExport: (format: ExportFormat) => void;
   onFpsChange: (fps: ExportFps) => void;
+  onOutputPresetChange: (preset: RhythmicOutputPreset) => void;
 }
 
 const MIN_CLIP_MS = 1000;
@@ -66,8 +69,18 @@ export function RhythmicTrimPanel(props: Props) {
       <div className="w-36 space-y-1.5">
         <span className="text-xs text-muted-foreground">{t("fps")}</span>
         <Select value={String(props.exportFps)} onValueChange={(value) => props.onFpsChange(Number(value) as ExportFps)}>
-          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-9" disabled={props.recording} aria-label={t("fps")}><SelectValue /></SelectTrigger>
           <SelectContent>{EXPORT_FPS_OPTIONS.map((fps) => <SelectItem key={fps} value={String(fps)}>{fps} FPS</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      <div className="w-64 max-w-full space-y-1.5">
+        <span className="text-xs text-muted-foreground">{t("outputSize")}</span>
+        <Select value={props.outputPreset} onValueChange={(value) => props.onOutputPresetChange(value as RhythmicOutputPreset)}>
+          <SelectTrigger className="h-9" disabled={props.recording || props.outputLocked} aria-label={t("outputSize")}><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="portrait-720p">{t("portrait720p")}</SelectItem>
+            <SelectItem value="landscape-720p">{t("landscape720p")}</SelectItem>
+          </SelectContent>
         </Select>
       </div>
       <Button type="button" variant="outline" disabled={props.recording} onClick={props.onPreview}>

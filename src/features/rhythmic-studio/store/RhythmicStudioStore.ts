@@ -3,6 +3,7 @@ import { BUILTIN_MELODIES, DEFAULT_SETTINGS } from "../defaults";
 import { listRhythmicProjects } from "../lib/projectStorage";
 import { buildRhythmicTimeline, timelineDuration } from "../lib/timeline";
 import { settingsForBallStyle } from "../lib/ballStyleProfiles";
+import { normalizeRhythmicOutputPreset } from "../lib/outputSize";
 import type { LyricFormat } from "../lib/lyrics";
 import type { RhythmicTextKey } from "../i18n";
 import type { RhythmicPresetId } from "../lib/studioPresets";
@@ -105,6 +106,7 @@ export class RhythmicStudioStore {
   replaceSettings(settings: StudioSettings) {
     const next = { ...DEFAULT_SETTINGS, ...settings };
     next.backgroundPreset = normalizeBackgroundPreset(next.backgroundPreset);
+    next.outputPreset = normalizeRhythmicOutputPreset(next.outputPreset);
     this.settings = next;
     this.activePresetId = null;
   }

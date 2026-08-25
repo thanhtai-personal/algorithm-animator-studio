@@ -15,6 +15,7 @@ import { buildPresetMixPlan, createPresetMixSettingsResolver } from "../lib/pres
 import { usePreparedMarbleCourse, type PreparedMarbleCourse } from "../hooks/usePreparedMarbleCourse";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 import { RHYTHMIC_COURSE_WIDTH } from "./RhythmicMotion3D";
+import { rhythmicOutputSize, type RhythmicOutputSize } from "../lib/outputSize";
 
 type Studio = ReturnType<typeof useRhythmicStudio>;
 
@@ -40,11 +41,12 @@ function CoursePreparationOverlay({ progress, label }: { progress: number; label
 
 type Translate = (key: Parameters<typeof rhythmicText>[1]) => string;
 
-function StageStatus({ studio, preparing, statusLabel, useThreeRenderer }: {
+function StageStatus({ studio, preparing, statusLabel, useThreeRenderer, outputSize }: {
   studio: Studio;
   preparing: boolean;
   statusLabel: string;
   useThreeRenderer: boolean;
+  outputSize: RhythmicOutputSize;
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card/60 px-3 py-2">
@@ -53,8 +55,8 @@ function StageStatus({ studio, preparing, statusLabel, useThreeRenderer }: {
         <span className="text-sm font-medium">{preparing ? statusLabel : studio.status}</span>
       </div>
       <div className="flex gap-2">
-        <Badge variant="secondary">9:16</Badge>
-        <Badge variant="outline">720×1280</Badge>
+        <Badge variant="secondary">{outputSize.aspectLabel}</Badge>
+        <Badge variant="outline">{outputSize.resolutionLabel}</Badge>
         <Badge variant="outline">{studio.settings.exportFps} FPS</Badge>
         {studio.presetMixEnabled ? <Badge variant="secondary">Preset Mix</Badge> : null}
         {useThreeRenderer ? <Badge variant="secondary">3D WebGL</Badge> : null}
@@ -92,17 +94,21 @@ function RendererSelector({ studio, webglAvailable, useThreeRenderer, locked, t,
   );
 }
 
-function PreparedScene({ studio, course, courseReady, useThreeRenderer, resolveSettings, preparingLabel }: {
+function PreparedScene({ studio, course, courseReady, useThreeRenderer, resolveSettings, preparingLabel, outputSize }: {
   studio: Studio;
   course: PreparedMarbleCourse;
   courseReady: boolean;
   useThreeRenderer: boolean;
   resolveSettings: StudioSettingsResolver;
   preparingLabel: string;
+  outputSize: RhythmicOutputSize;
 }) {
   if (!courseReady) {
     return (
-      <div className="grid aspect-[9/16] h-[66vh] max-h-[1280px] max-w-full place-items-center rounded-xl bg-slate-950 px-6 text-center text-sm text-white/70">
+      <div
+        className="grid max-h-[66vh] max-w-full place-items-center rounded-xl bg-slate-950 px-6 text-center text-sm text-white/70"
+        style={{ aspectRatio: `${outputSize.width} / ${outputSize.height}`, width: `min(100%, calc(66vh * ${outputSize.width / outputSize.height}))` }}
+      >
         {course.error ?? preparingLabel}
       </div>
     );
@@ -113,6 +119,8 @@ function PreparedScene({ studio, course, courseReady, useThreeRenderer, resolveS
         events={studio.timeline}
         settings={studio.settings}
         durationMs={studio.durationMs}
+        frameWidth={outputSize.width}
+        frameHeight={outputSize.height}
         timeMs={studio.timeMs}
         playing={studio.playing}
         recording={studio.recording}
@@ -137,6 +145,8 @@ function PreparedScene({ studio, course, courseReady, useThreeRenderer, resolveS
       events={studio.timeline}
       settings={studio.settings}
       durationMs={studio.durationMs}
+      frameWidth={outputSize.width}
+      frameHeight={outputSize.height}
       playing={studio.playing}
       playbackToken={studio.playbackToken}
       playbackStartMs={studio.playbackStartMs}
@@ -180,6 +190,7 @@ export function RhythmicStage({ studio }: { studio: Studio }) {
   const t: Translate = (key) => rhythmicText(lang, key);
   const webglAvailable = useMemo(() => hasRhythmicWebGLSupport(), []);
   const useThreeRenderer = studio.rendererMode === "three" && webglAvailable;
+  const outputSize = rhythmicOutputSize(studio.settings.outputPreset);
   const mixPlan = useMemo(() => buildPresetMixPlan(studio.timeline, studio.presetMixEnabled, studio.presetMixSeed), [studio.presetMixEnabled, studio.presetMixSeed, studio.timeline]);
   const resolveSettings = useMemo(() => createPresetMixSettingsResolver(studio.settings, mixPlan), [mixPlan, studio.settings]);
   const course = usePreparedMarbleCourse(studio.timeline, studio.settings, RHYTHMIC_COURSE_WIDTH, studio.presetMixEnabled, studio.presetMixSeed);
@@ -188,8 +199,8 @@ export function RhythmicStage({ studio }: { studio: Studio }) {
   const preparingLabel = t("status.preparingCourse");
 
   return <section className="rhythmic-stage min-w-0 space-y-3">
-    <StageStatus studio={studio} preparing={course.isPreparing} statusLabel={preparingLabel} useThreeRenderer={useThreeRenderer} />
-    <RhythmicProductionStrip events={studio.timeline} timeMs={studio.timeMs} durationMs={studio.durationMs} sourceType={studio.source.type} rendererMode={studio.rendererMode} webglAvailable={webglAvailable} exportFps={studio.settings.exportFps} />
+    <StageStatus studio={studio} preparing={course.isPreparing} statusLabel={preparingLabel} useThreeRenderer={useThreeRenderer} outputSize={outputSize} />
+    <RhythmicProductionStrip events={studio.timeline} timeMs={studio.timeMs} durationMs={studio.durationMs} sourceType={studio.source.type} rendererMode={studio.rendererMode} webglAvailable={webglAvailable} exportFps={studio.settings.exportFps} outputPreset={outputSize.preset} />
     <RendererSelector
       studio={studio}
       webglAvailable={webglAvailable}
@@ -203,11 +214,11 @@ export function RhythmicStage({ studio }: { studio: Studio }) {
     />
     {!webglAvailable && studio.rendererMode === "three" ? <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">{t("renderer.unavailable")}</p> : null}
     <div className="mx-auto flex max-h-[68vh] justify-center overflow-hidden rounded-2xl border bg-black p-2 shadow-2xl">
-      <PreparedScene studio={studio} course={course} courseReady={courseReady} useThreeRenderer={useThreeRenderer} resolveSettings={resolveSettings} preparingLabel={preparingLabel} />
+      <PreparedScene studio={studio} course={course} courseReady={courseReady} useThreeRenderer={useThreeRenderer} resolveSettings={resolveSettings} preparingLabel={preparingLabel} outputSize={outputSize} />
     </div>
     <TransportControls studio={studio} courseReady={courseReady} t={t} />
     <RhythmicTimeline events={studio.timeline} timeMs={studio.timeMs} durationMs={studio.durationMs} trimStartMs={studio.trimStartMs} trimEndMs={studio.trimEndMs} onSeek={studio.recording ? undefined : (timeMs) => void studio.seekPlayback(timeMs)} />
-    <RhythmicTrimPanel durationMs={studio.durationMs} timeMs={studio.timeMs} trimStartMs={studio.trimStartMs} trimEndMs={studio.trimEndMs} playingClip={studio.playingClip} recording={studio.recording} exportFps={studio.settings.exportFps} onFpsChange={(fps) => studio.patch("exportFps", fps)} onRangeChange={studio.setTrimRange} onPreview={() => void studio.previewTrim()} onExport={(format) => void studio.recordVideo(format, true)} />
+    <RhythmicTrimPanel durationMs={studio.durationMs} timeMs={studio.timeMs} trimStartMs={studio.trimStartMs} trimEndMs={studio.trimEndMs} playingClip={studio.playingClip} recording={studio.recording} outputLocked={studio.playing} exportFps={studio.settings.exportFps} outputPreset={outputSize.preset} onFpsChange={(fps) => studio.patch("exportFps", fps)} onOutputPresetChange={(preset) => studio.patch("outputPreset", preset)} onRangeChange={studio.setTrimRange} onPreview={() => void studio.previewTrim()} onExport={(format) => void studio.recordVideo(format, true)} />
     {course.isPreparing ? <CoursePreparationOverlay progress={course.progress} label={preparingLabel} /> : null}
   </section>;
 }

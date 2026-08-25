@@ -4,6 +4,8 @@ import { useSystemLang } from "@/hooks/use-system-lang";
 import { getExportFormat, type ExportFormat } from "@/pages/studio/exportFormats";
 import { rhythmicText } from "../i18n";
 import { downloadRhythmicBlob, pickRecordingMimeType } from "../lib/rhythmicExport";
+import { createFixedRhythmicExportSurface } from "../lib/rhythmicExportSurface";
+import { rhythmicOutputSize } from "../lib/outputSize";
 import { useRhythmicExportMutation } from "../queries/useRhythmicExportMutation";
 import type { AudioEngine } from "../lib/audioEngine";
 import type { RhythmicStudioStore } from "../store/RhythmicStudioStore";
@@ -28,43 +30,6 @@ type CanvasRefs = {
 function currentCanvas(store: RhythmicStudioStore, refs: CanvasRefs) {
   if (store.rendererMode === "three" && refs.threeCanvasRef.current) return refs.threeCanvasRef.current;
   return refs.legacyCanvasRef.current;
-}
-
-function createFixedExportSurface(source: HTMLCanvasElement) {
-  const output = document.createElement("canvas");
-  output.width = 720;
-  output.height = 1280;
-  const context = output.getContext("2d", { alpha: false });
-  if (!context) return { canvas: source, stop: () => undefined };
-  context.imageSmoothingEnabled = true;
-  context.imageSmoothingQuality = "high";
-
-  let stopped = false;
-  let raf = 0;
-
-  const paint = (image: CanvasImageSource) => {
-    context.fillStyle = "#000000";
-    context.fillRect(0, 0, output.width, output.height);
-    context.drawImage(image, 0, 0, output.width, output.height);
-  };
-
-  // Both renderers preserve a complete presented frame. Copying that frame
-  // directly avoids a WebGL canvas -> MediaStream -> video relay, which dropped
-  // most frames on otherwise capable GPUs and could produce a zero-byte export.
-  const copy = () => {
-    if (stopped) return;
-    paint(source);
-    raf = window.requestAnimationFrame(copy);
-  };
-  copy();
-
-  return {
-    canvas: output,
-    stop: () => {
-      stopped = true;
-      window.cancelAnimationFrame(raf);
-    },
-  };
 }
 
 export function useRhythmicExportActions(store: RhythmicStudioStore, refs: CanvasRefs, playback: PlaybackDeps) {
@@ -93,7 +58,8 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, refs: Canva
     // Record from a fixed 720x1280 surface instead of the responsive WebGL
     // drawing buffer. The latter follows CSS size × DPR and produced files such
     // as 744x1324 depending on the browser window.
-    const exportSurface = createFixedExportSurface(canvas);
+    const outputSize = rhythmicOutputSize(store.settings.outputPreset);
+    const exportSurface = createFixedRhythmicExportSurface(canvas, outputSize.preset);
     const videoStream = exportSurface.canvas.captureStream(store.settings.exportFps);
     // Never put the AudioEngine's shared destination track directly into the export
     // stream: stopping that stream would permanently end audio for later exports.
@@ -135,7 +101,15 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, refs: Canva
     };
     recorder.start(250);
     store.setRecording(true, format);
-    store.setStatus({ key: "status.recording", values: { format: exportFormat.label, fps: store.settings.exportFps } });
+    store.setStatus({
+      key: "status.recording",
+      values: {
+        format: exportFormat.label,
+        fps: store.settings.exportFps,
+        aspect: outputSize.aspectLabel,
+        resolution: outputSize.resolutionLabel,
+      },
+    });
     await new Promise((resolve) => window.setTimeout(resolve, 80));
     if (clipOnly) await playback.playRange(store.trimStartMs, store.trimEndMs, true);
     else await playback.resetAndPlay();

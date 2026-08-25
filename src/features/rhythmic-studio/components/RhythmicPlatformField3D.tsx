@@ -6,8 +6,11 @@ import { isPlatformCourseItem, overrideForNode } from "../lib/courseItems";
 import { RHYTHMIC_COURSE_WIDTH, RHYTHMIC_WORLD_SCALE } from "./RhythmicMotion3D";
 import { PlatformMesh } from "./RhythmicPlatformMeshes3D";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
-import { CHORD_GAP_MS } from "../engine/denseInstrumentRuns";
 import { wallMountProfile } from "./rhythmicSceneMath3D";
+import { instrumentLightAtTime } from "../lib/instrumentLight";
+import { isNoteLitInstrumentStyle, noteLightColorsForPlatform } from "../lib/instrumentLightsModel";
+import { RhythmicInstrumentNoteLights3D } from "./RhythmicInstrumentNoteLights3D";
+import { platformsMountedFor3D } from "../lib/platformViewport";
 
 function PhysicalMount({ terrain, w, h, detail, showcase, frontDepth, style }: {
   terrain: StudioSettings["terrainProfile"];
@@ -84,12 +87,13 @@ function PhysicalMount({ terrain, w, h, detail, showcase, frontDepth, style }: {
 
 function frontDepthForStyle(style: string, h: number, d: number) {
   if (style === "boomwhacker-tube" || style === "tube-cylinder" || style === "toy-tube" || style === "toy-peg" || style.includes("tube")) return Math.max(0.1, h * 0.56);
-  if (style === "instrument-cymbal" || style === "drum-disc") return Math.max(0.08, h * 0.6);
+  if (style === "instrument-cymbal" || style === "drum-disc" || style === "gong-disc") return Math.max(0.08, h * 0.6);
+  if (style === "flute-pipe") return Math.max(0.1, h * 0.52);
   if (style.includes("rail") || style === "instrument-wire") return Math.max(0.055, h * 0.24);
   return d * 0.5;
 }
 
-export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, focusIndex, selectedNodeIndex, onSelectNode, resolveSettings, impactIndex, impactStrength, timeMs }: {
+export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, selectedNodeIndex, onSelectNode, resolveSettings, impactIndex, impactStrength, timeMs }: {
   platforms: MarblePlatform[];
   settings: StudioSettings;
   courseOverrides: CourseItemOverride[];
@@ -101,43 +105,7 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
   impactStrength: number;
   timeMs: number;
 }) {
-  const visible = useMemo(() => {
-    const focusSettings = resolveSettings?.(focusIndex) ?? settings;
-    const focusPlatform = platforms[Math.max(0, Math.min(platforms.length - 1, focusIndex))];
-    const focusTimeMs = focusPlatform?.event.timeMs ?? 0;
-
-    let strikes = 0;
-    let previousStrikeMs = Number.NEGATIVE_INFINITY;
-    for (const platform of platforms) {
-      if (platform.event.timeMs < focusTimeMs - 450) continue;
-      if (platform.event.timeMs > focusTimeMs + 1450) break;
-      if (platform.event.timeMs - previousStrikeMs > CHORD_GAP_MS) {
-        strikes += 1;
-        previousStrikeMs = platform.event.timeMs;
-      }
-    }
-    const strikeRate = strikes / 1.9;
-    const crowding = Math.min(1, Math.max(0, (strikeRate - 3.2) / 4.8));
-    const profileAhead = focusSettings.terrainProfile === "xylophone" ? 3300 : 3000;
-    const behindMs = Math.round(1150 - crowding * 260);
-    const aheadMs = Math.round(profileAhead - crowding * 760);
-    const startMs = focusTimeMs - behindMs;
-    const endMs = focusTimeMs + aheadMs;
-    const base = platforms.filter((platform) => platform.event.timeMs >= startMs && platform.event.timeMs <= endMs);
-
-    // Keep a small overscan for a dense surface already entering the frame, but do
-    // not reveal an entire long MIDI phrase. This prevents support rails from
-    // popping at each planner-module seam without restoring the old screen clutter.
-    const activeSurfaceIds = new Set(base.flatMap((platform) => platform.denseSurfaceId === undefined ? [] : [platform.denseSurfaceId]));
-    if (!activeSurfaceIds.size) return base;
-    return platforms.filter((platform) => {
-      if (platform.event.timeMs >= startMs && platform.event.timeMs <= endMs) return true;
-      return platform.denseSurfaceId !== undefined
-        && activeSurfaceIds.has(platform.denseSurfaceId)
-        && platform.event.timeMs >= startMs - 260
-        && platform.event.timeMs <= endMs + 420;
-    });
-  }, [focusIndex, platforms, resolveSettings, settings]);
+  const visible = useMemo(() => platformsMountedFor3D(platforms), [platforms]);
 
   const denseSupports = useMemo(() => {
     const activeSurfaceIds = new Set<number>();
@@ -213,25 +181,14 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
           : { x: platform.normalX, y: platform.normalY };
         const worldX = ((baseX - visualNormal.x * normalInset / RHYTHMIC_WORLD_SCALE) - RHYTHMIC_COURSE_WIDTH / 2) * RHYTHMIC_WORLD_SCALE;
         const worldY = -(baseY - visualNormal.y * normalInset / RHYTHMIC_WORLD_SCALE) * RHYTHMIC_WORLD_SCALE;
-        const hasBeenHit = platform.event.timeMs <= timeMs;
         const immediateHit = platform.index === impactIndex ? Math.max(0, impactStrength) : 0;
-        const ageMs = timeMs - platform.event.timeMs;
-        const denseKeyPulse = platform.denseRunId !== undefined && ageMs >= 0 && ageMs < 280
-          ? 1 - ageMs / 280
-          : 0;
-        // A continuous keyboard is one physical lane but each key is still one
-        // note. Dense keys therefore pulse independently and fade instead of all
-        // previously touched keys remaining latched on at once.
-        const latchedHit = platformSettings.impactPlatformLight && hasBeenHit && platform.denseRunId === undefined
-          ? 0.62 + immediateHit * 0.38
-          : 0;
-        const effectiveGlow = platform.denseRunId !== undefined
-          ? (0.08 + Math.max(denseKeyPulse, immediateHit) * (0.9 + platformSettings.platformGlow * 0.78))
-          : platformSettings.impactPlatformLight
-            ? latchedHit * (0.82 + platformSettings.platformGlow * 0.98)
-            : platformSettings.platformGlow;
+        const noteLight = instrumentLightAtTime(platform.event.timeMs, timeMs, platform.color).intensity;
+        const effectiveGlow = platformSettings.impactPlatformLight
+          ? 0.055 + Math.max(noteLight, immediateHit) * (0.94 + platformSettings.platformGlow * 0.78)
+          : platformSettings.platformGlow;
         const depth = d * (0.92 + platformSettings.platformDetail * 0.12);
         const frontDepth = frontDepthForStyle(style, h, depth);
+        const lightColors = noteLightColorsForPlatform(platform, platforms);
         return (
           <group
             key={platform.index}
@@ -248,6 +205,7 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
               <PhysicalMount terrain={platformSettings.terrainProfile} w={w} h={h} detail={platformSettings.platformDetail} showcase={platformSettings.instrumentFamily !== "auto"} frontDepth={frontDepth} style={style} />
             )}
             <PlatformMesh w={w} h={h} d={depth} color={platform.color} style={style} selected={platform.index === selectedNodeIndex} glow={effectiveGlow} detail={platformSettings.platformDetail} />
+            {isNoteLitInstrumentStyle(style) && <RhythmicInstrumentNoteLights3D width={w} height={h} frontDepth={frontDepth} colors={lightColors} glow={effectiveGlow} />}
           </group>
         );
       })}

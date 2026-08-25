@@ -4,7 +4,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { StudioSettings } from "../types";
 import { RhythmicBackplate3D } from "./RhythmicBackplate3D";
-import { RHYTHMIC_SHOWCASE_WALL_CENTER_Y, RHYTHMIC_SHOWCASE_WALL_HEIGHT } from "./rhythmicSceneMath3D";
+import { RHYTHMIC_ROOM_BACKDROP_WIDTH, RHYTHMIC_ROOM_SIDE_X, RHYTHMIC_SHOWCASE_WALL_CENTER_Y, RHYTHMIC_SHOWCASE_WALL_HEIGHT } from "./rhythmicSceneMath3D";
 
 export type EnvironmentKind = "tube-board" | "comet" | "xylophone" | "neutral";
 
@@ -116,13 +116,13 @@ function TubeBoardRoom() {
   const sections = useMemo(() => Array.from({ length: 12 }, (_, i) => i), []);
   return (
     <group>
-      <RoundedBox position={[0, -54, -4.45]} args={[16.9, 136, 0.56]} radius={0.14} smoothness={4} receiveShadow renderOrder={-30}>
+      <RoundedBox position={[0, -54, -4.45]} args={[RHYTHMIC_ROOM_BACKDROP_WIDTH, 136, 0.56]} radius={0.14} smoothness={4} receiveShadow renderOrder={-30}>
         <meshStandardMaterial color="#111a25" roughness={0.78} metalness={0.16} depthWrite={false} />
       </RoundedBox>
-      <RoundedBox position={[0, -54, -4.08]} args={[12.9, 126, 0.12]} radius={0.1} smoothness={4} receiveShadow renderOrder={-28}>
+      <RoundedBox position={[0, -54, -4.08]} args={[64, 126, 0.12]} radius={0.1} smoothness={4} receiveShadow renderOrder={-28}>
         <meshStandardMaterial color="#1a2d40" roughness={0.7} metalness={0.08} depthWrite={false} />
       </RoundedBox>
-      {[-8.9, 8.9].map((x) => (
+      {[-RHYTHMIC_ROOM_SIDE_X, RHYTHMIC_ROOM_SIDE_X].map((x) => (
         <mesh key={x} position={[x, -54, -4.06]} rotation={[0, x < 0 ? Math.PI / 2.86 : -Math.PI / 2.86, 0]} receiveShadow renderOrder={-26}>
           <planeGeometry args={[5.4, 136]} />
           <meshStandardMaterial color="#1d2a36" roughness={0.7} metalness={0.22} side={THREE.DoubleSide} depthWrite={false} />
@@ -234,16 +234,16 @@ function XylophoneRoom() {
   const accents = ["#f2b457", "#ef6d7a", "#59c7a3", "#74b6ff", "#9d7bf2", "#ff9f6b"];
   return (
     <group>
-      <RoundedBox position={[0, -54, -4.45]} args={[17.6, 136, 0.55]} radius={0.18} smoothness={4} receiveShadow renderOrder={-30}>
+      <RoundedBox position={[0, -54, -4.45]} args={[RHYTHMIC_ROOM_BACKDROP_WIDTH, 136, 0.55]} radius={0.18} smoothness={4} receiveShadow renderOrder={-30}>
         <meshStandardMaterial color="#d8d1c8" roughness={0.82} metalness={0.02} depthWrite={false} />
       </RoundedBox>
-      {[-8.9, 8.9].map((x) => (
+      {[-RHYTHMIC_ROOM_SIDE_X, RHYTHMIC_ROOM_SIDE_X].map((x) => (
         <mesh key={x} position={[x, -54, -4.1]} rotation={[0, x < 0 ? Math.PI / 2.82 : -Math.PI / 2.82, 0]} receiveShadow renderOrder={-28}>
           <planeGeometry args={[5.2, 136]} />
           <meshStandardMaterial color="#958778" roughness={0.78} metalness={0.02} side={THREE.DoubleSide} depthWrite={false} />
         </mesh>
       ))}
-      <RoundedBox position={[0, -54, -4.08]} args={[12.8, 96, 0.16]} radius={0.12} smoothness={4} receiveShadow renderOrder={-26}>
+      <RoundedBox position={[0, -54, -4.08]} args={[64, 96, 0.16]} radius={0.12} smoothness={4} receiveShadow renderOrder={-26}>
         <meshStandardMaterial color="#f2eee8" roughness={0.7} metalness={0.02} depthWrite={false} />
       </RoundedBox>
       {[-4.15, 4.15].map((x, index) => (
@@ -260,7 +260,7 @@ function XylophoneRoom() {
           <meshStandardMaterial color={index % 2 ? "#8cd4ff" : "#f2cc7a"} roughness={0.34} metalness={0.06} depthWrite={false} />
         </mesh>
       ))}
-      <RoundedBox position={[0, -55, -3.02]} args={[11.8, 92, 0.32]} radius={0.08} smoothness={4} receiveShadow>
+      <RoundedBox position={[0, -55, -3.02]} args={[60, 92, 0.32]} radius={0.08} smoothness={4} receiveShadow>
         <meshStandardMaterial color="#9f724d" roughness={0.74} metalness={0.02} />
       </RoundedBox>
       {floorSlats.map((index) => (
@@ -322,7 +322,7 @@ function ShowcaseWall({ color }: { color: string }) {
   const wall = new THREE.Color(color).lerp(new THREE.Color("#d7d1ca"), 0.38).getStyle();
   return (
     <group>
-      <RoundedBox position={[0, RHYTHMIC_SHOWCASE_WALL_CENTER_Y, -4.45]} args={[18.8, RHYTHMIC_SHOWCASE_WALL_HEIGHT, 0.42]} radius={0.12} smoothness={4} receiveShadow>
+      <RoundedBox position={[0, RHYTHMIC_SHOWCASE_WALL_CENTER_Y, -4.45]} args={[RHYTHMIC_ROOM_BACKDROP_WIDTH, RHYTHMIC_SHOWCASE_WALL_HEIGHT, 0.42]} radius={0.12} smoothness={4} receiveShadow>
         <meshStandardMaterial color={wall} roughness={0.86} metalness={0.01} />
       </RoundedBox>
       {[-8.85, 8.85].map((x) => (
@@ -339,10 +339,10 @@ function ShowcaseWall({ color }: { color: string }) {
 function NeutralStudio({ color }: { color: string }) {
   return (
     <group>
-      <RoundedBox position={[0, -54, -4]} args={[17, 136, 0.65]} radius={0.14} smoothness={4} receiveShadow>
+      <RoundedBox position={[0, -54, -4]} args={[RHYTHMIC_ROOM_BACKDROP_WIDTH, 136, 0.65]} radius={0.14} smoothness={4} receiveShadow>
         <meshStandardMaterial color={color} roughness={0.76} metalness={0.14} />
       </RoundedBox>
-      {[-7.9, 7.9].map((x) => (
+      {[-RHYTHMIC_ROOM_SIDE_X, RHYTHMIC_ROOM_SIDE_X].map((x) => (
         <mesh key={x} position={[x, -54, -0.75]} rotation={[0, x < 0 ? Math.PI / 2.55 : -Math.PI / 2.55, 0]} receiveShadow>
           <planeGeometry args={[7.8, 136]} />
           <meshStandardMaterial color="#111722" roughness={0.72} metalness={0.22} side={THREE.DoubleSide} />

@@ -3,6 +3,7 @@ import { DEFAULT_COLLISION_VOLUME } from './lib/audioMix';
 
 export const DEFAULT_SETTINGS: StudioSettings = {
   exportFps: 60,
+  outputPreset: "portrait-720p",
   titleText: 'MARBLE MUSIC',
   playbackSpeed: 1,
   syncOffsetMs: 0,
@@ -53,7 +54,7 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   synthStereoWidth: 0.28,
   midiPlaybackEnabled: true,
   midiInstrumentMode: 'single',
-  instrumentNativeAudio: false,
+  instrumentNativeAudio: true,
   platformWidth: 104,
   platformThickness: 28,
   platformGap: 152,

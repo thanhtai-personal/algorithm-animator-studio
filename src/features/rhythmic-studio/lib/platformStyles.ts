@@ -2,6 +2,9 @@ import type { PlatformMixMode, PlatformStyle, RenderQuality, StudioSettings } fr
 import { clamp, hexToRgb, mixHex, type MarblePlatform } from "./marbleCourse";
 import { drawPresetPlatform } from "./presetPlatformRenderer";
 import { presetObstaclePlan } from "../engine/presetObstaclePlan";
+import { instrumentLightAtTime } from "./instrumentLight";
+import { drawInstrumentNoteLeds2D, drawWindMetalPlatform2D } from "./windMetalPlatform2D";
+import { isNoteLitInstrumentStyle } from "./instrumentLightsModel";
 
 function hash(index: number, salt = 0) {
   const raw = Math.sin((index + salt) * 12.9898 + 78.233) * 43758.5453;
@@ -326,18 +329,21 @@ function drawPrism(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatfor
   }
 }
 
-export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: MarblePlatform, screenY: number, timeMs: number, settings: StudioSettings, forcedStyle?: PlatformStyle, renderQuality: RenderQuality = "live") {
+export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: MarblePlatform, screenY: number, timeMs: number, settings: StudioSettings, forcedStyle?: PlatformStyle, renderQuality: RenderQuality = "live", noteLightColors = [platform.color]) {
   const age = timeMs - platform.event.timeMs;
   const impact = age >= 0 && age < 320 ? 1 - age / 320 : 0;
+  const noteLight = instrumentLightAtTime(platform.event.timeMs, timeMs, platform.color).intensity;
   const lightImpact = settings.impactPlatformLight
-    ? (age >= 0 ? 0.68 + impact * 0.32 : 0)
+    ? noteLight
     : impact;
   const half = platform.width / 2;
   const style = forcedStyle ?? resolvePlatformStyle(platform.index, settings);
   ctx.save();
   ctx.translate(platform.x, screenY);
   ctx.rotate(platform.tiltRad);
-  if (drawPresetPlatform(ctx, style, half, platform, lightImpact, age, settings, renderQuality)) {
+  if (drawWindMetalPlatform2D(ctx, style, platform, lightImpact, settings, renderQuality === "idle")) {
+    // dedicated 2D gong/flute renderer already drew the item
+  } else if (drawPresetPlatform(ctx, style, half, platform, lightImpact, age, settings, renderQuality)) {
     // preset renderer already drew the item
   } else if (style === "neon-tube") drawNeonTube(ctx, half, platform, lightImpact, settings);
   else if (style === "neon-bar") drawNeonBar(ctx, half, platform, lightImpact, settings);
@@ -352,6 +358,9 @@ export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: Marb
   else if (style === "toy-tube") drawToyTube(ctx, half, platform, lightImpact, settings);
   else if (style.startsWith("glass-")) drawRealGlass(ctx, half, platform, lightImpact, settings, style);
   else drawPrism(ctx, half, platform, lightImpact, settings);
+  if (isNoteLitInstrumentStyle(style)) {
+    drawInstrumentNoteLeds2D(ctx, platform, noteLightColors, settings.impactPlatformLight ? lightImpact : 0, renderQuality === "idle");
+  }
   ctx.restore();
 
   if (settings.impactRipple && impact > 0) {

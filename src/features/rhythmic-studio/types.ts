@@ -5,6 +5,8 @@ export const SYNTH_PRESETS = [
   "vibraphone",
   "bell",
   "marimba",
+  "xylophone",
+  "boomwhacker",
   "kalimba",
   "glass",
   "steel-drum",
@@ -18,6 +20,10 @@ export const SYNTH_PRESETS = [
   "snare",
   "clap",
   "hihat",
+  "tom",
+  "cymbal",
+  "gong",
+  "flute",
   "whoosh",
 ] as const;
 
@@ -58,6 +64,8 @@ export const PLATFORM_STYLES = [
   "pluck-pad",
   "vibraphone-bar",
   "drum-disc",
+  "gong-disc",
+  "flute-pipe",
   "piano-keyboard",
 ] as const;
 
@@ -72,6 +80,8 @@ export const INSTRUMENT_FAMILIES = [
   "marimba",
   "pluck",
   "vibraphone",
+  "gong",
+  "flute",
   "mixed",
 ] as const;
 export type InstrumentFamily = (typeof INSTRUMENT_FAMILIES)[number];
@@ -118,6 +128,7 @@ export type RenderQuality = "idle" | "live";
 export type RhythmicRendererMode = "legacy" | "three";
 export const EXPORT_FPS_OPTIONS = [30, 60, 120] as const;
 export type ExportFps = (typeof EXPORT_FPS_OPTIONS)[number];
+export type RhythmicOutputPreset = "portrait-720p" | "landscape-720p";
 
 export const BACKGROUND_PRESETS = [
   "spotlight",
@@ -168,6 +179,15 @@ export interface NoteEvent {
   isDrum?: boolean;
 }
 
+export interface InstrumentHitEvent {
+  event: NoteEvent;
+  platformIndex: number;
+  platformStyle: PlatformStyle;
+  noteColor: string;
+  chordEvents: NoteEvent[];
+  chordColors: string[];
+}
+
 export interface AudioSourceMeta {
   type: "builtin" | "midi" | "audio";
   name: string;
@@ -177,6 +197,7 @@ export interface AudioSourceMeta {
 
 export interface StudioSettings {
   exportFps: ExportFps;
+  outputPreset: RhythmicOutputPreset;
   titleText: string;
   playbackSpeed: number;
   syncOffsetMs: number;

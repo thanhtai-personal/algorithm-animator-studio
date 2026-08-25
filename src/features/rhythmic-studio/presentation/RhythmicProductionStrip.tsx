@@ -4,6 +4,8 @@ import { useSystemLang } from "@/hooks/use-system-lang";
 import { layoutText } from "../layoutI18n";
 import { activeEventPosition, buildProductionReadiness, formatStudioTimecode } from "../lib/productionStatus";
 import type { AudioSourceMeta, ExportFps, NoteEvent, RhythmicRendererMode } from "../types";
+import type { RhythmicOutputPreset } from "../types";
+import { rhythmicOutputSize } from "../lib/outputSize";
 
 interface Props {
   events: NoteEvent[];
@@ -13,6 +15,7 @@ interface Props {
   rendererMode: RhythmicRendererMode;
   webglAvailable: boolean;
   exportFps: ExportFps;
+  outputPreset: RhythmicOutputPreset;
 }
 
 export function RhythmicProductionStrip(props: Props) {
@@ -25,6 +28,7 @@ export function RhythmicProductionStrip(props: Props) {
     eventCount: props.events.length,
   });
   const beat = activeEventPosition(props.events, props.timeMs);
+  const outputSize = rhythmicOutputSize(props.outputPreset);
   const syncKey = readiness.timingFidelity === "midi-exact"
     ? "lab.midiExact"
     : readiness.timingFidelity === "audio-onset" ? "lab.audioOnset" : "lab.deterministic";
@@ -38,7 +42,7 @@ export function RhythmicProductionStrip(props: Props) {
       <Metric label={layoutText(lang, "lab.timecode")} value={`${formatStudioTimecode(props.timeMs)} / ${formatStudioTimecode(props.durationMs)}`} mono />
       <Metric label={layoutText(lang, "lab.event")} value={`${beat} / ${props.events.length}`} mono />
       <Metric label={layoutText(lang, "lab.sync")} value={layoutText(lang, syncKey)} />
-      <Metric label={layoutText(lang, "lab.output")} value={layoutText(lang, isThree ? "lab.threeD" : "lab.twoD")} />
+      <Metric label={layoutText(lang, "lab.output")} value={`${layoutText(lang, isThree ? "lab.threeD" : "lab.twoD")} · ${outputSize.aspectLabel} · ${outputSize.resolutionLabel}`} />
       <div className="flex min-w-[170px] items-center justify-between gap-2 border-t border-white/10 px-3 py-2.5 sm:col-span-2 2xl:col-span-1 2xl:border-l 2xl:border-t-0">
         <div className="flex items-center gap-2">
           {readiness.fallbackActive

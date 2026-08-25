@@ -1,5 +1,6 @@
 import type { CourseItemOverride, LyricCue, NoteEvent, RenderQuality, StudioSettings } from "../types";
 import { drawRhythmicBackground } from "./backgrounds";
+import { noteLightColorsForPlatform } from "./instrumentLightsModel";
 import { drawCourseLongItems, isPlatformCourseItem, overrideForNode } from "./courseItems";
 import { activeLyricAt } from "./lyrics";
 import { drawLongGapTubes } from "./longGapTube";
@@ -8,6 +9,7 @@ import { applyPresetCamera } from "./presetCamera";
 import { drawPresetMarble } from "./presetMarbleRenderer";
 import { drawPresetTrail } from "./presetTrailRenderer";
 import { drawStyledPlatform } from "./platformStyles";
+import { platformIsInside2DRenderWindow } from "./platformViewport";
 
 interface DrawFrameArgs {
   ctx: CanvasRenderingContext2D;
@@ -49,27 +51,6 @@ function firstPlatformAtOrAfter(platforms: MarblePlatform[], timeMs: number) {
     else high = mid;
   }
   return low;
-}
-
-function visiblePlatformRange(platforms: MarblePlatform[], cameraY: number, height: number) {
-  const minY = cameraY - 160;
-  const maxY = cameraY + height + 180;
-  let low = 0;
-  let high = platforms.length;
-  while (low < high) {
-    const mid = (low + high) >> 1;
-    if (platforms[mid].hitY < minY) low = mid + 1;
-    else high = mid;
-  }
-  const start = Math.max(0, low - 2);
-  low = start;
-  high = platforms.length;
-  while (low < high) {
-    const mid = (low + high) >> 1;
-    if (platforms[mid].hitY <= maxY) low = mid + 1;
-    else high = mid;
-  }
-  return { start, end: Math.min(platforms.length, low + 2) };
 }
 
 function drawParticles(ctx: CanvasRenderingContext2D, platforms: MarblePlatform[], cameraY: number, timeMs: number, settings: StudioSettings) {
@@ -173,12 +154,6 @@ function trailProfile(settings: StudioSettings) {
   return { count: Math.round(Math.min(28, settings.trailLength)), stepMs: 18 };
 }
 
-function shouldShowPlatform(platform: MarblePlatform, timeMs: number, settings: StudioSettings) {
-  if (settings.terrainProfile === "comet") return platform.event.timeMs >= timeMs - 1450 && platform.event.timeMs <= timeMs + 3300;
-  if (settings.terrainProfile === "xylophone") return platform.event.timeMs >= timeMs - 1700 && platform.event.timeMs <= timeMs + 3400;
-  return true;
-}
-
 export function drawRhythmicFrame(args: DrawFrameArgs) {
   const { ctx, width, height, timeMs, events, platforms, cameraX, cameraY, durationMs, settings, beatLabel, backgroundImage, lyrics, courseOverrides, selectedNodeIndex, recording, quality } = args;
   const live = quality === "live";
@@ -189,13 +164,9 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
   ctx.translate(-cameraX, 0);
   if (live) drawLongGapTubes(ctx, platforms, events, cameraY, timeMs, settings, courseOverrides);
   if (live || courseOverrides.length) drawCourseLongItems(ctx, platforms, courseOverrides, cameraY, settings);
-  let rendered = 0;
-  const maxIdleItems = 42;
-  const range = visiblePlatformRange(platforms, cameraY, height);
-  for (let platformIndex = range.start; platformIndex < range.end; platformIndex += 1) {
+  for (let platformIndex = 0; platformIndex < platforms.length; platformIndex += 1) {
     const platform = platforms[platformIndex];
     if (platform.visualHidden) continue;
-    if (!shouldShowPlatform(platform, timeMs, settings)) continue;
     const displayPlatform = platform.visualX !== undefined || platform.visualY !== undefined || platform.visualWidth !== undefined || platform.visualThickness !== undefined || platform.visualTiltRad !== undefined
       ? {
           ...platform,
@@ -206,14 +177,12 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
           tiltRad: platform.visualTiltRad ?? platform.tiltRad,
         }
       : platform;
+    if (!platformIsInside2DRenderWindow(displayPlatform, settings, { width, height, cameraX, cameraY })) continue;
     const y = displayPlatform.y - cameraY;
-    if (y < -260 || y > height + 280) continue;
-    if (!live && rendered >= maxIdleItems) break;
     const override = overrideForNode(platform.index, courseOverrides);
     if (!override || isPlatformCourseItem(override.style)) {
       const forcedStyle = platform.visualStyle ?? (override && isPlatformCourseItem(override.style) ? override.style : undefined);
-      drawStyledPlatform(ctx, displayPlatform, y, timeMs, settings, forcedStyle, quality);
-      rendered += 1;
+      drawStyledPlatform(ctx, displayPlatform, y, timeMs, settings, forcedStyle, quality, noteLightColorsForPlatform(platform, platforms));
     }
   }
   if (selectedNodeIndex !== null && platforms[selectedNodeIndex]) {

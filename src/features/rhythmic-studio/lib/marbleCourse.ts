@@ -6,6 +6,7 @@ import type { MarblePlatform, MarblePoint } from "../engine/marblePhysicsTypes";
 import { marbleEntrySpeed, marblePhysicsProfile } from "../engine/marblePhysicsProfiles";
 import { presetObstaclePlan } from "../engine/presetObstaclePlan";
 import { instrumentScenePlan } from "../engine/instrumentScenePlan";
+import { noteColorForMidi } from "./noteColors";
 
 export type { MarblePlatform, MarblePoint } from "../engine/marblePhysicsTypes";
 
@@ -175,7 +176,7 @@ export function buildMarbleCourse(
     events,
     settings,
     width,
-    (index, pitch) => paletteColor(index, pitch, resolveSettings?.(index) ?? settings),
+    (index) => noteColorForMidi(events[index]?.midi ?? 60),
     resolveSettings,
     onProgress,
   );

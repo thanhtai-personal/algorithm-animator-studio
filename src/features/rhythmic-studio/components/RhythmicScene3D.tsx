@@ -3,13 +3,15 @@ import { Canvas } from "@react-three/fiber";
 import * as THREE from "three";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 import type { MarblePlatform } from "../lib/marbleCourse";
-import type { CourseItemOverride, NoteEvent, StudioSettings } from "../types";
+import type { CourseItemOverride, InstrumentHitEvent, NoteEvent, StudioSettings } from "../types";
 import { RhythmicSceneContent3D } from "./RhythmicSceneContent3D";
 
 export interface RhythmicScene3DProps {
   events: NoteEvent[];
   settings: StudioSettings;
   durationMs: number;
+  frameWidth: number;
+  frameHeight: number;
   timeMs: number;
   playing: boolean;
   recording: boolean;
@@ -20,7 +22,7 @@ export interface RhythmicScene3DProps {
   backgroundUrl?: string;
   selectedNodeIndex: number | null;
   onSelectNode: (index: number | null) => void;
-  onNote: (event: NoteEvent) => void;
+  onNote: (hit: InstrumentHitEvent) => void;
   onTime: (timeMs: number) => void;
   onEnded: () => void;
   canvasRef?: MutableRefObject<HTMLCanvasElement | null>;
@@ -45,7 +47,11 @@ export function RhythmicScene3D(props: RhythmicScene3DProps) {
   }, [props.canvasRef]);
 
   return (
-    <div className="relative h-[66vh] max-h-[1280px] max-w-full aspect-[9/16] overflow-hidden rounded-xl bg-slate-950">
+    <div
+      data-testid="rhythmic-three-frame"
+      className="relative max-h-[66vh] max-w-full overflow-hidden rounded-xl bg-slate-950"
+      style={{ aspectRatio: `${props.frameWidth} / ${props.frameHeight}`, width: `min(100%, calc(66vh * ${props.frameWidth / props.frameHeight}))` }}
+    >
       <Canvas
         frameloop={props.playing ? "always" : "demand"}
         dpr={props.recording ? 2 : props.playing ? [1, 1.35] : [1, 1.15]}

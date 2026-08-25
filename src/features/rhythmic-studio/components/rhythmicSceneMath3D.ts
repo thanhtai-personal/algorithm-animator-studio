@@ -12,6 +12,12 @@ export const SHOWCASE_SHADOW_LIGHT_OFFSET = { x: -2.4, y: 3.2, z: 14 } as const;
 export const RHYTHMIC_SHADOW_RECEIVER_Z = -4.02;
 export const RHYTHMIC_SHOWCASE_WALL_CENTER_Y = -270;
 export const RHYTHMIC_SHOWCASE_WALL_HEIGHT = 560;
+export const RHYTHMIC_ROOM_BACKDROP_WIDTH = 80;
+export const RHYTHMIC_ROOM_SIDE_X = 18.5;
+
+export function roomBackdropCoversFrame(backdropWidth: number, cameraX: number, viewWidth: number, overscan = 1) {
+  return backdropWidth * 0.5 >= Math.abs(cameraX) + viewWidth * 0.5 + overscan;
+}
 
 export function wallMountProfile(frontDepth: number) {
   const anchorThickness = 0.08;

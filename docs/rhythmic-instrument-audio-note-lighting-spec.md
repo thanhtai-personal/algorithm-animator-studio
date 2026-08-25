@@ -2,7 +2,9 @@
 
 ## Trạng thái
 
-Chờ người dùng duyệt trước khi triển khai.
+Đã được người dùng duyệt và triển khai ngày 2026-08-25.
+
+Nghiệm thu: toàn bộ 166 test của repository và production build đều thành công. Kiểm thử browser có chủ đích xác nhận mesh gong/sáo hoạt động trong 3D, không có lỗi console; video WebM ngang thực tế 1280×720 có luồng Opus và âm thanh không im lặng. Renderer 2D vẫn được giữ nguyên như một lựa chọn độc lập.
 
 ## Mục tiêu
 
@@ -15,7 +17,7 @@ MIDI note → nhạc cụ vật lý bị chạm → âm sắc đúng nhạc cụ
 
 Ánh xạ này phải dùng chung trong xem trước, phát nhạc và video xuất, ở cả chế độ 2D lẫn 3D.
 
-## Các quyết định đề xuất cần duyệt
+## Các quyết định đã duyệt
 
 1. **Màu nốt:** dùng 12 màu cố định cho 12 pitch class C, C#, D, D#, E, F, F#, G, G#, A, A#, B. Cùng tên nốt ở các quãng tám giữ nguyên hue để khán giả học được quan hệ nốt–màu; quãng tám chỉ thay đổi độ sáng tối đa ±8%, không tạo màu mới.
 2. **Chiêng và sáo:** bổ sung nhạc cụ thật sự, gồm style/hình học `gong-disc` và `flute-pipe`, không giả lập bằng cách gọi cymbal/rail là chiêng/sáo. Cymbal hiện có vẫn là cymbal và có âm riêng.

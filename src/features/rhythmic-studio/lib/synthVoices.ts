@@ -133,6 +133,53 @@ function percussion(context: AudioContext, target: AudioNode, when: number, pres
   body.frequency.exponentialRampToValueAtTime(39, when + 0.28);
 }
 
+function tomVoice(context: AudioContext, target: AudioNode, when: number, hz: number, peak: number) {
+  noiseBurst(context, target, when, 0.11, peak * 0.22, "bandpass", 1250, 0.9);
+  const env = envelope(context, target, when, peak * 0.8, 0.002, 0.01, 0.38);
+  const body = osc(context, env, when, Math.max(92, hz * 0.68), 0.44, "sine", 1);
+  body.frequency.exponentialRampToValueAtTime(Math.max(56, hz * 0.34), when + 0.3);
+}
+
+function cymbalVoice(context: AudioContext, target: AudioNode, when: number, hz: number, peak: number) {
+  noiseBurst(context, target, when, 0.7, peak * 0.34, "highpass", 4800, 0.54);
+  partials(context, target, when, Math.max(520, hz * 2.1), 0.62, peak * 0.28, [
+    [1, 1, "square"],
+    [1.37, 0.5, "square"],
+    [1.91, 0.31, "triangle"],
+    [2.63, 0.18, "square"],
+    [3.89, 0.09, "triangle"],
+  ], 0.0015);
+}
+
+function gongVoice(context: AudioContext, target: AudioNode, when: number, hz: number, peak: number) {
+  noiseBurst(context, target, when, 0.16, peak * 0.1, "bandpass", 1100, 0.72);
+  partials(context, target, when, Math.max(72, hz * 0.52), 2.65, peak * 0.72, [
+    [1, 1, "sine"],
+    [1.41, 0.5, "sine"],
+    [1.93, 0.36, "triangle"],
+    [2.58, 0.24, "sine"],
+    [3.17, 0.17, "triangle"],
+    [4.06, 0.1, "sine"],
+    [5.43, 0.055, "sine"],
+  ], 0.018);
+}
+
+function fluteVoice(context: AudioContext, target: AudioNode, when: number, hz: number, duration: number, peak: number) {
+  noiseBurst(context, target, when, 0.13, peak * 0.12, "bandpass", Math.min(6400, hz * 8), 0.58);
+  const sustain = Math.max(0.42, duration + 0.22);
+  const env = envelope(context, target, when, peak * 0.76, 0.055, Math.max(0.08, duration * 0.64), 0.28);
+  const carrier = osc(context, env, when, hz, sustain, "sine", 0.9);
+  osc(context, env, when, hz * 2, sustain * 0.94, "sine", 0.1, 1.2);
+  const vibrato = context.createOscillator();
+  const depth = context.createGain();
+  vibrato.frequency.value = 5.1;
+  depth.gain.value = Math.min(5.5, hz * 0.012);
+  vibrato.connect(depth);
+  depth.connect(carrier.frequency);
+  vibrato.start(when + 0.08);
+  vibrato.stop(when + sustain);
+}
+
 function sweep(context: AudioContext, target: AudioNode, when: number, preset: SynthPreset, hz: number, peak: number) {
   if (preset === "laser") {
     const env = envelope(context, target, when, peak * 0.38, 0.002, 0.01, 0.28);
@@ -184,6 +231,10 @@ export function playSynthVoice(context: AudioContext, bus: AudioNode, midi: numb
 
   if (["kick", "snare", "clap", "hihat", "impact"].includes(preset)) return percussion(context, target, when, preset, peak);
   if (preset === "laser" || preset === "whoosh") return sweep(context, target, when, preset, hz, peak);
+  if (preset === "tom") return tomVoice(context, target, when, hz, peak);
+  if (preset === "cymbal") return cymbalVoice(context, target, when, hz, peak);
+  if (preset === "gong") return gongVoice(context, target, when, hz, peak);
+  if (preset === "flute") return fluteVoice(context, target, when, hz, duration, peak);
 
   if (preset === "piano") pianoVoice(context, target, when, hz, duration, peak);
   else if (preset === "fm") {
@@ -194,7 +245,8 @@ export function playSynthVoice(context: AudioContext, bus: AudioNode, midi: numb
     mod.connect(amount); amount.connect(carrier.frequency); mod.start(when); mod.stop(when + duration + 0.18);
   } else if (preset === "vibraphone") partials(context, target, when, hz, Math.max(0.62, duration), peak, [[1, 1, "sine"], [3.01, 0.13, "sine"], [4.02, 0.05, "sine"]]);
   else if (preset === "bell") partials(context, target, when, hz, Math.max(0.9, duration), peak, [[1, 1, "sine"], [2.71, 0.28, "sine"], [4.08, 0.12, "sine"], [5.41, 0.05, "sine"]]);
-  else if (preset === "marimba") malletVoice(context, target, when, hz, peak, "marimba");
+  else if (preset === "marimba" || preset === "xylophone") malletVoice(context, target, when, hz, peak, "marimba");
+  else if (preset === "boomwhacker") partials(context, target, when, hz, 0.42, peak, [[1, 1, "triangle"], [2, 0.16, "sine"], [3.01, 0.06, "sine"]], 0.004);
   else if (preset === "kalimba") malletVoice(context, target, when, hz, peak, "kalimba");
   else if (preset === "woodblock") malletVoice(context, target, when, hz, peak, "wood");
   else if (preset === "glass") partials(context, target, when, hz, Math.max(0.76, duration), peak, [[1, 1, "sine"], [2.33, 0.24, "sine"], [4.19, 0.1, "sine"], [6.13, 0.035, "sine"]], 0.002);

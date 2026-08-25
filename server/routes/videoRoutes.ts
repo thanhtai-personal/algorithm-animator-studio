@@ -85,7 +85,7 @@ export function createVideoRouter() {
         });
       }
       await runFfmpeg(
-        buildRhythmicMp4TranscodeArgs(req.file.path, outputPath, output),
+        buildRhythmicMp4TranscodeArgs(req.file.path, outputPath, output, cadence),
         envOverrides,
       );
       res.setHeader("X-Rhythmic-Captured-Fps", cadence.capturedFps.toFixed(2));

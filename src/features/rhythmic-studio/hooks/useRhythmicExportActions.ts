@@ -7,6 +7,7 @@ import {
   downloadRhythmicBlob,
   pickRecordingMimeType,
   settleRhythmicRecordingSurface,
+  startRhythmicMediaRecorder,
   usesFixedClientExportSurface,
 } from "../lib/rhythmicExport";
 import { createFixedRhythmicExportSurface } from "../lib/rhythmicExportSurface";
@@ -25,6 +26,7 @@ type PlaybackDeps = {
   recorderRef: MutableRefObject<MediaRecorder | null>;
   playRange: (startMs: number, endMs: number, clip?: boolean) => Promise<void>;
   resetAndPlay: () => Promise<void>;
+  preparePlaybackAudio: () => Promise<void>;
 };
 
 type CanvasRefs = {
@@ -60,6 +62,7 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, refs: Canva
     if (store.source.type === "audio" && playback.audioElementRef.current) {
       await playback.audioEngineRef.current.attachOriginalAudio(playback.audioElementRef.current);
     }
+    await playback.preparePlaybackAudio();
     // Let React Three Fiber finish its recording DPR/shadow update before the
     // first encoded frame. Recording the resize itself caused a visible startup
     // freeze and made audio lead the picture.
@@ -71,13 +74,23 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, refs: Canva
       ? createFixedRhythmicExportSurface(preparedCanvas, outputSize.preset)
       : null;
     const captureCanvas = exportSurface?.canvas ?? preparedCanvas;
-    const videoStream = captureCanvas.captureStream(store.settings.exportFps);
+    let videoStream = captureCanvas.captureStream(exportSurface?.manualFrames ? 0 : store.settings.exportFps);
+    let videoTracks = videoStream.getVideoTracks();
+    let captureTrack = videoTracks[0] as MediaStreamTrack & { requestFrame?: () => void };
+    if (exportSurface?.manualFrames && !captureTrack?.requestFrame) {
+      videoTracks.forEach((track) => track.stop());
+      videoStream = captureCanvas.captureStream(store.settings.exportFps);
+      videoTracks = videoStream.getVideoTracks();
+      captureTrack = videoTracks[0] as MediaStreamTrack & { requestFrame?: () => void };
+    } else if (exportSurface?.manualFrames && captureTrack) {
+      exportSurface.startCapture(store.settings.exportFps, () => captureTrack.requestFrame?.());
+    }
     // Never put the AudioEngine's shared destination track directly into the export
     // stream: stopping that stream would permanently end audio for later exports.
     const audioTracks = (playback.audioEngineRef.current.getRecordStream()?.getAudioTracks() ?? [])
       .filter((track) => track.readyState === "live")
       .map((track) => track.clone());
-    const stream = new MediaStream([...videoStream.getVideoTracks(), ...audioTracks]);
+    const stream = new MediaStream([...videoTracks, ...audioTracks]);
     const recorder = new MediaRecorder(stream, {
       mimeType,
       videoBitsPerSecond: store.settings.exportFps >= 120 ? 16_000_000 : 10_000_000,
@@ -117,7 +130,6 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, refs: Canva
       store.setStatus({ key: "status.exportFailed", values: { format: exportFormat.label } });
       toast.error(rhythmicText(lang, "status.exportFailed", { format: exportFormat.label }));
     };
-    recorder.start(250);
     store.setStatus({
       key: "status.recording",
       values: {
@@ -127,7 +139,7 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, refs: Canva
         resolution: outputSize.resolutionLabel,
       },
     });
-    await new Promise((resolve) => window.setTimeout(resolve, 80));
+    await startRhythmicMediaRecorder(recorder, () => captureTrack?.requestFrame?.());
     if (clipOnly) await playback.playRange(store.trimStartMs, store.trimEndMs, true);
     else await playback.resetAndPlay();
   }, [lang, mp4Mutation, playback, refs, store]);

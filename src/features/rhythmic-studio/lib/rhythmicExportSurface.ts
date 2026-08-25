@@ -10,26 +10,39 @@ export function createFixedRhythmicExportSurface(
   output.width = size.width;
   output.height = size.height;
   const context = output.getContext("2d", { alpha: false });
-  if (!context) return { canvas: source, stop: () => undefined };
+  if (!context) return {
+    canvas: source,
+    manualFrames: false,
+    startCapture: (_fps: number, _requestFrame: () => void) => undefined,
+    stop: () => undefined,
+  };
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
 
   let stopped = false;
-  let raf = 0;
+  let timer = 0;
   const paint = () => {
     if (stopped) return;
     context.fillStyle = "#000000";
     context.fillRect(0, 0, size.width, size.height);
     context.drawImage(source, 0, 0, size.width, size.height);
-    raf = window.requestAnimationFrame(paint);
   };
   paint();
 
   return {
     canvas: output,
+    manualFrames: true,
+    startCapture: (fps: number, requestFrame: () => void) => {
+      paint();
+      requestFrame();
+      timer = window.setInterval(() => {
+        paint();
+        requestFrame();
+      }, 1000 / Math.max(1, fps));
+    },
     stop: () => {
       stopped = true;
-      window.cancelAnimationFrame(raf);
+      if (timer) window.clearInterval(timer);
     },
   };
 }

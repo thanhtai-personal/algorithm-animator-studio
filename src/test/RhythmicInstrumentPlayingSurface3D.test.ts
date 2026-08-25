@@ -49,6 +49,22 @@ describe("3D instrument playing surfaces", () => {
     },
   );
 
+  it.each<[PlatformStyle, number]>([
+    ["boomwhacker-tube", 0.11],
+    ["tube-cylinder", 0.11],
+    ["toy-peg", 0.12],
+    ["flute-pipe", 0.085],
+    ["instrument-wire", 0.126],
+    ["instrument-rail", 0.145],
+  ])("uses the actual upper tangent of %s as its playing surface", (style, expectedTop) => {
+    const surface = expectBallToTouchFace(style);
+
+    expect(surface.faceKind).toBe("top");
+    expect(surface.pitchRad).toBeGreaterThan(0);
+    expect(surface.localStrikeY).toBeCloseTo(expectedTop, 6);
+    expect(surface.localStrikeZ).toBe(0);
+  });
+
   it("depresses piano keys away from the marble along the playing-face normal", () => {
     const surface = instrumentPlayingSurface3D("piano-key", 1, 0.14, 0.54, BALL_RADIUS);
     const offset = instrumentPressOffset3D(surface, 0.06);

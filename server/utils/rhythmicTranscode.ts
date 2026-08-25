@@ -18,7 +18,9 @@ export interface RhythmicCaptureCadence extends Required<RhythmicCaptureCadenceI
 }
 
 const MINIMUM_CAPTURE_CADENCE_RATIO = 0.82;
+const MINIMUM_RETIME_CADENCE_RATIO = 0.95;
 const MAXIMUM_VISIBLE_FREEZE_MS = 120;
+const MAXIMUM_REPAIRABLE_GAP_MS = 250;
 
 function numericField(value: unknown) {
   const normalized = Array.isArray(value) ? value[0] : value;
@@ -55,6 +57,8 @@ export function analyzeRhythmicCaptureCadence({
     && durationSeconds > 0
     && Number.isFinite(maxFrameGapMs)
     && maxFrameGapMs >= 0;
+  const gapIsHealthy = maxFrameGapMs <= maximumAllowedGapMs
+    || (ratio >= MINIMUM_RETIME_CADENCE_RATIO && maxFrameGapMs <= MAXIMUM_REPAIRABLE_GAP_MS);
 
   return {
     frameCount,
@@ -65,7 +69,7 @@ export function analyzeRhythmicCaptureCadence({
     ratio,
     healthy: valid
       && ratio >= MINIMUM_CAPTURE_CADENCE_RATIO
-      && maxFrameGapMs <= maximumAllowedGapMs,
+      && gapIsHealthy,
   };
 }
 
@@ -118,14 +122,21 @@ export function buildRhythmicMp4TranscodeArgs(
   inputPath: string,
   outputPath: string,
   fields: RhythmicTranscodeFields,
+  cadence?: Pick<RhythmicCaptureCadenceInput, "frameCount" | "durationSeconds">,
 ) {
   const { fps, width, height } = normalizeRhythmicTranscodeFields(fields);
+  const frameCount = Math.max(2, Math.round(Number(cadence?.frameCount)));
+  const durationSeconds = Number(cadence?.durationSeconds);
+  const retimeFilter = Number.isFinite(frameCount) && Number.isFinite(durationSeconds) && durationSeconds > 0
+    ? `setpts=N*${durationSeconds.toFixed(6)}/(${frameCount - 1}*TB)`
+    : null;
   const videoFilter = [
+    retimeFilter,
     `fps=${fps}`,
     `scale=${width}:${height}:force_original_aspect_ratio=decrease:flags=lanczos`,
     `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`,
     "setsar=1",
-  ].join(",");
+  ].filter(Boolean).join(",");
 
   return [
     "-y", "-fflags", "+genpts", "-i", inputPath,

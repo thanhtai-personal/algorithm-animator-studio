@@ -12,10 +12,14 @@ describe("rhythmic MP4 transcode", () => {
       fps: 60,
       width: 720,
       height: 1280,
+    }, {
+      frameCount: 3_580,
+      durationSeconds: 60,
     });
     const filter = args[args.indexOf("-vf") + 1];
 
     expect(filter).toContain("fps=60");
+    expect(filter).toContain("setpts=N*60.000000/(3579*TB)");
     expect(filter).toContain("scale=720:1280:force_original_aspect_ratio=decrease");
     expect(filter).toContain("pad=720:1280");
     expect(args).toContain("cfr");
@@ -53,6 +57,15 @@ describe("rhythmic MP4 transcode", () => {
       durationSeconds: 60,
       targetFps: 60,
       maxFrameGapMs: 42,
+    }).healthy).toBe(true);
+  });
+
+  it("accepts an isolated browser timestamp gap when almost every target frame is present", () => {
+    expect(analyzeRhythmicCaptureCadence({
+      frameCount: 168,
+      durationSeconds: 5.666,
+      targetFps: 30,
+      maxFrameGapMs: 200,
     }).healthy).toBe(true);
   });
 

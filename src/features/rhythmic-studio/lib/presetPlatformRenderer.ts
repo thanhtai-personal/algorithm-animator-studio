@@ -1,15 +1,20 @@
 import type { PlatformStyle, RenderQuality, StudioSettings } from "../types";
 import { mixHex, type MarblePlatform } from "./marbleCourse";
 import { drawMetallophonePlate2D } from "./metallophonePlate2D";
+import { drawDrum2D } from "./drumRenderer2D";
 
 function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
-  const r = Math.min(radius, width / 2, height / 2);
+  const left = Math.min(x, x + width);
+  const top = Math.min(y, y + height);
+  const safeWidth = Math.abs(width);
+  const safeHeight = Math.abs(height);
+  const r = Math.max(0, Math.min(radius, safeWidth / 2, safeHeight / 2));
   ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + width, y, x + width, y + height, r);
-  ctx.arcTo(x + width, y + height, x, y + height, r);
-  ctx.arcTo(x, y + height, x, y, r);
-  ctx.arcTo(x, y, x + width, y, r);
+  ctx.moveTo(left + r, top);
+  ctx.arcTo(left + safeWidth, top, left + safeWidth, top + safeHeight, r);
+  ctx.arcTo(left + safeWidth, top + safeHeight, left, top + safeHeight, r);
+  ctx.arcTo(left, top + safeHeight, left, top, r);
+  ctx.arcTo(left, top, left + safeWidth, top, r);
   ctx.closePath();
 }
 
@@ -210,13 +215,17 @@ function drawInstrumentKey(ctx: CanvasRenderingContext2D, half: number, p: Marbl
   ctx.stroke();
 
   ctx.fillStyle = "rgba(255,255,255,.68)";
-  roundedRect(ctx, -half + 8, 3, p.width - 22, 4, 2);
+  const highlightInset = Math.min(8, p.width * 0.24);
+  roundedRect(ctx, -half + highlightInset, 3, Math.max(1, p.width - highlightInset * 2), 4, 2);
   ctx.fill();
-  for (const x of [-half + 13, half - 13]) {
+  const boltRadius = Math.min(2.4, p.width * 0.16);
+  const boltInset = Math.min(13, Math.max(boltRadius, p.width * 0.25));
+  for (const x of [-half + boltInset, half - boltInset]) {
     ctx.fillStyle = "rgba(25,28,35,.72)";
-    ctx.beginPath(); ctx.arc(x, h / 2, 2.4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, h / 2, boltRadius, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "rgba(255,255,255,.42)";
-    ctx.beginPath(); ctx.arc(x - 0.7, h / 2 - 0.7, 0.8, 0, Math.PI * 2); ctx.fill();
+    const glintRadius = Math.min(0.8, boltRadius * 0.34);
+    ctx.beginPath(); ctx.arc(x - glintRadius * 0.85, h / 2 - glintRadius * 0.85, glintRadius, 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();
 }
@@ -373,6 +382,6 @@ export function drawPresetPlatform(
   if (style === "xylophone-bar" || style === "piano-key" || style === "marimba-bar" || style === "vibraphone-bar") { drawInstrumentKey(ctx, half, platform, impact, lowPower); return true; }
   if (style === "metallophone-plate") { drawMetallophonePlate2D(ctx, half, platform, impact, lowPower); return true; }
   if (style === "pluck-pad") { drawInstrumentPad(ctx, half, platform, impact, lowPower); return true; }
-  if (style === "drum-disc") { drawInstrumentCymbal(ctx, platform, impact, lowPower); return true; }
+  if (style === "drum-disc") { drawDrum2D(ctx, platform, impact, lowPower); return true; }
   return false;
 }

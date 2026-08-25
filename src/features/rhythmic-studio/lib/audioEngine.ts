@@ -22,6 +22,13 @@ interface MidiScheduleOptions {
   presetForEvent?: (event: NoteEvent, index: number) => SynthPreset;
 }
 
+export interface SynthVoiceWarmup {
+  midi: number;
+  velocity: number;
+  durationMs: number;
+  preset: SynthPreset;
+}
+
 function createRoomImpulse(context: AudioContext, seconds = 1.05, decay = 3.4) {
   const length = Math.floor(context.sampleRate * seconds);
   const impulse = context.createBuffer(2, length, context.sampleRate);
@@ -58,6 +65,7 @@ export class AudioEngine {
   private musicVolume = 1.3;
   private sfxVolume = DEFAULT_COLLISION_VOLUME;
   private reverbAmount = 0.22;
+  private warmedVoices = new Set<SynthPreset>();
 
   async ensure() {
     if (!this.context) {
@@ -169,6 +177,31 @@ export class AudioEngine {
       stereoWidth: this.stereoWidth,
       gainScale: COLLISION_VOICE_GAIN,
     });
+  }
+
+  async prepareVoices(voices: SynthVoiceWarmup[]) {
+    const context = await this.ensure();
+    if (!this.sfxInput) return;
+    const pending = voices.filter((voice) => !this.warmedVoices.has(voice.preset));
+    if (!pending.length) return;
+
+    // Build every synth graph and reusable noise buffer before canvas capture.
+    // A zero-gain connected bus keeps browsers from pruning this warm-up work.
+    const silentBus = context.createGain();
+    silentBus.gain.value = 0;
+    silentBus.connect(this.sfxInput);
+    const when = context.currentTime + 0.02;
+    for (const voice of pending) {
+      this.warmedVoices.add(voice.preset);
+      playSynthVoice(context, silentBus, voice.midi, voice.velocity, voice.durationMs, voice.preset, {
+        when,
+        brightness: this.brightness,
+        stereoWidth: this.stereoWidth,
+        gainScale: 0.02,
+      });
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    setTimeout(() => { try { silentBus.disconnect(); } catch { /* already disconnected */ } }, 3_200);
   }
 
   stopMidi() {

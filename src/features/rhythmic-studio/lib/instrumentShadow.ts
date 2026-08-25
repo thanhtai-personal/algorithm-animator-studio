@@ -1,4 +1,5 @@
 import type { PlatformStyle } from "../types";
+import { drumGeometry2D } from "./drumRenderer2D";
 
 type Point2D = { x: number; y: number };
 type Point3D = Point2D & { z: number };
@@ -36,7 +37,15 @@ function instrumentFoot(style: PlatformStyle, width: number, thickness: number) 
     const radius = Math.max(28, width * 0.42);
     return { contactY: radius, nearWidth: radius * 0.22, flared: true };
   }
-  if (style === "instrument-cymbal" || style === "drum-disc") {
+  if (style === "drum-disc") {
+    const drum = drumGeometry2D(width, thickness);
+    return {
+      contactY: drum.shellDepth + drum.faceRy * 2,
+      nearWidth: drum.faceRx * 1.3,
+      flared: false,
+    };
+  }
+  if (style === "instrument-cymbal") {
     const radiusY = Math.max(8, thickness * 0.62);
     return { contactY: radiusY * 3.3 + 3, nearWidth: 7, flared: true };
   }

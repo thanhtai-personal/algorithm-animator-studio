@@ -1,6 +1,7 @@
 import type { NoteEvent, SynthPreset } from "../types";
 
 const EPSILON = 0.0001;
+const noiseBufferCache = new WeakMap<AudioContext, Map<number, AudioBuffer>>();
 
 export interface SynthVoiceOptions {
   when?: number;
@@ -52,12 +53,21 @@ function osc(context: AudioContext, target: AudioNode, when: number, frequency: 
 
 function noise(context: AudioContext, seconds: number) {
   const frames = Math.max(1, Math.ceil(context.sampleRate * seconds));
-  const buffer = context.createBuffer(1, frames, context.sampleRate);
-  const data = buffer.getChannelData(0);
-  const fadeFrames = Math.max(8, Math.min(Math.round(context.sampleRate * 0.008), Math.floor(frames / 3)));
-  for (let i = 0; i < frames; i += 1) {
-    const edge = Math.min(1, i / fadeFrames, (frames - 1 - i) / fadeFrames);
-    data[i] = (Math.random() * 2 - 1) * Math.max(0, edge);
+  let contextCache = noiseBufferCache.get(context);
+  if (!contextCache) {
+    contextCache = new Map();
+    noiseBufferCache.set(context, contextCache);
+  }
+  let buffer = contextCache.get(frames);
+  if (!buffer) {
+    buffer = context.createBuffer(1, frames, context.sampleRate);
+    const data = buffer.getChannelData(0);
+    const fadeFrames = Math.max(8, Math.min(Math.round(context.sampleRate * 0.008), Math.floor(frames / 3)));
+    for (let i = 0; i < frames; i += 1) {
+      const edge = Math.min(1, i / fadeFrames, (frames - 1 - i) / fadeFrames);
+      data[i] = (Math.random() * 2 - 1) * Math.max(0, edge);
+    }
+    contextCache.set(frames, buffer);
   }
   const source = context.createBufferSource();
   source.buffer = buffer;

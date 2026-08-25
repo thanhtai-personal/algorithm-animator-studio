@@ -1,4 +1,5 @@
 import type { PlatformStyle } from "../types";
+import { drumGeometry3D } from "./RhythmicDrumMesh3D";
 
 export interface InstrumentPlayingSurface3D {
   faceKind: "edge" | "front" | "top";
@@ -18,7 +19,7 @@ export interface InstrumentPlayingSurface3D {
 interface PlayingFaceProfile {
   faceKind: "front" | "top";
   pitchDeg: number;
-  strikePoint: (height: number, depth: number) => { y: number; z: number };
+  strikePoint: (height: number, depth: number, width: number) => { y: number; z: number };
 }
 
 export interface InstrumentSurfaceFrame3D {
@@ -37,7 +38,7 @@ const PLAYING_FACE_PROFILES: Partial<Record<PlatformStyle, PlayingFaceProfile>> 
   "drum-disc": {
     faceKind: "front",
     pitchDeg: -58,
-    strikePoint: (height, depth) => ({ y: 0, z: Math.max(depth * 0.14, height * 0.52) }),
+    strikePoint: (height, depth, width) => ({ y: 0, z: drumGeometry3D(width, height, depth).playingFaceZ }),
   },
   "gong-disc": {
     faceKind: "front",
@@ -100,6 +101,67 @@ const PLAYING_FACE_PROFILES: Partial<Record<PlatformStyle, PlayingFaceProfile>> 
     pitchDeg: 34,
     strikePoint: (height) => ({ y: Math.max(height, 0.12) * 0.5, z: 0 }),
   },
+  "neon-tube": {
+    faceKind: "top",
+    pitchDeg: 31,
+    strikePoint: (height) => ({ y: Math.max(0.075, height * 0.42), z: 0 }),
+  },
+  "tube-cylinder": {
+    faceKind: "top",
+    pitchDeg: 31,
+    strikePoint: (height) => ({ y: Math.max(0.11, height * 0.5), z: 0 }),
+  },
+  "toy-tube": {
+    faceKind: "top",
+    pitchDeg: 31,
+    strikePoint: (height) => ({ y: Math.max(0.11, height * 0.5), z: 0 }),
+  },
+  "boomwhacker-tube": {
+    faceKind: "top",
+    pitchDeg: 31,
+    strikePoint: (height) => ({ y: Math.max(0.11, height * 0.5), z: 0 }),
+  },
+  "toy-peg": {
+    faceKind: "top",
+    pitchDeg: 31,
+    strikePoint: (height) => ({ y: Math.max(0.12, height * 0.56), z: 0 }),
+  },
+  "flute-pipe": {
+    faceKind: "top",
+    pitchDeg: 31,
+    strikePoint: (height) => ({ y: Math.max(0.085, height * 0.38), z: 0 }),
+  },
+  "instrument-wire": {
+    faceKind: "top",
+    pitchDeg: 29,
+    strikePoint: (height) => ({ y: Math.max(0.1, height * 0.5) + 0.026, z: 0 }),
+  },
+  "dual-rail": {
+    faceKind: "top",
+    pitchDeg: 29,
+    strikePoint: (height) => ({
+      y: Math.max(0.1, height * 0.5) + Math.max(0.045, height * 0.18),
+      z: 0,
+    }),
+  },
+  "instrument-rail": {
+    faceKind: "top",
+    pitchDeg: 29,
+    strikePoint: (height) => ({
+      y: Math.max(0.1, height * 0.5) + Math.max(0.045, height * 0.18),
+      z: 0,
+    }),
+  },
+  "pipe-rail": {
+    faceKind: "top",
+    pitchDeg: 29,
+    strikePoint: (height) => ({ y: Math.max(0.065, height * 0.24), z: 0 }),
+  },
+  "metal-rail": {
+    faceKind: "top",
+    pitchDeg: 29,
+    strikePoint: (height) => ({ y: Math.max(0.045, height * 0.18), z: 0 }),
+  },
 };
 
 function fallbackFrontDepth(style: PlatformStyle, height: number, depth: number) {
@@ -145,7 +207,7 @@ export function instrumentSurfaceFrame3D(
 
 export function instrumentPlayingSurface3D(
   style: PlatformStyle,
-  _width: number,
+  width: number,
   height: number,
   depth: number,
   ballRadius: number,
@@ -174,7 +236,7 @@ export function instrumentPlayingSurface3D(
   }
 
   const pitchRad = profile.pitchDeg * Math.PI / 180;
-  const { y: localStrikeY, z: localStrikeZ } = profile.strikePoint(height, depth);
+  const { y: localStrikeY, z: localStrikeZ } = profile.strikePoint(height, depth, width);
   const normalY = profile.faceKind === "front" ? -Math.sin(pitchRad) : Math.cos(pitchRad);
   const normalZ = profile.faceKind === "front" ? Math.cos(pitchRad) : Math.sin(pitchRad);
   const projectedStrikeY = localStrikeY * Math.cos(pitchRad) - localStrikeZ * Math.sin(pitchRad);

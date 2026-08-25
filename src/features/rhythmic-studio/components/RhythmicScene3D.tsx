@@ -36,7 +36,13 @@ export function hasRhythmicWebGLSupport() {
   const canvas = document.createElement("canvas");
   try {
     const context = canvas.getContext("webgl2", { powerPreference: "high-performance" }) || canvas.getContext("webgl");
-    return Boolean(context);
+    if (!context) return false;
+    try {
+      context.getExtension("WEBGL_lose_context")?.loseContext();
+    } catch {
+      // Capability probing succeeded; releasing the temporary context is best-effort.
+    }
+    return true;
   } catch {
     return false;
   }
@@ -55,7 +61,7 @@ export function RhythmicScene3D(props: RhythmicScene3DProps) {
       style={{ aspectRatio: `${props.frameWidth} / ${props.frameHeight}`, width: `min(100%, calc(66vh * ${props.frameWidth / props.frameHeight}))` }}
     >
       <Canvas
-        frameloop={props.playing ? "always" : "demand"}
+        frameloop={props.playing || props.recording ? "always" : "demand"}
         dpr={props.recording ? recordingProfile.dpr : props.playing ? [1, 1.35] : [1, 1.15]}
         shadows={props.settings.instrumentShadowsEnabled}
         gl={{
@@ -63,7 +69,9 @@ export function RhythmicScene3D(props: RhythmicScene3DProps) {
           alpha: false,
           powerPreference: "high-performance",
           stencil: false,
-          preserveDrawingBuffer: false,
+          // Export repaints this WebGL canvas onto a fixed-size 2D surface on a
+          // separate timer. Preserve the completed frame until that copy runs.
+          preserveDrawingBuffer: true,
         }}
         onCreated={({ gl }) => {
           gl.outputColorSpace = THREE.SRGBColorSpace;

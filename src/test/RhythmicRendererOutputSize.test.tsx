@@ -2,15 +2,16 @@ import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SETTINGS } from "../features/rhythmic-studio/defaults";
 import { RhythmicCanvas } from "../features/rhythmic-studio/components/RhythmicCanvas";
-import { RhythmicScene3D } from "../features/rhythmic-studio/components/RhythmicScene3D";
+import { hasRhythmicWebGLSupport, RhythmicScene3D } from "../features/rhythmic-studio/components/RhythmicScene3D";
 
 vi.mock("@react-three/fiber", () => ({
-  Canvas: ({ shadows, dpr, gl }: { shadows?: boolean; dpr?: number | number[]; gl?: { preserveDrawingBuffer?: boolean } }) => (
+  Canvas: ({ shadows, dpr, gl, frameloop }: { shadows?: boolean; dpr?: number | number[]; gl?: { preserveDrawingBuffer?: boolean }; frameloop?: string }) => (
     <canvas
       data-testid="three-canvas"
       data-shadows={String(Boolean(shadows))}
       data-dpr={String(dpr)}
       data-preserve-buffer={String(Boolean(gl?.preserveDrawingBuffer))}
+      data-frameloop={frameloop}
     />
   ),
 }));
@@ -39,6 +40,18 @@ const sharedProps = {
 
 describe("rhythmic renderer output dimensions", () => {
   afterEach(() => vi.restoreAllMocks());
+
+  it("releases the temporary WebGL capability probe", () => {
+    const loseContext = vi.fn();
+    const getExtension = vi.fn(() => ({ loseContext }));
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      getExtension,
+    } as unknown as WebGL2RenderingContext);
+
+    expect(hasRhythmicWebGLSupport()).toBe(true);
+    expect(getExtension).toHaveBeenCalledWith("WEBGL_lose_context");
+    expect(loseContext).toHaveBeenCalledOnce();
+  });
 
   it("uses the native 1280×720 backing buffer in Canvas 2D", () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
@@ -104,6 +117,7 @@ describe("rhythmic renderer output dimensions", () => {
     );
 
     expect(screen.getByTestId("three-canvas")).toHaveAttribute("data-dpr", "1.35");
-    expect(screen.getByTestId("three-canvas")).toHaveAttribute("data-preserve-buffer", "false");
+    expect(screen.getByTestId("three-canvas")).toHaveAttribute("data-preserve-buffer", "true");
+    expect(screen.getByTestId("three-canvas")).toHaveAttribute("data-frameloop", "always");
   });
 });

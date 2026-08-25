@@ -35,4 +35,22 @@ describe("rhythmic instrument shadows", () => {
     expect(geometry.farLeft.y).not.toBe(geometry.nearLeft.y);
     expect(geometry.farWidth).not.toBe(geometry.nearWidth);
   });
+
+  it("anchors a snare shadow to its deep shell instead of the cymbal stand", () => {
+    const drum = instrumentShadowGeometry2D({
+      width: 100,
+      thickness: 14,
+      tiltRad: 0.2,
+      style: "drum-disc",
+    });
+    const cymbal = instrumentShadowGeometry2D({
+      width: 100,
+      thickness: 14,
+      tiltRad: 0.2,
+      style: "instrument-cymbal",
+    });
+
+    expect(drum.contactY).not.toBe(cymbal.contactY);
+    expect(drum.nearWidth).toBeGreaterThan(cymbal.nearWidth);
+  });
 });

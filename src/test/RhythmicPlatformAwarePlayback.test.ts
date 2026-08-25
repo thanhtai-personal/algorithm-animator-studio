@@ -7,6 +7,7 @@ import type { InstrumentHitEvent } from "../features/rhythmic-studio/types";
 const audioMocks = vi.hoisted(() => ({
   playNote: vi.fn(async () => undefined),
   scheduleMidi: vi.fn(async () => undefined),
+  prepareVoices: vi.fn(async () => undefined),
 }));
 
 vi.mock("../features/rhythmic-studio/lib/audioEngine", () => ({
@@ -15,6 +16,7 @@ vi.mock("../features/rhythmic-studio/lib/audioEngine", () => ({
     ensure = vi.fn(async () => undefined);
     stopMidi = vi.fn();
     scheduleMidi = audioMocks.scheduleMidi;
+    prepareVoices = audioMocks.prepareVoices;
     attachOriginalAudio = vi.fn(async () => undefined);
     setVolume = vi.fn();
     setMusicVolume = vi.fn();
@@ -78,5 +80,34 @@ describe("platform-aware collision playback", () => {
 
     await act(async () => result.current.onNote(hit("drum-disc")));
     expect(audioMocks.playNote).not.toHaveBeenCalled();
+  });
+
+  it("warms each rendered instrument voice before export capture starts", async () => {
+    const store = new RhythmicStudioStore();
+    const events = [
+      { id: "drum-a", timeMs: 0, midi: 45, velocity: 0.8, durationMs: 220, isDrum: true },
+      { id: "drum-b", timeMs: 180, midi: 47, velocity: 0.75, durationMs: 220, isDrum: true },
+      { id: "gong", timeMs: 420, midi: 55, velocity: 0.88, durationMs: 620 },
+    ];
+    store.setSource(
+      events,
+      { type: "builtin", name: "warmup", durationMs: 1_200, eventCount: events.length },
+      { key: "info.builtin" },
+    );
+    Object.assign(store, {
+      preparedPlatforms: [
+        { index: 0, event: events[0], visualStyle: "drum-disc" },
+        { index: 1, event: events[1], visualStyle: "drum-disc" },
+        { index: 2, event: events[2], visualStyle: "gong-disc" },
+      ],
+    });
+    const { result } = renderHook(() => useRhythmicPlayback(store));
+
+    await act(async () => result.current.preparePlaybackAudio());
+
+    expect(audioMocks.prepareVoices).toHaveBeenCalledWith([
+      expect.objectContaining({ midi: 45, preset: "tom" }),
+      expect.objectContaining({ midi: 55, preset: "gong" }),
+    ]);
   });
 });

@@ -5,7 +5,6 @@ import type { PlatformStyle } from "../types";
 import { EndBolt, selectedColor, SurfaceMaterial } from "./RhythmicPlatformMaterials3D";
 import { InstrumentPaddleMesh3D } from "./RhythmicInstrumentPaddle3D";
 import {
-  DrumDiscMesh,
   MarimbaBarMesh,
   MetallophonePlateMesh,
   PianoKeyboardMesh,
@@ -14,6 +13,7 @@ import {
   VibraphoneBarMesh,
   XylophoneBarMesh,
 } from "./RhythmicShowcaseInstrumentMeshes3D";
+import { DrumDiscMesh } from "./RhythmicDrumMesh3D";
 import { FlutePipeMesh, GongDiscMesh } from "./RhythmicWindMetalMeshes3D";
 
 export interface MeshProps {

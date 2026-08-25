@@ -89,6 +89,28 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
     await Promise.all(tasks);
   }, [startMidiAudio, startOriginalAudio, store.source.type, store.settings.playOriginalSong]);
 
+  const preparePlaybackAudio = useCallback(async () => {
+    const voices = [];
+    const presets = new Set<SynthPreset>();
+    const timeline = store.timeline;
+    for (let index = 0; index < timeline.length; index += 1) {
+      const event = timeline[index];
+      const platform = store.preparedPlatforms[index];
+      const preset = platform
+        ? presetForInstrumentCollision(store, instrumentHitForPlatform(
+            index,
+            store.preparedPlatforms,
+            store.settings,
+            store.courseOverrides,
+          ))
+        : (store.settings.midiInstrumentMode === "auto" ? presetForMidiEvent(event) : store.settings.synthPreset);
+      if (presets.has(preset)) continue;
+      presets.add(preset);
+      voices.push({ midi: event.midi, velocity: event.velocity, durationMs: event.durationMs, preset });
+    }
+    await audioEngineRef.current.prepareVoices(voices);
+  }, [store]);
+
   const setOriginalAudioEnabled = useCallback(async (enabled: boolean) => {
     store.patch("playOriginalSong", enabled);
     if (!enabled) {
@@ -200,6 +222,7 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
     setMidiAudioEnabled,
     setSourceAudioEnabled,
     startPlaybackAudio,
+    preparePlaybackAudio,
     playRange,
     resetAndPlay,
     previewTrim,

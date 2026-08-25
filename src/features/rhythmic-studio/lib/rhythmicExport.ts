@@ -5,8 +5,8 @@ export function pickRecordingMimeType(target: ExportFormat) {
   return recordingFormat.mimeCandidates.find((candidate) => MediaRecorder.isTypeSupported(candidate)) ?? null;
 }
 
-export function usesFixedClientExportSurface(target: ExportFormat) {
-  return target !== "mp4";
+export function usesFixedClientExportSurface(_target: ExportFormat) {
+  return true;
 }
 
 export function settleRhythmicRecordingSurface() {
@@ -16,6 +16,27 @@ export function settleRhythmicRecordingSurface() {
         window.setTimeout(resolve, 160);
       });
     });
+  });
+}
+
+export function startRhythmicMediaRecorder(
+  recorder: MediaRecorder,
+  requestCapturedFrame?: () => void,
+  timeslice = 250,
+) {
+  return new Promise<void>((resolve) => {
+    let settled = false;
+    let fallbackTimer = 0;
+    const complete = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(fallbackTimer);
+      resolve();
+    };
+    recorder.addEventListener("start", complete, { once: true });
+    fallbackTimer = window.setTimeout(complete, 0);
+    recorder.start(timeslice);
+    requestCapturedFrame?.();
   });
 }
 

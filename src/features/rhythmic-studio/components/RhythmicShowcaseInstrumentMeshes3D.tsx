@@ -135,21 +135,3 @@ export function MetallophonePlateMesh({ w, h, d, color, selected, glow }: MeshPr
     {[-0.32, 0.32].map((ratio) => <EndBolt key={ratio} x={w * ratio} y={0} z={d * 0.43} color="#272b32" />)}
   </group>;
 }
-
-export function DrumDiscMesh({ w, h, d, color, selected, glow }: MeshProps) {
-  const radius = Math.max(0.2, w * 0.38);
-  return <group>
-    <mesh rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
-      <cylinderGeometry args={[radius, radius, Math.max(0.08, h), 32]} />
-      <meshPhysicalMaterial color={selectedColor("#252525", selected)} roughness={0.5} metalness={0.12} clearcoat={0.28} emissive={color} emissiveIntensity={glow * 0.42} />
-    </mesh>
-    <mesh position={[0, 0, d * 0.138]}>
-      <circleGeometry args={[radius * 0.715, 32]} />
-      <meshPhysicalMaterial color="#dedbd3" roughness={0.46} clearcoat={0.22} emissive={color} emissiveIntensity={glow * 0.32} />
-    </mesh>
-    <mesh position={[0, 0, d * 0.14]}>
-      <ringGeometry args={[radius * 0.72, radius * 0.9, 32]} />
-      <meshStandardMaterial color={color} roughness={0.32} metalness={0.28} emissive={color} emissiveIntensity={glow * 0.48} />
-    </mesh>
-  </group>;
-}

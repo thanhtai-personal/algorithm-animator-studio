@@ -5,6 +5,20 @@ export function pickRecordingMimeType(target: ExportFormat) {
   return recordingFormat.mimeCandidates.find((candidate) => MediaRecorder.isTypeSupported(candidate)) ?? null;
 }
 
+export function usesFixedClientExportSurface(target: ExportFormat) {
+  return target !== "mp4";
+}
+
+export function settleRhythmicRecordingSurface() {
+  return new Promise<void>((resolve) => {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        window.setTimeout(resolve, 160);
+      });
+    });
+  });
+}
+
 export function downloadRhythmicBlob(blob: Blob, fileName: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");

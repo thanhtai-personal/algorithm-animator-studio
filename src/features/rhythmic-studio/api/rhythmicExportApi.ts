@@ -1,9 +1,19 @@
 import { buildApiUrl } from "@/lib/runtimeApi";
 import { buildRuntimeSettingsHeaders } from "@/lib/runtimeSettings";
 
-export async function transcodeRhythmicWebmToMp4(blob: Blob) {
+interface RhythmicTranscodeRequest {
+  blob: Blob;
+  fps: number;
+  width: number;
+  height: number;
+}
+
+export async function transcodeRhythmicWebmToMp4({ blob, fps, width, height }: RhythmicTranscodeRequest) {
   const form = new FormData();
   form.append("video", new File([blob], "rhythmic-export.webm", { type: blob.type || "video/webm" }));
+  form.append("fps", String(fps));
+  form.append("width", String(width));
+  form.append("height", String(height));
   const response = await fetch(buildApiUrl("/api/video/transcode-mp4"), {
     method: "POST",
     headers: buildRuntimeSettingsHeaders(),

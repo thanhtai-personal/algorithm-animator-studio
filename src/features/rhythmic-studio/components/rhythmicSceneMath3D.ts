@@ -18,6 +18,16 @@ export const RHYTHMIC_SHOWCASE_WALL_HEIGHT = 560;
 export const RHYTHMIC_ROOM_BACKDROP_WIDTH = 80;
 export const RHYTHMIC_ROOM_SIDE_X = 18.5;
 
+export function rhythmicRecordingRenderProfile(exportFps: number) {
+  if (exportFps >= 120) {
+    return { dpr: 1, transmissionResolutionScale: 0.55, shadowMapSize: 512 } as const;
+  }
+  if (exportFps >= 60) {
+    return { dpr: 1.35, transmissionResolutionScale: 0.68, shadowMapSize: 1024 } as const;
+  }
+  return { dpr: 1.5, transmissionResolutionScale: 0.78, shadowMapSize: 1024 } as const;
+}
+
 export interface RhythmicBackdropBounds {
   centerY: number;
   height: number;

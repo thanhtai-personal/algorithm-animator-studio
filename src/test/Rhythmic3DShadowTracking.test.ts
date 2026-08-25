@@ -10,6 +10,7 @@ import {
   denseChassisMountProfile,
   courseBackdropBounds,
   needsDedicatedShadowReceiver,
+  rhythmicRecordingRenderProfile,
   shadowReceiverZForSettings,
   shadowReceiverOffset,
   shadowRigPose,
@@ -18,6 +19,24 @@ import {
 import { DEFAULT_SETTINGS } from "../features/rhythmic-studio/defaults";
 
 describe("rhythmic 3D shadow tracking", () => {
+  it("uses an adaptive recording profile without disabling physical shadows", () => {
+    expect(rhythmicRecordingRenderProfile(30)).toEqual({
+      dpr: 1.5,
+      transmissionResolutionScale: 0.78,
+      shadowMapSize: 1024,
+    });
+    expect(rhythmicRecordingRenderProfile(60)).toEqual({
+      dpr: 1.35,
+      transmissionResolutionScale: 0.68,
+      shadowMapSize: 1024,
+    });
+    expect(rhythmicRecordingRenderProfile(120)).toEqual({
+      dpr: 1,
+      transmissionResolutionScale: 0.55,
+      shadowMapSize: 512,
+    });
+  });
+
   it("keeps the key light and shadow target centered on a distant course section", () => {
     const pose = shadowRigPose(
       { x: 2.5, y: -72, z: 0 },

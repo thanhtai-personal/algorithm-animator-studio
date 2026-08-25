@@ -3,7 +3,10 @@ import type { CourseItemOverride, NoteEvent, StudioSettings } from "../types";
 import type { MarblePlatform, MarblePoint } from "../lib/marbleCourse";
 import { clamp, marbleAtTime } from "../lib/marbleCourse";
 import { overrideForSegment } from "../lib/courseGuide";
+import { isPlatformCourseItem, overrideForNode } from "../lib/courseItems";
+import { resolvePlatformStyle } from "../lib/platformStyles";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
+import { instrumentMarbleContactDepth3D } from "./instrumentPlayingSurface3D";
 
 export const RHYTHMIC_COURSE_WIDTH = 720;
 export const RHYTHMIC_WORLD_SCALE = 0.012;
@@ -47,6 +50,19 @@ function depthForSegment(index: number, phase: number, settings: StudioSettings)
   return Math.max(0, arc * amplitude * curveScale + weave);
 }
 
+function contactDepthForPlatform(
+  platform: MarblePlatform | undefined,
+  settings: StudioSettings,
+  overrides: CourseItemOverride[],
+) {
+  if (!platform) return 0;
+  const override = overrideForNode(platform.index, overrides);
+  if (override && !isPlatformCourseItem(override.style)) return 0;
+  const style = platform.visualStyle
+    ?? (override && isPlatformCourseItem(override.style) ? override.style : resolvePlatformStyle(platform.index, settings));
+  return instrumentMarbleContactDepth3D(style, settings.ballSize * RHYTHMIC_WORLD_SCALE);
+}
+
 export function visualMarbleAtTime(
   timeMs: number,
   events: NoteEvent[],
@@ -62,9 +78,10 @@ export function visualMarbleAtTime(
 
   if (timeMs < events[0].timeMs || events.length === 1) {
     const point = marbleAtTime(timeMs, events, platforms, settings, overrides, resolveSettings);
+    const firstSettings = resolveSettings?.(0) ?? settings;
     return {
       ...point,
-      z: 0,
+      z: contactDepthForPlatform(platforms[0], firstSettings, overrides),
       segmentIndex: 0,
       phase: 0,
       impactAgeMs: timeMs - events[0].timeMs,
@@ -75,9 +92,10 @@ export function visualMarbleAtTime(
   const index = Math.min(eventIndexAtOrBefore(events, timeMs), events.length - 1);
   if (index >= events.length - 1) {
     const point = marbleAtTime(timeMs, events, platforms, settings, overrides, resolveSettings);
+    const finalSettings = resolveSettings?.(index) ?? settings;
     return {
       ...point,
-      z: 0,
+      z: contactDepthForPlatform(platforms[index], finalSettings, overrides),
       segmentIndex: index,
       phase: 1,
       impactAgeMs: timeMs - events[index].timeMs,
@@ -94,10 +112,14 @@ export function visualMarbleAtTime(
   // trajectory in the presentation layer: doing so makes acceleration feel synthetic.
   const renderedTimeMs = timeMs;
   const segmentSettings = resolveSettings?.(index) ?? settings;
+  const nextSettings = resolveSettings?.(index + 1) ?? settings;
   const point = marbleAtTime(renderedTimeMs, events, platforms, settings, overrides, resolveSettings);
+  const contactStartZ = contactDepthForPlatform(platforms[index], segmentSettings, overrides);
+  const contactEndZ = contactDepthForPlatform(platforms[index + 1], nextSettings, overrides);
+  const contactZ = THREE.MathUtils.lerp(contactStartZ, contactEndZ, phase);
   return {
     ...point,
-    z: overrideForSegment(index, overrides) ? 0 : depthForSegment(index, phase, segmentSettings),
+    z: contactZ + (overrideForSegment(index, overrides) ? 0 : depthForSegment(index, phase, segmentSettings)),
     segmentIndex: index,
     phase,
     impactAgeMs: timeMs - start,

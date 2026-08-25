@@ -1,6 +1,7 @@
 import type { NoteEvent, StudioSettings } from "../types";
 import type { Vec2 } from "./marblePhysicsTypes";
 import { courseWorldBounds } from "./marbleCourseConstraints";
+import { marblePhysicsProfile } from "./marblePhysicsProfiles";
 import type { DenseInstrumentKind, DenseInstrumentRun, DenseSettingsResolver, ChordCluster, RollingRouteCandidate } from "./denseInstrumentTypes";
 import { CHORD_GAP_MS } from "./denseInstrumentTypes";
 
@@ -14,7 +15,10 @@ const DENSE_GAP_MS = 260;
 const MIN_RUN_STRIKES = 3;
 const MICRO_BURST_GAP_MS = 130;
 const MAX_RUN_STRIKES = 14;
-const ROLL_SLOPE = 0.075;
+// A shallower grade reads as a perfectly horizontal shelf in the perspective
+// camera, so the marble seems to propel itself. About eight degrees remains
+// compact while making gravity-driven travel visible.
+const ROLL_SLOPE = 0.14;
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const length = (v: Vec2) => Math.hypot(v.x, v.y);
 const normalize = (v: Vec2): Vec2 => {
@@ -229,32 +233,61 @@ export function rollingRouteCandidate(
   const minimumStep = Math.max(2.2, settings.ballSize * 0.16);
   let step = clamp(speed * dt, minimumStep, 34);
   const incomingDirection = Math.abs(incoming.x) > 1 ? Math.sign(incoming.x) : 0;
-  const direction = incomingDirection || preferredDirection || 1;
+  let direction = lockDirection
+    ? Math.sign(preferredDirection || incomingDirection || 1)
+    : incomingDirection || Math.sign(preferredDirection) || 1;
+
+  const roomFor = (candidateDirection: number) => (
+    candidateDirection > 0 ? maxX - hit.x : hit.x - minX
+  );
+
+  // The entry collision may redirect the marble onto either side of the new
+  // lane. Never keep a direction with no travel room: clamping X while still
+  // advancing Y made the sphere spin and descend at one fixed screen position.
+  const totalNeed = runHorizontalNeed(events, index, run, speed, settings.ballSize)
+    + runExitReserve(events, run, speed, settings.ballSize);
+  const forwardRoom = roomFor(direction);
+  const reverseRoom = roomFor(-direction);
+  const needsTurnaround = forwardRoom < minimumStep
+    || (forwardRoom < totalNeed && reverseRoom > forwardRoom && reverseRoom >= minimumStep);
+  if (needsTurnaround && roomFor(-direction) > roomFor(direction)) {
+    direction *= -1;
+  }
 
   // A passive lane cannot reverse the tangential component of the incoming
   // velocity. Preserve its direction and compress the run when the forward side
   // is short; an actual change of direction must be produced by a visible bounce.
   if (surfaceEntry && !lockDirection) {
-    const totalNeed = runHorizontalNeed(events, index, run, speed, settings.ballSize)
-      + runExitReserve(events, run, speed, settings.ballSize);
-    const forwardRoom = direction > 0 ? maxX - hit.x : hit.x - minX;
-    if (forwardRoom < totalNeed) step *= clamp(forwardRoom / Math.max(totalNeed, 1), 0.2, 1);
+    const forwardRoom = roomFor(direction);
+    if (forwardRoom < totalNeed) step *= clamp(forwardRoom / Math.max(totalNeed, 1), 0, 1);
   }
 
   const remaining = Math.max(1, run.end - index);
-  const availableRoom = direction > 0 ? maxX - hit.x : hit.x - minX;
-  step = Math.min(step, Math.max(minimumStep, availableRoom / remaining));
+  const availableRoom = Math.max(0, roomFor(direction));
+  step = Math.min(step, availableRoom / remaining);
   const dx = direction * step;
   const dy = Math.abs(dx) * ROLL_SLOPE;
   const target = { x: clamp(hit.x + dx, minX, maxX), y: hit.y + dy };
   const actual = { x: target.x - hit.x, y: target.y - hit.y };
+  const redirected = incomingDirection !== 0 && Math.sign(actual.x) !== incomingDirection;
   const tangent = normalize(actual);
-  const normal = { x: tangent.y, y: -tangent.x };
+  let normal = { x: tangent.y, y: -tangent.x };
+  let outgoing = { x: actual.x / dt, y: actual.y / dt };
+  if (redirected) {
+    const gravity = marblePhysicsProfile(settings).gravity;
+    outgoing = {
+      x: actual.x / dt,
+      y: (actual.y - 0.5 * gravity * dt * dt) / dt,
+    };
+    normal = normalize({ x: incoming.x - outgoing.x, y: incoming.y - outgoing.y });
+    if (incoming.x * normal.x + incoming.y * normal.y > 0) normal = { x: -normal.x, y: -normal.y };
+  }
   return {
     normal,
-    outgoing: { x: actual.x / dt, y: actual.y / dt },
+    outgoing,
     target,
-    score: Math.abs(step - Math.abs(actual.x)) * 0.45,
+    score: Math.abs(step - Math.abs(actual.x)) * 0.45 + (redirected ? 28 : 0),
+    motionMode: redirected ? "ballistic" : "roll",
   };
 }
 
@@ -287,4 +320,3 @@ export function rollingExitCandidate(
     score: 0,
   };
 }
-

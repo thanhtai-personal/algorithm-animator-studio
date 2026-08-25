@@ -5,6 +5,7 @@ import type { RhythmicStudioStore } from "../store/RhythmicStudioStore";
 import { instrumentVoiceForPlatform } from "../lib/instrumentHitProfiles";
 import { rhythmicAudioPresentationDelayMs } from "../lib/playbackSync";
 import { presetForMidiEvent } from "../lib/synthVoices";
+import { instrumentHitForPlatform } from "../lib/instrumentHitEvent";
 
 function presetForInstrumentCollision(store: RhythmicStudioStore, hit: InstrumentHitEvent): SynthPreset {
   const { settings } = store;
@@ -63,6 +64,22 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
       brightness: store.settings.synthBrightness,
       stereoWidth: store.settings.synthStereoWidth,
       presentationDelayMs: presentationDelayMs(),
+      presetForEvent: store.settings.instrumentNativeAudio
+        ? (event, index) => {
+            if (!store.preparedPlatforms[index]) {
+              return store.settings.midiInstrumentMode === "auto"
+                ? presetForMidiEvent(event)
+                : store.settings.synthPreset;
+            }
+            const hit = instrumentHitForPlatform(
+              index,
+              store.preparedPlatforms,
+              store.settings,
+              store.courseOverrides,
+            );
+            return presetForInstrumentCollision(store, hit);
+          }
+        : undefined,
     });
   }, [presentationDelayMs, store]);
 
@@ -156,7 +173,7 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
     // MIDI playback is already sample-accurately scheduled by scheduleMidi().
     // Triggering another synth voice here doubles every note and can overload the
     // recorded mix. Keep collision-triggered SFX for built-in/audio sources only.
-    if (store.source.type === "midi" && store.settings.midiPlaybackEnabled && !store.settings.instrumentNativeAudio) return;
+    if (store.source.type === "midi" && store.settings.midiPlaybackEnabled) return;
     const { event } = hit;
     void audioEngineRef.current.playNote(
       event.midi,

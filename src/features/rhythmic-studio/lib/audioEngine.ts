@@ -19,6 +19,7 @@ interface MidiScheduleOptions {
   brightness: number;
   stereoWidth: number;
   presentationDelayMs: number;
+  presetForEvent?: (event: NoteEvent, index: number) => SynthPreset;
 }
 
 function createRoomImpulse(context: AudioContext, seconds = 1.05, decay = 3.4) {
@@ -210,13 +211,15 @@ export class AudioEngine {
       const elapsedMs = Math.max(0, context.currentTime - base) * 1000 + resumeMs;
       const horizonMs = elapsedMs + 1450;
       while (index < events.length) {
-        const event = events[index];
+        const eventIndex = index;
+        const event = events[eventIndex];
         const visualTime = event.timeMs / speed + options.syncOffsetMs;
         if (visualTime > horizonMs) break;
         index += 1;
         if (visualTime < resumeMs - 2) continue;
         const when = base + Math.max(0, visualTime - resumeMs) / 1000;
-        const preset = options.mode === "auto" ? presetForMidiEvent(event) : options.preset;
+        const preset = options.presetForEvent?.(event, eventIndex)
+          ?? (options.mode === "auto" ? presetForMidiEvent(event) : options.preset);
         playSynthVoice(context, session, event.midi, event.velocity, event.durationMs / speed, preset, {
           when,
           brightness: Math.min(0.82, options.brightness * 0.9 + 0.08),

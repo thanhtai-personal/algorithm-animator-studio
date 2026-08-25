@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS } from "../features/rhythmic-studio/defaults";
 import { buildMarbleCourse, marbleAtTime } from "../features/rhythmic-studio/lib/marbleCourse";
 import type { NoteEvent } from "../features/rhythmic-studio/types";
-import { CHORD_GAP_MS, chordClusters } from "../features/rhythmic-studio/engine/denseInstrumentRuns";
+import {
+  CHORD_GAP_MS,
+  chordClusters,
+  rollingRouteCandidate,
+  type DenseInstrumentRun,
+} from "../features/rhythmic-studio/engine/denseInstrumentRuns";
+import { courseWorldBounds } from "../features/rhythmic-studio/engine/marbleCourseConstraints";
 
 function note(index: number, timeMs: number, isDrum = false): NoteEvent {
   return {
@@ -25,6 +31,70 @@ const settings = {
 };
 
 describe("rhythmic dense instrument routing", () => {
+  it("turns a new rolling surface away from the wall instead of rotating in place", () => {
+    const events = Array.from({ length: 5 }, (_, index) => note(index, index * 90));
+    const run: DenseInstrumentRun = { id: 0, surfaceId: 0, start: 0, end: 4, kind: "keyboard" };
+    const bounds = courseWorldBounds(settings, 720);
+    const margin = Math.max(settings.ballSize * 1.25, settings.platformThickness * 0.72, 14);
+    const hit = { x: bounds.max - margin, y: 180 };
+
+    const route = rollingRouteCandidate(
+      hit,
+      { x: 190, y: 20 },
+      events,
+      0,
+      run,
+      1,
+      settings,
+      720,
+      true,
+    );
+
+    expect(route.target.x).toBeLessThan(hit.x - 2);
+    expect(Math.abs(route.outgoing.x)).toBeGreaterThan(20);
+    expect(route.motionMode).toBe("ballistic");
+  });
+
+  it("gives every rolling lane a visibly downhill surface", () => {
+    const events = Array.from({ length: 5 }, (_, index) => note(index, index * 100));
+    const run: DenseInstrumentRun = { id: 0, surfaceId: 0, start: 0, end: 4, kind: "keyboard" };
+    const route = rollingRouteCandidate(
+      { x: 360, y: 180 },
+      { x: 180, y: 18 },
+      events,
+      0,
+      run,
+      1,
+      settings,
+      720,
+      true,
+    );
+    const dx = Math.abs(route.target.x - 360);
+    const dy = route.target.y - 180;
+
+    expect(dx).toBeGreaterThan(2);
+    expect(dy / dx).toBeGreaterThanOrEqual(0.12);
+  });
+
+  it("turns a long dense phrase before its rolling steps collapse near a wall", () => {
+    const gaps = [222.222, 222.222, 111.111, 111.111];
+    let timeMs = 0;
+    const events = Array.from({ length: 72 }, (_, index) => {
+      const event = note(index, timeMs);
+      timeMs += gaps[index % gaps.length];
+      return event;
+    });
+    events.push(note(events.length, timeMs + 620));
+
+    const platforms = buildMarbleCourse(events, settings, 720);
+    const minimumHorizontalStep = Math.max(2.2, settings.ballSize * 0.16);
+    for (let index = 0; index < platforms.length - 1; index += 1) {
+      if (platforms[index].motionMode !== "roll") continue;
+      const dx = Math.abs(platforms[index + 1].hitX - platforms[index].hitX);
+      expect(dx, `rolling segment ${index}`).toBeGreaterThanOrEqual(minimumHorizontalStep - 1e-6);
+    }
+  });
+
   it("moves 240 ms fast passages onto a parallel rail surface instead of distant bounces", () => {
     const events = Array.from({ length: 7 }, (_, index) => note(index, index * 240));
     events.push(note(7, 2_400));
@@ -180,15 +250,37 @@ describe("rhythmic dense instrument routing", () => {
     expect(dense.length).toBeGreaterThan(4);
 
     for (const platform of dense) {
-      const angle = platform.visualTiltRad ?? platform.tiltRad;
-      let tangent = { x: Math.cos(angle), y: Math.sin(angle) };
-      if (tangent.x < 0) tangent = { x: -tangent.x, y: -tangent.y };
-      const normal = { x: tangent.y, y: -tangent.x };
+      const normalLength = Math.hypot(platform.normalX, platform.normalY);
+      const normal = { x: platform.normalX / normalLength, y: platform.normalY / normalLength };
       const faceX = (platform.visualX ?? platform.x) + normal.x * settings.ballSize;
       const faceY = (platform.visualY ?? platform.y) + normal.y * settings.ballSize;
       const perpendicular = Math.abs((platform.hitX - faceX) * normal.x + (platform.hitY - faceY) * normal.y);
       expect(perpendicular).toBeLessThan(1e-6);
     }
+  });
+
+  it("keeps the marble on the playable side of dense surfaces in both travel directions", () => {
+    const events = Array.from({ length: 72 }, (_, index) => note(index, index * 118));
+    events.push(note(72, 9_300));
+    const platforms = buildMarbleCourse(events, settings, 720);
+    let leftMovingSegments = 0;
+
+    for (let index = 0; index < platforms.length - 1; index += 1) {
+      const platform = platforms[index];
+      if (platform.motionMode !== "roll" || platform.visualHidden) continue;
+      const next = platforms[index + 1];
+      if (next.hitX < platform.hitX) leftMovingSegments += 1;
+      const normalLength = Math.hypot(platform.normalX, platform.normalY);
+      const normalX = platform.normalX / normalLength;
+      const normalY = platform.normalY / normalLength;
+      const surfaceX = platform.visualX ?? platform.x;
+      const surfaceY = platform.visualY ?? platform.y;
+      const signedClearance = (platform.hitX - surfaceX) * normalX
+        + (platform.hitY - surfaceY) * normalY;
+      expect(signedClearance, `rolling surface ${index}`).toBeCloseTo(settings.ballSize, 5);
+    }
+
+    expect(leftMovingSegments).toBeGreaterThan(0);
   });
 
 });

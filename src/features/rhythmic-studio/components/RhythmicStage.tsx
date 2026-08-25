@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Box, CircleStop, FileVideo2, Image, LoaderCircle, Pause, Play, RefreshCcw, Video } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -224,6 +224,11 @@ export function RhythmicStage({ studio }: { studio: Studio }) {
   const courseReady = !course.isPreparing && !course.error && course.platforms.length === studio.timeline.length;
   const rendererLocked = studio.playing || studio.recording || course.isPreparing;
   const preparingLabel = t("status.preparingCourse");
+
+  useEffect(() => {
+    studio.store.setPreparedPlatforms(courseReady ? course.platforms : []);
+    return () => studio.store.setPreparedPlatforms([]);
+  }, [course.platforms, courseReady, studio.store]);
 
   return <section className="rhythmic-stage min-w-0 space-y-3">
     <StageStatus studio={studio} preparing={course.isPreparing} statusLabel={preparingLabel} useThreeRenderer={useThreeRenderer} outputSize={outputSize} />

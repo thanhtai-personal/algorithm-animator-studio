@@ -876,7 +876,11 @@ function createPlatformForRoute(
     step.platformWidth,
     step.profile.gravity,
   );
-  platform.motionMode = step.chord ? "hold" : step.denseRun ? "roll" : "ballistic";
+  platform.motionMode = step.chord
+    ? "hold"
+    : step.denseRun
+      ? ("motionMode" in route ? route.motionMode : undefined) ?? "roll"
+      : "ballistic";
   platform.denseRunId = step.denseNode?.id;
   platform.denseSurfaceId = step.denseNode?.surfaceId;
   platform.chordClusterId = step.chordNode?.id;

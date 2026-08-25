@@ -8,6 +8,7 @@ import type { LyricFormat } from "../lib/lyrics";
 import type { RhythmicTextKey } from "../i18n";
 import type { RhythmicPresetId } from "../lib/studioPresets";
 import { normalizeBackgroundPreset } from "../types";
+import type { MarblePlatform } from "../engine/marblePhysicsTypes";
 import type {
   AudioSourceMeta,
   CourseItemOverride,
@@ -57,9 +58,13 @@ export class RhythmicStudioStore {
   presetMixEnabled = false;
   presetMixSeed = 1;
   rendererMode: RhythmicRendererMode = "three";
+  // Runtime-only copy of the exact prepared course. Audio scheduling reads this
+  // so a rendered drum/gong/key receives its matching voice without waiting for
+  // frame callbacks (which can be late during capture).
+  preparedPlatforms: MarblePlatform[] = [];
 
   constructor() {
-    makeAutoObservable(this, {}, { autoBind: true });
+    makeAutoObservable(this, { preparedPlatforms: false }, { autoBind: true });
     this.playbackEndMs = this.durationMs;
     this.trimEndMs = this.durationMs;
   }
@@ -94,6 +99,7 @@ export class RhythmicStudioStore {
     this.activePresetId = id;
     this.courseOverrides = [];
     this.selectedNodeIndex = null;
+    this.preparedPlatforms = [];
   }
 
   applyVisualPreset(id: RhythmicPresetId, settings: Partial<StudioSettings>) {
@@ -118,6 +124,7 @@ export class RhythmicStudioStore {
     this.audioUrl = audioUrl;
     this.courseOverrides = [];
     this.selectedNodeIndex = null;
+    this.preparedPlatforms = [];
     this.playing = false;
     this.timeMs = 0;
     this.playbackToken += 1;
@@ -191,4 +198,5 @@ export class RhythmicStudioStore {
   setPresetMixSeed(seed: number) { this.presetMixSeed = Math.max(1, Math.floor(seed)); }
   setSelectedNode(index: number | null) { this.selectedNodeIndex = index; }
   setOverrides(overrides: CourseItemOverride[]) { this.courseOverrides = overrides; }
+  setPreparedPlatforms(platforms: MarblePlatform[]) { this.preparedPlatforms = platforms; }
 }

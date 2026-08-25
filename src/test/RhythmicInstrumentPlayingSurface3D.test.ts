@@ -10,10 +10,12 @@ const BALL_RADIUS = 0.18;
 
 function expectBallToTouchFace(style: PlatformStyle) {
   const surface = instrumentPlayingSurface3D(style, 1, 0.14, 0.54, BALL_RADIUS);
-  const distanceAlongFaceNormal = (BALL_RADIUS + surface.contactCorrection) * surface.normalY;
+  const distanceAlongFaceNormal = (BALL_RADIUS + surface.contactCorrection) * surface.normalY
+    + surface.marbleContactZ * surface.normalZ;
 
   expect(surface.normalY).toBeGreaterThan(0.55);
   expect(surface.normalZ).toBeGreaterThan(0.4);
+  expect(surface.marbleContactZ).toBeGreaterThan(0);
   expect(distanceAlongFaceNormal).toBeCloseTo(BALL_RADIUS, 6);
   return surface;
 }
@@ -66,7 +68,8 @@ describe("3D instrument playing surfaces", () => {
       BALL_RADIUS,
       normalAlignment,
     );
-    const distance = (BALL_RADIUS * normalAlignment + surface.contactCorrection) * surface.normalY;
+    const distance = (BALL_RADIUS * normalAlignment + surface.contactCorrection) * surface.normalY
+      + surface.marbleContactZ * surface.normalZ;
 
     expect(distance).toBeCloseTo(BALL_RADIUS, 6);
   });
@@ -87,6 +90,7 @@ describe("3D instrument playing surfaces", () => {
     expect(surface.faceKind).toBe("edge");
     expect(surface.normalY).toBe(1);
     expect(surface.normalZ).toBe(0);
+    expect(surface.marbleContactZ).toBe(0);
     expect(surface.localStrikeY).toBeCloseTo(0.07);
     expect(surface.localStrikeZ).toBeCloseTo(0.27);
     expect(surface.contactCorrection).toBe(0);

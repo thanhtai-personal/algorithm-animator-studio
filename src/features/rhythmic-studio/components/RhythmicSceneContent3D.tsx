@@ -18,19 +18,21 @@ import {
   firstEventAtOrAfter,
   noteDensity,
   platformImpactStrength,
+  rhythmicRecordingRenderProfile,
   RHYTHMIC_CAMERA_FOV,
   RHYTHMIC_CAMERA_Z,
   RHYTHMIC_UI_UPDATE_MS,
 } from "./rhythmicSceneMath3D";
 import { instrumentHitForPlatform } from "../lib/instrumentHitEvent";
 
-function RendererQuality({ recording, shadowsEnabled }: { recording: boolean; shadowsEnabled: boolean }) {
+function RendererQuality({ recording, shadowsEnabled, exportFps }: { recording: boolean; shadowsEnabled: boolean; exportFps: number }) {
   const { gl } = useThree();
   useEffect(() => {
-    gl.transmissionResolutionScale = recording ? 1 : 0.72;
+    const profile = rhythmicRecordingRenderProfile(exportFps);
+    gl.transmissionResolutionScale = recording ? profile.transmissionResolutionScale : 0.72;
     gl.shadowMap.enabled = shadowsEnabled;
     gl.shadowMap.needsUpdate = shadowsEnabled;
-  }, [gl, recording, shadowsEnabled]);
+  }, [exportFps, gl, recording, shadowsEnabled]);
   return null;
 }
 
@@ -260,10 +262,10 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
   });
 
   return <>
-    <RendererQuality recording={props.recording} shadowsEnabled={props.settings.instrumentShadowsEnabled} />
+    <RendererQuality recording={props.recording} shadowsEnabled={props.settings.instrumentShadowsEnabled} exportFps={props.settings.exportFps} />
     <PerspectiveCamera makeDefault fov={RHYTHMIC_CAMERA_FOV} near={0.1} far={180} position={[0, 0, RHYTHMIC_CAMERA_Z]} />
     <RhythmicTitle3D text={props.settings.titleText} />
-    <RhythmicLightingRig3D settings={props.settings} focus={smoothedLook} bounds={backdropBounds} />
+    <RhythmicLightingRig3D settings={props.settings} focus={smoothedLook} bounds={backdropBounds} recording={props.recording} />
     <RhythmicEnvironment3D settings={props.settings} backgroundUrl={props.backgroundUrl} bounds={backdropBounds} />
     <RhythmicCourseItems3D platforms={props.platforms} overrides={props.courseOverrides} settings={props.settings} focusIndex={focusIndex} events={props.events} resolveSettings={props.resolveSettings} />
     <RhythmicPlatformField3D platforms={props.platforms} settings={props.settings} courseOverrides={props.courseOverrides} focusIndex={focusIndex} selectedNodeIndex={props.selectedNodeIndex} onSelectNode={props.onSelectNode} resolveSettings={props.resolveSettings} impactIndex={impactLight.index} impactStrength={impactLight.strength} timeMs={props.timeMs} />

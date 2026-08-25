@@ -15,7 +15,7 @@ import {
   normalizeVideoFitMode,
 } from "../services/VideoService";
 import { listGeneratedVideos } from "../utils/videoOutput";
-import { runFfmpeg } from "../utils/ffmpeg";
+import { runFfmpeg, runFfprobe } from "../utils/ffmpeg";
 import { readEnvValues } from "../services/EnvFileService";
 import { resolveGeneratedResource } from "../services/ResourceService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
@@ -23,6 +23,12 @@ import { getRemotionHealth, renderRemotionVideo } from "../services/RemotionRend
 import { renderTimelineVideo } from "../services/TimelineVideoService";
 import { renderRemotionTimelineVideo } from "../services/RemotionTimelineRenderService";
 import { BACKGROUND_LIMITS, generateNarrationAudio, resolveOptionalBackgroundMusic, saveUploadedAudio, sendError, validateBackgroundFile } from "./videoRouteHelpers";
+import {
+  buildRhythmicCaptureProbeArgs,
+  buildRhythmicMp4TranscodeArgs,
+  normalizeRhythmicTranscodeFields,
+  parseRhythmicCaptureProbe,
+} from "../utils/rhythmicTranscode";
 
 const uploadDirectory = path.join(os.tmpdir(), "piper-react-video-backgrounds");
 
@@ -56,12 +62,34 @@ export function createVideoRouter() {
       fs.rm(outputPath, { force: true }, () => undefined);
     };
     try {
-      await runFfmpeg([
-        "-y", "-i", req.file.path,
-        "-map", "0:v:0", "-map", "0:a:0?",
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p",
-        "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", outputPath,
-      ], readRuntimeEnvFromRequest(req));
+      const envOverrides = readRuntimeEnvFromRequest(req);
+      const output = normalizeRhythmicTranscodeFields(req.body || {});
+      const probe = await runFfprobe(
+        buildRhythmicCaptureProbeArgs(req.file.path),
+        envOverrides,
+      );
+      const cadence = parseRhythmicCaptureProbe(probe.stdout, output.fps);
+      if (!cadence) {
+        cleanup();
+        return res.status(422).json({
+          code: "RHYTHMIC_CAPTURE_UNREADABLE",
+          error: "Không đo được nhịp khung hình của bản ghi WebGL. Video chưa được xuất để tránh tạo tệp bị giật.",
+        });
+      }
+      if (!cadence.healthy) {
+        cleanup();
+        return res.status(422).json({
+          code: "RHYTHMIC_CAPTURE_TOO_SLOW",
+          error: `Bản ghi chỉ đạt ${cadence.capturedFps.toFixed(1)}/${cadence.targetFps} FPS, khoảng đứng hình lớn nhất ${Math.round(cadence.maxFrameGapMs)} ms. Hãy chọn 30 FPS hoặc giảm hiệu ứng rồi xuất lại.`,
+          cadence,
+        });
+      }
+      await runFfmpeg(
+        buildRhythmicMp4TranscodeArgs(req.file.path, outputPath, output),
+        envOverrides,
+      );
+      res.setHeader("X-Rhythmic-Captured-Fps", cadence.capturedFps.toFixed(2));
+      res.setHeader("X-Rhythmic-Max-Frame-Gap-Ms", cadence.maxFrameGapMs.toFixed(1));
       res.once("finish", cleanup);
       res.once("close", cleanup);
       return res.sendFile(outputPath);

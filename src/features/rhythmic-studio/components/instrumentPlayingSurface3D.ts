@@ -9,6 +9,7 @@ export interface InstrumentPlayingSurface3D {
   projectedStrikeZ: number;
   normalY: number;
   normalZ: number;
+  marbleContactZ: number;
   contactCorrection: number;
   centerInset: number;
   frontDepth: number;
@@ -165,6 +166,7 @@ export function instrumentPlayingSurface3D(
       projectedStrikeZ: frontDepth,
       normalY: 1,
       normalZ: 0,
+      marbleContactZ: 0,
       contactCorrection,
       centerInset: height * 0.5 + contactCorrection,
       frontDepth,
@@ -177,7 +179,11 @@ export function instrumentPlayingSurface3D(
   const normalZ = profile.faceKind === "front" ? Math.cos(pitchRad) : Math.sin(pitchRad);
   const projectedStrikeY = localStrikeY * Math.cos(pitchRad) - localStrikeZ * Math.sin(pitchRad);
   const projectedStrikeZ = localStrikeY * Math.sin(pitchRad) + localStrikeZ * Math.cos(pitchRad);
-  const contactCorrection = safeRadius * (1 / normalY - safeAlignment);
+  const marbleContactZ = safeRadius * normalZ;
+  // Split the radius offset across screen-space Y and camera-space Z. Keeping
+  // the marble at z=0 forced an inclined drum/key face through the sphere.
+  const contactCorrection = (safeRadius - marbleContactZ * normalZ) / normalY
+    - safeRadius * safeAlignment;
 
   return {
     faceKind: profile.faceKind,
@@ -188,10 +194,19 @@ export function instrumentPlayingSurface3D(
     projectedStrikeZ,
     normalY,
     normalZ,
+    marbleContactZ,
     contactCorrection,
     centerInset: projectedStrikeY + contactCorrection,
     frontDepth: projectedStrikeZ,
   };
+}
+
+export function instrumentMarbleContactDepth3D(style: PlatformStyle, ballRadius: number) {
+  const profile = PLAYING_FACE_PROFILES[style];
+  if (!profile) return 0;
+  const pitchRad = profile.pitchDeg * Math.PI / 180;
+  const normalZ = profile.faceKind === "front" ? Math.cos(pitchRad) : Math.sin(pitchRad);
+  return Math.max(0, ballRadius) * Math.max(0, normalZ);
 }
 
 export function instrumentPressOffset3D(surface: InstrumentPlayingSurface3D, distance: number) {

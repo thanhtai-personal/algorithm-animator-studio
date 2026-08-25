@@ -1,5 +1,5 @@
 import type { StudioSettings } from "../types";
-import type { Vec2 } from "./marblePhysicsTypes";
+import type { SegmentMotionMode, Vec2 } from "./marblePhysicsTypes";
 
 export type DenseInstrumentKind = "keyboard" | "pad-strip";
 
@@ -22,6 +22,7 @@ export interface RollingRouteCandidate {
   outgoing: Vec2;
   target: Vec2;
   score: number;
+  motionMode?: SegmentMotionMode;
 }
 
 export type DenseSettingsResolver = (index: number) => StudioSettings;

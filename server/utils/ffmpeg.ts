@@ -17,13 +17,23 @@ export function runFfmpeg(
   );
 }
 
+export function runFfprobe(
+  args: string[],
+  envOverrides: RuntimeEnvValues = {}
+): Promise<{ stdout: string; stderr: string }> {
+  const env = readEnvValues(envOverrides);
+  return runProcess(
+    resolveRuntimeExecutable(env.FFPROBE_EXE || process.env.FFPROBE_EXE || FFPROBE_EXE),
+    args,
+    "Không chạy được FFprobe"
+  );
+}
+
 export async function getAudioDurationSeconds(
   audioPath: string,
   envOverrides: RuntimeEnvValues = {}
 ): Promise<number> {
-  const env = readEnvValues(envOverrides);
-  const result = await runProcess(
-    resolveRuntimeExecutable(env.FFPROBE_EXE || process.env.FFPROBE_EXE || FFPROBE_EXE),
+  const result = await runFfprobe(
     [
       "-v",
       "error",
@@ -33,7 +43,7 @@ export async function getAudioDurationSeconds(
       "default=noprint_wrappers=1:nokey=1",
       audioPath,
     ],
-    "Không chạy được FFprobe"
+    envOverrides
   );
   const duration = Number.parseFloat(result.stdout.trim());
 

@@ -5,7 +5,14 @@ import { RhythmicCanvas } from "../features/rhythmic-studio/components/RhythmicC
 import { RhythmicScene3D } from "../features/rhythmic-studio/components/RhythmicScene3D";
 
 vi.mock("@react-three/fiber", () => ({
-  Canvas: ({ shadows }: { shadows?: boolean }) => <canvas data-testid="three-canvas" data-shadows={String(Boolean(shadows))} />,
+  Canvas: ({ shadows, dpr, gl }: { shadows?: boolean; dpr?: number | number[]; gl?: { preserveDrawingBuffer?: boolean } }) => (
+    <canvas
+      data-testid="three-canvas"
+      data-shadows={String(Boolean(shadows))}
+      data-dpr={String(dpr)}
+      data-preserve-buffer={String(Boolean(gl?.preserveDrawingBuffer))}
+    />
+  ),
 }));
 vi.mock("../features/rhythmic-studio/lib/rhythmicFrameRenderer", () => ({
   drawRhythmicFrame: vi.fn(),
@@ -83,5 +90,20 @@ describe("rhythmic renderer output dimensions", () => {
     );
 
     expect(screen.getByTestId("three-canvas")).toHaveAttribute("data-shadows", "false");
+  });
+
+  it("caps recording pixel density so capture does not drop most frames", () => {
+    render(
+      <RhythmicScene3D
+        {...sharedProps}
+        recording
+        timeMs={0}
+        frameWidth={720}
+        frameHeight={1280}
+      />,
+    );
+
+    expect(screen.getByTestId("three-canvas")).toHaveAttribute("data-dpr", "1.35");
+    expect(screen.getByTestId("three-canvas")).toHaveAttribute("data-preserve-buffer", "false");
   });
 });

@@ -37,8 +37,15 @@ function strikePositionsForSurface(platforms: MarblePlatform[], positions: numbe
 
 function canonicalSurfaceFrame(from: MarblePlatform, to: MarblePlatform) {
   let tangent = normalize({ x: to.hitX - from.hitX, y: to.hitY - from.hitY });
-  if (tangent.x < 0) tangent = { x: -tangent.x, y: -tangent.y };
-  return { tangent, normal: { x: tangent.y, y: -tangent.x }, angle: Math.atan2(tangent.y, tangent.x) };
+  let normal = { x: tangent.y, y: -tangent.x };
+  // A bar axis is visually undirected, but its playing-face normal is not. The
+  // old x-positive canonicalization flipped the normal whenever the marble
+  // travelled left, placing the key on the marble side of the collision point.
+  if (normal.x * from.normalX + normal.y * from.normalY < 0) {
+    tangent = { x: -tangent.x, y: -tangent.y };
+    normal = { x: -normal.x, y: -normal.y };
+  }
+  return { tangent, normal, angle: Math.atan2(tangent.y, tangent.x) };
 }
 
 function terminalSurfaceFrame(platforms: MarblePlatform[], strikeIndices: number[], offset: number) {
@@ -142,7 +149,7 @@ export function decorateDenseInstrumentRuns(platforms: MarblePlatform[], runs: D
       const index = strikes[offset];
       const localSettings = resolveSettings?.(index) ?? settings;
       const next = offset < strikes.length - 1 ? decorated[strikes[offset + 1]] : undefined;
-      if (next) decorateRollingSegment(decorated[index], next, surface.kind, localSettings);
+      if (next && decorated[index].motionMode === "roll") decorateRollingSegment(decorated[index], next, surface.kind, localSettings);
       else if (decorated[index].motionMode === "roll") {
         decorateTerminalStrike(decorated[index], offset > 0 ? decorated[strikes[offset - 1]] : undefined, terminalSurfaceFrame(decorated, strikes, offset), surface.kind, localSettings);
       } else decoratePhysicalTerminalStrike(decorated[index], surface.kind, localSettings);

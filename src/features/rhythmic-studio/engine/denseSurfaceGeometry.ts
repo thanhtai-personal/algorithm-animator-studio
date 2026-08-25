@@ -19,7 +19,7 @@ export function denseSurfaceSegments(platforms: MarblePlatform[]): DenseSurfaceS
   for (let index = 0; index < visible.length - 1; index += 1) {
     const from = visible[index];
     const to = visible[index + 1];
-    if (from.denseSurfaceId !== to.denseSurfaceId || !from.denseLayout) continue;
+    if (from.denseSurfaceId !== to.denseSurfaceId || !from.denseLayout || from.motionMode !== "roll") continue;
     segments.push({
       id: `${from.denseSurfaceId}-${from.index}-${to.index}`,
       surfaceId: from.denseSurfaceId,

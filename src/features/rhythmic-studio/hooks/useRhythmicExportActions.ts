@@ -3,7 +3,12 @@ import { toast } from "sonner";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { getExportFormat, type ExportFormat } from "@/pages/studio/exportFormats";
 import { rhythmicText } from "../i18n";
-import { downloadRhythmicBlob, pickRecordingMimeType } from "../lib/rhythmicExport";
+import {
+  downloadRhythmicBlob,
+  pickRecordingMimeType,
+  settleRhythmicRecordingSurface,
+  usesFixedClientExportSurface,
+} from "../lib/rhythmicExport";
 import { createFixedRhythmicExportSurface } from "../lib/rhythmicExportSurface";
 import { rhythmicOutputSize } from "../lib/outputSize";
 import { useRhythmicExportMutation } from "../queries/useRhythmicExportMutation";
@@ -55,12 +60,18 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, refs: Canva
     if (store.source.type === "audio" && playback.audioElementRef.current) {
       await playback.audioEngineRef.current.attachOriginalAudio(playback.audioElementRef.current);
     }
-    // Record from a fixed 720x1280 surface instead of the responsive WebGL
-    // drawing buffer. The latter follows CSS size × DPR and produced files such
-    // as 744x1324 depending on the browser window.
+    // Let React Three Fiber finish its recording DPR/shadow update before the
+    // first encoded frame. Recording the resize itself caused a visible startup
+    // freeze and made audio lead the picture.
+    store.setRecording(true, format);
+    await settleRhythmicRecordingSurface();
+    const preparedCanvas = currentCanvas(store, refs) ?? canvas;
     const outputSize = rhythmicOutputSize(store.settings.outputPreset);
-    const exportSurface = createFixedRhythmicExportSurface(canvas, outputSize.preset);
-    const videoStream = exportSurface.canvas.captureStream(store.settings.exportFps);
+    const exportSurface = usesFixedClientExportSurface(format)
+      ? createFixedRhythmicExportSurface(preparedCanvas, outputSize.preset)
+      : null;
+    const captureCanvas = exportSurface?.canvas ?? preparedCanvas;
+    const videoStream = captureCanvas.captureStream(store.settings.exportFps);
     // Never put the AudioEngine's shared destination track directly into the export
     // stream: stopping that stream would permanently end audio for later exports.
     const audioTracks = (playback.audioEngineRef.current.getRecordStream()?.getAudioTracks() ?? [])
@@ -78,7 +89,14 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, refs: Canva
     recorder.onstop = async () => {
       try {
         const intermediate = new Blob(chunksRef.current, { type: recorder.mimeType || mimeType });
-        const blob = format === "mp4" ? await mp4Mutation.mutateAsync(intermediate) : intermediate;
+        const blob = format === "mp4"
+          ? await mp4Mutation.mutateAsync({
+              blob: intermediate,
+              fps: store.settings.exportFps,
+              width: outputSize.width,
+              height: outputSize.height,
+            })
+          : intermediate;
         const clipSuffix = clipOnly ? `-clip-${Math.round(store.trimStartMs / 1000)}-${Math.round(store.trimEndMs / 1000)}` : "";
         downloadRhythmicBlob(blob, `${safeFileName(store.projectName)}${clipSuffix}.${exportFormat.id}`);
         store.setStatus({ key: "status.exported", values: { format: exportFormat.label, size: (blob.size / (1024 * 1024)).toFixed(1) } });
@@ -87,20 +105,19 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, refs: Canva
         store.setStatus({ key: "status.exportFailed", values: { format: exportFormat.label } });
         toast.error(error instanceof Error ? error.message : rhythmicText(lang, "status.exportFailed", { format: exportFormat.label }));
       } finally {
-        exportSurface.stop();
+        exportSurface?.stop();
         stream.getTracks().forEach((track) => track.stop());
         store.setRecording(false);
       }
     };
     recorder.onerror = () => {
-      exportSurface.stop();
+      exportSurface?.stop();
       stream.getTracks().forEach((track) => track.stop());
       store.setRecording(false);
       store.setStatus({ key: "status.exportFailed", values: { format: exportFormat.label } });
       toast.error(rhythmicText(lang, "status.exportFailed", { format: exportFormat.label }));
     };
     recorder.start(250);
-    store.setRecording(true, format);
     store.setStatus({
       key: "status.recording",
       values: {

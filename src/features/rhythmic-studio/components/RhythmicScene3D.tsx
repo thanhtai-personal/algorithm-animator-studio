@@ -5,6 +5,7 @@ import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 import type { MarblePlatform } from "../lib/marbleCourse";
 import type { CourseItemOverride, InstrumentHitEvent, NoteEvent, StudioSettings } from "../types";
 import { RhythmicSceneContent3D } from "./RhythmicSceneContent3D";
+import { rhythmicRecordingRenderProfile } from "./rhythmicSceneMath3D";
 
 export interface RhythmicScene3DProps {
   events: NoteEvent[];
@@ -42,6 +43,7 @@ export function hasRhythmicWebGLSupport() {
 }
 
 export function RhythmicScene3D(props: RhythmicScene3DProps) {
+  const recordingProfile = rhythmicRecordingRenderProfile(props.settings.exportFps);
   useEffect(() => () => {
     if (props.canvasRef) props.canvasRef.current = null;
   }, [props.canvasRef]);
@@ -54,14 +56,14 @@ export function RhythmicScene3D(props: RhythmicScene3DProps) {
     >
       <Canvas
         frameloop={props.playing ? "always" : "demand"}
-        dpr={props.recording ? 2 : props.playing ? [1, 1.35] : [1, 1.15]}
+        dpr={props.recording ? recordingProfile.dpr : props.playing ? [1, 1.35] : [1, 1.15]}
         shadows={props.settings.instrumentShadowsEnabled}
         gl={{
           antialias: true,
           alpha: false,
           powerPreference: "high-performance",
           stencil: false,
-          preserveDrawingBuffer: true,
+          preserveDrawingBuffer: false,
         }}
         onCreated={({ gl }) => {
           gl.outputColorSpace = THREE.SRGBColorSpace;

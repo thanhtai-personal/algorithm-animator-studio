@@ -2,7 +2,7 @@
 
 Route: `/algorithms/rhythmic`
 
-Marble Music Studio is integrated into KAI Studio's Algorithm Studio group. It creates 9:16 beat-bounce videos: every accepted note/hit generates a neon platform and the marble lands on that platform at the exact event timestamp while the camera scrolls through the course.
+Marble Music Studio is integrated into KAI Studio's Algorithm Studio group. It creates beat-bounce videos in portrait 9:16 and landscape 16:9: every accepted note/hit generates a neon platform and the marble lands on that platform at the exact event timestamp while the camera scrolls through the course.
 
 ## Inputs
 
@@ -32,7 +32,7 @@ Marble Music Studio is integrated into KAI Studio's Algorithm Studio group. It c
 
 ## Preview and export
 
-- Canvas preview: 720x1280, 9:16.
+- Canvas preview/export: selectable 720x1280 (9:16) or 1280x720 (16:9).
 - Export uses `canvas.captureStream(60)` plus the Web Audio recording destination and `MediaRecorder`.
 - MIME support is detected at runtime; WebM is not relabeled as MP4.
 - For MP4, run `scripts/convert-rhythmic-webm-to-mp4.bat input.webm` on a machine with FFmpeg available.

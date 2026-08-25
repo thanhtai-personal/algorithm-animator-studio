@@ -115,6 +115,79 @@
   background: hsl(188 70% 42%);
 }
 
+.rhythmic-panel-resizer {
+  display: none;
+}
+
+@media (min-width: 1280px) {
+  .rhythmic-workspace-grid {
+    grid-template-areas: "left left-resizer stage right-resizer right";
+    grid-template-columns: var(--rhythmic-left-panel-width) 12px minmax(0, 1fr) 12px var(--rhythmic-right-panel-width);
+    gap: 0;
+  }
+
+  .rhythmic-stage-column { grid-area: stage; }
+  .rhythmic-left-panel-column { grid-area: left; }
+  .rhythmic-right-panel-column { grid-area: right; }
+
+  .rhythmic-panel-resizer {
+    position: sticky;
+    top: 81px;
+    display: flex;
+    height: calc(100dvh - 97px);
+    cursor: col-resize;
+    touch-action: none;
+    align-items: center;
+    justify-content: center;
+    color: hsl(210 16% 50%);
+    outline: none;
+  }
+
+  .rhythmic-panel-resizer[data-side="left"] { grid-area: left-resizer; }
+  .rhythmic-panel-resizer[data-side="right"] { grid-area: right-resizer; }
+
+  .rhythmic-panel-resizer::before {
+    position: absolute;
+    inset-block: 0;
+    width: 1px;
+    content: "";
+    background: hsl(210 24% 25% / 0.75);
+    transition: background-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  .rhythmic-panel-resizer-grip {
+    z-index: 1;
+    display: grid;
+    width: 10px;
+    height: 42px;
+    place-items: center;
+    border: 1px solid hsl(210 24% 28%);
+    border-radius: 999px;
+    background: hsl(216 30% 10%);
+  }
+
+  .rhythmic-panel-resizer-grip svg { width: 12px; }
+
+  .rhythmic-panel-resizer:hover,
+  .rhythmic-panel-resizer:focus-visible,
+  .rhythmic-panel-resizer[data-active="true"] {
+    color: hsl(188 88% 60%);
+  }
+
+  .rhythmic-panel-resizer:hover::before,
+  .rhythmic-panel-resizer:focus-visible::before,
+  .rhythmic-panel-resizer[data-active="true"]::before {
+    background: hsl(188 88% 48% / 0.85);
+    box-shadow: 0 0 14px hsl(188 88% 48% / 0.42);
+  }
+}
+
+body.rhythmic-panel-resizing,
+body.rhythmic-panel-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
 @media (max-width: 1279px) {
   .rhythmic-side-panel {
     max-height: none;

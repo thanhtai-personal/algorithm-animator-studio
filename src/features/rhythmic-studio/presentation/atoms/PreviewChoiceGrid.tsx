@@ -17,7 +17,7 @@ export function PreviewChoiceGrid({
   columns = "grid-cols-2",
   className,
 }: {
-  label: string;
+  label?: string;
   value: string;
   options: PreviewChoiceOption[];
   onChange: (value: string) => void;
@@ -25,7 +25,7 @@ export function PreviewChoiceGrid({
   className?: string;
 }) {
   return <div className="space-y-2">
-    <Label className="text-xs text-muted-foreground">{label}</Label>
+    {label ? <Label className="text-xs text-muted-foreground">{label}</Label> : null}
     <div className={cn("grid gap-2", columns, className)}>
       {options.map((option) => {
         const active = option.value === value;

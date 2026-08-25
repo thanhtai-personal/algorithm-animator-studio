@@ -193,8 +193,9 @@ function ReferencePresetThumbnail({ presetId }: { presetId: ReferenceVideoPreset
   if (presetId === "reference-wooden-marimba") return <SceneFrame className="h-16 bg-[#d9e4e5]">
     {[0, 1, 2, 3].map((index) => <div key={index} className="absolute h-3 w-12 rounded-sm border border-amber-950/30 bg-gradient-to-b from-amber-700 to-amber-950 shadow-[5px_7px_7px_rgba(0,0,0,.25)]" style={{ left: `${7 + index * 17}px`, top: `${7 + index * 13}px`, transform: `rotate(${index % 2 ? 12 : -8}deg)` }} />)}
   </SceneFrame>;
-  if (presetId === "reference-cyan-piano") return <SceneFrame className="h-16 bg-[radial-gradient(circle_at_50%_45%,#17d7d4,#07557a_62%)]">
-    {[0, 1, 2, 3].map((index) => <div key={index} className="absolute h-4 w-14 rounded-sm border border-cyan-100/50 bg-slate-100 shadow-[6px_8px_7px_rgba(0,0,0,.35)]" style={{ left: `${4 + index * 19}px`, top: `${6 + index * 13}px`, transform: `rotate(${index % 2 ? -12 : 9}deg)` }} />)}
+  if (presetId === "reference-cyan-piano") return <SceneFrame className="h-16 bg-[radial-gradient(circle_at_50%_42%,#0d6478_0%,#062b44_42%,#020813_100%)]">
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,rgba(34,211,238,.2),transparent_55%)]" />
+    {[0, 1, 2, 3].map((index) => <div key={index} className="absolute h-4 w-14 rounded-sm border border-cyan-100/70 bg-slate-100 shadow-[0_0_12px_rgba(34,211,238,.48),6px_8px_8px_rgba(0,0,0,.5)]" style={{ left: `${4 + index * 19}px`, top: `${6 + index * 13}px`, transform: `rotate(${index % 2 ? -12 : 9}deg)` }} />)}
   </SceneFrame>;
   if (presetId === "reference-era-corridor") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#e6ebef,#c7d0d8)]">
     {[0, 1, 2].map((row) => <div key={`left-${row}`} className="absolute h-4 w-4 rotate-[-14deg] rounded-sm border border-slate-400 bg-slate-700 shadow-[4px_5px_6px_rgba(15,23,42,.28)]" style={{ left: `${12 + row * 4}px`, top: `${7 + row * 17}px` }} />)}

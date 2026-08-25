@@ -2,6 +2,9 @@ import type { Lang } from "@/lib/i18n";
 
 const EN = {
   "page.info": "Run info",
+  "layout.reset": "Reset layout",
+  "layout.resizeLeft": "Resize scene panel",
+  "layout.resizeRight": "Resize production controls",
   "drawer.title": "Run information",
   "drawer.description": "Course metrics, source precision and export details.",
   "tabs.source": "Music",
@@ -22,7 +25,6 @@ const EN = {
   "lab.stepPerform": "Perform",
   "lab.stepExport": "Export",
   "lab.sceneDeck": "Scene deck",
-  "lab.sceneDeckHint": "Choose a physical world before tuning individual parts.",
   "lab.inspector": "Production inspector",
   "lab.inspectorHint": "Work one layer at a time; the stage remains your source of truth.",
   "lab.tabSource": "Source",
@@ -72,6 +74,9 @@ const EN = {
 
 const VI: Record<keyof typeof EN, string> = {
   "page.info": "Thông tin",
+  "layout.reset": "Đặt lại bố cục",
+  "layout.resizeLeft": "Thay đổi độ rộng kho cảnh",
+  "layout.resizeRight": "Thay đổi độ rộng bảng điều khiển",
   "drawer.title": "Thông tin đường chạy",
   "drawer.description": "Chỉ số địa hình, độ chính xác nguồn và cơ chế xuất video.",
   "tabs.source": "Nhạc",
@@ -92,7 +97,6 @@ const VI: Record<keyof typeof EN, string> = {
   "lab.stepPerform": "Trình diễn",
   "lab.stepExport": "Xuất video",
   "lab.sceneDeck": "Kho cảnh",
-  "lab.sceneDeckHint": "Chọn thế giới vật lý trước khi tinh chỉnh từng chi tiết.",
   "lab.inspector": "Bảng điều khiển sản xuất",
   "lab.inspectorHint": "Chỉnh từng lớp; sân khấu luôn là nguồn kiểm chứng chính.",
   "lab.tabSource": "Nguồn",

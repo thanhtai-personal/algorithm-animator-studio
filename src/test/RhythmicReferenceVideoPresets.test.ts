@@ -50,4 +50,17 @@ describe("reference video presets", () => {
     expect(settings.instrumentLayout).toBe("corridor");
     expect(settings.platformPrimaryStyle).toBe("instrument-pad");
   });
+
+  it("uses dark scene backgrounds for presets built around luminous instruments", () => {
+    const luminousPresetIds = ["neon-comet", "reference-cyan-piano", "reference-checker-rails"] as const;
+
+    for (const presetId of luminousPresetIds) {
+      const background = presetById(presetId).settings.backgroundColor;
+      expect(background).toMatch(/^#[0-9a-f]{6}$/i);
+
+      const rgb = background!.slice(1).match(/.{2}/g)!.map((channel) => Number.parseInt(channel, 16));
+      const perceivedLightness = rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+      expect(perceivedLightness, `${presetId} background should stay dark`).toBeLessThan(50);
+    }
+  });
 });

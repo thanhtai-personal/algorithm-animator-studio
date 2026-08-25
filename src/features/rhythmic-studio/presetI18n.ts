@@ -14,7 +14,7 @@ type PresetTextKey = RhythmicPresetId
 const EN: Record<PresetTextKey, string> = {
   title: "Quick presets",
   hint: "Switch Marble Player behavior without changing the current song.",
-  mix: "Auto preset mix",
+  mix: "Mix",
   "mix.on": "Mix on",
   "mix.off": "Mix off",
   "mix.wait": "Finding phrase breaks",
@@ -40,7 +40,7 @@ const EN: Record<PresetTextKey, string> = {
 const VI: typeof EN = {
   title: "Preset nhanh",
   hint: "Đổi hành vi Marble Player nhưng giữ nguyên bài nhạc hiện tại.",
-  mix: "Mix preset tự động",
+  mix: "Mix",
   "mix.on": "Đang Mix",
   "mix.off": "Tắt Mix",
   "mix.wait": "Đang tìm điểm chuyển",

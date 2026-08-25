@@ -53,7 +53,7 @@ export const REFERENCE_VIDEO_PRESETS: ReferenceVideoPreset[] = [
     id: "reference-cyan-piano",
     referenceClipIds: ["a154"],
     settings: {
-      terrainProfile: "xylophone", cameraProfile: "xylophone", backgroundPreset: "deep-space", backgroundColor: "#07557a",
+      terrainProfile: "xylophone", cameraProfile: "xylophone", backgroundPreset: "deep-space", backgroundColor: "#031624",
       colorPaletteMode: "duotone", prismStart: "#e9fbff", prismEnd: "#28e6e6", ballStyle: "glass", ballBaseColor: "#8eefff", ballSize: 16,
       platformPrimaryStyle: "piano-key", platformSecondaryStyle: "piano-keyboard", platformAccentStyle: "instrument-rail", platformMixMode: "accent", platformAccentEvery: 9,
       instrumentFamily: "piano", instrumentLayout: "split", showcaseRails: true, showcaseRailDensity: 0.7,

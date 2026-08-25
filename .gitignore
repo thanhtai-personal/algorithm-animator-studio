@@ -32,6 +32,9 @@ release/
 dist-electron/
 runtime/
 
+# Generated verification screenshots, videos, reports, and browser profiles
+/artifacts/
+
 server/data
 # Piper models are allowed so desktop installer can bundle offline voices.
 # Runtime venv/download temp files are still ignored.

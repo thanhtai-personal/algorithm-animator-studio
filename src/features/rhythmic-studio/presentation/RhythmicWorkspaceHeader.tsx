@@ -1,4 +1,4 @@
-import { FolderOpen, Info, Radio, Save, Shuffle } from "lucide-react";
+import { FolderOpen, Info, Radio, RotateCcw, Save, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { rhythmicText } from "../i18n";
@@ -11,6 +11,7 @@ interface Props {
   onInfo: () => void;
   onProjects: () => void;
   onRandomize: () => void;
+  onResetLayout: () => void;
   onSave: () => void;
 }
 
@@ -48,6 +49,7 @@ export function RhythmicWorkspaceHeader(props: Props) {
             ))}
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="ghost" className="text-slate-300 hover:bg-white/10 hover:text-white" onClick={props.onResetLayout}><RotateCcw className="mr-1.5 h-4 w-4" />{lt("layout.reset")}</Button>
             <Button size="sm" variant="ghost" className="text-slate-300 hover:bg-white/10 hover:text-white" onClick={props.onInfo}><Info className="mr-1.5 h-4 w-4" />{lt("page.info")}</Button>
             <Button size="sm" variant="ghost" className="text-slate-300 hover:bg-white/10 hover:text-white" onClick={props.onProjects}><FolderOpen className="mr-1.5 h-4 w-4" />{t("page.projects")}</Button>
             <Button size="sm" variant="outline" className="border-white/15 bg-white/5 text-slate-100 hover:bg-white/10" onClick={props.onRandomize}><Shuffle className="mr-1.5 h-4 w-4" />{t("page.randomize")}</Button>

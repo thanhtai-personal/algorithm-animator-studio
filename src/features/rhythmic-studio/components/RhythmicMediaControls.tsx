@@ -29,6 +29,7 @@ type Props = {
   importLyrics: (file: File) => Promise<void>;
   applyLyrics: () => void;
   clearLyrics: () => void;
+  showBackgroundPreset?: boolean;
 };
 
 function RangeField({ label, value, min, max, step, unit = "", onChange }: { label: string; value: number; min: number; max: number; step: number; unit?: string; onChange: (value: number) => void }) {
@@ -67,7 +68,7 @@ export function RhythmicMediaAccordionItems(props: Props) {
 
   return <>
     <AccordionItem value="background"><AccordionTrigger>{t("section.background")}</AccordionTrigger><AccordionContent className="space-y-4 px-1">
-      <div className="max-h-[360px] overflow-y-auto pr-1"><PreviewChoiceGrid label={t("background.preset")} value={props.settings.backgroundPreset} options={backgroundOptions} columns="grid-cols-2" onChange={(value) => props.patch("backgroundPreset", value as StudioSettings["backgroundPreset"])} /></div>
+      {props.showBackgroundPreset !== false && <div className="max-h-[360px] overflow-y-auto pr-1"><PreviewChoiceGrid label={t("background.preset")} value={props.settings.backgroundPreset} options={backgroundOptions} columns="grid-cols-2" onChange={(value) => props.patch("backgroundPreset", value as StudioSettings["backgroundPreset"])} /></div>}
       <ColorField label={t("background.color")} value={props.settings.backgroundColor} onChange={(value) => props.patch("backgroundColor", value)} />
       <RangeField label={t("background.motion")} value={props.settings.backgroundMotion} min={0} max={1.5} step={0.05} onChange={(value) => props.patch("backgroundMotion", value)} />
       <FileCard icon={Image} title={props.backgroundName ? t("background.replace") : t("background.upload")} hint={t("background.uploadHint")} accept="image/png,image/jpeg,image/webp" onFile={props.importBackground} />

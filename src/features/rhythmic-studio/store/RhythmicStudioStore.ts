@@ -2,6 +2,7 @@ import { makeAutoObservable } from "mobx";
 import { BUILTIN_MELODIES, DEFAULT_SETTINGS } from "../defaults";
 import { listRhythmicProjects } from "../lib/projectStorage";
 import { buildRhythmicTimeline, timelineDuration } from "../lib/timeline";
+import { settingsForBallStyle } from "../lib/ballStyleProfiles";
 import type { LyricFormat } from "../lib/lyrics";
 import type { RhythmicTextKey } from "../i18n";
 import type { RhythmicPresetId } from "../lib/studioPresets";
@@ -72,7 +73,10 @@ export class RhythmicStudioStore {
   }
 
   patch<K extends keyof StudioSettings>(key: K, value: StudioSettings[K]) {
-    const next = { ...this.settings, [key]: value };
+    const styleSettings = key === "ballStyle"
+      ? settingsForBallStyle(value as StudioSettings["ballStyle"])
+      : null;
+    const next = { ...this.settings, [key]: value, ...styleSettings };
     next.backgroundPreset = normalizeBackgroundPreset(next.backgroundPreset);
     this.settings = next;
     // Keep the selected preset identity while the user fine-tunes it. Clearing the

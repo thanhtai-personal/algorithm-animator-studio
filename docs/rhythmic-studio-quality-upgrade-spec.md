@@ -4,7 +4,7 @@
 
 1. The requested target is a polished creator workflow and export-ready marble-music video, not a clone of the Steam game's full sandbox.
 2. The existing course planner, WebGL renderer, 2D Canvas renderer, audio engine, presets, project storage, trim flow, and export pipeline remain the technical foundation.
-3. This milestone targets the existing 9:16 social-video output. Additional aspect ratios are out of scope.
+3. The workspace keeps 9:16 social video as its backward-compatible default and adds a user-selected 16:9 landscape output as defined in `docs/rhythmic-landscape-export-spec.md`.
 4. Desktop and Electron are the primary editing surfaces; tablet and mobile must remain usable through responsive stacking.
 5. OpenStudio is used only as product/interaction research. Its AGPL source code will not be copied into this repository.
 
@@ -105,7 +105,7 @@ export function StudioTimecode(props: StudioTimecodeProps) {
 
 ### 2. Stage and render readiness
 
-- Treat the 9:16 preview as the dominant surface.
+- Treat the selected 9:16 or 16:9 preview as the dominant surface; the stage must show the actual export framing.
 - Prefer the existing 3D WebGL renderer for recommended final-quality work when WebGL is available, while keeping Canvas 2D as a first-class creative video mode and automatic compatibility fallback.
 - Display source type, timing fidelity, active renderer, output size, FPS, event count, and current status close to the stage.
 - Add a concise readiness summary that distinguishes exact MIDI timing from audio-onset timing and makes unsupported MP4 behavior explicit.
@@ -128,7 +128,7 @@ export function StudioTimecode(props: StudioTimecodeProps) {
 
 ### 5. Responsive and accessible behavior
 
-- Wide desktop: three-zone workspace with sticky side panels and centered 9:16 stage.
+- Wide desktop: three-zone workspace with sticky side panels and a centered stage that fits the selected 9:16 or 16:9 frame.
 - Laptop/tablet: stage remains first; rails/inspectors move below or into tabs.
 - Mobile: single-column flow with no horizontal page scroll.
 - Interactive icon controls have accessible names, visible focus, pressed/selected state, and minimum practical hit areas.
@@ -160,7 +160,7 @@ Follow test-first development for behavior changes.
 
 - Add runtime or UI dependencies.
 - Change project-storage schema or invalidate saved presets.
-- Change output aspect ratio, resolution, or supported containers.
+- Add output sizes beyond the approved 720p portrait/landscape presets or change supported containers.
 - Replace the course planner, audio engine, renderer, or export architecture.
 
 ### Never
@@ -179,7 +179,7 @@ Follow test-first development for behavior changes.
 - The timeline supports pointer seeking and keyboard seeking and keeps preview/audio synchronized.
 - The workspace clearly reports MIDI-exact versus audio-onset timing fidelity.
 - WebGL-capable browsers open in the preferred 3D workflow, users can deliberately switch to and export from 2D Canvas, and unsupported environments continue in Canvas 2D with an understandable notice.
-- 60 FPS, 720×1280, renderer, source, event count, and export readiness are visible before recording.
+- 60 FPS, selected aspect/resolution, renderer, source, event count, and export readiness are visible before recording.
 - Existing presets, custom course overrides, project actions, lyrics/background media, playback, trim, and export remain functional.
 - New behavior is covered by tests; the full current test suite and `npm run build` pass.
 - No new or touched source file exceeds 400 lines.
@@ -189,7 +189,7 @@ Follow test-first development for behavior changes.
 - A freeform physics-object builder matching every Steam-game object.
 - New sample libraries, VST hosting, mixing plugins, or OpenStudio's native audio backend.
 - Multitrack waveform editing, automation lanes, or a full DAW mixer.
-- New video aspect ratios or server-side rendering architecture.
+- Output sizes beyond portrait 720×1280 and landscape 1280×720, or a new server-side rendering architecture.
 - Copying the Steam game's branding, artwork, or proprietary assets.
 
 ## Implementation Tasks

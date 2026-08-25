@@ -11,14 +11,47 @@ import { PresetThumbnail } from "./atoms/RhythmicOptionPreviews";
 interface QuickPresetBarProps {
   studio: RhythmicStudioController;
   embedded?: boolean;
+  showMix?: boolean;
 }
 
-export const QuickPresetBar = observer(function QuickPresetBar({ studio, embedded = false }: QuickPresetBarProps) {
+export const PresetMixButton = observer(function PresetMixButton({ studio, compact = false }: {
+  studio: RhythmicStudioController;
+  compact?: boolean;
+}) {
   const lang = useSystemLang();
   const mixLabel = presetText(lang, "mix");
   const mixStatus = studio.presetMixEnabled && studio.presetMixPlanActive
     ? `${presetText(lang, "mix.on")} · ${studio.presetMixSegmentCount}`
     : presetText(lang, studio.presetMixEnabled ? "mix.wait" : "mix.off");
+
+  return <Tooltip>
+    <TooltipTrigger asChild>
+      <Button
+        type="button"
+        variant={studio.presetMixEnabled ? "secondary" : "outline"}
+        className={compact
+          ? "h-8 shrink-0 gap-1.5 border-amber-300/30 bg-amber-300/[0.07] px-2.5 text-xs text-amber-100 hover:border-amber-200/60 hover:bg-amber-300/15"
+          : "mt-2 h-10 w-full justify-start gap-2 px-3 text-left"}
+        onClick={studio.togglePresetMix}
+        aria-label={`${mixLabel}: ${mixStatus}`}
+        aria-pressed={studio.presetMixEnabled}
+      >
+        <span className={`grid shrink-0 place-items-center ${compact ? "h-6 w-6 rounded-md" : "h-7 w-7 rounded-lg"} ${studio.presetMixEnabled ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+          <Shuffle className="h-3.5 w-3.5" />
+        </span>
+        <span className="font-semibold">{mixLabel}</span>
+      </Button>
+    </TooltipTrigger>
+    <TooltipContent side={compact ? "bottom" : "right"} align="start" className="max-w-72 p-3">
+      <p className="font-semibold">{mixLabel}</p>
+      <p className="mt-0.5 text-xs font-medium text-primary">{mixStatus}</p>
+      <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{presetText(lang, "mix.hint")}</p>
+    </TooltipContent>
+  </Tooltip>;
+});
+
+export const QuickPresetBar = observer(function QuickPresetBar({ studio, embedded = false, showMix = true }: QuickPresetBarProps) {
+  const lang = useSystemLang();
 
   return <section className={embedded ? "min-w-0" : "rounded-2xl border bg-card/60 p-3 shadow-sm backdrop-blur"}>
     {!embedded && <div className="mb-2 px-0.5">
@@ -45,25 +78,6 @@ export const QuickPresetBar = observer(function QuickPresetBar({ studio, embedde
         })}
       </div>
     </div>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          type="button"
-          variant={studio.presetMixEnabled ? "secondary" : "outline"}
-          className="mt-2 h-10 w-full justify-start gap-2 px-3 text-left"
-          onClick={studio.togglePresetMix}
-          aria-label={`${mixLabel}: ${mixStatus}`}
-          aria-pressed={studio.presetMixEnabled}
-        >
-          <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${studio.presetMixEnabled ? "bg-primary text-primary-foreground" : "bg-muted"}`}><Shuffle className="h-4 w-4" /></span>
-          <span className="min-w-0 flex-1 truncate text-sm font-semibold">{mixLabel}</span>
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="right" align="start" className="max-w-72 p-3">
-        <p className="font-semibold">{mixLabel}</p>
-        <p className="mt-0.5 text-xs font-medium text-primary">{mixStatus}</p>
-        <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{presetText(lang, "mix.hint")}</p>
-      </TooltipContent>
-    </Tooltip>
+    {showMix && <PresetMixButton studio={studio} />}
   </section>;
 });

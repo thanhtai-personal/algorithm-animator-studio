@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { observer } from "mobx-react-lite";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useSystemLang } from "@/hooks/use-system-lang";
@@ -8,6 +8,8 @@ import { RhythmicStage } from "../components/RhythmicStage";
 import { useRhythmicStudioController } from "../hooks/useRhythmicStudioController";
 import { layoutText } from "../layoutI18n";
 import { RhythmicPresetControls, RhythmicWorkflowControls } from "./layouts/RhythmicControlColumns";
+import { RhythmicPanelResizeHandle } from "./layouts/RhythmicPanelResizeHandle";
+import { useRhythmicPanelLayout } from "./layouts/rhythmicPanelLayout";
 import { RhythmicWorkspaceHeader } from "./RhythmicWorkspaceHeader";
 import "./rhythmic-production.css";
 
@@ -16,6 +18,7 @@ export const RhythmicStudioWorkspace = observer(function RhythmicStudioWorkspace
   const studio = useRhythmicStudioController();
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+  const panelLayout = useRhythmicPanelLayout();
   const lt = (key: Parameters<typeof layoutText>[1]) => layoutText(lang, key);
 
   return <main className="rhythmic-production min-h-[calc(100dvh-65px)] p-3 md:p-5">
@@ -27,13 +30,22 @@ export const RhythmicStudioWorkspace = observer(function RhythmicStudioWorkspace
         onInfo={() => setInfoOpen(true)}
         onProjects={() => setProjectsOpen(true)}
         onRandomize={studio.randomize}
+        onResetLayout={panelLayout.resetLayout}
         onSave={studio.saveProject}
       />
 
-      <div className="grid items-start gap-4 xl:grid-cols-[240px_minmax(420px,1fr)_360px]">
-        <div className="min-w-0 xl:col-start-2 xl:row-start-1"><RhythmicStage studio={studio} /></div>
-        <div className="min-w-0 xl:col-start-1 xl:row-start-1"><RhythmicPresetControls studio={studio} /></div>
-        <div className="min-w-0 xl:col-start-3 xl:row-start-1"><RhythmicWorkflowControls studio={studio} /></div>
+      <div
+        className="rhythmic-workspace-grid grid items-start gap-4"
+        style={{
+          "--rhythmic-left-panel-width": `${panelLayout.layout.left}px`,
+          "--rhythmic-right-panel-width": `${panelLayout.layout.right}px`,
+        } as CSSProperties}
+      >
+        <div className="rhythmic-stage-column min-w-0"><RhythmicStage studio={studio} /></div>
+        <div className="rhythmic-left-panel-column min-w-0"><RhythmicPresetControls studio={studio} /></div>
+        <RhythmicPanelResizeHandle side="left" width={panelLayout.layout.left} active={panelLayout.activeSide === "left"} label={lt("layout.resizeLeft")} onBeginResize={panelLayout.beginResize} onResizeByPointerDelta={panelLayout.resizeByPointerDelta} />
+        <RhythmicPanelResizeHandle side="right" width={panelLayout.layout.right} active={panelLayout.activeSide === "right"} label={lt("layout.resizeRight")} onBeginResize={panelLayout.beginResize} onResizeByPointerDelta={panelLayout.resizeByPointerDelta} />
+        <div className="rhythmic-right-panel-column min-w-0"><RhythmicWorkflowControls studio={studio} /></div>
       </div>
     </div>
 

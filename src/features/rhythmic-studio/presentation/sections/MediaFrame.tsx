@@ -23,6 +23,7 @@ export function MediaFrame({ studio }: { studio: RhythmicStudioController }) {
         importLyrics={studio.importLyrics}
         applyLyrics={studio.applyLyrics}
         clearLyrics={studio.clearLyrics}
+        showBackgroundPreset={false}
       />
     </Accordion>
   </ControlFrame>;

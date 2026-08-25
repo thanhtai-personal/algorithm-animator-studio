@@ -1,4 +1,4 @@
-import { FileMusic, Music2 } from "lucide-react";
+import { Music2 } from "lucide-react";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { BUILTIN_MELODIES } from "../../defaults";
 import { melodyLabel, rhythmicText } from "../../i18n";
@@ -13,7 +13,6 @@ export function SourceFrame({ studio }: { studio: RhythmicStudioController }) {
   const s = studio.settings;
   return <ControlFrame title={t("section.song")} subtitle={studio.audioFileInfo} defaultOpen={true}>
     <SelectField label={t("song.builtin")} value={studio.source.type === "builtin" ? studio.source.name : "imported"} options={[{ value: "imported", label: t("song.imported") }, ...Object.keys(BUILTIN_MELODIES).map((name) => ({ value: name, label: melodyLabel(lang, name) }))]} onChange={(value) => value !== "imported" && studio.loadBuiltin(value)} />
-    <UploadCard icon={FileMusic} title={t("song.uploadMidi")} hint={t("song.uploadMidiHint")} accept=".mid,.midi,audio/midi" onFile={studio.importMidi} />
     <UploadCard icon={Music2} title={t("song.uploadAudio")} hint={t("song.uploadAudioHint")} accept="audio/*" onFile={studio.importAudio} />
     <ToggleField label={t("song.playOriginal")} checked={s.playOriginalSong} onChange={(value) => studio.patch("playOriginalSong", value)} />
     <RangeField label={t("sound.musicVolume")} value={Math.round(s.musicVolume * 100)} min={0} max={160} step={5} unit="%" onChange={(value) => studio.patch("musicVolume", value / 100)} />

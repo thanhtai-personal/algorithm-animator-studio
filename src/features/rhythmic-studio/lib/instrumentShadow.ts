@@ -56,7 +56,7 @@ function instrumentFoot(style: PlatformStyle, width: number, thickness: number) 
     const railGap = Math.max(12, thickness * 0.9);
     return { contactY: railGap * 0.5 + 7, nearWidth: width * 0.7, flared: false };
   }
-  if (["instrument-key", "xylophone-key", "xylophone-bar", "piano-key", "marimba-bar", "vibraphone-bar"].includes(style)) {
+  if (["instrument-key", "xylophone-key", "xylophone-bar", "piano-key", "marimba-bar", "vibraphone-bar", "metallophone-plate"].includes(style)) {
     const height = Math.max(thickness < 9 ? 6 : 13, thickness);
     return { contactY: height + Math.max(8, height * 0.55), nearWidth: width * 0.74, flared: false };
   }

@@ -5,12 +5,12 @@ import {
 } from "../features/rhythmic-studio/lib/referenceVideoPresets";
 import { RHYTHMIC_PRESET_IDS, presetById } from "../features/rhythmic-studio/lib/studioPresets";
 
-const CLIP_IDS = ["013b", "0e70", "3949", "4739", "4fd7", "54ce", "a154", "ad97", "hB8lCZ8xGZo_005"] as const;
+const CLIP_IDS = ["013b", "0e70", "3949", "4739", "4fd7", "54ce", "57c8", "a154", "ad97", "hB8lCZ8xGZo_005"] as const;
 
 describe("reference video presets", () => {
   it("maps every clip while collapsing visually similar references", () => {
     expect(Object.keys(REFERENCE_CLIP_PRESET_MAP).sort()).toEqual([...CLIP_IDS].sort());
-    expect(REFERENCE_VIDEO_PRESET_IDS).toHaveLength(7);
+    expect(REFERENCE_VIDEO_PRESET_IDS).toHaveLength(8);
     expect(REFERENCE_CLIP_PRESET_MAP["0e70"]).toBe(REFERENCE_CLIP_PRESET_MAP["4fd7"]);
     expect(REFERENCE_CLIP_PRESET_MAP["3949"]).toBe(REFERENCE_CLIP_PRESET_MAP["4739"]);
 
@@ -39,7 +39,7 @@ describe("reference video presets", () => {
 
   it("assigns every collected reference marble style to a reference preset", () => {
     const assignedStyles = REFERENCE_VIDEO_PRESET_IDS.map((id) => presetById(id).settings.ballStyle);
-    expect(assignedStyles).toEqual(expect.arrayContaining(["flower", "fire", "water", "rainbow"]));
+    expect(assignedStyles).toEqual(expect.arrayContaining(["flower", "fire", "water", "rainbow", "patchwork"]));
   });
 
   it("keeps the fast-era clip as a distinct mixed-instrument corridor", () => {
@@ -51,8 +51,18 @@ describe("reference video presets", () => {
     expect(settings.platformPrimaryStyle).toBe("instrument-pad");
   });
 
+  it("keeps clip 57c8 as a distinct faceted metallophone gallery", () => {
+    const presetId = REFERENCE_CLIP_PRESET_MAP["57c8"];
+    const settings = presetById(presetId).settings;
+
+    expect(settings.ballStyle).toBe("patchwork");
+    expect(settings.instrumentFamily).toBe("metallophone");
+    expect(settings.platformPrimaryStyle).toBe("metallophone-plate");
+    expect(settings.platformSecondaryStyle).toBe("dual-rail");
+  });
+
   it("uses dark scene backgrounds for presets built around luminous instruments", () => {
-    const luminousPresetIds = ["neon-comet", "reference-cyan-piano", "reference-checker-rails"] as const;
+    const luminousPresetIds = ["neon-comet", "reference-cyan-piano", "reference-checker-rails", "reference-faceted-metallophone"] as const;
 
     for (const presetId of luminousPresetIds) {
       const background = presetById(presetId).settings.backgroundColor;

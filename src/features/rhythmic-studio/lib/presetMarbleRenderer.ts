@@ -270,6 +270,51 @@ function drawRainbow(ctx: CanvasRenderingContext2D, x: number, y: number, radius
   ctx.restore(); rim(ctx, x, y, radius, "rgba(255,255,255,.74)", 1.3); glossyHighlight(ctx, x, y, radius, 0.82);
 }
 
+function drawPatchwork(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, pulse: number, spin: number) {
+  groundShadow(ctx, x, y, radius, 0.32);
+  const cells = [
+    { color: "#22c8e8", points: [[-0.42, -0.2], [-0.12, -0.48], [0.26, -0.35], [0.38, 0.04], [0.08, 0.31], [-0.34, 0.2]] },
+    { color: "#ff3cad", points: [[-0.98, -0.18], [-0.42, -0.2], [-0.34, 0.2], [-0.68, 0.56], [-1.04, 0.32]] },
+    { color: "#ffb11b", points: [[-0.52, -0.92], [-0.12, -0.48], [-0.42, -0.2], [-0.84, -0.35]] },
+    { color: "#2c70ed", points: [[-0.12, -0.48], [0.22, -0.91], [0.65, -0.62], [0.26, -0.35]] },
+    { color: "#ef3340", points: [[0.26, -0.35], [0.65, -0.62], [1.02, -0.18], [0.83, 0.3], [0.38, 0.04]] },
+    { color: "#21c56b", points: [[0.38, 0.04], [0.83, 0.3], [0.53, 0.83], [0.08, 0.31]] },
+    { color: "#6346d8", points: [[0.08, 0.31], [0.53, 0.83], [0.02, 1.02], [-0.4, 0.71], [-0.68, 0.56], [-0.34, 0.2]] },
+  ] as const;
+  ctx.save();
+  ctx.shadowColor = "#40d9f0";
+  ctx.shadowBlur = 5 + pulse * 8;
+  ctx.fillStyle = sphereGradient(ctx, x, y, radius, "#24c7e8", 0.38);
+  circle(ctx, x, y, radius);
+  ctx.fill();
+  ctx.clip();
+  ctx.translate(x, y);
+  ctx.rotate(spin * 0.22);
+  for (const cell of cells) {
+    ctx.beginPath();
+    ctx.moveTo(cell.points[0][0] * radius, cell.points[0][1] * radius);
+    for (let index = 1; index < cell.points.length; index += 1) {
+      ctx.lineTo(cell.points[index][0] * radius, cell.points[index][1] * radius);
+    }
+    ctx.closePath();
+    ctx.fillStyle = cell.color;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(18,35,68,.42)";
+    ctx.lineWidth = Math.max(0.8, radius * 0.045);
+    ctx.stroke();
+  }
+  const shade = ctx.createLinearGradient(-radius, -radius, radius, radius);
+  shade.addColorStop(0, "rgba(255,255,255,.42)");
+  shade.addColorStop(0.48, "rgba(255,255,255,0)");
+  shade.addColorStop(1, "rgba(4,11,30,.5)");
+  ctx.fillStyle = shade;
+  circle(ctx, 0, 0, radius);
+  ctx.fill();
+  ctx.restore();
+  rim(ctx, x, y, radius, "rgba(255,255,255,.68)", 1.15);
+  glossyHighlight(ctx, x, y, radius, 0.7);
+}
+
 function paletteFor(style: BallStyle, point: MarblePoint, settings: StudioSettings) {
   const pointColor = point.color || settings.prismEnd;
   if (style === "chrome") return { base: "#a9b7c8", accent: pointColor };
@@ -312,6 +357,7 @@ export function drawPresetMarble(
   else if (style === "fire") drawFire(ctx, x, y, radius, pulse);
   else if (style === "water") drawWater(ctx, x, y, radius, pulse, base, accent, spin);
   else if (style === "rainbow") drawRainbow(ctx, x, y, radius, pulse, spin);
+  else if (style === "patchwork") drawPatchwork(ctx, x, y, radius, pulse, spin);
   else drawStriped(ctx, x, y, radius, pulse, base, settings.ballStripeColor, spin);
   ctx.restore();
   return true;

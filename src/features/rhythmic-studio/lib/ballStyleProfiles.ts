@@ -86,6 +86,12 @@ const BALL_STYLE_VISUAL_PROFILES: Record<BallStyle, BallStyleVisualProfile> = {
     animationSensitivity: 0.62, ringPulseSensitivity: 0.64,
     trailLength: 6, particleCount: 5, spectralDensity: 0.3,
   }),
+  patchwork: profile({
+    ballBaseColor: "#24c7e8", ballStripeColor: "#ff3cad", ballSize: 17,
+    glowAnimation: false, impactRipple: true,
+    animationSensitivity: 0.58, ringPulseSensitivity: 0.62,
+    trailLength: 4, particleCount: 8, spectralDensity: 0.34,
+  }),
 };
 
 export function settingsForBallStyle(style: BallStyle) {

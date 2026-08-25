@@ -15,6 +15,7 @@ function widthScale(style: PlatformStyle) {
   if (style === "piano-key") return 1.08;
   if (style === "marimba-bar") return 1.12;
   if (style === "vibraphone-bar") return 1.04;
+  if (style === "metallophone-plate") return 0.94;
   if (style === "boomwhacker-tube") return 1.02;
   if (style === "pluck-pad") return 0.72;
   if (style === "drum-disc") return 0.7;
@@ -55,6 +56,7 @@ function familyPattern(family: InstrumentFamily, index: number): PlatformStyle {
   if (family === "marimba") return index % 8 === 5 ? "drum-disc" : "marimba-bar";
   if (family === "pluck") return index % 6 === 4 ? "instrument-wire" : "pluck-pad";
   if (family === "vibraphone") return index % 10 === 8 ? "instrument-rail" : "vibraphone-bar";
+  if (family === "metallophone") return index % 9 === 8 ? "dual-rail" : "metallophone-plate";
   if (family === "gong") return "gong-disc";
   if (family === "flute") return "flute-pipe";
   if (family === "mixed") {

@@ -20,7 +20,7 @@ export function instrumentVoiceForPlatform(
   if (style === "piano-key" || style === "piano-keyboard") return program >= 4 && program <= 7 ? "fm" : "piano";
   if (["instrument-key", "xylophone-key", "xylophone-bar"].includes(style)) return "xylophone";
   if (style === "marimba-bar") return "marimba";
-  if (style === "vibraphone-bar") return "vibraphone";
+  if (style === "vibraphone-bar" || style === "metallophone-plate") return "vibraphone";
   if (style === "boomwhacker-tube") return "boomwhacker";
   if (style === "pluck-pad" || style === "instrument-wire") {
     if (program >= 32 && program <= 39) return "bass";

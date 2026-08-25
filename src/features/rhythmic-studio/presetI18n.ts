@@ -27,6 +27,7 @@ const EN: Record<PresetTextKey, string> = {
   "reference-cyan-piano": "Reference · Cyan Piano",
   "reference-checker-rails": "Reference · Checker Rails",
   "reference-era-corridor": "Reference · Era Corridor",
+  "reference-faceted-metallophone": "Reference · Faceted Metallophone",
   "toy-pegboard.hint": "Matches clip 013b: sparse colorful pegs and a candy-flower marble",
   "neon-comet.hint": "Galaxy marble, luminous pads and controlled ribbon jumps",
   "boomwhacker-wall.hint": "Combines clips 0e70 and 4fd7: rainbow tubes, drums, rails and a fire marble",
@@ -35,6 +36,7 @@ const EN: Record<PresetTextKey, string> = {
   "reference-cyan-piano.hint": "Matches clip a154: white piano surfaces in a cyan-blue light field",
   "reference-checker-rails.hint": "Matches clip ad97: dark neon rails, prisms and cyan-violet geometry",
   "reference-era-corridor.hint": "Matches clip hB8lCZ8xGZo_005: cymbals, square paddles, piano blocks and staggered fast-note corridors",
+  "reference-faceted-metallophone.hint": "Matches clip 57c8: a faceted patchwork ball, two-bolt metallophone plates and cyan dual rails",
 };
 
 const VI: typeof EN = {
@@ -53,6 +55,7 @@ const VI: typeof EN = {
   "reference-cyan-piano": "Mẫu · Piano cyan",
   "reference-checker-rails": "Mẫu · Ray caro neon",
   "reference-era-corridor": "Mẫu · Hành lang thời đại",
+  "reference-faceted-metallophone": "Mẫu · Metallophone đa diện",
   "toy-pegboard.hint": "Theo clip 013b: chốt màu thưa thoáng và bi hoa kẹo",
   "neon-comet.hint": "Bi galaxy, bệ sáng và các cú nảy ribbon được kiểm soát",
   "boomwhacker-wall.hint": "Gộp clip 0e70 và 4fd7: ống cầu vồng, trống, ray và bi lửa",
@@ -61,6 +64,7 @@ const VI: typeof EN = {
   "reference-cyan-piano.hint": "Theo clip a154: bề mặt piano trắng trong trường sáng xanh cyan",
   "reference-checker-rails.hint": "Theo clip ad97: ray neon tối, lăng kính và hình học cyan-tím",
   "reference-era-corridor.hint": "Theo clip hB8lCZ8xGZo_005: cymbal, paddle vuông, phím hộp và hành lang so le cho đoạn nhanh",
+  "reference-faceted-metallophone.hint": "Theo clip 57c8: bóng đa diện ghép màu, tấm Metallophone hai chốt và ray kép cyan",
 };
 
 export function presetText(lang: Lang, key: PresetTextKey) {

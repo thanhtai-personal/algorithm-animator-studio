@@ -65,6 +65,7 @@ export const PLATFORM_STYLES = [
   "marimba-bar",
   "pluck-pad",
   "vibraphone-bar",
+  "metallophone-plate",
   "drum-disc",
   "gong-disc",
   "flute-pipe",
@@ -82,6 +83,7 @@ export const INSTRUMENT_FAMILIES = [
   "marimba",
   "pluck",
   "vibraphone",
+  "metallophone",
   "gong",
   "flute",
   "mixed",
@@ -119,6 +121,7 @@ export const BALL_STYLES = [
   "fire",
   "water",
   "rainbow",
+  "patchwork",
 ] as const;
 
 export type BallStyle = (typeof BALL_STYLES)[number];

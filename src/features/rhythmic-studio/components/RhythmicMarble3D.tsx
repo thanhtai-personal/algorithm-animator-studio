@@ -2,6 +2,27 @@ import { forwardRef, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import type { BallStyle, StudioSettings } from "../types";
 
+const PATCHWORK_FACE_COLORS = ["#22c8e8", "#ff3cad", "#ffb11b", "#2c70ed", "#ef3340", "#21c56b", "#6346d8", "#16b8c4"];
+
+/** A non-indexed low-poly sphere lets each face keep one solid reference color. */
+export function createPatchworkGeometry() {
+  const source = new THREE.IcosahedronGeometry(1, 2);
+  const geometry = source.index ? source.toNonIndexed() : source.clone();
+  source.dispose();
+  const position = geometry.getAttribute("position");
+  const colors = new THREE.Float32BufferAttribute(new Float32Array(position.count * 3), 3);
+  for (let vertex = 0; vertex < position.count; vertex += 3) {
+    const face = Math.floor(vertex / 3);
+    const color = new THREE.Color(PATCHWORK_FACE_COLORS[(face * 5 + Math.floor(face / 7)) % PATCHWORK_FACE_COLORS.length]);
+    colors.setXYZ(vertex, color.r, color.g, color.b);
+    colors.setXYZ(vertex + 1, color.r, color.g, color.b);
+    colors.setXYZ(vertex + 2, color.r, color.g, color.b);
+  }
+  geometry.setAttribute("color", colors);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
 function marblePatternTexture(style: BallStyle, base: string, stripe: string) {
   const width = 384;
   const height = 192;
@@ -108,6 +129,19 @@ function MarbleMaterial({ style, settings }: { style: BallStyle; settings: Studi
   if (style === "water") {
     return <meshPhysicalMaterial color="#36dff2" roughness={0.02} transmission={0.86} thickness={1.2} ior={1.34} clearcoat={1} attenuationColor="#159ed1" attenuationDistance={1.2} envMapIntensity={1.9} />;
   }
+  if (style === "patchwork") {
+    return (
+      <meshPhysicalMaterial
+        vertexColors
+        flatShading
+        metalness={0.03}
+        roughness={0.36}
+        clearcoat={0.24}
+        clearcoatRoughness={0.22}
+        envMapIntensity={1.28}
+      />
+    );
+  }
   if (style === "striped" || style === "flower" || style === "rainbow") {
     return (
       <meshPhysicalMaterial
@@ -150,6 +184,11 @@ function MarbleMaterial({ style, settings }: { style: BallStyle; settings: Studi
 export const RhythmicMarble3D = forwardRef<THREE.Group, {
   settings: StudioSettings;
 }>(function RhythmicMarble3D({ settings }, ref) {
+  const patchworkGeometry = useMemo(
+    () => settings.ballStyle === "patchwork" ? createPatchworkGeometry() : null,
+    [settings.ballStyle],
+  );
+  useEffect(() => () => patchworkGeometry?.dispose(), [patchworkGeometry]);
   const glowStrength = THREE.MathUtils.clamp(settings.animationSensitivity, 0, 1.5);
   const luminous = settings.ballStyle === "neon" || settings.ballStyle === "fire" || settings.ballStyle === "water";
   const haloOpacity = luminous ? 0.2 : 0.11 + glowStrength * 0.025;
@@ -158,8 +197,8 @@ export const RhythmicMarble3D = forwardRef<THREE.Group, {
 
   return (
     <group ref={ref}>
-      <mesh castShadow receiveShadow>
-        <sphereGeometry args={[1, 64, 48]} />
+      <mesh castShadow receiveShadow geometry={patchworkGeometry ?? undefined}>
+        {!patchworkGeometry && <sphereGeometry args={[1, 64, 48]} />}
         <MarbleMaterial style={settings.ballStyle} settings={settings} />
       </mesh>
       {settings.ballStyle === "glass" && (

@@ -50,6 +50,7 @@ describe("instrument voice selected from the struck platform", () => {
     ["xylophone-bar", "xylophone"],
     ["marimba-bar", "marimba"],
     ["vibraphone-bar", "vibraphone"],
+    ["metallophone-plate", "vibraphone"],
     ["boomwhacker-tube", "boomwhacker"],
     ["pluck-pad", "pluck"],
   ] satisfies Array<[PlatformStyle, string]>)

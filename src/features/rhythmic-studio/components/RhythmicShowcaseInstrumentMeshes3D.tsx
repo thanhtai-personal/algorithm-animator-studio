@@ -100,6 +100,42 @@ export function VibraphoneBarMesh({ w, h, d, color, selected, glow }: MeshProps)
   </group>;
 }
 
+export function MetallophonePlateMesh({ w, h, d, color, selected, glow }: MeshProps) {
+  const bodyH = Math.max(h, 0.12);
+  const noteStrength = THREE.MathUtils.clamp((glow - 0.06) * 1.18 + (selected ? 0.22 : 0), 0, 1);
+  const face = new THREE.Color("#f4f3ee").lerp(new THREE.Color(color), noteStrength).getStyle();
+  const supportY = bodyH * 1.35;
+  const rodRadius = Math.max(0.022, bodyH * 0.14);
+  return <group>
+    <group position={[0, 0, -d * 0.48]}>
+      <mesh position={[-w * 0.31, supportY * 0.52, 0]} castShadow>
+        <cylinderGeometry args={[rodRadius, rodRadius, supportY, 14]} />
+        <meshStandardMaterial color="#22262e" roughness={0.3} metalness={0.72} />
+      </mesh>
+      <mesh position={[0, supportY, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
+        <cylinderGeometry args={[rodRadius, rodRadius, w * 0.62, 14]} />
+        <meshStandardMaterial color="#22262e" roughness={0.3} metalness={0.72} />
+      </mesh>
+      <mesh position={[w * 0.31, supportY, 0]} castShadow>
+        <sphereGeometry args={[rodRadius * 2.15, 16, 10]} />
+        <meshStandardMaterial color="#151820" roughness={0.36} metalness={0.58} />
+      </mesh>
+    </group>
+    <RoundedBox args={[w, bodyH, d * 0.82]} radius={Math.min(0.045, bodyH * 0.24)} smoothness={4} castShadow receiveShadow>
+      <meshPhysicalMaterial
+        color={selectedColor(face, selected)}
+        emissive={color}
+        emissiveIntensity={noteStrength * (0.72 + glow * 0.36)}
+        roughness={0.28}
+        metalness={0.22}
+        clearcoat={0.54}
+        clearcoatRoughness={0.16}
+      />
+    </RoundedBox>
+    {[-0.32, 0.32].map((ratio) => <EndBolt key={ratio} x={w * ratio} y={0} z={d * 0.43} color="#272b32" />)}
+  </group>;
+}
+
 export function DrumDiscMesh({ w, h, d, color, selected, glow }: MeshProps) {
   const radius = Math.max(0.2, w * 0.38);
   return <group>

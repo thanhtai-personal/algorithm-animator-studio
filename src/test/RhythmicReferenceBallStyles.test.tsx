@@ -7,7 +7,7 @@ import { DEFAULT_SETTINGS } from "../features/rhythmic-studio/defaults";
 import { drawPresetMarble } from "../features/rhythmic-studio/lib/presetMarbleRenderer";
 import { trailProfile } from "../features/rhythmic-studio/components/RhythmicVfx3D";
 
-const REFERENCE_BALL_STYLES = ["flower", "fire", "water", "rainbow"] as const satisfies readonly BallStyle[];
+const REFERENCE_BALL_STYLES = ["flower", "fire", "water", "rainbow", "patchwork"] as const satisfies readonly BallStyle[];
 
 describe("reference marble styles", () => {
   it("exposes every collected reference marble in the shared picker", () => {

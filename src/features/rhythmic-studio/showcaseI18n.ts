@@ -16,6 +16,7 @@ export type ShowcaseTextKey =
   | "family.marimba"
   | "family.pluck"
   | "family.vibraphone"
+  | "family.metallophone"
   | "family.gong"
   | "family.flute"
   | "family.mixed"
@@ -41,6 +42,7 @@ const EN: Record<ShowcaseTextKey, string> = {
   "family.marimba": "Marimba wood bars",
   "family.pluck": "Pluck organ pads",
   "family.vibraphone": "Vibraphone metal bars",
+  "family.metallophone": "Mounted metallophone plates",
   "family.gong": "Note-lit gongs",
   "family.flute": "Note-lit flute pipes",
   "family.mixed": "Mixed instrument sections",
@@ -67,6 +69,7 @@ const VI: typeof EN = {
   "family.marimba": "Thanh gỗ Marimba",
   "family.pluck": "Pad Pluck Organ",
   "family.vibraphone": "Thanh kim loại Vibraphone",
+  "family.metallophone": "Tấm Metallophone gắn khung",
   "family.gong": "Chiêng sáng theo màu nốt",
   "family.flute": "Ống sáo sáng theo màu nốt",
   "family.mixed": "Phối nhiều nhạc cụ theo đoạn",

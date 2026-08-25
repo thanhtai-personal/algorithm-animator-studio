@@ -56,6 +56,7 @@ function denseVisualStyle(kind: DenseInstrumentKind, settings: StudioSettings, e
   if (settings.instrumentFamily === "marimba") return "marimba-bar";
   if (settings.instrumentFamily === "pluck") return "pluck-pad";
   if (settings.instrumentFamily === "vibraphone") return "vibraphone-bar";
+  if (settings.instrumentFamily === "metallophone") return "metallophone-plate";
   if (kind === "pad-strip") return "instrument-pad";
   const midiStyle = midiInstrumentVisualStyle(event, settings);
   if (midiStyle) return midiStyle;

@@ -1,5 +1,6 @@
 import type { PlatformStyle, RenderQuality, StudioSettings } from "../types";
 import { mixHex, type MarblePlatform } from "./marbleCourse";
+import { drawMetallophonePlate2D } from "./metallophonePlate2D";
 
 function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
   const r = Math.min(radius, width / 2, height / 2);
@@ -370,6 +371,7 @@ export function drawPresetPlatform(
   if (style === "instrument-wire") { drawInstrumentWire(ctx, half, platform, impact, lowPower); return true; }
   if (style === "boomwhacker-tube") { drawTubeCylinder(ctx, half, platform, impact, ageMs, settings, lowPower); return true; }
   if (style === "xylophone-bar" || style === "piano-key" || style === "marimba-bar" || style === "vibraphone-bar") { drawInstrumentKey(ctx, half, platform, impact, lowPower); return true; }
+  if (style === "metallophone-plate") { drawMetallophonePlate2D(ctx, half, platform, impact, lowPower); return true; }
   if (style === "pluck-pad") { drawInstrumentPad(ctx, half, platform, impact, lowPower); return true; }
   if (style === "drum-disc") { drawInstrumentCymbal(ctx, platform, impact, lowPower); return true; }
   return false;

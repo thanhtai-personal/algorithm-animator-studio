@@ -16,6 +16,7 @@ const NOTE_LIT_STYLES = new Set<PlatformStyle>([
   "marimba-bar",
   "pluck-pad",
   "vibraphone-bar",
+  "metallophone-plate",
   "drum-disc",
   "gong-disc",
   "flute-pipe",

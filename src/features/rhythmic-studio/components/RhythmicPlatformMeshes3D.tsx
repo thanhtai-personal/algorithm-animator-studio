@@ -7,6 +7,7 @@ import { InstrumentPaddleMesh3D } from "./RhythmicInstrumentPaddle3D";
 import {
   DrumDiscMesh,
   MarimbaBarMesh,
+  MetallophonePlateMesh,
   PianoKeyboardMesh,
   PianoKeyMesh,
   PluckPadMesh,
@@ -374,6 +375,7 @@ export function PlatformMesh(props: MeshProps) {
   if (style === "marimba-bar") return <MarimbaBarMesh {...props} />;
   if (style === "pluck-pad") return <PluckPadMesh {...props} />;
   if (style === "vibraphone-bar") return <VibraphoneBarMesh {...props} />;
+  if (style === "metallophone-plate") return <MetallophonePlateMesh {...props} />;
   if (style === "drum-disc") return <DrumDiscMesh {...props} />;
   if (style === "gong-disc") return <GongDiscMesh {...props} />;
   if (style === "flute-pipe") return <FlutePipeMesh {...props} />;

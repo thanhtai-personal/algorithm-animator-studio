@@ -7,6 +7,7 @@ export const REFERENCE_CLIP_PRESET_MAP = {
   "4739": "vibraphone-wall",
   "4fd7": "boomwhacker-wall",
   "54ce": "reference-wooden-marimba",
+  "57c8": "reference-faceted-metallophone",
   a154: "reference-cyan-piano",
   ad97: "reference-checker-rails",
   hB8lCZ8xGZo_005: "reference-era-corridor",
@@ -17,6 +18,7 @@ export const NEW_REFERENCE_PRESET_IDS = [
   "reference-cyan-piano",
   "reference-checker-rails",
   "reference-era-corridor",
+  "reference-faceted-metallophone",
 ] as const;
 
 export const REFERENCE_VIDEO_PRESET_IDS = [
@@ -86,6 +88,19 @@ export const REFERENCE_VIDEO_PRESETS: ReferenceVideoPreset[] = [
       platformWidth: 106, platformThickness: 18, platformGap: 132, laneSpread: 260, minBounceDistance: 44, bounceHeight: 56,
       curveIntensity: 0, curvePathLength: 0, cameraAnchor: 0.48, cameraSmoothing: 0.18, cameraDistance: 1.08, cameraLookAhead: 1.16,
       platformGlow: 0.16, platformDetail: 0.94, trailLength: 3, particleCount: 1, impactRipple: false,
+    },
+  },
+  {
+    id: "reference-faceted-metallophone",
+    referenceClipIds: ["57c8"],
+    settings: {
+      terrainProfile: "xylophone", cameraProfile: "xylophone", backgroundPreset: "spotlight", backgroundColor: "#171b29",
+      colorPaletteMode: "key-rainbow", prismStart: "#f4f4f2", prismEnd: "#20e9ff", ballStyle: "patchwork", ballBaseColor: "#24c7e8", ballStripeColor: "#ff3cad", ballSize: 17,
+      platformPrimaryStyle: "metallophone-plate", platformSecondaryStyle: "dual-rail", platformAccentStyle: "instrument-rail", platformMixMode: "accent", platformAccentEvery: 9,
+      instrumentFamily: "metallophone", instrumentLayout: "gallery", showcaseRails: true, showcaseRailDensity: 0.84,
+      platformWidth: 124, platformThickness: 15, platformGap: 138, laneSpread: 252, minBounceDistance: 48, bounceHeight: 60,
+      curveIntensity: 0, curvePathLength: 0, cameraAnchor: 0.48, cameraSmoothing: 0.19, cameraDistance: 1.12, cameraLookAhead: 1.16,
+      platformGlow: 0.66, platformDetail: 1, trailLength: 4, particleCount: 8, impactRipple: true,
     },
   },
 ];

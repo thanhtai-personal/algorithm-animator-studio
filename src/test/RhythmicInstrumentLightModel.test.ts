@@ -13,7 +13,7 @@ function platform(index: number, midi: number, chordClusterId?: number) {
 }
 
 describe("instrument LED model", () => {
-  it.each(["drum-disc", "instrument-cymbal", "gong-disc", "flute-pipe", "piano-key", "xylophone-bar"] as const)(
+  it.each(["drum-disc", "instrument-cymbal", "gong-disc", "flute-pipe", "piano-key", "xylophone-bar", "metallophone-plate"] as const)(
     "marks %s as a note-lit instrument",
     (style) => expect(isNoteLitInstrumentStyle(style)).toBe(true),
   );

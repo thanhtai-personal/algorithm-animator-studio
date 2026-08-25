@@ -21,6 +21,8 @@ export function BallStylePreview({ style }: { style: BallStyle }) {
           ? "radial-gradient(circle at 34% 30%, #ffffff 0 7%, #fff59d 14%, #ffb000 36%, #f13b14 68%, #5b0904 100%)"
           : style === "water"
             ? "radial-gradient(circle at 30% 25%, #ffffff 0 9%, #c9fbff 17%, #37dff2 42%, #138bc8 68%, #073457 100%)"
+            : style === "patchwork"
+              ? "radial-gradient(circle at 32% 28%,rgba(255,255,255,.46),rgba(255,255,255,0)_28%),conic-gradient(from 18deg,#22c8e8,#2c70ed,#6346d8,#ff3cad,#ef3340,#ffb11b,#21c56b,#22c8e8)"
             : style === "rainbow"
               ? "conic-gradient(from 35deg,#ff3b30,#ffcc00,#34c759,#22d3ee,#3478f6,#af52de,#ff3b30)"
               : style === "flower"
@@ -41,6 +43,12 @@ export function BallStylePreview({ style }: { style: BallStyle }) {
       {style === "fire" && <div className="absolute inset-[7px] rounded-full border-2 border-orange-200/70 shadow-[inset_0_0_10px_rgba(255,255,255,.8)]" />}
       {style === "water" && <><div className="absolute inset-[5px] rounded-full border border-cyan-100/75" /><div className="absolute bottom-[9px] right-[8px] h-2 w-2 rounded-full border border-white/70" /></>}
       {style === "rainbow" && <div className="absolute inset-[5px] rounded-full border border-white/45 bg-white/10" />}
+      {style === "patchwork" && <>
+        <span className="absolute left-[4px] top-[7px] h-4 w-5 bg-amber-400/95" style={{ clipPath: "polygon(24% 0,100% 18%,82% 100%,0 72%)" }} />
+        <span className="absolute right-[3px] top-[10px] h-5 w-5 bg-blue-600/95" style={{ clipPath: "polygon(10% 8%,82% 0,100% 72%,38% 100%)" }} />
+        <span className="absolute bottom-[3px] left-[8px] h-5 w-5 bg-fuchsia-500/95" style={{ clipPath: "polygon(0 12%,78% 0,100% 70%,38% 100%)" }} />
+        <span className="absolute bottom-[4px] right-[6px] h-4 w-5 bg-emerald-500/95" style={{ clipPath: "polygon(18% 0,100% 20%,80% 100%,0 76%)" }} />
+      </>}
     </div>
   </SceneFrame>;
 }
@@ -109,6 +117,15 @@ export function CourseItemPreview({ style }: { style: CourseItemStyle }) {
       <div className="absolute left-[23px] top-[12px] h-9 w-9 rotate-[-7deg] rounded-md border border-white/25 bg-[linear-gradient(145deg,#55565a,#303136_70%)] shadow-[8px_11px_14px_rgba(15,23,42,.28)]" />
       <div className="absolute left-[28px] top-[17px] h-1 w-6 rotate-[-7deg] rounded-full bg-white/20" />
     </>, "bg-[linear-gradient(180deg,#d7dee5,#bfc8d1)]");
+  }
+  if (style === "metallophone-plate") {
+    return platformPreviewBase(<>
+      <div data-metallophone-mount="true" className="absolute left-[26px] top-[32px] h-7 w-9 rounded-bl-md border-b-[3px] border-l-[3px] border-slate-900" />
+      <div className="absolute left-[18px] top-[17px] h-7 w-14 rounded-[4px] border border-slate-300 bg-[linear-gradient(180deg,#ffffff,#eeece8_58%,#9aa0aa)] shadow-[0_9px_13px_rgba(0,0,0,.34)]" />
+      <span data-metallophone-bolt="true" className="absolute left-[29px] top-[29px] h-1.5 w-1.5 rounded-full bg-slate-800" />
+      <span data-metallophone-bolt="true" className="absolute right-[29px] top-[29px] h-1.5 w-1.5 rounded-full bg-slate-800" />
+      <div className="absolute left-[23px] top-[19px] h-1.5 w-10 rounded-full bg-white/80" />
+    </>, "bg-[radial-gradient(circle_at_50%_34%,rgba(255,255,255,.22),transparent_48%),linear-gradient(180deg,#202634,#10141e)]");
   }
   if (style === "instrument-key" || style === "xylophone-key") {
     const bg = style === "xylophone-key" ? "bg-[linear-gradient(180deg,#25143f,#3d2367)]" : "bg-[linear-gradient(180deg,#161d2c,#262f44)]";
@@ -208,6 +225,10 @@ function ReferencePresetThumbnail({ presetId }: { presetId: ReferenceVideoPreset
     {[0, 1, 2].map((row) => <div key={`left-${row}`} className="absolute h-4 w-4 rotate-[-14deg] rounded-sm border border-slate-400 bg-slate-700 shadow-[4px_5px_6px_rgba(15,23,42,.28)]" style={{ left: `${12 + row * 4}px`, top: `${7 + row * 17}px` }} />)}
     {[0, 1, 2].map((row) => <div key={`right-${row}`} className="absolute h-4 w-4 rotate-[14deg] rounded-sm border border-slate-400 bg-slate-700 shadow-[4px_5px_6px_rgba(15,23,42,.28)]" style={{ right: `${12 + row * 4}px`, top: `${7 + row * 17}px` }} />)}
     <div className="absolute left-1/2 top-[24px] h-5 w-5 -translate-x-1/2 rounded-full border border-white bg-[radial-gradient(circle_at_32%_28%,#fff,#a7f3d0_35%,#22c55e_100%)] shadow-[0_5px_8px_rgba(15,23,42,.24)]" />
+  </SceneFrame>;
+  if (presetId === "reference-faceted-metallophone") return <SceneFrame className="h-16 bg-[radial-gradient(circle_at_50%_34%,#5d6370,#171b29_72%)]">
+    {[0, 1, 2].map((index) => <div key={index} className="absolute h-3 w-11 rounded-sm border border-slate-300 bg-slate-100 shadow-[5px_7px_7px_rgba(0,0,0,.42)]" style={{ left: `${8 + index * 22}px`, top: `${8 + index * 17}px`, transform: `rotate(${index % 2 ? 13 : -9}deg)` }}><span className="absolute left-2 top-1 h-1 w-1 rounded-full bg-slate-800" /><span className="absolute right-2 top-1 h-1 w-1 rounded-full bg-slate-800" /></div>)}
+    <div className="absolute right-3 top-3 h-6 w-6 rounded-full border border-white/60 bg-[conic-gradient(#22c8e8,#2c70ed,#ff3cad,#ef3340,#ffb11b,#21c56b,#22c8e8)] shadow-[0_0_14px_rgba(255,255,255,.35)]" />
   </SceneFrame>;
   return <SceneFrame className="h-16 bg-[radial-gradient(circle_at_55%_40%,#31159b,#090022_65%)]">
     {[0, 1, 2].map((row) => <div key={row} className="absolute flex h-3 w-16 -rotate-12 overflow-hidden rounded-full shadow-[0_0_12px_rgba(32,233,255,.7)]" style={{ left: `${10 + row * 13}px`, top: `${9 + row * 17}px` }}>{Array.from({ length: 8 }, (_, index) => <span key={index} className={`h-full flex-1 ${index % 2 ? "bg-blue-700" : "bg-cyan-300"}`} />)}</div>)}

@@ -4,6 +4,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { StudioSettings } from "../types";
 import { RhythmicBackplate3D } from "./RhythmicBackplate3D";
+import { RHYTHMIC_SHOWCASE_WALL_CENTER_Y, RHYTHMIC_SHOWCASE_WALL_HEIGHT } from "./rhythmicSceneMath3D";
 
 export type EnvironmentKind = "tube-board" | "comet" | "xylophone" | "neutral";
 
@@ -321,11 +322,11 @@ function ShowcaseWall({ color }: { color: string }) {
   const wall = new THREE.Color(color).lerp(new THREE.Color("#d7d1ca"), 0.38).getStyle();
   return (
     <group>
-      <RoundedBox position={[0, -54, -4.45]} args={[18.8, 140, 0.42]} radius={0.12} smoothness={4} receiveShadow>
+      <RoundedBox position={[0, RHYTHMIC_SHOWCASE_WALL_CENTER_Y, -4.45]} args={[18.8, RHYTHMIC_SHOWCASE_WALL_HEIGHT, 0.42]} radius={0.12} smoothness={4} receiveShadow>
         <meshStandardMaterial color={wall} roughness={0.86} metalness={0.01} />
       </RoundedBox>
       {[-8.85, 8.85].map((x) => (
-        <RoundedBox key={x} position={[x, -54, -4.62]} args={[0.34, 140, 0.18]} radius={0.08} smoothness={3} receiveShadow>
+        <RoundedBox key={x} position={[x, RHYTHMIC_SHOWCASE_WALL_CENTER_Y, -4.62]} args={[0.34, RHYTHMIC_SHOWCASE_WALL_HEIGHT, 0.18]} radius={0.08} smoothness={3} receiveShadow>
           <meshStandardMaterial color="#b8b1aa" roughness={0.9} metalness={0.01} />
         </RoundedBox>
       ))}

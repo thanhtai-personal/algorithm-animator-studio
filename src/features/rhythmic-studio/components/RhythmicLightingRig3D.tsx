@@ -3,7 +3,13 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { StudioSettings } from "../types";
 import { environmentKind, ReflectionRig } from "./RhythmicEnvironment3D";
-import { SHOWCASE_SHADOW_LIGHT_OFFSET, shadowRigPose } from "./rhythmicSceneMath3D";
+import {
+  RHYTHMIC_SHADOW_RECEIVER_Z,
+  RHYTHMIC_SHOWCASE_WALL_CENTER_Y,
+  RHYTHMIC_SHOWCASE_WALL_HEIGHT,
+  SHOWCASE_SHADOW_LIGHT_OFFSET,
+  shadowRigPose,
+} from "./rhythmicSceneMath3D";
 
 type Point3D = { x: number; y: number; z: number };
 
@@ -74,6 +80,10 @@ export function RhythmicLightingRig3D({ settings, focus }: { settings: StudioSet
     return (
       <>
         <ReflectionRig settings={settings} />
+        <mesh position={[0, RHYTHMIC_SHOWCASE_WALL_CENTER_Y, RHYTHMIC_SHADOW_RECEIVER_Z]} receiveShadow renderOrder={-18}>
+          <planeGeometry args={[18.4, RHYTHMIC_SHOWCASE_WALL_HEIGHT]} />
+          <shadowMaterial transparent opacity={0.3} depthWrite={false} />
+        </mesh>
         <hemisphereLight args={["#fff9ef", "#6d655e", 0.9]} />
         <TrackedKeyLight focus={focus} offset={SHOWCASE_SHADOW_LIGHT_OFFSET} intensity={2.6} mapSize={1536} bias={-0.00035} normalBias={0.025} radius={3.2} />
         <directionalLight position={[5, -2, 5]} intensity={0.5} color="#dce7f5" />

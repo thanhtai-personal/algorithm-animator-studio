@@ -96,7 +96,14 @@ export function CourseItemPreview({ style }: { style: CourseItemStyle }) {
       <div className="absolute left-5 right-5 top-[24px] h-2 rounded-full bg-white/50" />
     </>, "bg-[radial-gradient(circle_at_50%_35%,rgba(167,139,250,.18),rgba(7,10,18,0)_55%),linear-gradient(180deg,#06070d,#131728)]");
   }
-  if (style === "instrument-key" || style === "xylophone-key" || style === "instrument-pad") {
+  if (style === "instrument-pad") {
+    return platformPreviewBase(<>
+      <div className="absolute left-[36px] top-[38px] h-5 w-2 rounded-sm bg-slate-800 shadow-[5px_8px_12px_rgba(15,23,42,.28)]" />
+      <div className="absolute left-[23px] top-[12px] h-9 w-9 rotate-[-7deg] rounded-md border border-white/25 bg-[linear-gradient(145deg,#55565a,#303136_70%)] shadow-[8px_11px_14px_rgba(15,23,42,.28)]" />
+      <div className="absolute left-[28px] top-[17px] h-1 w-6 rotate-[-7deg] rounded-full bg-white/20" />
+    </>, "bg-[linear-gradient(180deg,#d7dee5,#bfc8d1)]");
+  }
+  if (style === "instrument-key" || style === "xylophone-key") {
     const bg = style === "xylophone-key" ? "bg-[linear-gradient(180deg,#25143f,#3d2367)]" : "bg-[linear-gradient(180deg,#161d2c,#262f44)]";
     const keyColor = style === "xylophone-key" ? "linear-gradient(180deg,#fde68a,#f59e0b_55%,#92400e)" : "linear-gradient(180deg,#ffffff,#93c5fd_45%,#1d4ed8_100%)";
     return platformPreviewBase(<>
@@ -188,6 +195,11 @@ function ReferencePresetThumbnail({ presetId }: { presetId: ReferenceVideoPreset
   </SceneFrame>;
   if (presetId === "reference-cyan-piano") return <SceneFrame className="h-16 bg-[radial-gradient(circle_at_50%_45%,#17d7d4,#07557a_62%)]">
     {[0, 1, 2, 3].map((index) => <div key={index} className="absolute h-4 w-14 rounded-sm border border-cyan-100/50 bg-slate-100 shadow-[6px_8px_7px_rgba(0,0,0,.35)]" style={{ left: `${4 + index * 19}px`, top: `${6 + index * 13}px`, transform: `rotate(${index % 2 ? -12 : 9}deg)` }} />)}
+  </SceneFrame>;
+  if (presetId === "reference-era-corridor") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#e6ebef,#c7d0d8)]">
+    {[0, 1, 2].map((row) => <div key={`left-${row}`} className="absolute h-4 w-4 rotate-[-14deg] rounded-sm border border-slate-400 bg-slate-700 shadow-[4px_5px_6px_rgba(15,23,42,.28)]" style={{ left: `${12 + row * 4}px`, top: `${7 + row * 17}px` }} />)}
+    {[0, 1, 2].map((row) => <div key={`right-${row}`} className="absolute h-4 w-4 rotate-[14deg] rounded-sm border border-slate-400 bg-slate-700 shadow-[4px_5px_6px_rgba(15,23,42,.28)]" style={{ right: `${12 + row * 4}px`, top: `${7 + row * 17}px` }} />)}
+    <div className="absolute left-1/2 top-[24px] h-5 w-5 -translate-x-1/2 rounded-full border border-white bg-[radial-gradient(circle_at_32%_28%,#fff,#a7f3d0_35%,#22c55e_100%)] shadow-[0_5px_8px_rgba(15,23,42,.24)]" />
   </SceneFrame>;
   return <SceneFrame className="h-16 bg-[radial-gradient(circle_at_55%_40%,#31159b,#090022_65%)]">
     {[0, 1, 2].map((row) => <div key={row} className="absolute flex h-3 w-16 -rotate-12 overflow-hidden rounded-full shadow-[0_0_12px_rgba(32,233,255,.7)]" style={{ left: `${10 + row * 13}px`, top: `${9 + row * 17}px` }}>{Array.from({ length: 8 }, (_, index) => <span key={index} className={`h-full flex-1 ${index % 2 ? "bg-blue-700" : "bg-cyan-300"}`} />)}</div>)}

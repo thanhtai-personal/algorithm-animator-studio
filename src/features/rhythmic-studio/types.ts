@@ -76,7 +76,7 @@ export const INSTRUMENT_FAMILIES = [
 ] as const;
 export type InstrumentFamily = (typeof INSTRUMENT_FAMILIES)[number];
 
-export const INSTRUMENT_LAYOUTS = ["cascade", "fan", "gallery", "split"] as const;
+export const INSTRUMENT_LAYOUTS = ["cascade", "fan", "gallery", "split", "corridor"] as const;
 export type InstrumentLayout = (typeof INSTRUMENT_LAYOUTS)[number];
 
 export const COURSE_LONG_ITEMS = [

@@ -105,6 +105,8 @@ export function decorateDenseInstrumentRuns(platforms: MarblePlatform[], runs: D
     }
   }
   for (const surface of surfaces.values()) {
+    const surfaceSettings = resolveSettings?.(surface.start) ?? settings;
+    if (surfaceSettings.instrumentLayout === "corridor") continue;
     const positions = platformPositionsForSurface(decorated, surface);
     const strikes = strikePositionsForSurface(decorated, positions);
     for (const position of positions) decorated[position].denseSurfaceId = surface.surfaceId;

@@ -7,26 +7,31 @@ import { RHYTHMIC_COURSE_WIDTH, RHYTHMIC_WORLD_SCALE } from "./RhythmicMotion3D"
 import { PlatformMesh } from "./RhythmicPlatformMeshes3D";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 import { CHORD_GAP_MS } from "../engine/denseInstrumentRuns";
+import { wallMountProfile } from "./rhythmicSceneMath3D";
 
-function PhysicalMount({ terrain, w, h, detail, showcase }: {
+function PhysicalMount({ terrain, w, h, detail, showcase, frontDepth, style }: {
   terrain: StudioSettings["terrainProfile"];
   w: number;
   h: number;
   detail: number;
   showcase: boolean;
+  frontDepth: number;
+  style: string;
 }) {
   if (showcase) {
     const supportX = Math.min(w * 0.3, 0.46);
+    const supportPositions = style === "instrument-pad" ? [0] : [-supportX, supportX];
+    const mount = wallMountProfile(frontDepth);
     return (
       <group>
-        {[-supportX, supportX].map((x) => (
+        {supportPositions.map((x) => (
           <group key={x} position={[x, h * 0.28, 0]}>
-            <mesh position={[0, 0, -0.56]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-              <cylinderGeometry args={[0.024, 0.024, 1.02, 12]} />
+            <mesh position={[0, 0, mount.stemCenterZ]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+              <cylinderGeometry args={[0.024, 0.024, mount.stemLength, 12]} />
               <meshStandardMaterial color="#5c6066" roughness={0.3} metalness={0.74} />
             </mesh>
-            <mesh position={[0, 0, -1.08]} castShadow receiveShadow>
-              <cylinderGeometry args={[0.072, 0.072, 0.08, 16]} />
+            <mesh position={[0, 0, mount.anchorCenterZ]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+              <cylinderGeometry args={[0.072, 0.072, mount.anchorThickness, 16]} />
               <meshStandardMaterial color="#33363b" roughness={0.48} metalness={0.46} />
             </mesh>
           </group>
@@ -240,7 +245,7 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
             }}
           >
             {platform.denseRunId === undefined && (
-              <PhysicalMount terrain={platformSettings.terrainProfile} w={w} h={h} detail={platformSettings.platformDetail} showcase={platformSettings.instrumentFamily !== "auto"} />
+              <PhysicalMount terrain={platformSettings.terrainProfile} w={w} h={h} detail={platformSettings.platformDetail} showcase={platformSettings.instrumentFamily !== "auto"} frontDepth={frontDepth} style={style} />
             )}
             <PlatformMesh w={w} h={h} d={depth} color={platform.color} style={style} selected={platform.index === selectedNodeIndex} glow={effectiveGlow} detail={platformSettings.platformDetail} />
           </group>

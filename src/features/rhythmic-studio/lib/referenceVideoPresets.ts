@@ -9,12 +9,14 @@ export const REFERENCE_CLIP_PRESET_MAP = {
   "54ce": "reference-wooden-marimba",
   a154: "reference-cyan-piano",
   ad97: "reference-checker-rails",
+  hB8lCZ8xGZo_005: "reference-era-corridor",
 } as const;
 
 export const NEW_REFERENCE_PRESET_IDS = [
   "reference-wooden-marimba",
   "reference-cyan-piano",
   "reference-checker-rails",
+  "reference-era-corridor",
 ] as const;
 
 export const REFERENCE_VIDEO_PRESET_IDS = [
@@ -71,6 +73,19 @@ export const REFERENCE_VIDEO_PRESETS: ReferenceVideoPreset[] = [
       platformWidth: 118, platformThickness: 15, platformGap: 152, laneSpread: 236, minBounceDistance: 62, bounceHeight: 82,
       curveIntensity: 0, curvePathLength: 0, cameraAnchor: 0.47, cameraSmoothing: 0.17, cameraDistance: 1.2, cameraLookAhead: 1.2,
       platformGlow: 0.72, platformDetail: 1, trailLength: 7, particleCount: 2, impactRipple: true,
+    },
+  },
+  {
+    id: "reference-era-corridor",
+    referenceClipIds: ["hB8lCZ8xGZo_005"],
+    settings: {
+      terrainProfile: "xylophone", cameraProfile: "xylophone", backgroundPreset: "spotlight", backgroundColor: "#d7dee5",
+      colorPaletteMode: "duotone", prismStart: "#303238", prismEnd: "#d6dbe0", ballStyle: "glass", ballBaseColor: "#9fffc8", ballSize: 16,
+      platformPrimaryStyle: "instrument-pad", platformSecondaryStyle: "instrument-cymbal", platformAccentStyle: "piano-key", platformMixMode: "accent", platformAccentEvery: 8,
+      instrumentFamily: "mixed", instrumentLayout: "corridor", showcaseRails: true, showcaseRailDensity: 0.86,
+      platformWidth: 106, platformThickness: 18, platformGap: 132, laneSpread: 260, minBounceDistance: 44, bounceHeight: 56,
+      curveIntensity: 0, curvePathLength: 0, cameraAnchor: 0.48, cameraSmoothing: 0.18, cameraDistance: 1.08, cameraLookAhead: 1.16,
+      platformGlow: 0.16, platformDetail: 0.94, trailLength: 3, particleCount: 1, impactRipple: false,
     },
   },
 ];

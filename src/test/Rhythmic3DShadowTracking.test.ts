@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  RHYTHMIC_SHADOW_RECEIVER_Z,
+  RHYTHMIC_SHOWCASE_WALL_CENTER_Y,
+  RHYTHMIC_SHOWCASE_WALL_HEIGHT,
   SHOWCASE_SHADOW_LIGHT_OFFSET,
   shadowReceiverOffset,
   shadowRigPose,
+  wallMountProfile,
 } from "../features/rhythmic-studio/components/rhythmicSceneMath3D";
 
 describe("rhythmic 3D shadow tracking", () => {
@@ -43,5 +47,19 @@ describe("rhythmic 3D shadow tracking", () => {
 
     expect(Math.abs(shadow.x)).toBeLessThan(1);
     expect(Math.abs(shadow.y)).toBeLessThan(1.5);
+  });
+
+  it("anchors the mount foot on the same plane that receives its shadow", () => {
+    const frontDepth = 0.27;
+    const mount = wallMountProfile(frontDepth);
+    const platformGroupZ = -frontDepth;
+
+    expect(platformGroupZ + mount.anchorZ).toBeCloseTo(RHYTHMIC_SHADOW_RECEIVER_Z, 6);
+    expect(mount.stemLength).toBeGreaterThan(3);
+  });
+
+  it("keeps the shadow wall behind a complete long-form course", () => {
+    expect(RHYTHMIC_SHOWCASE_WALL_CENTER_Y + RHYTHMIC_SHOWCASE_WALL_HEIGHT * 0.5).toBeGreaterThanOrEqual(0);
+    expect(RHYTHMIC_SHOWCASE_WALL_CENTER_Y - RHYTHMIC_SHOWCASE_WALL_HEIGHT * 0.5).toBeLessThanOrEqual(-540);
   });
 });

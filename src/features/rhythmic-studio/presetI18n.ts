@@ -26,6 +26,7 @@ const EN: Record<PresetTextKey, string> = {
   "reference-wooden-marimba": "Reference · Wooden Marimba",
   "reference-cyan-piano": "Reference · Cyan Piano",
   "reference-checker-rails": "Reference · Checker Rails",
+  "reference-era-corridor": "Reference · Era Corridor",
   "toy-pegboard.hint": "Matches clip 013b: sparse colorful pegs and a candy-flower marble",
   "neon-comet.hint": "Galaxy marble, luminous pads and controlled ribbon jumps",
   "boomwhacker-wall.hint": "Combines clips 0e70 and 4fd7: rainbow tubes, drums, rails and a fire marble",
@@ -33,6 +34,7 @@ const EN: Record<PresetTextKey, string> = {
   "reference-wooden-marimba.hint": "Matches clip 54ce: wooden mallet instruments, brass mounts and guide rails",
   "reference-cyan-piano.hint": "Matches clip a154: white piano surfaces in a cyan-blue light field",
   "reference-checker-rails.hint": "Matches clip ad97: dark neon rails, prisms and cyan-violet geometry",
+  "reference-era-corridor.hint": "Matches clip hB8lCZ8xGZo_005: cymbals, square paddles, piano blocks and staggered fast-note corridors",
 };
 
 const VI: typeof EN = {
@@ -50,6 +52,7 @@ const VI: typeof EN = {
   "reference-wooden-marimba": "Mẫu · Marimba gỗ",
   "reference-cyan-piano": "Mẫu · Piano cyan",
   "reference-checker-rails": "Mẫu · Ray caro neon",
+  "reference-era-corridor": "Mẫu · Hành lang thời đại",
   "toy-pegboard.hint": "Theo clip 013b: chốt màu thưa thoáng và bi hoa kẹo",
   "neon-comet.hint": "Bi galaxy, bệ sáng và các cú nảy ribbon được kiểm soát",
   "boomwhacker-wall.hint": "Gộp clip 0e70 và 4fd7: ống cầu vồng, trống, ray và bi lửa",
@@ -57,6 +60,7 @@ const VI: typeof EN = {
   "reference-wooden-marimba.hint": "Theo clip 54ce: nhạc cụ gõ gỗ, chân đồng và ray dẫn hướng",
   "reference-cyan-piano.hint": "Theo clip a154: bề mặt piano trắng trong trường sáng xanh cyan",
   "reference-checker-rails.hint": "Theo clip ad97: ray neon tối, lăng kính và hình học cyan-tím",
+  "reference-era-corridor.hint": "Theo clip hB8lCZ8xGZo_005: cymbal, paddle vuông, phím hộp và hành lang so le cho đoạn nhanh",
 };
 
 export function presetText(lang: Lang, key: PresetTextKey) {

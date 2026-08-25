@@ -32,7 +32,16 @@ function layoutScale(layout: InstrumentLayout, index: number) {
   if (layout === "fan") return { vertical: 0.9 + (index % 5) * 0.018, horizontal: 0.56 + (index % 4) * 0.025 };
   if (layout === "gallery") return { vertical: 0.94, horizontal: 0.5 + (index % 3) * 0.03 };
   if (layout === "split") return { vertical: 0.88, horizontal: 0.62 + (index % 2) * 0.05 };
+  if (layout === "corridor") return { vertical: 0.86 + (index % 3) * 0.018, horizontal: 0.7 + (index % 2) * 0.04 };
   return { vertical: 0.92 + (index % 4) * 0.014, horizontal: 0.54 + (index % 3) * 0.02 };
+}
+
+function corridorPattern(index: number): PlatformStyle {
+  const section = Math.floor(index / 8) % 4;
+  if (section === 0) return index % 4 === 0 ? "instrument-cymbal" : "instrument-rail";
+  if (section === 1) return index % 5 === 0 ? "vibraphone-bar" : "instrument-pad";
+  if (section === 2) return index % 4 === 3 ? "pluck-pad" : "piano-key";
+  return index % 3 === 1 ? "instrument-wire" : "instrument-pad";
 }
 
 function familyPattern(family: InstrumentFamily, index: number): PlatformStyle {
@@ -51,9 +60,9 @@ function familyPattern(family: InstrumentFamily, index: number): PlatformStyle {
 
 export function presetObstaclePlan(index: number, settings: StudioSettings): PresetObstaclePlan | null {
   if (settings.instrumentFamily !== "auto") {
-    const style = familyPattern(settings.instrumentFamily, index);
+    const style = settings.instrumentLayout === "corridor" ? corridorPattern(index) : familyPattern(settings.instrumentFamily, index);
     const layout = layoutScale(settings.instrumentLayout, index);
-    const sectionLength = settings.instrumentLayout === "gallery" ? 10 : settings.instrumentLayout === "fan" ? 14 : 12;
+    const sectionLength = settings.instrumentLayout === "corridor" ? 8 : settings.instrumentLayout === "gallery" ? 10 : settings.instrumentLayout === "fan" ? 14 : 12;
     return {
       style,
       widthScale: widthScale(style) * (index % 6 === 0 ? 1.06 : 1),

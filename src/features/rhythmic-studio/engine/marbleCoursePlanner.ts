@@ -323,13 +323,17 @@ function createBounceCandidateContext(
     profile,
     bounds: courseWorldBounds(settings, width),
     naturalHorizontal: Math.max(8, terrain.horizontalDistance * profile.horizontalScale * spacing.horizontal * 0.42),
-    restitution: naturalRestitution(profile, settings),
+    restitution: settings.instrumentLayout === "corridor"
+      ? Math.max(0.88, naturalRestitution(profile, settings))
+      : naturalRestitution(profile, settings),
   };
 }
 
 function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: number, preferredDirection: number, pitch: number, settings: StudioSettings, width: number) {
   const context = createBounceCandidateContext(index, hit, incoming, spanMs, preferredDirection, pitch, settings, width);
-  const result = collisionAngles(context.profile, context.dt)
+  const angles = collisionAngles(context.profile, context.dt);
+  if (settings.instrumentLayout === "corridor" && context.dt < 0.16) angles.push(0.86, -0.86, 1, -1);
+  const result = angles
     .map((angle, order) => ordinaryBounceCandidate(context, angle, order))
     .filter((candidate): candidate is BounceCandidate => candidate !== null);
   result.push(...edgeAbsorberCandidates(context));
@@ -551,21 +555,25 @@ function searchVisualFit(
   compact: boolean,
 ) {
   const dense = platform.denseSurfaceId !== undefined || platform.denseRunId !== undefined;
-  const minimumWidth = compact
+  const squareCorridorPaddle = settings.instrumentLayout === "corridor" && platform.visualStyle === "instrument-pad";
+  const squareMinimum = Math.max(12, settings.ballSize * 1.05);
+  const minimumWidth = squareCorridorPaddle ? squareMinimum : compact
     ? Math.max(10, settings.ballSize * 0.72)
     : dense ? Math.max(11, settings.ballSize * 0.78) : Math.max(18, settings.ballSize * 1.2);
-  const minimumThickness = compact
+  const minimumThickness = squareCorridorPaddle ? squareMinimum : compact
     ? Math.max(4.5, settings.ballSize * 0.3)
     : dense ? Math.max(5, settings.ballSize * 0.34) : Math.max(5.2, settings.ballSize * 0.35);
-  const widths = candidateSizes(original.width, minimumWidth, 0.8, compact ? 5 : 8);
+  const widths = candidateSizes(squareCorridorPaddle ? Math.max(original.width, original.thickness) : original.width, minimumWidth, 0.8, compact ? 5 : 8);
   const thicknesses = candidateSizes(original.thickness, minimumThickness, 0.76, compact ? 5 : 7);
+  const sizes = squareCorridorPaddle
+    ? widths.map((size) => ({ width: size, thickness: size }))
+    : thicknesses.flatMap((thickness) => widths.map((width) => ({ width, thickness })));
   const hitMargin = Math.max(2.2, settings.ballSize * (compact ? 0.17 : 0.26));
   const wallInset = Math.max(3, settings.ballSize * 0.22);
   let best: VisualFitCandidate | null = null;
 
-  for (const thickness of thicknesses) {
-    for (const candidateWidth of widths) {
-      for (const shift of candidateShifts(original.hitProjection, candidateWidth, hitMargin)) {
+  for (const size of sizes) {
+      for (const shift of candidateShifts(original.hitProjection, size.width, hitMargin)) {
         const candidate = evaluateVisualCandidate(
           platforms,
           platformIndex,
@@ -575,12 +583,11 @@ function searchVisualFit(
           wallInset,
           original.width,
           original,
-          { width: candidateWidth, thickness, shift },
+          { width: size.width, thickness: size.thickness, shift },
         );
         best = preferVisualCandidate(best, candidate);
         if (best?.clean) return best;
       }
-    }
   }
   return best;
 }
@@ -609,7 +616,10 @@ function fitPlatformVisual(
     platform.visualStyle = platform.denseSurfaceId !== undefined || platform.denseRunId !== undefined
       ? (platform.visualStyle ?? "piano-key")
       : "instrument-pad";
-    best = preferVisualCandidate(best, searchVisualFit(platforms, platformIndex, platform, settings, sceneWidth, original, true));
+    const compactBest = searchVisualFit(platforms, platformIndex, platform, settings, sceneWidth, original, true);
+    best = settings.instrumentLayout === "corridor" && platform.visualStyle === "instrument-pad"
+      ? compactBest ?? best
+      : preferVisualCandidate(best, compactBest);
   }
   if (best) applyVisualCandidate(platform, original, best.width, best.thickness, best.shift);
 }
@@ -760,6 +770,14 @@ function routeCandidatesForStep(
   const denseRun = context.denseSegments.get(index);
   const chord = context.chordSegments.get(index);
   if (chord) return [holdRouteCandidate(state.hit, state.incoming)];
+  if (denseRun && settings.instrumentLayout === "corridor") {
+    const corridorDirection = Math.floor(index / 3) % 2 === 0 ? -1 : 1;
+    return bounceCandidates(index, state.hit, state.incoming, spanMs, corridorDirection, pitch, settings, context.width)
+      .map((candidate) => ({
+        ...candidate,
+        score: candidate.score + (Math.sign(candidate.target.x - state.hit.x || corridorDirection) === corridorDirection ? 0 : 120),
+      }));
+  }
   if (denseRun) return denseRouteCandidates(context, index, state, denseRun);
   const denseEnd = context.denseEnds.get(index);
   const smoothExit = denseEnd && index < context.events.length - 1
@@ -801,19 +819,35 @@ function applyPlannerVisualHints(
   platform: MarblePlatform,
 ) {
   const { denseNode, denseRun, chordNode, settings, event, spanMs } = step;
+  if (settings.instrumentLayout === "corridor" && !denseNode) {
+    platform.visualStyle = presetObstaclePlan(index, settings)?.style ?? "instrument-pad";
+    platform.visualWidth = Math.max(settings.ballSize * 2.45, Math.min(platform.width * 0.45, 48));
+    platform.visualThickness = platform.visualStyle === "instrument-pad"
+      ? platform.visualWidth
+      : Math.max(settings.ballSize * 0.72, settings.platformThickness * 0.5);
+  }
   if (denseNode) {
-    platform.visualStyle = denseNode.kind === "keyboard" ? "piano-key" : "instrument-pad";
-    const routeDistance = Math.hypot(route.target.x - state.hit.x, route.target.y - state.hit.y);
-    const seam = denseNode.kind === "keyboard" ? 1.2 : 2.4;
-    const previousDense = [...state.recentPlatforms].reverse().find((item) => item.denseRunId === denseNode.id);
-    platform.visualWidth = denseRun
-      ? Math.max(settings.ballSize * 1.04, routeDistance - seam)
-      : previousDense?.visualWidth ?? Math.max(settings.ballSize * 1.04, 24);
+    if (settings.instrumentLayout === "corridor") {
+      platform.visualStyle = presetObstaclePlan(index, settings)?.style ?? "instrument-pad";
+      platform.visualWidth = Math.max(settings.ballSize * 2.45, Math.min(platform.width * 0.45, 48));
+      platform.visualThickness = platform.visualStyle === "instrument-pad"
+        ? platform.visualWidth
+        : Math.max(settings.ballSize * 0.72, settings.platformThickness * 0.5);
+    } else {
+      platform.visualStyle = denseNode.kind === "keyboard" ? "piano-key" : "instrument-pad";
+      const routeDistance = Math.hypot(route.target.x - state.hit.x, route.target.y - state.hit.y);
+      const seam = denseNode.kind === "keyboard" ? 1.2 : 2.4;
+      const previousDense = [...state.recentPlatforms].reverse().find((item) => item.denseRunId === denseNode.id);
+      platform.visualWidth = denseRun
+        ? Math.max(settings.ballSize * 1.04, routeDistance - seam)
+        : previousDense?.visualWidth ?? Math.max(settings.ballSize * 1.04, 24);
+    }
     platform.visualTiltRad = axisAngle(Math.atan2(-route.normal.x, route.normal.y));
   }
   if (chordNode) {
     platform.visualStyle = "instrument-pad";
     platform.visualWidth = Math.max(settings.ballSize * 3.4, Math.min(platform.width * 0.72, 68));
+    if (settings.instrumentLayout === "corridor") platform.visualThickness = platform.visualWidth;
     if (index > chordNode.start) platform.visualHidden = true;
     return;
   }
@@ -849,9 +883,10 @@ function createPlatformForRoute(
     step.platformWidth,
     step.profile.gravity,
   );
-  platform.motionMode = step.chord ? "hold" : step.denseRun ? "roll" : "ballistic";
-  platform.denseRunId = step.denseNode?.id;
-  platform.denseSurfaceId = step.denseNode?.surfaceId;
+  const corridorImpact = step.settings.instrumentLayout === "corridor" && Boolean(step.denseRun);
+  platform.motionMode = step.chord ? "hold" : step.denseRun && !corridorImpact ? "roll" : "ballistic";
+  platform.denseRunId = corridorImpact ? undefined : step.denseNode?.id;
+  platform.denseSurfaceId = corridorImpact ? undefined : step.denseNode?.surfaceId;
   platform.chordClusterId = step.chordNode?.id;
   applyPlannerVisualHints(context, index, state, step, route, platform);
   const impactStyle = "impactStyle" in route ? route.impactStyle : undefined;
@@ -885,7 +920,7 @@ function buildNextSearchState(
 ): SearchState | null {
   const nextHit = route.target;
   const dt = Math.max(0.001, step.spanMs / 1000);
-  const constrainedMotion = Boolean(step.chord || step.denseRun);
+  const constrainedMotion = step.chord !== undefined || platform.motionMode === "roll";
   const nextIncoming = constrainedMotion
     ? { ...route.outgoing }
     : { x: route.outgoing.x, y: route.outgoing.y + step.profile.gravity * dt };

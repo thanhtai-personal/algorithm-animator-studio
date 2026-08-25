@@ -20,7 +20,8 @@ export type ShowcaseTextKey =
   | "layout.cascade"
   | "layout.fan"
   | "layout.gallery"
-  | "layout.split";
+  | "layout.split"
+  | "layout.corridor";
 
 const EN: Record<ShowcaseTextKey, string> = {
   title: "3D instrument showcase",
@@ -43,6 +44,7 @@ const EN: Record<ShowcaseTextKey, string> = {
   "layout.fan": "Fan / radial wall",
   "layout.gallery": "Instrument gallery",
   "layout.split": "Split duet lanes",
+  "layout.corridor": "Fast staggered corridor",
 };
 
 const VI: typeof EN = {
@@ -66,6 +68,7 @@ const VI: typeof EN = {
   "layout.fan": "Quạt / tỏa tròn trên tường",
   "layout.gallery": "Gallery nhạc cụ",
   "layout.split": "Hai lane cho duet",
+  "layout.corridor": "Hành lang so le cho đoạn nhanh",
 };
 
 export function showcaseText(lang: Lang, key: ShowcaseTextKey) {

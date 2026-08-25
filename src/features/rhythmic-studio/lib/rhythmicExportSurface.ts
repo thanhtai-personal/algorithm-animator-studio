@@ -13,14 +13,14 @@ export function createFixedRhythmicExportSurface(
   if (!context) return {
     canvas: source,
     manualFrames: false,
-    startCapture: (_fps: number, _requestFrame: () => void) => undefined,
+    startCapture: (_fps: number) => undefined,
     stop: () => undefined,
   };
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
 
   let stopped = false;
-  let timer = 0;
+  let frame = 0;
   const paint = () => {
     if (stopped) return;
     context.fillStyle = "#000000";
@@ -31,18 +31,24 @@ export function createFixedRhythmicExportSurface(
 
   return {
     canvas: output,
-    manualFrames: true,
-    startCapture: (fps: number, requestFrame: () => void) => {
+    manualFrames: false,
+    startCapture: (fps: number) => {
       paint();
-      requestFrame();
-      timer = window.setInterval(() => {
-        paint();
-        requestFrame();
-      }, 1000 / Math.max(1, fps));
+      const intervalMs = 1000 / Math.max(1, fps);
+      let lastPaintAt = performance.now();
+      const captureNextFrame = (now: number) => {
+        if (stopped) return;
+        if (now - lastPaintAt >= intervalMs - 0.5) {
+          paint();
+          lastPaintAt = now;
+        }
+        frame = window.requestAnimationFrame(captureNextFrame);
+      };
+      frame = window.requestAnimationFrame(captureNextFrame);
     },
     stop: () => {
       stopped = true;
-      if (timer) window.clearInterval(timer);
+      if (frame) window.cancelAnimationFrame(frame);
     },
   };
 }

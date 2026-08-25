@@ -35,6 +35,7 @@ describe("WebGL chase performers", () => {
       "chase-marble-A-striped",
       "chase-marble-B-multicolor-glass",
     ]);
+    expect(view.container.querySelector("group[name='multicolor-glass-core']")).not.toBeNull();
   });
 
   it("matches Canvas positions and keeps top-face contact depth", () => {

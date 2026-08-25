@@ -65,7 +65,7 @@ describe("reference marble styles", () => {
       glowAnimation: false,
     }} />);
     consoleError.mockRestore();
-    expect(webgl.container.querySelector('[data-marble-core="multicolor-glass"]')).toBeInTheDocument();
+    expect(webgl.container.querySelector('group[name="multicolor-glass-core"]')).toBeInTheDocument();
   });
 
   it("gives the fire marble a persistent readable 3D trail", () => {

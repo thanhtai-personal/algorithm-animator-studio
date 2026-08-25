@@ -214,7 +214,16 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
   if (index >= events.length - 1) {
     const last = platforms[platforms.length - 1];
     const hit = marbleHitPoint(last);
-    return { x: hit.x, y: hit.y, color: last.color, platformIndex: last.index };
+    const elapsed = Math.max(0, timeMs - events[events.length - 1].timeMs) / 1000;
+    // The final platform is prepared with a safe outgoing launch. Continue that
+    // physical trajectory after the last note so preview/export does not freeze
+    // the marble on the playing face while the terminal instrument is still on screen.
+    return {
+      x: hit.x + last.outVX * elapsed,
+      y: hit.y + last.outVY * elapsed + 0.5 * last.gravity * elapsed * elapsed,
+      color: last.color,
+      platformIndex: last.index,
+    };
   }
 
   const segmentSettings = resolveSettings?.(index) ?? settings;

@@ -10,7 +10,6 @@ describe("fixed rhythmic export surface", () => {
   ] as const)("creates a native %s recording canvas", (preset, width, height) => {
     const drawImage = vi.fn();
     const fillRect = vi.fn();
-    const requestFrame = vi.fn();
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
       drawImage,
       fillRect,
@@ -18,19 +17,26 @@ describe("fixed rhythmic export surface", () => {
       imageSmoothingQuality: "low",
       fillStyle: "",
     } as unknown as CanvasRenderingContext2D);
-    const setInterval = vi.spyOn(window, "setInterval").mockReturnValue(42);
-    const clearInterval = vi.spyOn(window, "clearInterval").mockImplementation(() => undefined);
+    let scheduled: FrameRequestCallback | undefined;
+    const requestAnimationFrame = vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      scheduled = callback;
+      return 42;
+    });
+    const cancelAnimationFrame = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => undefined);
     const source = document.createElement("canvas");
 
     const surface = createFixedRhythmicExportSurface(source, preset);
 
     expect(surface.canvas.width).toBe(width);
     expect(surface.canvas.height).toBe(height);
+    expect(surface.manualFrames).toBe(false);
     expect(drawImage).toHaveBeenCalledWith(source, 0, 0, width, height);
-    surface.startCapture(30, requestFrame);
-    expect(requestFrame).toHaveBeenCalledOnce();
-    expect(setInterval).toHaveBeenCalledWith(expect.any(Function), 1000 / 30);
+    const now = performance.now();
+    surface.startCapture(30);
+    expect(requestAnimationFrame).toHaveBeenCalledOnce();
+    scheduled?.(now + 1000 / 30);
+    expect(drawImage).toHaveBeenCalledTimes(3);
     surface.stop();
-    expect(clearInterval).toHaveBeenCalledWith(42);
+    expect(cancelAnimationFrame).toHaveBeenCalledWith(42);
   });
 });

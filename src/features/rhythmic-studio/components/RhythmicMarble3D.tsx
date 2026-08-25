@@ -243,7 +243,7 @@ export const RhythmicMarble3D = forwardRef<THREE.Group, {
         </mesh>
       )}
       {settings.ballStyle === "multicolor-glass" && (
-        <group data-marble-core="multicolor-glass" rotation={[0.18, -0.24, 0.16]}>
+        <group name="multicolor-glass-core" rotation={[0.18, -0.24, 0.16]}>
           {MULTICOLOR_GLASS_CORE.map((piece, index) => (
             <mesh
               key={piece.color}

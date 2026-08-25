@@ -1,6 +1,15 @@
 import type { Lang } from "@/lib/i18n";
 
 const EN = {
+  "marble.mode": "Marble mode",
+  "marble.mode.single": "1 marble",
+  "marble.mode.chase": "2-ball chase",
+  "marble.a": "Marble A",
+  "marble.b": "Marble B",
+  "marble.a.avatar": "Marble A avatar",
+  "marble.b.avatar": "Marble B avatar",
+  "marble.a.material": "Marble A material",
+  "marble.b.material": "Marble B material",
   "section.background": "Video background",
   "background.preset": "Background style",
   "background.brick-wall": "Realistic dark brick wall",
@@ -63,6 +72,15 @@ const EN = {
 } as const;
 
 const VI: Record<keyof typeof EN, string> = {
+  "marble.mode": "Chế độ bi",
+  "marble.mode.single": "1 bi",
+  "marble.mode.chase": "2 bi rượt nhau",
+  "marble.a": "Bi A",
+  "marble.b": "Bi B",
+  "marble.a.avatar": "Nhân vật bi A",
+  "marble.b.avatar": "Nhân vật bi B",
+  "marble.a.material": "Chất liệu bi A",
+  "marble.b.material": "Chất liệu bi B",
   "section.background": "Phông nền video",
   "background.preset": "Kiểu phông nền",
   "background.brick-wall": "Tường gạch tối chân thực",

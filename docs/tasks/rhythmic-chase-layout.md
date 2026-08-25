@@ -227,7 +227,7 @@ Steps 1–2 are sequential and form the authoritative model. Steps 3 and 4 depen
   - Verify: RED/GREEN `npm test -- src/test/RhythmicChaseWebGL.test.tsx src/test/RhythmicMotionContact3D.test.ts src/test/RhythmicSingleModeBaseline.test.ts`.
   - Files: `components/RhythmicSceneContent3D.tsx`, `components/RhythmicMotion3D.ts`, `components/RhythmicChaseMarbles3D.tsx`, `components/rhythmicSceneMath3D.ts`, `src/test/RhythmicChaseWebGL.test.tsx`.
 
-- [ ] Task 7: Add compact 1-bi/2-bi controls and persistence
+- [x] Task 7: Add compact 1-bi/2-bi controls and persistence
   - Acceptance: the external ball frame switches modes; B controls appear only in chase; A/B style/avatar choices are independent; WebGL hides sprite options for both; save/load and local storage retain chase while old projects remain single.
   - Verify: RED/GREEN `npm test -- src/test/RhythmicChaseControls.test.tsx src/test/RhythmicChaseSettings.test.ts src/test/RhythmicBallStyleFrame.test.tsx`.
   - Files: `presentation/sections/BallStyleFrame.tsx`, `presentation/sections/ChaseBallControls.tsx`, `mediaI18n.ts`, `store/RhythmicStudioStore.ts`, `src/test/RhythmicChaseControls.test.tsx`.

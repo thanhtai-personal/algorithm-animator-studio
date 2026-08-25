@@ -1,5 +1,6 @@
 import type { PlatformStyle } from "../types";
 import { drumGeometry2D } from "./drumRenderer2D";
+import { instrumentSurfaceAlignment2D } from "./instrumentPlayingGeometry2D";
 
 type Point2D = { x: number; y: number };
 type Point3D = Point2D & { z: number };
@@ -35,7 +36,7 @@ export function projectPointToShadowPlane(point: Point3D, receiverZ: number, lig
 function instrumentFoot(style: PlatformStyle, width: number, thickness: number) {
   if (style === "gong-disc") {
     const radius = Math.max(28, width * 0.42);
-    return { contactY: radius, nearWidth: radius * 0.22, flared: true };
+    return { contactY: instrumentSurfaceAlignment2D(style, width, thickness)!.footY, nearWidth: radius * 0.22, flared: true };
   }
   if (style === "drum-disc") {
     const drum = drumGeometry2D(width, thickness);
@@ -46,24 +47,20 @@ function instrumentFoot(style: PlatformStyle, width: number, thickness: number) 
     };
   }
   if (style === "instrument-cymbal") {
-    const radiusY = Math.max(8, thickness * 0.62);
-    return { contactY: radiusY * 3.3 + 3, nearWidth: 7, flared: true };
+    return { contactY: instrumentSurfaceAlignment2D(style, width, thickness)!.footY, nearWidth: 7, flared: true };
   }
   if (style === "flute-pipe") {
-    const radius = Math.max(8, thickness * 0.42);
-    return { contactY: radius, nearWidth: width * 0.76, flared: false };
+    return { contactY: instrumentSurfaceAlignment2D(style, width, thickness)!.footY, nearWidth: width * 0.76, flared: false };
   }
   if (style === "tube-cylinder" || style === "boomwhacker-tube") {
-    const radius = Math.max(24, thickness) * 0.5;
-    return { contactY: radius, nearWidth: width * 0.8, flared: false };
+    return { contactY: instrumentSurfaceAlignment2D(style, width, thickness)!.footY, nearWidth: width * 0.8, flared: false };
   }
   if (style === "comet-pad") {
     const height = Math.max(12, thickness);
     return { contactY: height * 0.78, nearWidth: width * 0.76, flared: false };
   }
   if (style === "instrument-wire") {
-    const railGap = Math.max(12, thickness * 0.9);
-    return { contactY: railGap * 0.5 + 7, nearWidth: width * 0.7, flared: false };
+    return { contactY: instrumentSurfaceAlignment2D(style, width, thickness)!.footY, nearWidth: width * 0.7, flared: false };
   }
   if (["instrument-key", "xylophone-key", "xylophone-bar", "piano-key", "marimba-bar", "vibraphone-bar", "metallophone-plate"].includes(style)) {
     const height = Math.max(thickness < 9 ? 6 : 13, thickness);

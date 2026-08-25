@@ -2,6 +2,7 @@ import type { PlatformStyle, RenderQuality, StudioSettings } from "../types";
 import { mixHex, type MarblePlatform } from "./marbleCourse";
 import { drawMetallophonePlate2D } from "./metallophonePlate2D";
 import { drawDrum2D } from "./drumRenderer2D";
+import { instrumentSurfaceAlignment2D } from "./instrumentPlayingGeometry2D";
 
 function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
   const left = Math.min(x, x + width);
@@ -41,6 +42,7 @@ function drawTubeCylinder(
   const farX = -contactX;
 
   ctx.save();
+  ctx.translate(0, instrumentSurfaceAlignment2D("tube-cylinder", p.width, p.thickness)!.translateY);
   if (!lowPower) {
     const underGlow = ctx.createRadialGradient(0, h * 0.55, 4, 0, h * 0.55, p.width * 0.78);
     underGlow.addColorStop(0, active ? `${litColor}${impact > 0 ? "4f" : "24"}` : "rgba(120,126,140,.08)");
@@ -234,6 +236,7 @@ function drawInstrumentCymbal(ctx: CanvasRenderingContext2D, p: MarblePlatform, 
   const rx = Math.max(28, p.width * 0.32);
   const ry = Math.max(8, p.thickness * 0.62);
   ctx.save();
+  ctx.translate(0, instrumentSurfaceAlignment2D("instrument-cymbal", p.width, p.thickness)!.translateY);
   ctx.strokeStyle = "rgba(90,92,98,.78)";
   ctx.lineWidth = 2.4;
   ctx.beginPath(); ctx.moveTo(2, ry * 0.35); ctx.lineTo(5, ry * 3.3); ctx.stroke();
@@ -326,6 +329,7 @@ function drawInstrumentPad(ctx: CanvasRenderingContext2D, half: number, p: Marbl
 function drawInstrumentWire(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, _lowPower: boolean) {
   const railGap = Math.max(12, p.thickness * 0.9);
   ctx.save();
+  ctx.translate(0, instrumentSurfaceAlignment2D("instrument-wire", p.width, p.thickness)!.translateY);
   ctx.strokeStyle = impact > 0 ? mixHex(p.color, "#ffffff", 0.38) : "#737b88";
   ctx.lineWidth = 2.2;
   ctx.lineCap = "round";

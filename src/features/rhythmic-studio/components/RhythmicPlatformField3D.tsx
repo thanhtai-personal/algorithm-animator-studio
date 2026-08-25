@@ -13,7 +13,7 @@ import { RhythmicInstrumentNoteLights3D } from "./RhythmicInstrumentNoteLights3D
 import { platformsMountedFor3D } from "../lib/platformViewport";
 import { RhythmicDenseChassisMounts3D } from "./RhythmicDenseChassisMounts3D";
 import { denseSurfaceSegments } from "../engine/denseSurfaceGeometry";
-import { instrumentKeyPressAtTime } from "../lib/instrumentResponse";
+import { instrumentImpactResponseAtTime, instrumentKeyPressAtTime } from "../lib/instrumentResponse";
 import { instrumentPlayingSurface3D, instrumentPressOffset3D, instrumentSurfaceFrame3D } from "./instrumentPlayingSurface3D";
 
 function PhysicalMount({ terrain, w, h, detail, showcase, frontDepth, receiverZ, style }: {
@@ -148,7 +148,9 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
         const keyPress = style === "piano-key" || style === "piano-keyboard"
           ? instrumentKeyPressAtTime(platform.event.timeMs, timeMs) * Math.min(0.085, Math.max(0.035, h * 0.46))
           : 0;
-        const pressOffset = instrumentPressOffset3D(playingSurface, keyPress);
+        const response = instrumentImpactResponseAtTime(style, platform.event.timeMs, timeMs, platform.index);
+        const resonanceTravel = response.normalRecoil * Math.min(0.09, Math.max(0.025, h * 0.55));
+        const pressOffset = instrumentPressOffset3D(playingSurface, keyPress + resonanceTravel);
         return (
           <group
             key={platform.index}
@@ -165,7 +167,11 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
               <PhysicalMount terrain={platformSettings.terrainProfile} w={w} h={h} detail={platformSettings.platformDetail} showcase={platformSettings.instrumentFamily !== "auto"} frontDepth={playingSurface.frontDepth} receiverZ={receiverZ} style={style} />
             )}
             <group position={[0, pressOffset.y, pressOffset.z]}>
-              <group rotation={[playingSurface.pitchRad, 0, 0]}>
+              <group rotation={[
+                playingSurface.pitchRad + response.tiltRad,
+                response.twistRad * 0.45,
+                response.twistRad,
+              ]}>
                 <PlatformMesh w={w} h={h} d={depth} color={platform.color} style={style} selected={platform.index === selectedNodeIndex} glow={effectiveGlow} detail={platformSettings.platformDetail} />
                 {isNoteLitInstrumentStyle(style) && <RhythmicInstrumentNoteLights3D width={w} height={h} surface={playingSurface} colors={lightColors} glow={effectiveGlow} />}
               </group>

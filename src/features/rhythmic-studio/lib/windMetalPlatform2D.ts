@@ -1,9 +1,11 @@
 import type { PlatformStyle, StudioSettings } from "../types";
 import { mixHex, type MarblePlatform } from "./marbleCourse";
+import { instrumentSurfaceAlignment2D } from "./instrumentPlayingGeometry2D";
 
 function gong(ctx: CanvasRenderingContext2D, platform: MarblePlatform, light: number, lowPower: boolean) {
   const radius = Math.max(28, platform.width * 0.42);
   ctx.save();
+  ctx.translate(0, instrumentSurfaceAlignment2D("gong-disc", platform.width, platform.thickness)!.translateY);
   ctx.shadowColor = platform.color;
   ctx.shadowBlur = lowPower ? 0 : 4 + light * 30;
   const metal = ctx.createRadialGradient(-radius * 0.24, -radius * 0.28, 2, 0, 0, radius);
@@ -26,6 +28,7 @@ function flute(ctx: CanvasRenderingContext2D, platform: MarblePlatform, light: n
   const half = platform.width / 2;
   const radius = Math.max(8, platform.thickness * 0.42);
   ctx.save();
+  ctx.translate(0, instrumentSurfaceAlignment2D("flute-pipe", platform.width, platform.thickness)!.translateY);
   const body = ctx.createLinearGradient(0, -radius, 0, radius);
   body.addColorStop(0, "#f4f8fb"); body.addColorStop(0.35, "#aeb8c2"); body.addColorStop(1, "#4d5965");
   ctx.fillStyle = body;

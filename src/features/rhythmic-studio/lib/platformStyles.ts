@@ -3,7 +3,7 @@ import { clamp, hexToRgb, mixHex, type MarblePlatform } from "./marbleCourse";
 import { drawPresetPlatform } from "./presetPlatformRenderer";
 import { presetObstaclePlan } from "../engine/presetObstaclePlan";
 import { instrumentLightAtTime } from "./instrumentLight";
-import { instrumentKeyPressAtTime } from "./instrumentResponse";
+import { instrumentImpactResponseAtTime, instrumentKeyPressAtTime } from "./instrumentResponse";
 import { drawInstrumentNoteLeds2D, drawWindMetalPlatform2D } from "./windMetalPlatform2D";
 import { isNoteLitInstrumentStyle } from "./instrumentLightsModel";
 import { drawInstrumentShadow2D } from "./instrumentShadow";
@@ -343,6 +343,8 @@ export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: Marb
   const keyPress = style === "piano-key" || style === "piano-keyboard"
     ? instrumentKeyPressAtTime(platform.event.timeMs, timeMs) * Math.max(2.4, platform.thickness * 0.24)
     : 0;
+  const response = instrumentImpactResponseAtTime(style, platform.event.timeMs, timeMs, platform.index);
+  const resonanceTravel = response.normalRecoil * Math.max(5, platform.thickness * 0.36);
   ctx.save();
   ctx.translate(platform.x, screenY);
   ctx.rotate(platform.tiltRad);
@@ -354,7 +356,8 @@ export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: Marb
       style,
     }, renderQuality === "idle");
   }
-  if (keyPress > 0) ctx.translate(0, keyPress);
+  if (keyPress + resonanceTravel > 0) ctx.translate(0, keyPress + resonanceTravel);
+  if (response.tiltRad || response.twistRad) ctx.rotate(response.tiltRad + response.twistRad * 0.65);
   if (drawWindMetalPlatform2D(ctx, style, platform, lightImpact, settings, renderQuality === "idle")) {
     // dedicated 2D gong/flute renderer already drew the item
   } else if (drawPresetPlatform(ctx, style, half, platform, lightImpact, age, settings, renderQuality)) {

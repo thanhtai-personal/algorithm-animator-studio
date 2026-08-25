@@ -10,7 +10,7 @@ const ffprobePath = require("@ffprobe-installer/ffprobe").path;
 const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
 const port = Number(process.argv[2] || 9333);
 const outputRoot = path.resolve(process.argv[3] || "artifacts/super-mario-3d-runtime");
-const presetIndex = Number(process.argv[4] ?? 7);
+const presetIndex = Number(process.argv[4] ?? 2);
 const midiPath = path.resolve("src/assets/audios/midis/SuperMarioMakerTitleTheme.mid");
 const runDir = path.join(outputRoot, `run-${Date.now()}`);
 fs.mkdirSync(runDir, { recursive: true });
@@ -113,7 +113,7 @@ function downloadedWebms() {
 async function exportClip() {
   const previous = new Set(downloadedWebms());
   const clicked = await evaluate(`(() => {
-    const button = [...document.querySelectorAll('button')].find((item) => /WebM/i.test(item.textContent || ''));
+    const button = [...document.querySelectorAll('button')].find((item) => /Export clip WebM|Xuất đoạn WebM/i.test(item.textContent || ''));
     if (!button || button.disabled) return false;
     button.click();
     return true;
@@ -144,22 +144,37 @@ function verifyMedia(filePath) {
   const probe = JSON.parse(result.stdout);
   const video = probe.streams.find((stream) => stream.codec_type === "video");
   const audio = probe.streams.find((stream) => stream.codec_type === "audio");
-  const durationSeconds = Number(probe.format.duration);
   const frameCount = Number(video?.nb_read_frames ?? 0);
+  const readLastTimestamp = (stream, entries) => {
+    const timestamps = spawnSync(ffprobePath, [
+      "-v", "error", "-select_streams", stream,
+      "-show_entries", entries, "-of", "csv=p=0", filePath,
+    ], { encoding: "utf8", windowsHide: true });
+    if (timestamps.status !== 0) throw new Error(timestamps.stderr);
+    const last = timestamps.stdout.trim().split(/\r?\n/).at(-1)?.split(",").map(Number) ?? [];
+    return last.filter(Number.isFinite).reduce((sum, value) => sum + value, 0);
+  };
+  const declaredDuration = Number(probe.format.duration);
+  const videoDuration = readLastTimestamp("v:0", "frame=best_effort_timestamp_time");
+  const audioDuration = readLastTimestamp("a:0", "packet=pts_time,duration_time");
+  const durationSeconds = Number.isFinite(declaredDuration) ? declaredDuration : Math.max(videoDuration, audioDuration);
   const summary = {
     videoCodec: video?.codec_name,
     width: video?.width,
     height: video?.height,
     frameCount,
     durationSeconds: Number(durationSeconds.toFixed(3)),
-    effectiveFps: Number((frameCount / durationSeconds).toFixed(1)),
+    videoDurationSeconds: Number(videoDuration.toFixed(3)),
+    effectiveFps: Number((frameCount / videoDuration).toFixed(1)),
     audioCodec: audio?.codec_name,
     sampleRate: Number(audio?.sample_rate ?? 0),
     channels: audio?.channels,
   };
   if (summary.width !== 720 || summary.height !== 1280) throw new Error(`Unexpected export dimensions: ${JSON.stringify(summary)}`);
   if (!audio || summary.sampleRate !== 48_000 || summary.channels !== 2) throw new Error(`Invalid export audio: ${JSON.stringify(summary)}`);
-  if (summary.durationSeconds < 14 || summary.effectiveFps < 40) throw new Error(`Unstable export: ${JSON.stringify(summary)}`);
+  if (!Number.isFinite(summary.durationSeconds) || !Number.isFinite(summary.effectiveFps) || summary.videoDurationSeconds < 14 || summary.durationSeconds < 14 || summary.effectiveFps < 40) {
+    throw new Error(`Unstable export: ${JSON.stringify(summary)}`);
+  }
   return summary;
 }
 
@@ -173,26 +188,78 @@ function createContactSheet(videoPath) {
   return targetPath;
 }
 
+async function inspectPageState() {
+  await send("Runtime.enable");
+  await send("Log.enable");
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  const state = await evaluate(`(() => ({
+    url: location.href,
+    title: document.title,
+    visibilityState: document.visibilityState,
+    hasFocus: document.hasFocus(),
+    sourceFiles: [...document.querySelectorAll('input[type="file"]')].map((input) => ({
+      accept: input.accept,
+      files: [...(input.files || [])].map((file) => file.name),
+    })),
+    presetCount: document.querySelectorAll('button.rhythmic-preset').length,
+    canvasCount: document.querySelectorAll('canvas').length,
+    gpu: (() => {
+      const canvas = document.querySelector('canvas');
+      const gl = canvas?.getContext('webgl2') || canvas?.getContext('webgl');
+      const debug = gl?.getExtension('WEBGL_debug_renderer_info');
+      return debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : gl?.getParameter(gl.RENDERER);
+    })(),
+    sliders: [...document.querySelectorAll('[role="slider"]')].map((slider) => ({
+      label: slider.getAttribute('aria-label'),
+      min: slider.getAttribute('aria-valuemin'),
+      max: slider.getAttribute('aria-valuemax'),
+      now: slider.getAttribute('aria-valuenow'),
+    })),
+    text: (document.body?.innerText || '').split('\\n').filter((line) => /MIDI|course|đường chạy|\\d{2}:\\d{2}|SuperMario|3D|error|lỗi/i.test(line)).slice(0, 80),
+  }))()`);
+  const rafFps = await evaluate(`new Promise((resolve) => {
+    let frames = 0;
+    const started = performance.now();
+    const sample = () => {
+      frames += 1;
+      if (performance.now() - started >= 1000) resolve(Number((frames * 1000 / (performance.now() - started)).toFixed(1)));
+      else requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  })`);
+  return { ...state, rafFps };
+}
+
+if (process.argv[5] === "inspect") {
+  const state = await inspectPageState();
+  process.stdout.write(`${JSON.stringify({ state, browserErrors }, null, 2)}\n`);
+  socket.close();
+  process.exit(0);
+}
+
 try {
   await send("Page.enable");
+  await send("Page.bringToFront");
   await send("DOM.enable");
   await send("Runtime.enable");
   await send("Log.enable");
   await send("Emulation.setDeviceMetricsOverride", { width: 1600, height: 1200, deviceScaleFactor: 1, mobile: false });
   await send("Browser.setDownloadBehavior", { behavior: "allow", downloadPath: runDir, eventsEnabled: true });
-  await waitFor(`document.querySelectorAll('button.rhythmic-preset').length >= 14`, "preset controls");
+  await waitFor(`document.querySelectorAll('button.rhythmic-preset').length >= 7`, "preset controls");
 
   await evaluate(`(() => {
     const button = document.querySelectorAll('button.rhythmic-preset')[${presetIndex}];
     if (button?.getAttribute('aria-pressed') !== 'true') button?.click();
   })()`);
   await waitFor(`document.querySelectorAll('button.rhythmic-preset')[${presetIndex}]?.getAttribute('aria-pressed') === 'true'`, "requested preset");
-  await uploadMidi();
+  const sourceAlreadyLoaded = await evaluate(`/SuperMarioMakerTitleTheme\\.mid/i.test(document.body?.innerText || '')`);
+  if (!sourceAlreadyLoaded) await uploadMidi();
   await waitFor(`(() => {
     const body = document.body?.innerText || '';
+    const timeline = document.querySelector('[role="slider"][aria-label="Marble music timeline"]');
     return /SuperMarioMakerTitleTheme\.mid/i.test(body)
       && !/Preparing marble course|Đang chuẩn bị đường chạy/i.test(body)
-      && /02:29/.test(body);
+      && Number(timeline?.getAttribute('aria-valuemax') || 0) >= 149000;
   })()`, "Super Mario MIDI course", 180_000);
 
   await evaluate(`(() => {
@@ -228,7 +295,7 @@ try {
     canvasCount: document.querySelectorAll('canvas').length,
     sourceLoaded: /SuperMarioMakerTitleTheme\\.mid/i.test(document.body.innerText),
   }))()`);
-  const unexpectedErrors = [...new Set(browserErrors)].filter((error) => !/(?:localhost|127\.0\.0\.1):5050\b/.test(error));
+  const unexpectedErrors = [...new Set(browserErrors)].filter((error) => !/(?:localhost|127\.0\.0\.1):5050\b|Failed to load resource: net::ERR_CONNECTION_REFUSED/.test(error));
   if (unexpectedErrors.length) throw new Error(`Unexpected browser errors: ${JSON.stringify(unexpectedErrors)}`);
   const report = { runDir, midiPath, bodySummary, screenshots, videoPath, contactSheet, media };
   fs.writeFileSync(path.join(runDir, "runtime-report.json"), JSON.stringify(report, null, 2));

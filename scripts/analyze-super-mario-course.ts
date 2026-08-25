@@ -7,7 +7,9 @@ import { parseMidi } from "../src/features/rhythmic-studio/lib/midiParser";
 import { RHYTHMIC_STUDIO_PRESETS } from "../src/features/rhythmic-studio/lib/studioPresets";
 import { buildRhythmicTimeline } from "../src/features/rhythmic-studio/lib/timeline";
 
-const MIDI_PATH = resolve("src/assets/audios/midis/SuperMarioMakerTitleTheme.mid");
+const requestedPresetArg = process.argv[2];
+const requestedPreset = requestedPresetArg && requestedPresetArg !== "all" ? requestedPresetArg : undefined;
+const MIDI_PATH = resolve(process.argv[3] || "src/assets/audios/midis/SuperMarioMakerTitleTheme.mid");
 const COURSE_WIDTH = 720;
 const EPSILON = 1e-5;
 
@@ -152,7 +154,6 @@ function analyzeCourse(platforms: MarblePlatform[]) {
 const midiBytes = readFileSync(MIDI_PATH);
 const midiBuffer = midiBytes.buffer.slice(midiBytes.byteOffset, midiBytes.byteOffset + midiBytes.byteLength) as ArrayBuffer;
 const rawEvents = parseMidi(midiBuffer);
-const requestedPreset = process.argv[2];
 const presets = requestedPreset
   ? RHYTHMIC_STUDIO_PRESETS.filter((preset) => preset.id === requestedPreset)
   : RHYTHMIC_STUDIO_PRESETS;

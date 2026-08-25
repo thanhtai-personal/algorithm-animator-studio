@@ -1,0 +1,32 @@
+{
+  "runDir": "C:\\DATA\\working\\sources\\video-creator-tools\\algorithm-animator-studio-pro\\artifacts\\rhythmic-shadow-runtime\\run-1787619755386",
+  "midiPath": "C:\\DATA\\working\\sources\\video-creator-tools\\algorithm-animator-studio-pro\\src\\assets\\audios\\midis\\SuperMarioMakerTitleTheme.mid",
+  "bodySummary": {
+    "title": "KAI STUDIO — Visual Content Studio",
+    "activePreset": 2,
+    "active3D": true,
+    "canvasCount": 1,
+    "sourceLoaded": true
+  },
+  "screenshots": [
+    "C:\\DATA\\working\\sources\\video-creator-tools\\algorithm-animator-studio-pro\\artifacts\\rhythmic-shadow-runtime\\run-1787619755386\\three-04.png",
+    "C:\\DATA\\working\\sources\\video-creator-tools\\algorithm-animator-studio-pro\\artifacts\\rhythmic-shadow-runtime\\run-1787619755386\\three-12.png",
+    "C:\\DATA\\working\\sources\\video-creator-tools\\algorithm-animator-studio-pro\\artifacts\\rhythmic-shadow-runtime\\run-1787619755386\\three-30.png",
+    "C:\\DATA\\working\\sources\\video-creator-tools\\algorithm-animator-studio-pro\\artifacts\\rhythmic-shadow-runtime\\run-1787619755386\\three-55.png",
+    "C:\\DATA\\working\\sources\\video-creator-tools\\algorithm-animator-studio-pro\\artifacts\\rhythmic-shadow-runtime\\run-1787619755386\\three-80.png"
+  ],
+  "videoPath": "C:\\DATA\\working\\sources\\video-creator-tools\\algorithm-animator-studio-pro\\artifacts\\rhythmic-shadow-runtime\\run-1787619755386\\super-mario-preset-2-3d.webm",
+  "contactSheet": "C:\\DATA\\working\\sources\\video-creator-tools\\algorithm-animator-studio-pro\\artifacts\\rhythmic-shadow-runtime\\run-1787619755386\\super-mario-3d-contact-sheet.png",
+  "media": {
+    "videoCodec": "vp9",
+    "width": 720,
+    "height": 1280,
+    "frameCount": 849,
+    "durationSeconds": 15.098,
+    "videoDurationSeconds": 15.038,
+    "effectiveFps": 56.5,
+    "audioCodec": "opus",
+    "sampleRate": 48000,
+    "channels": 2
+  }
+}

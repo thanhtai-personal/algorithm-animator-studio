@@ -6,6 +6,37 @@ export const RHYTHMIC_CAMERA_Z = 10.15;
 export const RHYTHMIC_CAMERA_FOV = 37;
 export const RHYTHMIC_UI_UPDATE_MS = 64;
 
+type Point3D = { x: number; y: number; z: number };
+
+export const SHOWCASE_SHADOW_LIGHT_OFFSET = { x: -2.4, y: 3.2, z: 14 } as const;
+
+export function shadowReceiverOffset(receiverDepth: number, lightOffset: Point3D) {
+  const depthScale = receiverDepth / Math.max(0.001, Math.abs(lightOffset.z));
+  return {
+    x: -lightOffset.x * depthScale,
+    y: -lightOffset.y * depthScale,
+  };
+}
+
+export function shadowRigPose(focus: Point3D, offset: Point3D) {
+  return {
+    target: { x: focus.x, y: focus.y, z: focus.z },
+    light: {
+      x: focus.x + offset.x,
+      y: focus.y + offset.y,
+      z: focus.z + offset.z,
+    },
+  };
+}
+
+export function cameraDepthProfile(settings: StudioSettings) {
+  if (settings.instrumentFamily !== "auto") return { offset: -1.75, near: 7.6, far: 10.2 };
+  if (settings.cameraProfile === "xylophone") return { offset: -0.6, near: 8.4, far: 11.2 };
+  if (settings.cameraProfile === "tube-board") return { offset: -0.25, near: 8.4, far: 11.5 };
+  if (settings.cameraProfile === "comet") return { offset: 0.15, near: 9.2, far: 12.5 };
+  return { offset: -0.1, near: 8.8, far: 12 };
+}
+
 export function firstEventAtOrAfter(events: NoteEvent[], timeMs: number) {
   let low = 0;
   let high = events.length;

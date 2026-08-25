@@ -1,8 +1,11 @@
 import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { BallStylePreview } from "../features/rhythmic-studio/presentation/atoms/RhythmicOptionPreviews";
 import { ballStyleText } from "../features/rhythmic-studio/ballStyleI18n";
 import { BALL_STYLES, type BallStyle } from "../features/rhythmic-studio/types";
+import { DEFAULT_SETTINGS } from "../features/rhythmic-studio/defaults";
+import { drawPresetMarble } from "../features/rhythmic-studio/lib/presetMarbleRenderer";
+import { trailProfile } from "../features/rhythmic-studio/components/RhythmicVfx3D";
 
 const REFERENCE_BALL_STYLES = ["flower", "fire", "water", "rainbow"] as const satisfies readonly BallStyle[];
 
@@ -18,5 +21,28 @@ describe("reference marble styles", () => {
   it.each(REFERENCE_BALL_STYLES)("renders a dedicated %s picker preview", (style) => {
     const { container } = render(<BallStylePreview style={style} />);
     expect(container.querySelectorAll("div").length).toBeGreaterThan(3);
+  });
+
+  it.each(REFERENCE_BALL_STYLES)("renders %s in the retained 2D mode", (style) => {
+    const gradient = { addColorStop: vi.fn() };
+    const method = () => vi.fn();
+    const context = {
+      save: method(), restore: method(), translate: method(), rotate: method(), scale: method(),
+      beginPath: method(), arc: method(), ellipse: method(), fill: method(), stroke: method(), clip: method(),
+      fillRect: method(), moveTo: method(), lineTo: method(), closePath: method(),
+      createRadialGradient: vi.fn(() => gradient), createLinearGradient: vi.fn(() => gradient),
+    } as unknown as CanvasRenderingContext2D;
+    const settings = { ...DEFAULT_SETTINGS, ballStyle: style };
+
+    expect(drawPresetMarble(context, { x: 80, y: 120, color: "#42d9ff", platformIndex: 0 }, 0, 0.4, settings)).toBe(true);
+    expect(context.fill).toHaveBeenCalled();
+  });
+
+  it("gives the fire marble a persistent readable 3D trail", () => {
+    const base = { ...DEFAULT_SETTINGS, terrainProfile: "xylophone" as const, trailLength: 14 };
+    const fire = trailProfile({ ...base, ballStyle: "fire" });
+    const standard = trailProfile({ ...base, ballStyle: "solid" });
+    expect(fire.duration).toBeGreaterThan(standard.duration * 2);
+    expect(fire.count).toBeGreaterThanOrEqual(8);
   });
 });

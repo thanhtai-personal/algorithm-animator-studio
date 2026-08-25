@@ -21,7 +21,7 @@ describe("reference video presets", () => {
     }
   });
 
-  it("uses physics-first settings and eight genuinely distinct visual signatures", () => {
+  it("uses physics-first settings and six genuinely distinct visual signatures", () => {
     const signatures = REFERENCE_VIDEO_PRESET_IDS.map((id) => {
       const settings = presetById(id).settings;
       expect(settings.curveIntensity).toBe(0);
@@ -34,6 +34,11 @@ describe("reference video presets", () => {
         settings.colorPaletteMode,
       ]);
     });
-    expect(new Set(signatures).size).toBe(CLIP_IDS.length);
+    expect(new Set(signatures).size).toBe(REFERENCE_VIDEO_PRESET_IDS.length);
+  });
+
+  it("assigns every collected reference marble style to a reference preset", () => {
+    const assignedStyles = REFERENCE_VIDEO_PRESET_IDS.map((id) => presetById(id).settings.ballStyle);
+    expect(assignedStyles).toEqual(expect.arrayContaining(["flower", "fire", "water", "rainbow"]));
   });
 });

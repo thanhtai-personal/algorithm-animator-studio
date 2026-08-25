@@ -1,4 +1,4 @@
-import type { StudioSettings } from "../types";
+import type { PlatformStyle, StudioSettings } from "../types";
 import type { DenseInstrumentKind, DenseInstrumentRun, DenseSettingsResolver, ChordCluster } from "./denseInstrumentTypes";
 import { CHORD_GAP_MS } from "./denseInstrumentTypes";
 import type { MarblePlatform, Vec2 } from "./marblePhysicsTypes";
@@ -48,11 +48,21 @@ function denseSurfaceThickness(kind: DenseInstrumentKind, settings: StudioSettin
   return Math.max(5.5, settings.ballSize * (kind === "keyboard" ? 0.38 : 0.44));
 }
 
+function denseVisualStyle(kind: DenseInstrumentKind, settings: StudioSettings): PlatformStyle {
+  if (settings.instrumentFamily === "boomwhacker") return "boomwhacker-tube";
+  if (settings.instrumentFamily === "xylophone") return "xylophone-bar";
+  if (settings.instrumentFamily === "piano") return "piano-key";
+  if (settings.instrumentFamily === "marimba") return "marimba-bar";
+  if (settings.instrumentFamily === "pluck") return "pluck-pad";
+  if (settings.instrumentFamily === "vibraphone") return "vibraphone-bar";
+  return kind === "keyboard" ? "piano-key" : "instrument-pad";
+}
+
 function decorateRollingSegment(platform: MarblePlatform, next: MarblePlatform, kind: DenseInstrumentKind, settings: StudioSettings) {
   const frame = canonicalSurfaceFrame(platform, next);
   const distance = Math.hypot(next.hitX - platform.hitX, next.hitY - platform.hitY);
   const faceCenter = { x: (platform.hitX + next.hitX) * 0.5, y: (platform.hitY + next.hitY) * 0.5 };
-  platform.visualStyle = kind === "keyboard" ? "piano-key" : "instrument-pad";
+  platform.visualStyle = denseVisualStyle(kind, settings);
   platform.visualThickness = denseSurfaceThickness(kind, settings);
   platform.visualX = faceCenter.x - frame.normal.x * settings.ballSize;
   platform.visualY = faceCenter.y - frame.normal.y * settings.ballSize;
@@ -63,7 +73,7 @@ function decorateRollingSegment(platform: MarblePlatform, next: MarblePlatform, 
 
 function decorateTerminalStrike(platform: MarblePlatform, frame: ReturnType<typeof terminalSurfaceFrame>, kind: DenseInstrumentKind, settings: StudioSettings) {
   if (!frame) return;
-  platform.visualStyle = kind === "keyboard" ? "piano-key" : "instrument-pad";
+  platform.visualStyle = denseVisualStyle(kind, settings);
   platform.visualThickness = denseSurfaceThickness(kind, settings);
   platform.visualX = platform.hitX - frame.normal.x * settings.ballSize;
   platform.visualY = platform.hitY - frame.normal.y * settings.ballSize;
@@ -76,7 +86,7 @@ function decoratePhysicalTerminalStrike(platform: MarblePlatform, kind: DenseIns
   // This terminal note redirects the marble instead of merely extending the
   // preceding lane. Keep the planner's collision-derived center and angle so the
   // visible face explains the impulse, while retaining a readable key body.
-  platform.visualStyle = kind === "keyboard" ? "piano-key" : "instrument-pad";
+  platform.visualStyle = denseVisualStyle(kind, settings);
   platform.visualThickness = denseSurfaceThickness(kind, settings);
   platform.visualWidth = Math.max(platform.visualWidth ?? 0, settings.ballSize * 1.05, 13);
   platform.visualHidden = false;

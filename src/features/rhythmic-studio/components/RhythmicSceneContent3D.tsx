@@ -4,13 +4,15 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { RhythmicScene3DProps } from "./RhythmicScene3D";
 import { RhythmicCourseItems3D } from "./RhythmicCourseItems3D";
-import { RhythmicEnvironment3D, RhythmicLightingRig3D } from "./RhythmicEnvironment3D";
+import { RhythmicEnvironment3D } from "./RhythmicEnvironment3D";
+import { RhythmicLightingRig3D } from "./RhythmicLightingRig3D";
 import { RhythmicMarble3D } from "./RhythmicMarble3D";
 import { RhythmicPlatformField3D } from "./RhythmicPlatformField3D";
 import { RhythmicTitle3D } from "./RhythmicTitle3D";
 import { RhythmicVfx3D, type RhythmicVfxHandle } from "./RhythmicVfx3D";
 import { impactSquash, RHYTHMIC_WORLD_SCALE, setWorldPoint, visualMarbleAtTime } from "./RhythmicMotion3D";
 import {
+  cameraDepthProfile,
   cameraLookAheadMs,
   firstEventAtOrAfter,
   noteDensity,
@@ -146,11 +148,11 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     const isTubeBoard = frameSettings.cameraProfile === "tube-board";
     const isComet = frameSettings.cameraProfile === "comet";
     const isShowcase = frameSettings.instrumentFamily !== "auto";
-    const profileZoom = isShowcase ? 2.75 : isXylophone ? 1.95 : isComet ? 0.92 : isTubeBoard ? 1.05 : 0.4;
+    const depthProfile = cameraDepthProfile(frameSettings);
     const adaptiveZ = THREE.MathUtils.clamp(
-      RHYTHMIC_CAMERA_Z + profileZoom + jumpDistance * (isComet ? 0.15 : 0.13) + Math.min(0.42, speed * 0.015) - Math.min(rollingSurface ? 0.24 : 0.58, density * (rollingSurface ? 0.012 : 0.028)),
-      isShowcase ? 13.0 : isXylophone ? 11.9 : isTubeBoard ? 10.1 : 9.6,
-      isShowcase ? 17.2 : isXylophone ? 15.9 : isTubeBoard ? 13.7 : 13.6,
+      RHYTHMIC_CAMERA_Z + depthProfile.offset + jumpDistance * (isComet ? 0.15 : 0.13) + Math.min(0.42, speed * 0.015) - Math.min(rollingSurface ? 0.24 : 0.58, density * (rollingSurface ? 0.012 : 0.028)),
+      depthProfile.near,
+      depthProfile.far,
     ) * THREE.MathUtils.clamp(frameSettings.cameraDistance, 0.8, 1.3);
     const anchorOffset = (0.5 - frameSettings.cameraAnchor) * 6.4;
     const lateralFactor = rollingSurface ? 0.075 : isShowcase ? 0.09 : isXylophone ? 0.13 : isTubeBoard ? 0.16 : 0.2;
@@ -253,7 +255,7 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     <RendererQuality recording={props.recording} />
     <PerspectiveCamera makeDefault fov={RHYTHMIC_CAMERA_FOV} near={0.1} far={180} position={[0, 0, RHYTHMIC_CAMERA_Z]} />
     <RhythmicTitle3D text={props.settings.titleText} />
-    <RhythmicLightingRig3D settings={props.settings} />
+    <RhythmicLightingRig3D settings={props.settings} focus={smoothedLook} />
     <RhythmicEnvironment3D settings={props.settings} backgroundUrl={props.backgroundUrl} />
     <RhythmicCourseItems3D platforms={props.platforms} overrides={props.courseOverrides} settings={props.settings} focusIndex={focusIndex} events={props.events} resolveSettings={props.resolveSettings} />
     <RhythmicPlatformField3D platforms={props.platforms} settings={props.settings} courseOverrides={props.courseOverrides} focusIndex={focusIndex} selectedNodeIndex={props.selectedNodeIndex} onSelectNode={props.onSelectNode} resolveSettings={props.resolveSettings} impactIndex={impactLight.index} impactStrength={impactLight.strength} timeMs={props.timeMs} />

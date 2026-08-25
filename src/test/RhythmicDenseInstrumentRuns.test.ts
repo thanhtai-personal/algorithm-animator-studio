@@ -56,6 +56,16 @@ describe("rhythmic dense instrument routing", () => {
     const platforms = buildMarbleCourse(events, settings, 720);
     expect(platforms.slice(0, 6).every((platform) => platform.visualStyle === "instrument-pad")).toBe(true);
   });
+
+  it("keeps the selected instrument family visible through dense runs", () => {
+    const events = Array.from({ length: 8 }, (_, index) => note(index, index * 125, true));
+    events.push(note(8, 1600, true));
+    const platforms = buildMarbleCourse(events, { ...settings, instrumentFamily: "boomwhacker" }, 720);
+    const dense = platforms.slice(0, 8).filter((platform) => !platform.visualHidden);
+
+    expect(dense.length).toBeGreaterThan(3);
+    expect(dense.every((platform) => platform.visualStyle === "boomwhacker-tube")).toBe(true);
+  });
   it("keeps planner modules on one physical dense surface", () => {
     const events = Array.from({ length: 30 }, (_, index) => note(index, index * 125));
     events.push(note(30, 30 * 125 + 620));

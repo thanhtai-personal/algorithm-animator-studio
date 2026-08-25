@@ -5,9 +5,9 @@ import * as THREE from "three";
 import type { StudioSettings } from "../types";
 import { RhythmicBackplate3D } from "./RhythmicBackplate3D";
 
-type EnvironmentKind = "tube-board" | "comet" | "xylophone" | "neutral";
+export type EnvironmentKind = "tube-board" | "comet" | "xylophone" | "neutral";
 
-function environmentKind(settings: StudioSettings): EnvironmentKind {
+export function environmentKind(settings: StudioSettings): EnvironmentKind {
   if (settings.backgroundPreset === "tube-board-dark") return "tube-board";
   if (settings.backgroundPreset === "comet-void" || settings.backgroundPreset === "deep-space") return "comet";
   if (settings.backgroundPreset === "xylophone-room" || settings.backgroundPreset === "instrument-room") return "xylophone";
@@ -82,7 +82,7 @@ function SceneAtmosphere({ settings }: { settings: StudioSettings }) {
   return null;
 }
 
-function ReflectionRig({ settings }: { settings: StudioSettings }) {
+export function ReflectionRig({ settings }: { settings: StudioSettings }) {
   const kind = environmentKind(settings);
   const warm = kind === "xylophone";
   const comet = kind === "comet";
@@ -349,86 +349,6 @@ function NeutralStudio({ color }: { color: string }) {
       ))}
       <GlowSprite position={[-4.8, -42, -2.8]} scale={[9, 22, 1]} color="#65a6ff" opacity={0.12} />
     </group>
-  );
-}
-
-export function RhythmicLightingRig3D({ settings }: { settings: StudioSettings }) {
-  const kind = environmentKind(settings);
-  if (settings.instrumentFamily !== "auto") {
-    return (
-      <>
-        <ReflectionRig settings={settings} />
-        <hemisphereLight args={["#fff9ef", "#6d655e", 1.18]} />
-        <directionalLight
-          position={[-6.5, 8.5, 8]}
-          intensity={2.45}
-          castShadow
-          shadow-mapSize-width={1536}
-          shadow-mapSize-height={1536}
-          shadow-bias={-0.00035}
-          shadow-normalBias={0.025}
-          shadow-radius={3.2}
-        />
-        <directionalLight position={[5, -2, 5]} intensity={0.62} color="#dce7f5" />
-      </>
-    );
-  }
-  if (kind === "xylophone") {
-    return (
-      <>
-        <ReflectionRig settings={settings} />
-        <hemisphereLight args={["#fff0d7", "#403529", 1.05]} />
-        <directionalLight
-          position={[-4, 7, 9]}
-          intensity={2.35}
-          castShadow
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
-          shadow-bias={-0.0003}
-          shadow-normalBias={0.035}
-        />
-        <pointLight position={[5, -4, 5]} color="#ffc17f" intensity={14} distance={22} decay={2} />
-        <pointLight position={[-5, -8, 3]} color="#7db7ff" intensity={4.5} distance={18} decay={2} />
-      </>
-    );
-  }
-  if (kind === "comet") {
-    return (
-      <>
-        <ReflectionRig settings={settings} />
-        <ambientLight intensity={0.16} />
-        <directionalLight position={[4, 6, 8]} intensity={1.25} castShadow shadow-mapSize-width={768} shadow-mapSize-height={768} shadow-bias={-0.0003} />
-        <pointLight position={[-4.5, 1, 4]} color="#5776ff" intensity={20} distance={25} decay={2} />
-        <pointLight position={[4.5, -6, 3]} color="#df54e5" intensity={16} distance={22} decay={2} />
-      </>
-    );
-  }
-  if (kind === "tube-board") {
-    return (
-      <>
-        <ReflectionRig settings={settings} />
-        <hemisphereLight args={["#dcecff", "#14171c", 0.82]} />
-        <directionalLight
-          position={[-5, 8, 9]}
-          intensity={2.4}
-          castShadow
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
-          shadow-bias={-0.00035}
-          shadow-normalBias={0.04}
-        />
-        <pointLight position={[5, -5, 5]} color="#ffc28c" intensity={10} distance={19} decay={2} />
-        <pointLight position={[-5, -10, 3]} color="#5aa7ff" intensity={6} distance={18} decay={2} />
-      </>
-    );
-  }
-  return (
-    <>
-      <ReflectionRig settings={settings} />
-      <ambientLight intensity={0.34} />
-      <directionalLight position={[5, 7, 9]} intensity={2.05} castShadow shadow-mapSize-width={768} shadow-mapSize-height={768} />
-      <pointLight position={[-4, 1, 6]} intensity={12} distance={22} decay={2} color="#7dd3fc" />
-    </>
   );
 }
 

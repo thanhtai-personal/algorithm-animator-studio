@@ -157,10 +157,10 @@ export function BackgroundPresetPreview({ preset }: { preset: BackgroundPreset }
 
 export function PresetThumbnail({ presetId }: { presetId: RhythmicPresetId }) {
   if (presetId.startsWith("reference-")) return <ReferencePresetThumbnail presetId={presetId as ReferenceVideoPresetId} />;
-  if (presetId === "toy-pegboard") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#8d8f97,#4b505c)]">
-    <div className="absolute inset-2 rounded-xl bg-[linear-gradient(180deg,#6b7280,#464b56)] shadow-[inset_0_0_0_1px_rgba(255,255,255,.08)]" />
-    {Array.from({ length: 3 }).map((_, index) => <div key={index} className="absolute top-[18px] h-8 w-6 rounded-full border border-white/20 bg-[linear-gradient(180deg,#faf9f6,#bbb39b_55%,#6f533f)]" style={{ left: `${16 + index * 24}px` }} />)}
-    <div className="absolute right-3 top-4 h-5 w-5 rounded-full bg-[linear-gradient(145deg,#ffffff,#ef4444_40%,#7f1d1d)] shadow-[0_0_14px_rgba(239,68,68,.35)]" />
+  if (presetId === "toy-pegboard") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#d6c8b9,#b6a18d)]">
+    <div className="absolute inset-2 rounded-xl bg-[linear-gradient(180deg,#e8dfd4,#cbb9a7)] shadow-[inset_0_0_0_1px_rgba(255,255,255,.45)]" />
+    {["#ef4444", "#facc15", "#22c55e", "#38bdf8", "#a855f7"].map((color, index) => <div key={color} className="absolute h-8 w-3 rounded-full border border-white/35 shadow-[0_5px_7px_rgba(70,45,30,.2)]" style={{ left: `${13 + index * 15}px`, top: `${18 + (index % 2) * 8}px`, background: color }} />)}
+    <div className="absolute right-3 top-3 h-6 w-6 rounded-full border border-white/35 bg-[radial-gradient(circle,#ffd84d_0_16%,#fff_17%_26%,#ef4738_27%_50%,#9f1f24_80%)] shadow-[0_6px_10px_rgba(90,35,25,.28)]" />
   </SceneFrame>;
   if (presetId === "neon-comet") return <SceneFrame className="h-16 bg-[radial-gradient(circle_at_50%_40%,rgba(96,165,250,.18),rgba(15,23,42,0)_28%),linear-gradient(180deg,#030712,#0f172a)]">
     {Array.from({ length: 3 }).map((_, index) => <div key={index} className="absolute left-[18px] top-[18px] h-4 rounded-[999px] border border-fuchsia-300/45" style={{ width: `${20 + index * 14}px`, transform: `translateX(${index * 10}px) translateY(${index * 5}px)` }} />)}
@@ -170,10 +170,6 @@ export function PresetThumbnail({ presetId }: { presetId: RhythmicPresetId }) {
   if (presetId === "boomwhacker-wall") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#d8d2cb,#bcb5ae)]">
     {[0,1,2,3].map((index) => <div key={index} className="absolute h-3 w-10 rounded-full shadow-[0_5px_8px_rgba(0,0,0,.2)]" style={{ left: `${12 + index * 10}px`, top: `${12 + index * 10}px`, transform: `rotate(${18 + index * 7}deg)`, background: ["#f97316","#65a30d","#2563eb","#dc2626"][index] }} />)}
     <div className="absolute right-3 top-3 h-5 w-5 rounded-full bg-[radial-gradient(circle_at_35%_30%,#fff,#7c3aed_45%,#34145c)]" />
-  </SceneFrame>;
-  if (presetId === "instrument-showcase") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#d6d0c9,#bdb7b1)]">
-    {[0,1,2].map((index) => <div key={index} className="absolute h-3 w-12 rounded-sm shadow-[0_5px_8px_rgba(0,0,0,.18)]" style={{ left: `${10 + index * 18}px`, top: `${15 + index * 12}px`, transform: `rotate(${-12 + index * 13}deg)`, background: index === 0 ? "#9a5d38" : index === 1 ? "#555" : "#4f8de8" }} />)}
-    <div className="absolute left-3 bottom-2 h-4 w-4 rounded-full bg-green-500" /><div className="absolute right-4 top-3 h-4 w-4 rounded-full bg-violet-600" />
   </SceneFrame>;
   if (presetId === "vibraphone-wall") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#d9d5d0,#c3beb8)]">
     {[0,1,2,3].map((index) => <div key={index} className="absolute h-3 w-11 rounded-sm border border-white/30 bg-gradient-to-b from-slate-200 to-slate-500 shadow-[0_5px_8px_rgba(0,0,0,.18)]" style={{ left: `${12 + index * 12}px`, top: `${10 + index * 11}px`, transform: `rotate(${index % 2 ? -8 : 8}deg)` }} />)}
@@ -187,22 +183,6 @@ export function PresetThumbnail({ presetId }: { presetId: RhythmicPresetId }) {
 }
 
 function ReferencePresetThumbnail({ presetId }: { presetId: ReferenceVideoPresetId }) {
-  if (presetId === "reference-color-pegs") return <SceneFrame className="h-16 bg-[#c9b9a8]">
-    {["#f97316", "#84cc16", "#0891b2", "#7c3aed", "#171717"].map((color, index) => <div key={color} className="absolute h-7 w-3 rounded-full shadow-[5px_7px_6px_rgba(0,0,0,.25)]" style={{ background: color, left: `${12 + index * 16}px`, top: `${10 + (index % 3) * 11}px` }} />)}
-  </SceneFrame>;
-  if (presetId === "reference-rainbow-boomwhackers") return <SceneFrame className="h-16 bg-[#8393a0]">
-    {["#ff2727", "#ffef24", "#13df69", "#1ec8ff", "#d42cff"].map((color, index) => <div key={color} className="absolute h-4 w-12 rounded-full border-r-4 border-black/70 shadow-[5px_7px_7px_rgba(0,0,0,.3)]" style={{ background: color, left: `${5 + index * 15}px`, top: `${6 + index * 10}px`, transform: `rotate(${index % 2 ? -16 : 14}deg)` }} />)}
-  </SceneFrame>;
-  if (presetId === "reference-midnight-vibraphone") return <SceneFrame className="h-16 bg-[radial-gradient(circle_at_60%_35%,#48515d,#171a20_58%)]">
-    {[0, 1, 2, 3].map((index) => <div key={index} className="absolute h-2.5 w-12 rounded-sm bg-gradient-to-b from-slate-100 to-slate-600 shadow-[6px_8px_8px_rgba(0,0,0,.65)]" style={{ left: `${8 + index * 17}px`, top: `${10 + index * 12}px`, transform: `rotate(${index % 2 ? -18 : 12}deg)` }} />)}
-  </SceneFrame>;
-  if (presetId === "reference-pastel-percussion") return <SceneFrame className="h-16 bg-[#c8a9dd]">
-    {[0, 1, 2].map((index) => <div key={index} className="absolute h-6 w-6 rounded-full border-2 border-slate-700 bg-cyan-300 shadow-[6px_8px_7px_rgba(0,0,0,.28)]" style={{ left: `${12 + index * 29}px`, top: `${10 + index * 12}px` }} />)}
-    <div className="absolute bottom-2 left-5 h-2 w-14 rotate-[-10deg] rounded-full bg-slate-100" />
-  </SceneFrame>;
-  if (presetId === "reference-candy-drumline") return <SceneFrame className="h-16 bg-[#8f9da8]">
-    {["#ff3030", "#ffdc2f", "#20dc88", "#20c7ff", "#e536e9"].map((color, index) => <div key={color} className="absolute h-6 w-6 rounded-full border-[3px] border-slate-800 shadow-[5px_7px_7px_rgba(0,0,0,.3)]" style={{ background: color, left: `${7 + index * 17}px`, top: `${8 + (index % 2) * 22}px` }} />)}
-  </SceneFrame>;
   if (presetId === "reference-wooden-marimba") return <SceneFrame className="h-16 bg-[#d9e4e5]">
     {[0, 1, 2, 3].map((index) => <div key={index} className="absolute h-3 w-12 rounded-sm border border-amber-950/30 bg-gradient-to-b from-amber-700 to-amber-950 shadow-[5px_7px_7px_rgba(0,0,0,.25)]" style={{ left: `${7 + index * 17}px`, top: `${7 + index * 13}px`, transform: `rotate(${index % 2 ? 12 : -8}deg)` }} />)}
   </SceneFrame>;

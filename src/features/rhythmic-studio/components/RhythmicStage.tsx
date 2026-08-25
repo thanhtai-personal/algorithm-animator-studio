@@ -17,6 +17,8 @@ import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 import { RHYTHMIC_COURSE_WIDTH } from "./RhythmicMotion3D";
 import { rhythmicOutputSize, type RhythmicOutputSize } from "../lib/outputSize";
 import { RhythmicShadowToggle } from "./RhythmicShadowToggle";
+import { RhythmicOriginalAudioToggle } from "./RhythmicOriginalAudioToggle";
+import { RhythmicMagicToggle } from "./RhythmicMagicToggle";
 
 type Studio = ReturnType<typeof useRhythmicStudio>;
 
@@ -98,6 +100,21 @@ export function RendererSelector({ studio, webglAvailable, useThreeRenderer, loc
           disabled={locked}
           lang={lang}
           onChange={(enabled) => studio.patch("instrumentShadowsEnabled", enabled)}
+        />
+        <RhythmicMagicToggle
+          enabled={studio.settings.glowAnimation}
+          available={useThreeRenderer}
+          disabled={studio.recording}
+          lang={lang}
+          onChange={(enabled) => studio.patch("glowAnimation", enabled)}
+        />
+        <RhythmicOriginalAudioToggle
+          kind={studio.source.type === "midi" ? "midi" : studio.source.type === "audio" ? "original" : "none"}
+          enabled={studio.source.type === "midi" ? studio.settings.midiPlaybackEnabled : studio.settings.playOriginalSong}
+          available={studio.source.type === "midi" ? studio.sourceEvents.length > 0 : studio.source.type === "audio" && Boolean(studio.audioUrl)}
+          disabled={studio.recording}
+          lang={lang}
+          onChange={(enabled) => void studio.setSourceAudioEnabled(enabled)}
         />
       </div>
     </div>

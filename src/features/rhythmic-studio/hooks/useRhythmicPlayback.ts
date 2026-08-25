@@ -3,6 +3,7 @@ import { AudioEngine } from "../lib/audioEngine";
 import type { InstrumentHitEvent, SynthPreset } from "../types";
 import type { RhythmicStudioStore } from "../store/RhythmicStudioStore";
 import { instrumentVoiceForPlatform } from "../lib/instrumentHitProfiles";
+import { rhythmicAudioPresentationDelayMs } from "../lib/playbackSync";
 import { presetForMidiEvent } from "../lib/synthVoices";
 
 function presetForInstrumentCollision(store: RhythmicStudioStore, hit: InstrumentHitEvent): SynthPreset {
@@ -16,6 +17,13 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const audioEngineRef = useRef(new AudioEngine());
   const recorderRef = useRef<MediaRecorder | null>(null);
+  const audioStartGenerationRef = useRef(0);
+
+  const presentationDelayMs = useCallback(() => rhythmicAudioPresentationDelayMs({
+    rendererMode: store.rendererMode,
+    recording: store.recording,
+    exportFps: store.settings.exportFps,
+  }), [store]);
 
   useEffect(() => audioEngineRef.current.setVolume(store.settings.synthVolume), [store.settings.synthVolume]);
   useEffect(() => audioEngineRef.current.setMusicVolume(store.settings.musicVolume), [store.settings.musicVolume]);
@@ -23,23 +31,30 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
   useEffect(() => audioEngineRef.current.setBrightness(store.settings.synthBrightness), [store.settings.synthBrightness]);
   useEffect(() => audioEngineRef.current.setStereoWidth(store.settings.synthStereoWidth), [store.settings.synthStereoWidth]);
 
-  const stopPlaybackAudio = useCallback(() => {
+  const stopOriginalAudio = useCallback(() => {
+    audioStartGenerationRef.current += 1;
     audioElementRef.current?.pause();
-    audioEngineRef.current.stopMidi();
   }, []);
+
+  const stopPlaybackAudio = useCallback(() => {
+    stopOriginalAudio();
+    audioEngineRef.current.stopMidi();
+  }, [stopOriginalAudio]);
 
   const startOriginalAudio = useCallback(async (resumeMs = 0) => {
     const audio = audioElementRef.current;
     if (!audio || !store.audioUrl || !store.settings.playOriginalSong) return;
+    const generation = audioStartGenerationRef.current;
+    await audioEngineRef.current.attachOriginalAudio(audio);
+    await new Promise((resolve) => window.setTimeout(resolve, presentationDelayMs()));
+    if (generation !== audioStartGenerationRef.current) return;
     audio.currentTime = Math.max(0, ((resumeMs - store.settings.syncOffsetMs) * store.settings.playbackSpeed) / 1000);
     audio.playbackRate = store.settings.playbackSpeed;
-    await audioEngineRef.current.attachOriginalAudio(audio);
     await audio.play();
-  }, [store]);
+  }, [presentationDelayMs, store]);
 
   const startMidiAudio = useCallback(async (resumeMs = 0) => {
     if (store.source.type !== "midi" || !store.settings.midiPlaybackEnabled) return;
-    if (store.settings.instrumentNativeAudio) return;
     await audioEngineRef.current.scheduleMidi(store.sourceEvents, resumeMs, {
       playbackSpeed: store.settings.playbackSpeed,
       syncOffsetMs: store.settings.syncOffsetMs,
@@ -47,14 +62,43 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
       preset: store.settings.synthPreset,
       brightness: store.settings.synthBrightness,
       stereoWidth: store.settings.synthStereoWidth,
+      presentationDelayMs: presentationDelayMs(),
     });
-  }, [store]);
+  }, [presentationDelayMs, store]);
 
   const startPlaybackAudio = useCallback(async (resumeMs = 0) => {
     const tasks: Promise<unknown>[] = [startMidiAudio(resumeMs)];
     if (store.source.type === "audio" && store.settings.playOriginalSong) tasks.push(startOriginalAudio(resumeMs));
     await Promise.all(tasks);
   }, [startMidiAudio, startOriginalAudio, store.source.type, store.settings.playOriginalSong]);
+
+  const setOriginalAudioEnabled = useCallback(async (enabled: boolean) => {
+    store.patch("playOriginalSong", enabled);
+    if (!enabled) {
+      stopOriginalAudio();
+      return;
+    }
+    if (!store.playing || store.source.type !== "audio") return;
+    try { await startOriginalAudio(store.timeMs); }
+    catch { store.setStatus({ key: "status.playingBlocked" }); }
+  }, [startOriginalAudio, stopOriginalAudio, store]);
+
+  const setMidiAudioEnabled = useCallback(async (enabled: boolean) => {
+    store.patch("midiPlaybackEnabled", enabled);
+    if (!enabled) {
+      audioEngineRef.current.stopMidi();
+      return;
+    }
+    if (!store.playing || store.source.type !== "midi") return;
+    try { await startMidiAudio(store.timeMs); }
+    catch { store.setStatus({ key: "status.playingBlocked" }); }
+  }, [startMidiAudio, store]);
+
+  const setSourceAudioEnabled = useCallback((enabled: boolean) => (
+    store.source.type === "midi"
+      ? setMidiAudioEnabled(enabled)
+      : setOriginalAudioEnabled(enabled)
+  ), [setMidiAudioEnabled, setOriginalAudioEnabled, store.source.type]);
 
   const playRange = useCallback(async (startMs: number, endMs: number, clip = false) => {
     const start = Math.max(0, Math.min(startMs, store.durationMs));
@@ -114,8 +158,14 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
     // recorded mix. Keep collision-triggered SFX for built-in/audio sources only.
     if (store.source.type === "midi" && store.settings.midiPlaybackEnabled && !store.settings.instrumentNativeAudio) return;
     const { event } = hit;
-    void audioEngineRef.current.playNote(event.midi, event.velocity, event.durationMs, presetForInstrumentCollision(store, hit));
-  }, [store]);
+    void audioEngineRef.current.playNote(
+      event.midi,
+      event.velocity,
+      event.durationMs,
+      presetForInstrumentCollision(store, hit),
+      presentationDelayMs(),
+    );
+  }, [presentationDelayMs, store]);
 
   const onEnded = useCallback(() => {
     store.finishPlayback();
@@ -129,6 +179,9 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
     audioEngineRef,
     recorderRef,
     stopPlaybackAudio,
+    setOriginalAudioEnabled,
+    setMidiAudioEnabled,
+    setSourceAudioEnabled,
     startPlaybackAudio,
     playRange,
     resetAndPlay,

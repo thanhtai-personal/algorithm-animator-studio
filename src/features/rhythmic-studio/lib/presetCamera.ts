@@ -8,11 +8,19 @@ export function presetCameraAnchorX(settings: StudioSettings) {
   return 0.5;
 }
 
+export function presetCameraScale(settings: StudioSettings) {
+  // 2D instruments need to keep a readable face size. The old xylophone value
+  // (0.82) zoomed out by 18%, which made dense/fast runs look like distant
+  // thumbnails. These close-up values keep instrument faces legible and let
+  // the moving camera reveal the course instead of exposing the whole run.
+  if (settings.cameraProfile === "xylophone") return 1.48;
+  if (settings.cameraProfile === "tube-board") return 1.38;
+  if (settings.cameraProfile === "comet") return 1.32;
+  return 1.34;
+}
+
 function matrix(settings: StudioSettings) {
-  const scale = settings.cameraProfile === "xylophone" ? 0.82
-    : settings.cameraProfile === "tube-board" ? 0.97
-      : settings.cameraProfile === "comet" ? 1.01
-        : 1;
+  const scale = presetCameraScale(settings);
   // Canvas 2D is an orthographic renderer. A non-uniform scale or shear changes
   // the apparent angle of every collision surface and turns the marble into an
   // ellipse, so profile framing may zoom but must preserve geometry angles.
@@ -48,5 +56,24 @@ export function unprojectPresetCamera(point: CameraPoint, settings: StudioSettin
   return {
     x: (d * px - c * py) / det + pivot.x,
     y: (-b * px + a * py) / det + pivot.y,
+  };
+}
+
+export function cameraOffsetFor2DFocus(
+  focus: CameraPoint,
+  settings: StudioSettings,
+  width: number,
+  height: number,
+): CameraPoint {
+  // The requested anchor is a screen-space position. Convert it through the
+  // inverse preset transform before deriving the world camera offset; directly
+  // subtracting width/height anchors is only correct when scale === 1.
+  const anchorBeforeProjection = unprojectPresetCamera({
+    x: width * presetCameraAnchorX(settings),
+    y: height * settings.cameraAnchor,
+  }, settings, width, height);
+  return {
+    x: focus.x - anchorBeforeProjection.x,
+    y: focus.y - anchorBeforeProjection.y,
   };
 }

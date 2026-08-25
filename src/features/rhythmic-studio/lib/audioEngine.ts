@@ -9,6 +9,7 @@ import {
   RHYTHMIC_MASTER_GAIN,
 } from "./audioMix";
 import { playSynthVoice, presetForMidiEvent } from "./synthVoices";
+import { rhythmicAudioStartTime } from "./playbackSync";
 
 interface MidiScheduleOptions {
   playbackSpeed: number;
@@ -17,6 +18,7 @@ interface MidiScheduleOptions {
   preset: SynthPreset;
   brightness: number;
   stereoWidth: number;
+  presentationDelayMs: number;
 }
 
 function createRoomImpulse(context: AudioContext, seconds = 1.05, decay = 3.4) {
@@ -157,10 +159,11 @@ export class AudioEngine {
     this.mediaSource.connect(this.musicBus);
   }
 
-  async playNote(midi: number, velocity: number, durationMs: number, preset: SynthPreset) {
+  async playNote(midi: number, velocity: number, durationMs: number, preset: SynthPreset, presentationDelayMs = 0) {
     const context = await this.ensure();
     if (!this.sfxInput) return;
     playSynthVoice(context, this.sfxInput, midi, velocity, durationMs, preset, {
+      when: rhythmicAudioStartTime(context.currentTime, presentationDelayMs),
       brightness: this.brightness,
       stereoWidth: this.stereoWidth,
       gainScale: COLLISION_VOICE_GAIN,
@@ -197,7 +200,8 @@ export class AudioEngine {
     session.connect(this.musicBus);
     this.midiSession = session;
     const speed = Math.max(0.1, options.playbackSpeed);
-    const base = context.currentTime + 0.03;
+    const schedulerGuardMs = 8;
+    const base = rhythmicAudioStartTime(context.currentTime, options.presentationDelayMs, schedulerGuardMs);
     let index = events.findIndex((event) => event.timeMs / speed + options.syncOffsetMs >= resumeMs - 2);
     if (index < 0) return;
 

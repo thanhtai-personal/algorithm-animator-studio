@@ -2,6 +2,8 @@ export const SYNTH_PRESETS = [
   "chime",
   "piano",
   "fm",
+  "bass",
+  "strings",
   "vibraphone",
   "bell",
   "marimba",
@@ -120,6 +122,7 @@ export const BALL_STYLES = [
 ] as const;
 
 export type BallStyle = (typeof BALL_STYLES)[number];
+export type MarbleAvatar = "ball" | `animal-${number}`;
 export type ColorPaletteMode = "duotone" | "rainbow" | "tube-accent" | "neon-galaxy" | "key-rainbow";
 export type TerrainProfile = "balanced" | "tube-board" | "comet" | "xylophone";
 export type CameraProfile = "follow" | "tube-board" | "comet" | "xylophone";
@@ -227,6 +230,7 @@ export interface StudioSettings {
   prismEnd: string;
   backgroundColor: string;
   ballStyle: BallStyle;
+  marbleAvatar: MarbleAvatar;
   ballBaseColor: string;
   ballStripeColor: string;
   colorPaletteMode: ColorPaletteMode;

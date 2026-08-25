@@ -6,7 +6,7 @@ import type { CourseItemOverride, InstrumentHitEvent, LyricCue, NoteEvent, Studi
 import { clamp, marbleAtTime } from "../lib/marbleCourse";
 import type { MarblePlatform } from "../engine/marblePhysicsTypes";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
-import { presetCameraAnchorX, unprojectPresetCamera } from "../lib/presetCamera";
+import { cameraOffsetFor2DFocus, unprojectPresetCamera } from "../lib/presetCamera";
 import { drawRhythmicFrame } from "../lib/rhythmicFrameRenderer";
 import { instrumentHitForPlatform } from "../lib/instrumentHitEvent";
 
@@ -82,8 +82,9 @@ export function RhythmicCanvas({ events, settings, durationMs, frameWidth, frame
     if (!ctx) return;
     const point = marbleAtTime(currentTime.current, events, platforms, settings, courseOverrides, resolveSettings);
     const frameSettings = resolveSettings(point.platformIndex);
-    cameraX.current = point.x - frameWidth * presetCameraAnchorX(frameSettings);
-    cameraY.current = point.y - frameHeight * frameSettings.cameraAnchor;
+    const camera = cameraOffsetFor2DFocus(point, frameSettings, frameWidth, frameHeight);
+    cameraX.current = camera.x;
+    cameraY.current = camera.y;
     const frame = requestAnimationFrame(() => drawRhythmicFrame({
       ctx, width: frameWidth, height: frameHeight, timeMs: currentTime.current, events, platforms,
       cameraX: cameraX.current, cameraY: cameraY.current, durationMs, settings: frameSettings, beatLabel,
@@ -99,8 +100,9 @@ export function RhythmicCanvas({ events, settings, durationMs, frameWidth, frame
     nextNoteIndex.current = firstEventAtOrAfter(events, playbackStartMs);
     const point = marbleAtTime(playbackStartMs, events, platforms, settings, courseOverrides, resolveSettings);
     const frameSettings = resolveSettings(point.platformIndex);
-    cameraX.current = point.x - frameWidth * presetCameraAnchorX(frameSettings);
-    cameraY.current = point.y - frameHeight * frameSettings.cameraAnchor;
+    const camera = cameraOffsetFor2DFocus(point, frameSettings, frameWidth, frameHeight);
+    cameraX.current = camera.x;
+    cameraY.current = camera.y;
     onTime(playbackStartMs);
   }, [courseOverrides, events, frameHeight, frameWidth, onTime, playbackStartMs, playbackToken, platforms, resolveSettings, settings]);
 
@@ -134,8 +136,9 @@ export function RhythmicCanvas({ events, settings, durationMs, frameWidth, frame
       }
       const marble = marbleAtTime(time, events, platforms, settings, courseOverrides, resolveSettings);
       const frameSettings = resolveSettings(marble.platformIndex);
-      const targetCameraX = marble.x - frameWidth * presetCameraAnchorX(frameSettings);
-      const targetCameraY = marble.y - frameHeight * frameSettings.cameraAnchor;
+      const targetCamera = cameraOffsetFor2DFocus(marble, frameSettings, frameWidth, frameHeight);
+      const targetCameraX = targetCamera.x;
+      const targetCameraY = targetCamera.y;
       // Treat cameraSmoothing as a 60fps response value, then normalize it for
       // the actual frame duration. This removes the slow/floaty camera at 30-45fps.
       const baseCameraEase = clamp(frameSettings.cameraSmoothing, 0.03, 1);

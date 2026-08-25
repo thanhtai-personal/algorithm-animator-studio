@@ -14,6 +14,7 @@ import { impactSquash, RHYTHMIC_WORLD_SCALE, setWorldPoint, visualMarbleAtTime }
 import {
   cameraDepthProfile,
   cameraLookAheadMs,
+  courseBackdropBounds,
   firstEventAtOrAfter,
   noteDensity,
   platformImpactStrength,
@@ -72,6 +73,9 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
   const lookTarget = useMemo(() => new THREE.Vector3(), []);
   const smoothedLook = useMemo(() => new THREE.Vector3(), []);
   const initializedRef = useRef(false);
+  const backdropBounds = useMemo(() => courseBackdropBounds(props.platforms.map((platform) => (
+    -(platform.visualY ?? platform.y) * RHYTHMIC_WORLD_SCALE
+  ))), [props.platforms]);
 
   const syncScene = useCallback((timeMs: number, deltaSeconds: number, snapCamera = false) => {
     const sample = visualMarbleAtTime(timeMs, props.events, props.platforms, props.settings, props.courseOverrides, props.resolveSettings);
@@ -259,8 +263,8 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     <RendererQuality recording={props.recording} shadowsEnabled={props.settings.instrumentShadowsEnabled} />
     <PerspectiveCamera makeDefault fov={RHYTHMIC_CAMERA_FOV} near={0.1} far={180} position={[0, 0, RHYTHMIC_CAMERA_Z]} />
     <RhythmicTitle3D text={props.settings.titleText} />
-    <RhythmicLightingRig3D settings={props.settings} focus={smoothedLook} />
-    <RhythmicEnvironment3D settings={props.settings} backgroundUrl={props.backgroundUrl} />
+    <RhythmicLightingRig3D settings={props.settings} focus={smoothedLook} bounds={backdropBounds} />
+    <RhythmicEnvironment3D settings={props.settings} backgroundUrl={props.backgroundUrl} bounds={backdropBounds} />
     <RhythmicCourseItems3D platforms={props.platforms} overrides={props.courseOverrides} settings={props.settings} focusIndex={focusIndex} events={props.events} resolveSettings={props.resolveSettings} />
     <RhythmicPlatformField3D platforms={props.platforms} settings={props.settings} courseOverrides={props.courseOverrides} focusIndex={focusIndex} selectedNodeIndex={props.selectedNodeIndex} onSelectNode={props.onSelectNode} resolveSettings={props.resolveSettings} impactIndex={impactLight.index} impactStrength={impactLight.strength} timeMs={props.timeMs} />
     <RhythmicVfx3D ref={vfxRef} events={props.events} platforms={props.platforms} settings={activeVisualSettings} courseOverrides={props.courseOverrides} resolveSettings={props.resolveSettings} />

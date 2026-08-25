@@ -152,8 +152,8 @@ export const RhythmicMarble3D = forwardRef<THREE.Group, {
 }>(function RhythmicMarble3D({ settings }, ref) {
   const glowStrength = THREE.MathUtils.clamp(settings.animationSensitivity, 0, 1.5);
   const luminous = settings.ballStyle === "neon" || settings.ballStyle === "fire" || settings.ballStyle === "water";
-  const haloOpacity = luminous ? 0.09 : 0.025 + glowStrength * 0.012;
-  const lightIntensity = settings.ballStyle === "fire" ? 4.2 : luminous ? 3.4 : 0.35 + glowStrength * 0.25;
+  const haloOpacity = luminous ? 0.2 : 0.11 + glowStrength * 0.025;
+  const lightIntensity = settings.ballStyle === "fire" ? 5.2 : luminous ? 4.4 : 2.1 + glowStrength * 0.45;
   const glowColor = settings.ballStyle === "fire" ? "#ff4d12" : settings.ballStyle === "water" ? "#31ddff" : settings.ballBaseColor;
 
   return (
@@ -184,7 +184,7 @@ export const RhythmicMarble3D = forwardRef<THREE.Group, {
       {settings.ballStyle === "water" && <><mesh scale={0.32}><sphereGeometry args={[1, 28, 20]} /><meshPhysicalMaterial color="#d9fcff" transmission={0.62} roughness={0.06} transparent opacity={0.68} /></mesh><mesh position={[0.38, 0.32, 0.66]} scale={0.12}><sphereGeometry args={[1, 18, 12]} /><meshBasicMaterial color="#ffffff" transparent opacity={0.72} /></mesh></>}
       {settings.glowAnimation && (
         <>
-          <mesh scale={luminous ? 1.07 : 1.035}>
+          <mesh scale={luminous ? 1.14 : 1.1}>
             <sphereGeometry args={[1, 32, 24]} />
             <meshBasicMaterial
               color={glowColor}
@@ -196,7 +196,11 @@ export const RhythmicMarble3D = forwardRef<THREE.Group, {
               toneMapped={false}
             />
           </mesh>
-          <pointLight color={glowColor} intensity={lightIntensity} distance={luminous ? 4.2 : 2.4} decay={2} />
+          <mesh scale={luminous ? 1.32 : 1.25}>
+            <sphereGeometry args={[1, 24, 18]} />
+            <meshBasicMaterial color={glowColor} transparent opacity={haloOpacity * 0.22} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+          </mesh>
+          <pointLight color={glowColor} intensity={lightIntensity} distance={luminous ? 5.2 : 3.8} decay={2} />
         </>
       )}
     </group>

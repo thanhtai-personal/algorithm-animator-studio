@@ -45,4 +45,13 @@ describe("reference marble styles", () => {
     expect(fire.duration).toBeGreaterThan(standard.duration * 2);
     expect(fire.count).toBeGreaterThanOrEqual(8);
   });
+
+  it("keeps a readable 3D light trail while Magic is enabled", () => {
+    const magic = trailProfile({ ...DEFAULT_SETTINGS, glowAnimation: true, trailLength: 0 });
+    const plain = trailProfile({ ...DEFAULT_SETTINGS, glowAnimation: false, trailLength: 0 });
+
+    expect(magic.count).toBeGreaterThanOrEqual(5);
+    expect(magic.duration).toBeGreaterThanOrEqual(100);
+    expect(plain).toEqual({ duration: 0, count: 0 });
+  });
 });

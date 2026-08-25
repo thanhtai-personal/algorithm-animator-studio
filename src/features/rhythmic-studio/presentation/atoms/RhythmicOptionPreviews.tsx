@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 import type { RhythmicPresetId } from "../../lib/studioPresets";
 import type { ReferenceVideoPresetId } from "../../lib/referenceVideoPresets";
-import type { BackgroundPreset, BallStyle, CourseItemStyle } from "../../types";
+import type { BackgroundPreset, BallStyle, CourseItemStyle, MarbleAvatar } from "../../types";
+import { marbleAvatarEntry } from "../../lib/marbleAvatars";
 import { cn } from "@/lib/utils";
+import { AnimalSpritePreview } from "./MarbleAvatarPreview";
 
 function SceneFrame({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <div className={cn("relative h-20 w-full overflow-hidden rounded-lg", className)}>{children}</div>;
@@ -41,6 +43,11 @@ export function BallStylePreview({ style }: { style: BallStyle }) {
       {style === "rainbow" && <div className="absolute inset-[5px] rounded-full border border-white/45 bg-white/10" />}
     </div>
   </SceneFrame>;
+}
+
+export function MarbleAvatarPreview({ avatar, ballStyle }: { avatar: MarbleAvatar; ballStyle: BallStyle }) {
+  const entry = marbleAvatarEntry(avatar);
+  return entry ? <AnimalSpritePreview entry={entry} /> : <BallStylePreview style={ballStyle} />;
 }
 
 function platformPreviewBase(children: ReactNode, background = "bg-[linear-gradient(180deg,#111827,#1f2937)]") {

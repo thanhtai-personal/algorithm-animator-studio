@@ -1,6 +1,9 @@
 export const RHYTHMIC_MASTER_GAIN = 0.88;
 export const DEFAULT_COLLISION_VOLUME = 0.62;
-export const COLLISION_VOICE_GAIN = 0.98;
+// Collision voices are short transients and otherwise sound noticeably quieter
+// than the sustained MIDI/original-audio buses. The output compressor still
+// catches dense overlaps, while this gain keeps a single hit clearly audible.
+export const COLLISION_VOICE_GAIN = 1.45;
 export const MIDI_SESSION_GAIN = 0.82;
 export const MIDI_VOICE_GAIN = 0.55;
 export const MIDI_DRUM_GAIN = 0.45;

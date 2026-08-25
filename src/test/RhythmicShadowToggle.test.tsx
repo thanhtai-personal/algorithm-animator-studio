@@ -29,7 +29,12 @@ describe("RhythmicShadowToggle", () => {
     const studio = {
       rendererMode: "three",
       settings: { ...DEFAULT_SETTINGS },
+      source: { type: "builtin" },
+      audioUrl: null,
+      recording: false,
       setRendererMode: vi.fn(),
+      setOriginalAudioEnabled: vi.fn(),
+      setSourceAudioEnabled: vi.fn(),
       patch: vi.fn(),
     };
     render(

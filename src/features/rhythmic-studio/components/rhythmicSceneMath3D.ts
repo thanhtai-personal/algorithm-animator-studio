@@ -11,10 +11,46 @@ type Point3D = { x: number; y: number; z: number };
 export const SHOWCASE_SHADOW_LIGHT_OFFSET = { x: -2.4, y: 3.2, z: 14 } as const;
 export const RHYTHMIC_SHADOW_RECEIVER_Z = -4.02;
 export const RHYTHMIC_AUTO_SHADOW_RECEIVER_Z = -1.12;
+export const DENSE_CHASSIS_CENTER_Z = -0.62;
+export const DENSE_CHASSIS_DEPTH = 0.22;
 export const RHYTHMIC_SHOWCASE_WALL_CENTER_Y = -270;
 export const RHYTHMIC_SHOWCASE_WALL_HEIGHT = 560;
 export const RHYTHMIC_ROOM_BACKDROP_WIDTH = 80;
 export const RHYTHMIC_ROOM_SIDE_X = 18.5;
+
+export interface RhythmicBackdropBounds {
+  centerY: number;
+  height: number;
+  topY: number;
+  bottomY: number;
+}
+
+export function courseBackdropBounds(worldYs: number[], padding = 24): RhythmicBackdropBounds {
+  let highest = Number.NEGATIVE_INFINITY;
+  let lowest = Number.POSITIVE_INFINITY;
+  for (const y of worldYs) {
+    if (!Number.isFinite(y)) continue;
+    highest = Math.max(highest, y);
+    lowest = Math.min(lowest, y);
+  }
+  const hasPoints = Number.isFinite(highest) && Number.isFinite(lowest);
+  const topY = Math.max(14, (hasPoints ? highest : -10) + padding);
+  const bottomY = Math.min(-122, (hasPoints ? lowest : -98) - padding);
+  return {
+    centerY: (topY + bottomY) * 0.5,
+    height: topY - bottomY,
+    topY,
+    bottomY,
+  };
+}
+
+export function shadowReceiverZForSettings(settings: Pick<StudioSettings, "instrumentFamily">) {
+  return settings.instrumentFamily === "auto" ? RHYTHMIC_AUTO_SHADOW_RECEIVER_Z : RHYTHMIC_SHADOW_RECEIVER_Z;
+}
+
+export function needsDedicatedShadowReceiver(kind: "tube-board" | "comet" | "xylophone" | "neutral") {
+  return kind === "comet";
+}
 
 export function roomBackdropCoversFrame(backdropWidth: number, cameraX: number, viewWidth: number, overscan = 1) {
   return backdropWidth * 0.5 >= Math.abs(cameraX) + viewWidth * 0.5 + overscan;
@@ -35,6 +71,18 @@ export function wallMountProfile(frontDepth: number, receiverZ = RHYTHMIC_SHADOW
     anchorThickness,
     stemCenterZ: (stemStartZ + stemEndZ) * 0.5,
     stemLength: Math.abs(stemStartZ - stemEndZ),
+  };
+}
+
+export function denseChassisMountProfile(receiverZ: number) {
+  const anchorThickness = 0.08;
+  const chassisBackZ = DENSE_CHASSIS_CENTER_Z - DENSE_CHASSIS_DEPTH * 0.5;
+  const anchorFrontZ = receiverZ + anchorThickness;
+  return {
+    anchorCenterZ: receiverZ + anchorThickness * 0.5,
+    anchorThickness,
+    stemCenterZ: (chassisBackZ + anchorFrontZ) * 0.5,
+    stemLength: Math.max(0.02, chassisBackZ - anchorFrontZ),
   };
 }
 

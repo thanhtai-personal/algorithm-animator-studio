@@ -4,11 +4,10 @@ import * as THREE from "three";
 import type { StudioSettings } from "../types";
 import { environmentKind, ReflectionRig } from "./RhythmicEnvironment3D";
 import {
-  RHYTHMIC_SHADOW_RECEIVER_Z,
-  RHYTHMIC_AUTO_SHADOW_RECEIVER_Z,
-  RHYTHMIC_SHOWCASE_WALL_CENTER_Y,
-  RHYTHMIC_SHOWCASE_WALL_HEIGHT,
+  type RhythmicBackdropBounds,
   SHOWCASE_SHADOW_LIGHT_OFFSET,
+  needsDedicatedShadowReceiver,
+  shadowReceiverZForSettings,
   shadowRigPose,
 } from "./rhythmicSceneMath3D";
 
@@ -77,28 +76,28 @@ function TrackedKeyLight({
   );
 }
 
-function ShadowReceiver({ settings, opacity }: { settings: StudioSettings; opacity: number }) {
+function ShadowReceiver({ settings, opacity, bounds }: { settings: StudioSettings; opacity: number; bounds: RhythmicBackdropBounds }) {
   if (!settings.instrumentShadowsEnabled) return null;
-  const showcase = settings.instrumentFamily !== "auto";
   return (
     <mesh
-      position={[0, RHYTHMIC_SHOWCASE_WALL_CENTER_Y, showcase ? RHYTHMIC_SHADOW_RECEIVER_Z : RHYTHMIC_AUTO_SHADOW_RECEIVER_Z]}
+      position={[0, bounds.centerY, shadowReceiverZForSettings(settings)]}
       receiveShadow
       renderOrder={-18}
     >
-      <planeGeometry args={[18.4, RHYTHMIC_SHOWCASE_WALL_HEIGHT]} />
+      <planeGeometry args={[18.4, bounds.height]} />
       <shadowMaterial transparent opacity={opacity} depthWrite={false} />
     </mesh>
   );
 }
 
-export function RhythmicLightingRig3D({ settings, focus }: { settings: StudioSettings; focus: THREE.Vector3 }) {
+export function RhythmicLightingRig3D({ settings, focus, bounds }: { settings: StudioSettings; focus: THREE.Vector3; bounds: RhythmicBackdropBounds }) {
   const kind = environmentKind(settings);
+  const needsShadowReceiver = needsDedicatedShadowReceiver(kind);
   if (settings.instrumentFamily !== "auto") {
     return (
       <>
         <ReflectionRig settings={settings} />
-        <ShadowReceiver settings={settings} opacity={0.3} />
+        {needsShadowReceiver && <ShadowReceiver settings={settings} opacity={0.3} bounds={bounds} />}
         <hemisphereLight args={["#fff9ef", "#6d655e", 0.9]} />
         <TrackedKeyLight focus={focus} offset={SHOWCASE_SHADOW_LIGHT_OFFSET} intensity={2.6} mapSize={1536} bias={-0.00035} normalBias={0.025} radius={3.2} shadowsEnabled={settings.instrumentShadowsEnabled} />
         <directionalLight position={[5, -2, 5]} intensity={0.5} color="#dce7f5" />
@@ -109,7 +108,7 @@ export function RhythmicLightingRig3D({ settings, focus }: { settings: StudioSet
     return (
       <>
         <ReflectionRig settings={settings} />
-        <ShadowReceiver settings={settings} opacity={0.22} />
+        {needsShadowReceiver && <ShadowReceiver settings={settings} opacity={0.22} bounds={bounds} />}
         <hemisphereLight args={["#fff0d7", "#403529", 0.92]} />
         <TrackedKeyLight focus={focus} offset={{ x: -4.8, y: 6.2, z: 9.5 }} intensity={2.5} mapSize={1024} normalBias={0.035} shadowsEnabled={settings.instrumentShadowsEnabled} />
         <pointLight position={[5, -4, 5]} color="#ffc17f" intensity={12} distance={22} decay={2} />
@@ -121,7 +120,7 @@ export function RhythmicLightingRig3D({ settings, focus }: { settings: StudioSet
     return (
       <>
         <ReflectionRig settings={settings} />
-        <ShadowReceiver settings={settings} opacity={0.2} />
+        {needsShadowReceiver && <ShadowReceiver settings={settings} opacity={0.2} bounds={bounds} />}
         <ambientLight intensity={0.12} />
         <TrackedKeyLight focus={focus} offset={{ x: 4.8, y: 6.2, z: 9 }} intensity={1.45} mapSize={1024} shadowsEnabled={settings.instrumentShadowsEnabled} />
         <pointLight position={[-4.5, 1, 4]} color="#5776ff" intensity={18} distance={25} decay={2} />
@@ -133,7 +132,7 @@ export function RhythmicLightingRig3D({ settings, focus }: { settings: StudioSet
     return (
       <>
         <ReflectionRig settings={settings} />
-        <ShadowReceiver settings={settings} opacity={0.28} />
+        {needsShadowReceiver && <ShadowReceiver settings={settings} opacity={0.28} bounds={bounds} />}
         <hemisphereLight args={["#dcecff", "#14171c", 0.72]} />
         <TrackedKeyLight focus={focus} offset={{ x: -4.8, y: 6.4, z: 9.5 }} intensity={2.55} mapSize={1024} bias={-0.00035} normalBias={0.04} shadowsEnabled={settings.instrumentShadowsEnabled} />
         <pointLight position={[5, -5, 5]} color="#ffc28c" intensity={9} distance={19} decay={2} />
@@ -144,7 +143,7 @@ export function RhythmicLightingRig3D({ settings, focus }: { settings: StudioSet
   return (
     <>
       <ReflectionRig settings={settings} />
-      <ShadowReceiver settings={settings} opacity={0.24} />
+      {needsShadowReceiver && <ShadowReceiver settings={settings} opacity={0.24} bounds={bounds} />}
       <ambientLight intensity={0.28} />
       <TrackedKeyLight focus={focus} offset={{ x: 4.8, y: 6.2, z: 9.5 }} intensity={2.2} mapSize={1024} shadowsEnabled={settings.instrumentShadowsEnabled} />
       <pointLight position={[-4, 1, 6]} intensity={10} distance={22} decay={2} color="#7dd3fc" />

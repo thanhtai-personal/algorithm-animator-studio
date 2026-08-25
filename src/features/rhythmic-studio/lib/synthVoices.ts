@@ -95,6 +95,34 @@ function pianoVoice(context: AudioContext, target: AudioNode, when: number, hz: 
   osc(context, filter, when, hz * 2, duration + 0.56, "sine", 0.13);
 }
 
+function bassVoice(context: AudioContext, target: AudioNode, when: number, hz: number, duration: number, peak: number) {
+  const sustain = Math.max(0.24, Math.min(1.8, duration));
+  const env = envelope(context, target, when, peak * 0.92, 0.006, sustain * 0.68, 0.24);
+  const body = context.createBiquadFilter();
+  body.type = "lowpass";
+  body.frequency.setValueAtTime(Math.min(1800, 420 + hz * 5.2), when);
+  body.frequency.exponentialRampToValueAtTime(Math.max(260, 240 + hz * 1.8), when + sustain);
+  body.Q.value = 0.86;
+  body.connect(env);
+  osc(context, body, when, hz, sustain + 0.28, "triangle", 0.84, -2.5);
+  osc(context, body, when, hz, sustain + 0.24, "sawtooth", 0.16, 2.5);
+  osc(context, body, when, hz * 0.5, sustain + 0.2, "sine", 0.18);
+}
+
+function stringsVoice(context: AudioContext, target: AudioNode, when: number, hz: number, duration: number, peak: number) {
+  const sustain = Math.max(0.34, Math.min(2.4, duration + 0.2));
+  const env = envelope(context, target, when, peak * 0.72, 0.045, Math.max(0.12, sustain * 0.72), 0.36);
+  const body = context.createBiquadFilter();
+  body.type = "lowpass";
+  body.frequency.value = Math.min(6200, 1600 + hz * 4.2);
+  body.Q.value = 0.48;
+  body.connect(env);
+  osc(context, body, when, hz, sustain + 0.38, "sawtooth", 0.24, -7);
+  osc(context, body, when, hz, sustain + 0.38, "sawtooth", 0.24, 7);
+  osc(context, body, when, hz, sustain + 0.32, "triangle", 0.5);
+  osc(context, body, when, hz * 2, sustain + 0.22, "sine", 0.08);
+}
+
 function malletVoice(context: AudioContext, target: AudioNode, when: number, hz: number, peak: number, kind: "marimba" | "kalimba" | "wood") {
   const duration = kind === "wood" ? 0.12 : kind === "marimba" ? 0.52 : 0.74;
   const env = envelope(context, target, when, peak, kind === "wood" ? 0.005 : 0.006, 0.006, duration);
@@ -206,12 +234,12 @@ export function presetForMidiEvent(event: NoteEvent): SynthPreset {
     return "woodblock";
   }
   const program = Math.max(0, Math.min(127, event.program ?? 0));
-  if (program <= 7) return "piano";
+  if (program <= 7) return program <= 3 ? "piano" : "fm";
   if (program <= 15) return program <= 11 ? "vibraphone" : "marimba";
   if (program <= 23) return "chime";
   if (program <= 31) return "pluck";
-  if (program <= 39) return "kalimba";
-  if (program <= 55) return program <= 47 ? "glass" : "chime";
+  if (program <= 39) return "bass";
+  if (program <= 55) return "strings";
   if (program <= 63) return "fm";
   if (program <= 79) return "vibraphone";
   if (program <= 95) return program <= 87 ? "fm" : "glass";
@@ -237,6 +265,8 @@ export function playSynthVoice(context: AudioContext, bus: AudioNode, midi: numb
   if (preset === "flute") return fluteVoice(context, target, when, hz, duration, peak);
 
   if (preset === "piano") pianoVoice(context, target, when, hz, duration, peak);
+  else if (preset === "bass") bassVoice(context, target, when, hz, duration, peak);
+  else if (preset === "strings") stringsVoice(context, target, when, hz, duration, peak);
   else if (preset === "fm") {
     const env = envelope(context, target, when, peak, 0.006, 0.018, Math.max(0.24, duration));
     const carrier = osc(context, env, when, hz, duration + 0.18, "sine", 0.9);

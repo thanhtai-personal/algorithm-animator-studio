@@ -6,25 +6,26 @@ import { isPlatformCourseItem, overrideForNode } from "../lib/courseItems";
 import { RHYTHMIC_COURSE_WIDTH, RHYTHMIC_WORLD_SCALE } from "./RhythmicMotion3D";
 import { PlatformMesh } from "./RhythmicPlatformMeshes3D";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
-import { RHYTHMIC_AUTO_SHADOW_RECEIVER_Z, RHYTHMIC_SHADOW_RECEIVER_Z, wallMountProfile } from "./rhythmicSceneMath3D";
+import { DENSE_CHASSIS_CENTER_Z, DENSE_CHASSIS_DEPTH, shadowReceiverZForSettings, wallMountProfile } from "./rhythmicSceneMath3D";
 import { instrumentLightAtTime } from "../lib/instrumentLight";
 import { isNoteLitInstrumentStyle, noteLightColorsForPlatform } from "../lib/instrumentLightsModel";
 import { RhythmicInstrumentNoteLights3D } from "./RhythmicInstrumentNoteLights3D";
 import { platformsMountedFor3D } from "../lib/platformViewport";
+import { RhythmicDenseChassisMounts3D } from "./RhythmicDenseChassisMounts3D";
 
-function PhysicalMount({ terrain, w, h, detail, showcase, frontDepth, style }: {
+function PhysicalMount({ terrain, w, h, detail, showcase, frontDepth, receiverZ, style }: {
   terrain: StudioSettings["terrainProfile"];
   w: number;
   h: number;
   detail: number;
   showcase: boolean;
   frontDepth: number;
+  receiverZ: number;
   style: string;
 }) {
   const supportX = Math.min(w * 0.3, showcase ? 0.46 : 0.38);
   const singleSupport = style === "instrument-pad" || style === "pluck-pad" || style === "instrument-cymbal" || style === "drum-disc" || style === "gong-disc";
   const supportPositions = singleSupport ? [0] : [-supportX, supportX];
-  const receiverZ = showcase ? RHYTHMIC_SHADOW_RECEIVER_Z : RHYTHMIC_AUTO_SHADOW_RECEIVER_Z;
   const mount = wallMountProfile(frontDepth, receiverZ);
   const stemColor = terrain === "xylophone" ? "#77634f" : terrain === "comet" ? "#555b76" : "#5c6670";
   const anchorColor = terrain === "xylophone" ? "#322a24" : "#282d34";
@@ -56,7 +57,7 @@ function frontDepthForStyle(style: string, h: number, d: number) {
   return d * 0.5;
 }
 
-export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, selectedNodeIndex, onSelectNode, resolveSettings, impactIndex, impactStrength, timeMs }: {
+export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, focusIndex, selectedNodeIndex, onSelectNode, resolveSettings, impactIndex, impactStrength, timeMs }: {
   platforms: MarblePlatform[];
   settings: StudioSettings;
   courseOverrides: CourseItemOverride[];
@@ -68,7 +69,8 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
   impactStrength: number;
   timeMs: number;
 }) {
-  const visible = useMemo(() => platformsMountedFor3D(platforms), [platforms]);
+  const visible = useMemo(() => platformsMountedFor3D(platforms, focusIndex), [focusIndex, platforms]);
+  const receiverZ = shadowReceiverZForSettings(settings);
 
   const denseSupports = useMemo(() => {
     const activeSurfaceIds = new Set<number>();
@@ -102,6 +104,7 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
           y: -((firstY + lastY) * 0.5) * RHYTHMIC_WORLD_SCALE,
           width: Math.max(0.22, span * RHYTHMIC_WORLD_SCALE),
           angle: Math.atan2(dy, dx),
+          mounted: offset % 3 === 0 || offset === surface.length - 2,
         };
       });
     });
@@ -110,15 +113,16 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
   return (
     <group>
       {denseSupports.map((support) => (
-        <group key={`dense-support-${support.id}`} position={[support.x, support.y, -0.62]} rotation={[0, 0, -support.angle]}>
-          <mesh castShadow receiveShadow>
-            <boxGeometry args={[support.width, 0.1, 0.22]} />
+        <group key={`dense-support-${support.id}`} position={[support.x, support.y, 0]} rotation={[0, 0, -support.angle]}>
+          <mesh position={[0, 0, DENSE_CHASSIS_CENTER_Z]} castShadow receiveShadow>
+            <boxGeometry args={[support.width, 0.1, DENSE_CHASSIS_DEPTH]} />
             <meshStandardMaterial color="#272c33" roughness={0.38} metalness={0.52} />
           </mesh>
-          <mesh position={[0, -0.055, 0.118]}>
+          <mesh position={[0, -0.055, DENSE_CHASSIS_CENTER_Z + DENSE_CHASSIS_DEPTH * 0.5 + 0.008]}>
             <boxGeometry args={[Math.max(0.2, support.width * 0.96), 0.018, 0.018]} />
             <meshStandardMaterial color="#747d87" roughness={0.28} metalness={0.72} />
           </mesh>
+          {support.mounted && <RhythmicDenseChassisMounts3D width={support.width} receiverZ={receiverZ} terrain={settings.terrainProfile} detail={settings.platformDetail} />}
         </group>
       ))}
       {visible.map((platform) => {
@@ -165,7 +169,7 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
             }}
           >
             {platform.denseRunId === undefined && (
-              <PhysicalMount terrain={platformSettings.terrainProfile} w={w} h={h} detail={platformSettings.platformDetail} showcase={platformSettings.instrumentFamily !== "auto"} frontDepth={frontDepth} style={style} />
+              <PhysicalMount terrain={platformSettings.terrainProfile} w={w} h={h} detail={platformSettings.platformDetail} showcase={platformSettings.instrumentFamily !== "auto"} frontDepth={frontDepth} receiverZ={receiverZ} style={style} />
             )}
             <PlatformMesh w={w} h={h} d={depth} color={platform.color} style={style} selected={platform.index === selectedNodeIndex} glow={effectiveGlow} detail={platformSettings.platformDetail} />
             {isNoteLitInstrumentStyle(style) && <RhythmicInstrumentNoteLights3D width={w} height={h} frontDepth={frontDepth} colors={lightColors} glow={effectiveGlow} />}

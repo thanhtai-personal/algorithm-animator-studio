@@ -35,7 +35,10 @@ function effectColorFromBall(target: THREE.Color, settings: StudioSettings, whit
 }
 
 export function trailProfile(settings: StudioSettings) {
-  const userLength = THREE.MathUtils.clamp(settings.trailLength, 0, 48);
+  const requestedLength = settings.glowAnimation
+    ? Math.max(16, settings.trailLength)
+    : settings.trailLength;
+  const userLength = THREE.MathUtils.clamp(requestedLength, 0, 48);
   if (userLength <= 0) return { duration: 0, count: 0 };
   let duration = 150;
   if (settings.terrainProfile === "tube-board") duration = 88;
@@ -48,7 +51,9 @@ export function trailProfile(settings: StudioSettings) {
   const trailDensity = settings.ballStyle === "fire" ? 0.65 : settings.ballStyle === "water" ? 0.52 : 0.36;
   const count = Math.min(MAX_TRAIL, Math.max(1, Math.round(userLength * trailDensity)));
   const durationScale = THREE.MathUtils.lerp(0.42, 1.55, userLength / 48);
-  return { duration: duration * durationScale, count };
+  const visibleDuration = duration * durationScale;
+  const magicMinimum = settings.ballStyle === "fire" ? 300 : settings.ballStyle === "water" ? 200 : 140;
+  return { duration: settings.glowAnimation ? Math.max(magicMinimum, visibleDuration) : visibleDuration, count };
 }
 
 function particleBudget(settings: StudioSettings) {
@@ -177,7 +182,7 @@ export const RhythmicVfx3D = forwardRef<RhythmicVfxHandle, {
     },
   }), [color, courseOverrides, delta, events, helper, hidden, midpoint, platforms, pointA, pointB, resolveSettings, settings, white]);
 
-  const trailOpacity = settings.glowAnimation ? (settings.terrainProfile === "comet" ? 0.42 : 0.24) : 0.14;
+  const trailOpacity = settings.glowAnimation ? (settings.terrainProfile === "comet" ? 0.56 : 0.42) : 0.14;
   return (
     <group>
       <instancedMesh ref={trailRef} args={[undefined, undefined, MAX_TRAIL]} frustumCulled={false}>

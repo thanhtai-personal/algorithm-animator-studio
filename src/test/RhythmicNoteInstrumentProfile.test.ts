@@ -4,6 +4,7 @@ import { NOTE_COLOR_BY_PITCH_CLASS, noteColorForMidi, noteColorsForEvents } from
 import type { NoteEvent, PlatformStyle } from "../features/rhythmic-studio/types";
 import { DEFAULT_SETTINGS } from "../features/rhythmic-studio/defaults";
 import { buildMarbleCourse } from "../features/rhythmic-studio/lib/marbleCourse";
+import { presetForMidiEvent } from "../features/rhythmic-studio/lib/synthVoices";
 
 function event(midi: number, extra: Partial<NoteEvent> = {}): NoteEvent {
   return { id: `note-${midi}`, timeMs: 100, midi, velocity: 0.8, durationMs: 320, ...extra };
@@ -64,5 +65,33 @@ describe("instrument voice selected from the struck platform", () => {
 
   it("uses MIDI/fallback only for generic platforms", () => {
     expect(instrumentVoiceForPlatform("neon-bar", event(60), "glass")).toBe("glass");
+  });
+
+  it("keeps string-family collision voices aligned with their MIDI-aware meshes", () => {
+    expect(instrumentVoiceForPlatform("pluck-pad", event(48, { program: 33 }), "piano")).toBe("bass");
+    expect(instrumentVoiceForPlatform("instrument-wire", event(71, { program: 48 }), "piano")).toBe("strings");
+    expect(instrumentVoiceForPlatform("piano-key", event(60, { program: 4 }), "piano")).toBe("fm");
+  });
+
+  it.each([
+    ["tube-cylinder", "boomwhacker"],
+    ["toy-tube", "boomwhacker"],
+    ["toy-peg", "woodblock"],
+    ["glass-tempered", "glass"],
+    ["metal-rail", "metal-hit"],
+    ["dual-rail", "metal-hit"],
+    ["pipe-rail", "metal-hit"],
+    ["stair-step", "xylophone"],
+  ] satisfies Array<[PlatformStyle, string]>)
+  ("uses the audible counterpart of the %s mesh instead of the global fallback", (style, expected) => {
+    expect(instrumentVoiceForPlatform(style, event(60), "piano")).toBe(expected);
+  });
+});
+
+describe("General MIDI source arrangement", () => {
+  it("preserves the three instrument programs used by SuperMarioMakerTitleTheme.mid", () => {
+    expect(presetForMidiEvent(event(60, { program: 4 }))).toBe("fm");
+    expect(presetForMidiEvent(event(48, { program: 33 }))).toBe("bass");
+    expect(presetForMidiEvent(event(71, { program: 48 }))).toBe("strings");
   });
 });

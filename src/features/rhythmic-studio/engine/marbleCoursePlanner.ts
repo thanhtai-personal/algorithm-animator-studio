@@ -1,5 +1,6 @@
 import type { NoteEvent, StudioSettings } from "../types";
 import { rhythmTerrainForGap } from "../lib/rhythmTerrain";
+import { midiInstrumentVisualStyle } from "../lib/midiInstrumentVisuals";
 import type { MarblePlatform, Vec2 } from "./marblePhysicsTypes";
 import { marbleEntrySpeed, marblePhysicsProfile, type MarblePhysicsProfile } from "./marblePhysicsProfiles";
 import { presetObstaclePlan } from "./presetObstaclePlan";
@@ -891,6 +892,8 @@ function createPlatformForRoute(
   applyPlannerVisualHints(context, index, state, step, route, platform);
   const impactStyle = "impactStyle" in route ? route.impactStyle : undefined;
   if (impactStyle === "instrument-pad" && !step.denseNode && !step.chordNode) platform.visualStyle = impactStyle;
+  const midiVisualStyle = midiInstrumentVisualStyle(step.event, step.settings);
+  if (midiVisualStyle) platform.visualStyle = midiVisualStyle;
   fitVisualWidthForScene(platform, state.recentPlatforms, step.settings);
   return platform;
 }
@@ -1075,6 +1078,12 @@ export function buildPhysicsCourse(
   onProgress?.(0.97);
   const chordDecorated = decorateChordClusters(denseDecorated, context.chords);
   const fitted = fitCourseToTrajectories(chordDecorated, settings, width, resolveSettings);
+  const instrumentAligned = fitted.map((platform, index) => {
+    if (platform.denseRunId !== undefined || platform.denseSurfaceId !== undefined || platform.chordClusterId !== undefined) return platform;
+    const frameSettings = resolveSettings?.(index) ?? settings;
+    const visualStyle = midiInstrumentVisualStyle(platform.event, frameSettings);
+    return visualStyle ? { ...platform, visualStyle } : platform;
+  });
   onProgress?.(1);
-  return fitted;
+  return instrumentAligned;
 }

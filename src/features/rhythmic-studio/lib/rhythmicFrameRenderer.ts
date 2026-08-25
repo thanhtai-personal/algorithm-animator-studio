@@ -7,6 +7,8 @@ import { drawLongGapTubes } from "./longGapTube";
 import { clamp, collisionStrength, marbleAtTime, mixHex, type MarblePlatform, type MarblePoint } from "./marbleCourse";
 import { applyPresetCamera } from "./presetCamera";
 import { drawPresetMarble } from "./presetMarbleRenderer";
+import { drawMarbleAvatar2D } from "./marbleAvatarRenderer2D";
+import { IDLE_MARBLE_AVATAR_MOTION, marbleAvatarMotion2D } from "./marbleAvatarMotion2D";
 import { drawPresetTrail } from "./presetTrailRenderer";
 import { drawStyledPlatform } from "./platformStyles";
 import { platformIsInside2DRenderWindow } from "./platformViewport";
@@ -80,7 +82,9 @@ function drawParticles(ctx: CanvasRenderingContext2D, platforms: MarblePlatform[
 function drawIdleMarble(ctx: CanvasRenderingContext2D, point: MarblePoint, cameraY: number, settings: StudioSettings) {
   // Idle preview must use the exact same material renderer as playback so changing
   // Marble style is visible immediately instead of falling back to a plain circle.
-  drawPresetMarble(ctx, point, cameraY, 0, settings);
+  if (!drawMarbleAvatar2D(ctx, point, cameraY, 0, settings, IDLE_MARBLE_AVATAR_MOTION)) {
+    drawPresetMarble(ctx, point, cameraY, 0, settings);
+  }
 }
 
 function wrapLyric(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
@@ -209,7 +213,12 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
     }
     ctx.globalAlpha = 1;
     drawParticles(ctx, platforms, cameraY, timeMs, settings);
-    drawPresetMarble(ctx, marble, cameraY, pulse, settings);
+    const beforeAvatar = marbleAtTime(Math.max(0, timeMs - 12), events, platforms, settings, courseOverrides);
+    const afterAvatar = marbleAtTime(Math.min(durationMs, timeMs + 12), events, platforms, settings, courseOverrides);
+    const avatarMotion = marbleAvatarMotion2D(timeMs, events, platforms, marble, beforeAvatar, afterAvatar);
+    if (!drawMarbleAvatar2D(ctx, marble, cameraY, pulse, settings, avatarMotion)) {
+      drawPresetMarble(ctx, marble, cameraY, pulse, settings);
+    }
   } else drawIdleMarble(ctx, marble, cameraY, settings);
   ctx.restore();
   drawLyrics(ctx, width, height, timeMs, lyrics, settings);

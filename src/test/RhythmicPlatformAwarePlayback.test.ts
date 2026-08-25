@@ -48,6 +48,6 @@ describe("platform-aware collision playback", () => {
 
     await act(async () => result.current.onNote(hit(style)));
 
-    expect(audioMocks.playNote).toHaveBeenCalledWith(60, 0.8, 300, voice);
+    expect(audioMocks.playNote).toHaveBeenCalledWith(60, 0.8, 300, voice, 24);
   });
 });

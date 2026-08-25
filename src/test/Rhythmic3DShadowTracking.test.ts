@@ -1,14 +1,21 @@
 import { describe, expect, it } from "vitest";
 import {
+  DENSE_CHASSIS_CENTER_Z,
+  DENSE_CHASSIS_DEPTH,
   RHYTHMIC_SHADOW_RECEIVER_Z,
   RHYTHMIC_AUTO_SHADOW_RECEIVER_Z,
   RHYTHMIC_SHOWCASE_WALL_CENTER_Y,
   RHYTHMIC_SHOWCASE_WALL_HEIGHT,
   SHOWCASE_SHADOW_LIGHT_OFFSET,
+  denseChassisMountProfile,
+  courseBackdropBounds,
+  needsDedicatedShadowReceiver,
+  shadowReceiverZForSettings,
   shadowReceiverOffset,
   shadowRigPose,
   wallMountProfile,
 } from "../features/rhythmic-studio/components/rhythmicSceneMath3D";
+import { DEFAULT_SETTINGS } from "../features/rhythmic-studio/defaults";
 
 describe("rhythmic 3D shadow tracking", () => {
   it("keeps the key light and shadow target centered on a distant course section", () => {
@@ -67,8 +74,45 @@ describe("rhythmic 3D shadow tracking", () => {
     expect(mount.stemLength).toBeLessThan(1.3);
   });
 
+  it("uses one authoritative receiver plane for automatic and showcase scenes", () => {
+    expect(shadowReceiverZForSettings(DEFAULT_SETTINGS)).toBe(RHYTHMIC_AUTO_SHADOW_RECEIVER_Z);
+    expect(shadowReceiverZForSettings({ ...DEFAULT_SETTINGS, instrumentFamily: "piano" })).toBe(RHYTHMIC_SHADOW_RECEIVER_Z);
+  });
+
+  it("does not add a second shadow receiver in rooms that already receive shadows", () => {
+    expect(needsDedicatedShadowReceiver("neutral")).toBe(false);
+    expect(needsDedicatedShadowReceiver("xylophone")).toBe(false);
+    expect(needsDedicatedShadowReceiver("tube-board")).toBe(false);
+    expect(needsDedicatedShadowReceiver("comet")).toBe(true);
+  });
+
+  it.each([
+    ["automatic", RHYTHMIC_AUTO_SHADOW_RECEIVER_Z],
+    ["showcase", RHYTHMIC_SHADOW_RECEIVER_Z],
+  ])("joins the dense-run chassis to the %s receiver without a floating gap", (_label, receiverZ) => {
+    const mount = denseChassisMountProfile(receiverZ);
+    const chassisBackZ = DENSE_CHASSIS_CENTER_Z - DENSE_CHASSIS_DEPTH * 0.5;
+    const stemNearEndZ = mount.stemCenterZ + mount.stemLength * 0.5;
+    const stemFarEndZ = mount.stemCenterZ - mount.stemLength * 0.5;
+
+    expect(stemNearEndZ).toBeCloseTo(chassisBackZ, 6);
+    expect(stemFarEndZ).toBeCloseTo(receiverZ + mount.anchorThickness, 6);
+    expect(mount.anchorCenterZ - mount.anchorThickness * 0.5).toBeCloseTo(receiverZ, 6);
+  });
+
   it("keeps the shadow wall behind a complete long-form course", () => {
     expect(RHYTHMIC_SHOWCASE_WALL_CENTER_Y + RHYTHMIC_SHOWCASE_WALL_HEIGHT * 0.5).toBeGreaterThanOrEqual(0);
     expect(RHYTHMIC_SHOWCASE_WALL_CENTER_Y - RHYTHMIC_SHOWCASE_WALL_HEIGHT * 0.5).toBeLessThanOrEqual(-540);
+  });
+
+  it("expands the receiver and room backdrop to cover a real long MIDI course", () => {
+    // Measured from Anh Chi Biet Cam Nin Nghe Tieng Em Khoc.mid (1,018 notes).
+    const bounds = courseBackdropBounds([-2.8282, -891.3458]);
+
+    expect(bounds.topY).toBeGreaterThan(-2.8282);
+    expect(bounds.bottomY).toBeLessThan(-891.3458);
+    expect(bounds.height).toBeGreaterThan(900);
+    expect(bounds.centerY + bounds.height * 0.5).toBeCloseTo(bounds.topY, 6);
+    expect(bounds.centerY - bounds.height * 0.5).toBeCloseTo(bounds.bottomY, 6);
   });
 });

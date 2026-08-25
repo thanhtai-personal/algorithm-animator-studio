@@ -4,7 +4,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { StudioSettings } from "../types";
 import { RhythmicBackplate3D } from "./RhythmicBackplate3D";
-import { RHYTHMIC_ROOM_BACKDROP_WIDTH, RHYTHMIC_ROOM_SIDE_X, RHYTHMIC_SHOWCASE_WALL_CENTER_Y, RHYTHMIC_SHOWCASE_WALL_HEIGHT } from "./rhythmicSceneMath3D";
+import { RHYTHMIC_ROOM_BACKDROP_WIDTH, RHYTHMIC_ROOM_SIDE_X, type RhythmicBackdropBounds } from "./rhythmicSceneMath3D";
 
 export type EnvironmentKind = "tube-board" | "comet" | "xylophone" | "neutral";
 
@@ -112,30 +112,30 @@ function BackgroundMotion({ settings, children }: { settings: StudioSettings; ch
   return <group ref={ref}>{children}</group>;
 }
 
-function TubeBoardRoom() {
-  const sections = useMemo(() => Array.from({ length: 12 }, (_, i) => i), []);
+function TubeBoardRoom({ bounds }: { bounds: RhythmicBackdropBounds }) {
+  const sections = useMemo(() => Array.from({ length: Math.ceil(bounds.height / 11.2) }, (_, i) => i), [bounds.height]);
   return (
     <group>
-      <RoundedBox position={[0, -54, -4.45]} args={[RHYTHMIC_ROOM_BACKDROP_WIDTH, 136, 0.56]} radius={0.14} smoothness={4} receiveShadow renderOrder={-30}>
+      <RoundedBox position={[0, bounds.centerY, -4.45]} args={[RHYTHMIC_ROOM_BACKDROP_WIDTH, bounds.height, 0.56]} radius={0.14} smoothness={4} receiveShadow renderOrder={-30}>
         <meshStandardMaterial color="#111a25" roughness={0.78} metalness={0.16} depthWrite={false} />
       </RoundedBox>
-      <RoundedBox position={[0, -54, -4.08]} args={[64, 126, 0.12]} radius={0.1} smoothness={4} receiveShadow renderOrder={-28}>
+      <RoundedBox position={[0, bounds.centerY, -4.08]} args={[64, Math.max(1, bounds.height - 10), 0.12]} radius={0.1} smoothness={4} receiveShadow renderOrder={-28}>
         <meshStandardMaterial color="#1a2d40" roughness={0.7} metalness={0.08} depthWrite={false} />
       </RoundedBox>
       {[-RHYTHMIC_ROOM_SIDE_X, RHYTHMIC_ROOM_SIDE_X].map((x) => (
-        <mesh key={x} position={[x, -54, -4.06]} rotation={[0, x < 0 ? Math.PI / 2.86 : -Math.PI / 2.86, 0]} receiveShadow renderOrder={-26}>
-          <planeGeometry args={[5.4, 136]} />
+        <mesh key={x} position={[x, bounds.centerY, -4.06]} rotation={[0, x < 0 ? Math.PI / 2.86 : -Math.PI / 2.86, 0]} receiveShadow renderOrder={-26}>
+          <planeGeometry args={[5.4, bounds.height]} />
           <meshStandardMaterial color="#1d2a36" roughness={0.7} metalness={0.22} side={THREE.DoubleSide} depthWrite={false} />
         </mesh>
       ))}
       {[-6.95, 6.95].map((x) => (
-        <mesh key={x} position={[x, -54, -3.84]} castShadow renderOrder={-24}>
-          <cylinderGeometry args={[0.065, 0.065, 136, 16]} />
+        <mesh key={x} position={[x, bounds.centerY, -3.84]} castShadow renderOrder={-24}>
+          <cylinderGeometry args={[0.065, 0.065, bounds.height, 16]} />
           <meshStandardMaterial color="#41515f" roughness={0.26} metalness={0.82} depthWrite={false} />
         </mesh>
       ))}
       {sections.map((index) => {
-        const y = 5 - index * 11.2;
+        const y = bounds.topY - 9 - index * 11.2;
         const accent = index % 4 === 0 ? "#dc5058" : "#98a4b3";
         return (
           <group key={index} position={[0, y, -3.7]} renderOrder={-22}>
@@ -166,21 +166,22 @@ function TubeBoardRoom() {
   );
 }
 
-function StarField() {
+function StarField({ bounds }: { bounds: RhythmicBackdropBounds }) {
   const positions = useMemo(() => {
-    const data = new Float32Array(360 * 3);
+    const count = Math.min(3600, Math.max(360, Math.round(bounds.height * 3.2)));
+    const data = new Float32Array(count * 3);
     let seed = 14723;
     const random = () => {
       seed = (seed * 16807) % 2147483647;
       return (seed - 1) / 2147483646;
     };
-    for (let i = 0; i < 360; i += 1) {
+    for (let i = 0; i < count; i += 1) {
       data[i * 3] = (random() - 0.5) * 28;
-      data[i * 3 + 1] = -random() * 155 + 14;
+      data[i * 3 + 1] = bounds.bottomY + random() * bounds.height;
       data[i * 3 + 2] = -2.5 - random() * 15;
     }
     return data;
-  }, []);
+  }, [bounds.bottomY, bounds.height]);
   return (
     <points>
       <bufferGeometry>
@@ -191,23 +192,23 @@ function StarField() {
   );
 }
 
-function CometSpace() {
-  const rings = useMemo(() => Array.from({ length: 9 }, (_, i) => i), []);
+function CometSpace({ bounds }: { bounds: RhythmicBackdropBounds }) {
+  const rings = useMemo(() => Array.from({ length: Math.ceil(bounds.height / 14.4) }, (_, i) => i), [bounds.height]);
   return (
     <group>
-      <StarField />
-      <mesh position={[0, -58, -9]}>
+      <StarField bounds={bounds} />
+      <mesh position={[0, bounds.centerY, -9]}>
         {/* The camera follows the marble laterally by several world units. A 34u
             comet backdrop exposed its hard vertical edge in portrait exports as a
             giant black strip sliding across the frame. Oversize the star-space
             plate so it remains a background, not a foreground-looking obstacle. */}
-        <planeGeometry args={[80, 170]} />
+        <planeGeometry args={[80, bounds.height + 34]} />
         <meshBasicMaterial color="#040611" />
       </mesh>
       {rings.map((index) => {
         const left = index % 2 === 0;
         return (
-          <group key={index} position={[left ? -5.2 : 5.4, 7 - index * 14.4, -6 - (index % 3) * 0.84]} rotation={[0.08, left ? -0.18 : 0.18, left ? -0.36 : 0.36]}>
+          <group key={index} position={[left ? -5.2 : 5.4, bounds.topY - 7 - index * 14.4, -6 - (index % 3) * 0.84]} rotation={[0.08, left ? -0.18 : 0.18, left ? -0.36 : 0.36]}>
             <mesh>
               <torusGeometry args={[2.2 + (index % 3) * 0.28, 0.038, 10, 72, Math.PI * 1.3]} />
               <meshStandardMaterial
@@ -228,26 +229,26 @@ function CometSpace() {
   );
 }
 
-function XylophoneRoom() {
-  const floorSlats = useMemo(() => Array.from({ length: 12 }, (_, i) => i), []);
+function XylophoneRoom({ bounds }: { bounds: RhythmicBackdropBounds }) {
+  const floorSlats = useMemo(() => Array.from({ length: Math.ceil(bounds.height / 10.4) }, (_, i) => i), [bounds.height]);
   const shelfItems = useMemo(() => Array.from({ length: 7 }, (_, i) => i), []);
   const accents = ["#f2b457", "#ef6d7a", "#59c7a3", "#74b6ff", "#9d7bf2", "#ff9f6b"];
   return (
     <group>
-      <RoundedBox position={[0, -54, -4.45]} args={[RHYTHMIC_ROOM_BACKDROP_WIDTH, 136, 0.55]} radius={0.18} smoothness={4} receiveShadow renderOrder={-30}>
+      <RoundedBox position={[0, bounds.centerY, -4.45]} args={[RHYTHMIC_ROOM_BACKDROP_WIDTH, bounds.height, 0.55]} radius={0.18} smoothness={4} receiveShadow renderOrder={-30}>
         <meshStandardMaterial color="#d8d1c8" roughness={0.82} metalness={0.02} depthWrite={false} />
       </RoundedBox>
       {[-RHYTHMIC_ROOM_SIDE_X, RHYTHMIC_ROOM_SIDE_X].map((x) => (
-        <mesh key={x} position={[x, -54, -4.1]} rotation={[0, x < 0 ? Math.PI / 2.82 : -Math.PI / 2.82, 0]} receiveShadow renderOrder={-28}>
-          <planeGeometry args={[5.2, 136]} />
+        <mesh key={x} position={[x, bounds.centerY, -4.1]} rotation={[0, x < 0 ? Math.PI / 2.82 : -Math.PI / 2.82, 0]} receiveShadow renderOrder={-28}>
+          <planeGeometry args={[5.2, bounds.height]} />
           <meshStandardMaterial color="#958778" roughness={0.78} metalness={0.02} side={THREE.DoubleSide} depthWrite={false} />
         </mesh>
       ))}
-      <RoundedBox position={[0, -54, -4.08]} args={[64, 96, 0.16]} radius={0.12} smoothness={4} receiveShadow renderOrder={-26}>
+      <RoundedBox position={[0, bounds.centerY, -4.08]} args={[64, Math.max(1, bounds.height - 40), 0.16]} radius={0.12} smoothness={4} receiveShadow renderOrder={-26}>
         <meshStandardMaterial color="#f2eee8" roughness={0.7} metalness={0.02} depthWrite={false} />
       </RoundedBox>
       {[-4.15, 4.15].map((x, index) => (
-        <RoundedBox key={`accent-panel-${x}`} position={[x, -54, -3.96]} args={[1.7, 92, 0.14]} radius={0.08} smoothness={4} receiveShadow renderOrder={-24}>
+        <RoundedBox key={`accent-panel-${x}`} position={[x, bounds.centerY, -3.96]} args={[1.7, Math.max(1, bounds.height - 44), 0.14]} radius={0.08} smoothness={4} receiveShadow renderOrder={-24}>
           <meshStandardMaterial color={index === 0 ? "#d9cec2" : "#cfd4da"} roughness={0.64} metalness={0.02} depthWrite={false} />
         </RoundedBox>
       ))}
@@ -260,11 +261,11 @@ function XylophoneRoom() {
           <meshStandardMaterial color={index % 2 ? "#8cd4ff" : "#f2cc7a"} roughness={0.34} metalness={0.06} depthWrite={false} />
         </mesh>
       ))}
-      <RoundedBox position={[0, -55, -3.02]} args={[60, 92, 0.32]} radius={0.08} smoothness={4} receiveShadow>
+      <RoundedBox position={[0, bounds.centerY - 1, -3.02]} args={[60, Math.max(1, bounds.height - 44), 0.32]} radius={0.08} smoothness={4} receiveShadow>
         <meshStandardMaterial color="#9f724d" roughness={0.74} metalness={0.02} />
       </RoundedBox>
       {floorSlats.map((index) => (
-        <mesh key={index} position={[0, 8 - index * 10.4, -2.82]} castShadow>
+        <mesh key={index} position={[0, bounds.topY - 6 - index * 10.4, -2.82]} castShadow>
           <boxGeometry args={[10.3 - Math.min(index, 6) * 0.16, 0.2, 0.06]} />
           <meshStandardMaterial color={index % 2 ? "#b9865d" : "#986945"} roughness={0.64} metalness={0.02} />
         </mesh>
@@ -318,15 +319,15 @@ function XylophoneRoom() {
 }
 
 
-function ShowcaseWall({ color }: { color: string }) {
+function ShowcaseWall({ color, bounds }: { color: string; bounds: RhythmicBackdropBounds }) {
   const wall = new THREE.Color(color).lerp(new THREE.Color("#d7d1ca"), 0.38).getStyle();
   return (
     <group>
-      <RoundedBox position={[0, RHYTHMIC_SHOWCASE_WALL_CENTER_Y, -4.45]} args={[RHYTHMIC_ROOM_BACKDROP_WIDTH, RHYTHMIC_SHOWCASE_WALL_HEIGHT, 0.42]} radius={0.12} smoothness={4} receiveShadow>
+      <RoundedBox position={[0, bounds.centerY, -4.45]} args={[RHYTHMIC_ROOM_BACKDROP_WIDTH, bounds.height, 0.42]} radius={0.12} smoothness={4} receiveShadow>
         <meshStandardMaterial color={wall} roughness={0.86} metalness={0.01} />
       </RoundedBox>
       {[-8.85, 8.85].map((x) => (
-        <RoundedBox key={x} position={[x, RHYTHMIC_SHOWCASE_WALL_CENTER_Y, -4.62]} args={[0.34, RHYTHMIC_SHOWCASE_WALL_HEIGHT, 0.18]} radius={0.08} smoothness={3} receiveShadow>
+        <RoundedBox key={x} position={[x, bounds.centerY, -4.62]} args={[0.34, bounds.height, 0.18]} radius={0.08} smoothness={3} receiveShadow>
           <meshStandardMaterial color="#b8b1aa" roughness={0.9} metalness={0.01} />
         </RoundedBox>
       ))}
@@ -336,15 +337,15 @@ function ShowcaseWall({ color }: { color: string }) {
   );
 }
 
-function NeutralStudio({ color }: { color: string }) {
+function NeutralStudio({ color, bounds }: { color: string; bounds: RhythmicBackdropBounds }) {
   return (
     <group>
-      <RoundedBox position={[0, -54, -4]} args={[RHYTHMIC_ROOM_BACKDROP_WIDTH, 136, 0.65]} radius={0.14} smoothness={4} receiveShadow>
+      <RoundedBox position={[0, bounds.centerY, -4]} args={[RHYTHMIC_ROOM_BACKDROP_WIDTH, bounds.height, 0.65]} radius={0.14} smoothness={4} receiveShadow>
         <meshStandardMaterial color={color} roughness={0.76} metalness={0.14} />
       </RoundedBox>
       {[-RHYTHMIC_ROOM_SIDE_X, RHYTHMIC_ROOM_SIDE_X].map((x) => (
-        <mesh key={x} position={[x, -54, -0.75]} rotation={[0, x < 0 ? Math.PI / 2.55 : -Math.PI / 2.55, 0]} receiveShadow>
-          <planeGeometry args={[7.8, 136]} />
+        <mesh key={x} position={[x, bounds.centerY, -0.75]} rotation={[0, x < 0 ? Math.PI / 2.55 : -Math.PI / 2.55, 0]} receiveShadow>
+          <planeGeometry args={[7.8, bounds.height]} />
           <meshStandardMaterial color="#111722" roughness={0.72} metalness={0.22} side={THREE.DoubleSide} />
         </mesh>
       ))}
@@ -353,17 +354,17 @@ function NeutralStudio({ color }: { color: string }) {
   );
 }
 
-export function RhythmicEnvironment3D({ settings, backgroundUrl }: { settings: StudioSettings; backgroundUrl?: string }) {
+export function RhythmicEnvironment3D({ settings, backgroundUrl, bounds }: { settings: StudioSettings; backgroundUrl?: string; bounds: RhythmicBackdropBounds }) {
   const kind = environmentKind(settings);
   return (
     <>
       <SceneAtmosphere settings={settings} />
       {backgroundUrl ? <Suspense fallback={null}><RhythmicBackplate3D url={backgroundUrl} settings={settings} /></Suspense> : null}
       <BackgroundMotion settings={settings}>
-        {kind === "tube-board" && <TubeBoardRoom />}
-        {kind === "comet" && <CometSpace />}
-        {kind === "xylophone" && <XylophoneRoom />}
-        {kind === "neutral" && (settings.instrumentFamily !== "auto" ? <ShowcaseWall color={settings.backgroundColor} /> : <NeutralStudio color={settings.backgroundColor} />)}
+        {kind === "tube-board" && <TubeBoardRoom bounds={bounds} />}
+        {kind === "comet" && <CometSpace bounds={bounds} />}
+        {kind === "xylophone" && <XylophoneRoom bounds={bounds} />}
+        {kind === "neutral" && (settings.instrumentFamily !== "auto" ? <ShowcaseWall color={settings.backgroundColor} bounds={bounds} /> : <NeutralStudio color={settings.backgroundColor} bounds={bounds} />)}
       </BackgroundMotion>
     </>
   );

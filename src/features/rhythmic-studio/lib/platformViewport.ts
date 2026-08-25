@@ -1,14 +1,29 @@
 import type { MarblePlatform } from "../engine/marblePhysicsTypes";
 import type { StudioSettings } from "../types";
-import { projectPresetCamera } from "./presetCamera";
+import { presetCameraScale, projectPresetCamera } from "./presetCamera";
 
-export const PLATFORM_PRELOAD_MARGIN_PX = 220;
+export const PLATFORM_PRELOAD_AHEAD_COUNT = 7;
+export const PLATFORM_3D_RETAIN_BEHIND_PX = 1_600;
+export const PLATFORM_3D_PRELOAD_AHEAD_PX = 3_200;
+const PLATFORM_MIN_VERTICAL_OVERSCAN_PX = 720;
+const PLATFORM_MIN_HORIZONTAL_OVERSCAN_PX = 320;
 
 interface Viewport2D {
   width: number;
   height: number;
   cameraX: number;
   cameraY: number;
+}
+
+export function platformRenderMargin2D(settings: StudioSettings) {
+  const cameraScale = presetCameraScale(settings);
+  return {
+    horizontal: cameraScale * Math.max(PLATFORM_MIN_HORIZONTAL_OVERSCAN_PX, settings.platformWidth * 2.5),
+    vertical: cameraScale * Math.max(
+      PLATFORM_MIN_VERTICAL_OVERSCAN_PX,
+      settings.platformGap * PLATFORM_PRELOAD_AHEAD_COUNT + settings.platformWidth,
+    ),
+  };
 }
 
 function displayGeometry(platform: MarblePlatform) {
@@ -48,14 +63,32 @@ export function platformScreenBounds2D(platform: MarblePlatform, settings: Studi
 
 export function platformIsInside2DRenderWindow(platform: MarblePlatform, settings: StudioSettings, viewport: Viewport2D) {
   const bounds = platformScreenBounds2D(platform, settings, viewport);
-  const margin = PLATFORM_PRELOAD_MARGIN_PX;
-  return bounds.right >= -margin
-    && bounds.left <= viewport.width + margin
-    && bounds.bottom >= -margin
-    && bounds.top <= viewport.height + margin;
+  const margin = platformRenderMargin2D(settings);
+  return bounds.right >= -margin.horizontal
+    && bounds.left <= viewport.width + margin.horizontal
+    && bounds.bottom >= -margin.vertical
+    && bounds.top <= viewport.height + margin.vertical;
 }
 
-/** Keep scene nodes alive; Three.js performs spatial frustum culling per mesh. */
-export function platformsMountedFor3D<T>(platforms: readonly T[]): readonly T[] {
-  return platforms;
+/**
+ * Keep a multi-screen spatial window mounted around the 3D camera focus. This
+ * preserves instruments before entry and after exit without constructing an
+ * entire multi-minute course in the first React frame.
+ */
+export function platformsMountedFor3D(platforms: readonly MarblePlatform[], focusIndex: number): readonly MarblePlatform[] {
+  if (!platforms.length) return platforms;
+  const focusOffset = Math.max(0, platforms.findIndex((platform) => platform.index === focusIndex));
+  const focus = platforms[focusOffset] ?? platforms[0];
+  const focusY = displayGeometry(focus).y;
+  const next = platforms[Math.min(platforms.length - 1, focusOffset + 1)];
+  const courseDirection = Math.sign(displayGeometry(next).y - focusY) || 1;
+  const minY = focusY - (courseDirection > 0 ? PLATFORM_3D_RETAIN_BEHIND_PX : PLATFORM_3D_PRELOAD_AHEAD_PX);
+  const maxY = focusY + (courseDirection > 0 ? PLATFORM_3D_PRELOAD_AHEAD_PX : PLATFORM_3D_RETAIN_BEHIND_PX);
+
+  return platforms.filter((platform) => {
+    const display = displayGeometry(platform);
+    const halfVerticalExtent = Math.abs(Math.sin(display.angle)) * display.width * 0.5
+      + Math.abs(Math.cos(display.angle)) * display.thickness * 0.5;
+    return display.y + halfVerticalExtent >= minY && display.y - halfVerticalExtent <= maxY;
+  });
 }

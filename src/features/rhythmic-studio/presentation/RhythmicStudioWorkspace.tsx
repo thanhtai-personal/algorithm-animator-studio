@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import { observer } from "mobx-react-lite";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { RhythmicInspector } from "../components/RhythmicInspector";
 import { RhythmicProjectsDialog } from "../components/RhythmicProjectsDialog";
@@ -10,6 +11,7 @@ import { layoutText } from "../layoutI18n";
 import { RhythmicPresetControls, RhythmicWorkflowControls } from "./layouts/RhythmicControlColumns";
 import { RhythmicPanelResizeHandle } from "./layouts/RhythmicPanelResizeHandle";
 import { useRhythmicPanelLayout } from "./layouts/rhythmicPanelLayout";
+import { RhythmicMobileControlDock } from "./layouts/RhythmicMobileControlDock";
 import { RhythmicWorkspaceHeader } from "./RhythmicWorkspaceHeader";
 import "./rhythmic-production.css";
 
@@ -18,10 +20,11 @@ export const RhythmicStudioWorkspace = observer(function RhythmicStudioWorkspace
   const studio = useRhythmicStudioController();
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+  const isMobile = useIsMobile();
   const panelLayout = useRhythmicPanelLayout();
   const lt = (key: Parameters<typeof layoutText>[1]) => layoutText(lang, key);
 
-  return <main className="rhythmic-production min-h-[calc(100dvh-65px)] p-3 md:p-5">
+  return <main className="rhythmic-production min-h-[calc(100dvh-65px)] p-2.5 pb-24 sm:p-3 sm:pb-24 md:p-5">
     <div className="mx-auto max-w-[1920px] space-y-4">
       <RhythmicWorkspaceHeader
         status={studio.status}
@@ -42,12 +45,16 @@ export const RhythmicStudioWorkspace = observer(function RhythmicStudioWorkspace
         } as CSSProperties}
       >
         <div className="rhythmic-stage-column min-w-0"><RhythmicStage studio={studio} /></div>
-        <div className="rhythmic-left-panel-column min-w-0"><RhythmicPresetControls studio={studio} /></div>
-        <RhythmicPanelResizeHandle side="left" width={panelLayout.layout.left} active={panelLayout.activeSide === "left"} label={lt("layout.resizeLeft")} onBeginResize={panelLayout.beginResize} onResizeByPointerDelta={panelLayout.resizeByPointerDelta} />
-        <RhythmicPanelResizeHandle side="right" width={panelLayout.layout.right} active={panelLayout.activeSide === "right"} label={lt("layout.resizeRight")} onBeginResize={panelLayout.beginResize} onResizeByPointerDelta={panelLayout.resizeByPointerDelta} />
-        <div className="rhythmic-right-panel-column min-w-0"><RhythmicWorkflowControls studio={studio} /></div>
+        {!isMobile ? <>
+          <div className="rhythmic-left-panel-column min-w-0"><RhythmicPresetControls studio={studio} /></div>
+          <RhythmicPanelResizeHandle side="left" width={panelLayout.layout.left} active={panelLayout.activeSide === "left"} label={lt("layout.resizeLeft")} onBeginResize={panelLayout.beginResize} onResizeByPointerDelta={panelLayout.resizeByPointerDelta} />
+          <RhythmicPanelResizeHandle side="right" width={panelLayout.layout.right} active={panelLayout.activeSide === "right"} label={lt("layout.resizeRight")} onBeginResize={panelLayout.beginResize} onResizeByPointerDelta={panelLayout.resizeByPointerDelta} />
+          <div className="rhythmic-right-panel-column min-w-0"><RhythmicWorkflowControls studio={studio} /></div>
+        </> : null}
       </div>
     </div>
+
+    {isMobile ? <RhythmicMobileControlDock studio={studio} /> : null}
 
     <Sheet open={infoOpen} onOpenChange={setInfoOpen}>
       <SheetContent side="right" className="w-[92vw] overflow-y-auto sm:max-w-md">

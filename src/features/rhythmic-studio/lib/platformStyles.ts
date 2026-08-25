@@ -3,6 +3,7 @@ import { clamp, hexToRgb, mixHex, type MarblePlatform } from "./marbleCourse";
 import { drawPresetPlatform } from "./presetPlatformRenderer";
 import { presetObstaclePlan } from "../engine/presetObstaclePlan";
 import { instrumentLightAtTime } from "./instrumentLight";
+import { instrumentKeyPressAtTime } from "./instrumentResponse";
 import { drawInstrumentNoteLeds2D, drawWindMetalPlatform2D } from "./windMetalPlatform2D";
 import { isNoteLitInstrumentStyle } from "./instrumentLightsModel";
 import { drawInstrumentShadow2D } from "./instrumentShadow";
@@ -339,6 +340,9 @@ export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: Marb
     : impact;
   const half = platform.width / 2;
   const style = forcedStyle ?? resolvePlatformStyle(platform.index, settings);
+  const keyPress = style === "piano-key" || style === "piano-keyboard"
+    ? instrumentKeyPressAtTime(platform.event.timeMs, timeMs) * Math.max(2.4, platform.thickness * 0.24)
+    : 0;
   ctx.save();
   ctx.translate(platform.x, screenY);
   ctx.rotate(platform.tiltRad);
@@ -350,6 +354,7 @@ export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: Marb
       style,
     }, renderQuality === "idle");
   }
+  if (keyPress > 0) ctx.translate(0, keyPress);
   if (drawWindMetalPlatform2D(ctx, style, platform, lightImpact, settings, renderQuality === "idle")) {
     // dedicated 2D gong/flute renderer already drew the item
   } else if (drawPresetPlatform(ctx, style, half, platform, lightImpact, age, settings, renderQuality)) {

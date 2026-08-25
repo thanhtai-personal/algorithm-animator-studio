@@ -12,6 +12,8 @@ import { isNoteLitInstrumentStyle, noteLightColorsForPlatform } from "../lib/ins
 import { RhythmicInstrumentNoteLights3D } from "./RhythmicInstrumentNoteLights3D";
 import { platformsMountedFor3D } from "../lib/platformViewport";
 import { RhythmicDenseChassisMounts3D } from "./RhythmicDenseChassisMounts3D";
+import { denseSurfaceSegments } from "../engine/denseSurfaceGeometry";
+import { instrumentKeyPressAtTime } from "../lib/instrumentResponse";
 
 function PhysicalMount({ terrain, w, h, detail, showcase, frontDepth, receiverZ, style }: {
   terrain: StudioSettings["terrainProfile"];
@@ -73,40 +75,18 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
   const receiverZ = shadowReceiverZForSettings(settings);
 
   const denseSupports = useMemo(() => {
-    const activeSurfaceIds = new Set<number>();
-    for (const platform of visible) {
-      if (!platform.visualHidden && platform.denseSurfaceId !== undefined) activeSurfaceIds.add(platform.denseSurfaceId);
-    }
-    return [...activeSurfaceIds].flatMap((surfaceId) => {
-      const surface = visible
-        .filter((platform) => platform.denseSurfaceId === surfaceId && !platform.visualHidden)
-        .sort((a, b) => a.index - b.index);
-      if (surface.length < 2) return [];
-
-      // The backing follows the same polyline as the playable keys. One long rail
-      // between first/last was the visual twin of the old straight-surface bug:
-      // at a bend the marble and keys turned while the chassis cut across empty
-      // space. Segment the chassis at every physical strike instead.
-      return surface.slice(0, -1).map((first, offset) => {
-        const last = surface[offset + 1];
-        const firstX = first.visualX ?? first.x;
-        const firstY = first.visualY ?? first.y;
-        const lastX = last.visualX ?? last.x;
-        const lastY = last.visualY ?? last.y;
-        const firstWidth = first.visualWidth ?? first.width;
-        const lastWidth = last.visualWidth ?? last.width;
-        const dx = lastX - firstX;
-        const dy = lastY - firstY;
-        const span = Math.hypot(dx, dy) + Math.min(firstWidth, lastWidth) * 0.52;
-        return {
-          id: `${surfaceId}-${first.index}-${last.index}`,
-          x: ((firstX + lastX) * 0.5 - RHYTHMIC_COURSE_WIDTH / 2) * RHYTHMIC_WORLD_SCALE,
-          y: -((firstY + lastY) * 0.5) * RHYTHMIC_WORLD_SCALE,
-          width: Math.max(0.22, span * RHYTHMIC_WORLD_SCALE),
-          angle: Math.atan2(dy, dx),
-          mounted: offset % 3 === 0 || offset === surface.length - 2,
-        };
-      });
+    const segments = denseSurfaceSegments(visible);
+    return segments.map((segment, offset) => {
+      const dx = segment.toX - segment.fromX;
+      const dy = segment.toY - segment.fromY;
+      return {
+        ...segment,
+        x: ((segment.fromX + segment.toX) * 0.5 - RHYTHMIC_COURSE_WIDTH / 2) * RHYTHMIC_WORLD_SCALE,
+        y: -((segment.fromY + segment.toY) * 0.5) * RHYTHMIC_WORLD_SCALE,
+        width: Math.max(0.12, Math.hypot(dx, dy) * RHYTHMIC_WORLD_SCALE),
+        angle: Math.atan2(dy, dx),
+        mounted: offset % 3 === 0 || offset === segments.length - 1,
+      };
     });
   }, [visible]);
 
@@ -122,6 +102,12 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
             <boxGeometry args={[Math.max(0.2, support.width * 0.96), 0.018, 0.018]} />
             <meshStandardMaterial color="#747d87" roughness={0.28} metalness={0.72} />
           </mesh>
+          {support.layout === "parallel-rails" && [-0.065, 0.065].map((y) => (
+            <mesh key={y} position={[0, y, DENSE_CHASSIS_CENTER_Z + DENSE_CHASSIS_DEPTH * 0.5 + 0.035]} rotation={[0, 0, Math.PI / 2]} castShadow>
+              <cylinderGeometry args={[0.022, 0.022, support.width, 14]} />
+              <meshStandardMaterial color="#8af7ff" emissive="#22d3ee" emissiveIntensity={2.4} roughness={0.18} metalness={0.52} toneMapped={false} />
+            </mesh>
+          ))}
           {support.mounted && <RhythmicDenseChassisMounts3D width={support.width} receiverZ={receiverZ} terrain={settings.terrainProfile} detail={settings.platformDetail} />}
         </group>
       ))}
@@ -132,7 +118,7 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
         const platformSettings = resolveSettings?.(platform.index) ?? settings;
         const style = platform.visualStyle ?? (override && isPlatformCourseItem(override.style) ? override.style : resolvePlatformStyle(platform.index, platformSettings));
         const displayWidth = platform.visualWidth ?? platform.width;
-        const w = Math.max(0.3, displayWidth * RHYTHMIC_WORLD_SCALE);
+        const w = Math.max(platform.denseLayout === "connected-keys" ? 0.065 : 0.3, displayWidth * RHYTHMIC_WORLD_SCALE);
         const displayThickness = platform.visualThickness ?? platform.thickness;
         const compactSurface = platform.denseSurfaceId !== undefined || displayThickness < 9;
         const h = Math.max(compactSurface ? 0.055 : 0.09, displayThickness * RHYTHMIC_WORLD_SCALE);
@@ -156,6 +142,9 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
         const depth = d * (0.92 + platformSettings.platformDetail * 0.12);
         const frontDepth = frontDepthForStyle(style, h, depth);
         const lightColors = noteLightColorsForPlatform(platform, platforms);
+        const keyPress = style === "piano-key" || style === "piano-keyboard"
+          ? instrumentKeyPressAtTime(platform.event.timeMs, timeMs) * Math.min(0.085, Math.max(0.035, h * 0.46))
+          : 0;
         return (
           <group
             key={platform.index}
@@ -171,8 +160,10 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
             {platform.denseRunId === undefined && (
               <PhysicalMount terrain={platformSettings.terrainProfile} w={w} h={h} detail={platformSettings.platformDetail} showcase={platformSettings.instrumentFamily !== "auto"} frontDepth={frontDepth} receiverZ={receiverZ} style={style} />
             )}
-            <PlatformMesh w={w} h={h} d={depth} color={platform.color} style={style} selected={platform.index === selectedNodeIndex} glow={effectiveGlow} detail={platformSettings.platformDetail} />
-            {isNoteLitInstrumentStyle(style) && <RhythmicInstrumentNoteLights3D width={w} height={h} frontDepth={frontDepth} colors={lightColors} glow={effectiveGlow} />}
+            <group position={[0, 0, -keyPress]}>
+              <PlatformMesh w={w} h={h} d={depth} color={platform.color} style={style} selected={platform.index === selectedNodeIndex} glow={effectiveGlow} detail={platformSettings.platformDetail} />
+              {isNoteLitInstrumentStyle(style) && <RhythmicInstrumentNoteLights3D width={w} height={h} frontDepth={frontDepth} colors={lightColors} glow={effectiveGlow} />}
+            </group>
           </group>
         );
       })}

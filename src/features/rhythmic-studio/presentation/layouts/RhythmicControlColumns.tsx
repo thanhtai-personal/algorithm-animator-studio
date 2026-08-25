@@ -11,7 +11,7 @@ import { RhythmicAdvancedControlsDrawer } from "./RhythmicAdvancedControlsDrawer
 
 export function RhythmicPresetControls({ studio }: { studio: RhythmicStudioController }) {
   const lang = useSystemLang();
-  return <aside className="rhythmic-side-panel min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-[#101419]/95 shadow-2xl xl:sticky xl:top-[81px] xl:max-h-[calc(100dvh-97px)]">
+  return <aside className="rhythmic-side-panel rhythmic-preset-panel min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-[#101419]/95 shadow-2xl xl:sticky xl:top-[81px] xl:max-h-[calc(100dvh-97px)]">
     <header className="border-b border-white/10 px-4 py-3">
       <div className="flex items-center justify-between gap-3">
         <p className="flex min-w-0 items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-amber-300">
@@ -29,7 +29,7 @@ export function RhythmicPresetControls({ studio }: { studio: RhythmicStudioContr
 export function RhythmicWorkflowControls({ studio }: { studio: RhythmicStudioController }) {
   const lang = useSystemLang();
   const t = (key: Parameters<typeof rhythmicText>[1]) => rhythmicText(lang, key);
-  return <aside className="rhythmic-side-panel flex min-w-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#101419]/95 shadow-2xl xl:sticky xl:top-[81px] xl:max-h-[calc(100dvh-97px)]">
+  return <aside className="rhythmic-side-panel rhythmic-workflow-panel flex min-w-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#101419]/95 shadow-2xl xl:sticky xl:top-[81px] xl:max-h-[calc(100dvh-97px)]">
     <div className="shrink-0 border-b border-white/10 px-4 py-4">
       <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-cyan-300">
         <SlidersHorizontal className="h-3.5 w-3.5" />{layoutText(lang, "lab.inspector")}

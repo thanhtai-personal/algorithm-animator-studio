@@ -22,12 +22,12 @@ describe("rhythmic instrument shadows", () => {
     expect(Math.hypot(tall.x, tall.y)).toBeGreaterThan(Math.hypot(shallow.x, shallow.y));
   });
 
-  it("starts a deformed 2D shadow at the instrument foot after rotation", () => {
+  it.each(["instrument-key", "metallophone-plate"] as const)("starts the %s shadow at the physical foot after rotation", (style) => {
     const geometry = instrumentShadowGeometry2D({
       width: 120,
       thickness: 20,
       tiltRad: Math.PI / 5,
-      style: "instrument-key",
+      style,
     });
 
     expect(geometry.nearLeft.y).toBe(geometry.contactY);

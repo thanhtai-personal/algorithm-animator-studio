@@ -26,15 +26,16 @@ const settings = {
 };
 
 describe("fast reference corridor", () => {
-  it("uses separate physical impacts instead of a passive rolling strip", () => {
+  it("uses a compact rolling surface instead of impossible distant micro-bounces", () => {
     const platforms = buildPhysicsCourse(rapidEvents, settings, 720, () => "#d1d5db");
 
     expect(platforms).toHaveLength(rapidEvents.length);
-    expect(platforms.every((platform) => platform.motionMode === "ballistic")).toBe(true);
-    expect(new Set(platforms.map((platform) => platform.visualStyle)).size).toBeGreaterThanOrEqual(3);
-    for (const paddle of platforms.filter((platform) => platform.visualStyle === "instrument-pad")) {
-      expect(paddle.visualWidth).toBeCloseTo(paddle.visualThickness ?? 0, 6);
-    }
+    const denseSegments = platforms.slice(0, -1).filter((platform) => platform.denseRunId !== undefined);
+    expect(denseSegments.filter((platform) => platform.motionMode === "roll").length).toBeGreaterThan(24);
+    expect(platforms.slice(0, -1).every((platform) => platform.denseLayout !== undefined)).toBe(true);
+    const styles = new Set(platforms.map((platform) => platform.visualStyle));
+    expect(styles.has("piano-key")).toBe(true);
+    expect(styles.has("instrument-pad")).toBe(true);
   });
 
   it("keeps unrelated paddles apart and outside every non-adjacent flight", () => {
@@ -42,13 +43,18 @@ describe("fast reference corridor", () => {
 
     for (let current = 0; current < platforms.length; current += 1) {
       for (let previous = 0; previous < current - 1; previous += 1) {
-        expect(platformClearance(platforms[current], platforms[previous])).toBeGreaterThan(
+        if (platforms[current].denseSurfaceId !== undefined
+          && platforms[current].denseSurfaceId === platforms[previous].denseSurfaceId) continue;
+        expect(platformClearance(platforms[current], platforms[previous]), `${current}:${previous}`).toBeGreaterThan(
           platformVisualClearanceRequirement(platforms[current], platforms[previous]),
         );
       }
     }
     for (let route = 0; route < platforms.length - 1; route += 1) {
       for (let future = route + 2; future < platforms.length; future += 1) {
+        if (platforms[future].denseSurfaceId !== undefined
+          && (platforms[future].denseSurfaceId === platforms[route].denseSurfaceId
+            || platforms[future].denseSurfaceId === platforms[route + 1].denseSurfaceId)) continue;
         expect(trajectoryPlatformClearance(platforms[future], platforms[route], platforms[route + 1])).toBeGreaterThan(
           trajectoryBodyClearanceRequirement(platforms[future], settings),
         );

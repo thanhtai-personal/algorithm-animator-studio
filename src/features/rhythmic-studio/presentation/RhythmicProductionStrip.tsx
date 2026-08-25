@@ -38,12 +38,12 @@ export function RhythmicProductionStrip(props: Props) {
     : "lab.waiting";
 
   return (
-    <div className="rhythmic-production-strip grid overflow-hidden rounded-xl border border-white/10 bg-[#0b1015]/95 text-slate-100 sm:grid-cols-2 2xl:grid-cols-[1.15fr_.8fr_1.2fr_1fr_auto]">
+    <div className="rhythmic-production-strip grid grid-cols-2 overflow-hidden rounded-xl border border-white/10 bg-[#0b1015]/95 text-slate-100 2xl:grid-cols-[1.15fr_.8fr_1.2fr_1fr_auto]">
       <Metric label={layoutText(lang, "lab.timecode")} value={`${formatStudioTimecode(props.timeMs)} / ${formatStudioTimecode(props.durationMs)}`} mono />
       <Metric label={layoutText(lang, "lab.event")} value={`${beat} / ${props.events.length}`} mono />
       <Metric label={layoutText(lang, "lab.sync")} value={layoutText(lang, syncKey)} />
       <Metric label={layoutText(lang, "lab.output")} value={`${layoutText(lang, isThree ? "lab.threeD" : "lab.twoD")} · ${outputSize.aspectLabel} · ${outputSize.resolutionLabel}`} />
-      <div className="flex min-w-[170px] items-center justify-between gap-2 border-t border-white/10 px-3 py-2.5 sm:col-span-2 2xl:col-span-1 2xl:border-l 2xl:border-t-0">
+      <div className="col-span-2 flex min-w-[170px] items-center justify-between gap-2 border-t border-white/10 px-3 py-2.5 2xl:col-span-1 2xl:border-l 2xl:border-t-0">
         <div className="flex items-center gap-2">
           {readiness.fallbackActive
             ? <AlertTriangle className="h-4 w-4 shrink-0 text-amber-300" />
@@ -62,7 +62,7 @@ export function RhythmicProductionStrip(props: Props) {
 
 function Metric({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="min-w-0 border-b border-white/10 px-3 py-2.5 sm:[&:nth-child(odd)]:border-r 2xl:border-b-0 2xl:border-r">
+    <div className="min-w-0 border-b border-white/10 px-3 py-2.5 [&:nth-child(odd)]:border-r 2xl:border-b-0 2xl:border-r">
       <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-500">{label}</p>
       <p className={`mt-0.5 truncate text-[11px] font-semibold text-slate-200 ${mono ? "font-mono tabular-nums" : ""}`}>{value}</p>
     </div>

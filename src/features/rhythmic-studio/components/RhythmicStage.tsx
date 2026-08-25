@@ -52,12 +52,12 @@ function StageStatus({ studio, preparing, statusLabel, useThreeRenderer, outputS
   outputSize: RhythmicOutputSize;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card/60 px-3 py-2">
-      <div className="flex items-center gap-2">
+    <div className="rhythmic-stage-status flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card/60 px-3 py-2">
+      <div className="flex min-w-0 items-center gap-2">
         <span className={`h-2.5 w-2.5 rounded-full ${studio.playing ? "animate-pulse bg-emerald-500" : preparing ? "animate-pulse bg-amber-500" : "bg-muted-foreground/40"}`} />
-        <span className="text-sm font-medium">{preparing ? statusLabel : studio.status}</span>
+        <span className="truncate text-sm font-medium">{preparing ? statusLabel : studio.status}</span>
       </div>
-      <div className="flex gap-2">
+      <div className="rhythmic-stage-badges flex gap-2">
         <Badge variant="secondary">{outputSize.aspectLabel}</Badge>
         <Badge variant="outline">{outputSize.resolutionLabel}</Badge>
         <Badge variant="outline">{studio.settings.exportFps} FPS</Badge>
@@ -81,12 +81,12 @@ export function RendererSelector({ studio, webglAvailable, useThreeRenderer, loc
   threeDHint: string;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card/45 px-3 py-2">
+    <div className="rhythmic-renderer-selector flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card/45 px-3 py-2">
       <div className="flex items-center gap-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("renderer.label")}</span>
         <Badge variant={useThreeRenderer ? "secondary" : "outline"}>{useThreeRenderer ? "WebGL" : "Canvas 2D"}</Badge>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="rhythmic-renderer-actions flex flex-wrap items-center gap-2">
         <div className="inline-flex rounded-lg border bg-muted/30 p-1">
           <Button type="button" size="sm" variant={studio.rendererMode === "legacy" ? "secondary" : "ghost"} disabled={locked} aria-pressed={studio.rendererMode === "legacy"} onClick={() => studio.setRendererMode("legacy")} className="h-8" title={twoDHint}>
             <Image className="mr-1.5 h-3.5 w-3.5" />{twoDLabel}
@@ -197,7 +197,7 @@ function PreparedScene({ studio, course, courseReady, useThreeRenderer, resolveS
 
 function TransportControls({ studio, courseReady, t }: { studio: Studio; courseReady: boolean; t: Translate }) {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2">
+    <div className="rhythmic-transport-controls flex flex-wrap items-center justify-center gap-2">
       <Button variant="outline" size="icon" disabled={!courseReady} onClick={studio.resetPlayback} aria-label={t("stage.reset")} title={t("stage.reset")}><RefreshCcw className="h-4 w-4" /></Button>
       <Button size="lg" className="min-w-36" disabled={!courseReady} onClick={() => void studio.togglePlayback()}>{studio.playing ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}{studio.playing ? t("stage.pause") : t("stage.play")}</Button>
       <Button variant="secondary" size="lg" disabled={studio.recording || !courseReady} onClick={() => void studio.recordVideo("webm")}>
@@ -241,7 +241,7 @@ export function RhythmicStage({ studio }: { studio: Studio }) {
       threeDHint={layoutText(lang, "lab.threeDHint")}
     />
     {!webglAvailable && studio.rendererMode === "three" ? <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">{t("renderer.unavailable")}</p> : null}
-    <div className="mx-auto flex max-h-[68vh] justify-center overflow-hidden rounded-2xl border bg-black p-2 shadow-2xl">
+    <div className="rhythmic-preview-shell mx-auto flex max-h-[68vh] justify-center overflow-hidden rounded-2xl border bg-black p-2 shadow-2xl">
       <PreparedScene studio={studio} course={course} courseReady={courseReady} useThreeRenderer={useThreeRenderer} resolveSettings={resolveSettings} preparingLabel={preparingLabel} outputSize={outputSize} />
     </div>
     <TransportControls studio={studio} courseReady={courseReady} t={t} />

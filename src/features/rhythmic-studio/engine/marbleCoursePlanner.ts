@@ -771,14 +771,6 @@ function routeCandidatesForStep(
   const denseRun = context.denseSegments.get(index);
   const chord = context.chordSegments.get(index);
   if (chord) return [holdRouteCandidate(state.hit, state.incoming)];
-  if (denseRun && settings.instrumentLayout === "corridor") {
-    const corridorDirection = Math.floor(index / 3) % 2 === 0 ? -1 : 1;
-    return bounceCandidates(index, state.hit, state.incoming, spanMs, corridorDirection, pitch, settings, context.width)
-      .map((candidate) => ({
-        ...candidate,
-        score: candidate.score + (Math.sign(candidate.target.x - state.hit.x || corridorDirection) === corridorDirection ? 0 : 120),
-      }));
-  }
   if (denseRun) return denseRouteCandidates(context, index, state, denseRun);
   const denseEnd = context.denseEnds.get(index);
   const smoothExit = denseEnd && index < context.events.length - 1
@@ -884,10 +876,9 @@ function createPlatformForRoute(
     step.platformWidth,
     step.profile.gravity,
   );
-  const corridorImpact = step.settings.instrumentLayout === "corridor" && Boolean(step.denseRun);
-  platform.motionMode = step.chord ? "hold" : step.denseRun && !corridorImpact ? "roll" : "ballistic";
-  platform.denseRunId = corridorImpact ? undefined : step.denseNode?.id;
-  platform.denseSurfaceId = corridorImpact ? undefined : step.denseNode?.surfaceId;
+  platform.motionMode = step.chord ? "hold" : step.denseRun ? "roll" : "ballistic";
+  platform.denseRunId = step.denseNode?.id;
+  platform.denseSurfaceId = step.denseNode?.surfaceId;
   platform.chordClusterId = step.chordNode?.id;
   applyPlannerVisualHints(context, index, state, step, route, platform);
   const impactStyle = "impactStyle" in route ? route.impactStyle : undefined;

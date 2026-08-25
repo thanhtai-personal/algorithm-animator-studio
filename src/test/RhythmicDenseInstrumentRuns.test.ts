@@ -25,6 +25,50 @@ const settings = {
 };
 
 describe("rhythmic dense instrument routing", () => {
+  it("moves 240 ms fast passages onto a parallel rail surface instead of distant bounces", () => {
+    const events = Array.from({ length: 7 }, (_, index) => note(index, index * 240));
+    events.push(note(7, 2_400));
+
+    const platforms = buildMarbleCourse(events, settings, 720);
+    const fast = platforms.slice(0, 7);
+
+    expect(fast.slice(0, -1).every((platform) => platform.motionMode === "roll")).toBe(true);
+    expect(fast.every((platform) => platform.denseLayout === "parallel-rails")).toBe(true);
+  });
+
+  it("reduces strike spacing with the MIDI gap and switches ultra-fast melody to connected keys", () => {
+    const events = [
+      note(0, 0),
+      note(1, 240),
+      note(2, 400),
+      note(3, 480),
+      note(4, 560),
+      note(5, 1_100),
+    ];
+
+    const platforms = buildMarbleCourse(events, settings, 720);
+    const distance = (index: number) => Math.hypot(
+      platforms[index + 1].hitX - platforms[index].hitX,
+      platforms[index + 1].hitY - platforms[index].hitY,
+    );
+
+    expect(distance(0)).toBeGreaterThan(distance(1));
+    expect(distance(1)).toBeGreaterThan(distance(2));
+    expect(platforms[0].denseLayout).toBe("parallel-rails");
+    expect(platforms[2].denseLayout).toBe("connected-keys");
+    expect(platforms[3].denseLayout).toBe("connected-keys");
+    expect(platforms.slice(2, 4).every((platform) => platform.visualStyle === "piano-key")).toBe(true);
+  });
+
+  it("keeps ultra-fast percussion as persistent light buttons instead of piano keys", () => {
+    const events = Array.from({ length: 6 }, (_, index) => note(index, index * 72, true));
+    events.push(note(6, 900, true));
+
+    const platforms = buildMarbleCourse(events, settings, 720);
+    expect(platforms.slice(0, 6).every((platform) => platform.denseLayout === "button-strip")).toBe(true);
+    expect(platforms.slice(0, 6).every((platform) => platform.visualStyle === "instrument-pad")).toBe(true);
+  });
+
   it("turns auto-mode dense notes into a continuous keyboard and rolls off without a velocity snap", () => {
     const events = Array.from({ length: 8 }, (_, index) => note(index, index * 125));
     events.push(note(8, 8 * 125 + 520));

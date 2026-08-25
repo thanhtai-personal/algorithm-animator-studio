@@ -198,6 +198,119 @@ body.rhythmic-panel-resizing * {
   }
 }
 
+@media (max-width: 767px) {
+  .rhythmic-header-actions,
+  .rhythmic-stage-badges,
+  .rhythmic-renderer-actions {
+    scrollbar-width: none;
+  }
+
+  .rhythmic-header-actions::-webkit-scrollbar,
+  .rhythmic-stage-badges::-webkit-scrollbar,
+  .rhythmic-renderer-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rhythmic-header-actions > button,
+  .rhythmic-trim-shortcuts > button {
+    min-height: 44px;
+  }
+
+  .rhythmic-stage-status {
+    align-items: stretch;
+  }
+
+  .rhythmic-stage-badges {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  .rhythmic-stage-badges > * {
+    flex: none;
+  }
+
+  .rhythmic-renderer-selector {
+    display: grid;
+  }
+
+  .rhythmic-renderer-actions {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-bottom: 2px;
+  }
+
+  .rhythmic-renderer-actions > * {
+    flex: none;
+  }
+
+  .rhythmic-preview-shell {
+    max-height: 64svh;
+    padding: 0.25rem;
+    border-radius: 0.875rem;
+  }
+
+  .rhythmic-preview-shell > * {
+    max-height: calc(64svh - 0.5rem) !important;
+  }
+
+  .rhythmic-transport-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rhythmic-transport-controls > button {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+  }
+
+  .rhythmic-trim-output > button {
+    min-height: 44px;
+  }
+}
+
+.rhythmic-mobile-dock {
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.rhythmic-mobile-sheet {
+  padding-bottom: env(safe-area-inset-bottom);
+  overscroll-behavior: contain;
+}
+
+.rhythmic-mobile-sheet > button {
+  z-index: 20;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid hsl(210 24% 28%);
+  border-radius: 0.75rem;
+  background: hsl(216 30% 10% / 0.94);
+}
+
+.rhythmic-mobile-sheet .rhythmic-side-panel {
+  height: 100%;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.rhythmic-mobile-sheet .rhythmic-side-panel > :first-child {
+  padding-right: 4.25rem;
+}
+
+.rhythmic-mobile-sheet .rhythmic-preset-panel > .rhythmic-scrollbar {
+  height: calc(100% - 57px);
+  max-height: none;
+  overflow-y: auto;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rhythmic-production *,
   .rhythmic-production *::before,

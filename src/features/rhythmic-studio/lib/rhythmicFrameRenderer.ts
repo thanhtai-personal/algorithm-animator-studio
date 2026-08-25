@@ -11,6 +11,7 @@ import { drawMarbleAvatar2D } from "./marbleAvatarRenderer2D";
 import { IDLE_MARBLE_AVATAR_MOTION, marbleAvatarMotion2D } from "./marbleAvatarMotion2D";
 import { drawPresetTrail } from "./presetTrailRenderer";
 import { drawStyledPlatform } from "./platformStyles";
+import { drawDenseSurfaces2D } from "./denseSurface2D";
 import { platformIsInside2DRenderWindow } from "./platformViewport";
 
 interface DrawFrameArgs {
@@ -168,6 +169,7 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
   ctx.translate(-cameraX, 0);
   if (live) drawLongGapTubes(ctx, platforms, events, cameraY, timeMs, settings, courseOverrides);
   if (live || courseOverrides.length) drawCourseLongItems(ctx, platforms, courseOverrides, cameraY, settings);
+  drawDenseSurfaces2D(ctx, platforms, cameraY, settings);
   for (let platformIndex = 0; platformIndex < platforms.length; platformIndex += 1) {
     const platform = platforms[platformIndex];
     if (platform.visualHidden) continue;

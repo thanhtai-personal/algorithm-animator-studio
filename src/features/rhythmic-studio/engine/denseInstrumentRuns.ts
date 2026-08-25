@@ -7,9 +7,12 @@ import { CHORD_GAP_MS } from "./denseInstrumentTypes";
 export type { DenseInstrumentKind, DenseInstrumentRun, ChordCluster, RollingRouteCandidate } from "./denseInstrumentTypes";
 export { CHORD_GAP_MS } from "./denseInstrumentTypes";
 export { decorateChordClusters, decorateDenseInstrumentRuns } from "./denseInstrumentDecoration";
-const DENSE_GAP_MS = 185;
+// Above this gap a real bounce remains readable. Below it a passive rolling
+// surface is both smoother and more physically plausible than accelerating the
+// marble between distant obstacles.
+const DENSE_GAP_MS = 260;
 const MIN_RUN_STRIKES = 3;
-const MICRO_BURST_GAP_MS = 90;
+const MICRO_BURST_GAP_MS = 130;
 const MAX_RUN_STRIKES = 14;
 const ROLL_SLOPE = 0.075;
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));

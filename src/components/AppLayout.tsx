@@ -11,6 +11,7 @@ import { readChillModeEnabled, subscribeChillMode } from "@/lib/chillMusicSettin
 import { readSystemLang, subscribeSystemLang, type Lang } from "@/lib/i18n";
 
 const SIDEBAR_STORAGE_KEY = "kai-studio.sidebar.mode";
+const DESKTOP_SIDEBAR_BREAKPOINT = 1024;
 
 function readSidebarMode(): SidebarMode {
   if (typeof window === "undefined") return "expanded";
@@ -18,10 +19,15 @@ function readSidebarMode(): SidebarMode {
   return saved === "collapsed" || saved === "hidden" || saved === "expanded" ? saved : "expanded";
 }
 
+function readResponsiveSidebarMode(): SidebarMode {
+  if (typeof window !== "undefined" && window.innerWidth < DESKTOP_SIDEBAR_BREAKPOINT) return "hidden";
+  return readSidebarMode();
+}
+
 export function AppLayout({ children }: PropsWithChildren) {
   const location = useLocation();
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
-  const [sidebarMode, setSidebarMode] = useState<SidebarMode>(() => readSidebarMode());
+  const [sidebarMode, setSidebarMode] = useState<SidebarMode>(readResponsiveSidebarMode);
   const [fantasticMode] = useFantasticMode();
   const [chillModeEnabled, setChillModeEnabled] = useState(() => readChillModeEnabled());
   const rhythmicStudioActive = location.pathname.startsWith("/algorithms/rhythmic");
@@ -29,12 +35,22 @@ export function AppLayout({ children }: PropsWithChildren) {
 
   useEffect(() => subscribeSystemLang(setLang), []);
   useEffect(() => subscribeChillMode(setChillModeEnabled), []);
+  useEffect(() => {
+    const query = window.matchMedia(`(min-width: ${DESKTOP_SIDEBAR_BREAKPOINT}px)`);
+    const syncSidebarToViewport = (event: MediaQueryListEvent) => {
+      setSidebarMode(event.matches ? readSidebarMode() : "hidden");
+    };
+    query.addEventListener("change", syncSidebarToViewport);
+    return () => query.removeEventListener("change", syncSidebarToViewport);
+  }, []);
   // Rhythmic Studio already owns a continuously updated preview canvas. Keep
   // the decorative fullscreen Fantastic canvas off this route to avoid stacked render loops.
   useFantasticFrameMotion(fantasticVisualsEnabled, location.pathname);
 
   useEffect(() => {
-    window.localStorage.setItem(SIDEBAR_STORAGE_KEY, sidebarMode);
+    if (window.innerWidth >= DESKTOP_SIDEBAR_BREAKPOINT) {
+      window.localStorage.setItem(SIDEBAR_STORAGE_KEY, sidebarMode);
+    }
   }, [sidebarMode]);
 
   const sidebarWidth = useMemo(() => {

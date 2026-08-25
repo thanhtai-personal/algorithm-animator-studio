@@ -1,8 +1,11 @@
 import type { NoteEvent, PlatformStyle, StudioSettings } from "../types";
 import { midiInstrumentVisualStyle } from "../lib/midiInstrumentVisuals";
+import { presetObstaclePlan } from "./presetObstaclePlan";
 import type { DenseInstrumentKind, DenseInstrumentRun, DenseSettingsResolver, ChordCluster } from "./denseInstrumentTypes";
 import { CHORD_GAP_MS } from "./denseInstrumentTypes";
-import type { MarblePlatform, Vec2 } from "./marblePhysicsTypes";
+import type { DenseSurfaceLayout, MarblePlatform, Vec2 } from "./marblePhysicsTypes";
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 const normalize = (vector: Vec2): Vec2 => {
   const size = Math.hypot(vector.x, vector.y);
@@ -49,7 +52,16 @@ function denseSurfaceThickness(kind: DenseInstrumentKind, settings: StudioSettin
   return Math.max(5.5, settings.ballSize * (kind === "keyboard" ? 0.38 : 0.44));
 }
 
-function denseVisualStyle(kind: DenseInstrumentKind, settings: StudioSettings, event: NoteEvent): PlatformStyle {
+function denseLayoutForGap(kind: DenseInstrumentKind, gapMs: number, settings: StudioSettings): DenseSurfaceLayout {
+  if (kind === "pad-strip") return "button-strip";
+  const rollingSpeed = clamp(145 + settings.laneSpread * 0.1, 150, 195);
+  const connectedKeyGapMs = clamp((settings.ballSize * 1.05 / rollingSpeed) * 1000, 70, 130);
+  return gapMs <= connectedKeyGapMs ? "connected-keys" : "parallel-rails";
+}
+
+function denseVisualStyle(kind: DenseInstrumentKind, layout: DenseSurfaceLayout, settings: StudioSettings, event: NoteEvent, index: number): PlatformStyle {
+  if (layout === "connected-keys") return "piano-key";
+  if (settings.instrumentFamily === "mixed") return presetObstaclePlan(index, settings)?.style ?? "instrument-rail";
   if (settings.instrumentFamily === "boomwhacker") return "boomwhacker-tube";
   if (settings.instrumentFamily === "xylophone") return "xylophone-bar";
   if (settings.instrumentFamily === "piano") return "piano-key";
@@ -66,23 +78,34 @@ function denseVisualStyle(kind: DenseInstrumentKind, settings: StudioSettings, e
 function decorateRollingSegment(platform: MarblePlatform, next: MarblePlatform, kind: DenseInstrumentKind, settings: StudioSettings) {
   const frame = canonicalSurfaceFrame(platform, next);
   const distance = Math.hypot(next.hitX - platform.hitX, next.hitY - platform.hitY);
+  const gapMs = Math.max(1, next.event.timeMs - platform.event.timeMs);
+  const layout = denseLayoutForGap(kind, gapMs, settings);
   const faceCenter = { x: (platform.hitX + next.hitX) * 0.5, y: (platform.hitY + next.hitY) * 0.5 };
-  platform.visualStyle = denseVisualStyle(kind, settings, platform.event);
+  platform.denseLayout = layout;
+  platform.visualStyle = denseVisualStyle(kind, layout, settings, platform.event, platform.index);
   platform.visualThickness = denseSurfaceThickness(kind, settings);
   platform.visualX = faceCenter.x - frame.normal.x * settings.ballSize;
   platform.visualY = faceCenter.y - frame.normal.y * settings.ballSize;
-  platform.visualWidth = Math.max(settings.ballSize * 1.05, distance + Math.max(1.6, settings.ballSize * 0.18));
+  platform.visualWidth = layout === "connected-keys"
+    ? Math.max(4.5, distance + Math.max(0.8, settings.ballSize * 0.06))
+    : Math.max(settings.ballSize * 1.05, distance + Math.max(1.6, settings.ballSize * 0.18));
   platform.visualTiltRad = frame.angle;
   platform.visualHidden = false;
 }
 
-function decorateTerminalStrike(platform: MarblePlatform, frame: ReturnType<typeof terminalSurfaceFrame>, kind: DenseInstrumentKind, settings: StudioSettings) {
+function decorateTerminalStrike(platform: MarblePlatform, previous: MarblePlatform | undefined, frame: ReturnType<typeof terminalSurfaceFrame>, kind: DenseInstrumentKind, settings: StudioSettings) {
   if (!frame) return;
-  platform.visualStyle = denseVisualStyle(kind, settings, platform.event);
+  const gapMs = previous ? Math.max(1, platform.event.timeMs - previous.event.timeMs) : Number.POSITIVE_INFINITY;
+  const layout = denseLayoutForGap(kind, gapMs, settings);
+  platform.denseLayout = layout;
+  platform.visualStyle = denseVisualStyle(kind, layout, settings, platform.event, platform.index);
   platform.visualThickness = denseSurfaceThickness(kind, settings);
   platform.visualX = platform.hitX - frame.normal.x * settings.ballSize;
   platform.visualY = platform.hitY - frame.normal.y * settings.ballSize;
-  platform.visualWidth = Math.max(settings.ballSize * 1.05, 13);
+  const previousWidth = previous?.visualWidth ?? 0;
+  platform.visualWidth = layout === "connected-keys"
+    ? Math.max(4.5, previousWidth)
+    : Math.max(settings.ballSize * 1.05, 13);
   platform.visualTiltRad = frame.angle;
   platform.visualHidden = false;
 }
@@ -91,7 +114,9 @@ function decoratePhysicalTerminalStrike(platform: MarblePlatform, kind: DenseIns
   // This terminal note redirects the marble instead of merely extending the
   // preceding lane. Keep the planner's collision-derived center and angle so the
   // visible face explains the impulse, while retaining a readable key body.
-  platform.visualStyle = denseVisualStyle(kind, settings, platform.event);
+  const layout = denseLayoutForGap(kind, Number.POSITIVE_INFINITY, settings);
+  platform.denseLayout = layout;
+  platform.visualStyle = denseVisualStyle(kind, layout, settings, platform.event, platform.index);
   platform.visualThickness = denseSurfaceThickness(kind, settings);
   platform.visualWidth = Math.max(platform.visualWidth ?? 0, settings.ballSize * 1.05, 13);
   platform.visualHidden = false;
@@ -110,8 +135,6 @@ export function decorateDenseInstrumentRuns(platforms: MarblePlatform[], runs: D
     }
   }
   for (const surface of surfaces.values()) {
-    const surfaceSettings = resolveSettings?.(surface.start) ?? settings;
-    if (surfaceSettings.instrumentLayout === "corridor") continue;
     const positions = platformPositionsForSurface(decorated, surface);
     const strikes = strikePositionsForSurface(decorated, positions);
     for (const position of positions) decorated[position].denseSurfaceId = surface.surfaceId;
@@ -121,7 +144,7 @@ export function decorateDenseInstrumentRuns(platforms: MarblePlatform[], runs: D
       const next = offset < strikes.length - 1 ? decorated[strikes[offset + 1]] : undefined;
       if (next) decorateRollingSegment(decorated[index], next, surface.kind, localSettings);
       else if (decorated[index].motionMode === "roll") {
-        decorateTerminalStrike(decorated[index], terminalSurfaceFrame(decorated, strikes, offset), surface.kind, localSettings);
+        decorateTerminalStrike(decorated[index], offset > 0 ? decorated[strikes[offset - 1]] : undefined, terminalSurfaceFrame(decorated, strikes, offset), surface.kind, localSettings);
       } else decoratePhysicalTerminalStrike(decorated[index], surface.kind, localSettings);
     }
   }

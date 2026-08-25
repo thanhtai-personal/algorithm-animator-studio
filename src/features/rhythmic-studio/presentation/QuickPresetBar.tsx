@@ -59,7 +59,7 @@ export const QuickPresetBar = observer(function QuickPresetBar({ studio, embedde
       <p className="text-xs leading-relaxed text-muted-foreground">{presetText(lang, "hint")}</p>
     </div>}
     <div className={embedded ? "" : "max-h-[340px] overflow-y-auto pr-1"}>
-      <div className={embedded ? "grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1" : "grid grid-cols-2 gap-2"}>
+      <div className={embedded ? "grid grid-cols-2 gap-2 xl:grid-cols-1" : "grid grid-cols-2 gap-2"}>
         {RHYTHMIC_PRESET_IDS.map((id) => {
           const active = studio.currentPresetId === id;
           return <Button

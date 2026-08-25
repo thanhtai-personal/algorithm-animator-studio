@@ -64,14 +64,14 @@ export function drawInstrumentNoteLeds2D(
   const count = Math.max(1, colors.length);
   const stripWidth = platform.width * 0.68;
   const segmentWidth = stripWidth / count;
-  const height = Math.max(2.5, platform.thickness * 0.1);
+  const height = Math.max(4, platform.thickness * 0.18);
   ctx.save();
   colors.forEach((color, index) => {
     const x = -stripWidth / 2 + segmentWidth * index;
     ctx.fillStyle = color;
-    ctx.globalAlpha = 0.18 + light * 0.82;
+    ctx.globalAlpha = 0.28 + light * 0.72;
     ctx.shadowColor = color;
-    ctx.shadowBlur = lowPower ? 0 : light * 24;
+    ctx.shadowBlur = lowPower ? 0 : 8 + light * 34;
     ctx.fillRect(x + segmentWidth * 0.08, -height * 0.5, segmentWidth * 0.84, height);
   });
   ctx.restore();

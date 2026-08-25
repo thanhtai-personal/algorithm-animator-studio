@@ -58,22 +58,22 @@ export function RhythmicTrimPanel(props: Props) {
       <TrimSlider label={t("end")} value={props.trimEndMs} min={Math.min(max, props.trimStartMs + MIN_CLIP_MS)} max={max} durationMax={max} onChange={setEnd} />
     </div>
 
-    <div className="flex flex-wrap items-center gap-2 text-xs">
+    <div className="rhythmic-trim-shortcuts flex flex-wrap items-center gap-2 text-xs">
       <span className="rounded-md bg-muted px-2.5 py-1.5 font-medium tabular-nums">{t("duration")}: {formatClipTime(clipLength)}</span>
       {[15, 30, 60].map((seconds) => <Button key={seconds} type="button" size="sm" variant="outline" onClick={() => fromPlayhead(seconds)}>{seconds}s</Button>)}
       <Button type="button" size="sm" variant="ghost" onClick={() => setStart(props.timeMs)}>{t("setStart")}</Button>
       <Button type="button" size="sm" variant="ghost" onClick={() => setEnd(props.timeMs)}>{t("setEnd")}</Button>
     </div>
 
-    <div className="flex flex-wrap items-end gap-3">
-      <div className="w-36 space-y-1.5">
+    <div className="rhythmic-trim-output flex flex-wrap items-end gap-3">
+      <div className="w-full space-y-1.5 sm:w-36">
         <span className="text-xs text-muted-foreground">{t("fps")}</span>
         <Select value={String(props.exportFps)} onValueChange={(value) => props.onFpsChange(Number(value) as ExportFps)}>
           <SelectTrigger className="h-9" disabled={props.recording} aria-label={t("fps")}><SelectValue /></SelectTrigger>
           <SelectContent>{EXPORT_FPS_OPTIONS.map((fps) => <SelectItem key={fps} value={String(fps)}>{fps} FPS</SelectItem>)}</SelectContent>
         </Select>
       </div>
-      <div className="w-64 max-w-full space-y-1.5">
+      <div className="w-full max-w-full space-y-1.5 sm:w-64">
         <span className="text-xs text-muted-foreground">{t("outputSize")}</span>
         <Select value={props.outputPreset} onValueChange={(value) => props.onOutputPresetChange(value as RhythmicOutputPreset)}>
           <SelectTrigger className="h-9" disabled={props.recording || props.outputLocked} aria-label={t("outputSize")}><SelectValue /></SelectTrigger>
@@ -83,11 +83,11 @@ export function RhythmicTrimPanel(props: Props) {
           </SelectContent>
         </Select>
       </div>
-      <Button type="button" variant="outline" disabled={props.recording} onClick={props.onPreview}>
+      <Button type="button" variant="outline" className="w-full sm:w-auto" disabled={props.recording} onClick={props.onPreview}>
         {props.playingClip ? <Clapperboard className="mr-2 h-4 w-4 animate-pulse" /> : <Play className="mr-2 h-4 w-4" />}{props.playingClip ? t("previewing") : t("preview")}
       </Button>
-      <Button type="button" variant="secondary" disabled={props.recording} onClick={() => props.onExport("webm")}><Video className="mr-2 h-4 w-4" />{t("exportWebm")}</Button>
-      <Button type="button" disabled={props.recording} onClick={() => props.onExport("mp4")}><FileVideo2 className="mr-2 h-4 w-4" />{t("exportMp4")}</Button>
+      <Button type="button" variant="secondary" className="w-full sm:w-auto" disabled={props.recording} onClick={() => props.onExport("webm")}><Video className="mr-2 h-4 w-4" />{t("exportWebm")}</Button>
+      <Button type="button" className="w-full sm:w-auto" disabled={props.recording} onClick={() => props.onExport("mp4")}><FileVideo2 className="mr-2 h-4 w-4" />{t("exportMp4")}</Button>
     </div>
   </div>;
 }

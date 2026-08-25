@@ -76,8 +76,8 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 px-3 py-2.5 shadow-[0_10px_40px_hsl(214_80%_5%/0.12)] backdrop-blur-xl md:px-5">
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 px-2 py-2.5 shadow-[0_10px_40px_hsl(214_80%_5%/0.12)] backdrop-blur-xl sm:px-3 md:px-5">
+      <div className="flex items-center gap-2 sm:gap-3">
         <Button
           aria-label={sidebarMode === "hidden" ? t(lang, "uiOpenMenu") : t(lang, "uiHideMenu")}
           className="h-10 w-10 shrink-0"
@@ -88,12 +88,12 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
           {sidebarMode === "hidden" ? <PanelLeftOpen className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </Button>
 
-        <img src="/kai-studio-logo.svg" alt={t(lang, "uiKaiStudioLogo")} className="h-10 w-10 shrink-0 rounded-xl" />
-        <div className="min-w-0 flex-1">
+        <img src="/kai-studio-logo.svg" alt={t(lang, "uiKaiStudioLogo")} className="h-9 w-9 shrink-0 rounded-xl max-[350px]:hidden sm:h-10 sm:w-10" />
+        <div className="hidden min-w-0 flex-1 sm:block">
           <h1 className="truncate bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-base font-black text-transparent md:text-lg">{APP_TITLE}</h1>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <button
             type="button"
             className={[
@@ -147,7 +147,7 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
             </Button>
           </div>
           <Select value={lang} onValueChange={(value) => changeLanguage(value as Lang)}>
-            <SelectTrigger className="h-10 w-[92px] shrink-0 md:w-28"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-10 w-[76px] shrink-0 sm:w-[92px] md:w-28"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="en">English</SelectItem>
               <SelectItem value="vi">{t(lang, "uiVietnamese")}</SelectItem>

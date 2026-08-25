@@ -7,6 +7,7 @@ export interface Vec2 {
 
 export type ContactMode = "cap" | "surface" | "bumper";
 export type SegmentMotionMode = "ballistic" | "roll" | "hold";
+export type DenseSurfaceLayout = "parallel-rails" | "connected-keys" | "button-strip";
 
 export interface MarblePlatform {
   index: number;
@@ -30,6 +31,7 @@ export interface MarblePlatform {
   motionMode?: SegmentMotionMode;
   denseRunId?: number;
   denseSurfaceId?: number;
+  denseLayout?: DenseSurfaceLayout;
   chordClusterId?: number;
   visualStyle?: PlatformStyle;
   visualX?: number;

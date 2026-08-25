@@ -23,11 +23,13 @@ import {
 } from "./rhythmicSceneMath3D";
 import { instrumentHitForPlatform } from "../lib/instrumentHitEvent";
 
-function RendererQuality({ recording }: { recording: boolean }) {
+function RendererQuality({ recording, shadowsEnabled }: { recording: boolean; shadowsEnabled: boolean }) {
   const { gl } = useThree();
   useEffect(() => {
     gl.transmissionResolutionScale = recording ? 1 : 0.72;
-  }, [gl, recording]);
+    gl.shadowMap.enabled = shadowsEnabled;
+    gl.shadowMap.needsUpdate = shadowsEnabled;
+  }, [gl, recording, shadowsEnabled]);
   return null;
 }
 
@@ -254,7 +256,7 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
   });
 
   return <>
-    <RendererQuality recording={props.recording} />
+    <RendererQuality recording={props.recording} shadowsEnabled={props.settings.instrumentShadowsEnabled} />
     <PerspectiveCamera makeDefault fov={RHYTHMIC_CAMERA_FOV} near={0.1} far={180} position={[0, 0, RHYTHMIC_CAMERA_Z]} />
     <RhythmicTitle3D text={props.settings.titleText} />
     <RhythmicLightingRig3D settings={props.settings} focus={smoothedLook} />

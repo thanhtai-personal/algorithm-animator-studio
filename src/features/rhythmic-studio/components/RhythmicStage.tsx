@@ -16,6 +16,7 @@ import { usePreparedMarbleCourse, type PreparedMarbleCourse } from "../hooks/use
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 import { RHYTHMIC_COURSE_WIDTH } from "./RhythmicMotion3D";
 import { rhythmicOutputSize, type RhythmicOutputSize } from "../lib/outputSize";
+import { RhythmicShadowToggle } from "./RhythmicShadowToggle";
 
 type Studio = ReturnType<typeof useRhythmicStudio>;
 
@@ -65,11 +66,12 @@ function StageStatus({ studio, preparing, statusLabel, useThreeRenderer, outputS
   );
 }
 
-function RendererSelector({ studio, webglAvailable, useThreeRenderer, locked, t, twoDLabel, threeDLabel, twoDHint, threeDHint }: {
+export function RendererSelector({ studio, webglAvailable, useThreeRenderer, locked, lang, t, twoDLabel, threeDLabel, twoDHint, threeDHint }: {
   studio: Studio;
   webglAvailable: boolean;
   useThreeRenderer: boolean;
   locked: boolean;
+  lang: ReturnType<typeof useSystemLang>;
   t: Translate;
   twoDLabel: string;
   threeDLabel: string;
@@ -82,13 +84,21 @@ function RendererSelector({ studio, webglAvailable, useThreeRenderer, locked, t,
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("renderer.label")}</span>
         <Badge variant={useThreeRenderer ? "secondary" : "outline"}>{useThreeRenderer ? "WebGL" : "Canvas 2D"}</Badge>
       </div>
-      <div className="inline-flex rounded-lg border bg-muted/30 p-1">
-        <Button type="button" size="sm" variant={studio.rendererMode === "legacy" ? "secondary" : "ghost"} disabled={locked} aria-pressed={studio.rendererMode === "legacy"} onClick={() => studio.setRendererMode("legacy")} className="h-8" title={twoDHint}>
-          <Image className="mr-1.5 h-3.5 w-3.5" />{twoDLabel}
-        </Button>
-        <Button type="button" size="sm" variant={studio.rendererMode === "three" ? "secondary" : "ghost"} disabled={locked || !webglAvailable} aria-pressed={studio.rendererMode === "three"} onClick={() => studio.setRendererMode("three")} className="h-8" title={webglAvailable ? threeDHint : t("renderer.unavailable")}>
-          <Box className="mr-1.5 h-3.5 w-3.5" />{threeDLabel}
-        </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="inline-flex rounded-lg border bg-muted/30 p-1">
+          <Button type="button" size="sm" variant={studio.rendererMode === "legacy" ? "secondary" : "ghost"} disabled={locked} aria-pressed={studio.rendererMode === "legacy"} onClick={() => studio.setRendererMode("legacy")} className="h-8" title={twoDHint}>
+            <Image className="mr-1.5 h-3.5 w-3.5" />{twoDLabel}
+          </Button>
+          <Button type="button" size="sm" variant={studio.rendererMode === "three" ? "secondary" : "ghost"} disabled={locked || !webglAvailable} aria-pressed={studio.rendererMode === "three"} onClick={() => studio.setRendererMode("three")} className="h-8" title={webglAvailable ? threeDHint : t("renderer.unavailable")}>
+            <Box className="mr-1.5 h-3.5 w-3.5" />{threeDLabel}
+          </Button>
+        </div>
+        <RhythmicShadowToggle
+          enabled={studio.settings.instrumentShadowsEnabled}
+          disabled={locked}
+          lang={lang}
+          onChange={(enabled) => studio.patch("instrumentShadowsEnabled", enabled)}
+        />
       </div>
     </div>
   );
@@ -206,6 +216,7 @@ export function RhythmicStage({ studio }: { studio: Studio }) {
       webglAvailable={webglAvailable}
       useThreeRenderer={useThreeRenderer}
       locked={rendererLocked}
+      lang={lang}
       t={t}
       twoDLabel={layoutText(lang, "lab.twoD")}
       threeDLabel={layoutText(lang, "lab.threeD")}

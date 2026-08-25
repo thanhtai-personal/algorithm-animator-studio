@@ -55,7 +55,7 @@ export function RhythmicScene3D(props: RhythmicScene3DProps) {
       <Canvas
         frameloop={props.playing ? "always" : "demand"}
         dpr={props.recording ? 2 : props.playing ? [1, 1.35] : [1, 1.15]}
-        shadows
+        shadows={props.settings.instrumentShadowsEnabled}
         gl={{
           antialias: true,
           alpha: false,
@@ -67,7 +67,7 @@ export function RhythmicScene3D(props: RhythmicScene3DProps) {
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1;
-          gl.shadowMap.enabled = true;
+          gl.shadowMap.enabled = props.settings.instrumentShadowsEnabled;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
           if (props.canvasRef) props.canvasRef.current = gl.domElement;
         }}

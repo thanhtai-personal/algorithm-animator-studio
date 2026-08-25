@@ -260,6 +260,7 @@ export interface StudioSettings {
   cameraDistance: number;
   cameraLookAhead: number;
   platformGlow: number;
+  instrumentShadowsEnabled: boolean;
   platformPrimaryStyle: PlatformStyle;
   platformSecondaryStyle: PlatformStyle;
   platformAccentStyle: PlatformStyle;

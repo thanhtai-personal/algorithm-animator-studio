@@ -10,6 +10,7 @@ type Point3D = { x: number; y: number; z: number };
 
 export const SHOWCASE_SHADOW_LIGHT_OFFSET = { x: -2.4, y: 3.2, z: 14 } as const;
 export const RHYTHMIC_SHADOW_RECEIVER_Z = -4.02;
+export const RHYTHMIC_AUTO_SHADOW_RECEIVER_Z = -1.12;
 export const RHYTHMIC_SHOWCASE_WALL_CENTER_Y = -270;
 export const RHYTHMIC_SHOWCASE_WALL_HEIGHT = 560;
 export const RHYTHMIC_ROOM_BACKDROP_WIDTH = 80;
@@ -19,12 +20,12 @@ export function roomBackdropCoversFrame(backdropWidth: number, cameraX: number, 
   return backdropWidth * 0.5 >= Math.abs(cameraX) + viewWidth * 0.5 + overscan;
 }
 
-export function wallMountProfile(frontDepth: number) {
+export function wallMountProfile(frontDepth: number, receiverZ = RHYTHMIC_SHADOW_RECEIVER_Z) {
   const anchorThickness = 0.08;
   // All values are local to the instrument group, whose origin sits at
   // -frontDepth. The anchor face and the shadow catcher therefore resolve to
   // the exact same world-space plane for every instrument body depth.
-  const anchorZ = RHYTHMIC_SHADOW_RECEIVER_Z + frontDepth;
+  const anchorZ = receiverZ + frontDepth;
   const anchorCenterZ = anchorZ + anchorThickness * 0.5;
   const stemStartZ = -Math.max(0.08, frontDepth * 1.02);
   const stemEndZ = anchorZ + anchorThickness;

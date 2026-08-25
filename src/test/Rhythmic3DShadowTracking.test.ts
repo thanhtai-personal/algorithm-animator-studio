@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   RHYTHMIC_SHADOW_RECEIVER_Z,
+  RHYTHMIC_AUTO_SHADOW_RECEIVER_Z,
   RHYTHMIC_SHOWCASE_WALL_CENTER_Y,
   RHYTHMIC_SHOWCASE_WALL_HEIGHT,
   SHOWCASE_SHADOW_LIGHT_OFFSET,
@@ -56,6 +57,14 @@ describe("rhythmic 3D shadow tracking", () => {
 
     expect(platformGroupZ + mount.anchorZ).toBeCloseTo(RHYTHMIC_SHADOW_RECEIVER_Z, 6);
     expect(mount.stemLength).toBeGreaterThan(3);
+  });
+
+  it("anchors compact automatic instruments to their nearer shadow receiver", () => {
+    const frontDepth = 0.24;
+    const mount = wallMountProfile(frontDepth, RHYTHMIC_AUTO_SHADOW_RECEIVER_Z);
+
+    expect(-frontDepth + mount.anchorZ).toBeCloseTo(RHYTHMIC_AUTO_SHADOW_RECEIVER_Z, 6);
+    expect(mount.stemLength).toBeLessThan(1.3);
   });
 
   it("keeps the shadow wall behind a complete long-form course", () => {

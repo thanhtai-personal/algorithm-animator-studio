@@ -66,6 +66,7 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   cameraDistance: 1,
   cameraLookAhead: 1,
   platformGlow: 0.42,
+  instrumentShadowsEnabled: true,
   platformPrimaryStyle: 'tube-cylinder',
   platformSecondaryStyle: 'tube-cylinder',
   platformAccentStyle: 'tube-cylinder',

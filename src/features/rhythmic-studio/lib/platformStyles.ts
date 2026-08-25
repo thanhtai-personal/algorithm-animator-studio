@@ -5,6 +5,7 @@ import { presetObstaclePlan } from "../engine/presetObstaclePlan";
 import { instrumentLightAtTime } from "./instrumentLight";
 import { drawInstrumentNoteLeds2D, drawWindMetalPlatform2D } from "./windMetalPlatform2D";
 import { isNoteLitInstrumentStyle } from "./instrumentLightsModel";
+import { drawInstrumentShadow2D } from "./instrumentShadow";
 
 function hash(index: number, salt = 0) {
   const raw = Math.sin((index + salt) * 12.9898 + 78.233) * 43758.5453;
@@ -341,6 +342,14 @@ export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: Marb
   ctx.save();
   ctx.translate(platform.x, screenY);
   ctx.rotate(platform.tiltRad);
+  if (settings.instrumentShadowsEnabled) {
+    drawInstrumentShadow2D(ctx, {
+      width: platform.width,
+      thickness: platform.thickness,
+      tiltRad: platform.tiltRad,
+      style,
+    }, renderQuality === "idle");
+  }
   if (drawWindMetalPlatform2D(ctx, style, platform, lightImpact, settings, renderQuality === "idle")) {
     // dedicated 2D gong/flute renderer already drew the item
   } else if (drawPresetPlatform(ctx, style, half, platform, lightImpact, age, settings, renderQuality)) {

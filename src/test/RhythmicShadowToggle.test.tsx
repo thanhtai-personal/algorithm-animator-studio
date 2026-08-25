@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { RhythmicShadowToggle } from "../features/rhythmic-studio/components/RhythmicShadowToggle";
+import { RendererSelector } from "../features/rhythmic-studio/components/RhythmicStage";
+import { DEFAULT_SETTINGS } from "../features/rhythmic-studio/defaults";
 
 describe("RhythmicShadowToggle", () => {
   it("exposes the current shadow state and toggles it from the quick controls", () => {
@@ -21,5 +23,30 @@ describe("RhythmicShadowToggle", () => {
     expect(button).toBeDisabled();
     fireEvent.click(button);
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("passes the active language through the renderer controls without a runtime error", () => {
+    const studio = {
+      rendererMode: "three",
+      settings: { ...DEFAULT_SETTINGS },
+      setRendererMode: vi.fn(),
+      patch: vi.fn(),
+    };
+    render(
+      <RendererSelector
+        studio={studio as never}
+        webglAvailable
+        useThreeRenderer
+        locked={false}
+        lang="vi"
+        t={() => "Renderer"}
+        twoDLabel="2D"
+        threeDLabel="3D"
+        twoDHint="Canvas"
+        threeDHint="WebGL"
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Bóng nhạc cụ: Bật" })).toBeInTheDocument();
   });
 });

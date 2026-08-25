@@ -25,6 +25,7 @@ export function useRhythmicPresetActions(store: RhythmicStudioStore) {
       midiPlaybackEnabled: store.settings.midiPlaybackEnabled,
       midiInstrumentMode: store.settings.midiInstrumentMode,
       instrumentNativeAudio: store.settings.instrumentNativeAudio,
+      instrumentShadowsEnabled: store.settings.instrumentShadowsEnabled,
       synthPreset: store.settings.synthPreset,
       synthVolume: store.settings.synthVolume,
       musicVolume: store.settings.musicVolume,

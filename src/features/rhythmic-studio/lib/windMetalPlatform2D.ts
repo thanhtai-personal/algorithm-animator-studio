@@ -26,13 +26,10 @@ function flute(ctx: CanvasRenderingContext2D, platform: MarblePlatform, light: n
   const half = platform.width / 2;
   const radius = Math.max(8, platform.thickness * 0.42);
   ctx.save();
-  ctx.shadowColor = "rgba(6,10,16,.55)"; ctx.shadowBlur = lowPower ? 0 : 13;
-  ctx.shadowOffsetX = lowPower ? 0 : -10; ctx.shadowOffsetY = lowPower ? 0 : 17;
   const body = ctx.createLinearGradient(0, -radius, 0, radius);
   body.addColorStop(0, "#f4f8fb"); body.addColorStop(0.35, "#aeb8c2"); body.addColorStop(1, "#4d5965");
   ctx.fillStyle = body;
   ctx.beginPath(); ctx.roundRect(-half, -radius, platform.width, radius * 2, radius); ctx.fill();
-  ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
   ctx.shadowColor = platform.color; ctx.shadowBlur = lowPower ? 0 : light * 28;
   ctx.strokeStyle = platform.color; ctx.globalAlpha = 0.16 + light * 0.84; ctx.lineWidth = 3 + light * 2;
   ctx.beginPath(); ctx.moveTo(-half * 0.72, -radius * 0.15); ctx.lineTo(half * 0.72, -radius * 0.15); ctx.stroke();

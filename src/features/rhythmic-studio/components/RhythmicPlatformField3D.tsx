@@ -6,7 +6,7 @@ import { isPlatformCourseItem, overrideForNode } from "../lib/courseItems";
 import { RHYTHMIC_COURSE_WIDTH, RHYTHMIC_WORLD_SCALE } from "./RhythmicMotion3D";
 import { PlatformMesh } from "./RhythmicPlatformMeshes3D";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
-import { wallMountProfile } from "./rhythmicSceneMath3D";
+import { RHYTHMIC_AUTO_SHADOW_RECEIVER_Z, RHYTHMIC_SHADOW_RECEIVER_Z, wallMountProfile } from "./rhythmicSceneMath3D";
 import { instrumentLightAtTime } from "../lib/instrumentLight";
 import { isNoteLitInstrumentStyle, noteLightColorsForPlatform } from "../lib/instrumentLightsModel";
 import { RhythmicInstrumentNoteLights3D } from "./RhythmicInstrumentNoteLights3D";
@@ -21,67 +21,30 @@ function PhysicalMount({ terrain, w, h, detail, showcase, frontDepth, style }: {
   frontDepth: number;
   style: string;
 }) {
-  if (showcase) {
-    const supportX = Math.min(w * 0.3, 0.46);
-    const supportPositions = style === "instrument-pad" ? [0] : [-supportX, supportX];
-    const mount = wallMountProfile(frontDepth);
-    return (
-      <group>
-        {supportPositions.map((x) => (
-          <group key={x} position={[x, h * 0.28, 0]}>
-            <mesh position={[0, 0, mount.stemCenterZ]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-              <cylinderGeometry args={[0.024, 0.024, mount.stemLength, 12]} />
-              <meshStandardMaterial color="#5c6066" roughness={0.3} metalness={0.74} />
-            </mesh>
-            <mesh position={[0, 0, mount.anchorCenterZ]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
-              <cylinderGeometry args={[0.072, 0.072, mount.anchorThickness, 16]} />
-              <meshStandardMaterial color="#33363b" roughness={0.48} metalness={0.46} />
-            </mesh>
-          </group>
-        ))}
-      </group>
-    );
-  }
-  if (terrain === "tube-board") {
-    // Auto-generated scenes do not have a visible wall exactly three world units
-    // behind every obstacle. Long stems therefore read as black spikes floating in
-    // space. Use a compact self-contained bracket; showcase instruments keep their
-    // dedicated mounting treatment above.
-    const length = 0.82;
-    return (
-      <group>
-        <mesh position={[0, h * 0.16, -length * 0.5]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-          <cylinderGeometry args={[0.035 + detail * 0.012, 0.035 + detail * 0.012, length, 12]} />
-          <meshStandardMaterial color="#65717e" roughness={0.27} metalness={0.84} />
-        </mesh>
-        <mesh position={[0, h * 0.16, -length - 0.08]} castShadow receiveShadow>
-          <boxGeometry args={[Math.min(0.72, Math.max(0.32, w * 0.28)), Math.max(0.18, h * 0.82), 0.075]} />
-          <meshStandardMaterial color="#202832" roughness={0.42} metalness={0.7} />
-        </mesh>
-      </group>
-    );
-  }
-  if (terrain === "xylophone") {
-    const supportX = Math.min(w * 0.3, 0.52);
-    const stemLength = 0.78;
-    return (
-      <group>
-        {[-supportX, supportX].map((x) => (
-          <group key={x} position={[x, h * 0.35, 0]}>
-            <mesh position={[0, 0, -stemLength * 0.5]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-              <cylinderGeometry args={[0.028, 0.028, stemLength, 12]} />
-              <meshStandardMaterial color="#77634f" roughness={0.34} metalness={0.48} />
-            </mesh>
-            <mesh position={[0, 0, -0.16]} castShadow>
-              <cylinderGeometry args={[0.065, 0.065, 0.08, 16]} />
-              <meshStandardMaterial color="#29231f" roughness={0.72} metalness={0.06} />
-            </mesh>
-          </group>
-        ))}
-      </group>
-    );
-  }
-  return null;
+  const supportX = Math.min(w * 0.3, showcase ? 0.46 : 0.38);
+  const singleSupport = style === "instrument-pad" || style === "pluck-pad" || style === "instrument-cymbal" || style === "drum-disc" || style === "gong-disc";
+  const supportPositions = singleSupport ? [0] : [-supportX, supportX];
+  const receiverZ = showcase ? RHYTHMIC_SHADOW_RECEIVER_Z : RHYTHMIC_AUTO_SHADOW_RECEIVER_Z;
+  const mount = wallMountProfile(frontDepth, receiverZ);
+  const stemColor = terrain === "xylophone" ? "#77634f" : terrain === "comet" ? "#555b76" : "#5c6670";
+  const anchorColor = terrain === "xylophone" ? "#322a24" : "#282d34";
+  const stemRadius = 0.022 + detail * 0.012;
+  return (
+    <group>
+      {supportPositions.map((x) => (
+        <group key={x} position={[x, h * 0.28, 0]}>
+          <mesh position={[0, 0, mount.stemCenterZ]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+            <cylinderGeometry args={[stemRadius, stemRadius, mount.stemLength, 12]} />
+            <meshStandardMaterial color={stemColor} roughness={0.3} metalness={0.7} />
+          </mesh>
+          <mesh position={[0, 0, mount.anchorCenterZ]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+            <cylinderGeometry args={[showcase ? 0.072 : 0.064, showcase ? 0.072 : 0.064, mount.anchorThickness, 16]} />
+            <meshStandardMaterial color={anchorColor} roughness={0.48} metalness={0.46} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
 }
 
 

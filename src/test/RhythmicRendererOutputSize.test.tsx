@@ -5,7 +5,7 @@ import { RhythmicCanvas } from "../features/rhythmic-studio/components/RhythmicC
 import { RhythmicScene3D } from "../features/rhythmic-studio/components/RhythmicScene3D";
 
 vi.mock("@react-three/fiber", () => ({
-  Canvas: () => <canvas data-testid="three-canvas" />,
+  Canvas: ({ shadows }: { shadows?: boolean }) => <canvas data-testid="three-canvas" data-shadows={String(Boolean(shadows))} />,
 }));
 vi.mock("../features/rhythmic-studio/lib/rhythmicFrameRenderer", () => ({
   drawRhythmicFrame: vi.fn(),
@@ -69,5 +69,19 @@ describe("rhythmic renderer output dimensions", () => {
     );
 
     expect(screen.getByTestId("rhythmic-three-frame")).toHaveStyle({ aspectRatio: "1280 / 720" });
+  });
+
+  it("turns the WebGL shadow map off when instrument shadows are disabled", () => {
+    render(
+      <RhythmicScene3D
+        {...sharedProps}
+        settings={{ ...DEFAULT_SETTINGS, instrumentShadowsEnabled: false }}
+        timeMs={0}
+        frameWidth={720}
+        frameHeight={1280}
+      />,
+    );
+
+    expect(screen.getByTestId("three-canvas")).toHaveAttribute("data-shadows", "false");
   });
 });

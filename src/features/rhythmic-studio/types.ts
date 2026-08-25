@@ -122,10 +122,30 @@ export const BALL_STYLES = [
   "water",
   "rainbow",
   "patchwork",
+  "multicolor-glass",
 ] as const;
 
 export type BallStyle = (typeof BALL_STYLES)[number];
 export type MarbleAvatar = "ball" | `animal-${number}`;
+export type MarbleMode = "single" | "chase";
+
+export interface MarbleAppearanceSettings {
+  ballStyle: BallStyle;
+  marbleAvatar: MarbleAvatar;
+  ballBaseColor: string;
+  ballStripeColor: string;
+  ballSize: number;
+  glowAnimation: boolean;
+  pulseAnimation: boolean;
+  impactPlatformLight: boolean;
+  impactRipple: boolean;
+  animationSensitivity: number;
+  ringPulseSensitivity: number;
+  trailLength: number;
+  particleCount: number;
+  spectralDensity: number;
+}
+
 export type ColorPaletteMode = "duotone" | "rainbow" | "tube-accent" | "neon-galaxy" | "key-rainbow";
 export type TerrainProfile = "balanced" | "tube-board" | "comet" | "xylophone";
 export type CameraProfile = "follow" | "tube-board" | "comet" | "xylophone";
@@ -137,6 +157,7 @@ export type ExportFps = (typeof EXPORT_FPS_OPTIONS)[number];
 export type RhythmicOutputPreset = "portrait-720p" | "landscape-720p";
 
 export const BACKGROUND_PRESETS = [
+  "brick-wall",
   "spotlight",
   "deep-space",
   "comet-void",
@@ -232,8 +253,10 @@ export interface StudioSettings {
   prismStart: string;
   prismEnd: string;
   backgroundColor: string;
+  marbleMode: MarbleMode;
   ballStyle: BallStyle;
   marbleAvatar: MarbleAvatar;
+  secondaryMarble: MarbleAppearanceSettings;
   ballBaseColor: string;
   ballStripeColor: string;
   colorPaletteMode: ColorPaletteMode;

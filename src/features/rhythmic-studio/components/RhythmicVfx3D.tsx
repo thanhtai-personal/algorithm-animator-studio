@@ -27,7 +27,7 @@ function hash(index: number, salt: number) {
 function effectColorFromBall(target: THREE.Color, settings: StudioSettings, white: THREE.Color) {
   target.set(settings.ballBaseColor);
   if (settings.ballStyle === "striped") target.lerp(new THREE.Color(settings.ballStripeColor), 0.28);
-  if (settings.ballStyle === "glass" || settings.ballStyle === "chrome") target.lerp(white, 0.26);
+  if (settings.ballStyle === "glass" || settings.ballStyle === "multicolor-glass" || settings.ballStyle === "chrome") target.lerp(white, 0.26);
   if (settings.ballStyle === "prism") target.offsetHSL(0.04, 0.08, 0.05);
   if (settings.ballStyle === "fire") target.set("#ff4b12").lerp(new THREE.Color("#ffc428"), 0.28);
   if (settings.ballStyle === "water") target.set("#32dff3").lerp(white, 0.16);
@@ -46,7 +46,7 @@ export function trailProfile(settings: StudioSettings) {
   if (settings.terrainProfile === "xylophone") duration = 68;
   if (settings.ballStyle === "fire") duration = 260;
   if (settings.ballStyle === "water") duration = Math.max(duration, 175);
-  if (settings.ballStyle === "glass" || settings.ballStyle === "chrome") duration *= 0.72;
+  if (settings.ballStyle === "glass" || settings.ballStyle === "multicolor-glass" || settings.ballStyle === "chrome") duration *= 0.72;
   if (settings.ballStyle === "neon" || settings.ballStyle === "prism") duration *= 1.08;
   const trailDensity = settings.ballStyle === "fire" ? 0.65 : settings.ballStyle === "water" ? 0.52 : 0.36;
   const count = Math.min(MAX_TRAIL, Math.max(1, Math.round(userLength * trailDensity)));

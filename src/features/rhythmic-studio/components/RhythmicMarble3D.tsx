@@ -3,6 +3,13 @@ import * as THREE from "three";
 import type { BallStyle, StudioSettings } from "../types";
 
 const PATCHWORK_FACE_COLORS = ["#22c8e8", "#ff3cad", "#ffb11b", "#2c70ed", "#ef3340", "#21c56b", "#6346d8", "#16b8c4"];
+const MULTICOLOR_GLASS_CORE = [
+  { color: "#e9af32", position: [-0.18, 0.14, 0.02], rotation: [0.2, 0.5, -0.45] },
+  { color: "#3399c1", position: [0.14, 0.18, 0.04], rotation: [-0.4, 0.1, 0.7] },
+  { color: "#db5a4d", position: [0.2, -0.12, -0.02], rotation: [0.55, -0.35, 0.2] },
+  { color: "#6cae67", position: [-0.12, -0.2, 0.08], rotation: [-0.15, 0.75, -0.2] },
+  { color: "#7560ae", position: [0.02, 0.01, -0.17], rotation: [0.75, 0.25, 0.55] },
+] as const;
 
 /** A non-indexed low-poly sphere lets each face keep one solid reference color. */
 export function createPatchworkGeometry() {
@@ -123,6 +130,22 @@ function MarbleMaterial({ style, settings }: { style: BallStyle; settings: Studi
       />
     );
   }
+  if (style === "multicolor-glass") {
+    return (
+      <meshPhysicalMaterial
+        color="#c9f3e5"
+        roughness={0.025}
+        transmission={0.94}
+        thickness={0.92}
+        ior={1.5}
+        clearcoat={1}
+        clearcoatRoughness={0.018}
+        attenuationColor="#6cb9a8"
+        attenuationDistance={2.1}
+        envMapIntensity={1.9}
+      />
+    );
+  }
   if (style === "fire") {
     return <meshPhysicalMaterial color="#ff6a19" emissive="#ff2a0a" emissiveIntensity={1.35} metalness={0.08} roughness={0.12} clearcoat={1} clearcoatRoughness={0.04} />;
   }
@@ -218,6 +241,34 @@ export const RhythmicMarble3D = forwardRef<THREE.Group, {
           <icosahedronGeometry args={[1, 2]} />
           <meshStandardMaterial color={settings.ballStripeColor} emissive={settings.ballBaseColor} emissiveIntensity={0.1} roughness={0.18} metalness={0.52} />
         </mesh>
+      )}
+      {settings.ballStyle === "multicolor-glass" && (
+        <group data-marble-core="multicolor-glass" rotation={[0.18, -0.24, 0.16]}>
+          {MULTICOLOR_GLASS_CORE.map((piece, index) => (
+            <mesh
+              key={piece.color}
+              position={piece.position}
+              rotation={piece.rotation}
+              scale={[0.52, 0.18, 0.3]}
+            >
+              <icosahedronGeometry args={[1, 2]} />
+              <meshPhysicalMaterial
+                color={piece.color}
+                emissive={piece.color}
+                emissiveIntensity={0.05}
+                roughness={0.18}
+                clearcoat={0.72}
+                clearcoatRoughness={0.1}
+                transparent
+                opacity={0.84}
+              />
+            </mesh>
+          ))}
+          <mesh scale={0.78}>
+            <sphereGeometry args={[1, 36, 28]} />
+            <meshBasicMaterial color="#e5fff7" transparent opacity={0.025} side={THREE.BackSide} depthWrite={false} />
+          </mesh>
+        </group>
       )}
       {settings.ballStyle === "fire" && <mesh scale={0.48}><icosahedronGeometry args={[1, 2]} /><meshBasicMaterial color="#fff3a1" transparent opacity={0.72} /></mesh>}
       {settings.ballStyle === "water" && <><mesh scale={0.32}><sphereGeometry args={[1, 28, 20]} /><meshPhysicalMaterial color="#d9fcff" transmission={0.62} roughness={0.06} transparent opacity={0.68} /></mesh><mesh position={[0.38, 0.32, 0.66]} scale={0.12}><sphereGeometry args={[1, 18, 12]} /><meshBasicMaterial color="#ffffff" transparent opacity={0.72} /></mesh></>}

@@ -8,7 +8,9 @@ import type { MarblePlatform } from "../engine/marblePhysicsTypes";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 import { cameraOffsetFor2DFocus, unprojectPresetCamera } from "../lib/presetCamera";
 import { drawRhythmicFrame } from "../lib/rhythmicFrameRenderer";
-import { instrumentHitForPlatform } from "../lib/instrumentHitEvent";
+import type { ChaseCoursePlan } from "../lib/chaseCourse";
+import { chaseFocusAtTime } from "../lib/chaseFrameRenderer2D";
+import { emitDueRhythmicHits } from "../lib/chaseAudioScheduler";
 
 interface Props {
   events: NoteEvent[];
@@ -33,6 +35,7 @@ interface Props {
   canvasRef: MutableRefObject<HTMLCanvasElement | null>;
   platforms: MarblePlatform[];
   resolveSettings: StudioSettingsResolver;
+  chasePlan: ChaseCoursePlan | null;
 }
 
 const PREVIEW_FPS = 45;
@@ -54,7 +57,7 @@ function firstEventAtOrAfter(events: NoteEvent[], timeMs: number) {
   return low;
 }
 
-export function RhythmicCanvas({ events, settings, durationMs, frameWidth, frameHeight, playing, playbackToken, playbackStartMs, playbackEndMs, backgroundUrl, lyrics, courseOverrides, selectedNodeIndex, onSelectNode, recording, targetFps, onNote, onTime, onEnded, canvasRef, platforms, resolveSettings }: Props) {
+export function RhythmicCanvas({ events, settings, durationMs, frameWidth, frameHeight, playing, playbackToken, playbackStartMs, playbackEndMs, backgroundUrl, lyrics, courseOverrides, selectedNodeIndex, onSelectNode, recording, targetFps, onNote, onTime, onEnded, canvasRef, platforms, resolveSettings, chasePlan }: Props) {
   const lang = useSystemLang();
   const beatLabel = rhythmicText(lang, "canvas.beats");
   const [backgroundImage, setBackgroundImage] = useState<HTMLImageElement | null>(null);
@@ -80,7 +83,9 @@ export function RhythmicCanvas({ events, settings, durationMs, frameWidth, frame
   useEffect(() => {
     const ctx = contextFor(canvasRef.current);
     if (!ctx) return;
-    const point = marbleAtTime(currentTime.current, events, platforms, settings, courseOverrides, resolveSettings);
+    const point = chasePlan
+      ? chaseFocusAtTime(currentTime.current, chasePlan, settings, resolveSettings)
+      : marbleAtTime(currentTime.current, events, platforms, settings, courseOverrides, resolveSettings);
     const frameSettings = resolveSettings(point.platformIndex);
     const camera = cameraOffsetFor2DFocus(point, frameSettings, frameWidth, frameHeight);
     cameraX.current = camera.x;
@@ -89,22 +94,25 @@ export function RhythmicCanvas({ events, settings, durationMs, frameWidth, frame
       ctx, width: frameWidth, height: frameHeight, timeMs: currentTime.current, events, platforms,
       cameraX: cameraX.current, cameraY: cameraY.current, durationMs, settings: frameSettings, beatLabel,
       backgroundImage, lyrics, courseOverrides, selectedNodeIndex, recording, quality: "idle",
+      chasePlan, resolveSettings,
     }));
     return () => cancelAnimationFrame(frame);
-  }, [backgroundImage, beatLabel, canvasRef, courseOverrides, durationMs, events, frameHeight, frameWidth, lyrics, platforms, recording, resolveSettings, selectedNodeIndex, settings]);
+  }, [backgroundImage, beatLabel, canvasRef, chasePlan, courseOverrides, durationMs, events, frameHeight, frameWidth, lyrics, platforms, recording, resolveSettings, selectedNodeIndex, settings]);
 
   useEffect(() => {
     if (previousToken.current === playbackToken) return;
     previousToken.current = playbackToken;
     currentTime.current = playbackStartMs;
     nextNoteIndex.current = firstEventAtOrAfter(events, playbackStartMs);
-    const point = marbleAtTime(playbackStartMs, events, platforms, settings, courseOverrides, resolveSettings);
+    const point = chasePlan
+      ? chaseFocusAtTime(playbackStartMs, chasePlan, settings, resolveSettings)
+      : marbleAtTime(playbackStartMs, events, platforms, settings, courseOverrides, resolveSettings);
     const frameSettings = resolveSettings(point.platformIndex);
     const camera = cameraOffsetFor2DFocus(point, frameSettings, frameWidth, frameHeight);
     cameraX.current = camera.x;
     cameraY.current = camera.y;
     onTime(playbackStartMs);
-  }, [courseOverrides, events, frameHeight, frameWidth, onTime, playbackStartMs, playbackToken, platforms, resolveSettings, settings]);
+  }, [chasePlan, courseOverrides, events, frameHeight, frameWidth, onTime, playbackStartMs, playbackToken, platforms, resolveSettings, settings]);
 
   useEffect(() => {
     const cancelScheduled = () => {
@@ -129,14 +137,20 @@ export function RhythmicCanvas({ events, settings, durationMs, frameWidth, frame
       lastRenderAt.current = now;
       const time = now - start;
       currentTime.current = time;
-      while (nextNoteIndex.current < events.length && events[nextNoteIndex.current].timeMs <= time) {
-        const index = nextNoteIndex.current;
-        onNote(instrumentHitForPlatform(index, platforms, resolveSettings(index), courseOverrides));
-        nextNoteIndex.current += 1;
-      }
-      const marble = marbleAtTime(time, events, platforms, settings, courseOverrides, resolveSettings);
-      const frameSettings = resolveSettings(marble.platformIndex);
-      const targetCamera = cameraOffsetFor2DFocus(marble, frameSettings, frameWidth, frameHeight);
+      nextNoteIndex.current = emitDueRhythmicHits({
+        nextIndex: nextNoteIndex.current,
+        timeMs: time,
+        events,
+        platforms,
+        resolveSettings,
+        courseOverrides,
+        onNote,
+      });
+      const focus = chasePlan
+        ? chaseFocusAtTime(time, chasePlan, settings, resolveSettings)
+        : marbleAtTime(time, events, platforms, settings, courseOverrides, resolveSettings);
+      const frameSettings = resolveSettings(focus.platformIndex);
+      const targetCamera = cameraOffsetFor2DFocus(focus, frameSettings, frameWidth, frameHeight);
       const targetCameraX = targetCamera.x;
       const targetCameraY = targetCamera.y;
       // Treat cameraSmoothing as a 60fps response value, then normalize it for
@@ -150,6 +164,7 @@ export function RhythmicCanvas({ events, settings, durationMs, frameWidth, frame
         ctx, width: frameWidth, height: frameHeight, timeMs: time, events, platforms,
         cameraX: cameraX.current, cameraY: cameraY.current, durationMs, settings: frameSettings, beatLabel,
         backgroundImage, lyrics, courseOverrides, selectedNodeIndex, recording, quality: "live",
+        chasePlan, resolveSettings,
       });
       if (now - lastUiUpdate.current >= 64) { lastUiUpdate.current = now; onTime(time); }
       if (time >= playbackEndMs) { onTime(playbackEndMs); onEnded(); return; }
@@ -157,7 +172,7 @@ export function RhythmicCanvas({ events, settings, durationMs, frameWidth, frame
     };
     scheduleNext(loop);
     return cancelScheduled;
-  }, [backgroundImage, beatLabel, canvasRef, courseOverrides, durationMs, events, frameHeight, frameWidth, lyrics, onEnded, onNote, onTime, playbackEndMs, platforms, playing, playbackToken, recording, resolveSettings, selectedNodeIndex, settings, targetFps]);
+  }, [backgroundImage, beatLabel, canvasRef, chasePlan, courseOverrides, durationMs, events, frameHeight, frameWidth, lyrics, onEnded, onNote, onTime, playbackEndMs, platforms, playing, playbackToken, recording, resolveSettings, selectedNodeIndex, settings, targetFps]);
 
   const selectAtPointer = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
@@ -165,7 +180,9 @@ export function RhythmicCanvas({ events, settings, durationMs, frameWidth, frame
     const rect = canvas.getBoundingClientRect();
     const screenX = (clientX - rect.left) * frameWidth / rect.width;
     const screenY = (clientY - rect.top) * frameHeight / rect.height;
-    const currentPoint = marbleAtTime(currentTime.current, events, platforms, settings, courseOverrides, resolveSettings);
+    const currentPoint = chasePlan
+      ? chaseFocusAtTime(currentTime.current, chasePlan, settings, resolveSettings)
+      : marbleAtTime(currentTime.current, events, platforms, settings, courseOverrides, resolveSettings);
     const frameSettings = resolveSettings(currentPoint.platformIndex);
     const projected = unprojectPresetCamera({ x: screenX, y: screenY }, frameSettings, frameWidth, frameHeight);
     const x = projected.x + cameraX.current;

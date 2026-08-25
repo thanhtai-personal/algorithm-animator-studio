@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { NoteEvent, StudioSettings } from "../types";
 import type { MarblePlatform } from "../engine/marblePhysicsTypes";
+import type { ChaseCoursePlan } from "../lib/chaseCourse";
+import type { MarbleCoursePreparationResult } from "../engine/marbleCoursePreparation";
 import { createMarbleCourseWorkerPayload, workerPostMessageError } from "../engine/marbleCourseWorkerPayload";
 
 interface WorkerProgressMessage {
@@ -12,7 +14,7 @@ interface WorkerProgressMessage {
 interface WorkerDoneMessage {
   id: number;
   type: "done";
-  platforms: MarblePlatform[];
+  result: MarbleCoursePreparationResult;
 }
 
 interface WorkerErrorMessage {
@@ -24,7 +26,9 @@ interface WorkerErrorMessage {
 type WorkerMessage = WorkerProgressMessage | WorkerDoneMessage | WorkerErrorMessage;
 
 export interface PreparedMarbleCourse {
+  mode: StudioSettings["marbleMode"];
   platforms: MarblePlatform[];
+  chasePlan: ChaseCoursePlan | null;
   isPreparing: boolean;
   progress: number;
   error: string | null;
@@ -55,13 +59,20 @@ export function usePreparedMarbleCourse(
   presetMixSeed: number,
 ): PreparedMarbleCourse {
   const requestId = useRef(0);
-  const [state, setState] = useState<PreparedMarbleCourse>({ platforms: [], isPreparing: true, progress: 0, error: null });
+  const [state, setState] = useState<PreparedMarbleCourse>({
+    mode: settings.marbleMode,
+    platforms: [],
+    chasePlan: null,
+    isPreparing: true,
+    progress: 0,
+    error: null,
+  });
 
   useEffect(() => {
     const id = requestId.current + 1;
     requestId.current = id;
     if (!events.length) {
-      setState({ platforms: [], isPreparing: false, progress: 1, error: null });
+      setState({ mode: settings.marbleMode, platforms: [], chasePlan: null, isPreparing: false, progress: 1, error: null });
       return;
     }
 
@@ -74,7 +85,7 @@ export function usePreparedMarbleCourse(
         return;
       }
       if (message.data.type === "done") {
-        setState({ platforms: message.data.platforms, isPreparing: false, progress: 1, error: null });
+        setState({ ...message.data.result, isPreparing: false, progress: 1, error: null });
         worker.terminate();
         return;
       }

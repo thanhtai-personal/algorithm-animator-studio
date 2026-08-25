@@ -3,8 +3,12 @@ import type { StudioSettings } from "../types";
 import { presetCameraScale, projectPresetCamera } from "./presetCamera";
 
 export const PLATFORM_PRELOAD_AHEAD_COUNT = 7;
-export const PLATFORM_3D_RETAIN_BEHIND_PX = 1_600;
-export const PLATFORM_3D_PRELOAD_AHEAD_PX = 3_200;
+// Roughly three screens behind and six screens ahead at the default WebGL
+// scale. The former 1,600/3,200 window mounted 110 dense instruments on frame
+// zero, making the scene expensive and visually noisy long before those props
+// could enter the camera. This still keeps a complete upcoming phrase ready.
+export const PLATFORM_3D_RETAIN_BEHIND_PX = 1_000;
+export const PLATFORM_3D_PRELOAD_AHEAD_PX = 2_000;
 const PLATFORM_MIN_VERTICAL_OVERSCAN_PX = 720;
 const PLATFORM_MIN_HORIZONTAL_OVERSCAN_PX = 320;
 

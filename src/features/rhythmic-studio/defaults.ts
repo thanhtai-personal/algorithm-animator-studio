@@ -1,5 +1,6 @@
 import type { NoteEvent, StudioSettings } from './types';
 import { DEFAULT_COLLISION_VOLUME } from './lib/audioMix';
+import { DEFAULT_SECONDARY_MARBLE } from './lib/chaseSettings';
 
 export const DEFAULT_SETTINGS: StudioSettings = {
   exportFps: 60,
@@ -31,15 +32,17 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   shellColor: '#d8dbe5',
   prismStart: '#78b7ff',
   prismEnd: '#ff9a64',
-  backgroundColor: '#454c58',
+  backgroundColor: '#15171a',
+  marbleMode: 'single',
   ballStyle: 'striped',
   marbleAvatar: 'ball',
+  secondaryMarble: { ...DEFAULT_SECONDARY_MARBLE },
   ballBaseColor: '#d93631',
   ballStripeColor: '#ffffff',
   colorPaletteMode: 'tube-accent',
   terrainProfile: 'tube-board',
   cameraProfile: 'tube-board',
-  backgroundPreset: 'spotlight',
+  backgroundPreset: 'brick-wall',
   backgroundMotion: 0.04,
   backgroundImageOpacity: 0.86,
   backgroundImageBlur: 0,

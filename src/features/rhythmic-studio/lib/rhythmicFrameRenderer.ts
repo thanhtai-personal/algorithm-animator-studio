@@ -13,6 +13,9 @@ import { drawPresetTrail } from "./presetTrailRenderer";
 import { drawStyledPlatform } from "./platformStyles";
 import { drawDenseSurfaces2D } from "./denseSurface2D";
 import { platformIsInside2DRenderWindow } from "./platformViewport";
+import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
+import type { ChaseCoursePlan } from "./chaseCourse";
+import { drawChasePerformers2D } from "./chaseFrameRenderer2D";
 
 interface DrawFrameArgs {
   ctx: CanvasRenderingContext2D;
@@ -32,6 +35,8 @@ interface DrawFrameArgs {
   selectedNodeIndex: number | null;
   recording: boolean;
   quality: RenderQuality;
+  chasePlan?: ChaseCoursePlan | null;
+  resolveSettings?: StudioSettingsResolver;
 }
 
 function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
@@ -160,7 +165,7 @@ function trailProfile(settings: StudioSettings) {
 }
 
 export function drawRhythmicFrame(args: DrawFrameArgs) {
-  const { ctx, width, height, timeMs, events, platforms, cameraX, cameraY, durationMs, settings, beatLabel, backgroundImage, lyrics, courseOverrides, selectedNodeIndex, recording, quality } = args;
+  const { ctx, width, height, timeMs, events, platforms, cameraX, cameraY, durationMs, settings, beatLabel, backgroundImage, lyrics, courseOverrides, selectedNodeIndex, recording, quality, chasePlan, resolveSettings } = args;
   const live = quality === "live";
   const pulse = live && settings.pulseAnimation ? collisionStrength(timeMs, events) * settings.animationSensitivity : 0;
   drawRhythmicBackground(ctx, width, height, settings, pulse, live ? timeMs : 0, backgroundImage);
@@ -199,29 +204,36 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
       ctx.beginPath(); ctx.arc(selected.hitX, y, Math.max(22, settings.ballSize + 11), 0, Math.PI * 2); ctx.stroke(); ctx.restore();
     }
   }
-  const marble = marbleAtTime(timeMs, events, platforms, settings, courseOverrides);
-  if (live) {
-    const { count: trailCount, stepMs } = trailProfile(settings);
-    const trailPoints = Array.from({ length: trailCount }, (_, index) => {
-      const i = trailCount - index;
-      return { ...marbleAtTime(Math.max(0, timeMs - i * stepMs), events, platforms, settings, courseOverrides), age: i / Math.max(1, trailCount) };
+  if (chasePlan) {
+    if (live) drawParticles(ctx, platforms, cameraY, timeMs, settings);
+    drawChasePerformers2D({
+      ctx, timeMs, durationMs, cameraY, settings, plan: chasePlan, quality, resolveSettings,
     });
-    if (!drawPresetTrail(ctx, trailPoints, cameraY, settings)) {
-      trailPoints.forEach((point) => {
-        const alpha = (1 - point.age) * 0.3;
-        ctx.globalAlpha = alpha; ctx.fillStyle = point.color;
-        ctx.beginPath(); ctx.arc(point.x, point.y - cameraY, Math.max(2, settings.ballSize * (0.18 + alpha * 0.8)), 0, Math.PI * 2); ctx.fill();
+  } else {
+    const marble = marbleAtTime(timeMs, events, platforms, settings, courseOverrides);
+    if (live) {
+      const { count: trailCount, stepMs } = trailProfile(settings);
+      const trailPoints = Array.from({ length: trailCount }, (_, index) => {
+        const i = trailCount - index;
+        return { ...marbleAtTime(Math.max(0, timeMs - i * stepMs), events, platforms, settings, courseOverrides), age: i / Math.max(1, trailCount) };
       });
-    }
-    ctx.globalAlpha = 1;
-    drawParticles(ctx, platforms, cameraY, timeMs, settings);
-    const beforeAvatar = marbleAtTime(Math.max(0, timeMs - 12), events, platforms, settings, courseOverrides);
-    const afterAvatar = marbleAtTime(Math.min(durationMs, timeMs + 12), events, platforms, settings, courseOverrides);
-    const avatarMotion = marbleAvatarMotion2D(timeMs, events, platforms, marble, beforeAvatar, afterAvatar);
-    if (!drawMarbleAvatar2D(ctx, marble, cameraY, pulse, settings, avatarMotion)) {
-      drawPresetMarble(ctx, marble, cameraY, pulse, settings);
-    }
-  } else drawIdleMarble(ctx, marble, cameraY, settings);
+      if (!drawPresetTrail(ctx, trailPoints, cameraY, settings)) {
+        trailPoints.forEach((point) => {
+          const alpha = (1 - point.age) * 0.3;
+          ctx.globalAlpha = alpha; ctx.fillStyle = point.color;
+          ctx.beginPath(); ctx.arc(point.x, point.y - cameraY, Math.max(2, settings.ballSize * (0.18 + alpha * 0.8)), 0, Math.PI * 2); ctx.fill();
+        });
+      }
+      ctx.globalAlpha = 1;
+      drawParticles(ctx, platforms, cameraY, timeMs, settings);
+      const beforeAvatar = marbleAtTime(Math.max(0, timeMs - 12), events, platforms, settings, courseOverrides);
+      const afterAvatar = marbleAtTime(Math.min(durationMs, timeMs + 12), events, platforms, settings, courseOverrides);
+      const avatarMotion = marbleAvatarMotion2D(timeMs, events, platforms, marble, beforeAvatar, afterAvatar);
+      if (!drawMarbleAvatar2D(ctx, marble, cameraY, pulse, settings, avatarMotion)) {
+        drawPresetMarble(ctx, marble, cameraY, pulse, settings);
+      }
+    } else drawIdleMarble(ctx, marble, cameraY, settings);
+  }
   ctx.restore();
   drawLyrics(ctx, width, height, timeMs, lyrics, settings);
 

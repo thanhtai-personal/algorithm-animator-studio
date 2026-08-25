@@ -7,10 +7,11 @@ import { RhythmicCourseItems3D } from "./RhythmicCourseItems3D";
 import { RhythmicEnvironment3D } from "./RhythmicEnvironment3D";
 import { RhythmicLightingRig3D } from "./RhythmicLightingRig3D";
 import { RhythmicMarble3D } from "./RhythmicMarble3D";
+import { RhythmicChaseMarbles3D, type RhythmicChaseMarblesHandle } from "./RhythmicChaseMarbles3D";
 import { RhythmicPlatformField3D } from "./RhythmicPlatformField3D";
 import { RhythmicTitle3D } from "./RhythmicTitle3D";
 import { RhythmicVfx3D, type RhythmicVfxHandle } from "./RhythmicVfx3D";
-import { impactSquash, RHYTHMIC_WORLD_SCALE, setWorldPoint, visualMarbleAtTime } from "./RhythmicMotion3D";
+import { impactSquash, RHYTHMIC_WORLD_SCALE, setWorldPoint, visualChaseFocusAtTime, visualMarbleAtTime } from "./RhythmicMotion3D";
 import {
   cameraDepthProfile,
   cameraLookAheadMs,
@@ -23,7 +24,8 @@ import {
   RHYTHMIC_CAMERA_Z,
   RHYTHMIC_UI_UPDATE_MS,
 } from "./rhythmicSceneMath3D";
-import { instrumentHitForPlatform } from "../lib/instrumentHitEvent";
+import { emitDueRhythmicHits } from "../lib/chaseAudioScheduler";
+import { settingsForChaseOwner } from "../engine/chaseCoursePlanner";
 
 function RendererQuality({ recording, shadowsEnabled, exportFps }: { recording: boolean; shadowsEnabled: boolean; exportFps: number }) {
   const { gl } = useThree();
@@ -36,14 +38,21 @@ function RendererQuality({ recording, shadowsEnabled, exportFps }: { recording: 
   return null;
 }
 
+function sceneSampleAt(props: RhythmicScene3DProps, timeMs: number) {
+  return props.chasePlan
+    ? visualChaseFocusAtTime(timeMs, props.chasePlan, props.settings, props.resolveSettings)
+    : visualMarbleAtTime(timeMs, props.events, props.platforms, props.settings, props.courseOverrides, props.resolveSettings);
+}
+
 export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
   const { camera, invalidate } = useThree();
   const marbleMotionRef = useRef<THREE.Group>(null);
   const marbleRef = useRef<THREE.Group>(null);
+  const chaseMarblesRef = useRef<RhythmicChaseMarblesHandle>(null);
   const vfxRef = useRef<RhythmicVfxHandle>(null);
   const initialSample = useMemo(
-    () => visualMarbleAtTime(props.timeMs, props.events, props.platforms, props.settings, props.courseOverrides, props.resolveSettings),
-    [props.courseOverrides, props.events, props.platforms, props.resolveSettings, props.settings, props.timeMs],
+    () => sceneSampleAt(props, props.timeMs),
+    [props.chasePlan, props.courseOverrides, props.events, props.platforms, props.resolveSettings, props.settings, props.timeMs],
   );
   const initialVisualSettings = useMemo(() => props.resolveSettings(initialSample.segmentIndex), [initialSample.segmentIndex, props.resolveSettings]);
   const [activeVisualSettings, setActiveVisualSettings] = useState(initialVisualSettings);
@@ -80,25 +89,27 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
   ))), [props.platforms]);
 
   const syncScene = useCallback((timeMs: number, deltaSeconds: number, snapCamera = false) => {
-    const sample = visualMarbleAtTime(timeMs, props.events, props.platforms, props.settings, props.courseOverrides, props.resolveSettings);
+    const sample = sceneSampleAt(props, timeMs);
     const frameSettings = props.resolveSettings(sample.segmentIndex);
     if (frameSettings !== activeSettingsRef.current) {
       activeSettingsRef.current = frameSettings;
       setActiveVisualSettings(frameSettings);
     }
     const lookAheadMs = cameraLookAheadMs(frameSettings);
-    const ahead = visualMarbleAtTime(Math.min(props.durationMs, timeMs + lookAheadMs), props.events, props.platforms, props.settings, props.courseOverrides, props.resolveSettings);
-    const farAhead = visualMarbleAtTime(Math.min(props.durationMs, timeMs + lookAheadMs * 1.72), props.events, props.platforms, props.settings, props.courseOverrides, props.resolveSettings);
+    const ahead = sceneSampleAt(props, Math.min(props.durationMs, timeMs + lookAheadMs));
+    const farAhead = sceneSampleAt(props, Math.min(props.durationMs, timeMs + lookAheadMs * 1.72));
     const sampleWindow = 10;
-    const before = visualMarbleAtTime(Math.max(0, timeMs - sampleWindow), props.events, props.platforms, props.settings, props.courseOverrides, props.resolveSettings);
-    const after = visualMarbleAtTime(Math.min(props.durationMs, timeMs + sampleWindow), props.events, props.platforms, props.settings, props.courseOverrides, props.resolveSettings);
+    const before = sceneSampleAt(props, Math.max(0, timeMs - sampleWindow));
+    const after = sceneSampleAt(props, Math.min(props.durationMs, timeMs + sampleWindow));
 
     if (sample.platformIndex !== focusIndexRef.current) {
       focusIndexRef.current = sample.platformIndex;
       setFocusIndex(sample.platformIndex);
     }
 
-    const impactStrength = platformImpactStrength(sample.impactAgeMs, frameSettings);
+    const impactOwner = props.chasePlan?.ownership.ownerByEventIndex[sample.platformIndex];
+    const impactSettings = impactOwner ? settingsForChaseOwner(frameSettings, impactOwner) : frameSettings;
+    const impactStrength = platformImpactStrength(sample.impactAgeMs, impactSettings);
     const impactNow = performance.now();
     const previousImpact = impactLightRef.current;
     if (
@@ -122,7 +133,7 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
 
     const marbleMotion = marbleMotionRef.current;
     const marbleMesh = marbleRef.current;
-    if (marbleMotion && marbleMesh) {
+    if (!props.chasePlan && marbleMotion && marbleMesh) {
       const radius = Math.max(0.06, frameSettings.ballSize * RHYTHMIC_WORLD_SCALE);
       const timeDelta = timeMs - previousTimeRef.current;
       displacement.copy(world).sub(previousWorld);
@@ -142,6 +153,7 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
       marbleMotion.scale.set(radius * (1 + squash * 0.32), radius * (1 - squash), radius * (1 + squash * 0.32));
       marbleMesh.quaternion.copy(rollQuaternion.current);
     }
+    chaseMarblesRef.current?.update(timeMs);
 
     previousWorld.copy(world);
     previousTimeRef.current = timeMs;
@@ -214,7 +226,7 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     const bankLimit = rollingSurface ? 0.006 : isShowcase ? 0.008 : isXylophone ? 0.014 : isTubeBoard ? 0.018 : 0.028;
     const bankTarget = THREE.MathUtils.clamp(-velocity.x * bankStrength, -bankLimit, bankLimit);
     perspective.rotation.z = snapCamera ? bankTarget : THREE.MathUtils.damp(perspective.rotation.z, bankTarget, 4.8, deltaSeconds);
-  }, [afterWorld, aheadWorld, beforeWorld, farAheadWorld, camera, cameraTarget, deltaQuaternion, displacement, lookTarget, previousWorld, props.courseOverrides, props.durationMs, props.events, props.platforms, props.resolveSettings, props.settings, rollAxis, smoothedLook, velocity, world]);
+  }, [afterWorld, aheadWorld, beforeWorld, farAheadWorld, camera, cameraTarget, deltaQuaternion, displacement, lookTarget, previousWorld, props.chasePlan, props.courseOverrides, props.durationMs, props.events, props.platforms, props.resolveSettings, props.settings, rollAxis, smoothedLook, velocity, world]);
 
   useEffect(() => {
     currentTimeRef.current = props.playbackStartMs;
@@ -243,11 +255,15 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     const endMs = props.playbackEndMs || props.durationMs;
     const timeMs = Math.min(endMs, Math.max(0, performance.now() - playbackEpochRef.current));
     currentTimeRef.current = timeMs;
-    while (nextNoteIndex.current < props.events.length && props.events[nextNoteIndex.current].timeMs <= timeMs) {
-      const index = nextNoteIndex.current;
-      props.onNote(instrumentHitForPlatform(index, props.platforms, props.resolveSettings(index), props.courseOverrides));
-      nextNoteIndex.current += 1;
-    }
+    nextNoteIndex.current = emitDueRhythmicHits({
+      nextIndex: nextNoteIndex.current,
+      timeMs,
+      events: props.events,
+      platforms: props.platforms,
+      resolveSettings: props.resolveSettings,
+      courseOverrides: props.courseOverrides,
+      onNote: props.onNote,
+    });
     syncScene(timeMs, delta);
     const now = performance.now();
     if (now - lastUiUpdate.current >= RHYTHMIC_UI_UPDATE_MS) {
@@ -270,6 +286,8 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     <RhythmicCourseItems3D platforms={props.platforms} overrides={props.courseOverrides} settings={props.settings} focusIndex={focusIndex} events={props.events} resolveSettings={props.resolveSettings} />
     <RhythmicPlatformField3D platforms={props.platforms} settings={props.settings} courseOverrides={props.courseOverrides} focusIndex={focusIndex} selectedNodeIndex={props.selectedNodeIndex} onSelectNode={props.onSelectNode} resolveSettings={props.resolveSettings} impactIndex={impactLight.index} impactStrength={impactLight.strength} timeMs={props.timeMs} />
     <RhythmicVfx3D ref={vfxRef} events={props.events} platforms={props.platforms} settings={activeVisualSettings} courseOverrides={props.courseOverrides} resolveSettings={props.resolveSettings} />
-    <group ref={marbleMotionRef}><RhythmicMarble3D ref={marbleRef} settings={activeVisualSettings} /></group>
+    {props.chasePlan
+      ? <RhythmicChaseMarbles3D ref={chaseMarblesRef} plan={props.chasePlan} settings={props.settings} resolveSettings={props.resolveSettings} />
+      : <group ref={marbleMotionRef}><RhythmicMarble3D ref={marbleRef} settings={activeVisualSettings} /></group>}
   </>;
 }

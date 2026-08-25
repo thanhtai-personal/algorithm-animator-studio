@@ -272,6 +272,10 @@ export function rollingRouteCandidate(
   const redirected = incomingDirection !== 0 && Math.sign(actual.x) !== incomingDirection;
   const tangent = normalize(actual);
   let normal = { x: tangent.y, y: -tangent.x };
+  // A rolling lane has one playable face: the face above the course. Reversing
+  // travel direction reverses the tangent, but must not turn that face toward
+  // the floor or the marble will appear to cling to the underside of the keys.
+  if (normal.y > 0) normal = { x: -normal.x, y: -normal.y };
   let outgoing = { x: actual.x / dt, y: actual.y / dt };
   if (redirected) {
     const gravity = marblePhysicsProfile(settings).gravity;
@@ -281,6 +285,7 @@ export function rollingRouteCandidate(
     };
     normal = normalize({ x: incoming.x - outgoing.x, y: incoming.y - outgoing.y });
     if (incoming.x * normal.x + incoming.y * normal.y > 0) normal = { x: -normal.x, y: -normal.y };
+    if (normal.y > 0) normal = { x: -normal.x, y: -normal.y };
   }
   return {
     normal,

@@ -92,6 +92,12 @@ const BALL_STYLE_VISUAL_PROFILES: Record<BallStyle, BallStyleVisualProfile> = {
     animationSensitivity: 0.58, ringPulseSensitivity: 0.62,
     trailLength: 4, particleCount: 8, spectralDensity: 0.34,
   }),
+  "multicolor-glass": profile({
+    ballBaseColor: "#b8ead8", ballStripeColor: "#f4c95d", ballSize: 16,
+    glowAnimation: false, impactRipple: false,
+    animationSensitivity: 0.24, ringPulseSensitivity: 0.22,
+    trailLength: 1, particleCount: 1, spectralDensity: 0.07,
+  }),
 };
 
 export function settingsForBallStyle(style: BallStyle) {

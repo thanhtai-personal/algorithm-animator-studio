@@ -4,6 +4,7 @@ import { listRhythmicProjects } from "../lib/projectStorage";
 import { buildRhythmicTimeline, timelineDuration } from "../lib/timeline";
 import { settingsForBallStyle } from "../lib/ballStyleProfiles";
 import { normalizeRhythmicOutputPreset } from "../lib/outputSize";
+import { normalizeChaseSettings, secondaryMarbleForStyle } from "../lib/chaseSettings";
 import type { LyricFormat } from "../lib/lyrics";
 import type { RhythmicTextKey } from "../i18n";
 import type { RhythmicPresetId } from "../lib/studioPresets";
@@ -17,6 +18,8 @@ import type {
   StoredProject,
   StudioSettings,
   RhythmicRendererMode,
+  BallStyle,
+  MarbleAvatar,
 } from "../types";
 
 export type MessageToken = { key: RhythmicTextKey; values?: Record<string, string | number> };
@@ -29,7 +32,10 @@ const DEFAULT_SOURCE: AudioSourceMeta = {
 };
 
 export class RhythmicStudioStore {
-  settings: StudioSettings = { ...DEFAULT_SETTINGS };
+  settings: StudioSettings = {
+    ...DEFAULT_SETTINGS,
+    secondaryMarble: { ...DEFAULT_SETTINGS.secondaryMarble },
+  };
   sourceEvents: NoteEvent[] = [...BUILTIN_MELODIES["Neon Scale"]];
   source: AudioSourceMeta = DEFAULT_SOURCE;
   audioUrl: string | null = null;
@@ -90,6 +96,20 @@ export class RhythmicStudioStore {
     // emitted a follow-up change after the preset was applied.
   }
 
+  setSecondaryMarbleStyle(ballStyle: BallStyle) {
+    this.settings = {
+      ...this.settings,
+      secondaryMarble: secondaryMarbleForStyle(ballStyle, this.settings.secondaryMarble.marbleAvatar),
+    };
+  }
+
+  setSecondaryMarbleAvatar(marbleAvatar: MarbleAvatar) {
+    this.settings = {
+      ...this.settings,
+      secondaryMarble: { ...this.settings.secondaryMarble, marbleAvatar },
+    };
+  }
+
 
   selectPreset(id: RhythmicPresetId, settings: Partial<StudioSettings>) {
     const next = { ...this.settings, ...settings };
@@ -110,7 +130,7 @@ export class RhythmicStudioStore {
   }
 
   replaceSettings(settings: StudioSettings) {
-    const next = { ...DEFAULT_SETTINGS, ...settings };
+    const next = { ...DEFAULT_SETTINGS, ...settings, ...normalizeChaseSettings(settings) };
     next.backgroundPreset = normalizeBackgroundPreset(next.backgroundPreset);
     next.outputPreset = normalizeRhythmicOutputPreset(next.outputPreset);
     this.settings = next;

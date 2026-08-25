@@ -23,6 +23,8 @@ export function BallStylePreview({ style }: { style: BallStyle }) {
             ? "radial-gradient(circle at 30% 25%, #ffffff 0 9%, #c9fbff 17%, #37dff2 42%, #138bc8 68%, #073457 100%)"
             : style === "patchwork"
               ? "radial-gradient(circle at 32% 28%,rgba(255,255,255,.46),rgba(255,255,255,0)_28%),conic-gradient(from 18deg,#22c8e8,#2c70ed,#6346d8,#ff3cad,#ef3340,#ffb11b,#21c56b,#22c8e8)"
+            : style === "multicolor-glass"
+              ? "radial-gradient(circle at 30% 24%,rgba(255,255,255,.98) 0 8%,rgba(222,252,242,.55) 16%,rgba(97,181,167,.2) 48%,rgba(20,77,91,.38) 76%,rgba(4,17,28,.78) 100%)"
             : style === "rainbow"
               ? "conic-gradient(from 35deg,#ff3b30,#ffcc00,#34c759,#22d3ee,#3478f6,#af52de,#ff3b30)"
               : style === "flower"
@@ -48,6 +50,14 @@ export function BallStylePreview({ style }: { style: BallStyle }) {
         <span className="absolute right-[3px] top-[10px] h-5 w-5 bg-blue-600/95" style={{ clipPath: "polygon(10% 8%,82% 0,100% 72%,38% 100%)" }} />
         <span className="absolute bottom-[3px] left-[8px] h-5 w-5 bg-fuchsia-500/95" style={{ clipPath: "polygon(0 12%,78% 0,100% 70%,38% 100%)" }} />
         <span className="absolute bottom-[4px] right-[6px] h-4 w-5 bg-emerald-500/95" style={{ clipPath: "polygon(18% 0,100% 20%,80% 100%,0 76%)" }} />
+      </>}
+      {style === "multicolor-glass" && <>
+        <div
+          data-marble-core="multicolor-glass"
+          className="absolute inset-[8px] rotate-[-18deg] rounded-full opacity-85 blur-[.2px]"
+          style={{ background: "conic-gradient(from 20deg,#edb63a,#329bc5,#7861b6,#df5f51,#72b46d,#edb63a)" }}
+        />
+        <div className="absolute inset-[4px] rounded-full border border-emerald-50/45 shadow-[inset_4px_5px_7px_rgba(255,255,255,.22),inset_-4px_-5px_8px_rgba(3,20,30,.35)]" />
       </>}
     </div>
   </SceneFrame>;
@@ -157,6 +167,10 @@ export function CourseItemPreview({ style }: { style: CourseItemStyle }) {
 }
 
 export function BackgroundPresetPreview({ preset }: { preset: BackgroundPreset }) {
+  if (preset === "brick-wall") return <SceneFrame className="bg-[#08090a]">
+    {Array.from({ length: 4 }).map((_, row) => Array.from({ length: 4 }).map((__, column) => <div key={`${row}-${column}`} className="absolute h-[10px] w-[28px] border border-black/80 bg-gradient-to-b from-zinc-700/65 to-zinc-900" style={{ left: `${-8 + column * 29 + (row % 2 ? 14 : 0)}px`, top: `${4 + row * 12}px` }} />))}
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_35%_42%,rgba(239,68,68,.38),transparent_48%)]" />
+  </SceneFrame>;
   if (preset === "tube-board-dark") return <SceneFrame className="bg-[linear-gradient(180deg,#6b7280,#3f434d)]">
     <div className="absolute inset-3 rounded-xl border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,.08),rgba(0,0,0,.18))]" />
     {Array.from({ length: 4 }).map((_, col) => <div key={col} className="absolute top-4 bottom-4 w-4 rounded-full border border-slate-200/20 bg-white/10" style={{ left: `${14 + col * 20}px` }} />)}

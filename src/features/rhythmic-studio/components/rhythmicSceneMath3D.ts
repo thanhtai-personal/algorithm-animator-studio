@@ -58,7 +58,7 @@ export function shadowReceiverZForSettings(settings: Pick<StudioSettings, "instr
   return settings.instrumentFamily === "auto" ? RHYTHMIC_AUTO_SHADOW_RECEIVER_Z : RHYTHMIC_SHADOW_RECEIVER_Z;
 }
 
-export function needsDedicatedShadowReceiver(kind: "tube-board" | "comet" | "xylophone" | "neutral") {
+export function needsDedicatedShadowReceiver(kind: "tube-board" | "comet" | "xylophone" | "brick" | "neutral") {
   return kind === "comet";
 }
 

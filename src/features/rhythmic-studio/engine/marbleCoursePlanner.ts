@@ -102,9 +102,13 @@ function axisAngle(angle: number) {
 }
 
 function outgoingForNormal(incoming: Vec2, normalInput: Vec2, restitution: number, tangentRetention = 0.965) {
-  let normal = normalize(normalInput);
-  if (dot(incoming, normal) > 0) normal = flip(normal);
+  const normal = normalize(normalInput);
   const projected = dot(incoming, normal);
+  // The visible instrument surface is always its upper face. If the marble is
+  // moving away from that face, this angle is not a collision candidate. The
+  // previous implementation silently flipped the normal and rendered the
+  // underside as playable, which let the marble roll on upside-down drums/keys.
+  if (normal.y >= -0.2 || projected >= -2) return null;
   const tangent = {
     x: incoming.x - projected * normal.x,
     y: incoming.y - projected * normal.y,
@@ -162,8 +166,13 @@ function fallbackCandidate(hit: Vec2, incoming: Vec2, spanMs: number, direction:
   const bounds = courseWorldBounds(settings, width);
   const sign = direction || (incoming.x >= 0 ? 1 : -1) || 1;
   const angle = dt < 0.16 ? 0.7 : dt < 0.24 ? 0.54 : dt < 0.36 ? 0.36 : (settings.instrumentFamily !== "auto" ? 0.18 : 0.24);
-  const normalInput = normalForAngle(sign * angle);
-  const reflected = outgoingForNormal(incoming, normalInput, naturalRestitution(profile, settings), 0.95);
+  const reflected = [sign * angle, -sign * angle, 0, 0.72, -0.72]
+    .map((candidateAngle) => outgoingForNormal(incoming, normalForAngle(candidateAngle), naturalRestitution(profile, settings), 0.95))
+    .find((candidate) => candidate !== null)
+    ?? {
+      normal: normalForAngle(0),
+      velocity: { x: incoming.x * 0.78, y: -Math.max(90, Math.abs(incoming.y) * 0.62) },
+    };
   reflected.velocity.x = clamp(reflected.velocity.x, -520, 520);
   const naturalX = hit.x + reflected.velocity.x * dt;
   const wallInset = Math.max(settings.ballSize * 1.25, settings.platformThickness * 0.72, 14);
@@ -173,10 +182,27 @@ function fallbackCandidate(hit: Vec2, incoming: Vec2, spanMs: number, direction:
   // exactly on the next note. Keep the stored velocity and endpoint consistent.
   if (Math.abs(targetX - naturalX) > 1e-6) reflected.velocity.x = (targetX - hit.x) / dt;
   const minimumDrop = dt < 0.16 ? 2 : dt < 0.24 ? 4 : 8;
-  const naturalY = hit.y + reflected.velocity.y * dt + 0.5 * profile.gravity * dt * dt;
-  if (naturalY < hit.y + minimumDrop) {
-    reflected.velocity.y = (minimumDrop - 0.5 * profile.gravity * dt * dt) / dt;
-  }
+  const maximumDrop = Math.max(260, profile.longGapDropPerSecond * dt * 1.8);
+  const gravityDrop = 0.5 * profile.gravity * dt * dt;
+  const minimumVelocityY = (minimumDrop - gravityDrop) / dt;
+  const maximumVelocityY = (maximumDrop - gravityDrop) / dt;
+  const visibleLiftSpeed = dt >= 0.24
+    ? Math.sqrt(2 * profile.gravity * Math.max(4, settings.ballSize * 0.32))
+    : 0;
+  const liftedMaximumVelocityY = Math.min(maximumVelocityY, -visibleLiftSpeed);
+  reflected.velocity.y = liftedMaximumVelocityY >= minimumVelocityY
+    ? clamp(reflected.velocity.y, minimumVelocityY, liftedMaximumVelocityY)
+    : minimumVelocityY;
+  const playableNormal = [
+    reflected.normal,
+    normalForAngle(-sign * angle),
+    normalForAngle(0),
+    normalForAngle(0.72),
+    normalForAngle(-0.72),
+  ].find((normal) => normal.y < -0.2
+    && dot(incoming, normal) < -2
+    && dot(reflected.velocity, normal) > 28);
+  reflected.normal = playableNormal ?? normalForAngle(0);
   const target = {
     x: targetX,
     y: hit.y + reflected.velocity.y * dt + 0.5 * profile.gravity * dt * dt,
@@ -231,6 +257,8 @@ function ordinaryBounceCandidate(context: BounceCandidateContext, angle: number,
   const normalInput = normalForAngle(angle);
   const tangentRetention = settings.terrainProfile === "comet" ? 0.93 : settings.instrumentFamily !== "auto" ? 0.955 : 0.965;
   const reflected = outgoingForNormal(incoming, normalInput, restitution, tangentRetention);
+  if (!reflected) return null;
+  if (dot(reflected.velocity, reflected.normal) < 28) return null;
   reflected.velocity.x = clamp(reflected.velocity.x, settings.terrainProfile === "comet" ? -560 : -520, settings.terrainProfile === "comet" ? 560 : 520);
   const target = bounceTarget(hit, reflected.velocity, profile.gravity, dt);
   const dx = target.x - hit.x;
@@ -240,6 +268,10 @@ function ordinaryBounceCandidate(context: BounceCandidateContext, angle: number,
 
   const nextIncomingY = reflected.velocity.y + profile.gravity * dt;
   const minimumDrop = dt < 0.16 ? -1.5 : dt < 0.24 ? 0 : 4;
+  const visibleLiftSpeed = dt >= 0.24
+    ? Math.sqrt(2 * profile.gravity * Math.max(4, settings.ballSize * 0.32))
+    : 0;
+  if (reflected.velocity.y > -visibleLiftSpeed) return null;
   if (dy < minimumDrop || dy > Math.max(260, profile.longGapDropPerSecond * dt * 1.8)) return null;
   if (nextIncomingY < (dt < 0.16 ? -2 : 8)) return null;
 
@@ -282,11 +314,22 @@ function edgeAbsorberCandidates(context: BounceCandidateContext) {
 
   for (const angle of absorberAngles) {
     const reflected = outgoingForNormal(incoming, normalForAngle(angle), absorberRestitution, absorberTangent);
+    if (!reflected) continue;
+    if (dot(reflected.velocity, reflected.normal) < 28) continue;
     const target = bounceTarget(hit, reflected.velocity, profile.gravity, dt);
     const nextIncomingY = reflected.velocity.y + profile.gravity * dt;
     const dy = target.y - hit.y;
     const minimumDrop = dt >= 0.28 ? 2 : 0.5;
-    if (target.x < bounds.min + wallInset || target.x > bounds.max - wallInset || dy < minimumDrop || nextIncomingY < 5) continue;
+    const maximumDrop = Math.max(260, profile.longGapDropPerSecond * dt * 1.8);
+    const visibleLiftSpeed = dt >= 0.24
+      ? Math.sqrt(2 * profile.gravity * Math.max(4, settings.ballSize * 0.32))
+      : 0;
+    if (target.x < bounds.min + wallInset
+      || target.x > bounds.max - wallInset
+      || dy < minimumDrop
+      || dy > maximumDrop
+      || reflected.velocity.y > -visibleLiftSpeed
+      || nextIncomingY < 5) continue;
     result.push({
       normal: reflected.normal,
       outgoing: reflected.velocity,

@@ -1,5 +1,6 @@
 import type { BallStyle, StudioSettings } from "../types";
 import { mixHex, type MarblePoint } from "./marbleCourse";
+import { drawMulticolorGlassMarble2D } from "./multicolorGlassMarble2D";
 
 function groundShadow(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, alpha = 0.3) {
   ctx.save();
@@ -358,6 +359,7 @@ export function drawPresetMarble(
   else if (style === "water") drawWater(ctx, x, y, radius, pulse, base, accent, spin);
   else if (style === "rainbow") drawRainbow(ctx, x, y, radius, pulse, spin);
   else if (style === "patchwork") drawPatchwork(ctx, x, y, radius, pulse, spin);
+  else if (style === "multicolor-glass") drawMulticolorGlassMarble2D(ctx, x, y, radius, pulse, spin);
   else drawStriped(ctx, x, y, radius, pulse, base, settings.ballStripeColor, spin);
   ctx.restore();
   return true;

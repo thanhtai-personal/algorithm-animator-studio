@@ -107,12 +107,17 @@ function decorateTerminalStrike(platform: MarblePlatform, previous: MarblePlatfo
   platform.denseLayout = layout;
   platform.visualStyle = denseVisualStyle(kind, layout, settings, platform.event, platform.index);
   platform.visualThickness = denseSurfaceThickness(kind, settings);
-  platform.visualX = platform.hitX - frame.normal.x * settings.ballSize;
-  platform.visualY = platform.hitY - frame.normal.y * settings.ballSize;
   const previousWidth = previous?.visualWidth ?? 0;
   platform.visualWidth = layout === "connected-keys"
     ? Math.max(4.5, previousWidth)
     : Math.max(settings.ballSize * 1.05, 13);
+  const travelTangent = normalize({ x: platform.outVX, y: platform.outVY });
+  const edgeOffset = Math.max(0, platform.visualWidth * 0.5 - settings.ballSize * 0.12);
+  // The terminal hit is the forward edge of the last key. Launching from its
+  // center made the gravity-enabled exit trajectory cut through half a key,
+  // which looked like a short pause before the next note.
+  platform.visualX = platform.hitX - frame.normal.x * settings.ballSize - travelTangent.x * edgeOffset;
+  platform.visualY = platform.hitY - frame.normal.y * settings.ballSize - travelTangent.y * edgeOffset;
   platform.visualTiltRad = frame.angle;
   platform.visualHidden = false;
 }
@@ -149,9 +154,12 @@ export function decorateDenseInstrumentRuns(platforms: MarblePlatform[], runs: D
       const index = strikes[offset];
       const localSettings = resolveSettings?.(index) ?? settings;
       const next = offset < strikes.length - 1 ? decorated[strikes[offset + 1]] : undefined;
+      const previous = offset > 0 ? decorated[strikes[offset - 1]] : undefined;
+      const passiveExit = Boolean(previous
+        && Math.hypot(platforms[index].outVX - previous.outVX, platforms[index].outVY - previous.outVY) < 1e-6);
       if (next && decorated[index].motionMode === "roll") decorateRollingSegment(decorated[index], next, surface.kind, localSettings);
-      else if (decorated[index].motionMode === "roll") {
-        decorateTerminalStrike(decorated[index], offset > 0 ? decorated[strikes[offset - 1]] : undefined, terminalSurfaceFrame(decorated, strikes, offset), surface.kind, localSettings);
+      else if (decorated[index].motionMode === "roll" || passiveExit) {
+        decorateTerminalStrike(decorated[index], previous, terminalSurfaceFrame(decorated, strikes, offset), surface.kind, localSettings);
       } else decoratePhysicalTerminalStrike(decorated[index], surface.kind, localSettings);
     }
   }

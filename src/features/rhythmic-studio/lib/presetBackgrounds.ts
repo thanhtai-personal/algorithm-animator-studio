@@ -1,4 +1,5 @@
 import type { StudioSettings } from "../types";
+import { drawBrickWallBackground2D } from "./brickWallBackground2D";
 
 function fillRoom(
   ctx: CanvasRenderingContext2D,
@@ -280,7 +281,13 @@ export function drawPresetBackground(
   width: number,
   height: number,
   settings: StudioSettings,
+  pulse = 0,
+  timeMs = 0,
 ) {
+  if (settings.backgroundPreset === "brick-wall") {
+    drawBrickWallBackground2D(ctx, width, height, pulse, timeMs);
+    return true;
+  }
   if (settings.backgroundPreset === "tube-board-dark") {
     drawTubeBoardDark(ctx, width, height);
     return true;

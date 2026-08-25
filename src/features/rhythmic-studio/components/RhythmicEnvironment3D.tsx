@@ -4,11 +4,13 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { StudioSettings } from "../types";
 import { RhythmicBackplate3D } from "./RhythmicBackplate3D";
+import { RhythmicBrickWall3D } from "./RhythmicBrickWall3D";
 import { RHYTHMIC_ROOM_BACKDROP_WIDTH, RHYTHMIC_ROOM_SIDE_X, type RhythmicBackdropBounds } from "./rhythmicSceneMath3D";
 
-export type EnvironmentKind = "tube-board" | "comet" | "xylophone" | "neutral";
+export type EnvironmentKind = "tube-board" | "comet" | "xylophone" | "brick" | "neutral";
 
 export function environmentKind(settings: StudioSettings): EnvironmentKind {
+  if (settings.backgroundPreset === "brick-wall") return "brick";
   if (settings.backgroundPreset === "tube-board-dark") return "tube-board";
   if (settings.backgroundPreset === "comet-void" || settings.backgroundPreset === "deep-space") return "comet";
   if (settings.backgroundPreset === "xylophone-room" || settings.backgroundPreset === "instrument-room") return "xylophone";
@@ -22,6 +24,7 @@ function artBackgroundColor(settings: StudioSettings) {
   const artColor = kind === "comet" ? new THREE.Color("#040611")
     : kind === "xylophone" ? new THREE.Color("#b9afa2")
       : kind === "tube-board" ? new THREE.Color("#10141a")
+        : kind === "brick" ? new THREE.Color("#08090a")
         : new THREE.Color(settings.backgroundColor);
   if (kind !== "neutral") artColor.lerp(new THREE.Color(settings.backgroundColor), 0.22);
   return artColor;
@@ -74,7 +77,7 @@ function SceneAtmosphere({ settings }: { settings: StudioSettings }) {
     scene.background = background;
     scene.fog = kind === "comet"
       ? new THREE.FogExp2(background.clone().lerp(new THREE.Color("#07091a"), 0.62), 0.024)
-      : new THREE.Fog(background, kind === "xylophone" ? 15 : 13, kind === "xylophone" ? 34 : 30);
+      : new THREE.Fog(background, kind === "brick" ? 18 : kind === "xylophone" ? 15 : 13, kind === "brick" ? 38 : kind === "xylophone" ? 34 : 30);
     return () => {
       scene.background = previousBackground;
       scene.fog = previousFog;
@@ -103,7 +106,7 @@ function BackgroundMotion({ settings, children }: { settings: StudioSettings; ch
     if (!group) return;
     const kind = environmentKind(settings);
     const motion = THREE.MathUtils.clamp(settings.backgroundMotion, 0, 1.5);
-    const strength = kind === "comet" ? 1 : kind === "tube-board" ? 0.16 : kind === "xylophone" ? 0.06 : 0.1;
+    const strength = kind === "comet" ? 1 : kind === "tube-board" ? 0.16 : kind === "xylophone" ? 0.06 : kind === "brick" ? 0.02 : 0.1;
     const time = clock.elapsedTime;
     group.position.x = Math.sin(time * 0.11) * 0.12 * motion * strength;
     group.position.z = Math.cos(time * 0.08) * 0.05 * motion * strength;
@@ -361,6 +364,7 @@ export function RhythmicEnvironment3D({ settings, backgroundUrl, bounds }: { set
       <SceneAtmosphere settings={settings} />
       {backgroundUrl ? <Suspense fallback={null}><RhythmicBackplate3D url={backgroundUrl} settings={settings} /></Suspense> : null}
       <BackgroundMotion settings={settings}>
+        {kind === "brick" && <RhythmicBrickWall3D bounds={bounds} />}
         {kind === "tube-board" && <TubeBoardRoom bounds={bounds} />}
         {kind === "comet" && <CometSpace bounds={bounds} />}
         {kind === "xylophone" && <XylophoneRoom bounds={bounds} />}

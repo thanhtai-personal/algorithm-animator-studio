@@ -6,6 +6,7 @@ import type { MarblePlatform } from "../lib/marbleCourse";
 import type { CourseItemOverride, InstrumentHitEvent, NoteEvent, StudioSettings } from "../types";
 import { RhythmicSceneContent3D } from "./RhythmicSceneContent3D";
 import { rhythmicRecordingRenderProfile } from "./rhythmicSceneMath3D";
+import type { ChaseCoursePlan } from "../lib/chaseCourse";
 
 export interface RhythmicScene3DProps {
   events: NoteEvent[];
@@ -29,6 +30,7 @@ export interface RhythmicScene3DProps {
   canvasRef?: MutableRefObject<HTMLCanvasElement | null>;
   platforms: MarblePlatform[];
   resolveSettings: StudioSettingsResolver;
+  chasePlan?: ChaseCoursePlan | null;
 }
 
 export function hasRhythmicWebGLSupport() {

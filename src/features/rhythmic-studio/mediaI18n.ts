@@ -3,6 +3,7 @@ import type { Lang } from "@/lib/i18n";
 const EN = {
   "section.background": "Video background",
   "background.preset": "Background style",
+  "background.brick-wall": "Realistic dark brick wall",
   "background.neon-grid": "Neon grid",
   "background.aurora": "Aurora glow",
   "background.starfield": "Moving starfield",
@@ -64,6 +65,7 @@ const EN = {
 const VI: Record<keyof typeof EN, string> = {
   "section.background": "Phông nền video",
   "background.preset": "Kiểu phông nền",
+  "background.brick-wall": "Tường gạch tối chân thực",
   "background.neon-grid": "Lưới neon",
   "background.aurora": "Cực quang phát sáng",
   "background.starfield": "Bầu trời sao chuyển động",

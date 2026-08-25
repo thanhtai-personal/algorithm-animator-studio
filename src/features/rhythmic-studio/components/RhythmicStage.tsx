@@ -164,6 +164,7 @@ function PreparedScene({ studio, course, courseReady, useThreeRenderer, resolveS
         canvasRef={studio.threeCanvasRef}
         platforms={course.platforms}
         resolveSettings={resolveSettings}
+        chasePlan={course.chasePlan}
       />
     );
   }
@@ -191,6 +192,7 @@ function PreparedScene({ studio, course, courseReady, useThreeRenderer, resolveS
       canvasRef={studio.canvasRef}
       platforms={course.platforms}
       resolveSettings={resolveSettings}
+      chasePlan={course.chasePlan}
     />
   );
 }

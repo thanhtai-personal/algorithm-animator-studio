@@ -9,6 +9,7 @@ import {
   type DenseInstrumentRun,
 } from "../features/rhythmic-studio/engine/denseInstrumentRuns";
 import { courseWorldBounds } from "../features/rhythmic-studio/engine/marbleCourseConstraints";
+import { marblePhysicsProfile } from "../features/rhythmic-studio/engine/marblePhysicsProfiles";
 
 function note(index: number, timeMs: number, isDrum = false): NoteEvent {
   return {
@@ -155,6 +156,15 @@ describe("rhythmic dense instrument routing", () => {
     const exit = dense[dense.length - 1];
     expect(exit.outVX).toBeCloseTo(beforeExit.outVX, 8);
     expect(exit.outVY).toBeCloseTo(beforeExit.outVY, 8);
+    const exitSpeed = Math.hypot(exit.outVX, exit.outVY);
+    const exitTangent = { x: exit.outVX / exitSpeed, y: exit.outVY / exitSpeed };
+    const exitFaceCenter = {
+      x: (exit.visualX ?? exit.x) + exit.normalX * settings.ballSize,
+      y: (exit.visualY ?? exit.y) + exit.normalY * settings.ballSize,
+    };
+    const exitEdgeProjection = (exit.hitX - exitFaceCenter.x) * exitTangent.x
+      + (exit.hitY - exitFaceCenter.y) * exitTangent.y;
+    expect(exitEdgeProjection).toBeGreaterThan((exit.visualWidth ?? exit.width) * 0.35);
 
     for (let index = 1; index < events.length; index += 1) {
       const before = marbleAtTime(events[index].timeMs - 0.01, events, platforms, settings);
@@ -273,6 +283,7 @@ describe("rhythmic dense instrument routing", () => {
       const normalLength = Math.hypot(platform.normalX, platform.normalY);
       const normalX = platform.normalX / normalLength;
       const normalY = platform.normalY / normalLength;
+      expect(normalY, `rolling face ${index}`).toBeLessThan(-0.2);
       const surfaceX = platform.visualX ?? platform.x;
       const surfaceY = platform.visualY ?? platform.y;
       const signedClearance = (platform.hitX - surfaceX) * normalX
@@ -281,6 +292,41 @@ describe("rhythmic dense instrument routing", () => {
     }
 
     expect(leftMovingSegments).toBeGreaterThan(0);
+  });
+
+  it("never flips an ordinary instrument onto its underside during a fast phrase", () => {
+    const events = Array.from({ length: 12 }, (_, index) => note(index, index * 261));
+    const platforms = buildMarbleCourse(events, settings, 720);
+
+    for (const platform of platforms.filter((item) => !item.visualHidden)) {
+      expect(platform.normalY, `instrument ${platform.index}`).toBeLessThan(-0.2);
+    }
+  });
+
+  it("bounds long-gap fallback travel and leaves every struck face immediately", () => {
+    const gaps = [261, 261, 1_500];
+    let timeMs = 0;
+    const events = Array.from({ length: 12 }, (_, index) => {
+      const event = note(index, timeMs);
+      timeMs += gaps[index % gaps.length];
+      return event;
+    });
+    const platforms = buildMarbleCourse(events, settings, 720);
+    const profile = marblePhysicsProfile(settings);
+
+    for (let index = 0; index < platforms.length - 1; index += 1) {
+      const platform = platforms[index];
+      const next = platforms[index + 1];
+      const dt = (events[index + 1].timeMs - events[index].timeMs) / 1_000;
+      const maximumDrop = Math.max(260, profile.longGapDropPerSecond * dt * 1.8);
+      expect(next.hitY - platform.hitY, `vertical travel ${index}`).toBeLessThanOrEqual(maximumDrop + 1e-6);
+      if (platform.motionMode !== "ballistic") continue;
+
+      const afterImpact = marbleAtTime(events[index].timeMs + 1_000 / 60, events, platforms, settings);
+      const signedDeparture = (afterImpact.x - platform.hitX) * platform.normalX
+        + (afterImpact.y - platform.hitY) * platform.normalY;
+      expect(signedDeparture, `post-impact separation ${index}`).toBeGreaterThan(0.2);
+    }
   });
 
 });

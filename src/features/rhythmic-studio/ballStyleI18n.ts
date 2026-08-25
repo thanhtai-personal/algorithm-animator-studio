@@ -13,6 +13,7 @@ const EN: Record<BallStyle, string> = {
   water: "Water Orb",
   rainbow: "Rainbow Ball",
   patchwork: "Faceted Patchwork Ball",
+  "multicolor-glass": "Natural Multicolor Glass Marble",
 };
 
 const VI: typeof EN = {
@@ -27,6 +28,7 @@ const VI: typeof EN = {
   water: "Bi nước",
   rainbow: "Bi cầu vồng",
   patchwork: "Bóng đa diện ghép màu",
+  "multicolor-glass": "Bi thủy tinh nhiều màu",
 };
 
 export function ballStyleText(lang: Lang, style: BallStyle) {

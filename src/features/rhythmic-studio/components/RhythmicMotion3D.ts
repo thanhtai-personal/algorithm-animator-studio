@@ -6,6 +6,9 @@ import { overrideForSegment } from "../lib/courseGuide";
 import { isPlatformCourseItem, overrideForNode } from "../lib/courseItems";
 import { resolvePlatformStyle } from "../lib/platformStyles";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
+import { settingsForChaseOwner } from "../engine/chaseCoursePlanner";
+import type { ChaseOwner } from "../engine/chaseStrikeOwnership";
+import type { ChaseCoursePlan } from "../lib/chaseCourse";
 import { instrumentMarbleContactDepth3D } from "./instrumentPlayingSurface3D";
 
 export const RHYTHMIC_COURSE_WIDTH = 720;
@@ -124,6 +127,71 @@ export function visualMarbleAtTime(
     phase,
     impactAgeMs: timeMs - start,
     renderedTimeMs,
+  };
+}
+
+export function visualChaseMarbleAtTime(
+  owner: ChaseOwner,
+  timeMs: number,
+  plan: ChaseCoursePlan,
+  settings: StudioSettings,
+  resolveSettings?: StudioSettingsResolver,
+): RhythmicVisualPoint {
+  const track = plan.tracks[owner];
+  if (!track.events.length) {
+    return {
+      x: track.lane.centerX,
+      y: 180,
+      z: 0,
+      color: settings.prismStart,
+      platformIndex: 0,
+      segmentIndex: 0,
+      phase: 0,
+      impactAgeMs: Number.POSITIVE_INFINITY,
+      renderedTimeMs: timeMs,
+    };
+  }
+  const ownerSettings = settingsForChaseOwner(settings, owner);
+  const resolveTrackSettings = resolveSettings
+    ? (localIndex: number) => settingsForChaseOwner(resolveSettings(track.eventIndices[localIndex] ?? 0), owner)
+    : undefined;
+  const local = visualMarbleAtTime(
+    timeMs,
+    track.events,
+    track.platforms,
+    ownerSettings,
+    [],
+    resolveTrackSettings,
+  );
+  const platformLocalIndex = Math.max(0, Math.min(track.eventIndices.length - 1, local.platformIndex));
+  const segmentLocalIndex = Math.max(0, Math.min(track.eventIndices.length - 1, local.segmentIndex));
+  return {
+    ...local,
+    platformIndex: track.eventIndices[platformLocalIndex],
+    segmentIndex: track.eventIndices[segmentLocalIndex],
+  };
+}
+
+export function visualChaseFocusAtTime(
+  timeMs: number,
+  plan: ChaseCoursePlan,
+  settings: StudioSettings,
+  resolveSettings?: StudioSettingsResolver,
+): RhythmicVisualPoint {
+  const a = visualChaseMarbleAtTime("A", timeMs, plan, settings, resolveSettings);
+  const b = visualChaseMarbleAtTime("B", timeMs, plan, settings, resolveSettings);
+  const eventIndex = eventIndexAtOrBefore(plan.events, timeMs);
+  const event = plan.events[eventIndex];
+  return {
+    x: (a.x + b.x) * 0.5,
+    y: (a.y + b.y) * 0.5,
+    z: (a.z + b.z) * 0.5,
+    color: a.color,
+    platformIndex: eventIndex,
+    segmentIndex: eventIndex,
+    phase: (a.phase + b.phase) * 0.5,
+    impactAgeMs: event ? timeMs - event.timeMs : Number.POSITIVE_INFINITY,
+    renderedTimeMs: timeMs,
   };
 }
 

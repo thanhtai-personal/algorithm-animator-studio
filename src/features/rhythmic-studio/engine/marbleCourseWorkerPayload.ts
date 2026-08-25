@@ -27,9 +27,9 @@ function snapshotNoteEvent(event: NoteEvent): NoteEvent {
 }
 
 function snapshotStudioSettings(settings: StudioSettings): StudioSettings {
-  // StudioSettings currently contains primitive fields only. Spreading across this
-  // boundary intentionally strips MobX observable/proxy identity before Worker IO.
-  return { ...settings };
+  // Strip MobX observable/proxy identity, including the nested chase appearance,
+  // before crossing the structured-clone Worker boundary.
+  return { ...settings, secondaryMarble: { ...settings.secondaryMarble } };
 }
 
 export function createMarbleCourseWorkerPayload(

@@ -14,6 +14,7 @@ import { platformsMountedFor3D } from "../lib/platformViewport";
 import { RhythmicDenseChassisMounts3D } from "./RhythmicDenseChassisMounts3D";
 import { denseSurfaceSegments } from "../engine/denseSurfaceGeometry";
 import { instrumentKeyPressAtTime } from "../lib/instrumentResponse";
+import { instrumentPlayingSurface3D, instrumentPressOffset3D, instrumentSurfaceFrame3D } from "./instrumentPlayingSurface3D";
 
 function PhysicalMount({ terrain, w, h, detail, showcase, frontDepth, receiverZ, style }: {
   terrain: StudioSettings["terrainProfile"];
@@ -50,14 +51,6 @@ function PhysicalMount({ terrain, w, h, detail, showcase, frontDepth, receiverZ,
   );
 }
 
-
-function frontDepthForStyle(style: string, h: number, d: number) {
-  if (style === "boomwhacker-tube" || style === "tube-cylinder" || style === "toy-tube" || style === "toy-peg" || style.includes("tube")) return Math.max(0.1, h * 0.56);
-  if (style === "instrument-cymbal" || style === "drum-disc" || style === "gong-disc") return Math.max(0.08, h * 0.6);
-  if (style === "flute-pipe") return Math.max(0.1, h * 0.52);
-  if (style.includes("rail") || style === "instrument-wire") return Math.max(0.055, h * 0.24);
-  return d * 0.5;
-}
 
 export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, focusIndex, selectedNodeIndex, onSelectNode, resolveSettings, impactIndex, impactStrength, timeMs }: {
   platforms: MarblePlatform[];
@@ -123,15 +116,27 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
         const compactSurface = platform.denseSurfaceId !== undefined || displayThickness < 9;
         const h = Math.max(compactSurface ? 0.055 : 0.09, displayThickness * RHYTHMIC_WORLD_SCALE);
         const d = style === "instrument-cymbal" ? 0.5 : style.includes("rail") ? 0.46 : style === "tube-cylinder" ? 0.62 : 0.54;
-        const normalInset = platform.contactMode === "surface"
-          ? Math.max(0.04, displayThickness * 0.5) * RHYTHMIC_WORLD_SCALE
-          : 0;
+        const depth = d * (0.92 + platformSettings.platformDetail * 0.12);
         const baseX = platform.visualX ?? platform.x;
         const baseY = platform.visualY ?? platform.y;
-        const visualAngle = platform.visualTiltRad ?? platform.tiltRad;
-        const visualNormal = platform.denseSurfaceId !== undefined
-          ? { x: Math.sin(visualAngle), y: -Math.cos(visualAngle) }
-          : { x: platform.normalX, y: platform.normalY };
+        const surfaceFrame = instrumentSurfaceFrame3D(
+          platform.visualTiltRad ?? platform.tiltRad,
+          platform.normalX,
+          platform.normalY,
+        );
+        const visualAngle = surfaceFrame.angleRad;
+        const visualNormal = { x: surfaceFrame.normalX, y: surfaceFrame.normalY };
+        const playingSurface = instrumentPlayingSurface3D(
+          style,
+          w,
+          h,
+          depth,
+          platformSettings.ballSize * RHYTHMIC_WORLD_SCALE,
+          surfaceFrame.normalAlignment,
+        );
+        const normalInset = platform.contactMode === "surface"
+          ? playingSurface.centerInset
+          : 0;
         const worldX = ((baseX - visualNormal.x * normalInset / RHYTHMIC_WORLD_SCALE) - RHYTHMIC_COURSE_WIDTH / 2) * RHYTHMIC_WORLD_SCALE;
         const worldY = -(baseY - visualNormal.y * normalInset / RHYTHMIC_WORLD_SCALE) * RHYTHMIC_WORLD_SCALE;
         const immediateHit = platform.index === impactIndex ? Math.max(0, impactStrength) : 0;
@@ -139,18 +144,17 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
         const effectiveGlow = platformSettings.impactPlatformLight
           ? 0.055 + Math.max(noteLight, immediateHit) * (0.94 + platformSettings.platformGlow * 0.78)
           : platformSettings.platformGlow;
-        const depth = d * (0.92 + platformSettings.platformDetail * 0.12);
-        const frontDepth = frontDepthForStyle(style, h, depth);
         const lightColors = noteLightColorsForPlatform(platform, platforms);
         const keyPress = style === "piano-key" || style === "piano-keyboard"
           ? instrumentKeyPressAtTime(platform.event.timeMs, timeMs) * Math.min(0.085, Math.max(0.035, h * 0.46))
           : 0;
+        const pressOffset = instrumentPressOffset3D(playingSurface, keyPress);
         return (
           <group
             key={platform.index}
             // The visible striking face sits exactly on z=0. The instrument body
             // and wall mount extend behind it, matching the reference installation.
-            position={[worldX, worldY, -frontDepth]}
+            position={[worldX, worldY, -playingSurface.frontDepth]}
             rotation={[0, 0, -visualAngle]}
             onClick={(event) => {
               event.stopPropagation();
@@ -158,11 +162,13 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
             }}
           >
             {platform.denseRunId === undefined && (
-              <PhysicalMount terrain={platformSettings.terrainProfile} w={w} h={h} detail={platformSettings.platformDetail} showcase={platformSettings.instrumentFamily !== "auto"} frontDepth={frontDepth} receiverZ={receiverZ} style={style} />
+              <PhysicalMount terrain={platformSettings.terrainProfile} w={w} h={h} detail={platformSettings.platformDetail} showcase={platformSettings.instrumentFamily !== "auto"} frontDepth={playingSurface.frontDepth} receiverZ={receiverZ} style={style} />
             )}
-            <group position={[0, 0, -keyPress]}>
-              <PlatformMesh w={w} h={h} d={depth} color={platform.color} style={style} selected={platform.index === selectedNodeIndex} glow={effectiveGlow} detail={platformSettings.platformDetail} />
-              {isNoteLitInstrumentStyle(style) && <RhythmicInstrumentNoteLights3D width={w} height={h} frontDepth={frontDepth} colors={lightColors} glow={effectiveGlow} />}
+            <group position={[0, pressOffset.y, pressOffset.z]}>
+              <group rotation={[playingSurface.pitchRad, 0, 0]}>
+                <PlatformMesh w={w} h={h} d={depth} color={platform.color} style={style} selected={platform.index === selectedNodeIndex} glow={effectiveGlow} detail={platformSettings.platformDetail} />
+                {isNoteLitInstrumentStyle(style) && <RhythmicInstrumentNoteLights3D width={w} height={h} surface={playingSurface} colors={lightColors} glow={effectiveGlow} />}
+              </group>
             </group>
           </group>
         );

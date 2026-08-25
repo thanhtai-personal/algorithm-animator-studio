@@ -1,9 +1,10 @@
 import * as THREE from "three";
+import type { InstrumentPlayingSurface3D } from "./instrumentPlayingSurface3D";
 
-export function RhythmicInstrumentNoteLights3D({ width, height, frontDepth, colors, glow }: {
+export function RhythmicInstrumentNoteLights3D({ width, height, surface, colors, glow }: {
   width: number;
   height: number;
-  frontDepth: number;
+  surface: InstrumentPlayingSurface3D;
   colors: string[];
   glow: number;
 }) {
@@ -11,10 +12,17 @@ export function RhythmicInstrumentNoteLights3D({ width, height, frontDepth, colo
   const stripWidth = Math.max(0.18, width * 0.68);
   const segmentWidth = stripWidth / count;
   const intensity = THREE.MathUtils.clamp(glow, 0, 1.5);
-  return <group position={[0, -height * 0.18, frontDepth + 0.02]}>
+  const onTopFace = surface.faceKind === "top";
+  const position: [number, number, number] = onTopFace
+    ? [0, surface.localStrikeY + 0.012, surface.localStrikeZ]
+    : [0, -height * 0.18, surface.localStrikeZ + 0.02];
+  return <group position={position}>
     {colors.map((color, index) => (
       <mesh key={`${color}-${index}`} position={[-stripWidth / 2 + segmentWidth * (index + 0.5), 0, 0]}>
-        <boxGeometry args={[Math.max(0.025, segmentWidth * 0.88), Math.max(0.024, height * 0.16), 0.022]} />
+        <boxGeometry args={onTopFace
+          ? [Math.max(0.025, segmentWidth * 0.88), 0.022, Math.max(0.04, height * 0.32)]
+          : [Math.max(0.025, segmentWidth * 0.88), Math.max(0.024, height * 0.16), 0.022]}
+        />
         <meshBasicMaterial
           color={color}
           transparent

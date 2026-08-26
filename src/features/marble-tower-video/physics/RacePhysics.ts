@@ -1,5 +1,4 @@
 import * as CANNON from "cannon-es";
-import * as THREE from "three";
 import { raceSessionStore } from "../store/RaceSessionStore";
 import { createMarbleRoster, type MarbleConfig, type MarbleId } from "../marble/marbleCatalog";
 import { marbleStartGrid, normalizeMarbleCount } from "../marble/marbleGrid";
@@ -20,6 +19,7 @@ import type { MarbleRuntime } from "./physicsTypes";
 import { impactVelocity, MarbleInteractionSystem, type MarbleImpactSound } from "./MarbleInteractionSystem";
 import { chimeBounceImpulse, jumpImpulse, launchImpulse, pianoBoostImpulse, recoveryImpulse } from "./marbleForces";
 import { updateBeatSpinners, updateStartGate } from "./obstacleMotion";
+import { freezeWinnerAtFinish, holdWinnerAtFinish, recoverMarbleToCourse, vec3 } from "./marbleRacePlacement";
 import type { RaceResult } from "../race/raceTypes";
 const DEFAULT_FIXED_STEP = 1 / 120;
 const VIDEO_COUNTDOWN_SECONDS = 3;
@@ -27,9 +27,6 @@ const MARBLE_MASS = 5.2;
 const STANDARD_GRAVITY = 9.81;
 const DRIVE_MIN = 4;
 const DRIVE_MAX = 10;
-function vec3(value: THREE.Vector3) {
-  return new CANNON.Vec3(value.x, value.y, value.z);
-}
 export class RacePhysics {
   readonly world = new CANNON.World({ gravity: new CANNON.Vec3(0, -STANDARD_GRAVITY, 0) });
   readonly marbles = new Map<MarbleId, MarbleRuntime>();
@@ -58,6 +55,7 @@ export class RacePhysics {
   private resolvedCuts = new Set<number>();
   private winnerId: MarbleId | null = null;
   private winnerTime = 0;
+  private winnerAnchor: CANNON.Vec3 | null = null;
   private finishDelay = -1;
   private driveMultiplier: number;
   private pianoCombo = 0;
@@ -171,6 +169,10 @@ export class RacePhysics {
     this.interactions.setTime(this.raceTime);
     if (this.opened) this.interactions.applyMagneticField(this.marbles.values());
     this.world.step(this.fixedStep, dt, this.maxSubSteps);
+    if (this.winnerId && this.winnerAnchor) {
+      const winner = this.marbles.get(this.winnerId);
+      if (winner) holdWinnerAtFinish(winner, this.winnerAnchor);
+    }
     if (this.opened) this.updateRace(dt);
     if (this.finishDelay >= 0) {
       this.finishDelay -= dt;
@@ -220,7 +222,7 @@ export class RacePhysics {
   }
   private updateRace(dt: number) {
     for (const marble of this.marbles.values()) {
-      if (!marble.alive) continue;
+      if (!marble.alive || marble.id === this.winnerId) continue;
       const body = marble.body;
       const previous = marble.progressIndex;
       marble.progressIndex = nearestSampleIndex(body.position, marble.progressIndex);
@@ -231,7 +233,7 @@ export class RacePhysics {
       const dz = body.position.z - sample.point.z;
       const distanceSq = dx * dx + dy * dy + dz * dz;
       if (body.position.y < -8 || distanceSq > 90) {
-        this.recoverMarbleToCourse(marble, sample);
+        recoverMarbleToCourse(marble, sample, this.marbleRadius);
         continue;
       }
       if (!marble.hitJump && progress >= SPECIALS.jump) {
@@ -266,36 +268,6 @@ export class RacePhysics {
     });
   }
 
-  private recoverMarbleToCourse(marble: MarbleRuntime, sample: (typeof COURSE_SAMPLES)[number]) {
-    // Falling off the physical course is recoverable. Never remove a marble body
-    // because it is outside the camera or temporarily outside the track bounds.
-    const body = marble.body;
-    const dx = body.position.x - sample.point.x;
-    const dy = body.position.y - sample.point.y;
-    const dz = body.position.z - sample.point.z;
-    const lateral = THREE.MathUtils.clamp(
-      dx * sample.right.x + dy * sample.right.y + dz * sample.right.z,
-      -TRACK_WIDTH * 0.32,
-      TRACK_WIDTH * 0.32,
-    );
-    const safePoint = sample.point.clone()
-      .addScaledVector(sample.right, lateral)
-      .addScaledVector(sample.normal, this.marbleRadius + 0.22);
-    const forwardSpeed = Math.max(3.2,
-      body.velocity.x * sample.tangent.x
-      + body.velocity.y * sample.tangent.y
-      + body.velocity.z * sample.tangent.z);
-
-    body.position.copy(vec3(safePoint));
-    body.previousPosition.copy(body.position);
-    body.interpolatedPosition.copy(body.position);
-    body.velocity.copy(vec3(sample.tangent.clone().multiplyScalar(forwardSpeed)));
-    body.angularVelocity.scale(0.35, body.angularVelocity);
-    body.force.setZero();
-    body.torque.setZero();
-    body.wakeUp();
-    marble.stuckFor = 0;
-  }
   private resolveFinish() {
     if (this.winnerId) return;
     const leader = this.getLeader();
@@ -305,11 +277,13 @@ export class RacePhysics {
     this.winnerId = leader.id;
     this.winnerTime = this.raceTime;
     leader.finalPosition = 1;
+    this.winnerAnchor = freezeWinnerAtFinish(leader, this.marbleRadius);
     const finalists = this.getRanked().filter((marble) => marble.alive && marble.id !== leader.id);
     finalists.forEach((marble, index) => { marble.finalPosition = 2 + index; });
     raceSessionStore.flash(`${leader.id.toUpperCase()} WINS!`);
     this.finishDelay = 1.45;
   }
+
   private completeRace() {
     if (this.completed || !this.winnerId) return;
     this.completed = true;

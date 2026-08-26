@@ -1,54 +1,167 @@
 import { useFrame } from '@react-three/fiber';
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import type * as CANNON from 'cannon-es';
-import { surfaceYAt } from '../track/trackLayout';
 import type { RacePhysics } from '../physics/RacePhysics';
+import { COURSE_SAMPLES, sampleAt } from '../track/towerCourseSampler';
+import { CUTS, SPECIALS, TRACK_WIDTH } from '../track/towerCourse';
 
-function SyncBody({ body, children }: { body: CANNON.Body; children: React.ReactNode }) {
-  const group = useRef<THREE.Group>(null);
+function SyncBody({ body, children }: { body: { position: { x: number; y: number; z: number }; quaternion: { x: number; y: number; z: number; w: number } }; children: React.ReactNode }) {
+  const ref = useRef<THREE.Group>(null);
   useFrame(() => {
-    if (!group.current) return;
-    group.current.position.set(body.position.x, body.position.y, body.position.z);
-    group.current.quaternion.set(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w);
+    if (!ref.current) return;
+    ref.current.position.set(body.position.x, body.position.y, body.position.z);
+    ref.current.quaternion.set(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w);
   });
-  return <group ref={group}>{children}</group>;
+  return <group ref={ref}>{children}</group>;
 }
 
-function NeonBar({ color = '#ff4f84', length = 7.8 }: { color?: string; length?: number }) {
+function Spinner({ body, color = '#16191e' }: { body: RacePhysics['spinnerA']['body']; color?: string }) {
   return (
-    <mesh castShadow>
-      <boxGeometry args={[length, 0.32, 0.44]} />
-      <meshPhysicalMaterial color={color} emissive={color} emissiveIntensity={0.82} metalness={0.68} roughness={0.2} clearcoat={0.7} />
-    </mesh>
+    <SyncBody body={body}>
+      <mesh castShadow>
+        <boxGeometry args={[TRACK_WIDTH * 0.86, 0.28, 0.34]} />
+        <meshStandardMaterial color={color} metalness={0.8} roughness={0.24} />
+      </mesh>
+      <mesh>
+        <cylinderGeometry args={[0.38, 0.42, 1.0, 18]} />
+        <meshStandardMaterial color="#c0c8cf" metalness={0.92} roughness={0.14} />
+      </mesh>
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[side * TRACK_WIDTH * 0.38, 0, 0]}>
+          <sphereGeometry args={[0.25, 16, 12]} />
+          <meshStandardMaterial color="#ff7a42" emissive="#c63a13" emissiveIntensity={0.65} />
+        </mesh>
+      ))}
+    </SyncBody>
+  );
+}
+
+function StartGate({ physics }: { physics: RacePhysics }) {
+  return (
+    <SyncBody body={physics.startGate}>
+      <mesh castShadow>
+        <boxGeometry args={[TRACK_WIDTH, 1.6, 0.36]} />
+        <meshStandardMaterial color="#15181c" metalness={0.84} roughness={0.22} />
+      </mesh>
+      {Array.from({ length: 7 }, (_, index) => (
+        <mesh key={index} position={[-TRACK_WIDTH / 2 + 0.65 + index * 1.25, 0, -0.2]}>
+          <boxGeometry args={[0.78, 0.11, 0.04]} />
+          <meshBasicMaterial color={['#ff3155', '#ff8c22', '#ffd938', '#47db69', '#2bd6d9', '#4777ff', '#a653ff'][index]} />
+        </mesh>
+      ))}
+    </SyncBody>
+  );
+}
+
+function ChimeGauntlet({ physics }: { physics: RacePhysics }) {
+  return (
+    <group>
+      {physics.chimeBodies.map((body, index) => {
+        const color = ['#ff425f', '#ff9a35', '#ffe145', '#4ce57a', '#36dce4', '#5983ff', '#b15fff'][index % 7];
+        return (
+          <group key={body.id} position={[body.position.x, body.position.y, body.position.z]}>
+            <mesh castShadow>
+              <cylinderGeometry args={[0.22, 0.27, 1.7, 12]} />
+              <meshStandardMaterial color="#adb7c0" metalness={0.94} roughness={0.16} />
+            </mesh>
+            <mesh position={[0, 0.68, 0]}>
+              <torusGeometry args={[0.38, 0.08, 8, 20]} />
+              <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.65} metalness={0.5} />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+function JumpRamp() {
+  const sample = sampleAt(SPECIALS.jump);
+  return (
+    <group position={sample.point.clone().addScaledVector(sample.normal, 0.16)} quaternion={sample.quaternion}>
+      <mesh castShadow receiveShadow rotation={[-0.12, 0, 0]}>
+        <boxGeometry args={[TRACK_WIDTH - 1.0, 0.22, 2.8]} />
+        <meshStandardMaterial color="#1478bf" emissive="#0d5c9e" emissiveIntensity={0.75} metalness={0.45} roughness={0.25} />
+      </mesh>
+      {[-2.4, 0, 2.4].map((x) => (
+        <mesh key={x} position={[x, 0.18, 0]}>
+          <boxGeometry args={[1.35, 0.06, 2.1]} />
+          <meshBasicMaterial color="#85eaff" toneMapped={false} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function CutGate({ progress, keep, label }: { progress: number; keep: number; label: string }) {
+  const sample = sampleAt(progress);
+  return (
+    <group position={sample.point} quaternion={sample.quaternion}>
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[side * (TRACK_WIDTH / 2 + 0.7), 1.6, 0]} castShadow>
+          <boxGeometry args={[0.34, 3.2, 0.34]} />
+          <meshStandardMaterial color="#191c21" metalness={0.86} roughness={0.22} />
+        </mesh>
+      ))}
+      <mesh position={[0, 3.08, 0]}>
+        <boxGeometry args={[TRACK_WIDTH + 1.7, 0.28, 0.34]} />
+        <meshStandardMaterial color="#ff2f66" emissive="#ff174f" emissiveIntensity={0.82} metalness={0.55} />
+      </mesh>
+      <mesh position={[0, 2.64, 0.01]}>
+        <boxGeometry args={[keep * 0.6, 0.08, 0.06]} />
+        <meshBasicMaterial color="#ffffff" toneMapped={false} />
+      </mesh>
+    </group>
+  );
+}
+
+function FinishArch() {
+  const sample = sampleAt(SPECIALS.finish);
+  return (
+    <group position={sample.point} quaternion={sample.quaternion}>
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[side * (TRACK_WIDTH / 2 + 0.8), 2.2, 0]}>
+          <boxGeometry args={[0.42, 4.4, 0.42]} />
+          <meshStandardMaterial color="#111318" metalness={0.8} roughness={0.24} />
+        </mesh>
+      ))}
+      <mesh position={[0, 4.18, 0]}>
+        <boxGeometry args={[TRACK_WIDTH + 2.0, 0.48, 0.48]} />
+        <meshStandardMaterial color="#15171b" metalness={0.82} roughness={0.2} />
+      </mesh>
+      {Array.from({ length: 9 }, (_, index) => (
+        <mesh key={index} position={[-TRACK_WIDTH / 2 + index * (TRACK_WIDTH / 8), 4.2, -0.26]}>
+          <boxGeometry args={[0.5, 0.16, 0.05]} />
+          <meshBasicMaterial color={index % 2 ? '#ffffff' : '#ff3155'} toneMapped={false} />
+        </mesh>
+      ))}
+    </group>
   );
 }
 
 export function ObstacleMeshes3D({ physics }: { physics: RacePhysics }) {
-  const { startGate, spinnerA, spinnerB, beatGate, finalCross } = physics.obstacles;
+  const finalSample = useMemo(() => COURSE_SAMPLES[Math.round(SPECIALS.finalCross * (COURSE_SAMPLES.length - 1))], []);
   return (
     <group>
-      <SyncBody body={startGate}>
-        <mesh castShadow><boxGeometry args={[9, 1.5, 0.36]} /><meshStandardMaterial color="#dce8ef" metalness={0.82} roughness={0.22} emissive="#31617c" emissiveIntensity={0.22} /></mesh>
-      </SyncBody>
-      <SyncBody body={spinnerA}><NeonBar color="#39e6ff" /></SyncBody>
-      <SyncBody body={spinnerB}><NeonBar color="#ffd84a" /></SyncBody>
-      <SyncBody body={beatGate}>
-        <mesh castShadow><boxGeometry args={[9, 1.6, 0.32]} /><meshStandardMaterial color="#b75cff" emissive="#7427d9" emissiveIntensity={0.72} metalness={0.64} roughness={0.24} /></mesh>
-      </SyncBody>
-      <SyncBody body={finalCross}>
-        <NeonBar color="#ff4f84" length={7.2} />
-        <mesh castShadow><boxGeometry args={[0.4, 0.32, 7.2]} /><meshPhysicalMaterial color="#9b5cff" emissive="#7a2ce0" emissiveIntensity={0.8} metalness={0.7} roughness={0.18} clearcoat={0.6} /></mesh>
-      </SyncBody>
-      {physics.bumpers.map((body, index) => (
-        <mesh key={body.id} position={[body.position.x, body.position.y, body.position.z]} castShadow>
-          <sphereGeometry args={[0.7, 24, 18]} />
-          <meshPhysicalMaterial color={index % 2 ? '#ffcf4a' : '#66e3ff'} emissive={index % 2 ? '#b9790a' : '#138bb2'} emissiveIntensity={0.58} metalness={0.42} roughness={0.2} clearcoat={0.9} />
+      <StartGate physics={physics} />
+      <Spinner body={physics.spinnerA.body} />
+      <Spinner body={physics.spinnerB.body} color="#20242a" />
+      <ChimeGauntlet physics={physics} />
+      <JumpRamp />
+      <SyncBody body={physics.finalCross.body}>
+        <mesh castShadow>
+          <boxGeometry args={[TRACK_WIDTH * 0.86, 0.28, 0.34]} />
+          <meshStandardMaterial color="#11141a" metalness={0.85} roughness={0.2} />
         </mesh>
-      ))}
-      {[63, 177].map((z) => (
-        <pointLight key={z} position={[0, surfaceYAt(z) + 5, z]} intensity={12} distance={14} color={z < 100 ? '#59dcff' : '#d45cff'} />
-      ))}
+        <mesh castShadow>
+          <boxGeometry args={[0.34, 0.28, TRACK_WIDTH * 0.86]} />
+          <meshStandardMaterial color="#11141a" metalness={0.85} roughness={0.2} />
+        </mesh>
+        <pointLight color="#ff486e" intensity={18} distance={7} position={[0, 1.1, 0]} />
+      </SyncBody>
+      <pointLight position={finalSample.point.clone().addScaledVector(finalSample.normal, 3)} intensity={26} distance={10} color="#ff3c76" />
+      {CUTS.map((cut) => <CutGate key={cut.progress} progress={cut.progress} keep={cut.keep} label={cut.label} />)}
+      <FinishArch />
     </group>
   );
 }

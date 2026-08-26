@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { RacePhysics } from "../features/marble-tower-video/physics/RacePhysics";
-import { START_GATE_Z } from "../features/marble-tower-video/track/trackLayout";
+import { COURSE_SAMPLES } from "../features/marble-tower-video/track/towerCourseSampler";
+import { SPECIALS } from "../features/marble-tower-video/track/towerCourse";
 
 describe("Marble Tower start gate", () => {
   let physics: RacePhysics | null = null;
@@ -11,19 +12,20 @@ describe("Marble Tower start gate", () => {
   });
 
   it("stops colliding as soon as the countdown reaches GO", () => {
-    physics = new RacePhysics("blue", () => undefined);
+    physics = new RacePhysics(() => undefined);
 
     physics.advanceTo(3.05);
 
-    expect(physics.obstacles.startGate.collisionResponse).toBe(false);
+    expect(physics.startGate.collisionResponse).toBe(false);
   });
 
-  it("lets the field pass the start line after GO", () => {
-    physics = new RacePhysics("blue", () => undefined);
+  it("launches the field forward along the curved tower course", () => {
+    physics = new RacePhysics(() => undefined, 1.8);
 
     physics.advanceTo(5.5);
 
-    const frontRunnerZ = Math.max(...[...physics.marbles.values()].map((marble) => marble.body.position.z));
-    expect(frontRunnerZ).toBeGreaterThan(START_GATE_Z + 1);
+    const gateIndex = Math.round(SPECIALS.startGate * (COURSE_SAMPLES.length - 1));
+    const frontRunnerProgress = Math.max(...[...physics.marbles.values()].map((marble) => marble.progressIndex));
+    expect(frontRunnerProgress).toBeGreaterThan(gateIndex + 2);
   });
 });

@@ -60,6 +60,8 @@ export class AudioEngine {
   private mediaSource: MediaElementAudioSourceNode | null = null;
   private midiSession: GainNode | null = null;
   private midiTimer: ReturnType<typeof setInterval> | null = null;
+  private cueSource: AudioBufferSourceNode | null = null;
+  private cueBuffers = new Map<string, AudioBuffer>();
   private brightness = 0.62;
   private stereoWidth = 0.34;
   private musicVolume = 1.3;
@@ -166,6 +168,42 @@ export class AudioEngine {
     this.mediaElement = element;
     this.mediaSource = this.context.createMediaElementSource(element);
     this.mediaSource.connect(this.musicBus);
+  }
+
+  stopCue() {
+    if (!this.cueSource) return;
+    try { this.cueSource.stop(); } catch { /* already stopped */ }
+    try { this.cueSource.disconnect(); } catch { /* already disconnected */ }
+    this.cueSource = null;
+  }
+
+  async playCue(url: string) {
+    const context = await this.ensure();
+    if (!this.master) return;
+    this.stopCue();
+    let buffer = this.cueBuffers.get(url);
+    if (!buffer) {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Unable to load audio cue: ${response.status}`);
+      buffer = await context.decodeAudioData(await response.arrayBuffer());
+      this.cueBuffers.set(url, buffer);
+    }
+    await new Promise<void>((resolve) => {
+      const source = context.createBufferSource();
+      const gain = context.createGain();
+      source.buffer = buffer;
+      gain.gain.value = 1.05;
+      source.connect(gain);
+      gain.connect(this.master!);
+      this.cueSource = source;
+      source.onended = () => {
+        if (this.cueSource === source) this.cueSource = null;
+        try { source.disconnect(); } catch { /* already disconnected */ }
+        try { gain.disconnect(); } catch { /* already disconnected */ }
+        resolve();
+      };
+      source.start(context.currentTime + 0.01);
+    });
   }
 
   async playNote(midi: number, velocity: number, durationMs: number, preset: SynthPreset, presentationDelayMs = 0) {

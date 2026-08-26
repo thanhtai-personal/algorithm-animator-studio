@@ -19,7 +19,7 @@ export function useMarbleTowerPlaylist(studio: RhythmicStudioController) {
 
   useEffect(() => () => revokeOwnedUrls(), [revokeOwnedUrls]);
 
-  const setElementTrack = useCallback((track: MarbleTowerPlaylistTrack | null, autoPlay: boolean) => {
+  const setElementTrack = useCallback((track: MarbleTowerPlaylistTrack | null) => {
     const audio = studio.audioElementRef.current;
     if (!audio || !track) return;
     if (audio.src !== track.url) {
@@ -28,8 +28,7 @@ export function useMarbleTowerPlaylist(studio: RhythmicStudioController) {
     }
     audio.currentTime = 0;
     audio.playbackRate = studio.settings.playbackSpeed;
-    if (autoPlay && studio.playing) void audio.play().catch(() => undefined);
-  }, [studio.audioElementRef, studio.playing, studio.settings.playbackSpeed]);
+  }, [studio.audioElementRef, studio.settings.playbackSpeed]);
 
   const clearTracks = useCallback(() => {
     const audio = studio.audioElementRef.current;
@@ -58,20 +57,18 @@ export function useMarbleTowerPlaylist(studio: RhythmicStudioController) {
 
     setTracks(nextTracks);
     setCurrentIndex(0);
-    // This screen no longer exposes the original-song toggle, so make audio
-    // playback explicit whenever the user selects a playlist.
-    studio.patch("playOriginalSong", true);
     await studio.importAudio(files[0]);
-    studio.patch("playOriginalSong", true);
-    setElementTrack(nextTracks[0], false);
+    // The race screen controls exactly when music begins; keep the audio source
+    // ready but silent during 3-2-1 and the spoken "Let's go!" cue.
+    studio.patch("playOriginalSong", false);
+    setElementTrack(nextTracks[0]);
   }, [revokeOwnedUrls, setElementTrack, studio]);
 
   const currentTrack = tracks[currentIndex] ?? null;
 
   useEffect(() => {
-    if (!currentTrack) return;
-    setElementTrack(currentTrack, studio.playing);
-  }, [currentTrack, setElementTrack, studio.playing]);
+    if (currentTrack) setElementTrack(currentTrack);
+  }, [currentTrack, setElementTrack]);
 
   useEffect(() => {
     const audio = studio.audioElementRef.current;
@@ -79,22 +76,25 @@ export function useMarbleTowerPlaylist(studio: RhythmicStudioController) {
   }, [studio.audioElementRef, studio.settings.playbackSpeed]);
 
   const advance = useCallback(() => {
-    if (!tracks.length || !studio.playing) return;
+    if (!tracks.length || !studio.playing || !studio.settings.playOriginalSong) return;
     const nextIndex = (currentIndex + 1) % tracks.length;
+    const nextTrack = tracks[nextIndex];
     setCurrentIndex(nextIndex);
-    setElementTrack(tracks[nextIndex], true);
-  }, [currentIndex, setElementTrack, studio.playing, tracks]);
+    setElementTrack(nextTrack);
+    const audio = studio.audioElementRef.current;
+    if (audio) void audio.play().catch(() => undefined);
+  }, [currentIndex, setElementTrack, studio.audioElementRef, studio.playing, studio.settings.playOriginalSong, tracks]);
 
   const selectTrack = useCallback((index: number) => {
     if (!tracks.length) return;
     const nextIndex = Math.max(0, Math.min(index, tracks.length - 1));
     setCurrentIndex(nextIndex);
-    setElementTrack(tracks[nextIndex], false);
+    setElementTrack(tracks[nextIndex]);
   }, [setElementTrack, tracks]);
 
   const resetToFirst = useCallback(() => {
     setCurrentIndex(0);
-    setElementTrack(tracks[0] ?? null, false);
+    setElementTrack(tracks[0] ?? null);
   }, [setElementTrack, tracks]);
 
   const names = useMemo(() => tracks.map((track) => track.name), [tracks]);

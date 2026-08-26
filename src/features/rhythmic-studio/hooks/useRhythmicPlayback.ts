@@ -40,7 +40,10 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
   const stopPlaybackAudio = useCallback(() => {
     stopOriginalAudio();
     audioEngineRef.current.stopMidi();
+    audioEngineRef.current.stopCue();
   }, [stopOriginalAudio]);
+
+  const playCue = useCallback((url: string) => audioEngineRef.current.playCue(url), []);
 
   const startOriginalAudio = useCallback(async (resumeMs = 0) => {
     const audio = audioElementRef.current;
@@ -218,6 +221,7 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
     audioEngineRef,
     recorderRef,
     stopPlaybackAudio,
+    playCue,
     setOriginalAudioEnabled,
     setMidiAudioEnabled,
     setSourceAudioEnabled,

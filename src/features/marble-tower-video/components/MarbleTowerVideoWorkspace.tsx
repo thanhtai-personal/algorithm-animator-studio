@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { FileVideo2, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { RhythmicTimeline } from "@/features/rhythmic-studio/components/Rhythmic
 import { RhythmicTrimPanel } from "@/features/rhythmic-studio/components/RhythmicTrimPanel";
 import { useRhythmicStudioController } from "@/features/rhythmic-studio/hooks/useRhythmicStudioController";
 import { rhythmicOutputSize } from "@/features/rhythmic-studio/lib/outputSize";
+import type { RacePhysics } from "../physics/RacePhysics";
 import { RaceScene3D } from "../race/RaceScene3D";
 import type { RaceResult } from "../race/raceTypes";
 import { useMarbleTowerPlaylist } from "../hooks/useMarbleTowerPlaylist";
@@ -13,12 +14,21 @@ import { raceSessionStore } from "../store/RaceSessionStore";
 import { MarbleTowerControls } from "./MarbleTowerControls";
 import { MarbleTowerTransportBar } from "./MarbleTowerTransportBar";
 import { RaceHudPanel } from "./RaceHudPanel";
+import { RaceStartSequence } from "./RaceStartSequence";
+import { WinnerCelebrationOverlay } from "./WinnerCelebrationOverlay";
+
+function isMidiFile(file: File) {
+  const name = file.name.toLowerCase();
+  return name.endsWith(".mid") || name.endsWith(".midi") || file.type.includes("midi");
+}
 
 export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorkspace() {
   const studio = useRhythmicStudioController();
   const [driveMultiplier, setDriveMultiplier] = useState(6);
   const [raceResult, setRaceResult] = useState<RaceResult | null>(null);
+  const [racePhysics, setRacePhysics] = useState<RacePhysics | null>(null);
   const [seekRevision, setSeekRevision] = useState(0);
+  const finishTimerRef = useRef<number | null>(null);
   const playlist = useMarbleTowerPlaylist(studio);
   const output = rhythmicOutputSize(studio.settings.outputPreset);
   const racePlaybackToken = studio.playbackToken * 1000 + seekRevision;
@@ -29,18 +39,39 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
     if (studio.settings.titleText === "MARBLE MUSIC") studio.patch("titleText", "MARBLE TOWER RACE");
   }, []);
 
+  const silenceSourceForCountdown = useCallback(() => {
+    studio.stopPlaybackAudio();
+    if (studio.source.type === "midi") studio.patch("midiPlaybackEnabled", false);
+    if (studio.source.type === "audio") studio.patch("playOriginalSong", false);
+  }, [studio.patch, studio.source.type, studio.stopPlaybackAudio]);
+
   const handleEnded = useCallback(() => studio.onEnded(), [studio.onEnded]);
   const handleComplete = useCallback((result: RaceResult) => {
     setRaceResult(result);
-    studio.onEnded();
+    if (finishTimerRef.current !== null) window.clearTimeout(finishTimerRef.current);
+    // Keep the canvas/recorder alive long enough to capture the champion card
+    // and confetti instead of stopping on the exact winning frame.
+    finishTimerRef.current = window.setTimeout(() => {
+      finishTimerRef.current = null;
+      studio.onEnded();
+    }, 2800);
   }, [studio.onEnded]);
 
+  useEffect(() => () => {
+    if (finishTimerRef.current !== null) window.clearTimeout(finishTimerRef.current);
+  }, []);
+
   const resetRace = useCallback(() => {
+    if (finishTimerRef.current !== null) {
+      window.clearTimeout(finishTimerRef.current);
+      finishTimerRef.current = null;
+    }
     studio.resetPlayback();
+    silenceSourceForCountdown();
     playlist.resetToFirst();
     setRaceResult(null);
     setSeekRevision((value) => value + 1);
-  }, [playlist.resetToFirst, studio.resetPlayback]);
+  }, [playlist.resetToFirst, silenceSourceForCountdown, studio.resetPlayback]);
 
   const seekRace = useCallback((timeMs: number) => {
     const wasPlaying = studio.playing;
@@ -49,18 +80,37 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
   }, [studio.playing, studio.seekPlayback]);
 
   const toggleRace = useCallback(() => {
-    if (!studio.playing && raceResult) {
+    if (studio.playing) {
+      void studio.togglePlayback();
+      return;
+    }
+    silenceSourceForCountdown();
+    if (raceResult) {
       playlist.resetToFirst();
       setRaceResult(null);
     }
     void studio.togglePlayback();
-  }, [playlist.resetToFirst, raceResult, studio.playing, studio.togglePlayback]);
+  }, [playlist.resetToFirst, raceResult, silenceSourceForCountdown, studio.playing, studio.togglePlayback]);
 
-  const recordRace = useCallback((format: "webm" | "mp4") => {
+  const recordRace = useCallback((format: "webm" | "mp4", trimOnly = false) => {
+    silenceSourceForCountdown();
     playlist.resetToFirst();
     setRaceResult(null);
-    void studio.recordVideo(format);
-  }, [playlist.resetToFirst, studio.recordVideo]);
+    void studio.recordVideo(format, trimOnly);
+  }, [playlist.resetToFirst, silenceSourceForCountdown, studio.recordVideo]);
+
+  const importMusicFiles = useCallback((files: File[]) => {
+    const midi = files.find(isMidiFile);
+    if (midi) {
+      playlist.clearTracks();
+      void studio.importMidi(midi).then(() => {
+        studio.patch("midiPlaybackEnabled", false);
+      });
+      return;
+    }
+    const audioFiles = files.filter((file) => !isMidiFile(file));
+    if (audioFiles.length) void playlist.replaceTracks(audioFiles);
+  }, [playlist.clearTracks, playlist.replaceTracks, studio.importMidi, studio.patch]);
 
   const sourceTimeMs = Math.min(studio.timeMs, studio.durationMs);
   const aspectRatio = `${output.width} / ${output.height}`;
@@ -69,7 +119,7 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
       <header className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card/70 px-4 py-3 shadow-sm backdrop-blur">
         <div>
           <h1 className="text-lg font-bold tracking-tight">Marble Tower Video</h1>
-          <p className="text-xs text-muted-foreground">Decorated warehouse tower · rainbow track preserved · 3-2-1 start · leader-follow camera · audio playlist loop</p>
+          <p className="text-xs text-muted-foreground">3-2-1 → Let&apos;s go! → music + marbles together · g = 9.81 m/s² · champion celebration</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="secondary" disabled={studio.recording} onClick={() => recordRace("webm")}><Video className="mr-2 h-4 w-4" />WebM</Button>
@@ -92,11 +142,21 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
                 onTime={studio.setTimeMs}
                 onEnded={handleEnded}
                 onComplete={handleComplete}
+                onReady={setRacePhysics}
                 stopAtPlaybackEnd={studio.playingClip}
                 canvasRef={studio.threeCanvasRef}
               />
+              <RaceStartSequence
+                active={studio.playing || studio.recording}
+                physics={racePhysics}
+                sourceType={studio.source.type}
+                patch={studio.patch}
+                playCue={studio.playCue}
+                startPlaybackAudio={studio.startPlaybackAudio}
+              />
               <CountdownOverlay active={studio.playing || studio.recording || studio.timeMs > 0} />
-              {studio.recording ? <div className="pointer-events-none absolute right-3 top-3 rounded-full bg-red-600/90 px-3 py-1 text-xs font-bold text-white shadow">● REC</div> : null}
+              <WinnerCelebrationOverlay result={raceResult} />
+              {studio.recording ? <div className="pointer-events-none absolute right-3 top-3 z-30 rounded-full bg-red-600/90 px-3 py-1 text-xs font-bold text-white shadow">● REC</div> : null}
             </div>
             <MarbleTowerTransportBar
               playing={studio.playing}
@@ -122,7 +182,7 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
             outputPreset={output.preset}
             onRangeChange={studio.setTrimRange}
             onPreview={() => void studio.previewTrim()}
-            onExport={(format) => void studio.recordVideo(format, true)}
+            onExport={(format) => recordRace(format, true)}
             onFpsChange={(fps) => studio.patch("exportFps", fps)}
             onOutputPresetChange={(preset) => studio.patch("outputPreset", preset)}
           />
@@ -133,29 +193,23 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
           onDriveChange={setDriveMultiplier}
           playlist={playlist.tracks}
           currentTrackIndex={playlist.currentIndex}
-          onAudioFiles={(files) => void playlist.replaceTracks(files)}
+          onMusicFiles={importMusicFiles}
           onSelectTrack={playlist.selectTrack}
         />
       </div>
     </div>
-    <audio
-      ref={studio.audioElementRef}
-      preload="auto"
-      onEnded={playlist.advance}
-      className="hidden"
-    />
+    <audio ref={studio.audioElementRef} preload="auto" onEnded={playlist.advance} className="hidden" />
   </main>;
 });
 
 const CountdownOverlay = observer(function CountdownOverlay({ active }: { active: boolean }) {
-  const showCount = active && raceSessionStore.phase === "countdown" && raceSessionStore.countdown > 0;
-  const showGo = active && raceSessionStore.phase === "racing" && raceSessionStore.elapsedMs < 550;
-  if (!showCount && !showGo) return null;
+  if (!active || raceSessionStore.phase !== "countdown") return null;
+  const label = raceSessionStore.countdown > 0 ? String(raceSessionStore.countdown) : "LET'S GO!";
 
   return (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-      <div className="rounded-full border border-white/35 bg-black/28 px-8 py-5 text-[clamp(64px,13vw,150px)] font-black italic leading-none text-white shadow-[0_18px_55px_rgba(0,0,0,0.55)] backdrop-blur-sm">
-        {showCount ? raceSessionStore.countdown : "GO!"}
+    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+      <div className="rounded-full border border-white/35 bg-black/30 px-8 py-5 text-[clamp(60px,12vw,142px)] font-black italic leading-none text-white shadow-[0_18px_55px_rgba(0,0,0,0.55)] backdrop-blur-sm">
+        {label}
       </div>
     </div>
   );

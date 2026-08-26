@@ -19,6 +19,8 @@ const FIXED_STEP = 1 / 60;
 const BPM = 126;
 const BEAT_SECONDS = 60 / BPM;
 const VIDEO_COUNTDOWN_SECONDS = 3;
+const MARBLE_MASS = 2.4;
+const STANDARD_GRAVITY = 9.81;
 const DRIVE_MIN = 4;
 const DRIVE_MAX = 10;
 
@@ -27,7 +29,7 @@ function vec3(value: THREE.Vector3) {
 }
 
 export class RacePhysics {
-  readonly world = new CANNON.World({ gravity: new CANNON.Vec3(0, -14.2, 0) });
+  readonly world = new CANNON.World({ gravity: new CANNON.Vec3(0, -STANDARD_GRAVITY, 0) });
   readonly marbles = new Map<MarbleId, MarbleRuntime>();
   readonly pianoBodies: CANNON.Body[];
   readonly chimeBodies: CANNON.Body[];
@@ -68,7 +70,7 @@ export class RacePhysics {
     const trackMaterial = new CANNON.Material("track");
     const obstacleMaterial = new CANNON.Material("obstacle");
     this.world.addContactMaterial(new CANNON.ContactMaterial(marbleMaterial, trackMaterial, {
-      friction: 0.035,
+      friction: 0.045,
       restitution: 0.11,
       contactEquationStiffness: 1e8,
     }));
@@ -101,12 +103,12 @@ export class RacePhysics {
     MARBLES.forEach((marble, index) => {
       const start = spawnPoint(index);
       const body = new CANNON.Body({
-        mass: 1,
+        mass: MARBLE_MASS,
         material,
         shape: new CANNON.Sphere(MARBLE_RADIUS),
         position: vec3(start),
-        linearDamping: 0.006,
-        angularDamping: 0.004,
+        linearDamping: 0.0015,
+        angularDamping: 0.0015,
       });
       body.allowSleep = false;
       this.world.addBody(body);
@@ -131,21 +133,8 @@ export class RacePhysics {
     const dt = Math.min(0.05, Math.max(0, delta));
     this.totalTime += dt;
 
-    if (!this.opened && this.totalTime >= VIDEO_COUNTDOWN_SECONDS) {
-      this.opened = true;
-      // The gate can keep moving visually, but it must stop blocking the launch.
-      this.startGate.collisionResponse = false;
-      this.startGate.collisionFilterMask = 0;
-      raceSessionStore.flash("GO!");
-    }
-
     if (this.opened) this.raceTime += dt;
     this.updateGate(dt);
-
-    if (this.opened && !this.launched && this.raceTime >= 0.12) {
-      this.launched = true;
-      this.launchMarbles();
-    }
 
     this.updateBeatObstacles();
     this.world.step(FIXED_STEP, dt, 5);
@@ -173,11 +162,26 @@ export class RacePhysics {
     if (!this.completed && this.totalTime < target) this.step(target - this.totalTime);
   }
 
+  releaseStart() {
+    if (this.opened || this.totalTime < VIDEO_COUNTDOWN_SECONDS) return false;
+    this.opened = true;
+    this.raceTime = 0;
+    this.startGate.collisionResponse = false;
+    this.startGate.collisionFilterMask = 0;
+    this.launched = true;
+    this.launchMarbles();
+    raceSessionStore.flash("LET'S GO!");
+    this.publishSnapshot();
+    return true;
+  }
+
   private launchMarbles() {
     for (const marble of this.marbles.values()) {
       const sample = COURSE_SAMPLES[Math.max(0, marble.progressIndex)];
-      const launchStrength = this.driveMultiplier * 1.65;
-      const impulse = sample.tangent.clone().multiplyScalar(launchStrength).addScaledVector(sample.normal, 0.12);
+      // Impulse scales with mass so the launch control represents initial speed,
+      // while downhill acceleration after launch comes from standard g = 9.81 m/s².
+      const launchStrength = MARBLE_MASS * this.driveMultiplier * 1.35;
+      const impulse = sample.tangent.clone().multiplyScalar(launchStrength).addScaledVector(sample.normal, MARBLE_MASS * 0.05);
       marble.body.applyImpulse(vec3(impulse));
       marble.body.angularVelocity.set(0, 0, 0);
     }
@@ -227,18 +231,17 @@ export class RacePhysics {
 
       if (!marble.hitJump && progress >= SPECIALS.jump) {
         marble.hitJump = true;
-        const impulse = sample.tangent.clone().multiplyScalar(2 + this.driveMultiplier * 0.18).addScaledVector(sample.normal, 2.0);
+        const impulse = sample.tangent.clone().multiplyScalar(MARBLE_MASS * (2 + this.driveMultiplier * 0.18)).addScaledVector(sample.normal, MARBLE_MASS * 2.0);
         body.applyImpulse(vec3(impulse));
         if (marble === this.getLeader()) raceSessionStore.flash("SKY JUMP!");
       }
 
-      this.applyRollingDrag(marble);
       const speed = body.velocity.length();
       const moved = Math.max(0, marble.progressIndex - previous);
       marble.stuckFor = speed < 0.24 && moved === 0 ? marble.stuckFor + dt : 0;
       if (marble.stuckFor > 2.8) {
         marble.stuckFor = 0;
-        const impulse = sample.tangent.clone().multiplyScalar(0.55 * this.driveMultiplier).addScaledVector(sample.normal, 0.45);
+        const impulse = sample.tangent.clone().multiplyScalar(MARBLE_MASS * 0.55 * this.driveMultiplier).addScaledVector(sample.normal, MARBLE_MASS * 0.45);
         body.applyImpulse(vec3(impulse));
         if (marble === this.getLeader()) raceSessionStore.flash("RECOVERY");
       }
@@ -246,18 +249,6 @@ export class RacePhysics {
     }
     this.resolveCuts();
     this.resolveFinish();
-  }
-
-  private applyRollingDrag(marble: MarbleRuntime) {
-    const speed = marble.body.velocity.length();
-    const softLimit = 12 + this.driveMultiplier * 1.45;
-    if (speed <= softLimit) return;
-    const factor = (speed - softLimit) * 0.22;
-    marble.body.applyForce(new CANNON.Vec3(
-      -marble.body.velocity.x * factor,
-      -marble.body.velocity.y * factor * 0.18,
-      -marble.body.velocity.z * factor,
-    ));
   }
 
   private resolveCuts() {

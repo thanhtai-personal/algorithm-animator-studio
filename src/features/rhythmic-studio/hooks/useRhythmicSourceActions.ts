@@ -35,7 +35,8 @@ export function useRhythmicSourceActions(store: RhythmicStudioStore, stopPlaybac
       if (!events.length) throw new Error("NO_NOTE_EVENTS");
       stopPlaybackAudio();
       replaceAudioUrl(null);
-      const durationMs = events.at(-1)?.timeMs ?? 0;
+      const lastEvent = events.at(-1);
+      const durationMs = lastEvent ? lastEvent.timeMs + lastEvent.durationMs : 0;
       store.setSource(events, { type: "midi", name: file.name, durationMs, eventCount: events.length }, {
         key: "info.midi", values: { name: file.name, size: prettyBytes(file.size), count: events.length },
       });

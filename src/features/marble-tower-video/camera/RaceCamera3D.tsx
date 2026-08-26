@@ -19,35 +19,37 @@ export function RaceCamera3D({ physics }: { physics: RacePhysics }) {
     const section = sample.section.id;
     focus.set(leader.body.position.x, leader.body.position.y, leader.body.position.z);
 
-    let behind = 8.2;
-    let lift = 3.6;
-    let side = 2.0;
-    let fov = 48;
+    // Keep the leader as the focal point, but frame enough of the tower to
+    // show upcoming track and nearby competitors instead of sitting on the marble.
+    let behind = 11.5;
+    let lift = 5.0;
+    let side = 2.8;
+    let fov = 53;
     if (section === "switchback" || section === "hairpin" || section === "spiral") {
-      behind = 5.5;
-      lift = 7.0;
-      side = 9.0;
-      fov = 55;
+      behind = 8.5;
+      lift = 8.5;
+      side = 10.5;
+      fov = 58;
     } else if (section === "spinner" || section === "chimes" || section === "chaos") {
-      behind = 3.5;
-      lift = 5.0;
-      side = 7.0;
-      fov = 52;
+      behind = 6.5;
+      lift = 6.5;
+      side = 8.0;
+      fov = 56;
     } else if (section === "piano") {
-      behind = 10.5;
-      lift = 3.0;
-      side = 1.2;
-      fov = 46;
+      behind = 14.0;
+      lift = 4.2;
+      side = 1.8;
+      fov = 51;
     } else if (section === "tunnel") {
-      behind = 7.0;
-      lift = 2.5;
-      side = 0.6;
-      fov = 50;
+      behind = 9.5;
+      lift = 3.3;
+      side = 1.0;
+      fov = 54;
     } else if (section === "finish") {
-      behind = 11.0;
-      lift = 5.0;
-      side = -4.0;
-      fov = 49;
+      behind = 15.0;
+      lift = 6.5;
+      side = -5.5;
+      fov = 54;
     }
 
     desired.copy(focus)
@@ -63,7 +65,7 @@ export function RaceCamera3D({ physics }: { physics: RacePhysics }) {
     const positionAlpha = 1 - Math.exp(-delta * 3.2);
     const lookAlpha = 1 - Math.exp(-delta * 5.2);
     camera.position.lerp(desired, positionAlpha);
-    look.copy(focus).addScaledVector(sample.tangent, 2.3).addScaledVector(sample.normal, 0.35);
+    look.copy(focus).addScaledVector(sample.tangent, 3.8).addScaledVector(sample.normal, 0.5);
     lookTarget.current.lerp(look, lookAlpha);
     camera.lookAt(lookTarget.current);
 

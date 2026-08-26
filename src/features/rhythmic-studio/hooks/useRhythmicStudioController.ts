@@ -127,6 +127,7 @@ export function useRhythmicStudioController() {
     stopPlaybackAudio: playback.stopPlaybackAudio,
     startPlaybackAudio: playback.startPlaybackAudio,
     playCue: playback.playCue,
+    playMarbleImpact: playback.playMarbleImpact,
     seekPlayback: playback.seekPlayback,
     resetPlayback: playback.resetPlayback,
     previewTrim: playback.previewTrim,

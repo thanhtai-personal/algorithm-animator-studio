@@ -13,13 +13,14 @@ import {
   spawnPoint,
 } from "./buildTowerCoursePhysics";
 import type { MarbleRuntime } from "./physicsTypes";
+import { MarbleInteractionSystem, type MarbleImpactSound } from "./MarbleInteractionSystem";
 import type { RaceResult } from "../race/raceTypes";
 
 const FIXED_STEP = 1 / 60;
 const BPM = 126;
 const BEAT_SECONDS = 60 / BPM;
 const VIDEO_COUNTDOWN_SECONDS = 3;
-const MARBLE_MASS = 2.4;
+const MARBLE_MASS = 3.8;
 const STANDARD_GRAVITY = 9.81;
 const DRIVE_MIN = 4;
 const DRIVE_MAX = 10;
@@ -40,6 +41,7 @@ export class RacePhysics {
   readonly finalCross: ReturnType<typeof createSpinner>;
 
   private bodyToMarble = new Map<number, MarbleRuntime>();
+  private interactions: MarbleInteractionSystem;
   private totalTime = 0;
   private raceTime = 0;
   private beatIndex = -1;
@@ -56,7 +58,11 @@ export class RacePhysics {
   private pianoCombo = 0;
   private lastPianoAt = -10;
 
-  constructor(private onComplete: (result: RaceResult) => void, driveMultiplier = 6) {
+  constructor(
+    private onComplete: (result: RaceResult) => void,
+    driveMultiplier = 6,
+    onImpactSound?: MarbleImpactSound,
+  ) {
     this.driveMultiplier = Math.max(DRIVE_MIN, Math.min(DRIVE_MAX, driveMultiplier));
     raceSessionStore.reset();
     this.world.allowSleep = false;
@@ -70,19 +76,26 @@ export class RacePhysics {
     const trackMaterial = new CANNON.Material("track");
     const obstacleMaterial = new CANNON.Material("obstacle");
     this.world.addContactMaterial(new CANNON.ContactMaterial(marbleMaterial, trackMaterial, {
-      friction: 0.045,
-      restitution: 0.11,
+      friction: 0.012,
+      restitution: 0.16,
       contactEquationStiffness: 1e8,
     }));
     this.world.addContactMaterial(new CANNON.ContactMaterial(marbleMaterial, obstacleMaterial, {
-      friction: 0.07,
-      restitution: 0.58,
+      friction: 0.035,
+      restitution: 0.68,
     }));
     this.world.addContactMaterial(new CANNON.ContactMaterial(marbleMaterial, marbleMaterial, {
-      friction: 0.035,
-      restitution: 0.38,
+      friction: 0.012,
+      restitution: 0.66,
     }));
 
+    this.interactions = new MarbleInteractionSystem(
+      this.bodyToMarble,
+      trackMaterial,
+      obstacleMaterial,
+      () => this.opened && !this.completed,
+      onImpactSound,
+    );
     buildTrackBodies(this.world, trackMaterial);
     this.createMarbles(marbleMaterial);
     this.startGate = createBarrier(this.world, obstacleMaterial, SPECIALS.startGate, 0.8);
@@ -107,8 +120,8 @@ export class RacePhysics {
         material,
         shape: new CANNON.Sphere(MARBLE_RADIUS),
         position: vec3(start),
-        linearDamping: 0.0015,
-        angularDamping: 0.0015,
+        linearDamping: 0.00015,
+        angularDamping: 0.0005,
       });
       body.allowSleep = false;
       this.world.addBody(body);
@@ -125,6 +138,7 @@ export class RacePhysics {
       };
       this.marbles.set(marble.id, runtime);
       this.bodyToMarble.set(body.id, runtime);
+      this.interactions.bindMarble(runtime);
     });
   }
 
@@ -137,6 +151,8 @@ export class RacePhysics {
     this.updateGate(dt);
 
     this.updateBeatObstacles();
+    this.interactions.setTime(this.raceTime);
+    if (this.opened) this.interactions.applyMagneticField(this.marbles.values());
     this.world.step(FIXED_STEP, dt, 5);
     if (this.opened) this.updateRace(dt);
 
@@ -180,7 +196,7 @@ export class RacePhysics {
       const sample = COURSE_SAMPLES[Math.max(0, marble.progressIndex)];
       // Impulse scales with mass so the launch control represents initial speed,
       // while downhill acceleration after launch comes from standard g = 9.81 m/s².
-      const launchStrength = MARBLE_MASS * this.driveMultiplier * 1.35;
+      const launchStrength = MARBLE_MASS * this.driveMultiplier * 1.9;
       const impulse = sample.tangent.clone().multiplyScalar(launchStrength).addScaledVector(sample.normal, MARBLE_MASS * 0.05);
       marble.body.applyImpulse(vec3(impulse));
       marble.body.angularVelocity.set(0, 0, 0);

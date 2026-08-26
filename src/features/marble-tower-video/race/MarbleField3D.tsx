@@ -34,10 +34,10 @@ function MarbleMesh({ id, physics }: { id: MarbleId; physics: RacePhysics }) {
 
   return <group ref={group} position={runtime ? [runtime.body.position.x, runtime.body.position.y, runtime.body.position.z] : [0, 0, 0]}>
     <group ref={ballRotation}>
-      <mesh castShadow material={material}>
+      <mesh castShadow material={material} userData={{ cameraIgnore: true }}>
         <sphereGeometry args={[MARBLE_RADIUS, 28, 20]} />
       </mesh>
-      <mesh scale={0.7} position={[-0.15, 0.18, -0.32]}>
+      <mesh scale={0.7} position={[-0.15, 0.18, -0.32]} userData={{ cameraIgnore: true }}>
         <sphereGeometry args={[MARBLE_RADIUS * 0.42, 16, 10]} />
         <meshBasicMaterial color={config.accent} transparent opacity={0.42} />
       </mesh>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { AudioEngine } from "../lib/audioEngine";
+import { AudioEngine, type MarbleImpactSoundKind } from "../lib/audioEngine";
 import type { InstrumentHitEvent, SynthPreset } from "../types";
 import type { RhythmicStudioStore } from "../store/RhythmicStudioStore";
 import { instrumentVoiceForPlatform } from "../lib/instrumentHitProfiles";
@@ -44,6 +44,9 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
   }, [stopOriginalAudio]);
 
   const playCue = useCallback((url: string) => audioEngineRef.current.playCue(url), []);
+  const playMarbleImpact = useCallback((kind: MarbleImpactSoundKind, strength: number, pan: number) => {
+    void audioEngineRef.current.playMarbleImpact(kind, strength, pan).catch(() => undefined);
+  }, []);
 
   const startOriginalAudio = useCallback(async (resumeMs = 0) => {
     const audio = audioElementRef.current;
@@ -222,6 +225,7 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
     recorderRef,
     stopPlaybackAudio,
     playCue,
+    playMarbleImpact,
     setOriginalAudioEnabled,
     setMidiAudioEnabled,
     setSourceAudioEnabled,

@@ -108,7 +108,7 @@ export function MarbleTowerControls({
       <section className="rounded-xl border bg-card/60 p-4">
         <h2 className="mb-3 text-sm font-semibold">Âm lượng</h2>
         <VolumeRow label="Nhạc" value={studio.settings.musicVolume} max={1.5} onChange={(value) => studio.patch("musicVolume", value)} />
-        <VolumeRow label="Hiệu ứng / MIDI synth" value={studio.settings.synthVolume} max={1.5} onChange={(value) => studio.patch("synthVolume", value)} />
+        <VolumeRow label="Va chạm / MIDI synth" value={studio.settings.synthVolume} max={1.5} onChange={(value) => studio.patch("synthVolume", value)} />
         <Label className="mt-3 block text-xs">Tên project</Label>
         <Input className="mt-1.5" value={studio.projectName} disabled={studio.recording} onChange={(event) => studio.setProjectName(event.target.value)} />
       </section>

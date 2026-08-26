@@ -8,6 +8,7 @@ import { ObstacleMeshes3D } from "./ObstacleMeshes3D";
 import { MarbleField3D } from "./MarbleField3D";
 import { RaceCamera3D } from "../camera/RaceCamera3D";
 import type { RaceResult } from "./raceTypes";
+import type { MarbleImpactKind } from "../physics/MarbleInteractionSystem";
 
 function Runtime({ physics, playing, playbackToken, playbackStartMs, playbackEndMs, durationMs, stopAtPlaybackEnd, onTime, onEnded }: {
   physics: RacePhysics;
@@ -63,12 +64,13 @@ export function RaceScene3D(props: {
   onTime: (timeMs: number) => void;
   onEnded: () => void;
   onComplete?: (result: RaceResult) => void;
+  onImpactSound?: (kind: MarbleImpactKind, strength: number, pan: number) => void;
   stopAtPlaybackEnd?: boolean;
   onReady?: (physics: RacePhysics) => void;
   canvasRef: MutableRefObject<HTMLCanvasElement | null>;
 }) {
   const physics = useMemo(
-    () => new RacePhysics(props.onComplete ?? (() => undefined), props.driveMultiplier),
+    () => new RacePhysics(props.onComplete ?? (() => undefined), props.driveMultiplier, props.onImpactSound),
     [props.playbackToken],
   );
   useEffect(() => { physics.setDriveMultiplier(props.driveMultiplier); }, [physics, props.driveMultiplier]);

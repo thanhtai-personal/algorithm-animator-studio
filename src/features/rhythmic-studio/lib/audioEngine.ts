@@ -22,6 +22,8 @@ interface MidiScheduleOptions {
   presetForEvent?: (event: NoteEvent, index: number) => SynthPreset;
 }
 
+export type MarbleImpactSoundKind = "wall" | "obstacle" | "obstacle-strike";
+
 export interface SynthVoiceWarmup {
   midi: number;
   velocity: number;
@@ -204,6 +206,61 @@ export class AudioEngine {
       };
       source.start(context.currentTime + 0.01);
     });
+  }
+
+  async playMarbleImpact(kind: MarbleImpactSoundKind, strength: number, pan = 0) {
+    const context = await this.ensure();
+    if (!this.sfxInput) return;
+    const intensity = Math.max(0, Math.min(1, (strength - 0.65) / 11.5));
+    if (intensity <= 0.01) return;
+
+    const when = context.currentTime + 0.004;
+    const duration = kind === "wall" ? 0.075 : kind === "obstacle" ? 0.11 : 0.16;
+    const peak = 0.025 + intensity * (kind === "obstacle-strike" ? 0.34 : 0.24);
+    const baseFrequency = kind === "wall"
+      ? 210 + intensity * 150
+      : kind === "obstacle"
+        ? 330 + intensity * 230
+        : 145 + intensity * 115;
+
+    const output = context.createGain();
+    const panner = context.createStereoPanner();
+    const tone = context.createBiquadFilter();
+    const fundamental = context.createOscillator();
+    const metallic = context.createOscillator();
+    const metallicGain = context.createGain();
+
+    output.gain.setValueAtTime(0.0001, when);
+    output.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), when + 0.003);
+    output.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+    panner.pan.value = Math.max(-1, Math.min(1, pan));
+    tone.type = "bandpass";
+    tone.frequency.value = kind === "obstacle-strike" ? 1250 : 2100 + intensity * 1700;
+    tone.Q.value = kind === "wall" ? 0.75 : 1.15;
+
+    fundamental.type = kind === "obstacle-strike" ? "triangle" : "sine";
+    fundamental.frequency.setValueAtTime(baseFrequency, when);
+    fundamental.frequency.exponentialRampToValueAtTime(Math.max(70, baseFrequency * 0.58), when + duration);
+    metallic.type = "triangle";
+    metallic.frequency.setValueAtTime(baseFrequency * (kind === "wall" ? 3.15 : 2.45), when);
+    metallic.frequency.exponentialRampToValueAtTime(baseFrequency * 1.55, when + duration * 0.8);
+    metallicGain.gain.value = kind === "wall" ? 0.42 : 0.64;
+
+    fundamental.connect(tone);
+    metallic.connect(metallicGain);
+    metallicGain.connect(tone);
+    tone.connect(output);
+    output.connect(panner);
+    panner.connect(this.sfxInput);
+    fundamental.start(when);
+    metallic.start(when);
+    fundamental.stop(when + duration + 0.02);
+    metallic.stop(when + duration + 0.02);
+    fundamental.onended = () => {
+      for (const node of [fundamental, metallic, metallicGain, tone, output, panner]) {
+        try { node.disconnect(); } catch { /* already disconnected */ }
+      }
+    };
   }
 
   async playNote(midi: number, velocity: number, durationMs: number, preset: SynthPreset, presentationDelayMs = 0) {

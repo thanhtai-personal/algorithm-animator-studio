@@ -25,7 +25,7 @@ export function drawMetallophonePlate2D(
   impact: number,
   lowPower: boolean,
 ) {
-  const height = Math.max(platform.thickness < 9 ? 7 : 14, platform.thickness);
+  const height = platform.visualCompact ? Math.max(2.4, platform.thickness) : Math.max(platform.thickness < 9 ? 7 : 14, platform.thickness);
   const active = impact > 0.035;
   const activeColor = mixHex("#f4f3ee", platform.color, Math.min(0.94, impact * 1.08));
   const mountY = height * 1.55;
@@ -38,11 +38,13 @@ export function drawMetallophonePlate2D(
   ctx.moveTo(-half * 0.32, height * 0.45);
   ctx.lineTo(-half * 0.32, mountY);
   ctx.lineTo(half * 0.28, mountY);
-  ctx.stroke();
+  if (!platform.visualCompact) ctx.stroke();
   ctx.fillStyle = "#161920";
-  ctx.beginPath();
-  ctx.arc(half * 0.28, mountY, Math.max(3, height * 0.2), 0, Math.PI * 2);
-  ctx.fill();
+  if (!platform.visualCompact) {
+    ctx.beginPath();
+    ctx.arc(half * 0.28, mountY, Math.max(3, height * 0.2), 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   if (active && !lowPower) {
     ctx.shadowColor = platform.color;
@@ -64,7 +66,7 @@ export function drawMetallophonePlate2D(
   ctx.lineWidth = active ? 1.8 : 1.05;
   ctx.stroke();
 
-  for (const x of [-half * 0.32, half * 0.32]) {
+  if (!platform.visualCompact) for (const x of [-half * 0.32, half * 0.32]) {
     ctx.fillStyle = "#292d34";
     ctx.beginPath();
     ctx.arc(x, height * 0.52, Math.max(2, height * 0.13), 0, Math.PI * 2);

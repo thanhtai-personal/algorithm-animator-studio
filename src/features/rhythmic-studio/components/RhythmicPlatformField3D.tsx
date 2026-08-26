@@ -146,6 +146,7 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
           depth,
           platformSettings.ballSize * RHYTHMIC_WORLD_SCALE,
           surfaceFrame.normalAlignment,
+          Boolean(platform.visualCompact),
         );
         const normalInset = platform.contactMode === "surface"
           ? playingSurface.centerInset
@@ -185,7 +186,7 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
                 response.twistRad * 0.45,
                 response.twistRad,
               ]}>
-                <PlatformMesh w={w} h={h} d={depth} color={platform.color} style={style} selected={platform.index === selectedNodeIndex} glow={effectiveGlow} detail={platformSettings.platformDetail} />
+                <PlatformMesh w={w} h={h} d={depth} color={platform.color} style={style} selected={platform.index === selectedNodeIndex} glow={effectiveGlow} detail={platformSettings.platformDetail} compact={Boolean(platform.visualCompact)} />
                 {isNoteLitInstrumentStyle(style) && <RhythmicInstrumentNoteLights3D width={w} height={h} surface={playingSurface} colors={lightColors} glow={effectiveGlow} />}
               </group>
             </group>

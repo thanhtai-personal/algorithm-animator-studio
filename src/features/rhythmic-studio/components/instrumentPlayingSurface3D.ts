@@ -212,6 +212,7 @@ export function instrumentPlayingSurface3D(
   depth: number,
   ballRadius: number,
   normalAlignment = 1,
+  compact = false,
 ): InstrumentPlayingSurface3D {
   const safeRadius = Math.max(0, ballRadius);
   const safeAlignment = Math.max(0, Math.min(1, normalAlignment));
@@ -236,7 +237,11 @@ export function instrumentPlayingSurface3D(
   }
 
   const pitchRad = profile.pitchDeg * Math.PI / 180;
-  const { y: localStrikeY, z: localStrikeZ } = profile.strikePoint(height, depth, width);
+  const strike = profile.strikePoint(height, depth, width);
+  const localStrikeY = compact && profile.faceKind === "top" ? height * 0.5 : strike.y;
+  const localStrikeZ = compact && style === "drum-disc"
+    ? drumGeometry3D(width, height, depth, true).playingFaceZ
+    : strike.z;
   const normalY = profile.faceKind === "front" ? -Math.sin(pitchRad) : Math.cos(pitchRad);
   const normalZ = profile.faceKind === "front" ? Math.cos(pitchRad) : Math.sin(pitchRad);
   const projectedStrikeY = localStrikeY * Math.cos(pitchRad) - localStrikeZ * Math.sin(pitchRad);

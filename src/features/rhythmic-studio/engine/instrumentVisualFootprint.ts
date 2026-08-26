@@ -67,6 +67,13 @@ export function instrumentVisualFootprint(platform: MarblePlatform): InstrumentV
   const thickness = platform.visualThickness ?? platform.thickness;
   if (platform.visualCompact) {
     const shallowDepth = Math.max(3, thickness + Math.max(1.2, thickness * 0.3));
+    if (platform.visualStyle === "gong-disc") return topAnchored(width, Math.max(shallowDepth, width * 0.84));
+    if (platform.visualStyle === "instrument-cymbal") return topAnchored(width, Math.max(shallowDepth, Math.max(1.2, thickness * 0.5) * 2.5 + 0.8));
+    if (platform.visualStyle === "drum-disc") {
+      const faceRx = Math.max(3.5, width * 0.44);
+      const faceRy = Math.max(1.2, Math.min(faceRx * 0.34, thickness * 0.5));
+      return topAnchored(Math.max(width, faceRx * 2), faceRy * 2 + Math.max(1.2, faceRy));
+    }
     return topAnchored(width, shallowDepth);
   }
   return styleFootprint(

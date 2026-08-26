@@ -354,6 +354,7 @@ export function drawStyledPlatform(ctx: CanvasRenderingContext2D, platform: Marb
       thickness: platform.thickness,
       tiltRad: platform.tiltRad,
       style,
+      compact: platform.visualCompact,
     }, renderQuality === "idle");
   }
   if (keyPress + resonanceTravel > 0) ctx.translate(0, keyPress + resonanceTravel);

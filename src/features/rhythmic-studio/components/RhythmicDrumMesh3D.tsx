@@ -12,14 +12,14 @@ export interface DrumGeometry3D {
   lugCount: number;
 }
 
-export function drumGeometry3D(width: number, height: number, depth: number): DrumGeometry3D {
-  const radius = Math.max(0.2, width * 0.42);
+export function drumGeometry3D(width: number, height: number, depth: number, compact = false): DrumGeometry3D {
+  const radius = compact ? width * 0.42 : Math.max(0.2, width * 0.42);
   const shellDepth = THREE.MathUtils.clamp(
     radius * 0.9,
-    Math.max(0.16, height * 1.25),
-    Math.max(0.18, depth * 0.72),
+    compact ? Math.max(0.024, height) : Math.max(0.16, height * 1.25),
+    compact ? Math.max(0.036, depth * 0.72) : Math.max(0.18, depth * 0.72),
   );
-  const hoopTubeRadius = THREE.MathUtils.clamp(radius * 0.045, 0.018, 0.038);
+  const hoopTubeRadius = THREE.MathUtils.clamp(radius * 0.045, compact ? 0.006 : 0.018, compact ? 0.018 : 0.038);
   return {
     radius,
     shellDepth,
@@ -31,8 +31,8 @@ export function drumGeometry3D(width: number, height: number, depth: number): Dr
   };
 }
 
-export function DrumDiscMesh({ w, h, d, color, selected, glow, detail }: MeshProps) {
-  const drum = drumGeometry3D(w, h, d);
+export function DrumDiscMesh({ w, h, d, color, selected, glow, detail, compact }: MeshProps) {
+  const drum = drumGeometry3D(w, h, d, compact);
   const segments = Math.round(32 + detail * 16);
   const noteStrength = THREE.MathUtils.clamp(glow * 0.58 + (selected ? 0.22 : 0), 0, 1);
   const shellColor = new THREE.Color("#12151a").lerp(new THREE.Color(color), noteStrength * 0.12).getStyle();

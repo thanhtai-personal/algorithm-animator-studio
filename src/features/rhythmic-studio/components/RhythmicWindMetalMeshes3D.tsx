@@ -2,8 +2,8 @@ import * as THREE from "three";
 import type { MeshProps } from "./RhythmicPlatformMeshes3D";
 import { selectedColor } from "./RhythmicPlatformMaterials3D";
 
-export function GongDiscMesh({ w, h, d, color, selected, glow, detail }: MeshProps) {
-  const radius = Math.max(0.25, w * 0.42);
+export function GongDiscMesh({ w, h, d, color, selected, glow, detail, compact }: MeshProps) {
+  const radius = compact ? w * 0.42 : Math.max(0.25, w * 0.42);
   const segments = Math.round(32 + detail * 24);
   const light = THREE.MathUtils.clamp(glow, 0, 1.5);
   return <group>
@@ -23,15 +23,15 @@ export function GongDiscMesh({ w, h, d, color, selected, glow, detail }: MeshPro
       <circleGeometry args={[radius * 0.24, segments]} />
       <meshPhysicalMaterial color="#c79a51" roughness={0.2} metalness={0.9} emissive={color} emissiveIntensity={light * 0.34} />
     </mesh>
-    {[-0.34, 0.34].map((ratio) => <mesh key={ratio} position={[radius * ratio, radius * 0.88, -d * 0.06]}>
+    {!compact && [-0.34, 0.34].map((ratio) => <mesh key={ratio} position={[radius * ratio, radius * 0.88, -d * 0.06]}>
       <torusGeometry args={[0.045, 0.012, 8, 18]} />
       <meshStandardMaterial color="#30343a" roughness={0.34} metalness={0.82} />
     </mesh>)}
   </group>;
 }
 
-export function FlutePipeMesh({ w, h, d, color, selected, glow, detail }: MeshProps) {
-  const radius = Math.max(0.085, h * 0.38);
+export function FlutePipeMesh({ w, h, d, color, selected, glow, detail, compact }: MeshProps) {
+  const radius = compact ? h * 0.38 : Math.max(0.085, h * 0.38);
   const segments = Math.round(22 + detail * 18);
   const holes = Array.from({ length: 6 }, (_, index) => -w * 0.29 + index * w * 0.115);
   const light = THREE.MathUtils.clamp(glow, 0, 1.5);

@@ -9,16 +9,16 @@ export interface DrumGeometry2D {
   lugCount: number;
 }
 
-export function drumGeometry2D(width: number, thickness: number): DrumGeometry2D {
-  const faceRx = Math.max(18, width * 0.44);
-  const faceRy = Math.max(7, Math.min(faceRx * 0.34, thickness * 0.72));
+export function drumGeometry2D(width: number, thickness: number, compact = false): DrumGeometry2D {
+  const faceRx = compact ? Math.max(3.5, width * 0.44) : Math.max(18, width * 0.44);
+  const faceRy = compact ? Math.max(1.2, Math.min(faceRx * 0.34, thickness * 0.5)) : Math.max(7, Math.min(faceRx * 0.34, thickness * 0.72));
   return {
     faceRx,
     faceRy,
     headRx: faceRx * 0.86,
     headRy: faceRy * 0.78,
-    shellDepth: Math.max(faceRy * 1.7, faceRx * 0.42),
-    lugCount: 8,
+    shellDepth: compact ? Math.max(1.2, faceRy) : Math.max(faceRy * 1.7, faceRx * 0.42),
+    lugCount: compact ? 4 : 8,
   };
 }
 
@@ -26,6 +26,7 @@ interface DrumRenderInput {
   width: number;
   thickness: number;
   color: string;
+  visualCompact?: boolean;
 }
 
 export function drawDrum2D(
@@ -34,7 +35,7 @@ export function drawDrum2D(
   impact: number,
   lowPower: boolean,
 ) {
-  const drum = drumGeometry2D(platform.width, platform.thickness);
+  const drum = drumGeometry2D(platform.width, platform.thickness, platform.visualCompact);
   const faceY = drum.faceRy;
   const bottomY = faceY + drum.shellDepth;
   const light = Math.max(0, Math.min(1, impact));

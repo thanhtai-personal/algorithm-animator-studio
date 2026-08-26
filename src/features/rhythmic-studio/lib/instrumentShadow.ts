@@ -10,6 +10,7 @@ interface InstrumentShadowInput {
   thickness: number;
   tiltRad: number;
   style: PlatformStyle;
+  compact?: boolean;
 }
 
 export interface InstrumentShadowGeometry2D {
@@ -33,13 +34,13 @@ export function projectPointToShadowPlane(point: Point3D, receiverZ: number, lig
   };
 }
 
-function instrumentFoot(style: PlatformStyle, width: number, thickness: number) {
+function instrumentFoot(style: PlatformStyle, width: number, thickness: number, compact = false) {
   if (style === "gong-disc") {
-    const radius = Math.max(28, width * 0.42);
-    return { contactY: instrumentSurfaceAlignment2D(style, width, thickness)!.footY, nearWidth: radius * 0.22, flared: true };
+    const radius = compact ? width * 0.42 : Math.max(28, width * 0.42);
+    return { contactY: instrumentSurfaceAlignment2D(style, width, thickness, compact)!.footY, nearWidth: radius * 0.22, flared: true };
   }
   if (style === "drum-disc") {
-    const drum = drumGeometry2D(width, thickness);
+    const drum = drumGeometry2D(width, thickness, compact);
     return {
       contactY: drum.shellDepth + drum.faceRy * 2,
       nearWidth: drum.faceRx * 1.3,
@@ -47,38 +48,38 @@ function instrumentFoot(style: PlatformStyle, width: number, thickness: number) 
     };
   }
   if (style === "instrument-cymbal") {
-    return { contactY: instrumentSurfaceAlignment2D(style, width, thickness)!.footY, nearWidth: 7, flared: true };
+    return { contactY: instrumentSurfaceAlignment2D(style, width, thickness, compact)!.footY, nearWidth: compact ? 1.6 : 7, flared: true };
   }
   if (style === "flute-pipe") {
-    return { contactY: instrumentSurfaceAlignment2D(style, width, thickness)!.footY, nearWidth: width * 0.76, flared: false };
+    return { contactY: instrumentSurfaceAlignment2D(style, width, thickness, compact)!.footY, nearWidth: width * 0.76, flared: false };
   }
   if (style === "tube-cylinder" || style === "boomwhacker-tube") {
-    return { contactY: instrumentSurfaceAlignment2D(style, width, thickness)!.footY, nearWidth: width * 0.8, flared: false };
+    return { contactY: instrumentSurfaceAlignment2D(style, width, thickness, compact)!.footY, nearWidth: width * 0.8, flared: false };
   }
   if (style === "comet-pad") {
     const height = Math.max(12, thickness);
     return { contactY: height * 0.78, nearWidth: width * 0.76, flared: false };
   }
   if (style === "instrument-wire") {
-    return { contactY: instrumentSurfaceAlignment2D(style, width, thickness)!.footY, nearWidth: width * 0.7, flared: false };
+    return { contactY: instrumentSurfaceAlignment2D(style, width, thickness, compact)!.footY, nearWidth: width * 0.7, flared: false };
   }
   if (["instrument-key", "xylophone-key", "xylophone-bar", "piano-key", "marimba-bar", "vibraphone-bar", "metallophone-plate"].includes(style)) {
-    const height = Math.max(thickness < 9 ? 6 : 13, thickness);
-    return { contactY: height + Math.max(8, height * 0.55), nearWidth: width * 0.74, flared: false };
+    const height = compact ? Math.max(2.4, thickness) : Math.max(thickness < 9 ? 6 : 13, thickness);
+    return { contactY: height + (compact ? Math.max(1.2, height * 0.3) : Math.max(8, height * 0.55)), nearWidth: width * 0.74, flared: false };
   }
   if (style === "instrument-pad" || style === "pluck-pad") {
-    const height = Math.max(thickness < 9 ? 6.5 : 14, thickness);
-    return { contactY: height + Math.max(8, height * 0.5), nearWidth: width * 0.72, flared: false };
+    const height = compact ? Math.max(2.4, thickness) : Math.max(thickness < 9 ? 6.5 : 14, thickness);
+    return { contactY: height + (compact ? Math.max(1.2, height * 0.3) : Math.max(8, height * 0.5)), nearWidth: width * 0.72, flared: false };
   }
   if (style === "instrument-rail") {
-    const height = Math.max(8, thickness * 0.62);
-    return { contactY: height + Math.max(5, height * 0.8), nearWidth: width * 0.76, flared: false };
+    const height = compact ? Math.max(2.4, thickness) : Math.max(8, thickness * 0.62);
+    return { contactY: height + (compact ? Math.max(1.2, height * 0.3) : Math.max(5, height * 0.8)), nearWidth: width * 0.76, flared: false };
   }
   return { contactY: Math.max(6, thickness), nearWidth: width * 0.78, flared: false };
 }
 
 export function instrumentShadowGeometry2D(input: InstrumentShadowInput): InstrumentShadowGeometry2D {
-  const foot = instrumentFoot(input.style, input.width, input.thickness);
+  const foot = instrumentFoot(input.style, input.width, input.thickness, input.compact);
   const screenDirection = { x: 0.62, y: 1 };
   const directionLength = Math.hypot(screenDirection.x, screenDirection.y);
   const screenX = screenDirection.x / directionLength;

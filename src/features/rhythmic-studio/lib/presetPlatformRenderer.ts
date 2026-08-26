@@ -34,7 +34,7 @@ function drawTubeCylinder(
   settings: StudioSettings,
   lowPower: boolean,
 ) {
-  const h = Math.max(24, p.thickness);
+  const h = p.visualCompact ? Math.max(2.4, p.thickness) : Math.max(24, p.thickness);
   const radius = h * 0.5;
   const active = ageMs >= 0;
   const litColor = active ? p.color : "#80858d";
@@ -42,7 +42,7 @@ function drawTubeCylinder(
   const farX = -contactX;
 
   ctx.save();
-  ctx.translate(0, instrumentSurfaceAlignment2D("tube-cylinder", p.width, p.thickness)!.translateY);
+  ctx.translate(0, instrumentSurfaceAlignment2D("tube-cylinder", p.width, p.thickness, p.visualCompact)!.translateY);
   if (!lowPower) {
     const underGlow = ctx.createRadialGradient(0, h * 0.55, 4, 0, h * 0.55, p.width * 0.78);
     underGlow.addColorStop(0, active ? `${litColor}${impact > 0 ? "4f" : "24"}` : "rgba(120,126,140,.08)");
@@ -233,15 +233,16 @@ function drawInstrumentKey(ctx: CanvasRenderingContext2D, half: number, p: Marbl
 }
 
 function drawInstrumentCymbal(ctx: CanvasRenderingContext2D, p: MarblePlatform, impact: number, _lowPower: boolean) {
-  const rx = Math.max(28, p.width * 0.32);
-  const ry = Math.max(8, p.thickness * 0.62);
+  const rx = p.visualCompact ? Math.max(2.5, p.width * 0.32) : Math.max(28, p.width * 0.32);
+  const ry = p.visualCompact ? Math.max(1.2, p.thickness * 0.5) : Math.max(8, p.thickness * 0.62);
   ctx.save();
-  ctx.translate(0, instrumentSurfaceAlignment2D("instrument-cymbal", p.width, p.thickness)!.translateY);
+  ctx.translate(0, instrumentSurfaceAlignment2D("instrument-cymbal", p.width, p.thickness, p.visualCompact)!.translateY);
   ctx.strokeStyle = "rgba(90,92,98,.78)";
   ctx.lineWidth = 2.4;
-  ctx.beginPath(); ctx.moveTo(2, ry * 0.35); ctx.lineTo(5, ry * 3.3); ctx.stroke();
+  const standEndY = p.visualCompact ? ry * 1.5 : ry * 3.3;
+  ctx.beginPath(); ctx.moveTo(2, ry * 0.35); ctx.lineTo(p.visualCompact ? 2 : 5, standEndY); ctx.stroke();
   ctx.fillStyle = "#5b616b";
-  ctx.beginPath(); ctx.arc(5, ry * 3.3, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(p.visualCompact ? 2 : 5, standEndY, p.visualCompact ? 0.8 : 3, 0, Math.PI * 2); ctx.fill();
   const metal = ctx.createRadialGradient(-rx * 0.24, -ry * 0.25, 2, 0, 0, rx);
   metal.addColorStop(0, "#fffbe2");
   metal.addColorStop(0.24, mixHex(p.color, "#f6d48a", 0.35));
@@ -266,8 +267,8 @@ function drawInstrumentCymbal(ctx: CanvasRenderingContext2D, p: MarblePlatform, 
 }
 
 function drawInstrumentRail(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, _lowPower: boolean) {
-  const h = Math.max(8, p.thickness * 0.62);
-  const depth = Math.max(5, h * 0.8);
+  const h = p.visualCompact ? Math.max(2.4, p.thickness) : Math.max(8, p.thickness * 0.62);
+  const depth = p.visualCompact ? Math.max(1.2, h * 0.3) : Math.max(5, h * 0.8);
   ctx.save();
   roundedRect(ctx, -half + 3, depth, p.width, h, h / 2);
   ctx.fillStyle = "rgba(74,80,92,.82)";
@@ -327,16 +328,17 @@ function drawInstrumentPad(ctx: CanvasRenderingContext2D, half: number, p: Marbl
 }
 
 function drawInstrumentWire(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, _lowPower: boolean) {
-  const railGap = Math.max(12, p.thickness * 0.9);
+  const railGap = p.visualCompact ? p.thickness * 0.6 : Math.max(12, p.thickness * 0.9);
   ctx.save();
-  ctx.translate(0, instrumentSurfaceAlignment2D("instrument-wire", p.width, p.thickness)!.translateY);
+  ctx.translate(0, instrumentSurfaceAlignment2D("instrument-wire", p.width, p.thickness, p.visualCompact)!.translateY);
   ctx.strokeStyle = impact > 0 ? mixHex(p.color, "#ffffff", 0.38) : "#737b88";
   ctx.lineWidth = 2.2;
   ctx.lineCap = "round";
   for (const y of [-railGap / 2, railGap / 2]) {
     ctx.beginPath();
     ctx.moveTo(-half, y);
-    ctx.quadraticCurveTo(0, y + (y < 0 ? -7 : 7), half, y);
+    const bend = p.visualCompact ? 1 : 7;
+    ctx.quadraticCurveTo(0, y + (y < 0 ? -bend : bend), half, y);
     ctx.stroke();
   }
   ctx.strokeStyle = "rgba(74,80,91,.84)";

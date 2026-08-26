@@ -25,6 +25,7 @@ export interface MeshProps {
   selected: boolean;
   glow: number;
   detail: number;
+  compact?: boolean;
 }
 
 function StandardBarMesh({ w, h, d, color, style, selected, glow }: MeshProps) {
@@ -138,12 +139,12 @@ function CurvedRail({ w, y, radius, color, style, selected, glow, bend = 0.035 }
   );
 }
 
-function RailMesh({ w, h, d, color, style, selected, glow, detail }: MeshProps) {
+function RailMesh({ w, h, d, color, style, selected, glow, detail, compact }: MeshProps) {
   const wire = style === "instrument-wire";
   const pipe = style === "pipe-rail";
   const dual = style === "dual-rail" || style === "instrument-rail" || wire;
-  const radius = wire ? 0.026 : pipe ? Math.max(0.065, h * 0.24) : Math.max(0.045, h * 0.18);
-  const gap = dual ? Math.max(0.1, h * 0.5) : 0;
+  const radius = compact ? Math.max(0.008, h * 0.18) : wire ? 0.026 : pipe ? Math.max(0.065, h * 0.24) : Math.max(0.045, h * 0.18);
+  const gap = dual ? (compact ? h * 0.5 : Math.max(0.1, h * 0.5)) : 0;
   const strands = dual ? [-gap, gap] : [0];
   return (
     <group>
@@ -153,7 +154,7 @@ function RailMesh({ w, h, d, color, style, selected, glow, detail }: MeshProps) 
           <RoundedBox args={[Math.max(0.045, radius * 1.2), dual ? gap * 2.5 : Math.max(h * 0.7, 0.12), d * 0.42]} radius={0.018} smoothness={3} castShadow>
             <meshStandardMaterial color="#252c36" roughness={0.34} metalness={0.76} />
           </RoundedBox>
-          <EndBolt x={0} y={0} z={d * 0.24} color="#aeb8c4" />
+          {!compact && <EndBolt x={0} y={0} z={d * 0.24} color="#aeb8c4" />}
         </group>
       ))}
     </group>
@@ -194,22 +195,21 @@ function TechPadMesh({ w, h, d, color, style, selected, glow }: MeshProps) {
   );
 }
 
-function KeyMesh({ w, h, d, color, style, selected, glow, detail }: MeshProps) {
+function KeyMesh({ w, h, d, color, style, selected, glow, detail, compact }: MeshProps) {
   return (
     <group>
-      <RoundedBox args={[w, Math.max(h, 0.11), d]} radius={Math.min(0.085, h * 0.32)} smoothness={5} castShadow receiveShadow>
+      <RoundedBox args={[w, compact ? h : Math.max(h, 0.11), d]} radius={Math.min(0.085, h * 0.32)} smoothness={5} castShadow receiveShadow>
         <SurfaceMaterial style={style} color={color} selected={selected} glow={glow} />
       </RoundedBox>
-      <mesh position={[0, h * 0.76, -d * 0.18]} rotation={[0, 0, Math.PI / 2]} castShadow>
+      {!compact && <mesh position={[0, h * 0.76, -d * 0.18]} rotation={[0, 0, Math.PI / 2]} castShadow>
         <cylinderGeometry args={[Math.min(0.08, h * 0.28), Math.min(0.08, h * 0.28), w * 0.72, 18]} />
         <meshStandardMaterial color="#31343a" roughness={0.38} metalness={0.7} />
-      </mesh>
+      </mesh>}
       <mesh position={[0, -h * 0.32, d * 0.51]}>
         <boxGeometry args={[w * 0.72, Math.max(0.014, h * 0.065), 0.012]} />
         <meshBasicMaterial color="#ffffff" transparent opacity={0.34} />
       </mesh>
-      <EndBolt x={-w * 0.36} y={0} z={d * 0.52} color="#f1e8d5" />
-      <EndBolt x={w * 0.36} y={0} z={d * 0.52} color="#f1e8d5" />
+      {!compact && <><EndBolt x={-w * 0.36} y={0} z={d * 0.52} color="#f1e8d5" /><EndBolt x={w * 0.36} y={0} z={d * 0.52} color="#f1e8d5" /></>}
     </group>
   );
 }
@@ -228,11 +228,11 @@ const CYMBAL_PROFILE = [
   new THREE.Vector2(0.02, 0.09),
 ];
 
-function CymbalMesh({ w, h, d, color, style, selected, glow, detail }: MeshProps) {
-  const radius = Math.max(0.24, w * 0.44);
+function CymbalMesh({ w, h, d, color, style, selected, glow, detail, compact }: MeshProps) {
+  const radius = compact ? w * 0.44 : Math.max(0.24, w * 0.44);
   return (
     <group>
-      <mesh rotation={[Math.PI / 2, 0, 0]} scale={[radius, Math.max(0.22, h * 1.2), radius]} castShadow receiveShadow>
+      <mesh rotation={[Math.PI / 2, 0, 0]} scale={[radius, compact ? Math.max(0.024, h * 0.9) : Math.max(0.22, h * 1.2), radius]} castShadow receiveShadow>
         <latheGeometry args={[CYMBAL_PROFILE, Math.round(28 + detail * 24)]} />
         <SurfaceMaterial style={style} color={color} selected={selected} glow={glow} />
       </mesh>
@@ -248,8 +248,8 @@ function CymbalMesh({ w, h, d, color, style, selected, glow, detail }: MeshProps
   );
 }
 
-function TubeMesh({ w, h, d, color, style, selected, glow, detail }: MeshProps) {
-  const radius = Math.max(h * 0.5, 0.11);
+function TubeMesh({ w, h, d, color, style, selected, glow, detail, compact }: MeshProps) {
+  const radius = compact ? h * 0.5 : Math.max(h * 0.5, 0.11);
   return (
     <group>
       <mesh rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
@@ -321,8 +321,8 @@ function StairStepMesh({ w, h, d, color, style, selected, glow }: MeshProps) {
 }
 
 
-function BoomwhackerMesh({ w, h, color, selected, glow, detail }: MeshProps) {
-  const radius = Math.max(0.11, h * 0.5);
+function BoomwhackerMesh({ w, h, color, selected, glow, detail, compact }: MeshProps) {
+  const radius = compact ? h * 0.5 : Math.max(0.11, h * 0.5);
   const segments = Math.round(24 + detail * 18);
   return (
     <group>

@@ -2,6 +2,7 @@ import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
 import { COURSE_SAMPLES } from '../track/towerCourseSampler';
 import { MARBLE_RADIUS, SPECIALS, TRACK_WIDTH } from '../track/towerCourse';
+import { PIANO_PAD_LAYOUT } from '../track/pianoPadLayout';
 
 function cannonVec(v: THREE.Vector3) { return new CANNON.Vec3(v.x, v.y, v.z); }
 function cannonQuat(q: THREE.Quaternion) { return new CANNON.Quaternion(q.x, q.y, q.z, q.w); }
@@ -138,19 +139,19 @@ export function createPianoBodies(
   onHit: (index: number, other: CANNON.Body, contact?: CANNON.ContactEquation) => void,
 ) {
   const keys: CANNON.Body[] = [];
-  const count = 12;
-  for (let i = 0; i < count; i += 1) {
-    const progress = THREE.MathUtils.lerp(SPECIALS.pianoStart, SPECIALS.pianoEnd, (i + 0.5) / count);
-    const sample = COURSE_SAMPLES[Math.round(progress * (COURSE_SAMPLES.length - 1))];
+  PIANO_PAD_LAYOUT.forEach((pad) => {
+    const sample = COURSE_SAMPLES[Math.round(pad.progress * (COURSE_SAMPLES.length - 1))];
     const body = new CANNON.Body({ mass: 0, material });
-    body.addShape(new CANNON.Box(new CANNON.Vec3(TRACK_WIDTH / 2 - 0.12, 0.055, 0.62)));
-    const pos = sample.point.clone().addScaledVector(sample.normal, 0.055);
+    body.addShape(new CANNON.Box(new CANNON.Vec3(pad.width / 2, 0.055, pad.depth / 2)));
+    const pos = sample.point.clone()
+      .addScaledVector(sample.right, pad.lateral)
+      .addScaledVector(sample.normal, 0.055);
     body.position.copy(cannonVec(pos));
     body.quaternion.copy(cannonQuat(sample.quaternion));
-    body.addEventListener('collide', (event: { body: CANNON.Body; contact?: CANNON.ContactEquation }) => onHit(i, event.body, event.contact));
+    body.addEventListener('collide', (event: { body: CANNON.Body; contact?: CANNON.ContactEquation }) => onHit(pad.index, event.body, event.contact));
     world.addBody(body);
     keys.push(body);
-  }
+  });
   return keys;
 }
 

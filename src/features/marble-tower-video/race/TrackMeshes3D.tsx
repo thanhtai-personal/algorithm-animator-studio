@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import type { RacePhysics } from '../physics/RacePhysics';
 import { COURSE_SAMPLES, sampleAt } from '../track/towerCourseSampler';
 import { RAINBOW_COLORS, SPECIALS, TRACK_THICKNESS, TRACK_WIDTH } from '../track/towerCourse';
+import { PIANO_PAD_LAYOUT } from '../track/pianoPadLayout';
 
 const SEGMENT_COUNT = COURSE_SAMPLES.length - 1;
 
@@ -188,20 +189,22 @@ function PianoBridge({ physics }: { physics: RacePhysics }) {
   });
   return (
     <group>
-      {Array.from({ length: 12 }, (_, index) => {
-        const progress = THREE.MathUtils.lerp(SPECIALS.pianoStart, SPECIALS.pianoEnd, (index + 0.5) / 12);
-        const sample = sampleAt(progress);
+      {PIANO_PAD_LAYOUT.map((pad) => {
+        const sample = sampleAt(pad.progress);
+        const position = sample.point.clone()
+          .addScaledVector(sample.right, pad.lateral)
+          .addScaledVector(sample.normal, 0.11);
         return (
           <mesh
-            key={index}
-            ref={(node) => { refs.current[index] = node; }}
-            position={sample.point.clone().addScaledVector(sample.normal, 0.11)}
+            key={pad.index}
+            ref={(node) => { refs.current[pad.index] = node; }}
+            position={position}
             quaternion={sample.quaternion}
-            material={materials[index]}
+            material={materials[pad.index]}
             castShadow
             receiveShadow
           >
-            <boxGeometry args={[TRACK_WIDTH - 0.28, 0.16, 1.18]} />
+            <boxGeometry args={[pad.width, 0.16, pad.depth]} />
           </mesh>
         );
       })}

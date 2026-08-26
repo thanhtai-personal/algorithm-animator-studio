@@ -4,6 +4,7 @@ import { raceSessionStore } from "../store/RaceSessionStore";
 import { MARBLES, type MarbleId } from "../marble/marbleCatalog";
 import { COURSE_SAMPLES, nearestSampleIndex } from "../track/towerCourseSampler";
 import { CUTS, MARBLE_RADIUS, SPECIALS, TRACK_WIDTH } from "../track/towerCourse";
+import { pianoPadAt } from "../track/pianoPadLayout";
 import {
   buildTrackBodies,
   createBarrier,
@@ -61,11 +62,7 @@ export class RacePhysics {
   private lastPianoAt = -10;
   private instrumentSoundAt = new Map<string, number>();
 
-  constructor(
-    private onComplete: (result: RaceResult) => void,
-    driveMultiplier = 7.25,
-    onImpactSound?: MarbleImpactSound,
-  ) {
+  constructor(private onComplete: (result: RaceResult) => void, driveMultiplier = 7.25, onImpactSound?: MarbleImpactSound) {
     this.driveMultiplier = Math.max(DRIVE_MIN, Math.min(DRIVE_MAX, driveMultiplier));
     this.onImpactSound = onImpactSound;
     raceSessionStore.reset();
@@ -333,16 +330,23 @@ export class RacePhysics {
     const marble = this.bodyToMarble.get(body.id);
     if (!marble?.alive) return;
     const now = this.raceTime;
-    if (this.pianoFlashUntil[index] > now - 0.05) return;
-    this.pianoFlashUntil[index] = now + 0.22;
+    const boostKey = `b:${index}:${marble.id}`;
+    if (now - (this.instrumentSoundAt.get(boostKey) ?? -Infinity) < 0.18) return;
+    this.instrumentSoundAt.set(boostKey, now);
+    this.pianoFlashUntil[index] = now + 0.24;
     this.pianoCombo = now - this.lastPianoAt < 0.8 ? this.pianoCombo + 1 : 1;
     this.lastPianoAt = now;
     this.instrumentHit(index, body, contact);
+    const sample = COURSE_SAMPLES[marble.progressIndex];
+    const pad = pianoPadAt(index);
+    const impulse = sample.tangent.clone().multiplyScalar(MARBLE_MASS * pad.boostDeltaV)
+      .addScaledVector(sample.normal, MARBLE_MASS * 0.16);
+    body.applyImpulse(vec3(impulse));
   }
   private instrumentHit(index: number, body: CANNON.Body, contact?: CANNON.ContactEquation) {
     const marble = this.bodyToMarble.get(body.id);
     if (!marble?.alive || !this.opened || !this.onImpactSound) return;
-    const key = `${index}:${marble.id}`;
+    const key = `s:${index}:${marble.id}`;
     const previous = this.instrumentSoundAt.get(key) ?? -Infinity;
     if (this.raceTime - previous < 0.075) return;
     this.instrumentSoundAt.set(key, this.raceTime);

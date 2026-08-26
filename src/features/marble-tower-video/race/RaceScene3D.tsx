@@ -9,13 +9,14 @@ import { MarbleField3D } from "./MarbleField3D";
 import { RaceCamera3D } from "../camera/RaceCamera3D";
 import type { RaceResult } from "./raceTypes";
 
-function Runtime({ physics, playing, playbackToken, playbackStartMs, playbackEndMs, durationMs, onTime, onEnded }: {
+function Runtime({ physics, playing, playbackToken, playbackStartMs, playbackEndMs, durationMs, stopAtPlaybackEnd, onTime, onEnded }: {
   physics: RacePhysics;
   playing: boolean;
   playbackToken: number;
   playbackStartMs: number;
   playbackEndMs: number;
   durationMs: number;
+  stopAtPlaybackEnd: boolean;
   onTime: (timeMs: number) => void;
   onEnded: () => void;
 }) {
@@ -33,14 +34,15 @@ function Runtime({ physics, playing, playbackToken, playbackStartMs, playbackEnd
   useFrame(() => {
     if (!playing) return;
     const endMs = playbackEndMs || durationMs;
-    const timeMs = Math.min(endMs, Math.max(0, performance.now() - epochRef.current));
+    const elapsedMs = Math.max(0, performance.now() - epochRef.current);
+    const timeMs = stopAtPlaybackEnd ? Math.min(endMs, elapsedMs) : elapsedMs;
     physics.advanceTo(timeMs / 1000);
     const now = performance.now();
     if (now - lastUiUpdate.current >= 64) {
       lastUiUpdate.current = now;
       onTime(timeMs);
     }
-    if (timeMs >= endMs && endedToken.current !== playbackToken) {
+    if (stopAtPlaybackEnd && timeMs >= endMs && endedToken.current !== playbackToken) {
       endedToken.current = playbackToken;
       onTime(endMs);
       onEnded();
@@ -61,6 +63,7 @@ export function RaceScene3D(props: {
   onTime: (timeMs: number) => void;
   onEnded: () => void;
   onComplete?: (result: RaceResult) => void;
+  stopAtPlaybackEnd?: boolean;
   onReady?: (physics: RacePhysics) => void;
   canvasRef: MutableRefObject<HTMLCanvasElement | null>;
 }) {
@@ -97,6 +100,7 @@ export function RaceScene3D(props: {
         playbackStartMs={props.playbackStartMs}
         playbackEndMs={props.playbackEndMs}
         durationMs={props.durationMs}
+        stopAtPlaybackEnd={props.stopAtPlaybackEnd ?? false}
         onTime={props.onTime}
         onEnded={props.onEnded}
       />

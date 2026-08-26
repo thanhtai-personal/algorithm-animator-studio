@@ -15,19 +15,20 @@ export function buildTrackBodies(world: CANNON.World, material: CANNON.Material)
       const sample = COURSE_SAMPLES[index];
       const next = COURSE_SAMPLES[index + 1];
       const mid = sample.point.clone().lerp(next.point, 0.5);
-      const length = sample.lengthToNext * 1.14;
+      const length = Math.max(0.32, sample.lengthToNext * 1.62);
       body.addShape(
-        new CANNON.Box(new CANNON.Vec3(TRACK_WIDTH / 2, TRACK_THICKNESS / 2, length / 2)),
+        new CANNON.Box(new CANNON.Vec3(TRACK_WIDTH / 2 + 0.22, TRACK_THICKNESS / 2, length / 2)),
         cannonVec(mid.clone().addScaledVector(sample.normal, -TRACK_THICKNESS / 2)),
         cannonQuat(sample.quaternion)
       );
       for (const side of [-1, 1]) {
-        const railCenter = mid.clone()
-          .addScaledVector(sample.right, side * (TRACK_WIDTH / 2 + 0.11))
-          .addScaledVector(sample.normal, 0.48);
+        const wallHalfHeight = 0.9;
+        const wallCenter = mid.clone()
+          .addScaledVector(sample.right, side * (TRACK_WIDTH / 2 - 0.04))
+          .addScaledVector(sample.normal, wallHalfHeight + 0.03);
         body.addShape(
-          new CANNON.Box(new CANNON.Vec3(0.12, 0.54, length / 2)),
-          cannonVec(railCenter),
+          new CANNON.Box(new CANNON.Vec3(0.16, wallHalfHeight, length / 2)),
+          cannonVec(wallCenter),
           cannonQuat(sample.quaternion)
         );
       }

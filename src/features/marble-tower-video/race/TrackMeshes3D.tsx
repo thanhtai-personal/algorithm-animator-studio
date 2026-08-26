@@ -17,7 +17,7 @@ function TrackBase() {
       const sample = COURSE_SAMPLES[index];
       const next = COURSE_SAMPLES[index + 1];
       const mid = sample.point.clone().lerp(next.point, 0.5).addScaledVector(sample.normal, -0.18);
-      scale.set(TRACK_WIDTH + 0.5, TRACK_THICKNESS, sample.lengthToNext * 1.12);
+      scale.set(TRACK_WIDTH + 0.8, TRACK_THICKNESS, sample.lengthToNext * 1.58);
       matrix.compose(mid, sample.quaternion, scale);
       ref.current.setMatrixAt(index, matrix);
     }
@@ -31,51 +31,116 @@ function TrackBase() {
   );
 }
 
+function buildRibbonGeometry(lateralMin: number, lateralMax: number, lift = 0.035) {
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+
+  COURSE_SAMPLES.forEach((sample, index) => {
+    const left = sample.point.clone().addScaledVector(sample.right, lateralMin).addScaledVector(sample.normal, lift);
+    const right = sample.point.clone().addScaledVector(sample.right, lateralMax).addScaledVector(sample.normal, lift);
+    positions.push(left.x, left.y, left.z, right.x, right.y, right.z);
+    normals.push(sample.normal.x, sample.normal.y, sample.normal.z, sample.normal.x, sample.normal.y, sample.normal.z);
+    const v = index / Math.max(1, SEGMENT_COUNT);
+    uvs.push(0, v, 1, v);
+  });
+
+  for (let index = 0; index < SEGMENT_COUNT; index += 1) {
+    const a = index * 2;
+    const b = a + 1;
+    const c = a + 2;
+    const d = a + 3;
+    indices.push(a, c, b, b, c, d);
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
 function Stripe({ color, stripeIndex }: { color: string; stripeIndex: number }) {
-  const ref = useRef<THREE.InstancedMesh>(null);
-  useLayoutEffect(() => {
-    if (!ref.current) return;
-    const matrix = new THREE.Matrix4();
-    const scale = new THREE.Vector3();
-    const stripeWidth = TRACK_WIDTH / RAINBOW_COLORS.length;
-    const lateral = -TRACK_WIDTH / 2 + stripeWidth * (stripeIndex + 0.5);
-    for (let index = 0; index < SEGMENT_COUNT; index += 1) {
-      const sample = COURSE_SAMPLES[index];
-      const next = COURSE_SAMPLES[index + 1];
-      const mid = sample.point.clone().lerp(next.point, 0.5)
-        .addScaledVector(sample.right, lateral)
-        .addScaledVector(sample.normal, 0.018);
-      scale.set(stripeWidth * 0.965, 0.075, sample.lengthToNext * 1.13);
-      matrix.compose(mid, sample.quaternion, scale);
-      ref.current.setMatrixAt(index, matrix);
-    }
-    ref.current.instanceMatrix.needsUpdate = true;
-  }, [stripeIndex]);
+  const stripeWidth = TRACK_WIDTH / RAINBOW_COLORS.length;
+  const lateralMin = -TRACK_WIDTH / 2 + stripeWidth * stripeIndex;
+  const lateralMax = lateralMin + stripeWidth;
+  const geometry = useMemo(() => buildRibbonGeometry(lateralMin, lateralMax), [lateralMax, lateralMin]);
   return (
-    <instancedMesh ref={ref} args={[undefined, undefined, SEGMENT_COUNT]} receiveShadow>
-      <boxGeometry args={[1, 1, 1]} />
-      <meshPhysicalMaterial color={color} roughness={0.2} metalness={0.22} clearcoat={0.72} clearcoatRoughness={0.15} />
-    </instancedMesh>
+    <mesh geometry={geometry} receiveShadow>
+      <meshPhysicalMaterial color={color} roughness={0.2} metalness={0.22} clearcoat={0.72} clearcoatRoughness={0.15} side={THREE.DoubleSide} />
+    </mesh>
   );
 }
 
-function Rails() {
-  const curves = useMemo(() => [-1, 1].map((side) => new THREE.CatmullRomCurve3(
-    COURSE_SAMPLES.map((sample) => sample.point.clone()
-      .addScaledVector(sample.right, side * (TRACK_WIDTH / 2 + 0.16))
-      .addScaledVector(sample.normal, 0.7)),
-    false,
-    'centripetal'
-  )), []);
+function buildGuardWallGeometry(side: -1 | 1) {
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const indices: number[] = [];
+  const lateral = side * (TRACK_WIDTH / 2 - 0.04);
+  const wallHeight = 1.62;
+
+  COURSE_SAMPLES.forEach((sample) => {
+    const lower = sample.point.clone().addScaledVector(sample.right, lateral).addScaledVector(sample.normal, 0.04);
+    const upper = lower.clone().addScaledVector(sample.normal, wallHeight);
+    positions.push(lower.x, lower.y, lower.z, upper.x, upper.y, upper.z);
+    const facing = sample.right.clone().multiplyScalar(-side);
+    normals.push(facing.x, facing.y, facing.z, facing.x, facing.y, facing.z);
+  });
+
+  for (let index = 0; index < SEGMENT_COUNT; index += 1) {
+    const a = index * 2;
+    const b = a + 1;
+    const c = a + 2;
+    const d = a + 3;
+    indices.push(a, b, c, b, d, c);
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geometry.setIndex(indices);
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function GuardWalls() {
+  const walls = useMemo(() => ([-1, 1] as const).map((side) => ({
+    side,
+    geometry: buildGuardWallGeometry(side),
+    topRail: new THREE.CatmullRomCurve3(
+      COURSE_SAMPLES.map((sample) => sample.point.clone()
+        .addScaledVector(sample.right, side * (TRACK_WIDTH / 2 - 0.04))
+        .addScaledVector(sample.normal, 1.68)),
+      false,
+      'centripetal',
+    ),
+  })), []);
+
   return (
-    <>
-      {curves.map((curve, index) => (
-        <mesh key={index} castShadow>
-          <tubeGeometry args={[curve, 260, 0.11, 8, false]} />
-          <meshStandardMaterial color="#aeb9c2" metalness={0.9} roughness={0.18} />
-        </mesh>
+    <group>
+      {walls.map(({ side, geometry, topRail }) => (
+        <group key={side}>
+          <mesh geometry={geometry} castShadow receiveShadow>
+            <meshPhysicalMaterial
+              color="#87939d"
+              transparent
+              opacity={0.72}
+              roughness={0.2}
+              metalness={0.48}
+              clearcoat={0.42}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+          <mesh castShadow>
+            <tubeGeometry args={[topRail, 260, 0.14, 8, false]} />
+            <meshStandardMaterial color="#d8e0e6" metalness={0.92} roughness={0.16} />
+          </mesh>
+        </group>
       ))}
-    </>
+    </group>
   );
 }
 
@@ -189,7 +254,7 @@ export function TrackMeshes3D({ physics }: { physics: RacePhysics }) {
     <group>
       <TrackBase />
       {RAINBOW_COLORS.map((color, index) => <Stripe key={color} color={color} stripeIndex={index} />)}
-      <Rails />
+      <GuardWalls />
       <TrackSupports />
       <PianoBridge physics={physics} />
       <PrismTunnel />

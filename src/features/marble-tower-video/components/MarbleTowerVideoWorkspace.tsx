@@ -9,6 +9,7 @@ import { rhythmicOutputSize } from "@/features/rhythmic-studio/lib/outputSize";
 import { RaceScene3D } from "../race/RaceScene3D";
 import type { RaceResult } from "../race/raceTypes";
 import { MarbleTowerControls } from "./MarbleTowerControls";
+import { useMarbleTowerPlaylist } from "../hooks/useMarbleTowerPlaylist";
 import { RaceHudPanel } from "./RaceHudPanel";
 import { MarbleTowerTransportBar } from "./MarbleTowerTransportBar";
 
@@ -17,6 +18,7 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
   const [driveMultiplier, setDriveMultiplier] = useState(1.8);
   const [raceResult, setRaceResult] = useState<RaceResult | null>(null);
   const [seekRevision, setSeekRevision] = useState(0);
+  const playlist = useMarbleTowerPlaylist(studio);
   const output = rhythmicOutputSize(studio.settings.outputPreset);
   const racePlaybackToken = studio.playbackToken * 1000 + seekRevision;
 
@@ -27,13 +29,17 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
   }, []); // This screen owns the Three.js export surface for its lifetime.
 
   const handleEnded = useCallback(() => studio.onEnded(), [studio.onEnded]);
-  const handleComplete = useCallback((result: RaceResult) => setRaceResult(result), []);
+  const handleComplete = useCallback((result: RaceResult) => {
+    setRaceResult(result);
+    studio.onEnded();
+  }, [studio.onEnded]);
 
   const resetRace = useCallback(() => {
     studio.resetPlayback();
+    playlist.resetToFirst();
     setRaceResult(null);
     setSeekRevision((value) => value + 1);
-  }, [studio.resetPlayback]);
+  }, [playlist.resetToFirst, studio.resetPlayback]);
 
   const seekRace = useCallback((timeMs: number) => {
     const wasPlaying = studio.playing;
@@ -41,6 +47,21 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
     if (!wasPlaying) setSeekRevision((value) => value + 1);
   }, [studio.playing, studio.seekPlayback]);
 
+  const toggleRace = useCallback(() => {
+    if (!studio.playing && raceResult) {
+      playlist.resetToFirst();
+      setRaceResult(null);
+    }
+    void studio.togglePlayback();
+  }, [playlist.resetToFirst, raceResult, studio.playing, studio.togglePlayback]);
+
+  const recordRace = useCallback((format: "webm" | "mp4") => {
+    playlist.resetToFirst();
+    setRaceResult(null);
+    void studio.recordVideo(format);
+  }, [playlist.resetToFirst, studio.recordVideo]);
+
+  const sourceTimeMs = Math.min(studio.timeMs, studio.durationMs);
   const aspectRatio = `${output.width} / ${output.height}`;
   return <main className="min-h-[calc(100dvh-65px)] bg-background/70 p-3 pb-24 md:p-5">
     <div className="mx-auto max-w-[1920px] space-y-4">
@@ -50,8 +71,8 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
           <p className="text-xs text-muted-foreground">Original tower map · Cannon physics · leader-follow camera · Kai Studio audio &amp; export</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="secondary" disabled={studio.recording} onClick={() => void studio.recordVideo("webm")}><Video className="mr-2 h-4 w-4" />WebM</Button>
-          <Button type="button" disabled={studio.recording} onClick={() => void studio.recordVideo("mp4")}><FileVideo2 className="mr-2 h-4 w-4" />MP4</Button>
+          <Button type="button" variant="secondary" disabled={studio.recording} onClick={() => recordRace("webm")}><Video className="mr-2 h-4 w-4" />WebM</Button>
+          <Button type="button" disabled={studio.recording} onClick={() => recordRace("mp4")}><FileVideo2 className="mr-2 h-4 w-4" />MP4</Button>
         </div>
       </header>
 
@@ -70,6 +91,7 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
                 onTime={studio.setTimeMs}
                 onEnded={handleEnded}
                 onComplete={handleComplete}
+                stopAtPlaybackEnd={studio.playingClip}
                 canvasRef={studio.threeCanvasRef}
               />
               {studio.recording ? <div className="pointer-events-none absolute right-3 top-3 rounded-full bg-red-600/90 px-3 py-1 text-xs font-bold text-white shadow">● REC</div> : null}
@@ -79,16 +101,16 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
               recording={studio.recording}
               timeMs={studio.timeMs}
               durationMs={studio.durationMs}
-              onToggle={() => void studio.togglePlayback()}
+              onToggle={toggleRace}
               onReset={resetRace}
               onSeek={seekRace}
             />
           </div>
           <RaceHudPanel result={raceResult} />
-          <RhythmicTimeline events={studio.timeline} timeMs={studio.timeMs} durationMs={studio.durationMs} trimStartMs={studio.trimStartMs} trimEndMs={studio.trimEndMs} onSeek={seekRace} />
+          <RhythmicTimeline events={studio.timeline} timeMs={sourceTimeMs} durationMs={studio.durationMs} trimStartMs={studio.trimStartMs} trimEndMs={studio.trimEndMs} onSeek={seekRace} />
           <RhythmicTrimPanel
             durationMs={studio.durationMs}
-            timeMs={studio.timeMs}
+            timeMs={sourceTimeMs}
             trimStartMs={studio.trimStartMs}
             trimEndMs={studio.trimEndMs}
             playingClip={studio.playingClip}
@@ -103,9 +125,27 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
             onOutputPresetChange={(preset) => studio.patch("outputPreset", preset)}
           />
         </section>
-        <MarbleTowerControls studio={studio} driveMultiplier={driveMultiplier} onDriveChange={setDriveMultiplier} />
+        <MarbleTowerControls
+          studio={studio}
+          driveMultiplier={driveMultiplier}
+          onDriveChange={setDriveMultiplier}
+          playlist={playlist.tracks}
+          currentTrackIndex={playlist.currentIndex}
+          onAudioFiles={(files) => void playlist.replaceTracks(files)}
+          onMidiFile={(file) => {
+            playlist.clearTracks();
+            void studio.importMidi(file);
+          }}
+          onSelectTrack={playlist.selectTrack}
+        />
       </div>
     </div>
-    <audio ref={studio.audioElementRef} src={studio.audioUrl ?? undefined} preload="metadata" className="hidden" />
+    <audio
+      ref={studio.audioElementRef}
+      src={playlist.audioSrc ?? undefined}
+      preload="auto"
+      onEnded={playlist.advance}
+      className="hidden"
+    />
   </main>;
 });

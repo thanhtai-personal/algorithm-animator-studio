@@ -1,44 +1,43 @@
 import { makeAutoObservable } from "mobx";
-import { MARBLES, type MarbleId } from "../marble/marbleCatalog";
+import { createMarbleRoster, type MarbleConfig, type MarbleId } from "../marble/marbleCatalog";
 import type { RaceSnapshot } from "../race/raceTypes";
+
+function initialStandings(roster: MarbleConfig[]) {
+  return roster.map((marble, index) => ({
+    id: marble.id,
+    position: index + 1,
+    alive: true,
+    progress: 0,
+  }));
+}
 
 class RaceSessionStore {
   phase: RaceSnapshot["phase"] = "countdown";
   countdown = 3;
   elapsedMs = 0;
   leaderId: MarbleId | null = null;
-  alive = 8;
+  alive = 10;
   speed = 0;
   nextCut = "TOP 6 QUALIFY";
   pianoCombo = 0;
   callout = "GET READY";
-  standings = MARBLES.map((marble, index) => ({
-    id: marble.id,
-    position: index + 1,
-    alive: true,
-    progress: 0,
-  }));
+  standings = initialStandings(createMarbleRoster(10));
 
   constructor() {
     makeAutoObservable(this);
   }
 
-  reset() {
+  reset(roster: MarbleConfig[] = createMarbleRoster(10)) {
     this.phase = "countdown";
     this.countdown = 3;
     this.elapsedMs = 0;
     this.leaderId = null;
-    this.alive = 8;
+    this.alive = roster.length;
     this.speed = 0;
     this.nextCut = "TOP 6 QUALIFY";
     this.pianoCombo = 0;
     this.callout = "GET READY";
-    this.standings = MARBLES.map((marble, index) => ({
-      id: marble.id,
-      position: index + 1,
-      alive: true,
-      progress: 0,
-    }));
+    this.standings = initialStandings(roster);
   }
 
   apply(snapshot: RaceSnapshot) {

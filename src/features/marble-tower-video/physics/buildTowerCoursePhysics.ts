@@ -1,7 +1,8 @@
 import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
 import { COURSE_SAMPLES } from '../track/towerCourseSampler';
-import { MARBLE_RADIUS, SPECIALS, TRACK_WIDTH } from '../track/towerCourse';
+import { SPECIALS, TRACK_WIDTH } from '../track/towerCourse';
+import { marbleStartGrid } from '../marble/marbleGrid';
 import { PIANO_PAD_LAYOUT } from '../track/pianoPadLayout';
 
 function cannonVec(v: THREE.Vector3) { return new CANNON.Vec3(v.x, v.y, v.z); }
@@ -57,6 +58,33 @@ export function buildTrackBodies(world: CANNON.World, material: CANNON.Material)
     }
     world.addBody(body);
   }
+}
+
+export function createStartGridBody(world: CANNON.World, material: CANNON.Material, marbleCount: number) {
+  const grid = marbleStartGrid(marbleCount);
+  const sample = COURSE_SAMPLES[0];
+  const body = new CANNON.Body({ mass: 0, material });
+  const floorCenter = sample.point.clone()
+    .addScaledVector(sample.tangent, -grid.depth / 2)
+    .addScaledVector(sample.normal, -0.12);
+  body.addShape(
+    new CANNON.Box(new CANNON.Vec3(TRACK_WIDTH / 2, 0.12, grid.depth / 2)),
+    cannonVec(floorCenter),
+    cannonQuat(sample.quaternion),
+  );
+  for (const side of [-1, 1]) {
+    const wallCenter = sample.point.clone()
+      .addScaledVector(sample.tangent, -grid.depth / 2)
+      .addScaledVector(sample.right, side * (TRACK_WIDTH / 2 - 0.05))
+      .addScaledVector(sample.normal, 0.92);
+    body.addShape(
+      new CANNON.Box(new CANNON.Vec3(0.18, 0.92, grid.depth / 2)),
+      cannonVec(wallCenter),
+      cannonQuat(sample.quaternion),
+    );
+  }
+  world.addBody(body);
+  return body;
 }
 
 export function createSupportBodies(world: CANNON.World, material: CANNON.Material) {
@@ -121,7 +149,10 @@ export function createChimeBumpers(
     const sample = COURSE_SAMPLES[Math.round(progress * (COURSE_SAMPLES.length - 1))];
     const lane = ((i * 3) % 7) - 3;
     const body = new CANNON.Body({ mass: 0, material });
-    body.addShape(new CANNON.Sphere(0.42));
+    const columnShape = new CANNON.Sphere(0.34);
+    body.addShape(columnShape, new CANNON.Vec3(0, -0.52, 0));
+    body.addShape(columnShape, new CANNON.Vec3(0, 0, 0));
+    body.addShape(columnShape, new CANNON.Vec3(0, 0.52, 0));
     const pos = sample.point.clone()
       .addScaledVector(sample.right, lane * 0.92)
       .addScaledVector(sample.normal, 0.42);
@@ -155,12 +186,17 @@ export function createPianoBodies(
   return keys;
 }
 
-export function spawnPoint(laneIndex: number) {
-  const sample = COURSE_SAMPLES[1];
-  const laneSpacing = (TRACK_WIDTH - MARBLE_RADIUS * 2.5) / 8;
-  const lateral = -TRACK_WIDTH / 2 + MARBLE_RADIUS * 1.4 + laneSpacing * (laneIndex + 0.5);
+export function spawnPoint(index: number, marbleCount: number, radius: number) {
+  const grid = marbleStartGrid(marbleCount);
+  const sample = COURSE_SAMPLES[0];
+  const lane = index % grid.lanes;
+  const row = Math.floor(index / grid.lanes);
+  const rowCount = Math.min(grid.lanes, grid.count - row * grid.lanes);
+  const rowWidth = Math.max(0, (rowCount - 1) * grid.spacing);
+  const lateral = -rowWidth / 2 + lane * grid.spacing;
+  const backward = radius * 1.4 + row * grid.spacing;
   return sample.point.clone()
     .addScaledVector(sample.right, lateral)
-    .addScaledVector(sample.normal, MARBLE_RADIUS + 0.12)
-    .addScaledVector(sample.tangent, -laneIndex * 0.12);
+    .addScaledVector(sample.normal, radius + 0.14)
+    .addScaledVector(sample.tangent, -backward);
 }

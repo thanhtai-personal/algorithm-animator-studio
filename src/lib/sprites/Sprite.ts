@@ -5,6 +5,7 @@ export type SpriteFrame = {
   y: number;
   w: number;
   h: number;
+  clearRects?: Array<{ x: number; y: number; w: number; h: number }>;
 };
 
 export type SpriteAction = {
@@ -78,7 +79,8 @@ export class Sprite {
   }
 
   private prepareFrame(frame: SpriteFrame): PreparedFrame | null {
-    const key = `${frame.x}:${frame.y}:${frame.w}:${frame.h}`;
+    const clearKey = frame.clearRects?.map((rect) => `${rect.x},${rect.y},${rect.w},${rect.h}`).join(";") ?? "";
+    const key = `${frame.x}:${frame.y}:${frame.w}:${frame.h}:${clearKey}`;
     if (this.preparedFrames.has(key)) return this.preparedFrames.get(key) ?? null;
 
     const canvas = document.createElement("canvas");
@@ -88,6 +90,9 @@ export class Sprite {
     if (!canvasContext) return null;
 
     canvasContext.drawImage(this.image, frame.x, frame.y, frame.w, frame.h, 0, 0, canvas.width, canvas.height);
+    frame.clearRects?.forEach((rect) => {
+      if (rect.w > 0 && rect.h > 0) canvasContext.clearRect(rect.x, rect.y, rect.w, rect.h);
+    });
     const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
     removeConnectedBackground(imageData, canvas.width, canvas.height);
     canvasContext.putImageData(imageData, 0, 0);

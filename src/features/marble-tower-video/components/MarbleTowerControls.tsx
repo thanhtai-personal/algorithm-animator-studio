@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { FileAudio2, FileMusic, Rocket } from "lucide-react";
+import { FileAudio2, FileMusic, Rocket, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,8 @@ export function MarbleTowerControls({
   studio,
   driveMultiplier,
   onDriveChange,
+  marbleCount,
+  onMarbleCountChange,
   playlist,
   currentTrackIndex,
   onMusicFiles,
@@ -19,6 +21,8 @@ export function MarbleTowerControls({
   studio: RhythmicStudioController;
   driveMultiplier: number;
   onDriveChange: (value: number) => void;
+  marbleCount: number;
+  onMarbleCountChange: (value: number) => void;
   playlist: MarbleTowerPlaylistTrack[];
   currentTrackIndex: number;
   onMusicFiles: (files: File[]) => void;
@@ -83,6 +87,29 @@ export function MarbleTowerControls({
             Chưa có nhạc. Chọn nhiều file audio để tạo playlist hoặc chọn một file MIDI.
           </div>
         )}
+      </section>
+
+      <section className="rounded-xl border bg-card/60 p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <Users className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold">Số lượng bi</h2>
+        </div>
+        <div className="flex items-center gap-3">
+          <Slider className="flex-1" min={10} max={1000} step={10} value={[marbleCount]} disabled={sourceLocked} onValueChange={([value]) => onMarbleCountChange(value)} />
+          <Input
+            className="w-24"
+            type="number"
+            min={10}
+            max={1000}
+            step={1}
+            value={marbleCount}
+            disabled={sourceLocked}
+            onChange={(event) => onMarbleCountChange(Number(event.target.value))}
+          />
+        </div>
+        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+          Chọn 10–1000 bi. Các bi đầu dùng màu riêng; khi hết bảng màu, hệ thống giữ màu nền và thêm sọc màu để từng bi vẫn phân biệt được.
+        </p>
       </section>
 
       <section className="rounded-xl border bg-card/60 p-4">

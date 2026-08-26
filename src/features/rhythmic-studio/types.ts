@@ -126,7 +126,7 @@ export const BALL_STYLES = [
 ] as const;
 
 export type BallStyle = (typeof BALL_STYLES)[number];
-export type MarbleAvatar = "ball" | `animal-${number}`;
+export type MarbleAvatar = "ball" | "haaland" | `animal-${number}`;
 export type MarbleMode = "single" | "chase";
 
 export interface MarbleAppearanceSettings {

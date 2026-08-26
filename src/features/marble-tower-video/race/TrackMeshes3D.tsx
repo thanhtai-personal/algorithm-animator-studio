@@ -8,6 +8,32 @@ import { PIANO_PAD_LAYOUT } from '../track/pianoPadLayout';
 
 const SEGMENT_COUNT = COURSE_SAMPLES.length - 1;
 
+function StartGridExtension({ depth }: { depth: number }) {
+  const sample = COURSE_SAMPLES[0];
+  const center = sample.point.clone().addScaledVector(sample.tangent, -depth / 2);
+  const stripeWidth = TRACK_WIDTH / RAINBOW_COLORS.length;
+  return (
+    <group position={center} quaternion={sample.quaternion}>
+      <mesh position={[0, -0.17, 0]} receiveShadow castShadow>
+        <boxGeometry args={[TRACK_WIDTH + 0.28, TRACK_THICKNESS, depth]} />
+        <meshStandardMaterial color="#c3cbd6" roughness={0.28} metalness={0.5} />
+      </mesh>
+      {RAINBOW_COLORS.map((color, index) => (
+        <mesh key={color} position={[-TRACK_WIDTH / 2 + stripeWidth * (index + 0.5), 0.045, 0]} receiveShadow>
+          <boxGeometry args={[stripeWidth + 0.035, 0.05, depth]} />
+          <meshPhysicalMaterial color={color} roughness={0.16} metalness={0.18} clearcoat={0.86} />
+        </mesh>
+      ))}
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[side * (TRACK_WIDTH / 2 - 0.04), 0.84, 0]} castShadow>
+          <boxGeometry args={[0.16, 1.68, depth]} />
+          <meshPhysicalMaterial color="#9cc4d9" transparent opacity={0.84} roughness={0.2} metalness={0.48} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 function TrackBase() {
   const ref = useRef<THREE.InstancedMesh>(null);
   useLayoutEffect(() => {
@@ -256,6 +282,7 @@ function FinishDeck() {
 export function TrackMeshes3D({ physics }: { physics: RacePhysics }) {
   return (
     <group>
+      <StartGridExtension depth={physics.startGridDepth} />
       <TrackBase />
       {RAINBOW_COLORS.map((color, index) => <Stripe key={color} color={color} stripeIndex={index} />)}
       <GuardWalls />

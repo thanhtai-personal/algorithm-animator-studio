@@ -8,6 +8,7 @@ import { useRhythmicStudioController } from "@/features/rhythmic-studio/hooks/us
 import { rhythmicOutputSize } from "@/features/rhythmic-studio/lib/outputSize";
 import { setRhythmicRuntimeMixBoost } from "@/features/rhythmic-studio/lib/audioEngine";
 import type { RacePhysics } from "../physics/RacePhysics";
+import { normalizeMarbleCount } from "../marble/marbleGrid";
 import { RaceScene3D } from "../race/RaceScene3D";
 import type { RaceResult } from "../race/raceTypes";
 import { useMarbleTowerPlaylist } from "../hooks/useMarbleTowerPlaylist";
@@ -26,6 +27,7 @@ function isMidiFile(file: File) {
 export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorkspace() {
   const studio = useRhythmicStudioController();
   const [driveMultiplier, setDriveMultiplier] = useState(7.25);
+  const [marbleCount, setMarbleCount] = useState(24);
   const [raceResult, setRaceResult] = useState<RaceResult | null>(null);
   const [racePhysics, setRacePhysics] = useState<RacePhysics | null>(null);
   const [seekRevision, setSeekRevision] = useState(0);
@@ -53,6 +55,17 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
     if (studio.source.type === "midi") studio.patch("midiPlaybackEnabled", false);
     if (studio.source.type === "audio") studio.patch("playOriginalSong", false);
   }, [studio.patch, studio.source.type, studio.stopPlaybackAudio]);
+
+  const changeMarbleCount = useCallback((value: number) => {
+    const next = normalizeMarbleCount(value);
+    if (next === marbleCount) return;
+    studio.resetPlayback();
+    silenceSourceForCountdown();
+    playlist.resetToFirst();
+    setRaceResult(null);
+    setMarbleCount(next);
+    setSeekRevision((revision) => revision + 1);
+  }, [marbleCount, playlist.resetToFirst, silenceSourceForCountdown, studio.resetPlayback]);
 
   const handleEnded = useCallback(() => studio.onEnded(), [studio.onEnded]);
   const handleComplete = useCallback((result: RaceResult) => {
@@ -142,6 +155,7 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
             <div className="relative mx-auto w-full overflow-hidden bg-black" style={{ aspectRatio }}>
               <RaceScene3D
                 driveMultiplier={driveMultiplier}
+                marbleCount={marbleCount}
                 playing={studio.playing}
                 recording={studio.recording}
                 playbackToken={racePlaybackToken}
@@ -201,6 +215,8 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
           studio={studio}
           driveMultiplier={driveMultiplier}
           onDriveChange={setDriveMultiplier}
+          marbleCount={marbleCount}
+          onMarbleCountChange={changeMarbleCount}
           playlist={playlist.tracks}
           currentTrackIndex={playlist.currentIndex}
           onMusicFiles={importMusicFiles}

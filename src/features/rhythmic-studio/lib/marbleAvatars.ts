@@ -1,9 +1,11 @@
 import type { Lang } from "@/lib/i18n";
 import { ANIMAL_SPRITES, type AnimalSpriteEntry } from "@/lib/animalColumns";
 import type { MarbleAvatar } from "../types";
+import { HAALAND_SPRITE_ENTRY } from "./haalandSprite";
 
 export const MARBLE_AVATARS: MarbleAvatar[] = [
   "ball",
+  "haaland",
   ...ANIMAL_SPRITES.map((entry) => `animal-${entry.id}` as MarbleAvatar),
 ];
 
@@ -32,12 +34,14 @@ const VIETNAMESE_ANIMALS = [
 
 export function marbleAvatarEntry(avatar: MarbleAvatar): AnimalSpriteEntry | null {
   if (avatar === "ball") return null;
+  if (avatar === "haaland") return HAALAND_SPRITE_ENTRY;
   const id = avatar.match(/^animal-(\d+)$/)?.[1];
   return id ? ANIMAL_SPRITES.find((entry) => entry.id === id) ?? null : null;
 }
 
 export function marbleAvatarText(lang: Lang, avatar: MarbleAvatar) {
   if (avatar === "ball") return lang === "vi" ? "Bi" : "Marble";
+  if (avatar === "haaland") return "Haaland";
   const entry = marbleAvatarEntry(avatar);
   if (!entry) return lang === "vi" ? "Nhân vật" : "Character";
   return lang === "vi" ? VIETNAMESE_ANIMALS[entry.heightWeight - 1] ?? entry.label : entry.label;

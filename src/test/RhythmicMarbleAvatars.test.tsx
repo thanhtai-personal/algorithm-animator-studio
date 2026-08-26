@@ -13,7 +13,7 @@ import type { MarblePlatform } from "../features/rhythmic-studio/engine/marblePh
 describe("rhythmic marble avatars", () => {
   it("offers the ball plus the complete cute animal sprite collection", () => {
     expect(DEFAULT_SETTINGS.marbleAvatar).toBe("ball");
-    expect(MARBLE_AVATARS).toHaveLength(21);
+    expect(MARBLE_AVATARS).toHaveLength(22);
     expect(marbleAvatarEntry("animal-8")?.label).toBe("Red Panda");
     expect(marbleAvatarText("vi", "animal-2")).toBe("Chuột hamster");
   });
@@ -41,7 +41,7 @@ describe("rhythmic marble avatars", () => {
     const patch = vi.fn();
     const { container } = render(<BallStyleFrame studio={{ rendererMode: "legacy", settings: { ...DEFAULT_SETTINGS }, patch } as never} />);
 
-    expect(container.querySelectorAll("[data-marble-avatar-preview] canvas")).toHaveLength(20);
+    expect(container.querySelectorAll("[data-marble-avatar-preview] canvas")).toHaveLength(21);
     expect(container.querySelectorAll("[data-marble-avatar-preview] img")).toHaveLength(0);
 
     fireEvent.click(screen.getByRole("button", { name: /Hamster/i }));

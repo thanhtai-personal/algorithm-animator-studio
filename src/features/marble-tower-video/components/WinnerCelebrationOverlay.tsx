@@ -32,12 +32,14 @@ export function WinnerCelebrationOverlay({ result }: { result: RaceResult | null
         <Crown className="mb-1 h-10 w-10 text-yellow-300" />
         <div className="text-xs font-black uppercase tracking-[0.34em] text-yellow-200">Champion</div>
         <div
-          className="my-4 h-28 w-28 rounded-full border-4 border-white/80 shadow-[inset_-18px_-20px_28px_rgba(0,0,0,.38),0_0_45px_rgba(255,255,255,.35)]"
+          className="relative my-4 h-28 w-28 overflow-hidden rounded-full border-4 border-white/80 shadow-[inset_-18px_-20px_28px_rgba(0,0,0,.38),0_0_45px_rgba(255,255,255,.35)]"
           style={{
             background: `radial-gradient(circle at 31% 24%, white 0 7%, ${winner.color} 19%, color-mix(in srgb, ${winner.color}, #000 46%) 78%)`,
             animation: "marble-winner-glow .75s ease-in-out infinite alternate",
           }}
-        />
+        >
+          {winner.stripeColor ? <span className="absolute -left-4 top-[44%] h-4 w-36 -rotate-12" style={{ background: winner.stripeColor }} /> : null}
+        </div>
         <div className="flex items-center gap-2 text-3xl font-black uppercase tracking-tight">
           <Trophy className="h-7 w-7 text-yellow-300" />
           {winner.name}

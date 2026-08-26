@@ -8,11 +8,12 @@ export const RaceHudPanel = observer(function RaceHudPanel({ result }: { result?
   const leader = raceSessionStore.leaderId ? marbleById(raceSessionStore.leaderId) : null;
   const winner = result ? marbleById(result.winnerId) : null;
   const focus = winner ?? leader;
+  const visibleStandings = raceSessionStore.standings.slice(0, 24);
 
   return <div className="grid gap-3 xl:grid-cols-[1fr_1.35fr]">
     <div className="rounded-xl border bg-card/60 p-3">
       <div className="flex items-center gap-3">
-        <span className="h-8 w-8 rounded-full border-2 border-white/70 shadow-lg" style={{ background: focus?.color ?? "#64748b" }} />
+        <span className="h-8 w-8 rounded-full border-2 border-white/70 shadow-lg" style={{ background: focus?.stripeColor ? `linear-gradient(135deg, ${focus.color} 0 42%, ${focus.stripeColor} 43% 58%, ${focus.color} 59%)` : focus?.color ?? "#64748b" }} />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold">{winner ? `${winner.name} WINS` : focus ? `${focus.name} LEADS` : "TOWER RACE"}</p>
           <p className="text-xs text-muted-foreground">{result ? `FINISH · ${(result.timeMs / 1000).toFixed(2)}s` : raceSessionStore.callout}</p>
@@ -21,11 +22,11 @@ export const RaceHudPanel = observer(function RaceHudPanel({ result }: { result?
       <div className="mt-3 grid grid-cols-3 gap-2 text-xs"><Metric icon={Gauge} label="Leader speed" value={`${raceSessionStore.speed.toFixed(1)} m/s`} /><Metric icon={Users} label="Alive" value={String(raceSessionStore.alive)} /><Metric icon={Trophy} label="Next" value={raceSessionStore.nextCut} /></div>
     </div>
     <div className="rounded-xl border bg-card/60 p-3">
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Live ranking</p>
-      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 xl:grid-cols-8">{raceSessionStore.standings.map((standing) => {
+      <div className="mb-2 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground"><span>Live ranking</span><span>Top {visibleStandings.length} / {raceSessionStore.standings.length}</span></div>
+      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 xl:grid-cols-8">{visibleStandings.map((standing) => {
         const marble = MARBLES.find((item) => item.id === standing.id)!;
         const isLeader = standing.id === raceSessionStore.leaderId && standing.alive;
-        return <div key={standing.id} className={`rounded-lg border px-2 py-1.5 text-xs ${isLeader ? "border-primary bg-primary/10" : "bg-background/35"} ${standing.alive ? "" : "opacity-45"}`}><div className="flex items-center gap-1.5"><b>{standing.position}</b><span className="h-2.5 w-2.5 rounded-full" style={{ background: marble.color }} /></div><div className="mt-0.5 truncate text-[10px] text-muted-foreground">{standing.alive ? marble.name : "OUT"}</div></div>;
+        return <div key={standing.id} className={`rounded-lg border px-2 py-1.5 text-xs ${isLeader ? "border-primary bg-primary/10" : "bg-background/35"} ${standing.alive ? "" : "opacity-45"}`}><div className="flex items-center gap-1.5"><b>{standing.position}</b><span className="h-2.5 w-2.5 rounded-full" style={{ background: marble.stripeColor ? `linear-gradient(135deg, ${marble.color} 0 40%, ${marble.stripeColor} 41% 60%, ${marble.color} 61%)` : marble.color }} /></div><div className="mt-0.5 truncate text-[10px] text-muted-foreground">{standing.alive ? marble.name : "OUT"}</div></div>;
       })}</div>
     </div>
   </div>;

@@ -22,7 +22,8 @@ function isBallStyle(value: unknown): value is BallStyle {
 }
 
 function isMarbleAvatar(value: unknown): value is MarbleAvatar {
-  return value === "ball" || (typeof value === "string" && /^animal-(?:[1-9]|1\d|20)$/.test(value));
+  return value === "ball" || value === "haaland"
+    || (typeof value === "string" && /^animal-(?:[1-9]|1\d|20)$/.test(value));
 }
 
 function color(value: unknown, fallback: string) {

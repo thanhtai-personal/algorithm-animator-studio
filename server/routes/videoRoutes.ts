@@ -76,20 +76,16 @@ export function createVideoRouter() {
           error: "Không đo được nhịp khung hình của bản ghi WebGL. Video chưa được xuất để tránh tạo tệp bị giật.",
         });
       }
-      if (!cadence.healthy) {
-        cleanup();
-        return res.status(422).json({
-          code: "RHYTHMIC_CAPTURE_TOO_SLOW",
-          error: `Bản ghi chỉ đạt ${cadence.capturedFps.toFixed(1)}/${cadence.targetFps} FPS, khoảng đứng hình lớn nhất ${Math.round(cadence.maxFrameGapMs)} ms. Hãy chọn 30 FPS hoặc giảm hiệu ứng rồi xuất lại.`,
-          cadence,
-        });
-      }
+      // Browser/WebGL capture can legitimately run below the requested cadence
+      // on a busy GPU. Keep cadence as diagnostics, but let FFmpeg retime the
+      // captured frames to the user's selected CFR instead of blocking export.
       await runFfmpeg(
         buildRhythmicMp4TranscodeArgs(req.file.path, outputPath, output, cadence),
         envOverrides,
       );
       res.setHeader("X-Rhythmic-Captured-Fps", cadence.capturedFps.toFixed(2));
       res.setHeader("X-Rhythmic-Max-Frame-Gap-Ms", cadence.maxFrameGapMs.toFixed(1));
+      res.setHeader("X-Rhythmic-Capture-Health", cadence.healthy ? "healthy" : "degraded");
       res.once("finish", cleanup);
       res.once("close", cleanup);
       return res.sendFile(outputPath);

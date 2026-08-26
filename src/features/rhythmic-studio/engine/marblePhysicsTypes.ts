@@ -39,6 +39,8 @@ export interface MarblePlatform {
   visualWidth?: number;
   visualThickness?: number;
   visualTiltRad?: number;
+  /** Keeps the instrument identity while using its shallow crowded-row body. */
+  visualCompact?: boolean;
   visualHidden?: boolean;
 }
 

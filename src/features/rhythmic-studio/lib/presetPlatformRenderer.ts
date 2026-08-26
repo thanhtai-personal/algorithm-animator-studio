@@ -179,8 +179,8 @@ function drawCometPad(ctx: CanvasRenderingContext2D, half: number, p: MarblePlat
 }
 
 function drawInstrumentKey(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, _lowPower: boolean) {
-  const h = Math.max(p.thickness < 9 ? 6 : 13, p.thickness);
-  const depth = Math.max(8, h * 0.55);
+  const h = p.visualCompact ? Math.max(2.4, p.thickness) : Math.max(p.thickness < 9 ? 5.2 : 11, p.thickness);
+  const depth = p.visualCompact ? Math.max(1.2, h * 0.3) : Math.max(4.5, h * 0.4);
   ctx.save();
   roundedRect(ctx, -half + 5, depth, p.width, h, 4);
   ctx.fillStyle = mixHex(p.color, "#222730", 0.6);
@@ -297,8 +297,8 @@ function drawInstrumentRail(ctx: CanvasRenderingContext2D, half: number, p: Marb
 }
 
 function drawInstrumentPad(ctx: CanvasRenderingContext2D, half: number, p: MarblePlatform, impact: number, _lowPower: boolean) {
-  const h = Math.max(p.thickness < 9 ? 6.5 : 14, p.thickness);
-  const depth = Math.max(8, h * 0.5);
+  const h = p.visualCompact ? Math.max(2.4, p.thickness) : Math.max(p.thickness < 9 ? 5.4 : 12, p.thickness);
+  const depth = p.visualCompact ? Math.max(1.2, h * 0.3) : Math.max(4.5, h * 0.4);
   ctx.save();
   roundedRect(ctx, -half + 5, depth, p.width, h, 7);
   ctx.fillStyle = mixHex(p.color, "#252832", 0.58);

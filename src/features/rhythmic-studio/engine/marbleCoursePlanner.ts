@@ -128,7 +128,7 @@ function naturalRestitution(profile: MarblePhysicsProfile, settings: StudioSetti
   return clamp(center, profile.restitutionMin, profile.restitutionMax);
 }
 
-function collisionAngles(profile: MarblePhysicsProfile, dt: number) {
+function collisionAngles(profile: MarblePhysicsProfile, dt: number, settings: StudioSettings) {
   const result = [...profile.normalAngles];
   // Very short note gaps cannot produce a believable high arc. Add steeper
   // glancing surfaces so the same restitution redirects momentum sideways and
@@ -143,6 +143,15 @@ function collisionAngles(profile: MarblePhysicsProfile, dt: number) {
   if (profile.terrain === "balanced" || profile.terrain === "tube-board") {
     if (dt >= 0.2) result.push(0.76, -0.76);
     if (dt >= 0.36) result.push(0.9, -0.9);
+  }
+  // Showcase presets previously inherited the very narrow xylophone angle set.
+  // That leaves no lateral escape around a chord or a large drum/cymbal body, so
+  // the next instrument can only be placed directly underneath it. The reference
+  // videos use tidy alternating rows: add physically valid redirect faces and let
+  // the collision-aware beam choose them only when the compact route is crowded.
+  if (settings.instrumentFamily !== "auto") {
+    result.push(0.34, -0.34, 0.48, -0.48, 0.62, -0.62);
+    if (dt >= 0.34) result.push(0.76, -0.76);
   }
   return result;
 }
@@ -164,7 +173,13 @@ function fallbackCandidate(hit: Vec2, incoming: Vec2, spanMs: number, direction:
   const profile = marblePhysicsProfile(settings);
   const dt = Math.max(0.08, spanMs / 1000);
   const bounds = courseWorldBounds(settings, width);
-  const sign = direction || (incoming.x >= 0 ? 1 : -1) || 1;
+  const wallInset = Math.max(settings.ballSize * 1.25, settings.platformThickness * 0.72, 14);
+  const edgeGuard = wallInset * 1.35;
+  const sign = hit.x <= bounds.min + edgeGuard
+    ? 1
+    : hit.x >= bounds.max - edgeGuard
+      ? -1
+      : direction || (incoming.x >= 0 ? 1 : -1) || 1;
   const angle = dt < 0.16 ? 0.7 : dt < 0.24 ? 0.54 : dt < 0.36 ? 0.36 : (settings.instrumentFamily !== "auto" ? 0.18 : 0.24);
   const reflected = [sign * angle, -sign * angle, 0, 0.72, -0.72]
     .map((candidateAngle) => outgoingForNormal(incoming, normalForAngle(candidateAngle), naturalRestitution(profile, settings), 0.95))
@@ -175,7 +190,6 @@ function fallbackCandidate(hit: Vec2, incoming: Vec2, spanMs: number, direction:
     };
   reflected.velocity.x = clamp(reflected.velocity.x, -520, 520);
   const naturalX = hit.x + reflected.velocity.x * dt;
-  const wallInset = Math.max(settings.ballSize * 1.25, settings.platformThickness * 0.72, 14);
   const targetX = clamp(naturalX, bounds.min + wallInset, bounds.max - wallInset);
   // The renderer integrates outgoing velocity directly. If fallback routing clamps
   // only the destination, the marble reaches naturalX and then snaps to targetX
@@ -265,6 +279,9 @@ function ordinaryBounceCandidate(context: BounceCandidateContext, angle: number,
   const dy = target.y - hit.y;
   const wallInset = bounceWallInset(settings);
   if (target.x < bounds.min + wallInset || target.x > bounds.max - wallInset) return null;
+  const edgeEscape = dt < 0.24 ? settings.ballSize * 0.5 : Math.max(24, settings.ballSize * 1.7);
+  if (hit.x <= bounds.min + wallInset + 1 && target.x < hit.x + edgeEscape) return null;
+  if (hit.x >= bounds.max - wallInset - 1 && target.x > hit.x - edgeEscape) return null;
 
   const nextIncomingY = reflected.velocity.y + profile.gravity * dt;
   const minimumDrop = dt < 0.16 ? -1.5 : dt < 0.24 ? 0 : 4;
@@ -368,14 +385,14 @@ function createBounceCandidateContext(
     bounds: courseWorldBounds(settings, width),
     naturalHorizontal: Math.max(8, terrain.horizontalDistance * profile.horizontalScale * spacing.horizontal * 0.42),
     restitution: settings.instrumentLayout === "corridor"
-      ? Math.max(0.88, naturalRestitution(profile, settings))
+      ? Math.max(0.72, naturalRestitution(profile, settings))
       : naturalRestitution(profile, settings),
   };
 }
 
 function bounceCandidates(index: number, hit: Vec2, incoming: Vec2, spanMs: number, preferredDirection: number, pitch: number, settings: StudioSettings, width: number) {
   const context = createBounceCandidateContext(index, hit, incoming, spanMs, preferredDirection, pitch, settings, width);
-  const angles = collisionAngles(context.profile, context.dt);
+  const angles = collisionAngles(context.profile, context.dt, settings);
   if (settings.instrumentLayout === "corridor" && context.dt < 0.16) angles.push(0.86, -0.86, 1, -1);
   const result = angles
     .map((angle, order) => ordinaryBounceCandidate(context, angle, order))
@@ -449,6 +466,7 @@ interface VisualFitCandidate {
   shift: number;
   cost: number;
   clean: boolean;
+  compact: boolean;
 }
 
 function sharesPlayableSurface(a: MarblePlatform, b: MarblePlatform) {
@@ -505,7 +523,7 @@ function visualConflictCost(platforms: MarblePlatform[], platformIndex: number, 
     const clearance = platformClearance(platform, other);
     if (clearance >= required) continue;
     const intrusion = required - clearance;
-    cost += intrusion * intrusion + intrusion * 30 + (clearance < 0.8 ? 8000 : 0);
+    cost += 10000 + intrusion * intrusion + intrusion * 42 + (clearance < 0.8 ? 12000 : 0);
   }
   const routeClearance = routeClearanceForPlatform(platforms, platformIndex, platform);
   const routeRequired = routeClearanceRequirement(platform, settings);
@@ -555,11 +573,13 @@ function applyVisualCandidate(
   width: number,
   thickness: number,
   shift: number,
+  compact: boolean,
 ) {
   platform.visualWidth = width;
   platform.visualThickness = thickness;
   platform.visualX = original.x + original.tangent.x * shift;
   platform.visualY = original.y + original.tangent.y * shift;
+  platform.visualCompact = compact || undefined;
 }
 
 function evaluateVisualCandidate(
@@ -572,15 +592,16 @@ function evaluateVisualCandidate(
   originalWidth: number,
   original: { x: number; y: number; tangent: Vec2 },
   candidate: { width: number; thickness: number; shift: number },
+  compact: boolean,
 ): VisualFitCandidate | null {
-  applyVisualCandidate(platform, original, candidate.width, candidate.thickness, candidate.shift);
+  applyVisualCandidate(platform, original, candidate.width, candidate.thickness, candidate.shift, compact);
   if (!platformWithinWorldBounds(platform, settings, sceneWidth, wallInset)) return null;
   const clean = isVisualFitClean(platforms, platformIndex, platform, settings, sceneWidth, wallInset);
   const cost = visualConflictCost(platforms, platformIndex, platform, settings)
     + Math.abs(candidate.shift) * 0.18
     + Math.max(0, originalWidth - candidate.width) * 0.035
     + Math.max(0, (platform.thickness - candidate.thickness)) * 0.02;
-  return { ...candidate, cost, clean };
+  return { ...candidate, cost, clean, compact };
 }
 
 function preferVisualCandidate(current: VisualFitCandidate | null, candidate: VisualFitCandidate | null) {
@@ -599,19 +620,19 @@ function searchVisualFit(
   compact: boolean,
 ) {
   const dense = platform.denseSurfaceId !== undefined || platform.denseRunId !== undefined;
-  const squareCorridorPaddle = settings.instrumentLayout === "corridor" && platform.visualStyle === "instrument-pad";
-  const squareMinimum = Math.max(12, settings.ballSize * 1.05);
-  const minimumWidth = squareCorridorPaddle ? squareMinimum : compact
-    ? Math.max(10, settings.ballSize * 0.72)
+  const corridorPaddle = settings.instrumentLayout === "corridor" && platform.visualStyle === "instrument-pad";
+  const slenderRail = platform.visualStyle === "metal-rail";
+  const corridorMinimumWidth = Math.max(6, settings.ballSize * 0.5);
+  const minimumWidth = slenderRail ? Math.max(6, settings.ballSize * 0.4) : corridorPaddle ? corridorMinimumWidth : compact
+    ? Math.max(8, settings.ballSize * 0.55)
     : dense ? Math.max(11, settings.ballSize * 0.78) : Math.max(18, settings.ballSize * 1.2);
-  const minimumThickness = squareCorridorPaddle ? squareMinimum : compact
-    ? Math.max(4.5, settings.ballSize * 0.3)
+  const minimumThickness = compact
+    ? Math.max(2.4, settings.ballSize * 0.16)
+    : slenderRail ? Math.max(3, settings.ballSize * 0.18) : corridorPaddle ? Math.max(4.5, settings.ballSize * 0.3)
     : dense ? Math.max(5, settings.ballSize * 0.34) : Math.max(5.2, settings.ballSize * 0.35);
-  const widths = candidateSizes(squareCorridorPaddle ? Math.max(original.width, original.thickness) : original.width, minimumWidth, 0.8, compact ? 5 : 8);
+  const widths = candidateSizes(original.width, minimumWidth, 0.8, compact ? 5 : 8);
   const thicknesses = candidateSizes(original.thickness, minimumThickness, 0.76, compact ? 5 : 7);
-  const sizes = squareCorridorPaddle
-    ? widths.map((size) => ({ width: size, thickness: size }))
-    : thicknesses.flatMap((thickness) => widths.map((width) => ({ width, thickness })));
+  const sizes = thicknesses.flatMap((thickness) => widths.map((width) => ({ width, thickness })));
   const hitMargin = Math.max(2.2, settings.ballSize * (compact ? 0.17 : 0.26));
   const wallInset = Math.max(3, settings.ballSize * 0.22);
   let best: VisualFitCandidate | null = null;
@@ -628,6 +649,7 @@ function searchVisualFit(
           original.width,
           original,
           { width: size.width, thickness: size.thickness, shift },
+          compact,
         );
         best = preferVisualCandidate(best, candidate);
         if (best?.clean) return best;
@@ -657,15 +679,10 @@ function fitPlatformVisual(
   const original = { x: originalX, y: originalY, width: originalWidth, thickness: originalThickness, tangent, hitProjection };
   let best = searchVisualFit(platforms, platformIndex, platform, settings, sceneWidth, original, false);
   if (!best?.clean) {
-    platform.visualStyle = platform.denseSurfaceId !== undefined || platform.denseRunId !== undefined
-      ? (platform.visualStyle ?? "piano-key")
-      : "instrument-pad";
     const compactBest = searchVisualFit(platforms, platformIndex, platform, settings, sceneWidth, original, true);
-    best = settings.instrumentLayout === "corridor" && platform.visualStyle === "instrument-pad"
-      ? compactBest ?? best
-      : preferVisualCandidate(best, compactBest);
+    best = preferVisualCandidate(best, compactBest);
   }
-  if (best) applyVisualCandidate(platform, original, best.width, best.thickness, best.shift);
+  if (best) applyVisualCandidate(platform, original, best.width, best.thickness, best.shift, best.compact);
 }
 
 function fitCourseToTrajectories(platforms: MarblePlatform[], settings: StudioSettings, width: number, resolveSettings?: StudioSettingsResolver) {
@@ -1116,12 +1133,8 @@ export function buildPhysicsCourse(
   onProgress?.(0.97);
   const chordDecorated = decorateChordClusters(denseDecorated, context.chords);
   const fitted = fitCourseToTrajectories(chordDecorated, settings, width, resolveSettings);
-  const instrumentAligned = fitted.map((platform, index) => {
-    if (platform.denseRunId !== undefined || platform.denseSurfaceId !== undefined || platform.chordClusterId !== undefined) return platform;
-    const frameSettings = resolveSettings?.(index) ?? settings;
-    const visualStyle = midiInstrumentVisualStyle(platform.event, frameSettings);
-    return visualStyle ? { ...platform, visualStyle } : platform;
-  });
+  // MIDI styles are assigned before collision scoring and remain unchanged. If a
+  // crowded row needs a smaller body, visualCompact changes geometry only.
   onProgress?.(1);
-  return instrumentAligned;
+  return fitted;
 }

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  pickRecordingMimeType,
   settleRhythmicRecordingSurface,
   startRhythmicMediaRecorder,
   usesFixedClientExportSurface,
@@ -9,6 +10,15 @@ describe("rhythmic capture policy", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("prefers the real-time friendly VP8 encoder for smooth browser capture", () => {
+    const isTypeSupported = vi.fn(() => true);
+    vi.stubGlobal("MediaRecorder", { isTypeSupported });
+
+    expect(pickRecordingMimeType("webm")).toBe("video/webm;codecs=vp8,opus");
+    expect(isTypeSupported).toHaveBeenCalledWith("video/webm;codecs=vp8,opus");
   });
 
   it("repaints both export formats onto a fixed canvas so WebGL capture cannot omit unchanged frames", () => {

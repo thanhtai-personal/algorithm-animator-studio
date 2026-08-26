@@ -110,12 +110,25 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
         if (override && !isPlatformCourseItem(override.style) && override.span > 1) return null;
         const platformSettings = resolveSettings?.(platform.index) ?? settings;
         const style = platform.visualStyle ?? (override && isPlatformCourseItem(override.style) ? override.style : resolvePlatformStyle(platform.index, platformSettings));
+        const platformReceiverZ = shadowReceiverZForSettings(platformSettings);
         const displayWidth = platform.visualWidth ?? platform.width;
         const w = Math.max(platform.denseLayout === "connected-keys" ? 0.065 : 0.3, displayWidth * RHYTHMIC_WORLD_SCALE);
         const displayThickness = platform.visualThickness ?? platform.thickness;
-        const compactSurface = platform.denseSurfaceId !== undefined || displayThickness < 9;
-        const h = Math.max(compactSurface ? 0.055 : 0.09, displayThickness * RHYTHMIC_WORLD_SCALE);
-        const d = style === "instrument-cymbal" ? 0.5 : style.includes("rail") ? 0.46 : style === "tube-cylinder" ? 0.62 : 0.54;
+        const compactSurface = platform.visualCompact || platform.denseSurfaceId !== undefined || displayThickness < 9;
+        const h = Math.max(platform.visualCompact ? 0.024 : compactSurface ? 0.055 : 0.09, displayThickness * RHYTHMIC_WORLD_SCALE);
+        const slimBody = style === "instrument-key"
+          || style === "instrument-pad"
+          || style === "xylophone-bar"
+          || style === "piano-key"
+          || style === "marimba-bar"
+          || style === "vibraphone-bar"
+          || style === "metallophone-plate"
+          || style === "pluck-pad";
+        const d = style === "instrument-cymbal" ? 0.5
+          : style.includes("rail") ? 0.46
+            : style === "tube-cylinder" ? 0.62
+              : slimBody ? Math.max(platform.visualCompact ? 0.04 : 0.14, Math.min(0.5, h))
+                : 0.54;
         const depth = d * (0.92 + platformSettings.platformDetail * 0.12);
         const baseX = platform.visualX ?? platform.x;
         const baseY = platform.visualY ?? platform.y;
@@ -164,7 +177,7 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
             }}
           >
             {platform.denseRunId === undefined && (
-              <PhysicalMount terrain={platformSettings.terrainProfile} w={w} h={h} detail={platformSettings.platformDetail} showcase={platformSettings.instrumentFamily !== "auto"} frontDepth={playingSurface.frontDepth} receiverZ={receiverZ} style={style} />
+              <PhysicalMount terrain={platformSettings.terrainProfile} w={w} h={h} detail={platformSettings.platformDetail} showcase={platformSettings.instrumentFamily !== "auto"} frontDepth={playingSurface.frontDepth} receiverZ={platformReceiverZ} style={style} />
             )}
             <group position={[0, pressOffset.y, pressOffset.z]}>
               <group rotation={[

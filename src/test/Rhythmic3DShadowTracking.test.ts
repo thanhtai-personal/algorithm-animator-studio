@@ -93,9 +93,12 @@ describe("rhythmic 3D shadow tracking", () => {
     expect(mount.stemLength).toBeLessThan(1.3);
   });
 
-  it("uses one authoritative receiver plane for automatic and showcase scenes", () => {
-    expect(shadowReceiverZForSettings(DEFAULT_SETTINGS)).toBe(RHYTHMIC_AUTO_SHADOW_RECEIVER_Z);
-    expect(shadowReceiverZForSettings({ ...DEFAULT_SETTINGS, instrumentFamily: "piano" })).toBe(RHYTHMIC_SHADOW_RECEIVER_Z);
+  it("anchors every preset to the visible wall that actually receives its shadow", () => {
+    expect(shadowReceiverZForSettings({ ...DEFAULT_SETTINGS, backgroundPreset: "brick-wall" })).toBeCloseTo(-4.06, 6);
+    expect(shadowReceiverZForSettings({ ...DEFAULT_SETTINGS, backgroundPreset: "tube-board-dark" })).toBeCloseTo(-4, 6);
+    expect(shadowReceiverZForSettings({ ...DEFAULT_SETTINGS, backgroundPreset: "instrument-room" })).toBeCloseTo(-2.84, 6);
+    expect(shadowReceiverZForSettings({ ...DEFAULT_SETTINGS, backgroundPreset: "deep-space" })).toBe(RHYTHMIC_AUTO_SHADOW_RECEIVER_Z);
+    expect(shadowReceiverZForSettings({ ...DEFAULT_SETTINGS, instrumentFamily: "piano", backgroundPreset: "spotlight" })).toBe(RHYTHMIC_SHADOW_RECEIVER_Z);
   });
 
   it("does not add a second shadow receiver in rooms that already receive shadows", () => {

@@ -11,6 +11,10 @@ type Point3D = { x: number; y: number; z: number };
 export const SHOWCASE_SHADOW_LIGHT_OFFSET = { x: -2.4, y: 3.2, z: 14 } as const;
 export const RHYTHMIC_SHADOW_RECEIVER_Z = -4.02;
 export const RHYTHMIC_AUTO_SHADOW_RECEIVER_Z = -1.12;
+export const RHYTHMIC_BRICK_SHADOW_RECEIVER_Z = -4.06;
+export const RHYTHMIC_TUBE_BOARD_SHADOW_RECEIVER_Z = -4;
+export const RHYTHMIC_XYLOPHONE_SHADOW_RECEIVER_Z = -2.84;
+export const RHYTHMIC_NEUTRAL_SHADOW_RECEIVER_Z = -3.64;
 export const DENSE_CHASSIS_CENTER_Z = -0.62;
 export const DENSE_CHASSIS_DEPTH = 0.22;
 export const RHYTHMIC_SHOWCASE_WALL_CENTER_Y = -270;
@@ -54,8 +58,20 @@ export function courseBackdropBounds(worldYs: number[], padding = 24): RhythmicB
   };
 }
 
-export function shadowReceiverZForSettings(settings: Pick<StudioSettings, "instrumentFamily">) {
-  return settings.instrumentFamily === "auto" ? RHYTHMIC_AUTO_SHADOW_RECEIVER_Z : RHYTHMIC_SHADOW_RECEIVER_Z;
+export function shadowReceiverZForSettings(settings: Pick<StudioSettings, "instrumentFamily" | "backgroundPreset" | "terrainProfile">) {
+  if (settings.backgroundPreset === "brick-wall") return RHYTHMIC_BRICK_SHADOW_RECEIVER_Z;
+  if (settings.backgroundPreset === "tube-board-dark") return RHYTHMIC_TUBE_BOARD_SHADOW_RECEIVER_Z;
+  if (settings.backgroundPreset === "xylophone-room" || settings.backgroundPreset === "instrument-room") return RHYTHMIC_XYLOPHONE_SHADOW_RECEIVER_Z;
+  if (settings.backgroundPreset === "comet-void" || settings.backgroundPreset === "deep-space") {
+    return settings.instrumentFamily === "auto" ? RHYTHMIC_AUTO_SHADOW_RECEIVER_Z : RHYTHMIC_SHADOW_RECEIVER_Z;
+  }
+  if (settings.backgroundPreset === "spotlight") {
+    return settings.instrumentFamily === "auto" ? RHYTHMIC_NEUTRAL_SHADOW_RECEIVER_Z : RHYTHMIC_SHADOW_RECEIVER_Z;
+  }
+  if (settings.terrainProfile === "tube-board") return RHYTHMIC_TUBE_BOARD_SHADOW_RECEIVER_Z;
+  if (settings.terrainProfile === "xylophone") return RHYTHMIC_XYLOPHONE_SHADOW_RECEIVER_Z;
+  if (settings.terrainProfile === "comet") return RHYTHMIC_AUTO_SHADOW_RECEIVER_Z;
+  return settings.instrumentFamily === "auto" ? RHYTHMIC_NEUTRAL_SHADOW_RECEIVER_Z : RHYTHMIC_SHADOW_RECEIVER_Z;
 }
 
 export function needsDedicatedShadowReceiver(kind: "tube-board" | "comet" | "xylophone" | "brick" | "neutral") {

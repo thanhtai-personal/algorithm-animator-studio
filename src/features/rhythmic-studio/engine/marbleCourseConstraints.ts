@@ -1,5 +1,6 @@
 import type { StudioSettings } from "../types";
 import type { MarblePlatform, Vec2 } from "./marblePhysicsTypes";
+import { instrumentVisualFootprint } from "./instrumentVisualFootprint";
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -51,13 +52,17 @@ function segmentDistance(a: Vec2, b: Vec2, c: Vec2, d: Vec2) {
 export function platformSegment(platform: MarblePlatform) {
   const x = platform.visualX ?? platform.x;
   const y = platform.visualY ?? platform.y;
-  const width = platform.visualWidth ?? platform.width;
+  const footprint = instrumentVisualFootprint(platform);
+  const width = footprint.width;
   const tiltRad = platform.visualTiltRad ?? platform.tiltRad;
+  const normal = { x: Math.sin(tiltRad), y: -Math.cos(tiltRad) };
+  const centerX = x - normal.x * footprint.centerInset;
+  const centerY = y - normal.y * footprint.centerInset;
   const dx = Math.cos(tiltRad) * width * 0.5;
   const dy = Math.sin(tiltRad) * width * 0.5;
   return {
-    a: { x: x - dx, y: y - dy },
-    b: { x: x + dx, y: y + dy },
+    a: { x: centerX - dx, y: centerY - dy },
+    b: { x: centerX + dx, y: centerY + dy },
   };
 }
 
@@ -72,7 +77,7 @@ function visibleForCollision(platform: MarblePlatform) {
 }
 
 function visualThickness(platform: MarblePlatform) {
-  return platform.visualThickness ?? platform.thickness;
+  return instrumentVisualFootprint(platform).thickness;
 }
 
 function platformHorizontalExtent(platform: MarblePlatform) {
@@ -125,8 +130,13 @@ export function platformOverlapPenalty(platform: MarblePlatform, recent: MarbleP
     const safeDistance = platformRequiredClearance(platform, other, settings);
     if (distance < safeDistance) {
       const overlap = safeDistance - distance;
+      // A small capsule intrusion still becomes a very obvious overlap once the
+      // drum shell, key depth or support is rendered. Treat every unrelated body
+      // intrusion as a hard scene defect; connected dense/chord surfaces were
+      // already excluded above and remain free to touch.
+      const bodyOverlapBoost = 10000;
       const crossingBoost = distance < 0.5 ? 12000 : 0;
-      penalty += crossingBoost + overlap * 28 + overlap * overlap * 1.15;
+      penalty += bodyOverlapBoost + crossingBoost + overlap * 42 + overlap * overlap * 1.6;
     }
   }
   return penalty;

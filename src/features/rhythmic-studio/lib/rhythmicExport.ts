@@ -2,7 +2,9 @@ import { getExportFormat, type ExportFormat } from "@/pages/studio/exportFormats
 
 export function pickRecordingMimeType(target: ExportFormat) {
   const recordingFormat = getExportFormat(target === "mp4" ? "webm" : target);
-  return recordingFormat.mimeCandidates.find((candidate) => MediaRecorder.isTypeSupported(candidate)) ?? null;
+  const priority = (candidate: string) => candidate.includes("vp8") ? 0 : candidate.includes("vp9") ? 1 : 2;
+  const candidates = [...recordingFormat.mimeCandidates].sort((a, b) => priority(a) - priority(b));
+  return candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate)) ?? null;
 }
 
 export function usesFixedClientExportSurface(_target: ExportFormat) {

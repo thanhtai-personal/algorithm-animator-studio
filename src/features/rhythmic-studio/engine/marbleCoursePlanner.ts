@@ -1138,7 +1138,7 @@ export function buildPhysicsCourse(
   const solved = reconstruct(states[0]?.node ?? null);
   const denseDecorated = decorateDenseInstrumentRuns(solved, context.denseRuns, settings, resolveSettings);
   onProgress?.(0.97);
-  const chordDecorated = decorateChordClusters(denseDecorated, context.chords);
+  const chordDecorated = decorateChordClusters(denseDecorated, context.chords, settings, resolveSettings);
   const fitted = fitCourseToTrajectories(chordDecorated, settings, width, resolveSettings);
   // MIDI styles are assigned before collision scoring and remain unchanged. If a
   // crowded row needs a smaller body, visualCompact changes geometry only.

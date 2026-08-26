@@ -7,6 +7,7 @@ import { marbleEntrySpeed, marblePhysicsProfile } from "../engine/marblePhysicsP
 import { presetObstaclePlan } from "../engine/presetObstaclePlan";
 import { instrumentScenePlan } from "../engine/instrumentScenePlan";
 import { noteColorForMidi } from "./noteColors";
+import { createPhraseInstrumentSettingsResolver } from "./phraseInstrumentMix";
 
 export type { MarblePlatform, MarblePoint } from "../engine/marblePhysicsTypes";
 
@@ -172,12 +173,14 @@ export function buildMarbleCourse(
   resolveSettings?: StudioSettingsResolver,
   onProgress?: (progress: number) => void,
 ): MarblePlatform[] {
+  const baseResolver: StudioSettingsResolver = resolveSettings ?? (() => settings);
+  const phraseResolver = createPhraseInstrumentSettingsResolver(events, baseResolver);
   return buildPhysicsCourse(
     events,
     settings,
     width,
     (index) => noteColorForMidi(events[index]?.midi ?? 60),
-    resolveSettings,
+    phraseResolver,
     onProgress,
   );
 }

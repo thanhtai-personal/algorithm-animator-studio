@@ -67,7 +67,8 @@ function denseLayoutForGap(kind: DenseInstrumentKind, gapMs: number, settings: S
 }
 
 function denseVisualStyle(kind: DenseInstrumentKind, layout: DenseSurfaceLayout, settings: StudioSettings, event: NoteEvent, index: number): PlatformStyle {
-  if (layout === "connected-keys") return "piano-key";
+  // A selected showcase instrument owns the whole phrase, including fast runs.
+  // Connected-key geometry must not silently turn xylophone/gong/etc. into piano.
   if (settings.instrumentFamily === "mixed") return presetObstaclePlan(index, settings)?.style ?? "instrument-rail";
   if (settings.instrumentFamily === "boomwhacker") return "boomwhacker-tube";
   if (settings.instrumentFamily === "xylophone") return "xylophone-bar";
@@ -76,6 +77,9 @@ function denseVisualStyle(kind: DenseInstrumentKind, layout: DenseSurfaceLayout,
   if (settings.instrumentFamily === "pluck") return "pluck-pad";
   if (settings.instrumentFamily === "vibraphone") return "vibraphone-bar";
   if (settings.instrumentFamily === "metallophone") return "metallophone-plate";
+  if (settings.instrumentFamily === "gong") return "gong-disc";
+  if (settings.instrumentFamily === "flute") return "flute-pipe";
+  if (layout === "connected-keys") return "piano-key";
   if (kind === "pad-strip") return "instrument-pad";
   const midiStyle = midiInstrumentVisualStyle(event, settings);
   if (midiStyle) return midiStyle;
@@ -166,13 +170,21 @@ export function decorateDenseInstrumentRuns(platforms: MarblePlatform[], runs: D
   return decorated;
 }
 
-export function decorateChordClusters(platforms: MarblePlatform[], clusters: ChordCluster[]) {
+export function decorateChordClusters(
+  platforms: MarblePlatform[],
+  clusters: ChordCluster[],
+  settings?: StudioSettings,
+  resolveSettings?: DenseSettingsResolver,
+) {
   if (!platforms.length || !clusters.length) return platforms;
   const decorated = platforms.map((platform) => ({ ...platform }));
   for (const cluster of clusters) {
     const first = decorated[cluster.start];
     if (!first) continue;
-    first.visualStyle = "instrument-pad";
+    const localSettings = resolveSettings?.(cluster.start) ?? settings;
+    first.visualStyle = localSettings && localSettings.instrumentFamily !== "auto"
+      ? presetObstaclePlan(cluster.start, localSettings)?.style ?? "instrument-pad"
+      : "instrument-pad";
     first.visualThickness = Math.max(5.8, first.thickness * 0.24);
     first.visualWidth = first.denseRunId !== undefined
       ? Math.max(first.visualWidth ?? 0, Math.min(first.width * 0.27, 30))

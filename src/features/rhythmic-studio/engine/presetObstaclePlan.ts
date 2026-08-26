@@ -50,25 +50,29 @@ function corridorPattern(index: number): PlatformStyle {
 }
 
 function familyPattern(family: InstrumentFamily, index: number): PlatformStyle {
-  if (family === "boomwhacker") return index % 7 === 5 ? "xylophone-bar" : "boomwhacker-tube";
-  if (family === "xylophone") return index % 9 === 7 ? "instrument-rail" : "xylophone-bar";
-  if (family === "piano") return index % 8 === 6 ? "pluck-pad" : "piano-key";
-  if (family === "marimba") return index % 8 === 5 ? "drum-disc" : "marimba-bar";
-  if (family === "pluck") return index % 6 === 4 ? "instrument-wire" : "pluck-pad";
-  if (family === "vibraphone") return index % 10 === 8 ? "instrument-rail" : "vibraphone-bar";
-  if (family === "metallophone") return index % 9 === 8 ? "dual-rail" : "metallophone-plate";
+  // One musical phrase owns one instrument family. Layout may change the
+  // geometry, but it must not sprinkle unrelated accent instruments into it.
+  if (family === "boomwhacker") return "boomwhacker-tube";
+  if (family === "xylophone") return "xylophone-bar";
+  if (family === "piano") return "piano-key";
+  if (family === "marimba") return "marimba-bar";
+  if (family === "pluck") return "pluck-pad";
+  if (family === "vibraphone") return "vibraphone-bar";
+  if (family === "metallophone") return "metallophone-plate";
   if (family === "gong") return "gong-disc";
   if (family === "flute") return "flute-pipe";
   if (family === "mixed") {
-    const section = Math.floor(index / 12) % 8;
-    return familyPattern((["boomwhacker", "xylophone", "piano", "marimba", "pluck", "vibraphone", "gong", "flute"] as const)[section], index);
+    // Direct-call fallback. The normal course path resolves Mixed to one
+    // concrete family per phrase before this planner is called.
+    const section = Math.floor(index / 16) % 9;
+    return familyPattern((["piano", "xylophone", "marimba", "vibraphone", "boomwhacker", "pluck", "metallophone", "gong", "flute"] as const)[section], index);
   }
   return "instrument-key";
 }
 
 export function presetObstaclePlan(index: number, settings: StudioSettings): PresetObstaclePlan | null {
   if (settings.instrumentFamily !== "auto") {
-    const style = settings.instrumentLayout === "corridor" ? corridorPattern(index) : familyPattern(settings.instrumentFamily, index);
+    const style = familyPattern(settings.instrumentFamily, index);
     const layout = layoutScale(settings.instrumentLayout, index);
     const sectionLength = settings.instrumentLayout === "corridor" ? 8 : settings.instrumentLayout === "gallery" ? 10 : settings.instrumentLayout === "fan" ? 14 : 12;
     return {

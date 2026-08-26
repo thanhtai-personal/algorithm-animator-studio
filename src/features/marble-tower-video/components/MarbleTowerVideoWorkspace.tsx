@@ -140,7 +140,6 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
     </div>
     <audio
       ref={studio.audioElementRef}
-      src={playlist.audioSrc ?? undefined}
       preload="auto"
       onEnded={playlist.advance}
       className="hidden"

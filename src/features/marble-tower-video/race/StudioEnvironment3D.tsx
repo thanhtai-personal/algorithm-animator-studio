@@ -49,19 +49,19 @@ function WallAccents() {
   return (
     <group>
       {[-18, 0, 18].map((x) => (
-        <mesh key={`line-${x}`} position={[x, 6.5, 41.55]}>
+        <mesh key={`line-${x}`} position={[x, 6.5, 61.55]}>
           <planeGeometry args={[9, 0.34]} />
           <meshBasicMaterial color="#ffe670" toneMapped={false} />
         </mesh>
       ))}
       {[-18, 0, 18].map((x) => (
-        <mesh key={`line-v-${x}`} position={[x, 19, 41.55]}>
+        <mesh key={`line-v-${x}`} position={[x, 19, 61.55]}>
           <planeGeometry args={[9, 0.18]} />
           <meshBasicMaterial color="#6fe4ff" toneMapped={false} />
         </mesh>
       ))}
       {[-20, -6, 8, 22].map((z, index) => (
-        <mesh key={`left-accent-${z}`} position={[-33.55, 8 + index * 4.7, z]} rotation={[0, Math.PI / 2, 0]}>
+        <mesh key={`left-accent-${z}`} position={[-49.55, 8 + index * 4.7, z]} rotation={[0, Math.PI / 2, 0]}>
           <planeGeometry args={[8, 0.28]} />
           <meshBasicMaterial color={index % 2 ? '#ff95d8' : '#ffd98c'} toneMapped={false} />
         </mesh>
@@ -75,9 +75,9 @@ export function StudioEnvironment3D() {
   const graffitiB = useMemo(() => graffitiTexture(5), []);
   return (
     <group>
-      <color attach="background" args={['#d9e0e7']} />
-      <fog attach="fog" args={['#dde5eb', 55, 118]} />
-      <ambientLight intensity={0.72} />
+      <color attach="background" args={['#aeb9c3']} />
+      <fog attach="fog" args={['#b9c4cd', 62, 132]} />
+      <ambientLight intensity={0.58} />
       <directionalLight
         castShadow
         intensity={3}
@@ -94,38 +94,33 @@ export function StudioEnvironment3D() {
       </Environment>
 
       <mesh position={[0, -0.28, 12]} receiveShadow>
-        <boxGeometry args={[70, 0.5, 70]} />
+        <boxGeometry args={[96, 0.5, 96]} />
         <meshStandardMaterial color="#a4acb4" roughness={0.92} metalness={0.04} />
       </mesh>
       <mesh position={[0, -0.02, 12]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[61, 61]} />
+        <planeGeometry args={[88, 88]} />
         <meshStandardMaterial color="#c8d0d7" roughness={0.95} />
       </mesh>
-      <mesh position={[0, 18, 42]} receiveShadow>
-        <boxGeometry args={[70, 36, 0.5]} />
+      <mesh position={[0, 18, 62]} receiveShadow>
+        <boxGeometry args={[96, 36, 0.5]} />
         <meshStandardMaterial color="#c6d0da" roughness={0.84} />
       </mesh>
-      <mesh position={[-34, 18, 12]} receiveShadow>
-        <boxGeometry args={[0.5, 36, 62]} />
+      <mesh position={[-50, 18, 12]} receiveShadow>
+        <boxGeometry args={[0.5, 36, 96]} />
         <meshStandardMaterial color="#cdd6de" roughness={0.84} />
       </mesh>
-      <mesh position={[0, 36, 12]} receiveShadow>
-        <boxGeometry args={[70, 0.5, 62]} />
-        <meshStandardMaterial color="#b8c1cb" roughness={0.9} />
-      </mesh>
-
-      <mesh position={[0, 15, 41.65]}>
+      <mesh position={[0, 15, 61.65]}>
         <planeGeometry args={[27, 12]} />
         <meshStandardMaterial map={graffitiA} roughness={0.72} />
       </mesh>
-      <mesh position={[-33.65, 12, 13]} rotation={[0, Math.PI / 2, 0]}>
+      <mesh position={[-49.65, 12, 13]} rotation={[0, Math.PI / 2, 0]}>
         <planeGeometry args={[24, 10]} />
         <meshStandardMaterial map={graffitiB} roughness={0.72} />
       </mesh>
       <WallAccents />
 
       {[-24, -12, 0, 12, 24].map((x) => (
-        <group key={x} position={[x, 25, 41.2]}>
+        <group key={x} position={[x, 25, 61.2]}>
           <mesh>
             <boxGeometry args={[8, 13, 0.18]} />
             <meshBasicMaterial color="#f2f8ff" toneMapped={false} />
@@ -138,7 +133,7 @@ export function StudioEnvironment3D() {
       ))}
 
       {[-26, -13, 0, 13, 26].map((x) => (
-        <mesh key={x} position={[x, 18, 10]} castShadow>
+        <mesh key={x} position={[x, 18, 18]} castShadow>
           <boxGeometry args={[0.35, 36, 0.35]} />
           <meshStandardMaterial color="#7d8790" metalness={0.84} roughness={0.28} />
         </mesh>

@@ -27,7 +27,7 @@ function vec3(value: THREE.Vector3) {
 }
 
 export class RacePhysics {
-  readonly world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
+  readonly world = new CANNON.World({ gravity: new CANNON.Vec3(0, -14.2, 0) });
   readonly marbles = new Map<MarbleId, MarbleRuntime>();
   readonly pianoBodies: CANNON.Body[];
   readonly chimeBodies: CANNON.Body[];
@@ -68,7 +68,7 @@ export class RacePhysics {
     const trackMaterial = new CANNON.Material("track");
     const obstacleMaterial = new CANNON.Material("obstacle");
     this.world.addContactMaterial(new CANNON.ContactMaterial(marbleMaterial, trackMaterial, {
-      friction: 0.075,
+      friction: 0.035,
       restitution: 0.11,
       contactEquationStiffness: 1e8,
     }));
@@ -105,8 +105,8 @@ export class RacePhysics {
         material,
         shape: new CANNON.Sphere(MARBLE_RADIUS),
         position: vec3(start),
-        linearDamping: 0.022,
-        angularDamping: 0.012,
+        linearDamping: 0.006,
+        angularDamping: 0.004,
       });
       body.allowSleep = false;
       this.world.addBody(body);
@@ -176,7 +176,7 @@ export class RacePhysics {
   private launchMarbles() {
     for (const marble of this.marbles.values()) {
       const sample = COURSE_SAMPLES[Math.max(0, marble.progressIndex)];
-      const launchStrength = this.driveMultiplier * 1.18;
+      const launchStrength = this.driveMultiplier * 1.65;
       const impulse = sample.tangent.clone().multiplyScalar(launchStrength).addScaledVector(sample.normal, 0.12);
       marble.body.applyImpulse(vec3(impulse));
       marble.body.angularVelocity.set(0, 0, 0);
@@ -250,7 +250,7 @@ export class RacePhysics {
 
   private applyRollingDrag(marble: MarbleRuntime) {
     const speed = marble.body.velocity.length();
-    const softLimit = 7.6 + this.driveMultiplier * 1.2;
+    const softLimit = 12 + this.driveMultiplier * 1.45;
     if (speed <= softLimit) return;
     const factor = (speed - softLimit) * 0.22;
     marble.body.applyForce(new CANNON.Vec3(

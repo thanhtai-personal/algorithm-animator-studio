@@ -7,6 +7,12 @@ import { TrackMeshes3D } from "./TrackMeshes3D";
 import { ObstacleMeshes3D } from "./ObstacleMeshes3D";
 import { MarbleField3D } from "./MarbleField3D";
 import { RaceCamera3D } from "../camera/RaceCamera3D";
+import { OlympicRoadCamera3D } from "../camera/OlympicRoadCamera3D";
+import { OLYMPIC_ROAD_MAP_ID } from "../track/olympicRoadCourse";
+import type { RaceMapId } from "../track/raceCourse";
+import { OlympicRoadEnvironment3D } from "./OlympicRoadEnvironment3D";
+import { OlympicRoadTrack3D } from "./OlympicRoadTrack3D";
+import { OlympicRoadObstacles3D } from "./OlympicRoadObstacles3D";
 import type { RaceResult } from "./raceTypes";
 import type { MarbleImpactKind } from "../physics/MarbleInteractionSystem";
 
@@ -14,7 +20,6 @@ function Runtime({ physics, playing, playbackToken, playbackStartMs, playbackEnd
   physics: RacePhysics;
   playing: boolean;
   playbackToken: number;
-  physicsRevision: number;
   playbackStartMs: number;
   playbackEndMs: number;
   durationMs: number;
@@ -55,6 +60,7 @@ function Runtime({ physics, playing, playbackToken, playbackStartMs, playbackEnd
 }
 
 export function RaceScene3D(props: {
+  mapId: RaceMapId;
   driveMultiplier: number;
   marbleCount: number;
   playing: boolean;
@@ -73,11 +79,13 @@ export function RaceScene3D(props: {
   canvasRef: MutableRefObject<HTMLCanvasElement | null>;
 }) {
   const physics = useMemo(
-    () => new RacePhysics(props.onComplete ?? (() => undefined), props.driveMultiplier, props.onImpactSound, props.marbleCount),
-    [props.marbleCount, props.physicsRevision],
+    () => new RacePhysics(props.onComplete ?? (() => undefined), props.driveMultiplier, props.onImpactSound, props.marbleCount, props.mapId),
+    [props.mapId, props.marbleCount, props.physicsRevision],
   );
   useEffect(() => { physics.setDriveMultiplier(props.driveMultiplier); }, [physics, props.driveMultiplier]);
   useEffect(() => { props.onReady?.(physics); return () => physics.dispose(); }, [physics, props.onReady]);
+
+  const olympicRoad = props.mapId === OLYMPIC_ROAD_MAP_ID;
 
   return <Canvas
     dpr={props.recording ? 1 : [1, 1.35]}
@@ -94,9 +102,9 @@ export function RaceScene3D(props: {
     }}
   >
     <Suspense fallback={null}>
-      <StudioEnvironment3D />
-      <TrackMeshes3D physics={physics} />
-      <ObstacleMeshes3D physics={physics} />
+      {olympicRoad ? <OlympicRoadEnvironment3D /> : <StudioEnvironment3D />}
+      {olympicRoad ? <OlympicRoadTrack3D physics={physics} /> : <TrackMeshes3D physics={physics} />}
+      {olympicRoad ? <OlympicRoadObstacles3D physics={physics} /> : <ObstacleMeshes3D physics={physics} />}
       <MarbleField3D physics={physics} />
       <Runtime
         physics={physics}
@@ -109,7 +117,7 @@ export function RaceScene3D(props: {
         onTime={props.onTime}
         onEnded={props.onEnded}
       />
-      <RaceCamera3D physics={physics} />
+      {olympicRoad ? <OlympicRoadCamera3D physics={physics} /> : <RaceCamera3D physics={physics} />}
     </Suspense>
   </Canvas>;
 }

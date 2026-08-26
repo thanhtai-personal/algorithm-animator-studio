@@ -1,9 +1,9 @@
 import * as CANNON from "cannon-es";
 import type { MarbleId } from "../marble/marbleCatalog";
-import { COURSE_SAMPLES } from "../track/towerCourseSampler";
+import { COURSE_SAMPLES, type CourseSample } from "../track/towerCourseSampler";
 import type { MarbleRuntime } from "./physicsTypes";
 
-export type MarbleImpactKind = "wall" | "obstacle" | "obstacle-strike" | "marble" | "instrument";
+export type MarbleImpactKind = "wall" | "obstacle" | "obstacle-strike" | "marble" | "instrument" | "roll";
 export type MarbleImpactSound = (kind: MarbleImpactKind, strength: number, pan: number, variant?: number) => void;
 
 export type CollideEvent = {
@@ -41,6 +41,7 @@ export class MarbleInteractionSystem {
     private isRaceActive: () => boolean,
     private onImpactSound?: MarbleImpactSound,
     marbleRadius = 0.48,
+    private courseSamples: readonly CourseSample[] = COURSE_SAMPLES,
   ) {
     this.magneticRadius = marbleRadius * 2.55;
   }
@@ -165,7 +166,7 @@ export class MarbleInteractionSystem {
 
   private isSideWallContact(runtime: MarbleRuntime, contact?: CANNON.ContactEquation) {
     if (!contact) return false;
-    const sample = COURSE_SAMPLES[Math.max(0, Math.min(runtime.progressIndex, COURSE_SAMPLES.length - 1))];
+    const sample = this.courseSamples[Math.max(0, Math.min(runtime.progressIndex, this.courseSamples.length - 1))];
     const normal = contact.ni;
     const alignment = Math.abs(normal.x * sample.normal.x + normal.y * sample.normal.y + normal.z * sample.normal.z);
     return alignment < 0.58;

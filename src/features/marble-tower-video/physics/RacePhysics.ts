@@ -2,20 +2,10 @@ import * as CANNON from "cannon-es";
 import { raceSessionStore } from "../store/RaceSessionStore";
 import { createMarbleRoster, type MarbleConfig, type MarbleId } from "../marble/marbleCatalog";
 import { marbleStartGrid, normalizeMarbleCount } from "../marble/marbleGrid";
-import { COURSE_SAMPLES, nearestSampleIndex } from "../track/towerCourseSampler";
-import { CUTS, SPECIALS, TRACK_WIDTH } from "../track/towerCourse";
+import { nearestSampleIndexIn } from "../track/towerCourseSampler";
+import { ORIGINAL_TOWER_COURSE, raceCourseForMap, type RaceMapId } from "../track/raceCourse";
 import { pianoPadAt } from "../track/pianoPadLayout";
-import {
-  buildTrackBodies,
-  createBarrier,
-  createChimeBumpers,
-  createPianoBodies,
-  createSpinner,
-  createStudioStructureBodies,
-  createSupportBodies,
-  createStartGridBody,
-  spawnPoint,
-} from "./buildTowerCoursePhysics";
+import { buildTrackBodies, createBarrier, createChimeBumpers, createPianoBodies, createSpinner, createStudioStructureBodies, createSupportBodies, createStartGridBody, spawnPoint } from "./buildTowerCoursePhysics";
 import type { MarbleRuntime } from "./physicsTypes";
 import { impactVelocity, MarbleInteractionSystem, type MarbleImpactSound } from "./MarbleInteractionSystem";
 import { chimeBounceImpulse, jumpImpulse, launchImpulse, pianoBoostImpulse, recoveryImpulse } from "./marbleForces";
@@ -50,6 +40,7 @@ export class RacePhysics {
   private bodyToMarble = new Map<number, MarbleRuntime>();
   private interactions: MarbleInteractionSystem;
   private onImpactSound?: MarbleImpactSound;
+  readonly course: ReturnType<typeof raceCourseForMap>;
   private totalTime = 0;
   private raceTime = 0;
   private beatIndex = -1;
@@ -69,12 +60,12 @@ export class RacePhysics {
   private courseObjects = new CourseObjectLifecycle();
   private fixedStep = DEFAULT_FIXED_STEP;
   private maxSubSteps = 10;
+  private rollingSoundTimer = 0;
   constructor(
-    private onComplete: (result: RaceResult) => void,
-    driveMultiplier = 7.25,
-    onImpactSound?: MarbleImpactSound,
-    marbleCount = 16,
+    private onComplete: (result: RaceResult) => void, driveMultiplier = 8.25, onImpactSound?: MarbleImpactSound,
+    marbleCount = 16, mapId: RaceMapId = ORIGINAL_TOWER_COURSE.id,
   ) {
+    this.course = raceCourseForMap(mapId);
     this.driveMultiplier = Math.max(DRIVE_MIN, Math.min(DRIVE_MAX, driveMultiplier));
     this.onImpactSound = onImpactSound;
     this.marbleCount = normalizeMarbleCount(marbleCount);
@@ -93,42 +84,44 @@ export class RacePhysics {
     this.world.solver = solver;
     const materials = createRaceMaterials(this.world);
     this.interactions = new MarbleInteractionSystem(
-      this.bodyToMarble,
-      materials.track,
-      materials.obstacle,
-      () => this.opened && !this.completed,
-      onImpactSound,
-      this.marbleRadius,
+      this.bodyToMarble, materials.track, materials.obstacle, () => this.opened && !this.completed,
+      onImpactSound, this.marbleRadius, this.course.samples,
     );
-    buildTrackBodies(this.world, materials.track);
-    createStartGridBody(this.world, materials.track, this.marbleCount);
-    this.supportBodies = createSupportBodies(this.world, materials.obstacle);
-    this.studioStructureBodies = createStudioStructureBodies(this.world, materials.obstacle);
+    buildTrackBodies(this.world, materials.track, this.course.samples, this.course.trackWidth);
+    createStartGridBody(this.world, materials.track, this.marbleCount, this.course.samples, this.course.trackWidth);
+    this.supportBodies = createSupportBodies(this.world, materials.obstacle, this.course.samples);
+    this.studioStructureBodies = this.course.studioCollision ? createStudioStructureBodies(this.world, materials.obstacle) : [];
     this.createMarbles(materials.marble);
-    this.startGate = createBarrier(this.world, materials.obstacle, SPECIALS.startGate, 0.8);
-    this.spinnerA = createSpinner(this.world, materials.obstacle, SPECIALS.spinnerA, 2.25);
-    this.spinnerB = createSpinner(this.world, materials.obstacle, SPECIALS.spinnerB, -1.95);
-    this.finalCross = createSpinner(this.world, materials.obstacle, SPECIALS.finalCross, 2.5);
-    this.finalCross.body.addShape(new CANNON.Box(new CANNON.Vec3(0.17, 0.14, TRACK_WIDTH * 0.43)));
-    this.chimeBodies = createChimeBumpers(this.world, materials.chime, (index, body, contact) => this.chimeHit(index, body, contact));
-    this.pianoBodies = createPianoBodies(this.world, materials.piano, (index, body, contact) => this.pianoHit(index, body, contact));
+    const { samples, specials, trackWidth } = this.course;
+    this.startGate = createBarrier(this.world, materials.obstacle, specials.startGate, 0.8, samples, trackWidth);
+    this.spinnerA = createSpinner(this.world, materials.obstacle, specials.spinnerA, 2.25, samples, trackWidth);
+    this.spinnerB = createSpinner(this.world, materials.obstacle, specials.spinnerB, -1.95, samples, trackWidth);
+    this.finalCross = createSpinner(this.world, materials.obstacle, specials.finalCross, 2.5, samples, trackWidth);
+    this.finalCross.body.addShape(new CANNON.Box(new CANNON.Vec3(0.17, 0.14, trackWidth * 0.43)));
+    this.chimeBodies = this.course.towerInstruments ? createChimeBumpers(
+      this.world, materials.chime, (index, body, contact) => this.chimeHit(index, body, contact), samples, specials,
+    ) : [];
+    this.pianoBodies = this.course.towerInstruments ? createPianoBodies(
+      this.world, materials.piano, (index, body, contact) => this.pianoHit(index, body, contact), samples,
+    ) : [];
     this.registerCourseObjects();
     this.publishSnapshot();
   }
   private registerCourseObjects() {
     this.courseObjects.register("start-gate", 0.05, [this.startGate]);
-    this.courseObjects.register("spinner-a", SPECIALS.spinnerA + 0.025, [this.spinnerA.body]);
-    this.courseObjects.register("spinner-b", SPECIALS.spinnerB + 0.025, [this.spinnerB.body]);
-    this.courseObjects.register("chimes", SPECIALS.chimeEnd, this.chimeBodies);
-    this.courseObjects.register("piano", SPECIALS.pianoEnd, this.pianoBodies);
-    this.courseObjects.register("final-cross", SPECIALS.finalCross + 0.025, [this.finalCross.body]);
+    const { specials } = this.course;
+    this.courseObjects.register("spinner-a", specials.spinnerA + 0.025, [this.spinnerA.body]);
+    this.courseObjects.register("spinner-b", specials.spinnerB + 0.025, [this.spinnerB.body]);
+    this.courseObjects.register("chimes", specials.chimeEnd, this.chimeBodies);
+    this.courseObjects.register("piano", specials.pianoEnd, this.pianoBodies);
+    this.courseObjects.register("final-cross", specials.finalCross + 0.025, [this.finalCross.body]);
   }
   setDriveMultiplier(value: number) {
     this.driveMultiplier = Math.max(DRIVE_MIN, Math.min(DRIVE_MAX, value));
   }
   private createMarbles(material: CANNON.Material) {
     this.roster.forEach((marble, index) => {
-      const start = spawnPoint(index, this.marbleCount, this.marbleRadius);
+      const start = spawnPoint(index, this.marbleCount, this.marbleRadius, this.course.samples);
       const body = new CANNON.Body({
         mass: MARBLE_MASS,
         material,
@@ -156,7 +149,7 @@ export class RacePhysics {
       this.interactions.bindMarble(runtime);
     });
   }
-  step(delta: number) {
+  step(delta: number, emitRollingSound = true) {
     if (this.completed) return;
     const dt = Math.min(0.05, Math.max(0, delta));
     this.totalTime += dt;
@@ -166,6 +159,7 @@ export class RacePhysics {
     this.interactions.setTime(this.raceTime);
     if (this.opened) this.interactions.applyMagneticField(this.marbles.values());
     this.world.step(this.fixedStep, dt, this.maxSubSteps);
+    if (this.opened && emitRollingSound) this.updateRollingSound(dt);
     if (this.winnerId && this.winnerAnchor) {
       const winner = this.marbles.get(this.winnerId);
       if (winner) holdWinnerAtFinish(winner, this.winnerAnchor);
@@ -186,12 +180,13 @@ export class RacePhysics {
   }
   advanceTo(targetSeconds: number) {
     const target = Math.max(0, targetSeconds);
+    const emitRollingSound = target - this.totalTime < 0.25;
     let guard = 0;
     while (!this.completed && this.totalTime + this.fixedStep < target && guard < 36000) {
-      this.step(this.fixedStep);
+      this.step(this.fixedStep, emitRollingSound);
       guard += 1;
     }
-    if (!this.completed && this.totalTime < target) this.step(target - this.totalTime);
+    if (!this.completed && this.totalTime < target) this.step(target - this.totalTime, emitRollingSound);
   }
   releaseStart() {
     if (this.opened || this.totalTime < VIDEO_COUNTDOWN_SECONDS) return false;
@@ -207,7 +202,7 @@ export class RacePhysics {
   }
   private launchMarbles() {
     for (const marble of this.marbles.values()) {
-      const sample = COURSE_SAMPLES[Math.max(0, marble.progressIndex)];
+      const sample = this.course.samples[Math.max(0, marble.progressIndex)];
       marble.body.applyImpulse(vec3(launchImpulse(sample, MARBLE_MASS, this.driveMultiplier)));
       marble.body.angularVelocity.set(0, 0, 0);
     }
@@ -223,7 +218,7 @@ export class RacePhysics {
   private retirePassedCourseObjects() {
     const progress = [...this.marbles.values()]
       .filter((marble) => marble.alive)
-      .map((marble) => marble.progressIndex / (COURSE_SAMPLES.length - 1));
+      .map((marble) => marble.progressIndex / (this.course.samples.length - 1));
     this.courseObjects.update(progress, Math.max(0, ...progress), this.world);
   }
   private updateRace(dt: number) {
@@ -231,18 +226,18 @@ export class RacePhysics {
       if (!marble.alive || marble.id === this.winnerId) continue;
       const body = marble.body;
       const previous = marble.progressIndex;
-      marble.progressIndex = nearestSampleIndex(body.position, marble.progressIndex);
-      const progress = marble.progressIndex / (COURSE_SAMPLES.length - 1);
-      const sample = COURSE_SAMPLES[marble.progressIndex];
+      marble.progressIndex = nearestSampleIndexIn(this.course.samples, body.position, marble.progressIndex);
+      const progress = marble.progressIndex / (this.course.samples.length - 1);
+      const sample = this.course.samples[marble.progressIndex];
       const dx = body.position.x - sample.point.x;
       const dy = body.position.y - sample.point.y;
       const dz = body.position.z - sample.point.z;
       const distanceSq = dx * dx + dy * dy + dz * dz;
       if (body.position.y < -8 || distanceSq > 90) {
-        recoverMarbleToCourse(marble, sample, this.marbleRadius);
+        recoverMarbleToCourse(marble, sample, this.marbleRadius, this.course.trackWidth);
         continue;
       }
-      if (!marble.hitJump && progress >= SPECIALS.jump) {
+      if (!marble.hitJump && progress >= this.course.specials.jump) {
         marble.hitJump = true;
         body.applyImpulse(vec3(jumpImpulse(sample, MARBLE_MASS, this.driveMultiplier)));
         if (marble === this.getLeader()) raceSessionStore.flash("SKY JUMP!");
@@ -266,30 +261,28 @@ export class RacePhysics {
     // behind the leader or currently outside the camera view.
     const leader = this.getLeader();
     if (!leader) return;
-    const leaderProgress = leader.progressIndex / (COURSE_SAMPLES.length - 1);
-    CUTS.forEach((cut, cutIndex) => {
+    const leaderProgress = leader.progressIndex / (this.course.samples.length - 1);
+    this.course.cuts.forEach((cut, cutIndex) => {
       if (this.resolvedCuts.has(cutIndex) || leaderProgress < cut.progress) return;
       this.resolvedCuts.add(cutIndex);
       raceSessionStore.flash(cut.label);
     });
   }
-
   private resolveFinish() {
     if (this.winnerId) return;
     const leader = this.getLeader();
     if (!leader) return;
-    const progress = leader.progressIndex / (COURSE_SAMPLES.length - 1);
-    if (progress < SPECIALS.finish) return;
+    const progress = leader.progressIndex / (this.course.samples.length - 1);
+    if (progress < this.course.specials.finish) return;
     this.winnerId = leader.id;
     this.winnerTime = this.raceTime;
     leader.finalPosition = 1;
-    this.winnerAnchor = freezeWinnerAtFinish(leader, this.marbleRadius);
+    this.winnerAnchor = freezeWinnerAtFinish(leader, this.marbleRadius, this.course.samples, this.course.specials.finish);
     const finalists = this.getRanked().filter((marble) => marble.alive && marble.id !== leader.id);
     finalists.forEach((marble, index) => { marble.finalPosition = 2 + index; });
     raceSessionStore.flash(`${leader.id.toUpperCase()} WINS!`);
     this.finishDelay = 1.45;
   }
-
   private completeRace() {
     if (this.completed || !this.winnerId) return;
     this.completed = true;
@@ -310,8 +303,7 @@ export class RacePhysics {
     const previous = this.instrumentSoundAt.get(key) ?? -Infinity;
     if (this.raceTime - previous < 0.16) return;
     this.instrumentSoundAt.set(key, this.raceTime);
-
-    const sample = COURSE_SAMPLES[Math.max(0, marble.progressIndex)];
+    const sample = this.course.samples[Math.max(0, marble.progressIndex)];
     body.applyImpulse(vec3(chimeBounceImpulse(sample, body, this.chimeBodies[index].position, MARBLE_MASS, index)));
   }
 
@@ -327,7 +319,7 @@ export class RacePhysics {
     this.pianoCombo = now - this.lastPianoAt < 0.8 ? this.pianoCombo + 1 : 1;
     this.lastPianoAt = now;
     this.instrumentHit(index, body, contact);
-    const sample = COURSE_SAMPLES[marble.progressIndex];
+    const sample = this.course.samples[marble.progressIndex];
     const pad = pianoPadAt(index);
     body.applyImpulse(vec3(pianoBoostImpulse(sample, MARBLE_MASS, pad.boostDeltaV)));
   }
@@ -342,6 +334,18 @@ export class RacePhysics {
     const pan = Math.max(-1, Math.min(1, body.position.x / 22));
     this.onImpactSound("instrument", Math.min(18, strength), pan, index);
   }
+  private updateRollingSound(dt: number) {
+    if (!this.onImpactSound || this.completed) return;
+    this.rollingSoundTimer += dt;
+    if (this.rollingSoundTimer < 1 / 14.5) return;
+    this.rollingSoundTimer %= 1 / 14.5;
+    const pack = this.getRanked().filter((marble) => marble.alive).slice(0, 6);
+    if (!pack.length) return;
+    const speed = pack.reduce((sum, marble) => sum + marble.body.velocity.length(), 0) / pack.length;
+    const x = pack.reduce((sum, marble) => sum + marble.body.position.x, 0) / pack.length;
+    const density = Math.min(1, 0.45 + pack.length * 0.09);
+    this.onImpactSound("roll", speed * density, Math.max(-0.9, Math.min(0.9, x / 22)), pack.length);
+  }
   getRanked() {
     return [...this.marbles.values()].sort((a, b) => {
       if (a.alive !== b.alive) return a.alive ? -1 : 1;
@@ -349,30 +353,20 @@ export class RacePhysics {
       return b.progressIndex - a.progressIndex;
     });
   }
-  getLeader() {
-    return this.getRanked().find((marble) => marble.alive) ?? null;
-  }
-  pianoGlow(index: number) {
-    return this.pianoFlashUntil[index] > this.raceTime;
-  }
+  getLeader() { return this.getRanked().find((marble) => marble.alive) ?? null; }
+  pianoGlow(index: number) { return this.pianoFlashUntil[index] > this.raceTime; }
   courseObjectVisible(id: CourseObjectId) { return this.courseObjects.isVisible(id); }
   setCourseObjectInView(id: CourseObjectId, inView: boolean) { this.courseObjects.setInView(id, inView); }
   pianoTrail(id: MarbleId) { return pianoTrailStrength(this.marbles.get(id)?.pianoTrailUntil ?? -1, this.raceTime); }
-  getMarble(id: MarbleId) {
-    return this.marbles.get(id) ?? null;
-  }
-  getTimelineSeconds() {
-    return this.totalTime;
-  }
-  hasStarted() {
-    return this.opened;
-  }
+  getMarble(id: MarbleId) { return this.marbles.get(id) ?? null; }
+  getTimelineSeconds() { return this.totalTime; }
+  hasStarted() { return this.opened; }
   private publishSnapshot() {
     const ranked = this.getRanked();
     const leader = this.getLeader();
-    const leaderProgress = leader ? leader.progressIndex / (COURSE_SAMPLES.length - 1) : 0;
-    const section = COURSE_SAMPLES[Math.round(leaderProgress * (COURSE_SAMPLES.length - 1))]?.section.label ?? "FINISH";
-    const nextCut = CUTS.find((_, index) => !this.resolvedCuts.has(index));
+    const leaderProgress = leader ? leader.progressIndex / (this.course.samples.length - 1) : 0;
+    const section = this.course.samples[Math.round(leaderProgress * (this.course.samples.length - 1))]?.section.label ?? "FINISH";
+    const nextCut = this.course.cuts.find((_, index) => !this.resolvedCuts.has(index));
     raceSessionStore.apply({
       phase: this.completed ? "finished" : this.opened ? "racing" : "countdown",
       countdown: this.opened ? 0 : Math.max(0, Math.ceil(VIDEO_COUNTDOWN_SECONDS - this.totalTime)),
@@ -386,7 +380,7 @@ export class RacePhysics {
         id: marble.id,
         position: marble.alive ? index + 1 : marble.finalPosition ?? index + 1,
         alive: marble.alive,
-        progress: marble.progressIndex / (COURSE_SAMPLES.length - 1),
+        progress: marble.progressIndex / (this.course.samples.length - 1),
       })),
     });
   }

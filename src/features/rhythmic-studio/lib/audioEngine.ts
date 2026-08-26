@@ -1,4 +1,5 @@
 import type { MidiInstrumentMode, NoteEvent, SynthPreset } from "../types";
+import { MarbleRollingAudio } from "./marbleRollingAudio";
 import {
   cleanMusicGain,
   COLLISION_VOICE_GAIN,
@@ -22,7 +23,7 @@ interface MidiScheduleOptions {
   presetForEvent?: (event: NoteEvent, index: number) => SynthPreset;
 }
 
-export type MarbleImpactSoundKind = "wall" | "obstacle" | "obstacle-strike" | "marble" | "instrument";
+export type MarbleImpactSoundKind = "wall" | "obstacle" | "obstacle-strike" | "marble" | "instrument" | "roll";
 
 let runtimeOutputBoost = 1;
 let runtimeSfxBoost = 1;
@@ -80,6 +81,7 @@ export class AudioEngine {
   private sfxVolume = DEFAULT_COLLISION_VOLUME;
   private reverbAmount = 0.22;
   private warmedVoices = new Set<SynthPreset>();
+  private rollingAudio = new MarbleRollingAudio();
 
   constructor() {
     activeAudioEngine = this;
@@ -230,6 +232,10 @@ export class AudioEngine {
   async playMarbleImpact(kind: MarbleImpactSoundKind, strength: number, pan = 0, variant = 0) {
     const context = await this.ensure();
     if (!this.sfxInput) return;
+    if (kind === "roll") {
+      this.rollingAudio.play(context, this.sfxInput, strength, pan);
+      return;
+    }
     const intensity = Math.max(0, Math.min(1, (strength - 0.18) / 12.5));
     if (intensity <= 0.005) return;
 

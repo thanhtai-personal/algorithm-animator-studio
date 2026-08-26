@@ -8,7 +8,7 @@ export function createRaceMaterials(world: CANNON.World) {
   const piano = new CANNON.Material("piano");
 
   world.addContactMaterial(new CANNON.ContactMaterial(marble, track, {
-    friction: 0.035,
+    friction: 0.022,
     restitution: 0.08,
     contactEquationStiffness: 1e8,
   }));

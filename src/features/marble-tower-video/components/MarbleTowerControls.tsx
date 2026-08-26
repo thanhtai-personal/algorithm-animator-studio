@@ -1,14 +1,17 @@
 import { useRef } from "react";
-import { FileAudio2, FileMusic, Rocket, Users } from "lucide-react";
+import { FileAudio2, FileMusic, Map, Rocket, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import type { RhythmicStudioController } from "@/features/rhythmic-studio/hooks/useRhythmicStudioController";
 import type { MarbleTowerPlaylistTrack } from "../hooks/useMarbleTowerPlaylist";
+import { RACE_MAPS, type RaceMapId } from "../track/raceCourse";
 
 export function MarbleTowerControls({
   studio,
+  mapId,
+  onMapChange,
   driveMultiplier,
   onDriveChange,
   marbleCount,
@@ -19,6 +22,8 @@ export function MarbleTowerControls({
   onSelectTrack,
 }: {
   studio: RhythmicStudioController;
+  mapId: RaceMapId;
+  onMapChange: (mapId: RaceMapId) => void;
   driveMultiplier: number;
   onDriveChange: (value: number) => void;
   marbleCount: number;
@@ -87,6 +92,27 @@ export function MarbleTowerControls({
             Chưa có nhạc. Chọn nhiều file audio để tạo playlist hoặc chọn một file MIDI.
           </div>
         )}
+      </section>
+
+      <section className="rounded-xl border bg-card/60 p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <Map className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold">Bản đồ cuộc đua</h2>
+        </div>
+        <div className="grid gap-2">
+          {RACE_MAPS.map((map) => (
+            <button
+              key={map.id}
+              type="button"
+              disabled={sourceLocked}
+              onClick={() => onMapChange(map.id)}
+              className={`rounded-lg border px-3 py-2 text-left transition ${mapId === map.id ? "border-primary bg-primary/10" : "bg-background/35 hover:bg-muted/50"}`}
+            >
+              <b className="block text-xs">{map.label}</b>
+              <span className="mt-1 block text-[11px] leading-relaxed text-muted-foreground">{map.description}</span>
+            </button>
+          ))}
+        </div>
       </section>
 
       <section className="rounded-xl border bg-card/60 p-4">

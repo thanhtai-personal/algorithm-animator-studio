@@ -9,15 +9,20 @@ export function vec3(value: THREE.Vector3) {
   return new CANNON.Vec3(value.x, value.y, value.z);
 }
 
-export function recoverMarbleToCourse(marble: MarbleRuntime, sample: CourseSample, marbleRadius: number) {
+export function recoverMarbleToCourse(
+  marble: MarbleRuntime,
+  sample: CourseSample,
+  marbleRadius: number,
+  trackWidth = TRACK_WIDTH,
+) {
   const body = marble.body;
   const dx = body.position.x - sample.point.x;
   const dy = body.position.y - sample.point.y;
   const dz = body.position.z - sample.point.z;
   const lateral = THREE.MathUtils.clamp(
     dx * sample.right.x + dy * sample.right.y + dz * sample.right.z,
-    -TRACK_WIDTH * 0.32,
-    TRACK_WIDTH * 0.32,
+    -trackWidth * 0.32,
+    trackWidth * 0.32,
   );
   const safePoint = sample.point.clone()
     .addScaledVector(sample.right, lateral)
@@ -38,13 +43,18 @@ export function recoverMarbleToCourse(marble: MarbleRuntime, sample: CourseSampl
   marble.stuckFor = 0;
 }
 
-export function freezeWinnerAtFinish(winner: MarbleRuntime, marbleRadius: number) {
-  const finishIndex = Math.round(SPECIALS.finish * (COURSE_SAMPLES.length - 1));
-  const finish = COURSE_SAMPLES[finishIndex];
+export function freezeWinnerAtFinish(
+  winner: MarbleRuntime,
+  marbleRadius: number,
+  samples: readonly CourseSample[] = COURSE_SAMPLES,
+  finishProgress: number = SPECIALS.finish,
+) {
+  const finishIndex = Math.round(finishProgress * (samples.length - 1));
+  const finish = samples[finishIndex];
   const anchor = vec3(finish.point.clone().addScaledVector(finish.normal, marbleRadius + 0.2));
 
   winner.progressIndex = finishIndex;
-  winner.previousProgress = SPECIALS.finish;
+  winner.previousProgress = finishProgress;
   winner.body.type = CANNON.Body.KINEMATIC;
   winner.body.collisionResponse = false;
   winner.body.collisionFilterMask = 0;

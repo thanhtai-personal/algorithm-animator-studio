@@ -30,7 +30,7 @@ export function AppLayout({ children }: PropsWithChildren) {
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>(readResponsiveSidebarMode);
   const [fantasticMode] = useFantasticMode();
   const [chillModeEnabled, setChillModeEnabled] = useState(() => readChillModeEnabled());
-  const rhythmicStudioActive = location.pathname.startsWith("/algorithms/rhythmic");
+  const rhythmicStudioActive = location.pathname.startsWith("/algorithms/rhythmic") || location.pathname.startsWith("/algorithms/marble-tower");
   const fantasticVisualsEnabled = fantasticMode && !rhythmicStudioActive;
 
   useEffect(() => subscribeSystemLang(setLang), []);

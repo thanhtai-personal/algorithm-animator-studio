@@ -8,6 +8,7 @@ import {
   ListChecks,
   Map,
   Music2,
+  Trophy,
   MicVocal,
   Newspaper,
   PenLine,
@@ -57,6 +58,14 @@ export const APP_NAVIGATION_GROUPS: AppNavigationGroup[] = [
         icon: Music2,
         label: { en: "Rhythmic Studio", vi: "Video nhịp điệu" },
         matchPaths: ["/algorithms/rhythmic"],
+      },
+      {
+        id: "marble-tower-video",
+        featureId: "rhythmic-studio",
+        to: "/algorithms/marble-tower",
+        icon: Trophy,
+        label: { en: "Marble Tower Video", vi: "Video đua bi tháp" },
+        matchPaths: ["/algorithms/marble-tower"],
       },
       {
         id: "maze-pathfinding",

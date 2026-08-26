@@ -145,6 +145,11 @@ export class RacePhysics {
     if (this.totalTime >= VIDEO_COUNTDOWN_SECONDS) {
       if (!this.opened) {
         this.opened = true;
+        // Release the physics gate immediately at GO. Its mesh can keep rising
+        // for visual feedback, but the marbles must not receive their launch
+        // impulse while the still-low kinematic box is blocking the lane.
+        this.obstacles.startGate.collisionResponse = false;
+        this.obstacles.startGate.collisionFilterMask = 0;
         raceSessionStore.flash("GO!");
         this.marbles.forEach((marble) => marble.body.applyImpulse(new CANNON.Vec3(0, 0.08, 1.5 * this.driveMultiplier)));
       }

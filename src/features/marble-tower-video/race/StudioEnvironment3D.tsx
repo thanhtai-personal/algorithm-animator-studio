@@ -90,8 +90,8 @@ export function StudioEnvironment3D() {
         intensity={3}
         color="#fff5e4"
         position={[-18, 46, -20]}
-        shadow-mapSize-width={1536}
-        shadow-mapSize-height={1536}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
         shadow-camera-far={100}
       />
       <pointLight position={[18, 22, 10]} intensity={80} distance={48} color="#d8eeff" />

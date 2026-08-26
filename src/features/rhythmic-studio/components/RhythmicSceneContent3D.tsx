@@ -28,13 +28,33 @@ import { emitDueRhythmicHits } from "../lib/chaseAudioScheduler";
 import { settingsForChaseOwner } from "../engine/chaseCoursePlanner";
 
 function RendererQuality({ recording, shadowsEnabled, exportFps }: { recording: boolean; shadowsEnabled: boolean; exportFps: number }) {
-  const { gl } = useThree();
+  const { gl, invalidate } = useThree();
+  const shadowElapsedRef = useRef(0);
   useEffect(() => {
     const profile = rhythmicRecordingRenderProfile(exportFps);
-    gl.transmissionResolutionScale = recording ? profile.transmissionResolutionScale : 0.72;
+    gl.transmissionResolutionScale = recording ? profile.transmissionResolutionScale : 0.68;
     gl.shadowMap.enabled = shadowsEnabled;
+    // Shadow maps are one of the most expensive passes in this scene. The
+    // instruments/marble still animate at display FPS, while the shadow pass is
+    // refreshed at a visually-smooth capped rate instead of every frame.
+    gl.shadowMap.autoUpdate = false;
     gl.shadowMap.needsUpdate = shadowsEnabled;
-  }, [exportFps, gl, recording, shadowsEnabled]);
+    shadowElapsedRef.current = 0;
+    invalidate();
+    return () => {
+      gl.shadowMap.autoUpdate = true;
+    };
+  }, [exportFps, gl, invalidate, recording, shadowsEnabled]);
+
+  useFrame((_, delta) => {
+    if (!shadowsEnabled) return;
+    shadowElapsedRef.current += Math.min(0.1, delta);
+    const shadowFps = recording ? Math.min(30, Math.max(20, exportFps)) : 24;
+    const interval = 1 / shadowFps;
+    if (shadowElapsedRef.current < interval) return;
+    shadowElapsedRef.current %= interval;
+    gl.shadowMap.needsUpdate = true;
+  }, -20);
   return null;
 }
 
@@ -115,7 +135,7 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     if (
       snapCamera
       || sample.platformIndex !== previousImpact.index
-      || (impactNow - lastImpactRenderRef.current >= 32 && Math.abs(impactStrength - previousImpact.strength) >= 0.045)
+      || (impactNow - lastImpactRenderRef.current >= 56 && Math.abs(impactStrength - previousImpact.strength) >= 0.075)
       || (impactStrength === 0 && previousImpact.strength > 0)
     ) {
       const nextImpact = { index: sample.platformIndex, strength: impactStrength };
@@ -220,8 +240,11 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
       isShowcase ? 35 : isComet ? 35.5 : isXylophone ? 34 : 34.5,
       isShowcase ? 41.5 : isComet ? 43.2 : isXylophone ? 39.8 : 40.8,
     );
-    perspective.fov = snapCamera ? targetFov : THREE.MathUtils.damp(perspective.fov, targetFov, 6.2, deltaSeconds);
-    perspective.updateProjectionMatrix();
+    const nextFov = snapCamera ? targetFov : THREE.MathUtils.damp(perspective.fov, targetFov, 6.2, deltaSeconds);
+    if (Math.abs(nextFov - perspective.fov) > 0.015) {
+      perspective.fov = nextFov;
+      perspective.updateProjectionMatrix();
+    }
     const bankStrength = rollingSurface ? 0.0007 : isShowcase ? 0.0012 : isXylophone ? 0.0022 : isTubeBoard ? 0.0028 : 0.0042;
     const bankLimit = rollingSurface ? 0.006 : isShowcase ? 0.008 : isXylophone ? 0.014 : isTubeBoard ? 0.018 : 0.028;
     const bankTarget = THREE.MathUtils.clamp(-velocity.x * bankStrength, -bankLimit, bankLimit);
@@ -284,7 +307,7 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     <RhythmicLightingRig3D settings={props.settings} focus={smoothedLook} bounds={backdropBounds} recording={props.recording} />
     <RhythmicEnvironment3D settings={props.settings} backgroundUrl={props.backgroundUrl} bounds={backdropBounds} />
     <RhythmicCourseItems3D platforms={props.platforms} overrides={props.courseOverrides} settings={props.settings} focusIndex={focusIndex} events={props.events} resolveSettings={props.resolveSettings} />
-    <RhythmicPlatformField3D platforms={props.platforms} settings={props.settings} courseOverrides={props.courseOverrides} focusIndex={focusIndex} selectedNodeIndex={props.selectedNodeIndex} onSelectNode={props.onSelectNode} resolveSettings={props.resolveSettings} impactIndex={impactLight.index} impactStrength={impactLight.strength} timeMs={props.timeMs} />
+    <RhythmicPlatformField3D platforms={props.platforms} settings={props.settings} courseOverrides={props.courseOverrides} focusIndex={focusIndex} selectedNodeIndex={props.selectedNodeIndex} onSelectNode={props.onSelectNode} resolveSettings={props.resolveSettings} impactIndex={impactLight.index} impactStrength={impactLight.strength} timeMs={currentTimeRef.current} />
     <RhythmicVfx3D ref={vfxRef} events={props.events} platforms={props.platforms} settings={activeVisualSettings} courseOverrides={props.courseOverrides} resolveSettings={props.resolveSettings} />
     {props.chasePlan
       ? <RhythmicChaseMarbles3D ref={chaseMarblesRef} plan={props.chasePlan} settings={props.settings} resolveSettings={props.resolveSettings} />

@@ -13,7 +13,9 @@ export type CollideEvent = {
 
 const MAGNETIC_ACCELERATION = 22;
 const PAIR_BOUNCE_COOLDOWN = 0.085;
-const SOUND_COOLDOWN = 0.048;
+const SOUND_COOLDOWN = 0.06;
+const SOUND_WINDOW_SECONDS = 0.05;
+const MAX_IMPACT_SOUNDS_PER_WINDOW = 4;
 
 function pairKey(a: MarbleId, b: MarbleId) {
   return a < b ? `${a}:${b}` : `${b}:${a}`;
@@ -22,7 +24,13 @@ function pairKey(a: MarbleId, b: MarbleId) {
 export function impactVelocity(contact: CANNON.ContactEquation | undefined, a: CANNON.Body, b?: CANNON.Body) {
   const equation = contact as (CANNON.ContactEquation & { getImpactVelocityAlongNormal?: () => number }) | undefined;
   const contactSpeed = Math.abs(equation?.getImpactVelocityAlongNormal?.() ?? 0);
-  const relative = b ? a.velocity.vsub(b.velocity).length() : a.velocity.length();
+  const relative = b
+    ? Math.sqrt(
+        (a.velocity.x - b.velocity.x) ** 2
+          + (a.velocity.y - b.velocity.y) ** 2
+          + (a.velocity.z - b.velocity.z) ** 2,
+      )
+    : a.velocity.length();
   return Math.max(contactSpeed, relative * 0.72);
 }
 
@@ -33,6 +41,13 @@ export class MarbleInteractionSystem {
   private soundWindowStart = 0;
   private soundWindowCount = 0;
   private magneticRadius: number;
+  private aliveScratch: MarbleRuntime[] = [];
+  private magneticBuckets = new Map<number, MarbleRuntime[]>();
+  private magneticBucketPool: MarbleRuntime[][] = [];
+  private magneticForceA = new CANNON.Vec3();
+  private magneticForceB = new CANNON.Vec3();
+  private bounceImpulseA = new CANNON.Vec3();
+  private bounceImpulseB = new CANNON.Vec3();
 
   constructor(
     private bodyToMarble: Map<number, MarbleRuntime>,
@@ -56,21 +71,34 @@ export class MarbleInteractionSystem {
   }
 
   applyMagneticField(marbles: Iterable<MarbleRuntime>) {
-    const alive = [...marbles].filter((marble) => marble.alive);
+    const alive = this.aliveScratch;
+    alive.length = 0;
+    for (const marble of marbles) {
+      if (marble.alive) alive.push(marble);
+    }
+    if (alive.length < 2) return;
+
     const cellSize = this.magneticRadius;
-    const buckets = new Map<string, MarbleRuntime[]>();
     const cell = (value: number) => Math.floor(value / cellSize);
-    const keyOf = (x: number, y: number, z: number) => `${x},${y},${z}`;
+    // The tower course stays well within this range. Numeric keys avoid allocating
+    // 28+ strings per marble on every physics step.
+    const keyOf = (x: number, y: number, z: number) => (x + 1024) * 4_194_304 + (y + 1024) * 2_048 + (z + 1024);
+    const buckets = this.magneticBuckets;
 
     for (const marble of alive) {
       const { position } = marble.body;
       const key = keyOf(cell(position.x), cell(position.y), cell(position.z));
-      const bucket = buckets.get(key);
-      if (bucket) bucket.push(marble);
-      else buckets.set(key, [marble]);
+      let bucket = buckets.get(key);
+      if (!bucket) {
+        bucket = this.magneticBucketPool.pop() ?? [];
+        buckets.set(key, bucket);
+      }
+      bucket.push(marble);
     }
 
     const radiusSq = this.magneticRadius * this.magneticRadius;
+    const forceA = this.magneticForceA;
+    const forceB = this.magneticForceB;
     for (const aRuntime of alive) {
       const a = aRuntime.body;
       const cx = cell(a.position.x);
@@ -96,13 +124,21 @@ export class MarbleInteractionSystem {
               const nx = dx / distance;
               const ny = dy / distance;
               const nz = dz / distance;
-              a.applyForce(new CANNON.Vec3(nx * acceleration * a.mass, ny * acceleration * a.mass, nz * acceleration * a.mass));
-              b.applyForce(new CANNON.Vec3(-nx * acceleration * b.mass, -ny * acceleration * b.mass, -nz * acceleration * b.mass));
+              forceA.set(nx * acceleration * a.mass, ny * acceleration * a.mass, nz * acceleration * a.mass);
+              forceB.set(-nx * acceleration * b.mass, -ny * acceleration * b.mass, -nz * acceleration * b.mass);
+              a.applyForce(forceA);
+              b.applyForce(forceB);
             }
           }
         }
       }
     }
+
+    for (const bucket of buckets.values()) {
+      bucket.length = 0;
+      this.magneticBucketPool.push(bucket);
+    }
+    buckets.clear();
   }
 
   private handleCollision(runtime: MarbleRuntime, event: CollideEvent) {
@@ -166,9 +202,10 @@ export class MarbleInteractionSystem {
     const closingSpeed = Math.max(0, -(rvx * nx + rvy * ny + rvz * nz));
     const separationSpeed = 0.72 + Math.min(2.4, closingSpeed * 0.34);
     const magnitude = Math.min(a.body.mass, b.body.mass) * separationSpeed;
-    const impulse = new CANNON.Vec3(nx * magnitude, ny * magnitude, nz * magnitude);
-    a.body.applyImpulse(impulse);
-    b.body.applyImpulse(new CANNON.Vec3(-impulse.x, -impulse.y, -impulse.z));
+    this.bounceImpulseA.set(nx * magnitude, ny * magnitude, nz * magnitude);
+    this.bounceImpulseB.set(-this.bounceImpulseA.x, -this.bounceImpulseA.y, -this.bounceImpulseA.z);
+    a.body.applyImpulse(this.bounceImpulseA);
+    b.body.applyImpulse(this.bounceImpulseB);
   }
 
   private isSideWallContact(runtime: MarbleRuntime, contact?: CANNON.ContactEquation) {
@@ -188,11 +225,11 @@ export class MarbleInteractionSystem {
   private emitPairSound(key: string, kind: MarbleImpactKind, strength: number, pan: number, variant?: number) {
     const previous = this.soundAt.get(key) ?? -Infinity;
     if (this.time - previous < SOUND_COOLDOWN) return;
-    if (this.time - this.soundWindowStart >= 0.05) {
+    if (this.time - this.soundWindowStart >= SOUND_WINDOW_SECONDS) {
       this.soundWindowStart = this.time;
       this.soundWindowCount = 0;
     }
-    if (this.soundWindowCount >= 8) return;
+    if (this.soundWindowCount >= MAX_IMPACT_SOUNDS_PER_WINDOW) return;
     this.soundWindowCount += 1;
     this.soundAt.set(key, this.time);
     this.onImpactSound?.(kind, Math.min(22, strength), pan, variant);

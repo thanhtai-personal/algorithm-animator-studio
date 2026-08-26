@@ -1,4 +1,4 @@
-import { useEffect, type MutableRefObject } from "react";
+import { memo, useEffect, type MutableRefObject } from "react";
 import { Canvas } from "@react-three/fiber";
 import * as THREE from "three";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
@@ -50,7 +50,7 @@ export function hasRhythmicWebGLSupport() {
   }
 }
 
-export function RhythmicScene3D(props: RhythmicScene3DProps) {
+function RhythmicScene3DImpl(props: RhythmicScene3DProps) {
   const recordingProfile = rhythmicRecordingRenderProfile(props.settings.exportFps);
   useEffect(() => () => {
     if (props.canvasRef) props.canvasRef.current = null;
@@ -64,7 +64,7 @@ export function RhythmicScene3D(props: RhythmicScene3DProps) {
     >
       <Canvas
         frameloop={props.playing || props.recording ? "always" : "demand"}
-        dpr={props.recording ? recordingProfile.dpr : props.playing ? [1, 1.35] : [1, 1.15]}
+        dpr={props.recording ? recordingProfile.dpr : props.playing ? [1, 1.15] : [1, 1.1]}
         shadows={props.settings.instrumentShadowsEnabled}
         gl={{
           antialias: true,
@@ -94,3 +94,36 @@ export function RhythmicScene3D(props: RhythmicScene3DProps) {
     </div>
   );
 }
+
+
+function sameRhythmicSceneProps(prev: RhythmicScene3DProps, next: RhythmicScene3DProps) {
+  const sameExceptTime = prev.events === next.events
+    && prev.settings === next.settings
+    && prev.durationMs === next.durationMs
+    && prev.frameWidth === next.frameWidth
+    && prev.frameHeight === next.frameHeight
+    && prev.playing === next.playing
+    && prev.recording === next.recording
+    && prev.playbackToken === next.playbackToken
+    && prev.playbackStartMs === next.playbackStartMs
+    && prev.playbackEndMs === next.playbackEndMs
+    && prev.courseOverrides === next.courseOverrides
+    && prev.backgroundUrl === next.backgroundUrl
+    && prev.selectedNodeIndex === next.selectedNodeIndex
+    && prev.onSelectNode === next.onSelectNode
+    && prev.onNote === next.onNote
+    && prev.onTime === next.onTime
+    && prev.onEnded === next.onEnded
+    && prev.canvasRef === next.canvasRef
+    && prev.platforms === next.platforms
+    && prev.resolveSettings === next.resolveSettings
+    && prev.chasePlan === next.chasePlan;
+  if (!sameExceptTime) return false;
+  if (prev.timeMs === next.timeMs) return true;
+  return (prev.playing || prev.recording) && (next.playing || next.recording);
+}
+
+// timeMs is advanced inside the R3F render loop while playing. Ignoring the
+// MobX/UI clock here keeps parent timeline updates from reconciling the whole
+// WebGL scene 10-15 times per second. Paused seeks still render immediately.
+export const RhythmicScene3D = memo(RhythmicScene3DImpl, sameRhythmicSceneProps);

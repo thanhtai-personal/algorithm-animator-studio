@@ -8,7 +8,7 @@ export function OlympicRoadEnvironment3D() {
       <ambientLight intensity={1.05} />
       <hemisphereLight intensity={1.25} color="#dff5ff" groundColor="#16405c" />
       <directionalLight castShadow intensity={3.8} color="#fff4de" position={[-18, 42, -22]}
-        shadow-mapSize-width={1536} shadow-mapSize-height={1536} shadow-camera-far={110} />
+        shadow-mapSize-width={1024} shadow-mapSize-height={1024} shadow-camera-far={110} />
       <pointLight position={[18, 22, 12]} intensity={125} distance={70} color="#8bdcff" />
       <pointLight position={[-20, 13, -6]} intensity={82} distance={58} color="#ffd34f" />
       <Environment resolution={64}>

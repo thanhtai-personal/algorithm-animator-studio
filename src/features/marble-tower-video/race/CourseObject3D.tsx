@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import type { CourseObjectId } from '../physics/CourseObjectLifecycle';
 import type { RacePhysics } from '../physics/RacePhysics';
 
-const VISIBILITY_CHECK_INTERVAL = 6;
+const VISIBILITY_CHECK_INTERVAL = 12;
 
 export function CourseObject3D({ physics, id, children }: {
   physics: RacePhysics;

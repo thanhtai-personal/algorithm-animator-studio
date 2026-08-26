@@ -4,7 +4,7 @@ import type { NoteEvent, StudioSettings } from "../types";
 
 export const RHYTHMIC_CAMERA_Z = 10.15;
 export const RHYTHMIC_CAMERA_FOV = 37;
-export const RHYTHMIC_UI_UPDATE_MS = 64;
+export const RHYTHMIC_UI_UPDATE_MS = 96;
 
 type Point3D = { x: number; y: number; z: number };
 

@@ -1,5 +1,5 @@
-import { Suspense, useEffect, useMemo, useRef, type MutableRefObject } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { memo, Suspense, useEffect, useMemo, useRef, type MutableRefObject } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { RacePhysics } from "../physics/RacePhysics";
 import { StudioEnvironment3D } from "./StudioEnvironment3D";
@@ -30,22 +30,24 @@ function Runtime({ physics, playing, playbackToken, playbackStartMs, playbackEnd
   const epochRef = useRef(performance.now() - playbackStartMs);
   const lastUiUpdate = useRef(0);
   const endedToken = useRef<number | null>(null);
+  const invalidate = useThree((state) => state.invalidate);
 
   useEffect(() => {
     epochRef.current = performance.now() - playbackStartMs;
     endedToken.current = null;
     physics.advanceTo(playbackStartMs / 1000);
     onTime(playbackStartMs);
-  }, [onTime, physics, playbackStartMs, playbackToken]);
+    invalidate();
+  }, [invalidate, onTime, physics, playbackStartMs, playbackToken]);
 
   useFrame(() => {
     if (!playing) return;
     const endMs = playbackEndMs || durationMs;
-    const elapsedMs = Math.max(0, performance.now() - epochRef.current);
+    const now = performance.now();
+    const elapsedMs = Math.max(0, now - epochRef.current);
     const timeMs = stopAtPlaybackEnd ? Math.min(endMs, elapsedMs) : elapsedMs;
     physics.advanceTo(timeMs / 1000);
-    const now = performance.now();
-    if (now - lastUiUpdate.current >= 64) {
+    if (now - lastUiUpdate.current >= 96) {
       lastUiUpdate.current = now;
       onTime(timeMs);
     }
@@ -59,7 +61,32 @@ function Runtime({ physics, playing, playbackToken, playbackStartMs, playbackEnd
   return null;
 }
 
-export function RaceScene3D(props: {
+function RaceShadowBudget({ recording, marbleCount }: { recording: boolean; marbleCount: number }) {
+  const { gl, invalidate } = useThree();
+  const elapsedRef = useRef(0);
+
+  useEffect(() => {
+    gl.shadowMap.autoUpdate = false;
+    gl.shadowMap.needsUpdate = true;
+    elapsedRef.current = 0;
+    invalidate();
+    return () => {
+      gl.shadowMap.autoUpdate = true;
+    };
+  }, [gl, invalidate]);
+
+  useFrame((_, delta) => {
+    elapsedRef.current += Math.min(0.1, delta);
+    const shadowFps = recording ? 30 : marbleCount > 120 ? 18 : 24;
+    const interval = 1 / shadowFps;
+    if (elapsedRef.current < interval) return;
+    elapsedRef.current %= interval;
+    gl.shadowMap.needsUpdate = true;
+  }, -20);
+  return null;
+}
+
+export interface RaceScene3DProps {
   mapId: RaceMapId;
   driveMultiplier: number;
   marbleCount: number;
@@ -77,7 +104,9 @@ export function RaceScene3D(props: {
   stopAtPlaybackEnd?: boolean;
   onReady?: (physics: RacePhysics) => void;
   canvasRef: MutableRefObject<HTMLCanvasElement | null>;
-}) {
+}
+
+function RaceScene3DImpl(props: RaceScene3DProps) {
   const physics = useMemo(
     () => new RacePhysics(props.onComplete ?? (() => undefined), props.driveMultiplier, props.onImpactSound, props.marbleCount, props.mapId),
     [props.mapId, props.marbleCount, props.physicsRevision],
@@ -88,7 +117,8 @@ export function RaceScene3D(props: {
   const olympicRoad = props.mapId === OLYMPIC_ROAD_MAP_ID;
 
   return <Canvas
-    dpr={props.recording ? 1 : [1, 1.35]}
+    frameloop={props.playing || props.recording ? "always" : "demand"}
+    dpr={props.recording ? 1 : [1, 1.15]}
     shadows
     camera={{ fov: 49, near: 0.1, far: 300, position: [5, 39.4, -16.6] }}
     gl={{ antialias: true, alpha: false, powerPreference: "high-performance", stencil: false }}
@@ -101,6 +131,7 @@ export function RaceScene3D(props: {
       gl.shadowMap.type = THREE.PCFSoftShadowMap;
     }}
   >
+    <RaceShadowBudget recording={props.recording} marbleCount={props.marbleCount} />
     <Suspense fallback={null}>
       {olympicRoad ? <OlympicRoadEnvironment3D /> : <StudioEnvironment3D />}
       {olympicRoad ? <OlympicRoadTrack3D physics={physics} /> : <TrackMeshes3D physics={physics} />}
@@ -121,3 +152,8 @@ export function RaceScene3D(props: {
     </Suspense>
   </Canvas>;
 }
+
+
+// Runtime time lives inside RacePhysics/useFrame. Memoizing the canvas prevents
+// the outer MobX workspace clock/HUD from reconciling the entire R3F tree.
+export const RaceScene3D = memo(RaceScene3DImpl);

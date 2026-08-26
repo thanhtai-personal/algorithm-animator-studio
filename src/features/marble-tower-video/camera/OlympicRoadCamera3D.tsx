@@ -13,19 +13,22 @@ export function OlympicRoadCamera3D({ physics }: { physics: RacePhysics }) {
   const { camera } = useThree();
   const lookTarget = useRef(new THREE.Vector3(0, 28, -25));
   useFrame((_, delta) => {
-    const leader = physics.getLeader();
-    if (!leader) return;
+    const ranked = physics.getRanked();
+    const leader = ranked[0];
+    if (!leader?.alive) return;
     const samples = physics.course.samples;
     const sample = samples[Math.max(0, Math.min(leader.progressIndex, samples.length - 1))];
     const progress = leader.progressIndex / (samples.length - 1);
-    const pack = physics.getRanked().filter((marble) => marble.alive).slice(0, 8);
+    let packLength = 0;
     packCenter.set(0, 0, 0);
-    pack.forEach((marble) => {
+    while (packLength < ranked.length && packLength < 8 && ranked[packLength].alive) {
+      const marble = ranked[packLength];
       packCenter.x += marble.body.position.x;
       packCenter.y += marble.body.position.y;
       packCenter.z += marble.body.position.z;
-    });
-    if (pack.length) packCenter.multiplyScalar(1 / pack.length);
+      packLength += 1;
+    }
+    if (packLength) packCenter.multiplyScalar(1 / packLength);
     focus.set(leader.body.position.x, leader.body.position.y, leader.body.position.z).lerp(packCenter, 0.62);
     const shot = olympicRoadCameraShot(progress);
     const countdownDrift = physics.hasStarted() ? 0 : Math.sin(physics.getTimelineSeconds() * 0.72) * 1.2;
@@ -38,8 +41,11 @@ export function OlympicRoadCamera3D({ physics }: { physics: RacePhysics }) {
     lookTarget.current.lerp(look, 1 - Math.exp(-delta * 5.4));
     camera.lookAt(lookTarget.current);
     if (camera instanceof THREE.PerspectiveCamera) {
-      camera.fov = THREE.MathUtils.lerp(camera.fov, shot.fov, 1 - Math.exp(-delta * 3.2));
-      camera.updateProjectionMatrix();
+      const nextFov = THREE.MathUtils.lerp(camera.fov, shot.fov, 1 - Math.exp(-delta * 3.2));
+      if (Math.abs(nextFov - camera.fov) > 0.015) {
+        camera.fov = nextFov;
+        camera.updateProjectionMatrix();
+      }
     }
   });
   return null;

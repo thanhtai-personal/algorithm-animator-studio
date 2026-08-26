@@ -13,6 +13,7 @@ export function MarbleBoostTrails3D({ physics }: { physics: RacePhysics }) {
   const direction = useMemo(() => new THREE.Vector3(), []);
   const scale = useMemo(() => new THREE.Vector3(), []);
   const identity = useMemo(() => new THREE.Quaternion(), []);
+  const updateElapsed = useRef(0);
 
   useLayoutEffect(() => {
     if (!ref.current) return;
@@ -23,8 +24,12 @@ export function MarbleBoostTrails3D({ physics }: { physics: RacePhysics }) {
     if (ref.current.instanceColor) ref.current.instanceColor.needsUpdate = true;
   }, [physics, steps]);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!ref.current) return;
+    updateElapsed.current += Math.min(0.1, delta);
+    const updateFps = physics.marbleCount > 120 ? 20 : 30;
+    if (updateElapsed.current < 1 / updateFps) return;
+    updateElapsed.current %= 1 / updateFps;
     physics.roster.forEach((config, marbleIndex) => {
       const runtime = physics.getMarble(config.id);
       const strength = runtime?.alive ? physics.pianoTrail(config.id) : 0;

@@ -15,7 +15,7 @@ import { freezeWinnerAtFinish, holdWinnerAtFinish, recoverMarbleToCourse, vec3 }
 import { CourseObjectLifecycle, type CourseObjectId } from "./CourseObjectLifecycle";
 import { createRaceMaterials } from "./createRaceMaterials";
 import type { RaceResult } from "../race/raceTypes";
-const DEFAULT_FIXED_STEP = 1 / 120;
+const DEFAULT_FIXED_STEP = 1 / 90;
 const VIDEO_COUNTDOWN_SECONDS = 3;
 const MARBLE_MASS = 5.2;
 const STANDARD_GRAVITY = 9.81;
@@ -49,6 +49,9 @@ export class RacePhysics {
   private launched = false;
   private completed = false;
   private publishTimer = 0;
+  private courseCullTimer = 0;
+  private rankedCache: MarbleRuntime[] = [];
+  private rankingDirty = true;
   private resolvedCuts = new Set<number>();
   private winnerId: MarbleId | null = null;
   private winnerTime = 0;
@@ -74,13 +77,13 @@ export class RacePhysics {
     const grid = marbleStartGrid(this.marbleCount);
     this.marbleRadius = grid.radius;
     this.startGridDepth = grid.depth;
-    this.fixedStep = this.marbleCount > 500 ? 1 / 60 : this.marbleCount > 220 ? 1 / 90 : DEFAULT_FIXED_STEP;
-    this.maxSubSteps = this.marbleCount > 500 ? 5 : this.marbleCount > 220 ? 7 : 10;
+    this.fixedStep = this.marbleCount > 500 ? 1 / 60 : this.marbleCount > 220 ? 1 / 75 : DEFAULT_FIXED_STEP;
+    this.maxSubSteps = this.marbleCount > 500 ? 4 : this.marbleCount > 220 ? 5 : 6;
     raceSessionStore.reset(this.roster);
     this.world.allowSleep = false;
     this.world.broadphase = new CANNON.SAPBroadphase(this.world);
     const solver = new CANNON.GSSolver();
-    solver.iterations = 14;
+    solver.iterations = 11;
     solver.tolerance = 0.001;
     this.world.solver = solver;
     const materials = createRaceMaterials(this.world);
@@ -168,14 +171,18 @@ export class RacePhysics {
     }
     if (this.opened) {
       this.updateRace(dt);
-      this.retirePassedCourseObjects();
+      this.courseCullTimer += dt;
+      if (this.courseCullTimer >= 0.1) {
+        this.courseCullTimer %= 0.1;
+        this.retirePassedCourseObjects();
+      }
     }
     if (this.finishDelay >= 0) {
       this.finishDelay -= dt;
       if (this.finishDelay <= 0) this.completeRace();
     }
     this.publishTimer += dt;
-    if (this.publishTimer >= 0.075) {
+    if (this.publishTimer >= 0.1) {
       this.publishTimer = 0;
       this.publishSnapshot();
     }
@@ -218,12 +225,19 @@ export class RacePhysics {
     );
   }
   private retirePassedCourseObjects() {
-    const progress = [...this.marbles.values()]
-      .filter((marble) => marble.alive)
-      .map((marble) => marble.progressIndex / (this.course.samples.length - 1));
-    this.courseObjects.update(progress, Math.max(0, ...progress), this.world);
+    const progress: number[] = [];
+    let cameraProgress = 0;
+    const denominator = Math.max(1, this.course.samples.length - 1);
+    for (const marble of this.marbles.values()) {
+      if (!marble.alive) continue;
+      const value = marble.progressIndex / denominator;
+      progress.push(value);
+      if (value > cameraProgress) cameraProgress = value;
+    }
+    this.courseObjects.update(progress, cameraProgress, this.world);
   }
   private updateRace(dt: number) {
+    const leaderAtStart = this.getLeader()?.id ?? null;
     for (const marble of this.marbles.values()) {
       if (!marble.alive || marble.id === this.winnerId) continue;
       const body = marble.body;
@@ -242,7 +256,7 @@ export class RacePhysics {
       if (!marble.hitJump && progress >= this.course.specials.jump) {
         marble.hitJump = true;
         body.applyImpulse(vec3(jumpImpulse(sample, MARBLE_MASS, this.driveMultiplier)));
-        if (marble === this.getLeader()) raceSessionStore.flash("SKY JUMP!");
+        if (marble.id === leaderAtStart) raceSessionStore.flash("SKY JUMP!");
       }
       const speed = body.velocity.length();
       const moved = Math.max(0, marble.progressIndex - previous);
@@ -251,10 +265,11 @@ export class RacePhysics {
       if (marble.stuckFor > 0.65) {
         marble.stuckFor = 0;
         body.applyImpulse(vec3(recoveryImpulse(sample, MARBLE_MASS, this.driveMultiplier, STANDARD_GRAVITY)));
-        if (marble === this.getLeader()) raceSessionStore.flash("RECOVERY");
+        if (marble.id === leaderAtStart) raceSessionStore.flash("RECOVERY");
       }
       marble.previousProgress = progress;
     }
+    this.rankingDirty = true;
     this.resolveCuts();
     this.resolveFinish();
   }
@@ -279,6 +294,7 @@ export class RacePhysics {
     this.winnerId = leader.id;
     this.winnerTime = this.raceTime;
     leader.finalPosition = 1;
+    this.rankingDirty = true;
     this.winnerAnchor = freezeWinnerAtFinish(leader, this.marbleRadius, this.course.samples, this.course.specials.finish);
     const finalists = this.getRanked().filter((marble) => marble.alive && marble.id !== leader.id);
     finalists.forEach((marble, index) => { marble.finalPosition = 2 + index; });
@@ -349,11 +365,15 @@ export class RacePhysics {
     this.onImpactSound("roll", speed * density, Math.max(-0.9, Math.min(0.9, x / 22)), pack.length);
   }
   getRanked() {
-    return [...this.marbles.values()].sort((a, b) => {
+    if (!this.rankingDirty && this.rankedCache.length === this.marbles.size) return this.rankedCache;
+    this.rankedCache = Array.from(this.marbles.values());
+    this.rankedCache.sort((a, b) => {
       if (a.alive !== b.alive) return a.alive ? -1 : 1;
       if (!a.alive && !b.alive && a.finalPosition !== b.finalPosition) return (a.finalPosition ?? 99) - (b.finalPosition ?? 99);
       return b.progressIndex - a.progressIndex;
     });
+    this.rankingDirty = false;
+    return this.rankedCache;
   }
   getLeader() { return this.getRanked().find((marble) => marble.alive) ?? null; }
   pianoGlow(index: number) { return this.pianoFlashUntil[index] > this.raceTime; }
@@ -365,7 +385,7 @@ export class RacePhysics {
   hasStarted() { return this.opened; }
   private publishSnapshot() {
     const ranked = this.getRanked();
-    const leader = this.getLeader();
+    const leader = ranked.find((marble) => marble.alive) ?? null;
     const leaderProgress = leader ? leader.progressIndex / (this.course.samples.length - 1) : 0;
     const section = this.course.samples[Math.round(leaderProgress * (this.course.samples.length - 1))]?.section.label ?? "FINISH";
     const nextCut = this.course.cuts.find((_, index) => !this.resolvedCuts.has(index));

@@ -803,6 +803,9 @@ function createMainWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
+      // Video preview/recording must keep requestAnimationFrame active when the
+      // packaged window temporarily loses focus or is covered by another window.
+      backgroundThrottling: false,
     },
   });
 

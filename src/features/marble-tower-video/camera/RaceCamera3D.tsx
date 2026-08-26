@@ -16,9 +16,11 @@ export function RaceCamera3D({ physics }: { physics: RacePhysics }) {
   const lookTarget = useRef(new THREE.Vector3(0, 35, -5));
 
   useFrame((_, delta) => {
-    const ranked = physics.getRanked().filter((marble) => marble.alive).slice(0, 4);
+    const ranked = physics.getRanked();
     const leader = ranked[0];
-    if (!leader) return;
+    if (!leader?.alive) return;
+    let packLength = 0;
+    while (packLength < ranked.length && packLength < 4 && ranked[packLength].alive) packLength += 1;
 
     const sample = COURSE_SAMPLES[leader.progressIndex];
     const progress = leader.progressIndex / Math.max(1, COURSE_SAMPLES.length - 1);
@@ -27,12 +29,13 @@ export function RaceCamera3D({ physics }: { physics: RacePhysics }) {
     const shot = finishCameraShot(baseShot, progress);
     leaderFocus.set(leader.body.position.x, leader.body.position.y, leader.body.position.z);
     packFocus.set(0, 0, 0);
-    ranked.forEach((marble) => {
+    for (let index = 0; index < packLength; index += 1) {
+      const marble = ranked[index];
       packFocus.x += marble.body.position.x;
       packFocus.y += marble.body.position.y;
       packFocus.z += marble.body.position.z;
-    });
-    packFocus.multiplyScalar(1 / ranked.length).lerp(leaderFocus, 0.58);
+    }
+    packFocus.multiplyScalar(1 / Math.max(1, packLength)).lerp(leaderFocus, 0.58);
 
     // The remaining leaders may still be one or two floors above the winner.
     // Blend fully to the winner before the finish so the upper deck cannot pull
@@ -63,8 +66,11 @@ export function RaceCamera3D({ physics }: { physics: RacePhysics }) {
     camera.lookAt(lookTarget.current);
 
     if (camera instanceof THREE.PerspectiveCamera) {
-      camera.fov = THREE.MathUtils.lerp(camera.fov, shot.fov, 1 - Math.exp(-delta * 3));
-      camera.updateProjectionMatrix();
+      const nextFov = THREE.MathUtils.lerp(camera.fov, shot.fov, 1 - Math.exp(-delta * 3));
+      if (Math.abs(nextFov - camera.fov) > 0.015) {
+        camera.fov = nextFov;
+        camera.updateProjectionMatrix();
+      }
     }
   });
 

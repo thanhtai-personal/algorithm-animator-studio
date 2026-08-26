@@ -182,6 +182,22 @@ export function buildMarbleCourse(
   );
 }
 
+export function hasCompleteMarblePlatforms(events: NoteEvent[], platforms: MarblePlatform[]) {
+  if (platforms.length !== events.length) return false;
+  for (let index = 0; index < events.length; index += 1) {
+    const event = events[index];
+    const platform = platforms[index];
+    if (!platform
+      || platform.index !== index
+      || !platform.event
+      || platform.event.id !== event.id
+      || platform.event.timeMs !== event.timeMs
+      || platform.event.midi !== event.midi
+      || platform.event.durationMs !== event.durationMs) return false;
+  }
+  return true;
+}
+
 export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: MarblePlatform[], settings: StudioSettings, overrides: CourseItemOverride[] = [], resolveSettings?: StudioSettingsResolver): MarblePoint {
   if (!events.length || !platforms.length) return { x: 360, y: 180, color: settings.prismStart, platformIndex: 0 };
 

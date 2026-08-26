@@ -4,7 +4,10 @@ import {
   prepareMarbleCourse,
 } from "../features/rhythmic-studio/engine/marbleCoursePreparation";
 import { createMarbleCourseWorkerPayload } from "../features/rhythmic-studio/engine/marbleCourseWorkerPayload";
-import { buildMarbleCourse } from "../features/rhythmic-studio/lib/marbleCourse";
+import {
+  buildMarbleCourse,
+  hasCompleteMarblePlatforms,
+} from "../features/rhythmic-studio/lib/marbleCourse";
 import type { NoteEvent } from "../features/rhythmic-studio/types";
 
 const events: NoteEvent[] = [
@@ -42,8 +45,24 @@ describe("prepared marble course mode boundary", () => {
     expect(result.mode).toBe("chase");
     expect(result.chasePlan).not.toBeNull();
     expect(result.platforms).toEqual(result.chasePlan?.platforms);
+    expect(Array.from({ length: events.length }, (_, index) => result.platforms[index]).every(Boolean)).toBe(true);
     expect(result.chasePlan?.platforms.map((platform) => platform.event.id)).toEqual(events.map((event) => event.id));
     expect(() => structuredClone(result)).not.toThrow();
+  });
+
+  it("rejects sparse or stale platform arrays even when their lengths match", () => {
+    const settings = { ...DEFAULT_SETTINGS, marbleMode: "single" as const };
+    const dense = buildMarbleCourse(events, settings, 720);
+    const sparse = dense.slice();
+    delete sparse[1];
+    const stale = dense.map((platform, index) => index === 2
+      ? { ...platform, event: { ...platform.event, id: "different-midi-note" } }
+      : platform);
+
+    expect(hasCompleteMarblePlatforms(events, dense)).toBe(true);
+    expect(sparse.length).toBe(events.length);
+    expect(hasCompleteMarblePlatforms(events, sparse)).toBe(false);
+    expect(hasCompleteMarblePlatforms(events, stale)).toBe(false);
   });
 
   it("deep-snapshots secondary marble settings before worker IO", () => {

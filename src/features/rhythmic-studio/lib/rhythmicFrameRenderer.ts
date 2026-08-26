@@ -4,7 +4,7 @@ import { noteLightColorsForPlatform } from "./instrumentLightsModel";
 import { drawCourseLongItems, isPlatformCourseItem, overrideForNode } from "./courseItems";
 import { activeLyricAt } from "./lyrics";
 import { drawLongGapTubes } from "./longGapTube";
-import { clamp, collisionStrength, marbleAtTime, mixHex, type MarblePlatform, type MarblePoint } from "./marbleCourse";
+import { clamp, collisionStrength, hasCompleteMarblePlatforms, marbleAtTime, mixHex, type MarblePlatform, type MarblePoint } from "./marbleCourse";
 import { applyPresetCamera } from "./presetCamera";
 import { drawPresetMarble } from "./presetMarbleRenderer";
 import { drawMarbleAvatar2D } from "./marbleAvatarRenderer2D";
@@ -169,6 +169,10 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
   const live = quality === "live";
   const pulse = live && settings.pulseAnimation ? collisionStrength(timeMs, events) * settings.animationSensitivity : 0;
   drawRhythmicBackground(ctx, width, height, settings, pulse, live ? timeMs : 0, backgroundImage);
+  // A sparse array still reports the requested length. During a worker/mode/MIDI
+  // transition it must never enter the physics renderer because all indexing
+  // below intentionally assumes one prepared platform per source event.
+  if (!hasCompleteMarblePlatforms(events, platforms)) return;
   ctx.save();
   applyPresetCamera(ctx, settings, width, height);
   ctx.translate(-cameraX, 0);

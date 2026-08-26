@@ -19,6 +19,7 @@ import { rhythmicOutputSize, type RhythmicOutputSize } from "../lib/outputSize";
 import { RhythmicShadowToggle } from "./RhythmicShadowToggle";
 import { RhythmicOriginalAudioToggle } from "./RhythmicOriginalAudioToggle";
 import { RhythmicMagicToggle } from "./RhythmicMagicToggle";
+import { hasCompleteMarblePlatforms } from "../lib/marbleCourse";
 
 type Studio = ReturnType<typeof useRhythmicStudio>;
 
@@ -223,7 +224,12 @@ export function RhythmicStage({ studio }: { studio: Studio }) {
   const mixPlan = useMemo(() => buildPresetMixPlan(studio.timeline, studio.presetMixEnabled, studio.presetMixSeed), [studio.presetMixEnabled, studio.presetMixSeed, studio.timeline]);
   const resolveSettings = useMemo(() => createPresetMixSettingsResolver(studio.settings, mixPlan), [mixPlan, studio.settings]);
   const course = usePreparedMarbleCourse(studio.timeline, studio.settings, RHYTHMIC_COURSE_WIDTH, studio.presetMixEnabled, studio.presetMixSeed);
-  const courseReady = !course.isPreparing && !course.error && course.platforms.length === studio.timeline.length;
+  const requestedMode = studio.settings.marbleMode;
+  const courseReady = !course.isPreparing
+    && !course.error
+    && course.mode === requestedMode
+    && hasCompleteMarblePlatforms(studio.timeline, course.platforms)
+    && (requestedMode === "chase" ? course.chasePlan !== null : course.chasePlan === null);
   const rendererLocked = studio.playing || studio.recording || course.isPreparing;
   const preparingLabel = t("status.preparingCourse");
 

@@ -6,6 +6,7 @@ import { RhythmicTimeline } from "@/features/rhythmic-studio/components/Rhythmic
 import { RhythmicTrimPanel } from "@/features/rhythmic-studio/components/RhythmicTrimPanel";
 import { useRhythmicStudioController } from "@/features/rhythmic-studio/hooks/useRhythmicStudioController";
 import { rhythmicOutputSize } from "@/features/rhythmic-studio/lib/outputSize";
+import { setRhythmicRuntimeMixBoost } from "@/features/rhythmic-studio/lib/audioEngine";
 import type { RacePhysics } from "../physics/RacePhysics";
 import { RaceScene3D } from "../race/RaceScene3D";
 import type { RaceResult } from "../race/raceTypes";
@@ -37,6 +38,14 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
     studio.setRendererMode("three");
     if (studio.settings.outputPreset !== "landscape-720p") studio.patch("outputPreset", "landscape-720p");
     if (studio.settings.titleText === "MARBLE MUSIC") studio.patch("titleText", "MARBLE TOWER RACE");
+  }, []);
+
+  useEffect(() => {
+    // Marble Tower needs a broadcast-loud mix without changing the generic
+    // Rhythmic Studio defaults. The compressor below the master bus protects
+    // dense collision moments from clipping.
+    setRhythmicRuntimeMixBoost(1.75, 1.65);
+    return () => setRhythmicRuntimeMixBoost(1, 1);
   }, []);
 
   const silenceSourceForCountdown = useCallback(() => {

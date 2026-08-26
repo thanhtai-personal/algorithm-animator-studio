@@ -24,6 +24,16 @@ interface MidiScheduleOptions {
 
 export type MarbleImpactSoundKind = "wall" | "obstacle" | "obstacle-strike" | "marble" | "instrument";
 
+let runtimeOutputBoost = 1;
+let runtimeSfxBoost = 1;
+let activeAudioEngine: AudioEngine | null = null;
+
+export function setRhythmicRuntimeMixBoost(outputBoost = 1, sfxBoost = 1) {
+  runtimeOutputBoost = Math.max(0.5, Math.min(2.2, outputBoost));
+  runtimeSfxBoost = Math.max(0.5, Math.min(2.5, sfxBoost));
+  activeAudioEngine?.refreshRuntimeMixBoost();
+}
+
 export interface SynthVoiceWarmup {
   midi: number;
   velocity: number;
@@ -71,6 +81,15 @@ export class AudioEngine {
   private reverbAmount = 0.22;
   private warmedVoices = new Set<SynthPreset>();
 
+  constructor() {
+    activeAudioEngine = this;
+  }
+
+  refreshRuntimeMixBoost() {
+    if (this.master) this.master.gain.value = RHYTHMIC_MASTER_GAIN * runtimeOutputBoost;
+    if (this.sfxInput) this.sfxInput.gain.value = Math.min(2.4, this.sfxVolume * runtimeSfxBoost);
+  }
+
   async ensure() {
     if (!this.context) {
       this.context = new AudioContext();
@@ -87,11 +106,11 @@ export class AudioEngine {
       reverb.buffer = createRoomImpulse(this.context);
       const compressor = this.context.createDynamicsCompressor();
       this.outputCompressor = compressor;
-      compressor.threshold.value = -9;
-      compressor.knee.value = 12;
-      compressor.ratio.value = 2.1;
-      compressor.attack.value = 0.008;
-      compressor.release.value = 0.18;
+      compressor.threshold.value = -12;
+      compressor.knee.value = 8;
+      compressor.ratio.value = 5;
+      compressor.attack.value = 0.004;
+      compressor.release.value = 0.14;
 
       this.sfxTone.type = "lowpass";
       this.sfxTone.frequency.value = 9900;
@@ -108,9 +127,9 @@ export class AudioEngine {
       compressor.connect(this.context.destination);
       compressor.connect(this.recordDestination);
 
-      this.master.gain.value = RHYTHMIC_MASTER_GAIN;
+      this.master.gain.value = RHYTHMIC_MASTER_GAIN * runtimeOutputBoost;
       this.musicBus.gain.value = cleanMusicGain(this.musicVolume);
-      this.sfxInput.gain.value = this.sfxVolume;
+      this.sfxInput.gain.value = Math.min(2.4, this.sfxVolume * runtimeSfxBoost);
       this.sfxDry.gain.value = 1 - this.reverbAmount * 0.18;
       this.reverbSend.gain.value = this.reverbAmount * 0.42;
       this.reverbWet.gain.value = this.reverbAmount * 0.48;
@@ -126,8 +145,8 @@ export class AudioEngine {
   }
 
   setVolume(value: number) {
-    this.sfxVolume = Math.max(0, Math.min(1, value));
-    if (this.sfxInput) this.sfxInput.gain.value = this.sfxVolume;
+    this.sfxVolume = Math.max(0, Math.min(1.6, value));
+    if (this.sfxInput) this.sfxInput.gain.value = Math.min(2.4, this.sfxVolume * runtimeSfxBoost);
   }
 
   setReverb(value: number) {
@@ -194,7 +213,7 @@ export class AudioEngine {
       const source = context.createBufferSource();
       const gain = context.createGain();
       source.buffer = buffer;
-      gain.gain.value = 1.05;
+      gain.gain.value = 1.18;
       source.connect(gain);
       gain.connect(this.master!);
       this.cueSource = source;

@@ -2,10 +2,12 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
 import type { RacePhysics } from "../physics/RacePhysics";
+import { olympicRoadCameraShot } from "./olympicRoadCameraPlan";
 
 const focus = new THREE.Vector3();
 const desired = new THREE.Vector3();
 const look = new THREE.Vector3();
+const packCenter = new THREE.Vector3();
 
 export function OlympicRoadCamera3D({ physics }: { physics: RacePhysics }) {
   const { camera } = useThree();
@@ -16,20 +18,27 @@ export function OlympicRoadCamera3D({ physics }: { physics: RacePhysics }) {
     const samples = physics.course.samples;
     const sample = samples[Math.max(0, Math.min(leader.progressIndex, samples.length - 1))];
     const progress = leader.progressIndex / (samples.length - 1);
-    focus.set(leader.body.position.x, leader.body.position.y, leader.body.position.z);
-    const spiral = progress >= 0.29 && progress <= 0.53;
-    const finish = progress > 0.9;
-    const behind = finish ? 8.2 : spiral ? 6.5 : 9.6;
-    const lift = finish ? 4.2 : spiral ? 9.4 : 5.8;
-    const side = spiral ? 6.2 : finish ? 4.8 : 3.4;
-    desired.copy(focus).addScaledVector(sample.tangent, -behind).addScaledVector(sample.normal, lift).addScaledVector(sample.right, side);
-    camera.position.lerp(desired, 1 - Math.exp(-delta * 4.2));
-    look.copy(focus).addScaledVector(sample.tangent, finish ? 4.2 : 3.2).addScaledVector(sample.normal, 0.42);
-    lookTarget.current.lerp(look, 1 - Math.exp(-delta * 6));
+    const pack = physics.getRanked().filter((marble) => marble.alive).slice(0, 8);
+    packCenter.set(0, 0, 0);
+    pack.forEach((marble) => {
+      packCenter.x += marble.body.position.x;
+      packCenter.y += marble.body.position.y;
+      packCenter.z += marble.body.position.z;
+    });
+    if (pack.length) packCenter.multiplyScalar(1 / pack.length);
+    focus.set(leader.body.position.x, leader.body.position.y, leader.body.position.z).lerp(packCenter, 0.62);
+    const shot = olympicRoadCameraShot(progress);
+    const countdownDrift = physics.hasStarted() ? 0 : Math.sin(physics.getTimelineSeconds() * 0.72) * 1.2;
+    desired.copy(focus)
+      .addScaledVector(sample.tangent, -shot.behind)
+      .addScaledVector(sample.normal, shot.lift)
+      .addScaledVector(sample.right, shot.side + countdownDrift);
+    camera.position.lerp(desired, 1 - Math.exp(-delta * 3.7));
+    look.copy(focus).addScaledVector(sample.tangent, shot.lookAhead).addScaledVector(sample.normal, 0.38);
+    lookTarget.current.lerp(look, 1 - Math.exp(-delta * 5.4));
     camera.lookAt(lookTarget.current);
     if (camera instanceof THREE.PerspectiveCamera) {
-      const fov = spiral ? 55 : finish ? 48 : 51;
-      camera.fov = THREE.MathUtils.lerp(camera.fov, fov, 1 - Math.exp(-delta * 3.4));
+      camera.fov = THREE.MathUtils.lerp(camera.fov, shot.fov, 1 - Math.exp(-delta * 3.2));
       camera.updateProjectionMatrix();
     }
   });

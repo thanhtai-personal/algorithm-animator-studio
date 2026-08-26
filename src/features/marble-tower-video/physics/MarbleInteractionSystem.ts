@@ -42,6 +42,7 @@ export class MarbleInteractionSystem {
     private onImpactSound?: MarbleImpactSound,
     marbleRadius = 0.48,
     private courseSamples: readonly CourseSample[] = COURSE_SAMPLES,
+    private staticObstacleVariant = 0,
   ) {
     this.magneticRadius = marbleRadius * 2.55;
   }
@@ -126,7 +127,13 @@ export class MarbleInteractionSystem {
     if (otherMaterial === this.obstacleMaterial) {
       const moving = event.body.type === CANNON.Body.KINEMATIC
         && (event.body.angularVelocity.lengthSquared() > 0.08 || event.body.velocity.lengthSquared() > 0.2);
-      this.emitSound(runtime, event.body, moving ? "obstacle-strike" : "obstacle", strength);
+      this.emitSound(
+        runtime,
+        event.body,
+        moving ? "obstacle-strike" : "obstacle",
+        strength,
+        moving ? 0 : this.staticObstacleVariant,
+      );
       return;
     }
     if (otherMaterial === this.trackMaterial && this.isSideWallContact(runtime, event.contact)) {
@@ -172,10 +179,10 @@ export class MarbleInteractionSystem {
     return alignment < 0.58;
   }
 
-  private emitSound(runtime: MarbleRuntime, other: CANNON.Body, kind: MarbleImpactKind, strength: number) {
+  private emitSound(runtime: MarbleRuntime, other: CANNON.Body, kind: MarbleImpactKind, strength: number, variant = 0) {
     const key = `${runtime.id}:${other.id}:${kind}`;
     const pan = Math.max(-1, Math.min(1, runtime.body.position.x / 22));
-    this.emitPairSound(key, kind, strength, pan);
+    this.emitPairSound(key, kind, strength, pan, variant);
   }
 
   private emitPairSound(key: string, kind: MarbleImpactKind, strength: number, pan: number, variant?: number) {

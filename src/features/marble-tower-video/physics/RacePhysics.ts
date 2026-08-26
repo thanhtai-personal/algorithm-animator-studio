@@ -5,7 +5,7 @@ import { marbleStartGrid, normalizeMarbleCount } from "../marble/marbleGrid";
 import { nearestSampleIndexIn } from "../track/towerCourseSampler";
 import { ORIGINAL_TOWER_COURSE, raceCourseForMap, type RaceMapId } from "../track/raceCourse";
 import { pianoPadAt } from "../track/pianoPadLayout";
-import { buildTrackBodies, createBarrier, createChimeBumpers, createPianoBodies, createSpinner, createStudioStructureBodies, createSupportBodies, createStartGridBody, spawnPoint } from "./buildTowerCoursePhysics";
+import { buildTrackBodies, createBarrier, createChimeBumpers, createCourseObstacleBodies, createPianoBodies, createSpinner, createStudioStructureBodies, createSupportBodies, createStartGridBody, spawnPoint } from "./buildTowerCoursePhysics";
 import type { MarbleRuntime } from "./physicsTypes";
 import { impactVelocity, MarbleInteractionSystem, type MarbleImpactSound } from "./MarbleInteractionSystem";
 import { chimeBounceImpulse, jumpImpulse, launchImpulse, pianoBoostImpulse, recoveryImpulse } from "./marbleForces";
@@ -32,6 +32,7 @@ export class RacePhysics {
   readonly chimeBodies: CANNON.Body[];
   readonly supportBodies: CANNON.Body[];
   readonly studioStructureBodies: CANNON.Body[];
+  readonly roadObstacleBodies: CANNON.Body[];
   readonly pianoFlashUntil = Array.from({ length: 12 }, () => -1);
   readonly startGate: CANNON.Body;
   readonly spinnerA: ReturnType<typeof createSpinner>;
@@ -85,9 +86,10 @@ export class RacePhysics {
     const materials = createRaceMaterials(this.world);
     this.interactions = new MarbleInteractionSystem(
       this.bodyToMarble, materials.track, materials.obstacle, () => this.opened && !this.completed,
-      onImpactSound, this.marbleRadius, this.course.samples,
+      onImpactSound, this.marbleRadius, this.course.samples, this.course.obstacleSoundVariant,
     );
     buildTrackBodies(this.world, materials.track, this.course.samples, this.course.trackWidth);
+    this.roadObstacleBodies = createCourseObstacleBodies(this.world, materials.obstacle, this.course.samples, this.course.roadObstacles);
     createStartGridBody(this.world, materials.track, this.marbleCount, this.course.samples, this.course.trackWidth);
     this.supportBodies = createSupportBodies(this.world, materials.obstacle, this.course.samples);
     this.studioStructureBodies = this.course.studioCollision ? createStudioStructureBodies(this.world, materials.obstacle) : [];
@@ -208,7 +210,7 @@ export class RacePhysics {
     }
   }
   private updateGate(dt: number) {
-    updateStartGate(this.startGate, this.opened, dt);
+    updateStartGate(this.startGate, this.opened, dt, this.course.samples, this.course.specials.startGate);
   }
   private updateBeatObstacles() {
     this.beatIndex = updateBeatSpinners(

@@ -5,6 +5,7 @@ import { SPECIALS, TRACK_WIDTH } from '../track/towerCourse';
 import { marbleStartGrid } from '../marble/marbleGrid';
 import { PIANO_PAD_LAYOUT } from '../track/pianoPadLayout';
 import { STUDIO_SOLIDS } from '../race/studioStructure';
+import type { OlympicRoadObstacle } from '../track/olympicRoadCourse';
 
 function cannonVec(v: THREE.Vector3) { return new CANNON.Vec3(v.x, v.y, v.z); }
 function cannonQuat(q: THREE.Quaternion) { return new CANNON.Quaternion(q.x, q.y, q.z, q.w); }
@@ -115,6 +116,31 @@ export function createSupportBodies(
     bodies.push(body);
   });
   return bodies;
+}
+
+export function createCourseObstacleBodies(
+  world: CANNON.World,
+  material: CANNON.Material,
+  samples: readonly CourseSample[],
+  obstacles: readonly OlympicRoadObstacle[],
+) {
+  return obstacles.map((obstacle) => {
+    const sample = samples[Math.round(obstacle.progress * (samples.length - 1))];
+    const [width, height, depth] = obstacle.collider;
+    const body = new CANNON.Body({
+      mass: 0,
+      type: CANNON.Body.STATIC,
+      material,
+      shape: new CANNON.Box(new CANNON.Vec3(width / 2, height / 2, depth / 2)),
+    });
+    const position = sample.point.clone()
+      .addScaledVector(sample.right, obstacle.lateral)
+      .addScaledVector(sample.normal, height / 2 + 0.08);
+    body.position.copy(cannonVec(position));
+    body.quaternion.copy(cannonQuat(sample.quaternion));
+    world.addBody(body);
+    return body;
+  });
 }
 
 export function createStudioStructureBodies(world: CANNON.World, material: CANNON.Material) {

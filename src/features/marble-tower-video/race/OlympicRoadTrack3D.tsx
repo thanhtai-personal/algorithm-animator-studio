@@ -52,12 +52,43 @@ function StartDeck({ physics }: { physics: RacePhysics }) {
     <group position={sample.point} quaternion={sample.quaternion}>
       <mesh position={[0, -0.12, -physics.startGridDepth / 2]} receiveShadow castShadow>
         <boxGeometry args={[physics.course.trackWidth, 0.24, physics.startGridDepth]} />
-        <meshStandardMaterial color="#454d55" roughness={0.7} metalness={0.18} />
+        <meshStandardMaterial color="#727d84" roughness={0.66} metalness={0.16} />
       </mesh>
       {[-1, 1].map((side) => (
         <mesh key={side} position={[side * (physics.course.trackWidth / 2 - 0.06), 0.75, -physics.startGridDepth / 2]} castShadow>
           <boxGeometry args={[0.14, 1.5, physics.startGridDepth]} />
           <meshStandardMaterial color="#d9e1e8" metalness={0.75} roughness={0.26} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function LaunchArch({ physics }: { physics: RacePhysics }) {
+  const sample = physics.course.samples[Math.round(0.015 * (physics.course.samples.length - 1))];
+  const width = physics.course.trackWidth;
+  return (
+    <group position={sample.point} quaternion={sample.quaternion}>
+      {[-1, 1].map((side) => (
+        <group key={side}>
+          <mesh position={[side * (width / 2 + 0.48), 1.72, 0]} castShadow>
+            <boxGeometry args={[0.42, 3.44, 0.48]} />
+            <meshStandardMaterial color="#e7edf0" metalness={0.58} roughness={0.28} />
+          </mesh>
+          <mesh position={[side * (width / 2 + 0.48), 1.72, -0.27]}>
+            <boxGeometry args={[0.16, 2.8, 0.04]} />
+            <meshBasicMaterial color={side > 0 ? "#39d8ff" : "#ffcf2f"} toneMapped={false} />
+          </mesh>
+        </group>
+      ))}
+      <mesh position={[0, 3.34, 0]} castShadow>
+        <boxGeometry args={[width + 1.4, 0.52, 0.5]} />
+        <meshStandardMaterial color="#18242d" metalness={0.52} roughness={0.32} />
+      </mesh>
+      {Array.from({ length: 7 }, (_, index) => (
+        <mesh key={index} position={[-2.7 + index * 0.9, 3.34, -0.28]}>
+          <circleGeometry args={[0.14, 16]} />
+          <meshBasicMaterial color={index < 3 ? "#ff3f52" : index === 3 ? "#ffca2b" : "#42e77a"} toneMapped={false} />
         </mesh>
       ))}
     </group>
@@ -85,7 +116,7 @@ function RoadBase({ physics }: { physics: RacePhysics }) {
   return (
     <instancedMesh ref={ref} args={[undefined, undefined, count]} receiveShadow castShadow>
       <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color="#434950" roughness={0.72} metalness={0.18} />
+      <meshStandardMaterial color="#5f6970" roughness={0.72} metalness={0.16} />
     </instancedMesh>
   );
 }
@@ -97,10 +128,10 @@ function CurbsAndRoad({ physics }: { physics: RacePhysics }) {
   const right = useMemo(() => ribbon(samples, trackWidth / 2 - 0.42, trackWidth / 2, 0.07), [samples, trackWidth]);
   return (
     <group>
-      <mesh geometry={road} receiveShadow><meshStandardMaterial color="#5c6268" roughness={0.82} metalness={0.06} side={THREE.DoubleSide} /></mesh>
+      <mesh geometry={road} receiveShadow><meshStandardMaterial color="#81898e" roughness={0.8} metalness={0.04} side={THREE.DoubleSide} /></mesh>
       {[left, right].map((geometry, index) => (
         <mesh key={index} geometry={geometry} receiveShadow>
-          <meshStandardMaterial color="#e2454f" roughness={0.56} metalness={0.08} side={THREE.DoubleSide} />
+          <meshStandardMaterial color="#f1bf24" roughness={0.54} metalness={0.08} side={THREE.DoubleSide} />
         </mesh>
       ))}
     </group>
@@ -128,7 +159,7 @@ function RoadDetails({ physics }: { physics: RacePhysics }) {
       {samples.filter((_, index) => index % 10 === 5).flatMap((sample) => ([-1, 1] as const).map((side) => (
         <mesh key={`curb-${sample.index}-${side}`} position={sample.point.clone().addScaledVector(sample.right, side * (trackWidth / 2 - 0.2)).addScaledVector(sample.normal, 0.105)} quaternion={sample.quaternion}>
           <boxGeometry args={[0.38, 0.04, Math.max(0.65, sample.lengthToNext * 2.5)]} />
-          <meshBasicMaterial color="#ffffff" toneMapped={false} />
+          <meshBasicMaterial color={Math.floor(sample.index / 10) % 2 ? "#25282b" : "#fff3c5"} toneMapped={false} />
         </mesh>
       )))}
       {walls.map((geometry, index) => (
@@ -139,7 +170,7 @@ function RoadDetails({ physics }: { physics: RacePhysics }) {
       {rails.map((curve, index) => (
         <mesh key={`rail-${index}`} castShadow>
           <tubeGeometry args={[curve, 300, 0.095, 8, false]} />
-          <meshStandardMaterial color={index ? "#62dcff" : "#ff6382"} emissive={index ? "#1ca5d0" : "#c22649"} emissiveIntensity={1.4} metalness={0.65} roughness={0.18} />
+          <meshStandardMaterial color={index ? "#62dcff" : "#ffd83b"} emissive={index ? "#1ca5d0" : "#d89a18"} emissiveIntensity={1.4} metalness={0.65} roughness={0.18} />
         </mesh>
       ))}
       {supports.map((sample) => {
@@ -155,13 +186,17 @@ function RoadDetails({ physics }: { physics: RacePhysics }) {
 
 function NeonSpiralBasin() {
   return (
-    <group position={[0, 6.8, 0]}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[8.4, 4.2, 1.1, 64, 1, true]} />
-        <meshPhysicalMaterial color="#1a8ed1" transparent opacity={0.2} roughness={0.14} metalness={0.35} side={THREE.DoubleSide} />
+    <group position={[0, 6.4, 0]}>
+      <mesh>
+        <cylinderGeometry args={[8.8, 3.8, 5.6, 64, 1, true]} />
+        <meshPhysicalMaterial color="#26a9e8" transparent opacity={0.22} roughness={0.12} metalness={0.28} side={THREE.DoubleSide} />
       </mesh>
-      {[4.6, 5.8, 7.1, 8.3].map((radius, index) => (
-        <mesh key={radius} rotation={[Math.PI / 2, 0, 0]} position={[0, 0.2 + index * 0.18, 0]}>
+      <mesh position={[0, -2.76, 0]}>
+        <cylinderGeometry args={[3.85, 3.85, 0.22, 64]} />
+        <meshStandardMaterial color="#1285c8" emissive="#0c69a4" emissiveIntensity={0.7} roughness={0.28} />
+      </mesh>
+      {[4.5, 5.8, 7.2, 8.5].map((radius, index) => (
+        <mesh key={radius} rotation={[Math.PI / 2, 0, 0]} position={[0, -2 + index * 1.48, 0]}>
           <torusGeometry args={[radius, 0.075, 8, 72]} />
           <meshStandardMaterial color="#45c8ff" emissive="#168fd0" emissiveIntensity={2.2} toneMapped={false} />
         </mesh>
@@ -170,7 +205,7 @@ function NeonSpiralBasin() {
   );
 }
 
-function FinishMark({ physics }: { physics: RacePhysics }) {
+function FinishPodium({ physics }: { physics: RacePhysics }) {
   const sample = physics.course.samples[Math.round(physics.course.specials.finish * (physics.course.samples.length - 1))];
   const width = physics.course.trackWidth;
   return (
@@ -181,10 +216,38 @@ function FinishMark({ physics }: { physics: RacePhysics }) {
           <meshBasicMaterial color={index % 2 ? "#ffffff" : "#15181d"} />
         </mesh>
       ))}
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[side * (width / 2 + 0.5), 1.75, 0]} castShadow>
+          <boxGeometry args={[0.4, 3.5, 0.5]} />
+          <meshStandardMaterial color="#edf2f4" metalness={0.52} roughness={0.3} />
+        </mesh>
+      ))}
+      <mesh position={[0, 3.35, 0]} castShadow>
+        <boxGeometry args={[width + 1.4, 0.52, 0.52]} />
+        <meshStandardMaterial color="#17242d" metalness={0.48} roughness={0.34} />
+      </mesh>
+      {Array.from({ length: 10 }, (_, index) => (
+        <mesh key={index} position={[-3.15 + index * 0.7, 3.35, -0.29]}>
+          <boxGeometry args={[0.42, 0.2, 0.035]} />
+          <meshBasicMaterial color={index % 2 ? "#ffffff" : "#41d9ff"} toneMapped={false} />
+        </mesh>
+      ))}
+      {[-2.55, -0.85, 0.85, 2.55].map((x, index) => (
+        <group key={x} position={[x, 0, 2.5]}>
+          <mesh position={[0, 0.03 + index * 0.03, 0]} receiveShadow castShadow>
+            <boxGeometry args={[1.45, 0.24 + index * 0.06, 4.1]} />
+            <meshStandardMaterial color={["#2497df", "#f0bd27", "#ec5f42", "#42ba73"][index]} roughness={0.52} />
+          </mesh>
+          <mesh position={[0, 0.34 + index * 0.06, 1.48]}>
+            <boxGeometry args={[0.86, 0.38, 0.18]} />
+            <meshBasicMaterial color="#f5f7f8" />
+          </mesh>
+        </group>
+      ))}
     </group>
   );
 }
 
 export function OlympicRoadTrack3D({ physics }: { physics: RacePhysics }) {
-  return <group><StartDeck physics={physics} /><RoadBase physics={physics} /><CurbsAndRoad physics={physics} /><RoadDetails physics={physics} /><NeonSpiralBasin /><FinishMark physics={physics} /></group>;
+  return <group><StartDeck physics={physics} /><LaunchArch physics={physics} /><RoadBase physics={physics} /><CurbsAndRoad physics={physics} /><RoadDetails physics={physics} /><NeonSpiralBasin /><FinishPodium physics={physics} /></group>;
 }

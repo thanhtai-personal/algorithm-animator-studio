@@ -3,10 +3,12 @@ import { CUTS, SPECIALS, TOWER_RACE_MAP_ID, TRACK_WIDTH } from "./towerCourse";
 import {
   OLYMPIC_ROAD_CUTS,
   OLYMPIC_ROAD_MAP_ID,
+  OLYMPIC_ROAD_OBSTACLES,
   OLYMPIC_ROAD_SAMPLES,
   OLYMPIC_ROAD_SPECIALS,
   OLYMPIC_TRACK_WIDTH,
 } from "./olympicRoadCourse";
+import type { OlympicRoadObstacle } from "./olympicRoadCourse";
 
 export type RaceMapId = typeof TOWER_RACE_MAP_ID | typeof OLYMPIC_ROAD_MAP_ID;
 
@@ -33,6 +35,8 @@ export type RaceCourseDefinition = {
   };
   towerInstruments: boolean;
   studioCollision: boolean;
+  roadObstacles: readonly OlympicRoadObstacle[];
+  obstacleSoundVariant: number;
 };
 
 export const ORIGINAL_TOWER_COURSE: RaceCourseDefinition = {
@@ -45,18 +49,22 @@ export const ORIGINAL_TOWER_COURSE: RaceCourseDefinition = {
   specials: SPECIALS,
   towerInstruments: true,
   studioCollision: true,
+  roadObstacles: [],
+  obstacleSoundVariant: 0,
 };
 
 export const OLYMPIC_ROAD_COURSE: RaceCourseDefinition = {
   id: OLYMPIC_ROAD_MAP_ID,
   label: "Map 2 · Olympic Road",
-  description: "Đường đua đồ chơi: hairpin lớn, spiral neon, S-curve và hazard chute.",
+  description: "Đường đua đồ chơi: showcase hairpin, spiral bowl, switchback và podium.",
   samples: OLYMPIC_ROAD_SAMPLES,
   trackWidth: OLYMPIC_TRACK_WIDTH,
   cuts: OLYMPIC_ROAD_CUTS,
   specials: OLYMPIC_ROAD_SPECIALS,
   towerInstruments: false,
   studioCollision: false,
+  roadObstacles: OLYMPIC_ROAD_OBSTACLES,
+  obstacleSoundVariant: 1,
 };
 
 export const RACE_MAPS = [ORIGINAL_TOWER_COURSE, OLYMPIC_ROAD_COURSE] as const;

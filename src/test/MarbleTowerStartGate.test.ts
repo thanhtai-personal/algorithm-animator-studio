@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { RacePhysics } from "../features/marble-tower-video/physics/RacePhysics";
 import { COURSE_SAMPLES } from "../features/marble-tower-video/track/towerCourseSampler";
 import { SPECIALS } from "../features/marble-tower-video/track/towerCourse";
+import { OLYMPIC_ROAD_MAP_ID, OLYMPIC_ROAD_SAMPLES } from "../features/marble-tower-video/track/olympicRoadCourse";
 
 describe("Marble Tower start gate", () => {
   let physics: RacePhysics | null = null;
@@ -31,5 +32,15 @@ describe("Marble Tower start gate", () => {
     const gateIndex = Math.round(SPECIALS.startGate * (COURSE_SAMPLES.length - 1));
     const frontRunnerProgress = Math.max(...[...physics.marbles.values()].map((marble) => marble.progressIndex));
     expect(frontRunnerProgress).toBeGreaterThan(gateIndex + 2);
+  });
+
+  it("keeps the map 2 gate attached to the Olympic launch chute", () => {
+    physics = new RacePhysics(() => undefined, 6, undefined, 24, OLYMPIC_ROAD_MAP_ID);
+
+    physics.advanceTo(1);
+
+    const gateSample = OLYMPIC_ROAD_SAMPLES[Math.round(physics.course.specials.startGate * (OLYMPIC_ROAD_SAMPLES.length - 1))];
+    const distance = gateSample.point.distanceTo(physics.startGate.position);
+    expect(distance).toBeLessThan(3);
   });
 });

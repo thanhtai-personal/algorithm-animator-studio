@@ -8,14 +8,15 @@ import { useRhythmicStudioController } from "@/features/rhythmic-studio/hooks/us
 import { rhythmicOutputSize } from "@/features/rhythmic-studio/lib/outputSize";
 import { RaceScene3D } from "../race/RaceScene3D";
 import type { RaceResult } from "../race/raceTypes";
-import { MarbleTowerControls } from "./MarbleTowerControls";
 import { useMarbleTowerPlaylist } from "../hooks/useMarbleTowerPlaylist";
-import { RaceHudPanel } from "./RaceHudPanel";
+import { raceSessionStore } from "../store/RaceSessionStore";
+import { MarbleTowerControls } from "./MarbleTowerControls";
 import { MarbleTowerTransportBar } from "./MarbleTowerTransportBar";
+import { RaceHudPanel } from "./RaceHudPanel";
 
 export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorkspace() {
   const studio = useRhythmicStudioController();
-  const [driveMultiplier, setDriveMultiplier] = useState(1.8);
+  const [driveMultiplier, setDriveMultiplier] = useState(6);
   const [raceResult, setRaceResult] = useState<RaceResult | null>(null);
   const [seekRevision, setSeekRevision] = useState(0);
   const playlist = useMarbleTowerPlaylist(studio);
@@ -26,7 +27,7 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
     studio.setRendererMode("three");
     if (studio.settings.outputPreset !== "landscape-720p") studio.patch("outputPreset", "landscape-720p");
     if (studio.settings.titleText === "MARBLE MUSIC") studio.patch("titleText", "MARBLE TOWER RACE");
-  }, []); // This screen owns the Three.js export surface for its lifetime.
+  }, []);
 
   const handleEnded = useCallback(() => studio.onEnded(), [studio.onEnded]);
   const handleComplete = useCallback((result: RaceResult) => {
@@ -68,7 +69,7 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
       <header className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card/70 px-4 py-3 shadow-sm backdrop-blur">
         <div>
           <h1 className="text-lg font-bold tracking-tight">Marble Tower Video</h1>
-          <p className="text-xs text-muted-foreground">Original tower map · Cannon physics · leader-follow camera · Kai Studio audio &amp; export</p>
+          <p className="text-xs text-muted-foreground">Decorated warehouse tower · rainbow track preserved · 3-2-1 start · leader-follow camera · audio playlist loop</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="secondary" disabled={studio.recording} onClick={() => recordRace("webm")}><Video className="mr-2 h-4 w-4" />WebM</Button>
@@ -94,6 +95,7 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
                 stopAtPlaybackEnd={studio.playingClip}
                 canvasRef={studio.threeCanvasRef}
               />
+              <CountdownOverlay active={studio.playing || studio.recording || studio.timeMs > 0} />
               {studio.recording ? <div className="pointer-events-none absolute right-3 top-3 rounded-full bg-red-600/90 px-3 py-1 text-xs font-bold text-white shadow">● REC</div> : null}
             </div>
             <MarbleTowerTransportBar
@@ -132,10 +134,6 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
           playlist={playlist.tracks}
           currentTrackIndex={playlist.currentIndex}
           onAudioFiles={(files) => void playlist.replaceTracks(files)}
-          onMidiFile={(file) => {
-            playlist.clearTracks();
-            void studio.importMidi(file);
-          }}
           onSelectTrack={playlist.selectTrack}
         />
       </div>
@@ -148,4 +146,18 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
       className="hidden"
     />
   </main>;
+});
+
+const CountdownOverlay = observer(function CountdownOverlay({ active }: { active: boolean }) {
+  const showCount = active && raceSessionStore.phase === "countdown" && raceSessionStore.countdown > 0;
+  const showGo = active && raceSessionStore.phase === "racing" && raceSessionStore.elapsedMs < 550;
+  if (!showCount && !showGo) return null;
+
+  return (
+    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+      <div className="rounded-full border border-white/35 bg-black/28 px-8 py-5 text-[clamp(64px,13vw,150px)] font-black italic leading-none text-white shadow-[0_18px_55px_rgba(0,0,0,0.55)] backdrop-blur-sm">
+        {showCount ? raceSessionStore.countdown : "GO!"}
+      </div>
+    </div>
+  );
 });

@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { FileAudio2, FileMusic, Rocket, Upload } from "lucide-react";
+import { FileAudio2, FileMusic, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,6 @@ export function MarbleTowerControls({
   playlist,
   currentTrackIndex,
   onAudioFiles,
-  onMidiFile,
   onSelectTrack,
 }: {
   studio: RhythmicStudioController;
@@ -23,10 +22,8 @@ export function MarbleTowerControls({
   playlist: MarbleTowerPlaylistTrack[];
   currentTrackIndex: number;
   onAudioFiles: (files: File[]) => void;
-  onMidiFile: (file: File) => void;
   onSelectTrack: (index: number) => void;
 }) {
-  const midiRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLInputElement>(null);
   const sourceLocked = studio.playing || studio.recording;
 
@@ -38,33 +35,17 @@ export function MarbleTowerControls({
           <h2 className="text-sm font-semibold">Nhạc cho video</h2>
         </div>
         <p className="mb-3 text-xs text-muted-foreground">
-          Audio có thể chọn nhiều bài. Game phát lần lượt rồi quay lại bài đầu cho tới khi cuộc đua dừng.
+          Màn hình này chỉ dùng nhạc audio. Có thể chọn nhiều bài để phát tuần tự rồi lặp lại từ đầu cho tới khi cuộc đua dừng.
         </p>
-        <div className="grid grid-cols-2 gap-2">
-          <Button type="button" variant="outline" disabled={sourceLocked} onClick={() => midiRef.current?.click()}>
-            <Upload className="mr-2 h-4 w-4" />MIDI
-          </Button>
-          <Button type="button" variant="outline" disabled={sourceLocked} onClick={() => audioRef.current?.click()}>
-            <FileAudio2 className="mr-2 h-4 w-4" />Chọn nhiều Audio
-          </Button>
-        </div>
-        <input
-          ref={midiRef}
-          type="file"
-          className="hidden"
-          accept=".mid,.midi,audio/midi,audio/x-midi"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) onMidiFile(file);
-            event.currentTarget.value = "";
-          }}
-        />
+        <Button type="button" variant="outline" className="w-full" disabled={sourceLocked} onClick={() => audioRef.current?.click()}>
+          <FileAudio2 className="mr-2 h-4 w-4" />Upload nhạc / playlist
+        </Button>
         <input
           ref={audioRef}
           type="file"
           multiple
           className="hidden"
-          accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg"
+          accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac"
           onChange={(event) => {
             const files = Array.from(event.target.files ?? []);
             if (files.length) onAudioFiles(files);
@@ -73,7 +54,7 @@ export function MarbleTowerControls({
         />
 
         {playlist.length ? (
-          <div className="mt-3 max-h-44 space-y-1 overflow-y-auto rounded-lg border bg-background/35 p-2">
+          <div className="mt-3 max-h-48 space-y-1 overflow-y-auto rounded-lg border bg-background/35 p-2">
             {playlist.map((track, index) => {
               const active = index === currentTrackIndex;
               return (
@@ -92,11 +73,8 @@ export function MarbleTowerControls({
             })}
           </div>
         ) : (
-          <div className="mt-3 rounded-lg bg-muted/40 px-3 py-2 text-xs">
-            <b className="block truncate">{studio.source.name}</b>
-            <span className="text-muted-foreground">
-              {studio.source.type.toUpperCase()} · {studio.sourceEvents.length} events · {(studio.durationMs / 1000).toFixed(1)}s
-            </span>
+          <div className="mt-3 rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+            Chưa có playlist. Hãy upload một hoặc nhiều file nhạc để phát trong cuộc đua.
           </div>
         )}
       </section>
@@ -106,10 +84,13 @@ export function MarbleTowerControls({
           <Rocket className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold">Động lực ban đầu</h2>
         </div>
-        <div className="flex items-center justify-between text-xs"><Label>Launch impulse</Label><b>{driveMultiplier.toFixed(2)}×</b></div>
-        <Slider className="mt-3" min={0.75} max={3.2} step={0.05} value={[driveMultiplier]} disabled={studio.recording} onValueChange={([value]) => onDriveChange(value)} />
+        <div className="flex items-center justify-between text-xs">
+          <Label>Launch impulse</Label>
+          <b>{driveMultiplier.toFixed(2)}×</b>
+        </div>
+        <Slider className="mt-3" min={4} max={10} step={0.25} value={[driveMultiplier]} disabled={studio.recording} onValueChange={([value]) => onDriveChange(value)} />
         <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-          Tất cả bi nhận cùng một cú đẩy theo tiếp tuyến của tháp khi cổng mở. Sau đó cuộc đua tiếp tục bằng gravity, va chạm và độ dốc của map.
+          Kéo từ 4× tới 10×. Tất cả bi nhận cùng một cú đẩy theo tiếp tuyến của tháp khi cổng mở, sau đó tiếp tục bằng gravity và va chạm.
         </p>
       </section>
 
@@ -121,7 +102,7 @@ export function MarbleTowerControls({
       <section className="rounded-xl border bg-card/60 p-4">
         <h2 className="mb-3 text-sm font-semibold">Âm lượng</h2>
         <VolumeRow label="Nhạc gốc" value={studio.settings.musicVolume} max={1.5} onChange={(value) => studio.patch("musicVolume", value)} />
-        <VolumeRow label="MIDI / synth" value={studio.settings.synthVolume} max={1.5} onChange={(value) => studio.patch("synthVolume", value)} />
+        <VolumeRow label="Hiệu ứng / synth" value={studio.settings.synthVolume} max={1.5} onChange={(value) => studio.patch("synthVolume", value)} />
         <Label className="mt-3 block text-xs">Tên project</Label>
         <Input className="mt-1.5" value={studio.projectName} disabled={studio.recording} onChange={(event) => studio.setProjectName(event.target.value)} />
       </section>

@@ -17,7 +17,7 @@ function TrackBase() {
       const sample = COURSE_SAMPLES[index];
       const next = COURSE_SAMPLES[index + 1];
       const mid = sample.point.clone().lerp(next.point, 0.5).addScaledVector(sample.normal, -0.18);
-      scale.set(TRACK_WIDTH + 0.8, TRACK_THICKNESS, sample.lengthToNext * 1.58);
+      scale.set(TRACK_WIDTH + 0.28, TRACK_THICKNESS, sample.lengthToNext * 1.52);
       matrix.compose(mid, sample.quaternion, scale);
       ref.current.setMatrixAt(index, matrix);
     }
@@ -26,12 +26,12 @@ function TrackBase() {
   return (
     <instancedMesh ref={ref} args={[undefined, undefined, SEGMENT_COUNT]} receiveShadow castShadow>
       <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color="#14171c" roughness={0.34} metalness={0.72} />
+      <meshStandardMaterial color="#c3cbd6" roughness={0.28} metalness={0.5} />
     </instancedMesh>
   );
 }
 
-function buildRibbonGeometry(lateralMin: number, lateralMax: number, lift = 0.035) {
+function buildRibbonGeometry(lateralMin: number, lateralMax: number, lift = 0.05) {
   const positions: number[] = [];
   const normals: number[] = [];
   const uvs: number[] = [];
@@ -65,12 +65,13 @@ function buildRibbonGeometry(lateralMin: number, lateralMax: number, lift = 0.03
 
 function Stripe({ color, stripeIndex }: { color: string; stripeIndex: number }) {
   const stripeWidth = TRACK_WIDTH / RAINBOW_COLORS.length;
-  const lateralMin = -TRACK_WIDTH / 2 + stripeWidth * stripeIndex;
-  const lateralMax = lateralMin + stripeWidth;
+  const overlap = 0.035;
+  const lateralMin = -TRACK_WIDTH / 2 + stripeWidth * stripeIndex - overlap;
+  const lateralMax = lateralMin + stripeWidth + overlap * 2;
   const geometry = useMemo(() => buildRibbonGeometry(lateralMin, lateralMax), [lateralMax, lateralMin]);
   return (
     <mesh geometry={geometry} receiveShadow>
-      <meshPhysicalMaterial color={color} roughness={0.2} metalness={0.22} clearcoat={0.72} clearcoatRoughness={0.15} side={THREE.DoubleSide} />
+      <meshPhysicalMaterial color={color} roughness={0.16} metalness={0.18} clearcoat={0.86} clearcoatRoughness={0.12} side={THREE.DoubleSide} />
     </mesh>
   );
 }
@@ -125,9 +126,9 @@ function GuardWalls() {
         <group key={side}>
           <mesh geometry={geometry} castShadow receiveShadow>
             <meshPhysicalMaterial
-              color="#87939d"
+              color="#9cc4d9"
               transparent
-              opacity={0.72}
+              opacity={0.84}
               roughness={0.2}
               metalness={0.48}
               clearcoat={0.42}
@@ -136,7 +137,7 @@ function GuardWalls() {
           </mesh>
           <mesh castShadow>
             <tubeGeometry args={[topRail, 260, 0.14, 8, false]} />
-            <meshStandardMaterial color="#d8e0e6" metalness={0.92} roughness={0.16} />
+            <meshStandardMaterial color="#edf4fa" metalness={0.92} roughness={0.16} />
           </mesh>
         </group>
       ))}
@@ -154,11 +155,11 @@ function TrackSupports() {
           <group key={sample.index}>
             <mesh position={[sample.point.x, height / 2, sample.point.z]} castShadow>
               <cylinderGeometry args={[0.16, 0.2, height, 10]} />
-              <meshStandardMaterial color="#22272d" metalness={0.76} roughness={0.32} />
+              <meshStandardMaterial color="#6e7883" metalness={0.76} roughness={0.32} />
             </mesh>
             <mesh position={[sample.point.x, sample.point.y - 0.8, sample.point.z]} quaternion={sample.quaternion}>
               <boxGeometry args={[TRACK_WIDTH + 1.4, 0.18, 0.28]} />
-              <meshStandardMaterial color="#252a30" metalness={0.8} roughness={0.3} />
+              <meshStandardMaterial color="#929daa" metalness={0.8} roughness={0.3} />
             </mesh>
           </group>
         );
@@ -237,12 +238,12 @@ function FinishDeck() {
     <group position={sample.point} quaternion={sample.quaternion}>
       <mesh position={[0, 0.055, 0]} receiveShadow>
         <boxGeometry args={[TRACK_WIDTH + 1.8, 0.1, 4.8]} />
-        <meshStandardMaterial color="#0b0c0f" metalness={0.62} roughness={0.38} />
+        <meshStandardMaterial color="#bcc6d1" metalness={0.62} roughness={0.38} />
       </mesh>
       {Array.from({ length: 10 }, (_, index) => (
         <mesh key={index} position={[-TRACK_WIDTH / 2 + index * (TRACK_WIDTH / 9), 0.13, 0]}>
           <boxGeometry args={[TRACK_WIDTH / 9, 0.04, 0.8]} />
-          <meshBasicMaterial color={index % 2 ? '#ffffff' : '#101114'} />
+          <meshBasicMaterial color={index % 2 ? '#ffffff' : '#6b7a8b'} />
         </mesh>
       ))}
     </group>

@@ -23,10 +23,12 @@ export function MarbleField3D({ physics }: { physics: RacePhysics }) {
     if (balls.current) {
       physics.roster.forEach((marble, index) => balls.current?.setColorAt(index, new THREE.Color(marble.color)));
       if (balls.current.instanceColor) balls.current.instanceColor.needsUpdate = true;
+      if (!Array.isArray(balls.current.material)) balls.current.material.needsUpdate = true;
     }
     if (stripes.current) {
       striped.forEach((marble, index) => stripes.current?.setColorAt(index, new THREE.Color(marble.stripeColor!)));
       if (stripes.current.instanceColor) stripes.current.instanceColor.needsUpdate = true;
+      if (!Array.isArray(stripes.current.material)) stripes.current.material.needsUpdate = true;
     }
   }, [physics, striped]);
 
@@ -59,12 +61,12 @@ export function MarbleField3D({ physics }: { physics: RacePhysics }) {
     <group>
       <instancedMesh ref={balls} args={[undefined, undefined, physics.roster.length]} castShadow={shadow} frustumCulled={false} userData={{ cameraIgnore: true }}>
         <sphereGeometry args={[1, physics.marbleCount > 300 ? 14 : 22, physics.marbleCount > 300 ? 10 : 16]} />
-        <meshPhysicalMaterial vertexColors metalness={0.16} roughness={0.13} clearcoat={0.92} clearcoatRoughness={0.06} />
+        <meshPhysicalMaterial color="#ffffff" metalness={0.16} roughness={0.13} clearcoat={0.92} clearcoatRoughness={0.06} />
       </instancedMesh>
       {striped.length ? (
         <instancedMesh ref={stripes} args={[undefined, undefined, striped.length]} castShadow={false} frustumCulled={false} userData={{ cameraIgnore: true }}>
           <torusGeometry args={[0.72, 0.115, 8, 20]} />
-          <meshPhysicalMaterial vertexColors roughness={0.15} metalness={0.12} clearcoat={0.8} />
+          <meshPhysicalMaterial color="#ffffff" roughness={0.15} metalness={0.12} clearcoat={0.8} />
         </instancedMesh>
       ) : null}
     </group>

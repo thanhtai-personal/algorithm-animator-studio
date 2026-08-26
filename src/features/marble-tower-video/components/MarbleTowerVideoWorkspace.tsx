@@ -18,6 +18,7 @@ import { MarbleTowerTransportBar } from "./MarbleTowerTransportBar";
 import { RaceHudPanel } from "./RaceHudPanel";
 import { RaceStartSequence } from "./RaceStartSequence";
 import { WinnerCelebrationOverlay } from "./WinnerCelebrationOverlay";
+import "./marbleTowerTransport.css";
 
 function isMidiFile(file: File) {
   const name = file.name.toLowerCase();

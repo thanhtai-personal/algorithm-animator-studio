@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
+import { observer } from "mobx-react-lite";
 import { Gauge, Music2, Video } from "lucide-react";
 import { useSystemLang } from "@/hooks/use-system-lang";
 import { useRhythmicStudioController } from "@/features/rhythmic-studio/hooks/useRhythmicStudioController";
 import { MarbleTowerControls } from "./MarbleTowerControls";
 import { MarbleTowerStage } from "./MarbleTowerStage";
 
-export function MarbleTowerVideoWorkspace() {
+export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorkspace() {
   const lang = useSystemLang();
   const vi = lang === "vi";
   const studio = useRhythmicStudioController();
@@ -33,4 +34,4 @@ export function MarbleTowerVideoWorkspace() {
     </div>
     <audio ref={studio.audioElementRef} src={studio.audioUrl ?? undefined} preload="metadata" className="hidden" />
   </main>;
-}
+});

@@ -24,7 +24,7 @@ function isMidiFile(file: File) {
 
 export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorkspace() {
   const studio = useRhythmicStudioController();
-  const [driveMultiplier, setDriveMultiplier] = useState(6);
+  const [driveMultiplier, setDriveMultiplier] = useState(7.25);
   const [raceResult, setRaceResult] = useState<RaceResult | null>(null);
   const [racePhysics, setRacePhysics] = useState<RacePhysics | null>(null);
   const [seekRevision, setSeekRevision] = useState(0);

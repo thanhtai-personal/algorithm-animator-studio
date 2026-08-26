@@ -154,7 +154,7 @@ function TrackSupports() {
         return (
           <group key={sample.index}>
             <mesh position={[sample.point.x, height / 2, sample.point.z]} castShadow>
-              <cylinderGeometry args={[0.16, 0.2, height, 10]} />
+              <cylinderGeometry args={[0.22, 0.25, height, 12]} />
               <meshStandardMaterial color="#6e7883" metalness={0.76} roughness={0.32} />
             </mesh>
             <mesh position={[sample.point.x, sample.point.y - 0.8, sample.point.z]} quaternion={sample.quaternion}>

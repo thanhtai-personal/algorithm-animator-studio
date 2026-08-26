@@ -44,8 +44,8 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
   }, [stopOriginalAudio]);
 
   const playCue = useCallback((url: string) => audioEngineRef.current.playCue(url), []);
-  const playMarbleImpact = useCallback((kind: MarbleImpactSoundKind, strength: number, pan: number) => {
-    void audioEngineRef.current.playMarbleImpact(kind, strength, pan).catch(() => undefined);
+  const playMarbleImpact = useCallback((kind: MarbleImpactSoundKind, strength: number, pan: number, variant?: number) => {
+    void audioEngineRef.current.playMarbleImpact(kind, strength, pan, variant).catch(() => undefined);
   }, []);
 
   const startOriginalAudio = useCallback(async (resumeMs = 0) => {

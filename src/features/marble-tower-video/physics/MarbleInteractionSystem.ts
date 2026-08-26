@@ -4,27 +4,27 @@ import { COURSE_SAMPLES } from "../track/towerCourseSampler";
 import { MARBLE_RADIUS } from "../track/towerCourse";
 import type { MarbleRuntime } from "./physicsTypes";
 
-export type MarbleImpactKind = "wall" | "obstacle" | "obstacle-strike";
-export type MarbleImpactSound = (kind: MarbleImpactKind, strength: number, pan: number) => void;
+export type MarbleImpactKind = "wall" | "obstacle" | "obstacle-strike" | "marble" | "instrument";
+export type MarbleImpactSound = (kind: MarbleImpactKind, strength: number, pan: number, variant?: number) => void;
 
-type CollideEvent = {
+export type CollideEvent = {
   body: CANNON.Body;
   contact?: CANNON.ContactEquation;
 };
 
-const MAGNETIC_RADIUS = MARBLE_RADIUS * 2.95;
-const MAGNETIC_ACCELERATION = 38;
-const PAIR_BOUNCE_COOLDOWN = 0.075;
-const SOUND_COOLDOWN = 0.055;
+const MAGNETIC_RADIUS = MARBLE_RADIUS * 2.55;
+const MAGNETIC_ACCELERATION = 22;
+const PAIR_BOUNCE_COOLDOWN = 0.085;
+const SOUND_COOLDOWN = 0.048;
 
 function pairKey(a: MarbleId, b: MarbleId) {
   return a < b ? `${a}:${b}` : `${b}:${a}`;
 }
 
-function impactVelocity(event: CollideEvent, marble: CANNON.Body) {
-  const contact = event.contact as (CANNON.ContactEquation & { getImpactVelocityAlongNormal?: () => number }) | undefined;
-  const contactSpeed = Math.abs(contact?.getImpactVelocityAlongNormal?.() ?? 0);
-  const relative = marble.velocity.vsub(event.body.velocity).length();
+export function impactVelocity(contact: CANNON.ContactEquation | undefined, a: CANNON.Body, b?: CANNON.Body) {
+  const equation = contact as (CANNON.ContactEquation & { getImpactVelocityAlongNormal?: () => number }) | undefined;
+  const contactSpeed = Math.abs(equation?.getImpactVelocityAlongNormal?.() ?? 0);
+  const relative = b ? a.velocity.vsub(b.velocity).length() : a.velocity.length();
   return Math.max(contactSpeed, relative * 0.72);
 }
 
@@ -53,7 +53,7 @@ export class MarbleInteractionSystem {
     const alive = [...marbles].filter((marble) => marble.alive);
     for (let i = 0; i < alive.length; i += 1) {
       for (let j = i + 1; j < alive.length; j += 1) {
-        if (Math.abs(alive[i].progressIndex - alive[j].progressIndex) > 12) continue;
+        if (Math.abs(alive[i].progressIndex - alive[j].progressIndex) > 10) continue;
         const a = alive[i].body;
         const b = alive[j].body;
         const dx = a.position.x - b.position.x;
@@ -67,10 +67,8 @@ export class MarbleInteractionSystem {
         const nx = dx / distance;
         const ny = dy / distance;
         const nz = dz / distance;
-        const forceA = acceleration * a.mass;
-        const forceB = acceleration * b.mass;
-        a.applyForce(new CANNON.Vec3(nx * forceA, ny * forceA, nz * forceA));
-        b.applyForce(new CANNON.Vec3(-nx * forceB, -ny * forceB, -nz * forceB));
+        a.applyForce(new CANNON.Vec3(nx * acceleration * a.mass, ny * acceleration * a.mass, nz * acceleration * a.mass));
+        b.applyForce(new CANNON.Vec3(-nx * acceleration * b.mass, -ny * acceleration * b.mass, -nz * acceleration * b.mass));
       }
     }
   }
@@ -80,12 +78,19 @@ export class MarbleInteractionSystem {
     const otherMarble = this.bodyToMarble.get(event.body.id);
     if (otherMarble?.alive) {
       this.applyMagneticBounce(runtime, otherMarble);
+      if (this.isRaceActive() && this.onImpactSound) {
+        const strength = impactVelocity(event.contact, runtime.body, otherMarble.body);
+        if (strength > 0.22) {
+          const pan = Math.max(-1, Math.min(1, (runtime.body.position.x + otherMarble.body.position.x) / 44));
+          this.emitPairSound(pairKey(runtime.id, otherMarble.id), "marble", strength, pan);
+        }
+      }
       return;
     }
     if (!this.isRaceActive() || !this.onImpactSound) return;
 
-    const strength = impactVelocity(event, runtime.body);
-    if (strength < 0.8) return;
+    const strength = impactVelocity(event.contact, runtime.body, event.body);
+    if (strength < 0.45) return;
     const otherMaterial = event.body.material;
     if (otherMaterial === this.obstacleMaterial) {
       const moving = event.body.type === CANNON.Body.KINEMATIC
@@ -110,7 +115,7 @@ export class MarbleInteractionSystem {
     let distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
     if (distance < 1e-5) {
       dx = a.id < b.id ? -1 : 1;
-      dy = 0.08;
+      dy = 0.06;
       dz = 0;
       distance = Math.sqrt(dx * dx + dy * dy);
     }
@@ -121,9 +126,8 @@ export class MarbleInteractionSystem {
     const rvy = a.body.velocity.y - b.body.velocity.y;
     const rvz = a.body.velocity.z - b.body.velocity.z;
     const closingSpeed = Math.max(0, -(rvx * nx + rvy * ny + rvz * nz));
-    const separationSpeed = 1.25 + Math.min(3.4, closingSpeed * 0.42);
-    const impulseMass = Math.min(a.body.mass, b.body.mass);
-    const magnitude = impulseMass * separationSpeed;
+    const separationSpeed = 0.72 + Math.min(2.4, closingSpeed * 0.34);
+    const magnitude = Math.min(a.body.mass, b.body.mass) * separationSpeed;
     const impulse = new CANNON.Vec3(nx * magnitude, ny * magnitude, nz * magnitude);
     a.body.applyImpulse(impulse);
     b.body.applyImpulse(new CANNON.Vec3(-impulse.x, -impulse.y, -impulse.z));
@@ -139,10 +143,14 @@ export class MarbleInteractionSystem {
 
   private emitSound(runtime: MarbleRuntime, other: CANNON.Body, kind: MarbleImpactKind, strength: number) {
     const key = `${runtime.id}:${other.id}:${kind}`;
+    const pan = Math.max(-1, Math.min(1, runtime.body.position.x / 22));
+    this.emitPairSound(key, kind, strength, pan);
+  }
+
+  private emitPairSound(key: string, kind: MarbleImpactKind, strength: number, pan: number, variant?: number) {
     const previous = this.soundAt.get(key) ?? -Infinity;
     if (this.time - previous < SOUND_COOLDOWN) return;
     this.soundAt.set(key, this.time);
-    const pan = Math.max(-1, Math.min(1, runtime.body.position.x / 22));
-    this.onImpactSound?.(kind, Math.min(18, strength), pan);
+    this.onImpactSound?.(kind, Math.min(22, strength), pan, variant);
   }
 }

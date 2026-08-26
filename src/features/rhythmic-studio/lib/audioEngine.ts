@@ -22,7 +22,7 @@ interface MidiScheduleOptions {
   presetForEvent?: (event: NoteEvent, index: number) => SynthPreset;
 }
 
-export type MarbleImpactSoundKind = "wall" | "obstacle" | "obstacle-strike";
+export type MarbleImpactSoundKind = "wall" | "obstacle" | "obstacle-strike" | "marble" | "instrument";
 
 export interface SynthVoiceWarmup {
   midi: number;
@@ -208,21 +208,13 @@ export class AudioEngine {
     });
   }
 
-  async playMarbleImpact(kind: MarbleImpactSoundKind, strength: number, pan = 0) {
+  async playMarbleImpact(kind: MarbleImpactSoundKind, strength: number, pan = 0, variant = 0) {
     const context = await this.ensure();
     if (!this.sfxInput) return;
-    const intensity = Math.max(0, Math.min(1, (strength - 0.65) / 11.5));
-    if (intensity <= 0.01) return;
+    const intensity = Math.max(0, Math.min(1, (strength - 0.18) / 12.5));
+    if (intensity <= 0.005) return;
 
-    const when = context.currentTime + 0.004;
-    const duration = kind === "wall" ? 0.075 : kind === "obstacle" ? 0.11 : 0.16;
-    const peak = 0.025 + intensity * (kind === "obstacle-strike" ? 0.34 : 0.24);
-    const baseFrequency = kind === "wall"
-      ? 210 + intensity * 150
-      : kind === "obstacle"
-        ? 330 + intensity * 230
-        : 145 + intensity * 115;
-
+    const when = context.currentTime + 0.003;
     const output = context.createGain();
     const panner = context.createStereoPanner();
     const tone = context.createBiquadFilter();
@@ -230,21 +222,40 @@ export class AudioEngine {
     const metallic = context.createOscillator();
     const metallicGain = context.createGain();
 
+    const instrument = kind === "instrument";
+    const marble = kind === "marble";
+    const duration = instrument ? 0.2 : marble ? 0.07 : kind === "wall" ? 0.075 : kind === "obstacle" ? 0.11 : 0.16;
+    const peak = instrument
+      ? 0.055 + intensity * 0.28
+      : marble
+        ? 0.035 + intensity * 0.25
+        : 0.025 + intensity * (kind === "obstacle-strike" ? 0.34 : 0.24);
+    const instrumentFrequency = 220 * Math.pow(2, ((variant % 19) + 3) / 12);
+    const baseFrequency = instrument
+      ? instrumentFrequency
+      : marble
+        ? 520 + intensity * 420
+        : kind === "wall"
+          ? 210 + intensity * 150
+          : kind === "obstacle"
+            ? 330 + intensity * 230
+            : 145 + intensity * 115;
+
     output.gain.setValueAtTime(0.0001, when);
-    output.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), when + 0.003);
+    output.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), when + 0.0025);
     output.gain.exponentialRampToValueAtTime(0.0001, when + duration);
     panner.pan.value = Math.max(-1, Math.min(1, pan));
-    tone.type = "bandpass";
-    tone.frequency.value = kind === "obstacle-strike" ? 1250 : 2100 + intensity * 1700;
-    tone.Q.value = kind === "wall" ? 0.75 : 1.15;
+    tone.type = instrument ? "lowpass" : "bandpass";
+    tone.frequency.value = instrument ? 5200 : marble ? 3600 + intensity * 1400 : kind === "obstacle-strike" ? 1250 : 2100 + intensity * 1700;
+    tone.Q.value = instrument ? 0.55 : marble ? 1.6 : kind === "wall" ? 0.75 : 1.15;
 
-    fundamental.type = kind === "obstacle-strike" ? "triangle" : "sine";
+    fundamental.type = instrument ? "sine" : kind === "obstacle-strike" ? "triangle" : "sine";
     fundamental.frequency.setValueAtTime(baseFrequency, when);
-    fundamental.frequency.exponentialRampToValueAtTime(Math.max(70, baseFrequency * 0.58), when + duration);
-    metallic.type = "triangle";
-    metallic.frequency.setValueAtTime(baseFrequency * (kind === "wall" ? 3.15 : 2.45), when);
-    metallic.frequency.exponentialRampToValueAtTime(baseFrequency * 1.55, when + duration * 0.8);
-    metallicGain.gain.value = kind === "wall" ? 0.42 : 0.64;
+    fundamental.frequency.exponentialRampToValueAtTime(Math.max(70, baseFrequency * (instrument ? 0.995 : marble ? 0.82 : 0.58)), when + duration);
+    metallic.type = instrument ? "sine" : "triangle";
+    metallic.frequency.setValueAtTime(baseFrequency * (instrument ? 2.01 : marble ? 2.75 : kind === "wall" ? 3.15 : 2.45), when);
+    metallic.frequency.exponentialRampToValueAtTime(baseFrequency * (instrument ? 1.98 : marble ? 1.8 : 1.55), when + duration * 0.8);
+    metallicGain.gain.value = instrument ? 0.28 : marble ? 0.32 : kind === "wall" ? 0.42 : 0.64;
 
     fundamental.connect(tone);
     metallic.connect(metallicGain);

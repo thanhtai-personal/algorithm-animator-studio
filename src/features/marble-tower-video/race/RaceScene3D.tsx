@@ -64,7 +64,7 @@ export function RaceScene3D(props: {
   onTime: (timeMs: number) => void;
   onEnded: () => void;
   onComplete?: (result: RaceResult) => void;
-  onImpactSound?: (kind: MarbleImpactKind, strength: number, pan: number) => void;
+  onImpactSound?: (kind: MarbleImpactKind, strength: number, pan: number, variant?: number) => void;
   stopAtPlaybackEnd?: boolean;
   onReady?: (physics: RacePhysics) => void;
   canvasRef: MutableRefObject<HTMLCanvasElement | null>;

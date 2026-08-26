@@ -5,6 +5,7 @@ import type { RacePhysics } from '../physics/RacePhysics';
 import { COURSE_SAMPLES, sampleAt } from '../track/towerCourseSampler';
 import { RAINBOW_COLORS, SPECIALS, TRACK_THICKNESS, TRACK_WIDTH } from '../track/towerCourse';
 import { PIANO_PAD_LAYOUT } from '../track/pianoPadLayout';
+import { CourseObject3D } from './CourseObject3D';
 
 const SEGMENT_COUNT = COURSE_SAMPLES.length - 1;
 
@@ -287,7 +288,7 @@ export function TrackMeshes3D({ physics }: { physics: RacePhysics }) {
       {RAINBOW_COLORS.map((color, index) => <Stripe key={color} color={color} stripeIndex={index} />)}
       <GuardWalls />
       <TrackSupports />
-      <PianoBridge physics={physics} />
+      <CourseObject3D physics={physics} id="piano"><PianoBridge physics={physics} /></CourseObject3D>
       <PrismTunnel />
       <FinishDeck />
     </group>

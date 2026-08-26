@@ -21,8 +21,7 @@ export function recoveryImpulse(sample: CourseSample, mass: number, driveMultipl
 }
 
 export function pianoBoostImpulse(sample: CourseSample, mass: number, boostDeltaV: number) {
-  return sample.tangent.clone().multiplyScalar(mass * boostDeltaV)
-    .addScaledVector(sample.normal, mass * 0.16);
+  return sample.tangent.clone().multiplyScalar(mass * boostDeltaV);
 }
 
 export function chimeBounceImpulse(
@@ -32,19 +31,19 @@ export function chimeBounceImpulse(
   mass: number,
   index: number,
 ) {
-  const velocity = new THREE.Vector3(body.velocity.x, body.velocity.y, body.velocity.z);
-  const speed = velocity.length();
-  const inertia = speed > 0.45 ? velocity.normalize() : sample.tangent.clone();
-  if (inertia.dot(sample.tangent) < 0.25) inertia.addScaledVector(sample.tangent, 0.9).normalize();
+  const speed = body.velocity.length();
   const away = new THREE.Vector3(
     body.position.x - chimePosition.x,
     body.position.y - chimePosition.y,
     body.position.z - chimePosition.z,
   );
+  away.addScaledVector(sample.normal, -away.dot(sample.normal));
+  away.addScaledVector(sample.tangent, -away.dot(sample.tangent));
   if (away.lengthSq() > 1e-6) away.normalize();
   else away.copy(sample.right).multiplyScalar(index % 2 ? 1 : -1);
-  const deltaV = 3.8 + Math.min(4.2, speed * 0.25);
-  return inertia.multiplyScalar(mass * deltaV)
-    .addScaledVector(away, mass * 1.15)
-    .addScaledVector(sample.normal, mass * 0.24);
+  const forwardDeltaV = 0.45 + Math.min(0.4, speed * 0.03);
+  const outwardDeltaV = 0.78 + Math.min(0.25, speed * 0.02);
+  return sample.tangent.clone().multiplyScalar(mass * forwardDeltaV)
+    .addScaledVector(away, mass * outwardDeltaV)
+    .addScaledVector(sample.normal, mass * 0.06);
 }

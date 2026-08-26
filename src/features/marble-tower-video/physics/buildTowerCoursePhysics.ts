@@ -4,6 +4,7 @@ import { COURSE_SAMPLES } from '../track/towerCourseSampler';
 import { SPECIALS, TRACK_WIDTH } from '../track/towerCourse';
 import { marbleStartGrid } from '../marble/marbleGrid';
 import { PIANO_PAD_LAYOUT } from '../track/pianoPadLayout';
+import { STUDIO_SOLIDS } from '../race/studioStructure';
 
 function cannonVec(v: THREE.Vector3) { return new CANNON.Vec3(v.x, v.y, v.z); }
 function cannonQuat(q: THREE.Quaternion) { return new CANNON.Quaternion(q.x, q.y, q.z, q.w); }
@@ -100,6 +101,29 @@ export function createSupportBodies(world: CANNON.World, material: CANNON.Materi
     bodies.push(body);
   });
   return bodies;
+}
+
+export function createStudioStructureBodies(world: CANNON.World, material: CANNON.Material) {
+  return STUDIO_SOLIDS.map((solid) => {
+    const body = new CANNON.Body({ mass: 0, material });
+    if (solid.kind === 'cylinder') {
+      body.addShape(new CANNON.Cylinder(
+        solid.radiusTop + 0.08,
+        solid.radiusBottom + 0.08,
+        solid.height,
+        24,
+      ));
+    } else {
+      body.addShape(new CANNON.Box(new CANNON.Vec3(
+        solid.size[0] / 2 + 0.08,
+        solid.size[1] / 2,
+        solid.size[2] / 2 + 0.08,
+      )));
+    }
+    body.position.set(...solid.position);
+    world.addBody(body);
+    return body;
+  });
 }
 
 export function createBarrier(

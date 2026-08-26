@@ -11,6 +11,7 @@ import {
   createChimeBumpers,
   createPianoBodies,
   createSpinner,
+  createStudioStructureBodies,
   createSupportBodies,
   createStartGridBody,
   spawnPoint,
@@ -18,8 +19,11 @@ import {
 import type { MarbleRuntime } from "./physicsTypes";
 import { impactVelocity, MarbleInteractionSystem, type MarbleImpactSound } from "./MarbleInteractionSystem";
 import { chimeBounceImpulse, jumpImpulse, launchImpulse, pianoBoostImpulse, recoveryImpulse } from "./marbleForces";
+import { PIANO_TRAIL_SECONDS, pianoTrailStrength } from "./marbleBoostTrail";
 import { updateBeatSpinners, updateStartGate } from "./obstacleMotion";
 import { freezeWinnerAtFinish, holdWinnerAtFinish, recoverMarbleToCourse, vec3 } from "./marbleRacePlacement";
+import { CourseObjectLifecycle, type CourseObjectId } from "./CourseObjectLifecycle";
+import { createRaceMaterials } from "./createRaceMaterials";
 import type { RaceResult } from "../race/raceTypes";
 const DEFAULT_FIXED_STEP = 1 / 120;
 const VIDEO_COUNTDOWN_SECONDS = 3;
@@ -37,6 +41,7 @@ export class RacePhysics {
   readonly pianoBodies: CANNON.Body[];
   readonly chimeBodies: CANNON.Body[];
   readonly supportBodies: CANNON.Body[];
+  readonly studioStructureBodies: CANNON.Body[];
   readonly pianoFlashUntil = Array.from({ length: 12 }, () => -1);
   readonly startGate: CANNON.Body;
   readonly spinnerA: ReturnType<typeof createSpinner>;
@@ -61,6 +66,7 @@ export class RacePhysics {
   private pianoCombo = 0;
   private lastPianoAt = -10;
   private instrumentSoundAt = new Map<string, number>();
+  private courseObjects = new CourseObjectLifecycle();
   private fixedStep = DEFAULT_FIXED_STEP;
   private maxSubSteps = 10;
   constructor(
@@ -85,47 +91,37 @@ export class RacePhysics {
     solver.iterations = 14;
     solver.tolerance = 0.001;
     this.world.solver = solver;
-    const marbleMaterial = new CANNON.Material("marble");
-    const trackMaterial = new CANNON.Material("track");
-    const obstacleMaterial = new CANNON.Material("obstacle");
-    const instrumentMaterial = new CANNON.Material("instrument");
-    this.world.addContactMaterial(new CANNON.ContactMaterial(marbleMaterial, trackMaterial, {
-      friction: 0.035,
-      restitution: 0.08,
-      contactEquationStiffness: 1e8,
-    }));
-    this.world.addContactMaterial(new CANNON.ContactMaterial(marbleMaterial, obstacleMaterial, {
-      friction: 0.04,
-      restitution: 0.62,
-    }));
-    this.world.addContactMaterial(new CANNON.ContactMaterial(marbleMaterial, marbleMaterial, {
-      friction: 0.018,
-      restitution: 0.58,
-    }));
-    this.world.addContactMaterial(new CANNON.ContactMaterial(marbleMaterial, instrumentMaterial, {
-      friction: 0.028,
-      restitution: 0.42,
-    }));
+    const materials = createRaceMaterials(this.world);
     this.interactions = new MarbleInteractionSystem(
       this.bodyToMarble,
-      trackMaterial,
-      obstacleMaterial,
+      materials.track,
+      materials.obstacle,
       () => this.opened && !this.completed,
       onImpactSound,
       this.marbleRadius,
     );
-    buildTrackBodies(this.world, trackMaterial);
-    createStartGridBody(this.world, trackMaterial, this.marbleCount);
-    this.supportBodies = createSupportBodies(this.world, obstacleMaterial);
-    this.createMarbles(marbleMaterial);
-    this.startGate = createBarrier(this.world, obstacleMaterial, SPECIALS.startGate, 0.8);
-    this.spinnerA = createSpinner(this.world, obstacleMaterial, SPECIALS.spinnerA, 2.25);
-    this.spinnerB = createSpinner(this.world, obstacleMaterial, SPECIALS.spinnerB, -1.95);
-    this.finalCross = createSpinner(this.world, obstacleMaterial, SPECIALS.finalCross, 2.5);
+    buildTrackBodies(this.world, materials.track);
+    createStartGridBody(this.world, materials.track, this.marbleCount);
+    this.supportBodies = createSupportBodies(this.world, materials.obstacle);
+    this.studioStructureBodies = createStudioStructureBodies(this.world, materials.obstacle);
+    this.createMarbles(materials.marble);
+    this.startGate = createBarrier(this.world, materials.obstacle, SPECIALS.startGate, 0.8);
+    this.spinnerA = createSpinner(this.world, materials.obstacle, SPECIALS.spinnerA, 2.25);
+    this.spinnerB = createSpinner(this.world, materials.obstacle, SPECIALS.spinnerB, -1.95);
+    this.finalCross = createSpinner(this.world, materials.obstacle, SPECIALS.finalCross, 2.5);
     this.finalCross.body.addShape(new CANNON.Box(new CANNON.Vec3(0.17, 0.14, TRACK_WIDTH * 0.43)));
-    this.chimeBodies = createChimeBumpers(this.world, instrumentMaterial, (index, body, contact) => this.chimeHit(index, body, contact));
-    this.pianoBodies = createPianoBodies(this.world, instrumentMaterial, (index, body, contact) => this.pianoHit(index, body, contact));
+    this.chimeBodies = createChimeBumpers(this.world, materials.chime, (index, body, contact) => this.chimeHit(index, body, contact));
+    this.pianoBodies = createPianoBodies(this.world, materials.piano, (index, body, contact) => this.pianoHit(index, body, contact));
+    this.registerCourseObjects();
     this.publishSnapshot();
+  }
+  private registerCourseObjects() {
+    this.courseObjects.register("start-gate", 0.05, [this.startGate]);
+    this.courseObjects.register("spinner-a", SPECIALS.spinnerA + 0.025, [this.spinnerA.body]);
+    this.courseObjects.register("spinner-b", SPECIALS.spinnerB + 0.025, [this.spinnerB.body]);
+    this.courseObjects.register("chimes", SPECIALS.chimeEnd, this.chimeBodies);
+    this.courseObjects.register("piano", SPECIALS.pianoEnd, this.pianoBodies);
+    this.courseObjects.register("final-cross", SPECIALS.finalCross + 0.025, [this.finalCross.body]);
   }
   setDriveMultiplier(value: number) {
     this.driveMultiplier = Math.max(DRIVE_MIN, Math.min(DRIVE_MAX, value));
@@ -153,6 +149,7 @@ export class RacePhysics {
         finalPosition: null,
         crossedCuts: new Set(),
         hitJump: false,
+        pianoTrailUntil: -1,
       };
       this.marbles.set(marble.id, runtime);
       this.bodyToMarble.set(body.id, runtime);
@@ -173,7 +170,10 @@ export class RacePhysics {
       const winner = this.marbles.get(this.winnerId);
       if (winner) holdWinnerAtFinish(winner, this.winnerAnchor);
     }
-    if (this.opened) this.updateRace(dt);
+    if (this.opened) {
+      this.updateRace(dt);
+      this.retirePassedCourseObjects();
+    }
     if (this.finishDelay >= 0) {
       this.finishDelay -= dt;
       if (this.finishDelay <= 0) this.completeRace();
@@ -219,6 +219,12 @@ export class RacePhysics {
     this.beatIndex = updateBeatSpinners(
       this.raceTime, this.opened, this.beatIndex, [this.spinnerA, this.spinnerB, this.finalCross],
     );
+  }
+  private retirePassedCourseObjects() {
+    const progress = [...this.marbles.values()]
+      .filter((marble) => marble.alive)
+      .map((marble) => marble.progressIndex / (COURSE_SAMPLES.length - 1));
+    this.courseObjects.update(progress, Math.max(0, ...progress), this.world);
   }
   private updateRace(dt: number) {
     for (const marble of this.marbles.values()) {
@@ -316,6 +322,7 @@ export class RacePhysics {
     const boostKey = `b:${index}:${marble.id}`;
     if (now - (this.instrumentSoundAt.get(boostKey) ?? -Infinity) < 0.18) return;
     this.instrumentSoundAt.set(boostKey, now);
+    marble.pianoTrailUntil = now + PIANO_TRAIL_SECONDS;
     this.pianoFlashUntil[index] = now + 0.24;
     this.pianoCombo = now - this.lastPianoAt < 0.8 ? this.pianoCombo + 1 : 1;
     this.lastPianoAt = now;
@@ -348,8 +355,17 @@ export class RacePhysics {
   pianoGlow(index: number) {
     return this.pianoFlashUntil[index] > this.raceTime;
   }
+  courseObjectVisible(id: CourseObjectId) { return this.courseObjects.isVisible(id); }
+  setCourseObjectInView(id: CourseObjectId, inView: boolean) { this.courseObjects.setInView(id, inView); }
+  pianoTrail(id: MarbleId) { return pianoTrailStrength(this.marbles.get(id)?.pianoTrailUntil ?? -1, this.raceTime); }
   getMarble(id: MarbleId) {
     return this.marbles.get(id) ?? null;
+  }
+  getTimelineSeconds() {
+    return this.totalTime;
+  }
+  hasStarted() {
+    return this.opened;
   }
   private publishSnapshot() {
     const ranked = this.getRanked();

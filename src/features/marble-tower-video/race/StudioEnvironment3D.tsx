@@ -1,6 +1,7 @@
 import { Environment, Lightformer } from '@react-three/drei';
 import { useMemo } from 'react';
 import * as THREE from 'three';
+import { STUDIO_COLUMN_SOLIDS, TOWER_CORE_SOLID } from './studioStructure';
 
 function graffitiTexture(seed: number) {
   const canvas = document.createElement('canvas');
@@ -22,17 +23,23 @@ function graffitiTexture(seed: number) {
   ctx.font = '900 148px Arial';
   ctx.fillStyle = '#eff5fb';
   ctx.globalAlpha = 0.84;
-  ctx.fillText('MBR', 330, 320);
+  ctx.fillText('KATA', 290, 320);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
 }
 
 function TowerCore() {
+  if (TOWER_CORE_SOLID.kind !== 'cylinder') return null;
   return (
-    <group position={[0, 17, 12]}>
+    <group position={TOWER_CORE_SOLID.position}>
       <mesh castShadow receiveShadow>
-        <cylinderGeometry args={[1.55, 1.9, 34, 24]} />
+        <cylinderGeometry args={[
+          TOWER_CORE_SOLID.radiusTop,
+          TOWER_CORE_SOLID.radiusBottom,
+          TOWER_CORE_SOLID.height,
+          24,
+        ]} />
         <meshStandardMaterial color="#5a6470" metalness={0.86} roughness={0.25} />
       </mesh>
       {Array.from({ length: 8 }, (_, index) => (
@@ -132,9 +139,9 @@ export function StudioEnvironment3D() {
         </group>
       ))}
 
-      {[-26, -13, 0, 13, 26].map((x) => (
-        <mesh key={x} position={[x, 18, 18]} castShadow>
-          <boxGeometry args={[0.35, 36, 0.35]} />
+      {STUDIO_COLUMN_SOLIDS.map((column) => column.kind === 'box' && (
+        <mesh key={column.id} position={column.position} castShadow>
+          <boxGeometry args={column.size} />
           <meshStandardMaterial color="#7d8790" metalness={0.84} roughness={0.28} />
         </mesh>
       ))}

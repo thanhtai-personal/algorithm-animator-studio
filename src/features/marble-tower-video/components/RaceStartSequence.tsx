@@ -7,6 +7,7 @@ import letsGoUrl from "@/assets/marble-lets-go.wav?url";
 import type { AudioSourceMeta, StudioSettings } from "@/features/rhythmic-studio/types";
 import type { RacePhysics } from "../physics/RacePhysics";
 import { raceSessionStore } from "../store/RaceSessionStore";
+import { startRaceAtLetsGo } from "./startRaceAtLetsGo";
 
 type PatchSettings = <K extends keyof StudioSettings>(key: K, value: StudioSettings[K]) => void;
 
@@ -55,30 +56,13 @@ export const RaceStartSequence = observer(function RaceStartSequence({
     if (!active || !physics || phase !== "countdown" || countdown > 0) return;
     if (startedPhysicsRef.current === physics) return;
     startedPhysicsRef.current = physics;
-    let cancelled = false;
-
-    void (async () => {
-      try {
-        await playCueRef.current(letsGoUrl);
-      } catch {
-        // A missing cue must never block the race from starting.
-      }
-      if (cancelled) return;
-
-      if (sourceType === "midi") patchRef.current("midiPlaybackEnabled", true);
-      if (sourceType === "audio") patchRef.current("playOriginalSong", true);
-
-      try {
-        await startPlaybackAudioRef.current(0);
-      } catch {
-        // Physics still starts if browser audio is unavailable/blocked.
-      }
-      if (!cancelled) physics.releaseStart();
-    })();
-
-    return () => {
-      cancelled = true;
-    };
+    startRaceAtLetsGo({
+      sourceType,
+      patch: patchRef.current,
+      playCue: () => playCueRef.current(letsGoUrl),
+      startPlaybackAudio: startPlaybackAudioRef.current,
+      releaseStart: () => physics.releaseStart(),
+    });
   }, [active, countdown, phase, physics, sourceType]);
 
   return null;

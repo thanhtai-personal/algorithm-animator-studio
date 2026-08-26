@@ -82,7 +82,7 @@ export function RaceScene3D(props: {
   return <Canvas
     dpr={props.recording ? 1 : [1, 1.35]}
     shadows
-    camera={{ fov: 54, near: 0.1, far: 300, position: [0, 46, -30] }}
+    camera={{ fov: 49, near: 0.1, far: 300, position: [5, 39.4, -16.6] }}
     gl={{ antialias: true, alpha: false, powerPreference: "high-performance", stencil: false }}
     onCreated={({ gl }) => {
       props.canvasRef.current = gl.domElement;

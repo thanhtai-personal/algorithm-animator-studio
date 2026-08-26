@@ -2,6 +2,7 @@ import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { RacePhysics } from "../physics/RacePhysics";
+import { MarbleBoostTrails3D } from "./MarbleBoostTrails3D";
 
 export function MarbleField3D({ physics }: { physics: RacePhysics }) {
   const balls = useRef<THREE.InstancedMesh>(null);
@@ -59,6 +60,7 @@ export function MarbleField3D({ physics }: { physics: RacePhysics }) {
   const shadow = physics.marbleCount <= 220;
   return (
     <group>
+      <MarbleBoostTrails3D physics={physics} />
       <instancedMesh ref={balls} args={[undefined, undefined, physics.roster.length]} castShadow={shadow} frustumCulled={false} userData={{ cameraIgnore: true }}>
         <sphereGeometry args={[1, physics.marbleCount > 300 ? 14 : 22, physics.marbleCount > 300 ? 10 : 16]} />
         <meshPhysicalMaterial color="#ffffff" metalness={0.16} roughness={0.13} clearcoat={0.92} clearcoatRoughness={0.06} />

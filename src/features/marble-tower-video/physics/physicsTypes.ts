@@ -11,4 +11,5 @@ export type MarbleRuntime = {
   finalPosition: number | null;
   crossedCuts: Set<number>;
   hitJump: boolean;
+  pianoTrailUntil: number;
 };

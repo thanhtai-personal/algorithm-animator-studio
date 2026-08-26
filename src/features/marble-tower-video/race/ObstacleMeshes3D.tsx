@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import type { RacePhysics } from '../physics/RacePhysics';
 import { COURSE_SAMPLES, sampleAt } from '../track/towerCourseSampler';
 import { CUTS, SPECIALS, TRACK_WIDTH } from '../track/towerCourse';
+import { CourseObject3D } from './CourseObject3D';
 
 function SyncBody({ body, children }: { body: { position: { x: number; y: number; z: number }; quaternion: { x: number; y: number; z: number; w: number } }; children: React.ReactNode }) {
   const ref = useRef<THREE.Group>(null);
@@ -143,23 +144,25 @@ export function ObstacleMeshes3D({ physics }: { physics: RacePhysics }) {
   const finalSample = useMemo(() => COURSE_SAMPLES[Math.round(SPECIALS.finalCross * (COURSE_SAMPLES.length - 1))], []);
   return (
     <group>
-      <StartGate physics={physics} />
-      <Spinner body={physics.spinnerA.body} />
-      <Spinner body={physics.spinnerB.body} color="#20242a" />
-      <ChimeGauntlet physics={physics} />
+      <CourseObject3D physics={physics} id="start-gate"><StartGate physics={physics} /></CourseObject3D>
+      <CourseObject3D physics={physics} id="spinner-a"><Spinner body={physics.spinnerA.body} /></CourseObject3D>
+      <CourseObject3D physics={physics} id="spinner-b"><Spinner body={physics.spinnerB.body} color="#20242a" /></CourseObject3D>
+      <CourseObject3D physics={physics} id="chimes"><ChimeGauntlet physics={physics} /></CourseObject3D>
       <JumpRamp />
-      <SyncBody body={physics.finalCross.body}>
-        <mesh castShadow>
-          <boxGeometry args={[TRACK_WIDTH * 0.86, 0.28, 0.34]} />
-          <meshStandardMaterial color="#11141a" metalness={0.85} roughness={0.2} />
-        </mesh>
-        <mesh castShadow>
-          <boxGeometry args={[0.34, 0.28, TRACK_WIDTH * 0.86]} />
-          <meshStandardMaterial color="#11141a" metalness={0.85} roughness={0.2} />
-        </mesh>
-        <pointLight color="#ff486e" intensity={18} distance={7} position={[0, 1.1, 0]} />
-      </SyncBody>
-      <pointLight position={finalSample.point.clone().addScaledVector(finalSample.normal, 3)} intensity={26} distance={10} color="#ff3c76" />
+      <CourseObject3D physics={physics} id="final-cross">
+        <SyncBody body={physics.finalCross.body}>
+          <mesh castShadow>
+            <boxGeometry args={[TRACK_WIDTH * 0.86, 0.28, 0.34]} />
+            <meshStandardMaterial color="#11141a" metalness={0.85} roughness={0.2} />
+          </mesh>
+          <mesh castShadow>
+            <boxGeometry args={[0.34, 0.28, TRACK_WIDTH * 0.86]} />
+            <meshStandardMaterial color="#11141a" metalness={0.85} roughness={0.2} />
+          </mesh>
+          <pointLight color="#ff486e" intensity={18} distance={7} position={[0, 1.1, 0]} />
+        </SyncBody>
+        <pointLight position={finalSample.point.clone().addScaledVector(finalSample.normal, 3)} intensity={26} distance={10} color="#ff3c76" />
+      </CourseObject3D>
       {CUTS.map((cut) => <CutGate key={cut.progress} progress={cut.progress} keep={cut.keep} label={cut.label} />)}
       <FinishArch />
     </group>

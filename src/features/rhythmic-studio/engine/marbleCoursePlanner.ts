@@ -872,6 +872,13 @@ function applyPlannerVisualHints(
   platform: MarblePlatform,
 ) {
   const { denseNode, denseRun, chordNode, settings, event, spanMs } = step;
+  // The renderer resolves showcase instruments from the preset when a platform
+  // has no explicit style. The planner must use that exact same style before it
+  // scores clearances; otherwise a deep marimba/drum body is measured like a
+  // flat generic bar and can overlap the dense module beside it after render.
+  if (settings.instrumentFamily !== "auto" && !denseNode && !chordNode) {
+    platform.visualStyle = presetObstaclePlan(index, settings)?.style;
+  }
   if (settings.instrumentLayout === "corridor" && !denseNode) {
     platform.visualStyle = presetObstaclePlan(index, settings)?.style ?? "instrument-pad";
     platform.visualWidth = Math.max(settings.ballSize * 2.45, Math.min(platform.width * 0.45, 48));

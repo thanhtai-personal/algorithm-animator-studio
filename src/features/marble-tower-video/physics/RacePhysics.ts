@@ -55,7 +55,6 @@ export class RacePhysics {
   private launched = false;
   private completed = false;
   private publishTimer = 0;
-  private cutPasses = new Map<number, MarbleId[]>();
   private resolvedCuts = new Set<number>();
   private winnerId: MarbleId | null = null;
   private winnerTime = 0;
@@ -232,7 +231,7 @@ export class RacePhysics {
       const dz = body.position.z - sample.point.z;
       const distanceSq = dx * dx + dy * dy + dz * dz;
       if (body.position.y < -8 || distanceSq > 90) {
-        this.eliminate(marble, "OUT OF BOUNDS");
+        this.recoverMarbleToCourse(marble, sample);
         continue;
       }
       if (!marble.hitJump && progress >= SPECIALS.jump) {
@@ -255,27 +254,47 @@ export class RacePhysics {
     this.resolveFinish();
   }
   private resolveCuts() {
-    for (let cutIndex = 0; cutIndex < CUTS.length; cutIndex += 1) {
-      if (this.resolvedCuts.has(cutIndex)) continue;
-      const cut = CUTS[cutIndex];
-      const alive = this.getRanked().filter((item) => item.alive);
-      const keep = Math.min(cut.keep, alive.length);
-      const passed = this.cutPasses.get(cutIndex) ?? [];
-      alive.forEach((marble) => {
-        const progress = marble.progressIndex / (COURSE_SAMPLES.length - 1);
-        if (progress >= cut.progress && passed.length < keep && !passed.includes(marble.id)) passed.push(marble.id);
-      });
-      this.cutPasses.set(cutIndex, passed);
-      if (passed.length < keep || keep === 0) continue;
+    // CUT markers are checkpoints only. They must never despawn marbles that are
+    // behind the leader or currently outside the camera view.
+    const leader = this.getLeader();
+    if (!leader) return;
+    const leaderProgress = leader.progressIndex / (COURSE_SAMPLES.length - 1);
+    CUTS.forEach((cut, cutIndex) => {
+      if (this.resolvedCuts.has(cutIndex) || leaderProgress < cut.progress) return;
       this.resolvedCuts.add(cutIndex);
-      const survivors = new Set(passed);
-      const eliminated = alive.filter((marble) => !survivors.has(marble.id));
-      eliminated.forEach((marble, index) => {
-        marble.finalPosition = keep + 1 + index;
-        this.eliminate(marble, cut.label, false);
-      });
       raceSessionStore.flash(cut.label);
-    }
+    });
+  }
+
+  private recoverMarbleToCourse(marble: MarbleRuntime, sample: (typeof COURSE_SAMPLES)[number]) {
+    // Falling off the physical course is recoverable. Never remove a marble body
+    // because it is outside the camera or temporarily outside the track bounds.
+    const body = marble.body;
+    const dx = body.position.x - sample.point.x;
+    const dy = body.position.y - sample.point.y;
+    const dz = body.position.z - sample.point.z;
+    const lateral = THREE.MathUtils.clamp(
+      dx * sample.right.x + dy * sample.right.y + dz * sample.right.z,
+      -TRACK_WIDTH * 0.32,
+      TRACK_WIDTH * 0.32,
+    );
+    const safePoint = sample.point.clone()
+      .addScaledVector(sample.right, lateral)
+      .addScaledVector(sample.normal, this.marbleRadius + 0.22);
+    const forwardSpeed = Math.max(3.2,
+      body.velocity.x * sample.tangent.x
+      + body.velocity.y * sample.tangent.y
+      + body.velocity.z * sample.tangent.z);
+
+    body.position.copy(vec3(safePoint));
+    body.previousPosition.copy(body.position);
+    body.interpolatedPosition.copy(body.position);
+    body.velocity.copy(vec3(sample.tangent.clone().multiplyScalar(forwardSpeed)));
+    body.angularVelocity.scale(0.35, body.angularVelocity);
+    body.force.setZero();
+    body.torque.setZero();
+    body.wakeUp();
+    marble.stuckFor = 0;
   }
   private resolveFinish() {
     if (this.winnerId) return;
@@ -290,16 +309,6 @@ export class RacePhysics {
     finalists.forEach((marble, index) => { marble.finalPosition = 2 + index; });
     raceSessionStore.flash(`${leader.id.toUpperCase()} WINS!`);
     this.finishDelay = 1.45;
-  }
-  private eliminate(marble: MarbleRuntime, reason: string, assignPosition = true) {
-    if (!marble.alive) return;
-    if (assignPosition && marble.finalPosition === null) {
-      marble.finalPosition = this.getRanked().filter((item) => item.alive).length;
-    }
-    const wasLeader = this.getLeader()?.id === marble.id;
-    marble.alive = false;
-    this.world.removeBody(marble.body);
-    if (wasLeader) raceSessionStore.flash(reason);
   }
   private completeRace() {
     if (this.completed || !this.winnerId) return;

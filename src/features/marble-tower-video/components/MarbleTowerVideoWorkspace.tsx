@@ -18,7 +18,6 @@ import { MarbleTowerTransportBar } from "./MarbleTowerTransportBar";
 import { RaceHudPanel } from "./RaceHudPanel";
 import { RaceStartSequence } from "./RaceStartSequence";
 import { WinnerCelebrationOverlay } from "./WinnerCelebrationOverlay";
-import "./marbleTowerTransport.css";
 
 function isMidiFile(file: File) {
   const name = file.name.toLowerCase();
@@ -31,8 +30,10 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
   const [marbleCount, setMarbleCount] = useState(24);
   const [raceResult, setRaceResult] = useState<RaceResult | null>(null);
   const [racePhysics, setRacePhysics] = useState<RacePhysics | null>(null);
+  const [physicsRevision, setPhysicsRevision] = useState(0);
   const [seekRevision, setSeekRevision] = useState(0);
   const finishTimerRef = useRef<number | null>(null);
+  const physicsReadyWaiterRef = useRef<((physics: RacePhysics) => void) | null>(null);
   const playlist = useMarbleTowerPlaylist(studio);
   const output = rhythmicOutputSize(studio.settings.outputPreset);
   const racePlaybackToken = studio.playbackToken * 1000 + seekRevision;
@@ -50,6 +51,25 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
     setRhythmicRuntimeMixBoost(1.75, 1.65);
     return () => setRhythmicRuntimeMixBoost(1, 1);
   }, []);
+
+
+  const handlePhysicsReady = useCallback((physics: RacePhysics) => {
+    setRacePhysics(physics);
+    const waiter = physicsReadyWaiterRef.current;
+    if (waiter) {
+      physicsReadyWaiterRef.current = null;
+      waiter(physics);
+    }
+  }, []);
+
+  const prepareFreshPhysics = useCallback(() => new Promise<RacePhysics>((resolve) => {
+    physicsReadyWaiterRef.current = resolve;
+    setPhysicsRevision((revision) => revision + 1);
+  }), []);
+
+  const waitForPaint = useCallback(() => new Promise<void>((resolve) => {
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()));
+  }), []);
 
   const silenceSourceForCountdown = useCallback(() => {
     studio.stopPlaybackAudio();
@@ -93,6 +113,7 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
     silenceSourceForCountdown();
     playlist.resetToFirst();
     setRaceResult(null);
+    setPhysicsRevision((revision) => revision + 1);
     setSeekRevision((value) => value + 1);
   }, [playlist.resetToFirst, silenceSourceForCountdown, studio.resetPlayback]);
 
@@ -111,16 +132,35 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
     if (raceResult) {
       playlist.resetToFirst();
       setRaceResult(null);
+      setPhysicsRevision((revision) => revision + 1);
     }
     void studio.togglePlayback();
   }, [playlist.resetToFirst, raceResult, silenceSourceForCountdown, studio.playing, studio.togglePlayback]);
 
-  const recordRace = useCallback((format: "webm" | "mp4", trimOnly = false) => {
+  const recordRace = useCallback(async (format: "webm" | "mp4", trimOnly = false) => {
+    if (studio.recording) return;
     silenceSourceForCountdown();
     playlist.resetToFirst();
     setRaceResult(null);
-    void studio.recordVideo(format, trimOnly);
-  }, [playlist.resetToFirst, silenceSourceForCountdown, studio.recordVideo]);
+    studio.resetPlayback();
+
+    // Building hundreds of Cannon bodies is intentionally done before
+    // MediaRecorder starts. Otherwise the expensive constructor becomes a
+    // frozen opening shot in the exported video.
+    const preparedPhysics = await prepareFreshPhysics();
+    if (trimOnly && studio.trimStartMs > 0) preparedPhysics.advanceTo(studio.trimStartMs / 1000);
+    await waitForPaint();
+    await studio.recordVideo(format, trimOnly);
+  }, [
+    playlist.resetToFirst,
+    prepareFreshPhysics,
+    silenceSourceForCountdown,
+    studio.recordVideo,
+    studio.recording,
+    studio.resetPlayback,
+    studio.trimStartMs,
+    waitForPaint,
+  ]);
 
   const importMusicFiles = useCallback((files: File[]) => {
     const midi = files.find(isMidiFile);
@@ -160,6 +200,7 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
                 playing={studio.playing}
                 recording={studio.recording}
                 playbackToken={racePlaybackToken}
+                physicsRevision={physicsRevision}
                 playbackStartMs={studio.playbackStartMs}
                 playbackEndMs={studio.playbackEndMs}
                 durationMs={studio.durationMs}
@@ -167,7 +208,7 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
                 onEnded={handleEnded}
                 onComplete={handleComplete}
                 onImpactSound={studio.playMarbleImpact}
-                onReady={setRacePhysics}
+                onReady={handlePhysicsReady}
                 stopAtPlaybackEnd={studio.playingClip}
                 canvasRef={studio.threeCanvasRef}
               />

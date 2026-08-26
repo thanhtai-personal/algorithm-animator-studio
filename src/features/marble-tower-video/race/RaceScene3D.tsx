@@ -14,6 +14,7 @@ function Runtime({ physics, playing, playbackToken, playbackStartMs, playbackEnd
   physics: RacePhysics;
   playing: boolean;
   playbackToken: number;
+  physicsRevision: number;
   playbackStartMs: number;
   playbackEndMs: number;
   durationMs: number;
@@ -59,6 +60,7 @@ export function RaceScene3D(props: {
   playing: boolean;
   recording: boolean;
   playbackToken: number;
+  physicsRevision: number;
   playbackStartMs: number;
   playbackEndMs: number;
   durationMs: number;
@@ -72,7 +74,7 @@ export function RaceScene3D(props: {
 }) {
   const physics = useMemo(
     () => new RacePhysics(props.onComplete ?? (() => undefined), props.driveMultiplier, props.onImpactSound, props.marbleCount),
-    [props.marbleCount, props.playbackToken],
+    [props.marbleCount, props.physicsRevision],
   );
   useEffect(() => { physics.setDriveMultiplier(props.driveMultiplier); }, [physics, props.driveMultiplier]);
   useEffect(() => { props.onReady?.(physics); return () => physics.dispose(); }, [physics, props.onReady]);

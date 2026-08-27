@@ -37,6 +37,7 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
   const [seekRevision, setSeekRevision] = useState(0);
   const finishTimerRef = useRef<number | null>(null);
   const physicsReadyWaiterRef = useRef<((physics: RacePhysics) => void) | null>(null);
+  const suppressImpactSoundRef = useRef(false);
   const playlist = useMarbleTowerPlaylist(studio);
   const output = rhythmicOutputSize(studio.settings.outputPreset);
   const racePlaybackToken = studio.playbackToken * 1000 + seekRevision;
@@ -56,6 +57,11 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
   }, []);
 
 
+  const handleRaceImpactSound = useCallback((kind: Parameters<typeof studio.playMarbleImpact>[0], strength: number, pan: number, variant?: number) => {
+    if (suppressImpactSoundRef.current) return;
+    studio.playMarbleImpact(kind, strength, pan, variant);
+  }, [studio.playMarbleImpact]);
+
   const handlePhysicsReady = useCallback((physics: RacePhysics) => {
     setRacePhysics(physics);
     const waiter = physicsReadyWaiterRef.current;
@@ -73,6 +79,30 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
   const waitForPaint = useCallback(() => new Promise<void>((resolve) => {
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()));
   }), []);
+
+  const advancePhysicsWithoutBlocking = useCallback(async (physics: RacePhysics, targetMs: number) => {
+    const targetSeconds = Math.max(0, targetMs) / 1000;
+    suppressImpactSoundRef.current = true;
+    try {
+      while (physics.getTimelineSeconds() + 0.001 < targetSeconds) {
+        const frameBudgetStartedAt = performance.now();
+        do {
+          const current = physics.getTimelineSeconds();
+          const chunkTarget = Math.min(targetSeconds, current + 0.22);
+          if (!physics.hasStarted() && chunkTarget > 3) {
+            if (current < 3) physics.advanceTo(3);
+            physics.releaseStart();
+          }
+          physics.advanceTo(chunkTarget);
+        } while (physics.getTimelineSeconds() + 0.001 < targetSeconds && performance.now() - frameBudgetStartedAt < 7);
+        if (physics.getTimelineSeconds() + 0.001 < targetSeconds) {
+          await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+        }
+      }
+    } finally {
+      suppressImpactSoundRef.current = false;
+    }
+  }, []);
 
   const silenceSourceForCountdown = useCallback(() => {
     studio.stopPlaybackAudio();
@@ -162,14 +192,39 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
     // MediaRecorder starts. Otherwise the expensive constructor becomes a
     // frozen opening shot in the exported video.
     const preparedPhysics = await prepareFreshPhysics();
-    if (trimOnly && studio.trimStartMs > 0) preparedPhysics.advanceTo(studio.trimStartMs / 1000);
+    if (trimOnly && studio.trimStartMs > 0) {
+      await advancePhysicsWithoutBlocking(preparedPhysics, studio.trimStartMs);
+    }
     await waitForPaint();
     await studio.recordVideo(format, trimOnly);
   }, [
+    advancePhysicsWithoutBlocking,
     playlist.resetToFirst,
     prepareFreshPhysics,
     silenceSourceForCountdown,
     studio.recordVideo,
+    studio.recording,
+    studio.resetPlayback,
+    studio.trimStartMs,
+    waitForPaint,
+  ]);
+
+  const previewRaceTrim = useCallback(async () => {
+    if (studio.recording) return;
+    studio.resetPlayback();
+    silenceSourceForCountdown();
+    setRaceResult(null);
+    const preparedPhysics = await prepareFreshPhysics();
+    if (studio.trimStartMs > 0) {
+      await advancePhysicsWithoutBlocking(preparedPhysics, studio.trimStartMs);
+    }
+    await waitForPaint();
+    await studio.previewTrim();
+  }, [
+    advancePhysicsWithoutBlocking,
+    prepareFreshPhysics,
+    silenceSourceForCountdown,
+    studio.previewTrim,
     studio.recording,
     studio.resetPlayback,
     studio.trimStartMs,
@@ -222,7 +277,7 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
                 onTime={studio.setTimeMs}
                 onEnded={handleEnded}
                 onComplete={handleComplete}
-                onImpactSound={studio.playMarbleImpact}
+                onImpactSound={handleRaceImpactSound}
                 onReady={handlePhysicsReady}
                 stopAtPlaybackEnd={studio.playingClip}
                 canvasRef={studio.threeCanvasRef}
@@ -262,7 +317,7 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
             exportFps={studio.settings.exportFps}
             outputPreset={output.preset}
             onRangeChange={studio.setTrimRange}
-            onPreview={() => void studio.previewTrim()}
+            onPreview={() => void previewRaceTrim()}
             onExport={(format) => recordRace(format, true)}
             onFpsChange={(fps) => studio.patch("exportFps", fps)}
             onOutputPresetChange={(preset) => studio.patch("outputPreset", preset)}

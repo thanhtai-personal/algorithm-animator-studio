@@ -3,7 +3,8 @@ import { buildCourseSamplesFor } from "./towerCourseSampler";
 
 export const OLYMPIC_ROAD_MAP_ID = "olympic-road" as const;
 export const OLYMPIC_TRACK_WIDTH = 7.4;
-export const OLYMPIC_SAMPLE_COUNT = 320;
+export const OLYMPIC_SAMPLE_COUNT = 280;
+export const OLYMPIC_SPIRAL_CENTER: [number, number, number] = [-8, 9.2, 8];
 
 export type OlympicRoadObstacleKind =
   | "hazard-diamond"
@@ -19,81 +20,86 @@ export type OlympicRoadObstacle = {
   collider: readonly [number, number, number];
 };
 
-// Reference sequence: launch -> showcase hairpin -> spiral bowl -> choice gates
-// -> elevated switchbacks -> slalom -> final chute -> ranked finish lanes.
-// Height decreases throughout so gravity remains the only forward motor.
-export const OLYMPIC_ROAD_POINTS = [
-  [0, 30, -38], [0, 29, -31], [0, 27.8, -23], [0, 26.5, -15],
-  [-6, 25, -9], [-13, 23.5, -8], [-17, 22, -2], [-16, 20.5, 6],
-  [-10, 19, 12], [-2, 17.8, 14], [7, 16.6, 12], [13, 15.5, 7],
-  [15, 14.5, 0], [12, 13.6, -7], [5, 12.8, -11], [-2, 12.1, -11],
-  [-8, 11.4, -7], [-11, 10.7, 0], [-8, 10, 7], [-1, 9.3, 10],
-  [6, 8.6, 8], [10, 7.9, 2], [8, 7.2, -5], [2, 6.6, -8],
-  [-4, 6, -6], [-7, 5.5, -1], [-5, 5, 4], [0, 4.6, 6],
-  [5, 4.2, 3], [6, 3.9, -2], [2, 3.6, -5], [7, 3.4, -8],
-  [14, 3.2, -6], [17, 3, 0], [14, 2.8, 6], [8, 2.6, 10],
-  [0, 2.4, 10], [-7, 2.2, 6], [-9, 2, 0], [-6, 1.8, -5],
-  [0, 1.65, -7], [7, 1.5, -4], [10, 1.35, 1], [8, 1.2, 6],
-  [2, 1.05, 8], [-3, 0.9, 6], [-5, 0.75, 1], [-2, 0.62, -3],
-  [3, 0.5, -4], [8, 0.38, -1], [12, 0.3, 4], [14, 0.22, 10],
-  [17, 0.15, 16], [20, 0.1, 22],
+// Map 2 is intentionally a compact tabletop road course like the reference
+// video: launch straight -> broad U-turn -> spiral bowl -> bridge/U-turn ->
+// S-bends -> final hairpin -> ranking chute. It must not reuse the descending
+// tower grammar from Map 1. Y only drops gradually to keep gravity as the motor.
+const OLYMPIC_ROAD_XZ = [
+  [0, -54], [0, -44], [0, -34], [0, -24], [0, -14],
+  [3, -7], [10, -3], [18, -3], [25, -7], [28, -14], [27, -22], [22, -28], [15, -31], [8, -31],
+  [2, -27], [-4, -21], [-7, -14], [-6, -7], [-2, -2],
+  [-2.87, -6.10], [4.07, -1.63], [6.94, 5.31], [5.15, 12.73], [-0.54, 18.20],
+  [-8.31, 20.80], [-15.87, 19.11], [-21.04, 13.78], [-22.46, 6.45], [-19.92, 0.02],
+  [-14.57, -3.70], [-8.22, -3.45], [-3.03, 0.44], [-0.79, 6.17], [-1.99, 11.79],
+  [-5.89, 15.47], [-10.81, 15.88], [-14.67, 12.96], [-15.92, 8.31], [-14.18, 4.16],
+  [-10.14, 2.03], [-5.82, 2.65], [-2, 10], [5, 12], [12, 16], [20, 18], [28, 18],
+  [34, 22], [35, 30], [31, 37], [24, 40], [17, 39], [11, 34], [10, 28],
+  [7, 23], [1, 22], [-5, 26], [-8, 32], [-5, 38], [2, 41], [8, 45], [9, 52],
+  [5, 58], [-2, 61], [-10, 60], [-17, 55], [-20, 48],
+  [-19, 41], [-14, 36], [-7, 35], [0, 38], [4, 44], [4, 51], [0, 57], [-6, 60],
+  [-12, 60], [-17, 56], [-19, 50], [-17, 44], [-12, 40], [-6, 40], [-1, 44], [1, 50],
+  [1, 58], [0, 66], [0, 76],
 ] as const;
+
+export const OLYMPIC_ROAD_POINTS = OLYMPIC_ROAD_XZ.map(([x, z], index) => {
+  const progress = index / Math.max(1, OLYMPIC_ROAD_XZ.length - 1);
+  const y = THREE.MathUtils.lerp(15.5, 2.4, progress);
+  return [x, y, z] as const;
+});
 
 export const OLYMPIC_ROAD_CURVE = new THREE.CatmullRomCurve3(
   OLYMPIC_ROAD_POINTS.map(([x, y, z]) => new THREE.Vector3(x, y, z)),
   false,
   "centripetal",
-  0.28,
+  0.18,
 );
 
 export const OLYMPIC_ROAD_SECTIONS = [
-  { from: 0, to: 0.1, id: "road-launch", label: "LAUNCH STRAIGHT", style: "road" },
-  { from: 0.1, to: 0.27, id: "road-showcase-hairpin", label: "SHOWCASE HAIRPIN", style: "curb" },
-  { from: 0.27, to: 0.49, id: "road-spiral-bowl", label: "SPIRAL BOWL", style: "neon" },
-  { from: 0.49, to: 0.58, id: "road-choice-gates", label: "CHOICE GATES", style: "hazard" },
-  { from: 0.58, to: 0.74, id: "road-switchbacks", label: "ELEVATED SWITCHBACKS", style: "curb" },
-  { from: 0.74, to: 0.88, id: "road-slalom", label: "TRAFFIC SLALOM", style: "hazard" },
-  { from: 0.88, to: 0.95, id: "road-final-chute", label: "FINAL CHUTE", style: "hazard" },
-  { from: 0.95, to: 1, id: "road-finish-podium", label: "RANKED FINISH", style: "finish" },
+  { from: 0, to: 0.08, id: "road-launch", label: "LAUNCH STRAIGHT", style: "road" },
+  { from: 0.08, to: 0.20, id: "road-first-hairpin", label: "TABLETOP U-TURN", style: "curb" },
+  { from: 0.20, to: 0.49, id: "road-spiral-bowl", label: "SPIRAL BOWL", style: "neon" },
+  { from: 0.49, to: 0.64, id: "road-bridge-turn", label: "ELEVATED BRIDGE", style: "road" },
+  { from: 0.64, to: 0.79, id: "road-switchbacks", label: "S-BENDS", style: "curb" },
+  { from: 0.79, to: 0.94, id: "road-final-hairpin", label: "FINAL HAIRPIN", style: "hazard" },
+  { from: 0.94, to: 1, id: "road-finish-chute", label: "RANKING CHUTE", style: "finish" },
 ] as const;
 
 export const OLYMPIC_ROAD_OBSTACLES: readonly OlympicRoadObstacle[] = [
-  { id: "launch-warning-left", kind: "hazard-diamond", progress: 0.045, lateral: -2.35, collider: [0.7, 1.25, 0.45] },
-  { id: "launch-warning-right", kind: "hazard-diamond", progress: 0.065, lateral: 2.35, collider: [0.7, 1.25, 0.45] },
-  { id: "launch-warning-center", kind: "hazard-diamond", progress: 0.085, lateral: 0, collider: [0.7, 1.25, 0.45] },
-  { id: "hairpin-post-a", kind: "slalom-post", progress: 0.145, lateral: -2, collider: [0.65, 1.45, 0.65] },
-  { id: "hairpin-post-b", kind: "slalom-post", progress: 0.18, lateral: 1.8, collider: [0.65, 1.45, 0.65] },
-  { id: "hairpin-post-c", kind: "slalom-post", progress: 0.225, lateral: -0.8, collider: [0.65, 1.45, 0.65] },
-  { id: "choice-left", kind: "choice-gate", progress: 0.525, lateral: -2.4, collider: [1.1, 1.7, 0.45] },
-  { id: "choice-center", kind: "choice-gate", progress: 0.525, lateral: 0, collider: [1.1, 1.7, 0.45] },
-  { id: "choice-right", kind: "choice-gate", progress: 0.525, lateral: 2.4, collider: [1.1, 1.7, 0.45] },
-  { id: "switchback-post-a", kind: "slalom-post", progress: 0.635, lateral: -1.75, collider: [0.65, 1.45, 0.65] },
-  { id: "switchback-post-b", kind: "slalom-post", progress: 0.69, lateral: 1.75, collider: [0.65, 1.45, 0.65] },
-  { id: "traffic-left", kind: "traffic-light", progress: 0.775, lateral: -1.9, collider: [1.05, 1.55, 0.75] },
-  { id: "traffic-right", kind: "traffic-light", progress: 0.815, lateral: 1.9, collider: [1.05, 1.55, 0.75] },
-  { id: "final-warning-left", kind: "hazard-diamond", progress: 0.9, lateral: -2.25, collider: [0.7, 1.25, 0.45] },
-  { id: "final-warning-right", kind: "hazard-diamond", progress: 0.925, lateral: 2.25, collider: [0.7, 1.25, 0.45] },
+  { id: "launch-warning-left", kind: "hazard-diamond", progress: 0.035, lateral: -2.2, collider: [0.8, 1.25, 0.7] },
+  { id: "launch-warning-right", kind: "hazard-diamond", progress: 0.06, lateral: 2.2, collider: [0.8, 1.25, 0.7] },
+  { id: "hairpin-post-a", kind: "slalom-post", progress: 0.11, lateral: -1.9, collider: [0.7, 1.5, 0.7] },
+  { id: "hairpin-post-b", kind: "slalom-post", progress: 0.145, lateral: 1.65, collider: [0.7, 1.5, 0.7] },
+  { id: "hairpin-post-c", kind: "slalom-post", progress: 0.18, lateral: -0.65, collider: [0.7, 1.5, 0.7] },
+  { id: "bridge-choice-left", kind: "choice-gate", progress: 0.535, lateral: -2.25, collider: [1.1, 1.7, 0.7] },
+  { id: "bridge-choice-center", kind: "choice-gate", progress: 0.535, lateral: 0, collider: [1.1, 1.7, 0.7] },
+  { id: "bridge-choice-right", kind: "choice-gate", progress: 0.535, lateral: 2.25, collider: [1.1, 1.7, 0.7] },
+  { id: "s-post-a", kind: "slalom-post", progress: 0.665, lateral: -1.65, collider: [0.7, 1.5, 0.7] },
+  { id: "s-post-b", kind: "slalom-post", progress: 0.705, lateral: 1.65, collider: [0.7, 1.5, 0.7] },
+  { id: "traffic-left", kind: "traffic-light", progress: 0.755, lateral: -1.85, collider: [1.05, 1.55, 0.9] },
+  { id: "traffic-right", kind: "traffic-light", progress: 0.79, lateral: 1.85, collider: [1.05, 1.55, 0.9] },
+  { id: "final-post-a", kind: "slalom-post", progress: 0.845, lateral: -1.6, collider: [0.7, 1.5, 0.7] },
+  { id: "final-post-b", kind: "slalom-post", progress: 0.88, lateral: 1.5, collider: [0.7, 1.5, 0.7] },
+  { id: "final-warning", kind: "hazard-diamond", progress: 0.92, lateral: -2.15, collider: [0.8, 1.25, 0.7] },
 ];
 
 export const OLYMPIC_ROAD_CUTS = [
-  { progress: 0.29, keep: 0, label: "SPIRAL SECTOR" },
-  { progress: 0.58, keep: 0, label: "SWITCHBACK SECTOR" },
-  { progress: 0.88, keep: 0, label: "FINAL SECTOR" },
+  { progress: 0.49, keep: 0, label: "SPIRAL EXIT" },
+  { progress: 0.79, keep: 0, label: "FINAL SECTOR" },
 ] as const;
 
 export const OLYMPIC_ROAD_SPECIALS = {
-  startGate: 0.03,
-  spinnerA: 0.205,
-  spinnerB: 0.79,
+  startGate: 0.022,
+  spinnerA: 0.16,
+  spinnerB: 0.72,
   chimeStart: 2,
   chimeEnd: 2,
   pianoStart: 2,
   pianoEnd: 2,
   jump: 2,
-  tunnelStart: 0.28,
+  tunnelStart: 0.2,
   tunnelEnd: 0.49,
-  finalCross: 0.905,
-  finish: 0.975,
+  finalCross: 0.9,
+  finish: 0.982,
 } as const;
 
 export const OLYMPIC_ROAD_SAMPLES = buildCourseSamplesFor(

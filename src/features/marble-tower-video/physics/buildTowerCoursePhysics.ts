@@ -127,12 +127,23 @@ export function createCourseObstacleBodies(
   return obstacles.map((obstacle) => {
     const sample = samples[Math.round(obstacle.progress * (samples.length - 1))];
     const [width, height, depth] = obstacle.collider;
-    const body = new CANNON.Body({
-      mass: 0,
-      type: CANNON.Body.STATIC,
-      material,
-      shape: new CANNON.Box(new CANNON.Vec3(width / 2, height / 2, depth / 2)),
-    });
+    const body = new CANNON.Body({ mass: 0, type: CANNON.Body.STATIC, material });
+
+    if (obstacle.kind === 'slalom-post') {
+      // A visually narrow post is easy to tunnel through at racing speed. Keep
+      // the visible post slim, but give physics a rounded core plus a short
+      // hidden sweep volume along the travel axis so one fixed step cannot jump it.
+      const radius = Math.max(width, depth) * 0.52;
+      const sphere = new CANNON.Sphere(radius);
+      body.addShape(sphere, new CANNON.Vec3(0, -height * 0.3, 0));
+      body.addShape(sphere, new CANNON.Vec3(0, 0, 0));
+      body.addShape(sphere, new CANNON.Vec3(0, height * 0.3, 0));
+      body.addShape(new CANNON.Box(new CANNON.Vec3(radius, height * 0.43, Math.max(0.72, depth * 0.9))));
+    } else {
+      const safeDepth = Math.max(depth, obstacle.kind === 'hazard-diamond' ? 1.05 : 0.92);
+      body.addShape(new CANNON.Box(new CANNON.Vec3(width / 2, height / 2, safeDepth / 2)));
+    }
+
     const position = sample.point.clone()
       .addScaledVector(sample.right, obstacle.lateral)
       .addScaledVector(sample.normal, height / 2 + 0.08);

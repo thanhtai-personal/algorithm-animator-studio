@@ -56,7 +56,7 @@ export const ORIGINAL_TOWER_COURSE: RaceCourseDefinition = {
 export const OLYMPIC_ROAD_COURSE: RaceCourseDefinition = {
   id: OLYMPIC_ROAD_MAP_ID,
   label: "Map 2 · Olympic Road",
-  description: "Đường đua đồ chơi: showcase hairpin, spiral bowl, switchback và podium.",
+  description: "Template tabletop theo video: U-turn lớn, spiral bowl, cầu/S-bend và ranking chute.",
   samples: OLYMPIC_ROAD_SAMPLES,
   trackWidth: OLYMPIC_TRACK_WIDTH,
   cuts: OLYMPIC_ROAD_CUTS,

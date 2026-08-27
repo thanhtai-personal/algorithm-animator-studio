@@ -26,11 +26,13 @@ const normalize = (v: Vec2): Vec2 => {
   return size > 1e-6 ? { x: v.x / size, y: v.y / size } : { x: 1, y: 0 };
 };
 
-function supportsDenseInstrumentRun(_settings: StudioSettings) {
+function supportsDenseInstrumentRun(settings: StudioSettings) {
   // Dense routing is a planner decision, not a preset-only decoration. In auto
   // mode this is exactly where we want to switch from isolated obstacles to a
   // continuous playable surface instead of disabling collision constraints.
-  return true;
+  // The Korobeiniki reference is the exception: even its 115 ms notes strike
+  // separate tube mouths, never a continuous keyboard/rail surface.
+  return settings.instrumentLayout !== "wall-score";
 }
 
 function denseInstrumentKind(events: NoteEvent[], start: number, end: number): DenseInstrumentKind {

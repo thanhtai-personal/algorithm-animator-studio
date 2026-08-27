@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import type { BallStyle, StudioSettings } from "../types";
+import { isKorobeinikiWallLayout } from "../lib/korobeinikiReferenceLayout";
 
 const PATCHWORK_FACE_COLORS = ["#22c8e8", "#ff3cad", "#ffb11b", "#2c70ed", "#ef3340", "#21c56b", "#6346d8", "#16b8c4"];
 const MULTICOLOR_GLASS_CORE = [
@@ -30,7 +31,12 @@ export function createPatchworkGeometry() {
   return geometry;
 }
 
-function marblePatternTexture(style: BallStyle, base: string, stripe: string) {
+export function referenceStripedMarbleBandAtUv(u: number, v: number) {
+  const center = 0.5 - Math.sin(u * Math.PI * 2) * 0.045;
+  return Math.abs(v - center) < 0.105;
+}
+
+function marblePatternTexture(style: BallStyle, base: string, stripe: string, referenceStriped = false) {
   const width = 384;
   const height = 192;
   const data = new Uint8Array(width * height * 4);
@@ -43,7 +49,9 @@ function marblePatternTexture(style: BallStyle, base: string, stripe: string) {
     for (let x = 0; x < width; x += 1) {
       const u = (x + 0.5) / width;
       let color = baseColor.clone();
-      if (style === "rainbow") {
+      if (style === "striped" && referenceStriped) {
+        color = referenceStripedMarbleBandAtUv(u, v) ? stripeColor.clone() : baseColor.clone();
+      } else if (style === "rainbow") {
         const band = Math.floor(((u + Math.sin(v * Math.PI * 2) * 0.035 + 1) % 1) * rainbow.length);
         color = rainbow[Math.min(rainbow.length - 1, band)].clone();
       } else if (style === "flower") {
@@ -81,9 +89,10 @@ function marblePatternTexture(style: BallStyle, base: string, stripe: string) {
 }
 
 function MarbleMaterial({ style, settings }: { style: BallStyle; settings: StudioSettings }) {
+  const referenceStriped = style === "striped" && isKorobeinikiWallLayout(settings);
   const patternMap = useMemo(
-    () => marblePatternTexture(style, settings.ballBaseColor, settings.ballStripeColor),
-    [settings.ballBaseColor, settings.ballStripeColor, style],
+    () => marblePatternTexture(style, settings.ballBaseColor, settings.ballStripeColor, referenceStriped),
+    [referenceStriped, settings.ballBaseColor, settings.ballStripeColor, style],
   );
   useEffect(() => () => patternMap.dispose(), [patternMap]);
 
@@ -169,6 +178,9 @@ function MarbleMaterial({ style, settings }: { style: BallStyle; settings: Studi
     return (
       <meshPhysicalMaterial
         map={patternMap}
+        flatShading={referenceStriped}
+        emissive={referenceStriped ? settings.ballBaseColor : "#000000"}
+        emissiveIntensity={referenceStriped ? 0.16 : 0}
         metalness={0.04}
         roughness={0.2}
         clearcoat={0.92}
@@ -208,8 +220,12 @@ export const RhythmicMarble3D = forwardRef<THREE.Group, {
   settings: StudioSettings;
 }>(function RhythmicMarble3D({ settings }, ref) {
   const patchworkGeometry = useMemo(
-    () => settings.ballStyle === "patchwork" ? createPatchworkGeometry() : null,
-    [settings.ballStyle],
+    () => settings.ballStyle === "patchwork"
+      ? createPatchworkGeometry()
+      : settings.ballStyle === "striped" && isKorobeinikiWallLayout(settings)
+        ? new THREE.IcosahedronGeometry(1, 2)
+        : null,
+    [settings.ballStyle, settings.instrumentFamily, settings.instrumentLayout],
   );
   useEffect(() => () => patchworkGeometry?.dispose(), [patchworkGeometry]);
   const glowStrength = THREE.MathUtils.clamp(settings.animationSensitivity, 0, 1.5);

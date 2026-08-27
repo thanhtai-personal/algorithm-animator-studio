@@ -8,6 +8,7 @@ import { presetObstaclePlan } from "../engine/presetObstaclePlan";
 import { instrumentScenePlan } from "../engine/instrumentScenePlan";
 import { noteColorForMidi } from "./noteColors";
 import { createPhraseInstrumentSettingsResolver } from "./phraseInstrumentMix";
+import { buildKorobeinikiReferenceCourse, isKorobeinikiWallLayout } from "./korobeinikiReferenceLayout";
 
 export type { MarblePlatform, MarblePoint } from "../engine/marblePhysicsTypes";
 
@@ -173,6 +174,9 @@ export function buildMarbleCourse(
   resolveSettings?: StudioSettingsResolver,
   onProgress?: (progress: number) => void,
 ): MarblePlatform[] {
+  if (isKorobeinikiWallLayout(settings)) {
+    return buildKorobeinikiReferenceCourse(events, settings, width, onProgress);
+  }
   const baseResolver: StudioSettingsResolver = resolveSettings ?? (() => settings);
   const phraseResolver = createPhraseInstrumentSettingsResolver(events, baseResolver);
   return buildPhysicsCourse(

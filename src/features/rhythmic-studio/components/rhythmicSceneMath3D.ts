@@ -150,6 +150,10 @@ export function firstEventAtOrAfter(events: NoteEvent[], timeMs: number) {
   return low;
 }
 
+export function crossedRhythmicHit(previousTimeMs: number, timeMs: number, eventTimeMs: number) {
+  return previousTimeMs < eventTimeMs && timeMs >= eventTimeMs;
+}
+
 export function noteDensity(events: NoteEvent[], timeMs: number, windowMs = 900) {
   const start = firstEventAtOrAfter(events, timeMs);
   let strikes = 0;

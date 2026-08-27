@@ -228,6 +228,11 @@ export function PresetThumbnail({ presetId }: { presetId: RhythmicPresetId }) {
 }
 
 function ReferencePresetThumbnail({ presetId }: { presetId: ReferenceVideoPresetId }) {
+  if (presetId === "reference-korobeiniki-tubes") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#9a98a4,#777582)]">
+    {["#93e9d5", "#f4a4d5", "#b6a2f4", "#f2d59d", "#92cbed"].map((color, index) => <div key={color} className="absolute h-4 w-9 origin-right shadow-[4px_6px_6px_rgba(0,0,0,.28)]" style={{ left: `${4 + index * 15}px`, top: `${3 + index * 10}px`, transform: `rotate(${index % 2 ? 12 : -10}deg)`, background: `linear-gradient(180deg,${color},color-mix(in_srgb,${color},#222 34%))`, clipPath: "polygon(0 30%,100% 0,100% 100%,0 70%)" }}><span className="absolute -right-2 top-0 h-4 w-4 rounded-full border-2 border-black/55" style={{ background: `radial-gradient(circle,#17171a 0 46%,${color} 49% 70%,#111 74%)` }} /></div>)}
+    {[0, 1, 2].map((index) => <div key={index} className="absolute h-4 w-8 origin-right bg-gradient-to-b from-[#303136] to-[#111216] shadow-[4px_6px_6px_rgba(0,0,0,.32)]" style={{ left: `${9 + index * 22}px`, bottom: `${1 + index * 6}px`, transform: `rotate(${index % 2 ? -11 : 9}deg)`, clipPath: "polygon(0 30%,100% 0,100% 100%,0 70%)" }}><span className="absolute -right-2 top-0 h-4 w-4 rounded-full border-2 border-[#18191d] bg-[radial-gradient(circle,#050506_0_52%,#28292d_56%)]" /></div>)}
+    <div className="absolute right-3 top-6 h-5 w-5 rounded-full border border-pink-100/70 bg-[repeating-linear-gradient(155deg,#5f177e_0_5px,#f59ad0_6px_9px)] shadow-[0_5px_9px_rgba(50,15,70,.35)]" />
+  </SceneFrame>;
   if (presetId === "reference-wooden-marimba") return <SceneFrame className="h-16 bg-[#d9e4e5]">
     {[0, 1, 2, 3].map((index) => <div key={index} className="absolute h-3 w-12 rounded-sm border border-amber-950/30 bg-gradient-to-b from-amber-700 to-amber-950 shadow-[5px_7px_7px_rgba(0,0,0,.25)]" style={{ left: `${7 + index * 17}px`, top: `${7 + index * 13}px`, transform: `rotate(${index % 2 ? 12 : -8}deg)` }} />)}
   </SceneFrame>;

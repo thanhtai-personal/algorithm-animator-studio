@@ -21,7 +21,7 @@ export function instrumentVoiceForPlatform(
   if (["instrument-key", "xylophone-key", "xylophone-bar"].includes(style)) return "xylophone";
   if (style === "marimba-bar") return "marimba";
   if (style === "vibraphone-bar" || style === "metallophone-plate") return "vibraphone";
-  if (style === "boomwhacker-tube") return "boomwhacker";
+  if (style === "boomwhacker-tube" || style === "wall-boomwhacker-tube") return "boomwhacker";
   if (style === "pluck-pad" || style === "instrument-wire") {
     if (program >= 32 && program <= 39) return "bass";
     if (program >= 40 && program <= 55) return "strings";

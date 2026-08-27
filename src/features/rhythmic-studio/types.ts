@@ -60,6 +60,7 @@ export const PLATFORM_STYLES = [
   "instrument-pad",
   "instrument-wire",
   "boomwhacker-tube",
+  "wall-boomwhacker-tube",
   "xylophone-bar",
   "piano-key",
   "marimba-bar",
@@ -90,7 +91,7 @@ export const INSTRUMENT_FAMILIES = [
 ] as const;
 export type InstrumentFamily = (typeof INSTRUMENT_FAMILIES)[number];
 
-export const INSTRUMENT_LAYOUTS = ["cascade", "fan", "gallery", "split", "corridor"] as const;
+export const INSTRUMENT_LAYOUTS = ["cascade", "fan", "gallery", "split", "corridor", "wall-score"] as const;
 export type InstrumentLayout = (typeof INSTRUMENT_LAYOUTS)[number];
 
 export const COURSE_LONG_ITEMS = [

@@ -2,13 +2,23 @@ import { useCallback } from "react";
 import type { RhythmicStudioStore } from "../store/RhythmicStudioStore";
 import { presetById, type RhythmicPresetId } from "../lib/studioPresets";
 import { DEFAULT_SETTINGS } from "../defaults";
+import { referenceEventsForImportedAudio } from "../lib/referenceAudio";
 
-export function useRhythmicPresetActions(store: RhythmicStudioStore) {
+export interface LoadBuiltinOptions {
+  preserveAudio?: boolean;
+}
+
+export function useRhythmicPresetActions(
+  store: RhythmicStudioStore,
+  loadBuiltin?: (name: string, options?: LoadBuiltinOptions) => void,
+  clearBackground?: () => void,
+) {
   const applyQuickPreset = useCallback((id: RhythmicPresetId) => {
     // Manual selection must take ownership immediately. Leaving Auto Mix enabled
     // would make the UI look unresponsive because the time-based resolver keeps
     // replacing the manually selected preset on the next render frame.
-    const preset = presetById(id).settings;
+    const selectedPreset = presetById(id);
+    const preset = selectedPreset.settings;
     const lockedBackground = {
       backgroundPreset: store.settings.backgroundPreset,
       backgroundColor: store.settings.backgroundColor,
@@ -41,8 +51,21 @@ export function useRhythmicPresetActions(store: RhythmicStudioStore) {
       lyricShadow: store.settings.lyricShadow,
       lyricShowNext: store.settings.lyricShowNext,
     };
-    store.selectPreset(id, { ...DEFAULT_SETTINGS, ...persistentRuntime, ...preset, ...lockedBackground });
-  }, [store]);
+    if (selectedPreset.builtinMelody) {
+      const preserveAudio = store.source.type === "audio"
+        && referenceEventsForImportedAudio({
+          activePresetId: id,
+          fileName: store.source.name,
+          durationMs: store.source.durationMs,
+        }) !== null;
+      if (preserveAudio) loadBuiltin?.(selectedPreset.builtinMelody, { preserveAudio: true });
+      else loadBuiltin?.(selectedPreset.builtinMelody);
+      if (clearBackground) clearBackground();
+      else store.setBackground(null, null);
+    }
+    const backgroundPolicy = selectedPreset.builtinMelody ? {} : lockedBackground;
+    store.selectPreset(id, { ...DEFAULT_SETTINGS, ...persistentRuntime, ...preset, ...backgroundPolicy });
+  }, [clearBackground, loadBuiltin, store]);
 
   const togglePresetMix = useCallback(() => {
     const nextEnabled = !store.presetMixEnabled;

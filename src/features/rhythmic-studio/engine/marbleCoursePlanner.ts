@@ -953,7 +953,12 @@ function createPlatformForRoute(
   platform.chordClusterId = step.chordNode?.id;
   applyPlannerVisualHints(context, index, state, step, route, platform);
   const impactStyle = "impactStyle" in route ? route.impactStyle : undefined;
-  if (impactStyle === "instrument-pad" && !step.denseNode && !step.chordNode) platform.visualStyle = impactStyle;
+  if (
+    impactStyle === "instrument-pad"
+    && (step.settings.instrumentFamily === "auto" || step.settings.instrumentFamily === "mixed")
+    && !step.denseNode
+    && !step.chordNode
+  ) platform.visualStyle = impactStyle;
   const midiVisualStyle = midiInstrumentVisualStyle(step.event, step.settings);
   if (midiVisualStyle) platform.visualStyle = midiVisualStyle;
   fitVisualWidthForScene(platform, state.recentPlatforms, step.settings);

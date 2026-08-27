@@ -121,6 +121,11 @@ const PLAYING_FACE_PROFILES: Partial<Record<PlatformStyle, PlayingFaceProfile>> 
     pitchDeg: 31,
     strikePoint: (height) => ({ y: Math.max(0.11, height * 0.5), z: 0 }),
   },
+  "wall-boomwhacker-tube": {
+    faceKind: "front",
+    pitchDeg: 0,
+    strikePoint: (_height, depth) => ({ y: 0, z: depth * 0.5 }),
+  },
   "toy-peg": {
     faceKind: "top",
     pitchDeg: 31,
@@ -249,8 +254,9 @@ export function instrumentPlayingSurface3D(
   const marbleContactZ = safeRadius * normalZ;
   // Split the radius offset across screen-space Y and camera-space Z. Keeping
   // the marble at z=0 forced an inclined drum/key face through the sphere.
-  const contactCorrection = (safeRadius - marbleContactZ * normalZ) / normalY
-    - safeRadius * safeAlignment;
+  const contactCorrection = Math.abs(normalY) < 1e-6
+    ? 0
+    : (safeRadius - marbleContactZ * normalZ) / normalY - safeRadius * safeAlignment;
 
   return {
     faceKind: profile.faceKind,

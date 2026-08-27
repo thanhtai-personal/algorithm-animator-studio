@@ -5,12 +5,12 @@ import {
 } from "../features/rhythmic-studio/lib/referenceVideoPresets";
 import { RHYTHMIC_PRESET_IDS, presetById } from "../features/rhythmic-studio/lib/studioPresets";
 
-const CLIP_IDS = ["013b", "0e70", "3949", "4739", "4fd7", "54ce", "57c8", "a154", "ad97", "hB8lCZ8xGZo_005"] as const;
+const CLIP_IDS = ["013b", "0e70", "3949", "4739", "4fd7", "54ce", "57c8", "a154", "ad97", "hB8lCZ8xGZo_005", "tXxHSu15xU8_002"] as const;
 
 describe("reference video presets", () => {
   it("maps every clip while collapsing visually similar references", () => {
     expect(Object.keys(REFERENCE_CLIP_PRESET_MAP).sort()).toEqual([...CLIP_IDS].sort());
-    expect(REFERENCE_VIDEO_PRESET_IDS).toHaveLength(8);
+    expect(REFERENCE_VIDEO_PRESET_IDS).toHaveLength(9);
     expect(REFERENCE_CLIP_PRESET_MAP["0e70"]).toBe(REFERENCE_CLIP_PRESET_MAP["4fd7"]);
     expect(REFERENCE_CLIP_PRESET_MAP["3949"]).toBe(REFERENCE_CLIP_PRESET_MAP["4739"]);
 

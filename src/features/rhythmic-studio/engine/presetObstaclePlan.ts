@@ -1,5 +1,6 @@
 import type { InstrumentFamily, InstrumentLayout, PlatformStyle, StudioSettings } from "../types";
 import { instrumentScenePlan } from "./instrumentScenePlan";
+import { korobeinikiSceneForIndex } from "../lib/korobeinikiReferenceLayout";
 
 export interface PresetObstaclePlan {
   style: PlatformStyle;
@@ -17,6 +18,7 @@ function widthScale(style: PlatformStyle) {
   if (style === "vibraphone-bar") return 1.04;
   if (style === "metallophone-plate") return 0.94;
   if (style === "boomwhacker-tube") return 1.02;
+  if (style === "wall-boomwhacker-tube") return 0.58;
   if (style === "pluck-pad") return 0.72;
   if (style === "drum-disc") return 0.7;
   if (style === "gong-disc") return 0.76;
@@ -36,6 +38,7 @@ function layoutScale(layout: InstrumentLayout, index: number) {
   if (layout === "gallery") return { vertical: 0.94, horizontal: 0.5 + (index % 3) * 0.03 };
   if (layout === "split") return { vertical: 0.88, horizontal: 0.62 + (index % 2) * 0.05 };
   if (layout === "corridor") return { vertical: 0.86 + (index % 3) * 0.018, horizontal: 0.7 + (index % 2) * 0.04 };
+  if (layout === "wall-score") return { vertical: 0.9 + (index % 4) * 0.012, horizontal: 0.68 + (index % 5) * 0.025 };
   return { vertical: 0.92 + (index % 4) * 0.014, horizontal: 0.54 + (index % 3) * 0.02 };
 }
 
@@ -72,16 +75,18 @@ function familyPattern(family: InstrumentFamily, index: number): PlatformStyle {
 
 export function presetObstaclePlan(index: number, settings: StudioSettings): PresetObstaclePlan | null {
   if (settings.instrumentFamily !== "auto") {
-    const style = familyPattern(settings.instrumentFamily, index);
+    const wallScore = settings.instrumentFamily === "boomwhacker" && settings.instrumentLayout === "wall-score";
+    const style = wallScore ? "wall-boomwhacker-tube" : familyPattern(settings.instrumentFamily, index);
     const layout = layoutScale(settings.instrumentLayout, index);
+    const referenceScene = wallScore ? korobeinikiSceneForIndex(index) : null;
     const sectionLength = settings.instrumentLayout === "corridor" ? 8 : settings.instrumentLayout === "gallery" ? 10 : settings.instrumentLayout === "fan" ? 14 : 12;
     return {
       style,
       widthScale: widthScale(style) * (index % 6 === 0 ? 1.06 : 1),
       verticalScale: layout.vertical,
       horizontalScale: layout.horizontal,
-      sceneStart: index > 0 && index % sectionLength === 0,
-      sceneIndex: Math.floor(index / sectionLength),
+      sceneStart: referenceScene?.sceneStart ?? (index > 0 && index % sectionLength === 0),
+      sceneIndex: referenceScene?.sceneIndex ?? Math.floor(index / sectionLength),
     };
   }
   if (settings.terrainProfile === "tube-board" && settings.platformPrimaryStyle === "tube-cylinder") {

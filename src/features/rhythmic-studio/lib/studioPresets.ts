@@ -8,6 +8,7 @@ export type RhythmicPresetId = (typeof RHYTHMIC_PRESET_IDS)[number];
 export interface RhythmicStudioPreset {
   id: RhythmicPresetId;
   referenceClipIds?: readonly string[];
+  builtinMelody?: string;
   settings: Partial<StudioSettings>;
 }
 

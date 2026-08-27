@@ -22,7 +22,7 @@ export function useRhythmicStudioController() {
   const course = useRhythmicCourseActions(store);
   const projects = useRhythmicProjectActions(store, sources.loadBuiltin);
   const exporter = useRhythmicExportActions(store, { legacyCanvasRef: canvasRef, threeCanvasRef }, playback);
-  const presets = useRhythmicPresetActions(store);
+  const presets = useRhythmicPresetActions(store, sources.loadBuiltin, media.clearBackground);
 
   useEffect(() => {
     if (store.projectName === "My rhythmic run") store.setProjectName(rhythmicText(lang, "default.projectName"));

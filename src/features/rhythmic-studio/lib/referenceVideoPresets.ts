@@ -1,4 +1,5 @@
 import type { StudioSettings } from "../types";
+import { KOROBEINIKI_MELODY_NAME } from "../defaults";
 
 export const REFERENCE_CLIP_PRESET_MAP = {
   "013b": "toy-pegboard",
@@ -11,6 +12,7 @@ export const REFERENCE_CLIP_PRESET_MAP = {
   a154: "reference-cyan-piano",
   ad97: "reference-checker-rails",
   hB8lCZ8xGZo_005: "reference-era-corridor",
+  tXxHSu15xU8_002: "reference-korobeiniki-tubes",
 } as const;
 
 export const NEW_REFERENCE_PRESET_IDS = [
@@ -19,6 +21,7 @@ export const NEW_REFERENCE_PRESET_IDS = [
   "reference-checker-rails",
   "reference-era-corridor",
   "reference-faceted-metallophone",
+  "reference-korobeiniki-tubes",
 ] as const;
 
 export const REFERENCE_VIDEO_PRESET_IDS = [
@@ -34,10 +37,28 @@ export type NewReferencePresetId = (typeof NEW_REFERENCE_PRESET_IDS)[number];
 export interface ReferenceVideoPreset {
   id: NewReferencePresetId;
   referenceClipIds: readonly string[];
+  builtinMelody?: string;
   settings: Partial<StudioSettings>;
 }
 
 export const REFERENCE_VIDEO_PRESETS: ReferenceVideoPreset[] = [
+  {
+    id: "reference-korobeiniki-tubes",
+    referenceClipIds: ["tXxHSu15xU8_002"],
+    builtinMelody: KOROBEINIKI_MELODY_NAME,
+    settings: {
+      titleText: "Korobeiniki",
+      terrainProfile: "xylophone", cameraProfile: "xylophone", backgroundPreset: "spotlight", backgroundColor: "#9494a0", backgroundMotion: 0.002,
+      colorPaletteMode: "key-rainbow", prismStart: "#5ffbf8", prismEnd: "#f5a6bf", ballStyle: "striped", ballBaseColor: "#46107b", ballStripeColor: "#ff91c8", ballSize: 15,
+      platformPrimaryStyle: "wall-boomwhacker-tube", platformSecondaryStyle: "wall-boomwhacker-tube", platformAccentStyle: "instrument-wire", platformMixMode: "single", platformAccentEvery: 12,
+      instrumentFamily: "boomwhacker", instrumentLayout: "wall-score", showcaseRails: true, showcaseRailDensity: 0.62, showcaseDuet: false,
+      platformWidth: 116, platformThickness: 24, platformGap: 136, laneSpread: 278, platformTilt: 4, minBounceDistance: 48, bounceHeight: 54,
+      curveIntensity: 0, curvePathLength: 0, cameraAnchor: 0.2, cameraSmoothing: 0.2, cameraDistance: 1.3, cameraLookAhead: 1.18,
+      platformGlow: 0.12, platformDetail: 1, trailLength: 1, particleCount: 0, spectralDensity: 0.04, animationSensitivity: 0.22,
+      pulseAnimation: true, glowAnimation: false, impactRipple: false, impactPlatformLight: false,
+      synthPreset: "boomwhacker", midiInstrumentMode: "single", midiPlaybackEnabled: true, instrumentNativeAudio: true,
+    },
+  },
   {
     id: "reference-wooden-marimba",
     referenceClipIds: ["54ce"],

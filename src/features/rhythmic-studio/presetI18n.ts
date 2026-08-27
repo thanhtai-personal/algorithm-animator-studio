@@ -13,7 +13,7 @@ type PresetTextKey = RhythmicPresetId
 
 const EN: Record<PresetTextKey, string> = {
   title: "Quick presets",
-  hint: "Switch Marble Player behavior without changing the current song.",
+  hint: "Switch Marble Player behavior. A matched performance preset also loads its reference melody.",
   mix: "Mix",
   "mix.on": "Mix on",
   "mix.off": "Mix off",
@@ -28,6 +28,7 @@ const EN: Record<PresetTextKey, string> = {
   "reference-checker-rails": "Reference · Checker Rails",
   "reference-era-corridor": "Reference · Era Corridor",
   "reference-faceted-metallophone": "Reference · Faceted Metallophone",
+  "reference-korobeiniki-tubes": "Reference · Korobeiniki Tubes",
   "toy-pegboard.hint": "Matches clip 013b: sparse colorful pegs and a candy-flower marble",
   "neon-comet.hint": "Galaxy marble, luminous pads and controlled ribbon jumps",
   "boomwhacker-wall.hint": "Combines clips 0e70 and 4fd7: rainbow tubes, drums, rails and a fire marble",
@@ -37,11 +38,12 @@ const EN: Record<PresetTextKey, string> = {
   "reference-checker-rails.hint": "Matches clip ad97: dark neon rails, prisms and cyan-violet geometry",
   "reference-era-corridor.hint": "Matches clip hB8lCZ8xGZo_005: cymbals, square paddles, piano blocks and staggered fast-note corridors",
   "reference-faceted-metallophone.hint": "Matches clip 57c8: a faceted patchwork ball, two-bolt metallophone plates and cyan dual rails",
+  "reference-korobeiniki-tubes.hint": "Matches tXxHSu15xU8_002: loads the 39-note Korobeiniki performance, pastel wall tubes, wire bridges and a purple striped marble",
 };
 
 const VI: typeof EN = {
   title: "Preset nhanh",
-  hint: "Đổi hành vi Marble Player nhưng giữ nguyên bài nhạc hiện tại.",
+  hint: "Đổi hành vi Marble Player. Preset trình diễn có bài mẫu sẽ tải luôn đúng giai điệu tham chiếu.",
   mix: "Mix",
   "mix.on": "Đang Mix",
   "mix.off": "Tắt Mix",
@@ -56,6 +58,7 @@ const VI: typeof EN = {
   "reference-checker-rails": "Mẫu · Ray caro neon",
   "reference-era-corridor": "Mẫu · Hành lang thời đại",
   "reference-faceted-metallophone": "Mẫu · Metallophone đa diện",
+  "reference-korobeiniki-tubes": "Mẫu · Ống Korobeiniki",
   "toy-pegboard.hint": "Theo clip 013b: chốt màu thưa thoáng và bi hoa kẹo",
   "neon-comet.hint": "Bi galaxy, bệ sáng và các cú nảy ribbon được kiểm soát",
   "boomwhacker-wall.hint": "Gộp clip 0e70 và 4fd7: ống cầu vồng, trống, ray và bi lửa",
@@ -65,6 +68,7 @@ const VI: typeof EN = {
   "reference-checker-rails.hint": "Theo clip ad97: ray neon tối, lăng kính và hình học cyan-tím",
   "reference-era-corridor.hint": "Theo clip hB8lCZ8xGZo_005: cymbal, paddle vuông, phím hộp và hành lang so le cho đoạn nhanh",
   "reference-faceted-metallophone.hint": "Theo clip 57c8: bóng đa diện ghép màu, tấm Metallophone hai chốt và ray kép cyan",
+  "reference-korobeiniki-tubes.hint": "Theo clip tXxHSu15xU8_002: tự tải bản Korobeiniki 39 nốt, ống tường pastel, cầu dây và bi tím sọc",
 };
 
 export function presetText(lang: Lang, key: PresetTextKey) {

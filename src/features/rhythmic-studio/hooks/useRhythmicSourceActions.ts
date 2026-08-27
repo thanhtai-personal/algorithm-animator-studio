@@ -6,6 +6,8 @@ import { rhythmicText } from "../i18n";
 import { analyzeAudioFile } from "../lib/audioAnalysis";
 import { parseMidi } from "../lib/midiParser";
 import type { RhythmicStudioStore } from "../store/RhythmicStudioStore";
+import { referenceEventsForImportedAudio } from "../lib/referenceAudio";
+import type { LoadBuiltinOptions } from "./useRhythmicPresetActions";
 
 function prettyBytes(bytes: number) {
   return bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -19,13 +21,19 @@ export function useRhythmicSourceActions(store: RhythmicStudioStore, stopPlaybac
     store.setAudioUrl(next);
   }, [store]);
 
-  const loadBuiltin = useCallback((name: string) => {
+  const loadBuiltin = useCallback((name: string, options: LoadBuiltinOptions = {}) => {
     const events = BUILTIN_MELODIES[name];
     if (!events) return;
     stopPlaybackAudio();
-    replaceAudioUrl(null);
-    const durationMs = events.at(-1)?.timeMs ?? 0;
-    store.setSource(events, { type: "builtin", name, durationMs, eventCount: events.length }, { key: "info.builtin" });
+    const preserveAudio = options.preserveAudio && store.source.type === "audio" && store.audioUrl;
+    if (!preserveAudio) replaceAudioUrl(null);
+    const lastEvent = events.at(-1);
+    const durationMs = lastEvent ? lastEvent.timeMs + lastEvent.durationMs : 0;
+    const source = preserveAudio
+      ? { ...store.source, eventCount: events.length }
+      : { type: "builtin" as const, name, durationMs, eventCount: events.length };
+    const info = preserveAudio ? store.audioInfoToken : { key: "info.builtin" as const };
+    store.setSource(events, source, info, preserveAudio || null);
     store.setStatus({ key: "status.loaded", values: { name } });
   }, [replaceAudioUrl, stopPlaybackAudio, store]);
 
@@ -53,11 +61,16 @@ export function useRhythmicSourceActions(store: RhythmicStudioStore, stopPlaybac
   const importAudio = useCallback(async (file: File) => {
     store.setStatus({ key: "status.analyzing" });
     try {
-      const { buffer, events } = await analyzeAudioFile(file);
+      const { buffer, events: detectedEvents } = await analyzeAudioFile(file);
       stopPlaybackAudio();
       const url = URL.createObjectURL(file);
       replaceAudioUrl(url);
       const durationMs = buffer.duration * 1000;
+      const events = referenceEventsForImportedAudio({
+        activePresetId: store.activePresetId,
+        fileName: file.name,
+        durationMs,
+      }) ?? detectedEvents;
       store.setSource(events, { type: "audio", name: file.name, durationMs, eventCount: events.length }, {
         key: "info.audio", values: { name: file.name, size: prettyBytes(file.size), count: events.length },
       }, url);

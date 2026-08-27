@@ -15,6 +15,7 @@ import {
 } from "./RhythmicShowcaseInstrumentMeshes3D";
 import { DrumDiscMesh } from "./RhythmicDrumMesh3D";
 import { FlutePipeMesh, GongDiscMesh } from "./RhythmicWindMetalMeshes3D";
+import { WallBoomwhackerMesh } from "./RhythmicWallBoomwhacker3D";
 
 export interface MeshProps {
   w: number;
@@ -26,6 +27,7 @@ export interface MeshProps {
   glow: number;
   detail: number;
   compact?: boolean;
+  variant?: number;
 }
 
 function StandardBarMesh({ w, h, d, color, style, selected, glow }: MeshProps) {
@@ -369,6 +371,7 @@ export function PlatformMesh(props: MeshProps) {
   if (style === "instrument-pad") return <InstrumentPaddleMesh3D {...props} />;
   if (style === "instrument-cymbal") return <CymbalMesh {...props} />;
   if (style === "boomwhacker-tube") return <BoomwhackerMesh {...props} />;
+  if (style === "wall-boomwhacker-tube") return <WallBoomwhackerMesh {...props} />;
   if (style === "xylophone-bar") return <XylophoneBarMesh {...props} />;
   if (style === "piano-key") return <PianoKeyMesh {...props} />;
   if (style === "piano-keyboard") return <PianoKeyboardMesh {...props} />;

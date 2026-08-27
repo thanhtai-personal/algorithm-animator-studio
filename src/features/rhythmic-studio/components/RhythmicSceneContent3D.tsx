@@ -6,6 +6,7 @@ import type { RhythmicScene3DProps } from "./RhythmicScene3D";
 import { RhythmicCourseItems3D } from "./RhythmicCourseItems3D";
 import { RhythmicEnvironment3D } from "./RhythmicEnvironment3D";
 import { RhythmicLightingRig3D } from "./RhythmicLightingRig3D";
+import { RhythmicGuideRails3D } from "./RhythmicGuideRails3D";
 import { RhythmicMarble3D } from "./RhythmicMarble3D";
 import { RhythmicChaseMarbles3D, type RhythmicChaseMarblesHandle } from "./RhythmicChaseMarbles3D";
 import { RhythmicPlatformField3D } from "./RhythmicPlatformField3D";
@@ -16,6 +17,7 @@ import {
   cameraDepthProfile,
   cameraLookAheadMs,
   courseBackdropBounds,
+  crossedRhythmicHit,
   firstEventAtOrAfter,
   noteDensity,
   platformImpactStrength,
@@ -26,6 +28,8 @@ import {
 } from "./rhythmicSceneMath3D";
 import { emitDueRhythmicHits } from "../lib/chaseAudioScheduler";
 import { settingsForChaseOwner } from "../engine/chaseCoursePlanner";
+import { isKorobeinikiWallLayout } from "../lib/korobeinikiReferenceLayout";
+import { KorobeinikiReferenceDecor3D } from "./KorobeinikiReferenceDecor3D";
 
 function RendererQuality({ recording, shadowsEnabled, exportFps }: { recording: boolean; shadowsEnabled: boolean; exportFps: number }) {
   const { gl, invalidate } = useThree();
@@ -132,8 +136,12 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     const impactStrength = platformImpactStrength(sample.impactAgeMs, impactSettings);
     const impactNow = performance.now();
     const previousImpact = impactLightRef.current;
+    const hitTimeMs = props.events[sample.platformIndex]?.timeMs;
+    const crossedHit = hitTimeMs !== undefined
+      && crossedRhythmicHit(previousTimeRef.current, timeMs, hitTimeMs);
     if (
       snapCamera
+      || crossedHit
       || sample.platformIndex !== previousImpact.index
       || (impactNow - lastImpactRenderRef.current >= 56 && Math.abs(impactStrength - previousImpact.strength) >= 0.075)
       || (impactStrength === 0 && previousImpact.strength > 0)
@@ -189,6 +197,7 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     const isTubeBoard = frameSettings.cameraProfile === "tube-board";
     const isComet = frameSettings.cameraProfile === "comet";
     const isShowcase = frameSettings.instrumentFamily !== "auto";
+    const isWallScore = isKorobeinikiWallLayout(frameSettings);
     const depthProfile = cameraDepthProfile(frameSettings);
     const adaptiveZ = THREE.MathUtils.clamp(
       RHYTHMIC_CAMERA_Z + depthProfile.offset + jumpDistance * (isComet ? 0.15 : 0.13) + Math.min(0.42, speed * 0.015) - Math.min(rollingSurface ? 0.24 : 0.58, density * (rollingSurface ? 0.012 : 0.028)),
@@ -207,7 +216,7 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     const framedY = THREE.MathUtils.lerp(nearFramedY, farAheadWorld.y, futureWeight * 0.72);
     const lateralLead = THREE.MathUtils.clamp((aheadWorld.x - world.x) * lateralFactor + velocity.x * (lateralFactor * 0.04), -lateralClamp, lateralClamp);
     const verticalLag = THREE.MathUtils.clamp(velocity.y * verticalFactor, -0.18, 0.24);
-    const observerOffsetX = isShowcase ? 0.78 : isXylophone ? 0.62 : isTubeBoard ? 0.52 : isComet ? -0.38 : 0.3;
+    const observerOffsetX = isWallScore ? 2.8 : isShowcase ? 0.78 : isXylophone ? 0.62 : isTubeBoard ? 0.52 : isComet ? -0.38 : 0.3;
     const observerLiftY = isShowcase ? 0.42 : isXylophone ? 0.34 : isTubeBoard ? 0.22 : isComet ? 0.12 : 0.16;
     cameraTarget.set(framedX + lateralLead + observerOffsetX, framedY + anchorOffset - verticalLag + observerLiftY, adaptiveZ + world.z * (isComet ? 0.14 : 0.08));
 
@@ -220,7 +229,8 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     }
 
     const lookX = THREE.MathUtils.lerp(world.x, aheadWorld.x, isShowcase ? 0.64 : isComet ? 0.62 : isTubeBoard ? 0.58 : 0.55);
-    const lookY = THREE.MathUtils.lerp(world.y - (isShowcase ? 0.12 : isXylophone ? 0.18 : 0.28), aheadWorld.y, isShowcase ? 0.5 : isComet ? 0.48 : 0.43);
+    const lookDrop = isWallScore ? 1.05 : isShowcase ? 0.12 : isXylophone ? 0.18 : 0.28;
+    const lookY = THREE.MathUtils.lerp(world.y - lookDrop, aheadWorld.y, isShowcase ? 0.5 : isComet ? 0.48 : 0.43);
     lookTarget.set(
       THREE.MathUtils.lerp(lookX, farAheadWorld.x, isComet ? 0.08 : 0.05),
       THREE.MathUtils.lerp(lookY, farAheadWorld.y, isComet ? 0.06 : 0.04),
@@ -236,7 +246,7 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
 
     const perspective = camera as THREE.PerspectiveCamera;
     const targetFov = THREE.MathUtils.clamp(
-      RHYTHMIC_CAMERA_FOV + jumpDistance * (isShowcase ? 0.24 : isComet ? 0.48 : isXylophone ? 0.32 : 0.35) - density * (rollingSurface ? 0.018 : 0.045),
+      RHYTHMIC_CAMERA_FOV - (isWallScore ? 1.1 : 0) + jumpDistance * (isShowcase ? 0.24 : isComet ? 0.48 : isXylophone ? 0.32 : 0.35) - density * (rollingSurface ? 0.018 : 0.045),
       isShowcase ? 35 : isComet ? 35.5 : isXylophone ? 34 : 34.5,
       isShowcase ? 41.5 : isComet ? 43.2 : isXylophone ? 39.8 : 40.8,
     );
@@ -303,10 +313,12 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
   return <>
     <RendererQuality recording={props.recording} shadowsEnabled={props.settings.instrumentShadowsEnabled} exportFps={props.settings.exportFps} />
     <PerspectiveCamera makeDefault fov={RHYTHMIC_CAMERA_FOV} near={0.1} far={180} position={[0, 0, RHYTHMIC_CAMERA_Z]} />
-    <RhythmicTitle3D text={props.settings.titleText} />
+    <RhythmicTitle3D text={isKorobeinikiWallLayout(props.settings) ? "" : props.settings.titleText} />
     <RhythmicLightingRig3D settings={props.settings} focus={smoothedLook} bounds={backdropBounds} recording={props.recording} />
     <RhythmicEnvironment3D settings={props.settings} backgroundUrl={props.backgroundUrl} bounds={backdropBounds} />
+    {isKorobeinikiWallLayout(props.settings) && <KorobeinikiReferenceDecor3D />}
     <RhythmicCourseItems3D platforms={props.platforms} overrides={props.courseOverrides} settings={props.settings} focusIndex={focusIndex} events={props.events} resolveSettings={props.resolveSettings} />
+    <RhythmicGuideRails3D platforms={props.platforms} settings={props.settings} focusIndex={focusIndex} />
     <RhythmicPlatformField3D platforms={props.platforms} settings={props.settings} courseOverrides={props.courseOverrides} focusIndex={focusIndex} selectedNodeIndex={props.selectedNodeIndex} onSelectNode={props.onSelectNode} resolveSettings={props.resolveSettings} impactIndex={impactLight.index} impactStrength={impactLight.strength} timeMs={currentTimeRef.current} />
     <RhythmicVfx3D ref={vfxRef} events={props.events} platforms={props.platforms} settings={activeVisualSettings} courseOverrides={props.courseOverrides} resolveSettings={props.resolveSettings} />
     {props.chasePlan

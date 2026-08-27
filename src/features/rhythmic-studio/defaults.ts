@@ -100,8 +100,34 @@ function note(id: number, timeMs: number, midi: number, durationMs = 260): NoteE
   return { id: `builtin-${id}`, timeMs, midi, velocity: 0.82, durationMs };
 }
 
+export const KOROBEINIKI_MELODY_NAME = "Korobeiniki · Tetris Theme";
+
+const KOROBEINIKI_TIMES_MS = [
+  600, 1065, 1295, 1525, 1755, 1870, 1990, 2220, 2450, 2915,
+  3145, 3375, 3840, 4070, 4300, 4995, 5225, 5690, 6150, 6615, 7075,
+  8235, 8695, 8925, 9390, 9620, 9850, 10545, 10780, 11240, 11470,
+  11705, 12165, 12395, 12630, 13090, 13555, 14015, 14480,
+] as const;
+
+const KOROBEINIKI_MIDI = [
+  76, 71, 72, 74, 76, 74, 72, 71, 69, 69,
+  72, 76, 74, 72, 71, 72, 74, 76, 72, 69, 69,
+  74, 77, 81, 79, 77, 76, 72, 76, 74, 72, 71,
+  71, 72, 74, 76, 72, 69, 69,
+] as const;
+
+const KOROBEINIKI_EVENTS = KOROBEINIKI_MIDI.map((midi, index) => {
+  const timeMs = KOROBEINIKI_TIMES_MS[index];
+  const nextTimeMs = KOROBEINIKI_TIMES_MS[index + 1];
+  const durationMs = nextTimeMs === undefined
+    ? 381
+    : Math.min(210, Math.max(85, nextTimeMs - timeMs - 35));
+  return { ...note(index, timeMs, midi, durationMs), velocity: 0.88 };
+});
+
 export const BUILTIN_MELODIES: Record<string, NoteEvent[]> = {
   'Neon Scale': [60, 62, 64, 65, 67, 69, 71, 72, 71, 69, 67, 65, 64, 62, 60].map((midi, i) => note(i, i * 360, midi)),
   'Pentatonic Run': [60, 62, 64, 67, 69, 72, 69, 67, 64, 62, 60, 64, 67, 72, 76, 72].map((midi, i) => note(i, i * 300, midi, 210)),
   'Twinkle Fragment': [60, 60, 67, 67, 69, 69, 67, 65, 65, 64, 64, 62, 62, 60].map((midi, i) => note(i, i * 430, midi, 320)),
+  [KOROBEINIKI_MELODY_NAME]: KOROBEINIKI_EVENTS,
 };

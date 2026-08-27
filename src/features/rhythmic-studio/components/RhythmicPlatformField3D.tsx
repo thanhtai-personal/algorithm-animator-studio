@@ -14,7 +14,9 @@ import { platformsMountedFor3D } from "../lib/platformViewport";
 import { RhythmicDenseChassisMounts3D } from "./RhythmicDenseChassisMounts3D";
 import { denseSurfaceSegments } from "../engine/denseSurfaceGeometry";
 import { instrumentImpactResponseAtTime, instrumentKeyPressAtTime } from "../lib/instrumentResponse";
+import { instrumentBodyColorAtTime } from "../lib/instrumentLifecycle";
 import { instrumentPlayingSurface3D, instrumentPressOffset3D, instrumentSurfaceFrame3D } from "./instrumentPlayingSurface3D";
+import { korobeinikiReferenceTubeDepth } from "../lib/korobeinikiReferenceLayout";
 
 function PhysicalMount({ terrain, w, h, detail, showcase, frontDepth, receiverZ, style }: {
   terrain: StudioSettings["terrainProfile"];
@@ -124,7 +126,11 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
           || style === "vibraphone-bar"
           || style === "metallophone-plate"
           || style === "pluck-pad";
-        const d = style === "instrument-cymbal" ? 0.5
+        const d = style === "wall-boomwhacker-tube"
+          ? platformSettings.instrumentLayout === "wall-score"
+            ? korobeinikiReferenceTubeDepth(platform.index)
+            : 4.05 + (platform.index % 4) * 0.11
+          : style === "instrument-cymbal" ? 0.5
           : style.includes("rail") ? 0.46
             : style === "tube-cylinder" ? 0.62
               : slimBody ? Math.max(platform.visualCompact ? 0.04 : 0.14, Math.min(0.5, h))
@@ -158,6 +164,7 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
         const effectiveGlow = platformSettings.impactPlatformLight
           ? 0.055 + Math.max(noteLight, immediateHit) * (0.94 + platformSettings.platformGlow * 0.78)
           : platformSettings.platformGlow;
+        const bodyColor = instrumentBodyColorAtTime(style, platform.color, platform.event.timeMs, timeMs);
         const lightColors = noteLightColorsForPlatform(platform, platforms);
         const keyPress = style === "piano-key" || style === "piano-keyboard"
           ? instrumentKeyPressAtTime(platform.event.timeMs, timeMs) * Math.min(0.085, Math.max(0.035, h * 0.46))
@@ -177,7 +184,7 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
               onSelectNode(platform.index);
             }}
           >
-            {platform.denseRunId === undefined && (
+            {platform.denseRunId === undefined && style !== "wall-boomwhacker-tube" && (
               <PhysicalMount terrain={platformSettings.terrainProfile} w={w} h={h} detail={platformSettings.platformDetail} showcase={platformSettings.instrumentFamily !== "auto"} frontDepth={playingSurface.frontDepth} receiverZ={platformReceiverZ} style={style} />
             )}
             <group position={[0, pressOffset.y, pressOffset.z]}>
@@ -186,7 +193,7 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
                 response.twistRad * 0.45,
                 response.twistRad,
               ]}>
-                <PlatformMesh w={w} h={h} d={depth} color={platform.color} style={style} selected={platform.index === selectedNodeIndex} glow={effectiveGlow} detail={platformSettings.platformDetail} compact={Boolean(platform.visualCompact)} />
+                <PlatformMesh w={w} h={h} d={depth} color={bodyColor} style={style} selected={platform.index === selectedNodeIndex} glow={effectiveGlow} detail={platformSettings.platformDetail} compact={Boolean(platform.visualCompact)} variant={platform.index} />
                 {isNoteLitInstrumentStyle(style) && <RhythmicInstrumentNoteLights3D width={w} height={h} surface={playingSurface} colors={lightColors} glow={effectiveGlow} />}
               </group>
             </group>

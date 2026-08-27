@@ -4,7 +4,13 @@ import * as THREE from "three";
 import type { RacePhysics } from "../physics/RacePhysics";
 import { COURSE_SAMPLES } from "../track/towerCourseSampler";
 import { cameraAnchorProgress, cameraShotForSection } from "./raceCameraPlan";
-import { FINISH_MAX_CAMERA_HEIGHT_ABOVE_LEADER, finishCameraBlend, finishCameraShot } from "./finishCameraFraming";
+import {
+  FINISH_CAMERA_HEIGHT_ABOVE_PACK,
+  finishCameraBlend,
+  finishCameraLookAhead,
+  finishCameraPackSize,
+  finishCameraShot,
+} from "./finishCameraFraming";
 
 const leaderFocus = new THREE.Vector3();
 const packFocus = new THREE.Vector3();
@@ -19,12 +25,13 @@ export function RaceCamera3D({ physics }: { physics: RacePhysics }) {
     const ranked = physics.getRanked();
     const leader = ranked[0];
     if (!leader?.alive) return;
-    let packLength = 0;
-    while (packLength < ranked.length && packLength < 4 && ranked[packLength].alive) packLength += 1;
-
     const sample = COURSE_SAMPLES[leader.progressIndex];
     const progress = leader.progressIndex / Math.max(1, COURSE_SAMPLES.length - 1);
     const finishBlend = finishCameraBlend(progress);
+    let packLength = 0;
+    const packSize = finishCameraPackSize(progress);
+    while (packLength < ranked.length && packLength < packSize && ranked[packLength].alive) packLength += 1;
+
     const baseShot = cameraShotForSection(sample.section.id, physics.getTimelineSeconds(), physics.hasStarted());
     const shot = finishCameraShot(baseShot, progress);
     const anchorIndex = Math.round(cameraAnchorProgress(sample.section) * (COURSE_SAMPLES.length - 1));
@@ -37,12 +44,8 @@ export function RaceCamera3D({ physics }: { physics: RacePhysics }) {
       packFocus.y += marble.body.position.y;
       packFocus.z += marble.body.position.z;
     }
-    packFocus.multiplyScalar(1 / Math.max(1, packLength)).lerp(leaderFocus, 0.58);
-
-    // The remaining leaders may still be one or two floors above the winner.
-    // Blend fully to the winner before the finish so the upper deck cannot pull
-    // the camera upward and block the final lane.
-    if (finishBlend > 0) packFocus.lerp(leaderFocus, finishBlend);
+    const leaderWeight = THREE.MathUtils.lerp(0.58, 0.28, finishBlend);
+    packFocus.multiplyScalar(1 / Math.max(1, packLength)).lerp(leaderFocus, leaderWeight);
 
     // Hold one camera position per section, like the real tabletop reference.
     // The camera pans with the pack but does not chase it, so rolling speed stays
@@ -52,19 +55,19 @@ export function RaceCamera3D({ physics }: { physics: RacePhysics }) {
       .addScaledVector(anchorSample.normal, shot.lift)
       .addScaledVector(anchorSample.right, shot.side);
 
-    // Hard finish clearance: keep the lens below the preceding deck while the
-    // large outside offset keeps it clear of the finish guard wall.
+    // Move above the lane instead of filming through its outside guard wall.
+    // The opened Map 1 floor spacing leaves enough headroom for this angle.
     if (finishBlend > 0) {
-      const maxHeight = THREE.MathUtils.lerp(4.2, FINISH_MAX_CAMERA_HEIGHT_ABOVE_LEADER, finishBlend);
-      desired.y = Math.min(desired.y, leaderFocus.y + maxHeight);
+      const finishHeight = packFocus.y + FINISH_CAMERA_HEIGHT_ABOVE_PACK;
+      desired.y = THREE.MathUtils.lerp(desired.y, finishHeight, finishBlend);
     }
 
     const positionAlpha = 1 - Math.exp(-delta * (finishBlend > 0 ? 4.8 : 2.8));
     const lookAlpha = 1 - Math.exp(-delta * 6.2);
     camera.position.lerp(desired, positionAlpha);
     look.copy(packFocus)
-      .addScaledVector(sample.tangent, THREE.MathUtils.lerp(2.8, 1.7, finishBlend))
-      .addScaledVector(sample.normal, THREE.MathUtils.lerp(0.55, 0.3, finishBlend));
+      .addScaledVector(sample.tangent, finishCameraLookAhead(progress))
+      .addScaledVector(sample.normal, THREE.MathUtils.lerp(0.55, 0.4, finishBlend));
     lookTarget.current.lerp(look, lookAlpha);
     camera.lookAt(lookTarget.current);
 

@@ -6,6 +6,7 @@ import type { StudioSettings } from "../types";
 import { RhythmicBackplate3D } from "./RhythmicBackplate3D";
 import { RhythmicBrickWall3D } from "./RhythmicBrickWall3D";
 import { RHYTHMIC_ROOM_BACKDROP_WIDTH, RHYTHMIC_ROOM_SIDE_X, type RhythmicBackdropBounds } from "./rhythmicSceneMath3D";
+import { isKorobeinikiWallLayout } from "../lib/korobeinikiReferenceLayout";
 
 export type EnvironmentKind = "tube-board" | "comet" | "xylophone" | "brick" | "neutral";
 
@@ -340,6 +341,20 @@ function ShowcaseWall({ color, bounds }: { color: string; bounds: RhythmicBackdr
   );
 }
 
+function KorobeinikiReferenceWall({ color, bounds }: { color: string; bounds: RhythmicBackdropBounds }) {
+  return (
+    <RoundedBox
+      position={[0, bounds.centerY, -4.45]}
+      args={[RHYTHMIC_ROOM_BACKDROP_WIDTH, bounds.height, 0.42]}
+      radius={0.1}
+      smoothness={4}
+      receiveShadow
+    >
+      <meshStandardMaterial color={color} roughness={0.88} metalness={0.015} />
+    </RoundedBox>
+  );
+}
+
 function NeutralStudio({ color, bounds }: { color: string; bounds: RhythmicBackdropBounds }) {
   return (
     <group>
@@ -368,7 +383,11 @@ export function RhythmicEnvironment3D({ settings, backgroundUrl, bounds }: { set
         {kind === "tube-board" && <TubeBoardRoom bounds={bounds} />}
         {kind === "comet" && <CometSpace bounds={bounds} />}
         {kind === "xylophone" && <XylophoneRoom bounds={bounds} />}
-        {kind === "neutral" && (settings.instrumentFamily !== "auto" ? <ShowcaseWall color={settings.backgroundColor} bounds={bounds} /> : <NeutralStudio color={settings.backgroundColor} bounds={bounds} />)}
+        {kind === "neutral" && (isKorobeinikiWallLayout(settings)
+          ? <KorobeinikiReferenceWall color={settings.backgroundColor} bounds={bounds} />
+          : settings.instrumentFamily !== "auto"
+            ? <ShowcaseWall color={settings.backgroundColor} bounds={bounds} />
+            : <NeutralStudio color={settings.backgroundColor} bounds={bounds} />)}
       </BackgroundMotion>
     </>
   );

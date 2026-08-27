@@ -11,6 +11,7 @@ import {
   shadowRigPose,
   rhythmicRecordingRenderProfile,
 } from "./rhythmicSceneMath3D";
+import { isKorobeinikiWallLayout } from "../lib/korobeinikiReferenceLayout";
 
 type Point3D = { x: number; y: number; z: number };
 
@@ -101,6 +102,26 @@ export function RhythmicLightingRig3D({ settings, focus, bounds, recording = fal
   const needsShadowReceiver = needsDedicatedShadowReceiver(kind);
   const recordingMapSize = rhythmicRecordingRenderProfile(settings.exportFps).shadowMapSize;
   const mapSize = (previewSize: number) => recording ? Math.min(previewSize, recordingMapSize) : previewSize;
+  if (isKorobeinikiWallLayout(settings)) {
+    return (
+      <>
+        <ReflectionRig settings={settings} />
+        <hemisphereLight args={["#ddd9e7", "#262533", 0.72]} />
+        <TrackedKeyLight
+          focus={focus}
+          offset={{ x: -1.5, y: 2.1, z: 20 }}
+          intensity={1.42}
+          color="#f7eef5"
+          mapSize={mapSize(1536)}
+          bias={-0.0003}
+          normalBias={0.025}
+          radius={3.6}
+          shadowsEnabled={settings.instrumentShadowsEnabled}
+        />
+        <directionalLight position={[4, -2, 6]} intensity={0.12} color="#b9c8e4" />
+      </>
+    );
+  }
   if (settings.instrumentFamily !== "auto") {
     return (
       <>

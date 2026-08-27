@@ -2,26 +2,50 @@ import * as THREE from 'three';
 import type * as CANNON from 'cannon-es';
 import type { CourseSample } from '../track/towerCourseSampler';
 
+const SOLID_SPHERE_ROLL_FACTOR = 5 / 7;
+
+export function rollingSphereAcceleration(
+  downhillSlopeSin: number,
+  rollingResistance = 0.012,
+  gravity = 9.81,
+) {
+  const slopeSin = THREE.MathUtils.clamp(downhillSlopeSin, -1, 1);
+  const slopeCos = Math.sqrt(Math.max(0, 1 - slopeSin * slopeSin));
+  return SOLID_SPHERE_ROLL_FACTOR * gravity * (slopeSin - rollingResistance * slopeCos);
+}
+
 export function launchImpulse(sample: CourseSample, mass: number, driveMultiplier: number) {
-  return sample.tangent.clone().multiplyScalar(mass * driveMultiplier * 2.15)
-    .addScaledVector(sample.normal, mass * 0.05);
+  const gateNudge = THREE.MathUtils.clamp(driveMultiplier, 0.6, 1.5);
+  return sample.tangent.clone().multiplyScalar(mass * gateNudge);
 }
 
 export function jumpImpulse(sample: CourseSample, mass: number, driveMultiplier: number) {
-  return sample.tangent.clone().multiplyScalar(mass * (2 + driveMultiplier * 0.18))
+  const gateNudge = THREE.MathUtils.clamp(driveMultiplier, 0.6, 1.5);
+  return sample.tangent.clone().multiplyScalar(mass * (0.55 + gateNudge * 0.2))
     .addScaledVector(sample.normal, mass * 2.0);
 }
 
 export function recoveryImpulse(sample: CourseSample, mass: number, driveMultiplier: number, gravity: number) {
-  const grade = Math.max(0.04, -sample.tangent.y);
-  const rollingAcceleration = gravity * grade * (5 / 7);
-  const deltaV = Math.max(1.15, rollingAcceleration * 0.9 + driveMultiplier * 0.08);
+  const rollingAcceleration = Math.max(0, rollingSphereAcceleration(-sample.tangent.y, 0.012, gravity));
+  const gateNudge = THREE.MathUtils.clamp(driveMultiplier, 0.6, 1.5);
+  const deltaV = Math.max(0.8, rollingAcceleration * 0.9 + gateNudge * 0.08);
   return sample.tangent.clone().multiplyScalar(mass * deltaV)
     .addScaledVector(sample.normal, mass * 0.12);
 }
 
 export function pianoBoostImpulse(sample: CourseSample, mass: number, boostDeltaV: number) {
   return sample.tangent.clone().multiplyScalar(mass * boostDeltaV);
+}
+
+export function driveBeltForce(
+  sample: CourseSample,
+  mass: number,
+  tangentSpeed: number,
+  targetSpeed: number,
+  maxAcceleration: number,
+) {
+  const acceleration = THREE.MathUtils.clamp((targetSpeed - tangentSpeed) * 2.2, 0, maxAcceleration);
+  return sample.tangent.clone().multiplyScalar(mass * acceleration);
 }
 
 export function chimeBounceImpulse(

@@ -132,7 +132,7 @@ function ShowcaseSweeper({ body, width }: { body: CANNON.Body; width: number }) 
   return (
     <SyncBody body={body}>
       <mesh castShadow>
-        <boxGeometry args={[width * 0.86, 0.3, 0.42]} />
+        <boxGeometry args={[width * 0.48, 0.3, 0.42]} />
         <meshStandardMaterial color="#2795e8" roughness={0.38} metalness={0.24} />
       </mesh>
       {[-1, 1].map((side) => (
@@ -150,7 +150,7 @@ function TrafficSweeper({ body, width }: { body: CANNON.Body; width: number }) {
   return (
     <SyncBody body={body}>
       <mesh castShadow>
-        <boxGeometry args={[width * 0.86, 0.34, 0.48]} />
+        <boxGeometry args={[width * 0.48, 0.34, 0.48]} />
         <meshStandardMaterial color="#202326" roughness={0.4} metalness={0.38} />
       </mesh>
       {[-0.34, 0, 0.34].map((x, index) => (
@@ -168,7 +168,7 @@ function FinalPivot({ body, width }: { body: CANNON.Body; width: number }) {
   return (
     <SyncBody body={body}>
       <mesh castShadow>
-        <boxGeometry args={[width * 0.86, 0.3, 0.38]} />
+        <boxGeometry args={[width * 0.48, 0.3, 0.38]} />
         <meshStandardMaterial color="#ff7b23" roughness={0.38} />
       </mesh>
       {[-0.3, 0, 0.3].map((x) => (

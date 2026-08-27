@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cameraShotForSection } from "../features/marble-tower-video/camera/raceCameraPlan";
+import { cameraAnchorProgress, cameraShotForSection } from "../features/marble-tower-video/camera/raceCameraPlan";
 
 const SECTION_IDS = [
   "start",
@@ -21,10 +21,18 @@ describe("Marble Tower camera plan", () => {
       const distance = Math.hypot(shot.behind, shot.lift, shot.side);
 
       expect(distance, section).toBeGreaterThanOrEqual(7);
-      expect(distance, section).toBeLessThanOrEqual(16);
+      expect(distance, section).toBeLessThanOrEqual(20);
       expect(shot.fov, section).toBeGreaterThanOrEqual(46);
-      expect(shot.fov, section).toBeLessThanOrEqual(56);
+      expect(shot.fov, section).toBeLessThanOrEqual(60);
     });
+  });
+
+  it("holds one camera anchor while the marbles cross a section", () => {
+    const section = { from: 0.32, to: 0.45 };
+
+    expect(cameraAnchorProgress(section)).toBeCloseTo(0.3876, 4);
+    expect(cameraAnchorProgress(section)).toBeGreaterThan(section.from);
+    expect(cameraAnchorProgress(section)).toBeLessThan(section.to);
   });
 
   it("moves the opening shot during the countdown without a camera jump", () => {

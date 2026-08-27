@@ -141,15 +141,15 @@ export function MarbleTowerControls({
       <section className="rounded-xl border bg-card/60 p-4">
         <div className="mb-3 flex items-center gap-2">
           <Rocket className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-semibold">Động lực ban đầu</h2>
+          <h2 className="text-sm font-semibold">Cổng xuất phát</h2>
         </div>
         <div className="flex items-center justify-between text-xs">
-          <Label>Launch impulse</Label>
-          <b>{driveMultiplier.toFixed(2)}×</b>
+          <Label>Cú đẩy mở cổng</Label>
+          <b>{driveMultiplier.toFixed(2)} m/s</b>
         </div>
-        <Slider className="mt-3" min={4} max={10} step={0.25} value={[driveMultiplier]} disabled={studio.recording} onValueChange={([value]) => onDriveChange(value)} />
+        <Slider className="mt-3" min={0.6} max={1.5} step={0.05} value={[driveMultiplier]} disabled={studio.recording} onValueChange={([value]) => onDriveChange(value)} />
         <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-          Bi nặng hơn nhưng gia tốc trọng trường vẫn chuẩn g = 9,81 m/s². Sau cú xuất phát, tốc độ trên dốc tăng tự nhiên theo trọng lực, không còn bộ hãm tốc nhân tạo.
+          Cổng chỉ đẩy nhẹ để tách bi. Sau đó dốc và trọng lực g = 9,81 m/s² quyết định gia tốc; các dụng cụ trên đường chỉ hỗ trợ ở vùng thiếu lực hoặc giảm tốc trước khúc nguy hiểm.
         </p>
       </section>
 

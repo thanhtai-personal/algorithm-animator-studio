@@ -2,7 +2,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
 import type { RacePhysics } from "../physics/RacePhysics";
-import { olympicRoadCameraShot } from "./olympicRoadCameraPlan";
+import { olympicRoadCameraAnchorProgress, olympicRoadCameraShot } from "./olympicRoadCameraPlan";
 
 const focus = new THREE.Vector3();
 const desired = new THREE.Vector3();
@@ -31,11 +31,16 @@ export function OlympicRoadCamera3D({ physics }: { physics: RacePhysics }) {
     if (packLength) packCenter.multiplyScalar(1 / packLength);
     focus.set(leader.body.position.x, leader.body.position.y, leader.body.position.z).lerp(packCenter, 0.62);
     const shot = olympicRoadCameraShot(progress);
+    const anchorProgress = olympicRoadCameraAnchorProgress(shot);
+    const anchorSample = samples[Math.round(anchorProgress * (samples.length - 1))];
     const countdownDrift = physics.hasStarted() ? 0 : Math.sin(physics.getTimelineSeconds() * 0.72) * 1.2;
-    desired.copy(focus)
-      .addScaledVector(sample.tangent, -shot.behind)
-      .addScaledVector(sample.normal, shot.lift)
-      .addScaledVector(sample.right, shot.side + countdownDrift);
+    // Match the tabletop reference: the lens holds one readable position per
+    // module while only the pan follows the pack. Chasing the marbles at their
+    // exact velocity made otherwise realistic motion look slow and weightless.
+    desired.copy(anchorSample.point)
+      .addScaledVector(anchorSample.tangent, -shot.behind)
+      .addScaledVector(anchorSample.normal, shot.lift)
+      .addScaledVector(anchorSample.right, shot.side + countdownDrift);
     camera.position.lerp(desired, 1 - Math.exp(-delta * 3.7));
     look.copy(focus).addScaledVector(sample.tangent, shot.lookAhead).addScaledVector(sample.normal, 0.38);
     lookTarget.current.lerp(look, 1 - Math.exp(-delta * 5.4));

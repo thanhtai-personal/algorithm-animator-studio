@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   OLYMPIC_ROAD_CAMERA_SHOTS,
+  olympicRoadCameraAnchorProgress,
   olympicRoadCameraShot,
 } from "../features/marble-tower-video/camera/olympicRoadCameraPlan";
 
@@ -24,6 +25,15 @@ describe("Marble Tower Map 2 reference camera", () => {
     expect(shot.lift).toBeGreaterThanOrEqual(15);
     expect(Math.abs(shot.behind)).toBeLessThanOrEqual(3);
     expect(Math.abs(shot.side)).toBeLessThanOrEqual(3);
+  });
+
+  it("holds a fixed camera position while the pack crosses each module", () => {
+    OLYMPIC_ROAD_CAMERA_SHOTS.forEach((shot) => {
+      const anchor = olympicRoadCameraAnchorProgress(shot);
+      expect(anchor, shot.id).toBeGreaterThan(shot.from);
+      expect(anchor, shot.id).toBeLessThan(shot.to);
+      expect(anchor, shot.id).toBeCloseTo(shot.from + (shot.to - shot.from) * 0.52, 5);
+    });
   });
 
   it("pans around the modular road and finishes from ahead of the marbles", () => {

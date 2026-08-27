@@ -20,7 +20,7 @@ function Spinner({ body, color = '#16191e' }: { body: RacePhysics['spinnerA']['b
   return (
     <SyncBody body={body}>
       <mesh castShadow>
-        <boxGeometry args={[TRACK_WIDTH * 0.86, 0.28, 0.34]} />
+        <boxGeometry args={[TRACK_WIDTH * 0.48, 0.28, 0.34]} />
         <meshStandardMaterial color={color} metalness={0.8} roughness={0.24} />
       </mesh>
       <mesh>
@@ -152,11 +152,11 @@ export function ObstacleMeshes3D({ physics }: { physics: RacePhysics }) {
       <CourseObject3D physics={physics} id="final-cross">
         <SyncBody body={physics.finalCross.body}>
           <mesh castShadow>
-            <boxGeometry args={[TRACK_WIDTH * 0.86, 0.28, 0.34]} />
+            <boxGeometry args={[TRACK_WIDTH * 0.48, 0.28, 0.34]} />
             <meshStandardMaterial color="#11141a" metalness={0.85} roughness={0.2} />
           </mesh>
           <mesh castShadow>
-            <boxGeometry args={[0.34, 0.28, TRACK_WIDTH * 0.86]} />
+            <boxGeometry args={[0.34, 0.28, TRACK_WIDTH * 0.48]} />
             <meshStandardMaterial color="#11141a" metalness={0.85} roughness={0.2} />
           </mesh>
           <pointLight color="#ff486e" intensity={18} distance={7} position={[0, 1.1, 0]} />

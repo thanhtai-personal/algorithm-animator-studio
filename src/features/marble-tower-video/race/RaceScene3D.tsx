@@ -120,7 +120,12 @@ function RaceScene3DImpl(props: RaceScene3DProps) {
     frameloop={props.playing || props.recording ? "always" : "demand"}
     dpr={props.recording ? 1 : [1, 1.15]}
     shadows
-    camera={{ fov: 49, near: 0.1, far: 300, position: [5, 39.4, -16.6] }}
+    camera={{
+      fov: 52,
+      near: 0.1,
+      far: 300,
+      position: olympicRoad ? [6, 28, -68] : [7, 73, -22],
+    }}
     gl={{ antialias: true, alpha: false, powerPreference: "high-performance", stencil: false }}
     onCreated={({ gl }) => {
       props.canvasRef.current = gl.domElement;

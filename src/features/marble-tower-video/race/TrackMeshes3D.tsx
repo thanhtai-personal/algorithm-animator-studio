@@ -2,8 +2,9 @@ import { useFrame } from '@react-three/fiber';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { RacePhysics } from '../physics/RacePhysics';
+import { courseSupportSamples } from '../track/courseSupportLayout';
 import { COURSE_SAMPLES, sampleAt } from '../track/towerCourseSampler';
-import { RAINBOW_COLORS, SPECIALS, TRACK_THICKNESS, TRACK_WIDTH } from '../track/towerCourse';
+import { RAINBOW_COLORS, SPECIALS, TOWER_DRIVE_BELTS, TRACK_THICKNESS, TRACK_WIDTH } from '../track/towerCourse';
 import { PIANO_PAD_LAYOUT } from '../track/pianoPadLayout';
 import { CourseObject3D } from './CourseObject3D';
 
@@ -174,11 +175,11 @@ function GuardWalls() {
 }
 
 function TrackSupports() {
-  const supports = useMemo(() => COURSE_SAMPLES.filter((_, index) => index % 12 === 6 && index > 5), []);
+  const supports = useMemo(() => courseSupportSamples(COURSE_SAMPLES, TRACK_WIDTH), []);
   return (
     <group>
       {supports.map((sample) => {
-        const height = Math.max(1, sample.point.y);
+        const height = Math.max(0.5, sample.point.y - 0.48);
         return (
           <group key={sample.index}>
             <mesh position={[sample.point.x, height / 2, sample.point.z]} castShadow>
@@ -262,6 +263,31 @@ function PrismTunnel() {
   );
 }
 
+function DriveBelts() {
+  return (
+    <group>
+      {TOWER_DRIVE_BELTS.flatMap((belt) => Array.from({ length: 7 }, (_, index) => {
+        const progress = THREE.MathUtils.lerp(belt.from, belt.to, (index + 0.5) / 7);
+        const sample = sampleAt(progress);
+        return (
+          <group key={`${belt.id}-${index}`} position={sample.point.clone().addScaledVector(sample.normal, 0.105)} quaternion={sample.quaternion}>
+            <mesh receiveShadow>
+              <boxGeometry args={[TRACK_WIDTH - 1.1, 0.08, Math.max(0.72, sample.lengthToNext * 1.8)]} />
+              <meshStandardMaterial color="#174f63" emissive="#0c8fab" emissiveIntensity={0.72} roughness={0.38} />
+            </mesh>
+            {[-1.7, 0, 1.7].map((x) => (
+              <mesh key={x} position={[x, 0.055, 0]} rotation={[0, Math.PI / 4, 0]}>
+                <boxGeometry args={[0.52, 0.035, 0.52]} />
+                <meshBasicMaterial color="#83f2ff" toneMapped={false} />
+              </mesh>
+            ))}
+          </group>
+        );
+      }))}
+    </group>
+  );
+}
+
 function FinishDeck() {
   const sample = sampleAt(0.985);
   return (
@@ -290,6 +316,7 @@ export function TrackMeshes3D({ physics }: { physics: RacePhysics }) {
       <TrackSupports />
       <CourseObject3D physics={physics} id="piano"><PianoBridge physics={physics} /></CourseObject3D>
       <PrismTunnel />
+      <DriveBelts />
       <FinishDeck />
     </group>
   );

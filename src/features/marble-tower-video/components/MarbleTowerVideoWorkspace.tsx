@@ -29,7 +29,7 @@ function isMidiFile(file: File) {
 export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorkspace() {
   const studio = useRhythmicStudioController();
   const [mapId, setMapId] = useState<RaceMapId>(TOWER_RACE_MAP_ID);
-  const [driveMultiplier, setDriveMultiplier] = useState(8.25);
+  const [driveMultiplier, setDriveMultiplier] = useState(1.05);
   const [marbleCount, setMarbleCount] = useState(24);
   const [raceResult, setRaceResult] = useState<RaceResult | null>(null);
   const [racePhysics, setRacePhysics] = useState<RacePhysics | null>(null);
@@ -251,7 +251,7 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
       <header className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card/70 px-4 py-3 shadow-sm backdrop-blur">
         <div>
           <h1 className="text-lg font-bold tracking-tight">Marble Tower Video</h1>
-          <p className="text-xs text-muted-foreground">3-2-1 → Let&apos;s go! → music + marbles together · magnetic marble collisions · force-based impact audio</p>
+          <p className="text-xs text-muted-foreground">3-2-1 → Let&apos;s go! → music + marbles together · physical marble collisions · force-based impact audio</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="secondary" disabled={studio.recording} onClick={() => recordRace("webm")}><Video className="mr-2 h-4 w-4" />WebM</Button>

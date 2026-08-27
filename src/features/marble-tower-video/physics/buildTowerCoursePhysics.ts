@@ -6,6 +6,7 @@ import { marbleStartGrid } from '../marble/marbleGrid';
 import { PIANO_PAD_LAYOUT } from '../track/pianoPadLayout';
 import { STUDIO_SOLIDS } from '../race/studioStructure';
 import type { OlympicRoadObstacle } from '../track/olympicRoadCourse';
+import { courseSupportSamples } from '../track/courseSupportLayout';
 
 function cannonVec(v: THREE.Vector3) { return new CANNON.Vec3(v.x, v.y, v.z); }
 function cannonQuat(q: THREE.Quaternion) { return new CANNON.Quaternion(q.x, q.y, q.z, q.w); }
@@ -105,10 +106,14 @@ export function createSupportBodies(
   world: CANNON.World,
   material: CANNON.Material,
   samples: readonly CourseSample[] = COURSE_SAMPLES,
+  trackWidth = TRACK_WIDTH,
 ) {
   const bodies: CANNON.Body[] = [];
-  samples.filter((_, index) => index % 12 === 6 && index > 5).forEach((sample) => {
-    const height = Math.max(1, sample.point.y);
+  courseSupportSamples(samples, trackWidth).forEach((sample) => {
+    // Keep the cap below the lowest edge of the sloped road. A support ending
+    // exactly at the centerline can protrude through the mesh on a descent and
+    // behave like an invisible speed bump.
+    const height = Math.max(0.5, sample.point.y - 0.48);
     const body = new CANNON.Body({ mass: 0, material });
     body.addShape(new CANNON.Box(new CANNON.Vec3(0.26, height / 2, 0.26)));
     body.position.set(sample.point.x, height / 2, sample.point.z);
@@ -202,7 +207,7 @@ export function createSpinner(
   const index = Math.round(progress * (samples.length - 1));
   const sample = samples[index];
   const body = new CANNON.Body({ mass: 0, type: CANNON.Body.KINEMATIC, material });
-  body.addShape(new CANNON.Box(new CANNON.Vec3(trackWidth * 0.43, 0.14, 0.17)));
+  body.addShape(new CANNON.Box(new CANNON.Vec3(trackWidth * 0.24, 0.14, 0.17)));
   const pos = sample.point.clone().addScaledVector(sample.normal, 0.62);
   body.position.copy(cannonVec(pos));
   body.quaternion.copy(cannonQuat(sample.quaternion));

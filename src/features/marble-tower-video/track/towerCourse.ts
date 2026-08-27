@@ -5,9 +5,11 @@ export const TRACK_WIDTH = 8.8;
 export const TRACK_THICKNESS = 0.34;
 export const MARBLE_RADIUS = 0.48;
 export const SAMPLE_COUNT = 184;
+export const TOWER_HEIGHT_SCALE = 1.9;
+const TOWER_BASE_Y = 1.35;
 
-export const TOWER_POINTS = [
-  [0, 35.0, -8], [0, 34.8, 0], [6.5, 32.8, 7], [10.5, 30.2, 15],
+const TOWER_PLAN_POINTS = [
+  [0, 35.0, -8], [0, 34.0, 0], [6.5, 32.8, 7], [10.5, 30.2, 15],
   [8.0, 28.2, 24], [0.5, 26.6, 28], [-8.0, 24.8, 24], [-11.5, 22.8, 15],
   [-8.0, 21.0, 5], [-1.0, 19.6, -1], [8.0, 18.4, 1], [13.2, 17.0, 9],
   [12.0, 15.5, 19], [5.5, 14.1, 27], [-4.0, 12.8, 29], [-12.0, 11.5, 23],
@@ -16,6 +18,14 @@ export const TOWER_POINTS = [
   [-7.0, 3.5, 30], [-12.0, 3.0, 24], [-10.0, 2.6, 16], [-3.0, 2.2, 12],
   [6.0, 1.9, 14], [13.0, 1.6, 20], [18.0, 1.35, 28],
 ] as const;
+
+// Keep the proven horizontal route while opening the vertical spacing between
+// decks. The old late-race floors were only 3.26 units apart, which trapped the
+// camera between guard walls. Scaling around the finish floor preserves its
+// ground clearance and gives every overlapping deck at least 6 units of room.
+export const TOWER_POINTS = TOWER_PLAN_POINTS.map(([x, y, z]) => (
+  [x, TOWER_BASE_Y + (y - TOWER_BASE_Y) * TOWER_HEIGHT_SCALE, z] as const
+));
 
 export const COURSE_CURVE = new THREE.CatmullRomCurve3(
   TOWER_POINTS.map(([x, y, z]) => new THREE.Vector3(x, y, z)),
@@ -42,6 +52,18 @@ export const CUTS = [
   { progress: 0.66, keep: 4, label: "TOP 4 QUALIFY" },
   { progress: 0.86, keep: 2, label: "FINAL 2" },
 ] as const;
+
+export type CourseDriveBelt = {
+  id: string;
+  from: number;
+  to: number;
+  targetSpeed: number;
+  maxAcceleration: number;
+};
+
+export const TOWER_DRIVE_BELTS: readonly CourseDriveBelt[] = [
+  { id: "final-drive-belt", from: 0.91, to: 0.98, targetSpeed: 7, maxAcceleration: 4.2 },
+];
 
 export const SPECIALS = {
   startGate: 0.026,

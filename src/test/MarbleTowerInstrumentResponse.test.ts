@@ -53,4 +53,13 @@ describe("Marble Tower instrument responses", () => {
     expect(chimeContact.restitution).toBeGreaterThan(pianoContact.restitution);
     expect(chimeContact.restitution).toBeLessThanOrEqual(0.3);
   });
+
+  it("uses enough track friction to make the sphere roll instead of skate", () => {
+    const world = new CANNON.World();
+    const materials = createRaceMaterials(world);
+    const trackContact = world.getContactMaterial(materials.marble, materials.track);
+
+    expect(trackContact.friction).toBeGreaterThanOrEqual(0.12);
+    expect(trackContact.friction).toBeLessThanOrEqual(0.22);
+  });
 });

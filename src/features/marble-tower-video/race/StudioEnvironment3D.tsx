@@ -42,8 +42,8 @@ function TowerCore() {
         ]} />
         <meshStandardMaterial color="#5a6470" metalness={0.86} roughness={0.25} />
       </mesh>
-      {Array.from({ length: 8 }, (_, index) => (
-        <mesh key={index} position={[0, -14 + index * 4, 0]}>
+      {Array.from({ length: 15 }, (_, index) => (
+        <mesh key={index} position={[0, -28 + index * 4, 0]}>
           <cylinderGeometry args={[2.4, 2.4, 0.22, 28]} />
           <meshStandardMaterial color="#aeb8c3" metalness={0.68} roughness={0.28} />
         </mesh>
@@ -56,19 +56,19 @@ function WallAccents() {
   return (
     <group>
       {[-18, 0, 18].map((x) => (
-        <mesh key={`line-${x}`} position={[x, 6.5, 61.55]}>
+          <mesh key={`line-${x}`} position={[x, 14, 61.55]}>
           <planeGeometry args={[9, 0.34]} />
           <meshBasicMaterial color="#ffe670" toneMapped={false} />
         </mesh>
       ))}
       {[-18, 0, 18].map((x) => (
-        <mesh key={`line-v-${x}`} position={[x, 19, 61.55]}>
+          <mesh key={`line-v-${x}`} position={[x, 42, 61.55]}>
           <planeGeometry args={[9, 0.18]} />
           <meshBasicMaterial color="#6fe4ff" toneMapped={false} />
         </mesh>
       ))}
       {[-20, -6, 8, 22].map((z, index) => (
-        <mesh key={`left-accent-${z}`} position={[-49.55, 8 + index * 4.7, z]} rotation={[0, Math.PI / 2, 0]}>
+        <mesh key={`left-accent-${z}`} position={[-49.55, 18 + index * 9, z]} rotation={[0, Math.PI / 2, 0]}>
           <planeGeometry args={[8, 0.28]} />
           <meshBasicMaterial color={index % 2 ? '#ff95d8' : '#ffd98c'} toneMapped={false} />
         </mesh>
@@ -83,21 +83,21 @@ export function StudioEnvironment3D() {
   return (
     <group>
       <color attach="background" args={['#aeb9c3']} />
-      <fog attach="fog" args={['#b9c4cd', 62, 132]} />
+      <fog attach="fog" args={['#b9c4cd', 92, 178]} />
       <ambientLight intensity={0.58} />
       <directionalLight
         castShadow
         intensity={3}
         color="#fff5e4"
-        position={[-18, 46, -20]}
+        position={[-18, 82, -20]}
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
-        shadow-camera-far={100}
+        shadow-camera-far={160}
       />
-      <pointLight position={[18, 22, 10]} intensity={80} distance={48} color="#d8eeff" />
+      <pointLight position={[18, 50, 10]} intensity={105} distance={94} color="#d8eeff" />
       <Environment resolution={64}>
-        <Lightformer form="rect" intensity={5} color="#fff4db" position={[-20, 25, -18]} scale={[14, 20, 1]} />
-        <Lightformer form="rect" intensity={3} color="#b8dcff" position={[22, 18, 28]} rotation={[0, Math.PI, 0]} scale={[12, 14, 1]} />
+        <Lightformer form="rect" intensity={5} color="#fff4db" position={[-20, 58, -18]} scale={[14, 34, 1]} />
+        <Lightformer form="rect" intensity={3} color="#b8dcff" position={[22, 42, 28]} rotation={[0, Math.PI, 0]} scale={[12, 28, 1]} />
       </Environment>
 
       <mesh position={[0, -0.28, 12]} receiveShadow>
@@ -108,32 +108,32 @@ export function StudioEnvironment3D() {
         <planeGeometry args={[88, 88]} />
         <meshStandardMaterial color="#c8d0d7" roughness={0.95} />
       </mesh>
-      <mesh position={[0, 18, 62]} receiveShadow>
-        <boxGeometry args={[96, 36, 0.5]} />
+      <mesh position={[0, 40, 62]} receiveShadow>
+        <boxGeometry args={[96, 80, 0.5]} />
         <meshStandardMaterial color="#c6d0da" roughness={0.84} />
       </mesh>
-      <mesh position={[-50, 18, 12]} receiveShadow>
-        <boxGeometry args={[0.5, 36, 96]} />
+      <mesh position={[-50, 40, 12]} receiveShadow>
+        <boxGeometry args={[0.5, 80, 96]} />
         <meshStandardMaterial color="#cdd6de" roughness={0.84} />
       </mesh>
-      <mesh position={[0, 15, 61.65]}>
-        <planeGeometry args={[27, 12]} />
+      <mesh position={[0, 34, 61.65]}>
+        <planeGeometry args={[27, 20]} />
         <meshStandardMaterial map={graffitiA} roughness={0.72} />
       </mesh>
-      <mesh position={[-49.65, 12, 13]} rotation={[0, Math.PI / 2, 0]}>
-        <planeGeometry args={[24, 10]} />
+      <mesh position={[-49.65, 30, 13]} rotation={[0, Math.PI / 2, 0]}>
+        <planeGeometry args={[24, 18]} />
         <meshStandardMaterial map={graffitiB} roughness={0.72} />
       </mesh>
       <WallAccents />
 
       {[-24, -12, 0, 12, 24].map((x) => (
-        <group key={x} position={[x, 25, 61.2]}>
+        <group key={x} position={[x, 60, 61.2]}>
           <mesh>
-            <boxGeometry args={[8, 13, 0.18]} />
+            <boxGeometry args={[8, 22, 0.18]} />
             <meshBasicMaterial color="#f2f8ff" toneMapped={false} />
           </mesh>
           <mesh position={[0, 0, -0.12]}>
-            <boxGeometry args={[0.22, 13, 0.22]} />
+            <boxGeometry args={[0.22, 22, 0.22]} />
             <meshStandardMaterial color="#8b96a1" metalness={0.74} />
           </mesh>
         </group>

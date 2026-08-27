@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { RacePhysics } from "../physics/RacePhysics";
+import { courseSupportSamples } from "../track/courseSupportLayout";
 import { OLYMPIC_SPIRAL_CENTER } from "../track/olympicRoadCourse";
 import type { CourseSample } from "../track/towerCourseSampler";
 
@@ -163,7 +164,7 @@ function CurbsAndRoad({ physics }: { physics: RacePhysics }) {
 function RoadDetails({ physics }: { physics: RacePhysics }) {
   const { samples, trackWidth } = physics.course;
   const dashes = samples.filter((_, index) => index > 3 && index % 8 === 2);
-  const supports = samples.filter((_, index) => index > 8 && index % 18 === 8);
+  const supports = courseSupportSamples(samples, trackWidth, 18, 8);
   const rails = useMemo(() => ([-1, 1] as const).map((side) => new THREE.CatmullRomCurve3(
     samples.map((sample) => sample.point.clone().addScaledVector(sample.right, side * (trackWidth / 2 - 0.08)).addScaledVector(sample.normal, 1.22)),
     false,
@@ -196,7 +197,7 @@ function RoadDetails({ physics }: { physics: RacePhysics }) {
         </mesh>
       ))}
       {supports.map((sample) => {
-        const height = Math.max(1, sample.point.y);
+        const height = Math.max(0.5, sample.point.y - 0.48);
         return <mesh key={`support-${sample.index}`} position={[sample.point.x, height / 2, sample.point.z]} castShadow>
           <cylinderGeometry args={[0.18, 0.24, height, 10]} />
           <meshStandardMaterial color="#737d87" metalness={0.8} roughness={0.28} />
@@ -223,6 +224,32 @@ function NeonSpiralBasin() {
           <meshStandardMaterial color="#45c8ff" emissive="#168fd0" emissiveIntensity={2.2} toneMapped={false} />
         </mesh>
       ))}
+    </group>
+  );
+}
+
+function RoadDriveBelts({ physics }: { physics: RacePhysics }) {
+  const samples = physics.course.samples;
+  return (
+    <group>
+      {physics.course.driveBelts.flatMap((belt) => Array.from({ length: 6 }, (_, index) => {
+        const progress = THREE.MathUtils.lerp(belt.from, belt.to, (index + 0.5) / 6);
+        const sample = samples[Math.round(progress * (samples.length - 1))];
+        return (
+          <group key={`${belt.id}-${index}`} position={sample.point.clone().addScaledVector(sample.normal, 0.105)} quaternion={sample.quaternion}>
+            <mesh receiveShadow>
+              <boxGeometry args={[physics.course.trackWidth - 0.9, 0.08, Math.max(0.65, sample.lengthToNext * 1.75)]} />
+              <meshStandardMaterial color="#b44e24" emissive="#e36629" emissiveIntensity={0.55} roughness={0.56} />
+            </mesh>
+            {[-1.5, 0, 1.5].map((x) => (
+              <mesh key={x} position={[x, 0.055, 0]} rotation={[0, Math.PI / 4, 0]}>
+                <boxGeometry args={[0.44, 0.035, 0.44]} />
+                <meshBasicMaterial color="#ffd84a" toneMapped={false} />
+              </mesh>
+            ))}
+          </group>
+        );
+      }))}
     </group>
   );
 }
@@ -276,5 +303,5 @@ function FinishChute({ physics }: { physics: RacePhysics }) {
 }
 
 export function OlympicRoadTrack3D({ physics }: { physics: RacePhysics }) {
-  return <group><TabletopDisplayBase /><StartDeck physics={physics} /><LaunchArch physics={physics} /><RoadBase physics={physics} /><CurbsAndRoad physics={physics} /><RoadDetails physics={physics} /><NeonSpiralBasin /><FinishChute physics={physics} /></group>;
+  return <group><TabletopDisplayBase /><StartDeck physics={physics} /><LaunchArch physics={physics} /><RoadBase physics={physics} /><CurbsAndRoad physics={physics} /><RoadDetails physics={physics} /><NeonSpiralBasin /><RoadDriveBelts physics={physics} /><FinishChute physics={physics} /></group>;
 }

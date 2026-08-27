@@ -6,17 +6,21 @@ export type RaceCameraShot = {
 };
 
 const SHOTS: Record<string, RaceCameraShot> = {
-  start: { behind: 8.6, lift: 4.4, side: 5, fov: 49 },
-  switchback: { behind: 6.4, lift: 6.4, side: 7.2, fov: 54 },
-  spinner: { behind: 5, lift: 5.2, side: 6.5, fov: 52 },
-  hairpin: { behind: 6.4, lift: 6.4, side: 7.2, fov: 54 },
-  chimes: { behind: 4.8, lift: 4.8, side: 6.4, fov: 51 },
-  piano: { behind: 10, lift: 3.2, side: 1.2, fov: 47 },
-  spiral: { behind: 6.2, lift: 6.4, side: 7.2, fov: 54 },
-  tunnel: { behind: 7, lift: 2.8, side: 0.8, fov: 50 },
-  chaos: { behind: 4.8, lift: 5.2, side: 6, fov: 53 },
-  finish: { behind: 7.2, lift: 4.8, side: 8.4, fov: 47 },
+  start: { behind: 10.5, lift: 7.5, side: 7, fov: 52 },
+  switchback: { behind: 8.5, lift: 9.5, side: 10.5, fov: 58 },
+  spinner: { behind: 8, lift: 7.5, side: 9.5, fov: 55 },
+  hairpin: { behind: 8, lift: 10, side: 10.5, fov: 58 },
+  chimes: { behind: 7.5, lift: 7, side: 9, fov: 55 },
+  piano: { behind: 13, lift: 5.5, side: 3, fov: 52 },
+  spiral: { behind: 8, lift: 10, side: 11, fov: 58 },
+  tunnel: { behind: 10, lift: 4, side: 3, fov: 53 },
+  chaos: { behind: 7, lift: 8, side: 10, fov: 56 },
+  finish: { behind: 8, lift: 7, side: 11, fov: 50 },
 };
+
+export function cameraAnchorProgress(section: { from: number; to: number }) {
+  return section.from + (section.to - section.from) * 0.52;
+}
 
 export function cameraShotForSection(section: string, timelineSeconds: number, racing: boolean): RaceCameraShot {
   const base = SHOTS[section] ?? SHOTS.start;

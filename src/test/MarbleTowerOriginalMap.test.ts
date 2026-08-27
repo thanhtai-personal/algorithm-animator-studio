@@ -9,9 +9,9 @@ import {
 import { COURSE_SAMPLES } from "../features/marble-tower-video/track/towerCourseSampler";
 
 describe("Marble Tower original map parity", () => {
-  it("keeps the original 31-point tower centerline and vertical drop", () => {
+  it("keeps the 31-point tower route while opening its vertical spacing", () => {
     expect(TOWER_POINTS).toHaveLength(31);
-    expect(TOWER_POINTS[0]).toEqual([0, 35, -8]);
+    expect(TOWER_POINTS[0]).toEqual([0, 65.285, -8]);
     expect(TOWER_POINTS.at(-1)).toEqual([18, 1.35, 28]);
     expect(SAMPLE_COUNT).toBe(184);
     expect(COURSE_SAMPLES).toHaveLength(184);

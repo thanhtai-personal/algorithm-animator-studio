@@ -1,7 +1,9 @@
 import { COURSE_SAMPLES } from "./towerCourseSampler";
-import { CUTS, SPECIALS, TOWER_RACE_MAP_ID, TRACK_WIDTH } from "./towerCourse";
+import { CUTS, SPECIALS, TOWER_DRIVE_BELTS, TOWER_RACE_MAP_ID, TRACK_WIDTH } from "./towerCourse";
+import type { CourseDriveBelt } from "./towerCourse";
 import {
   OLYMPIC_ROAD_CUTS,
+  OLYMPIC_ROAD_DRIVE_BELTS,
   OLYMPIC_ROAD_MAP_ID,
   OLYMPIC_ROAD_OBSTACLES,
   OLYMPIC_ROAD_SAMPLES,
@@ -36,6 +38,7 @@ export type RaceCourseDefinition = {
   towerInstruments: boolean;
   studioCollision: boolean;
   roadObstacles: readonly OlympicRoadObstacle[];
+  driveBelts: readonly CourseDriveBelt[];
   obstacleSoundVariant: number;
 };
 
@@ -50,6 +53,7 @@ export const ORIGINAL_TOWER_COURSE: RaceCourseDefinition = {
   towerInstruments: true,
   studioCollision: true,
   roadObstacles: [],
+  driveBelts: TOWER_DRIVE_BELTS,
   obstacleSoundVariant: 0,
 };
 
@@ -64,6 +68,7 @@ export const OLYMPIC_ROAD_COURSE: RaceCourseDefinition = {
   towerInstruments: false,
   studioCollision: false,
   roadObstacles: OLYMPIC_ROAD_OBSTACLES,
+  driveBelts: OLYMPIC_ROAD_DRIVE_BELTS,
   obstacleSoundVariant: 1,
 };
 

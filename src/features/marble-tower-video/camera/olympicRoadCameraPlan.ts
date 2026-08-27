@@ -25,3 +25,7 @@ export function olympicRoadCameraShot(progress: number) {
   return OLYMPIC_ROAD_CAMERA_SHOTS.find((shot) => clamped >= shot.from && clamped < shot.to)
     ?? OLYMPIC_ROAD_CAMERA_SHOTS[OLYMPIC_ROAD_CAMERA_SHOTS.length - 1];
 }
+
+export function olympicRoadCameraAnchorProgress(shot: OlympicRoadCameraShot) {
+  return shot.from + (shot.to - shot.from) * 0.52;
+}

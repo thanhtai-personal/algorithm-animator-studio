@@ -20,27 +20,35 @@ function worldPoint(x: number, y: number, z = 0) {
 }
 
 function EntryWire({ sceneIndex }: { sceneIndex: number }) {
-  const curve = useMemo(() => {
+  const curves = useMemo(() => {
     const decor = korobeinikiReferenceDecorForScene(sceneIndex);
     const hit = korobeinikiReferenceSceneHit(sceneIndex);
-    if (!decor.length || !hit) return null;
+    if (!decor.length || !hit) return [];
     const from = worldPoint(decor.at(-1)!.x + 18, decor.at(-1)!.y + 8, -0.2);
     const to = worldPoint(hit.x - 20, hit.y - 6, -0.2);
     const delta = to.clone().sub(from);
-    const normal = new THREE.Vector3(-delta.y, delta.x, 0).normalize();
-    return new THREE.CatmullRomCurve3([
-      from,
-      from.clone().lerp(to, 0.34).addScaledVector(normal, 0.11),
-      from.clone().lerp(to, 0.68).addScaledVector(normal, -0.08),
-      to,
-    ], false, "catmullrom", 0.34);
+    const planarLength = Math.max(0.001, Math.hypot(delta.x, delta.y));
+    const normal = new THREE.Vector3(-delta.y / planarLength, delta.x / planarLength, 0);
+    return [-0.018, 0.018].map((strand) => {
+      const strandOffset = normal.clone().multiplyScalar(strand);
+      return new THREE.CatmullRomCurve3([
+        from.clone().add(strandOffset),
+        from.clone().lerp(to, 0.32).addScaledVector(normal, 0.09 + strand),
+        from.clone().lerp(to, 0.68).addScaledVector(normal, -0.05 + strand),
+        to.clone().add(strandOffset),
+      ], false, "catmullrom", 0.38);
+    });
   }, [sceneIndex]);
-  if (!curve) return null;
+  if (!curves.length) return null;
   return (
-    <mesh castShadow>
-      <tubeGeometry args={[curve, 32, 0.014, 7, false]} />
-      <meshStandardMaterial color="#151419" roughness={0.44} metalness={0.34} />
-    </mesh>
+    <group>
+      {curves.map((curve, index) => (
+        <mesh key={index} castShadow>
+          <tubeGeometry args={[curve, 28, 0.01, 7, false]} />
+          <meshStandardMaterial color="#1d1b20" roughness={0.42} metalness={0.3} />
+        </mesh>
+      ))}
+    </group>
   );
 }
 
@@ -56,15 +64,15 @@ export function KorobeinikiReferenceDecor3D() {
               const tubeDepth = korobeinikiReferenceTubeDepth(tube.index);
               const position = worldPoint(tube.x, tube.y, -tubeDepth / 2);
               return (
-                <group key={tube.index} position={position} rotation={[0, 0, ((tube.index % 3) - 1) * 0.012]}>
+                <group key={tube.index} position={position} rotation={[0, 0, ((tube.index % 3) - 1) * 0.015]}>
                   <WallBoomwhackerMesh
-                    w={0.72}
-                    h={0.36}
+                    w={0.92}
+                    h={0.48}
                     d={tubeDepth}
                     color={tube.color}
                     style="wall-boomwhacker-tube"
                     selected={false}
-                    glow={0.1}
+                    glow={0.04}
                     detail={1}
                     variant={sceneIndex * 5 + tube.index}
                   />

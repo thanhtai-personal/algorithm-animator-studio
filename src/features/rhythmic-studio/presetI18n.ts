@@ -38,7 +38,7 @@ const EN: Record<PresetTextKey, string> = {
   "reference-checker-rails.hint": "Matches clip ad97: dark neon rails, prisms and cyan-violet geometry",
   "reference-era-corridor.hint": "Matches clip hB8lCZ8xGZo_005: cymbals, square paddles, piano blocks and staggered fast-note corridors",
   "reference-faceted-metallophone.hint": "Matches clip 57c8: a faceted patchwork ball, two-bolt metallophone plates and cyan dual rails",
-  "reference-korobeiniki-tubes.hint": "Matches tXxHSu15xU8_002: loads the 39-note Korobeiniki performance, pastel wall tubes, wire bridges and a purple striped marble",
+  "reference-korobeiniki-tubes.hint": "Matches tXxHSu15xU8_002: loads the 39-note Korobeiniki performance, pastel wall tubes, compact wire bridges and a purple striped marble",
 };
 
 const VI: typeof EN = {
@@ -68,7 +68,7 @@ const VI: typeof EN = {
   "reference-checker-rails.hint": "Theo clip ad97: ray neon tối, lăng kính và hình học cyan-tím",
   "reference-era-corridor.hint": "Theo clip hB8lCZ8xGZo_005: cymbal, paddle vuông, phím hộp và hành lang so le cho đoạn nhanh",
   "reference-faceted-metallophone.hint": "Theo clip 57c8: bóng đa diện ghép màu, tấm Metallophone hai chốt và ray kép cyan",
-  "reference-korobeiniki-tubes.hint": "Theo clip tXxHSu15xU8_002: tự tải bản Korobeiniki 39 nốt, ống tường pastel, cầu dây và bi tím sọc",
+  "reference-korobeiniki-tubes.hint": "Theo clip tXxHSu15xU8_002: tự tải bản Korobeiniki 39 nốt, ống tường pastel, cầu dây ngắn và bi tím sọc",
 };
 
 export function presetText(lang: Lang, key: PresetTextKey) {

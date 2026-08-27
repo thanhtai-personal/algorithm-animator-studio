@@ -37,7 +37,9 @@ const ENTRY_DECOR_OFFSETS = [
 ] as const;
 
 export function korobeinikiReferenceTubeDepth(index: number) {
-  return 2.18 + (Math.max(0, index) % 4) * 0.035;
+  // The supplied reference uses long pipes that reach from the playing plane
+  // almost back to the wall; the old ~2.2 depth left the bases visibly floating.
+  return 4.08 + (Math.max(0, index) % 4) * 0.055;
 }
 
 export function korobeinikiColorForMidi(midi: number) {
@@ -155,7 +157,7 @@ export function buildKorobeinikiReferenceCourse(
       motionMode: "ballistic",
       event,
       visualStyle: "wall-boomwhacker-tube",
-      visualThickness: Math.max(30, settings.platformThickness),
+      visualThickness: Math.max(40, settings.platformThickness),
     };
     if (scene.sceneStart) platform.visualTiltRad = 0;
     onProgress?.(Math.min(1, (index + 1) / Math.max(1, events.length)));

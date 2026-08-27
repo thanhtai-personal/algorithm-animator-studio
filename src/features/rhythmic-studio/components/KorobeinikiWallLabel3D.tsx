@@ -10,18 +10,11 @@ function makeWallLabelTexture() {
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.translate(canvas.width * 0.5, canvas.height * 0.52);
   context.rotate(-0.035);
-  context.font = "italic 600 92px 'Comic Sans MS', 'Segoe Print', cursive";
+  context.font = "italic 500 86px 'Segoe Print', 'Comic Sans MS', cursive";
   context.textAlign = "center";
   context.textBaseline = "middle";
-  context.fillStyle = "rgba(32, 30, 34, 0.86)";
+  context.fillStyle = "rgba(29, 27, 33, 0.9)";
   context.fillText("Korobeiniki", 0, 0);
-  context.lineWidth = 4;
-  context.lineCap = "round";
-  context.strokeStyle = "rgba(32, 30, 34, 0.68)";
-  context.beginPath();
-  context.moveTo(-225, 73);
-  context.quadraticCurveTo(18, 91, 236, 66);
-  context.stroke();
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.minFilter = THREE.LinearFilter;
@@ -38,12 +31,12 @@ export function KorobeinikiWallLabel3D({ courseX, courseY }: { courseX: number; 
       position={[
         (courseX - RHYTHMIC_COURSE_WIDTH / 2) * RHYTHMIC_WORLD_SCALE,
         -courseY * RHYTHMIC_WORLD_SCALE,
-        -3.98,
+        -4.205,
       ]}
-      scale={[4.15, 1.04, 1]}
+      scale={[3.35, 0.84, 1]}
       renderOrder={-10}
     >
-      <spriteMaterial map={texture} transparent depthWrite={false} opacity={0.9} />
+      <spriteMaterial map={texture} transparent depthWrite={false} opacity={0.96} />
     </sprite>
   );
 }

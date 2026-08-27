@@ -27,28 +27,61 @@ function RailSegment({ points, offset }: { points: THREE.Vector3[]; offset: numb
 }
 
 function ReferenceWireBridge({ from, to }: { from: THREE.Vector3; to: THREE.Vector3 }) {
-  const curves = useMemo(() => {
-    const direction = to.clone().sub(from);
-    const planarLength = Math.max(0.001, Math.hypot(direction.x, direction.y));
-    const normal = new THREE.Vector3(-direction.y / planarLength, direction.x / planarLength, 0);
-    return [-0.055, 0.055].map((strand) => {
-      const strandOffset = normal.clone().multiplyScalar(strand);
-      const bow = normal.clone().multiplyScalar(0.12 + Math.min(0.2, planarLength * 0.025));
-      const points = [0.16, 0.38, 0.62, 0.84].map((t, index) => from.clone()
-        .lerp(to, t)
-        .add(strandOffset)
-        .addScaledVector(bow, index < 2 ? 1 : -1));
-      return new THREE.CatmullRomCurve3(points, false, "catmullrom", 0.34);
+  const geometry = useMemo(() => {
+    const center = from.clone().lerp(to, 0.53);
+    const delta = to.clone().sub(from);
+    const planarLength = Math.max(0.001, Math.hypot(delta.x, delta.y));
+    const tangent = new THREE.Vector3(delta.x / planarLength, delta.y / planarLength, 0);
+    const normal = new THREE.Vector3(-tangent.y, tangent.x, 0);
+    const halfSpan = Math.min(0.82, Math.max(0.58, planarLength * 0.17));
+    const pointAt = (t: number, strand: number) => center.clone()
+      .addScaledVector(tangent, (t - 0.5) * halfSpan * 2)
+      .addScaledVector(normal, strand + Math.sin(t * Math.PI) * 0.1)
+      .setZ(-0.31);
+    const curves = [-0.05, 0.05].map((strand) => new THREE.CatmullRomCurve3(
+      [0, 0.25, 0.5, 0.75, 1].map((t) => pointAt(t, strand)),
+      false,
+      "catmullrom",
+      0.42,
+    ));
+    const pins = [0.1, 0.3, 0.5, 0.7, 0.9].map((t) => {
+      const foot = pointAt(t, 0);
+      return {
+        foot,
+        top: foot.clone().addScaledVector(normal, 0.16 + Math.sin(t * Math.PI) * 0.06).setZ(-0.23),
+      };
     });
+    return { curves, pins };
   }, [from, to]);
   return (
     <group>
-      {curves.map((curve, index) => (
+      {geometry.curves.map((curve, index) => (
         <mesh key={index} castShadow>
           <tubeGeometry args={[curve, 32, 0.014, 7, false]} />
-          <meshStandardMaterial color="#111216" roughness={0.52} metalness={0.2} />
+          <meshStandardMaterial color="#1a191e" roughness={0.42} metalness={0.24} />
         </mesh>
       ))}
+      {geometry.pins.map(({ foot, top }, index) => {
+        const axis = top.clone().sub(foot);
+        const length = Math.max(0.001, axis.length());
+        const center = foot.clone().lerp(top, 0.5);
+        const quaternion = new THREE.Quaternion().setFromUnitVectors(
+          new THREE.Vector3(0, 1, 0),
+          axis.clone().normalize(),
+        );
+        return (
+          <group key={`pin-${index}`}>
+            <mesh position={center} quaternion={quaternion} castShadow>
+              <cylinderGeometry args={[0.012, 0.012, length, 8]} />
+              <meshStandardMaterial color="#26242b" roughness={0.4} metalness={0.22} />
+            </mesh>
+            <mesh position={top} castShadow>
+              <sphereGeometry args={[0.026, 10, 8]} />
+              <meshStandardMaterial color="#302e35" roughness={0.34} metalness={0.2} />
+            </mesh>
+          </group>
+        );
+      })}
     </group>
   );
 }

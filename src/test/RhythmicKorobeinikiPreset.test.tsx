@@ -65,9 +65,9 @@ describe("Korobeiniki wall-tube reference preset", () => {
       showcaseRails: true,
       impactRipple: false,
       particleCount: 0,
-      backgroundColor: "#9494a0",
-      cameraAnchor: 0.2,
-      cameraDistance: 1.3,
+      backgroundColor: "#8e8b9a",
+      cameraAnchor: 0.24,
+      cameraDistance: 0.94,
     });
   });
 
@@ -101,9 +101,9 @@ describe("Korobeiniki wall-tube reference preset", () => {
     expect(surface.marbleContactZ).toBeCloseTo(0.18, 4);
     expect(surface.contactCorrection).toBeTypeOf("number");
     expect(Number.isFinite(surface.contactCorrection)).toBe(true);
-    expect(wallBoomwhackerGeometry(1.4, 0.3, 2.18, false).length).toBe(2.18);
-    expect(korobeinikiReferenceTubeDepth(0)).toBe(2.18);
-    expect(korobeinikiReferenceTubeDepth(3)).toBeCloseTo(2.285, 6);
+    expect(wallBoomwhackerGeometry(1.4, 0.3, 4.08, false).length).toBe(4.08);
+    expect(korobeinikiReferenceTubeDepth(0)).toBe(4.08);
+    expect(korobeinikiReferenceTubeDepth(3)).toBeCloseTo(4.245, 6);
   });
 
   it("splits the installation at the three long rests and bridges only those gaps", () => {

@@ -106,19 +106,19 @@ export function RhythmicLightingRig3D({ settings, focus, bounds, recording = fal
     return (
       <>
         <ReflectionRig settings={settings} />
-        <hemisphereLight args={["#ddd9e7", "#262533", 0.72]} />
+        <hemisphereLight args={["#e9e4ee", "#292735", 0.5]} />
         <TrackedKeyLight
           focus={focus}
-          offset={{ x: -1.5, y: 2.1, z: 20 }}
-          intensity={1.42}
+          offset={{ x: -4.4, y: 6.4, z: 10.8 }}
+          intensity={2.15}
           color="#f7eef5"
           mapSize={mapSize(1536)}
           bias={-0.0003}
           normalBias={0.025}
-          radius={3.6}
+          radius={4.2}
           shadowsEnabled={settings.instrumentShadowsEnabled}
         />
-        <directionalLight position={[4, -2, 6]} intensity={0.12} color="#b9c8e4" />
+        <directionalLight position={[4.6, -2.8, 7]} intensity={0.24} color="#c9d4e7" />
       </>
     );
   }

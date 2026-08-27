@@ -66,8 +66,8 @@ describe("Korobeiniki wall-tube reference preset", () => {
       impactRipple: false,
       particleCount: 0,
       backgroundColor: "#8e8b9a",
-      cameraAnchor: 0.24,
-      cameraDistance: 0.94,
+      cameraAnchor: 0.28,
+      cameraDistance: 1.02,
     });
   });
 
@@ -144,7 +144,7 @@ describe("Korobeiniki wall-tube reference preset", () => {
       [112, 108, "#93d395"],
       [165, 140, "#b6b0ef"],
     ]);
-    expect(korobeinikiReferenceLabelForScene(0)).toEqual({ x: 288, y: 146 });
+    expect(korobeinikiReferenceLabelForScene(0)).toEqual({ x: 390, y: 236 });
     expect(korobeinikiReferenceDecorForScene(1)[0].y).toBeGreaterThan(1_000);
   });
 

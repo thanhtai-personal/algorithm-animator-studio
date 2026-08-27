@@ -20,8 +20,8 @@ export function WallBoomwhackerMesh({
   const dark = color.toLowerCase() === "#18191d";
   // Reference pipes are mounted almost perfectly perpendicular to the wall.
   // Let perspective create the apparent fan instead of rotating each pipe.
-  const yaw = ((variant % 5) - 2) * 0.0015;
-  const pitch = (((variant * 3) % 5) - 2) * 0.0012;
+  const yaw = ((variant % 5) - 2) * 0.0012;
+  const pitch = (((variant * 3) % 5) - 2) * 0.001;
   const baseZ = -geometry.length + geometry.radius * 0.16;
 
   return (
@@ -30,71 +30,71 @@ export function WallBoomwhackerMesh({
         <cylinderGeometry args={[geometry.radius, geometry.radius, geometry.length, segments, 1, true]} />
         {dark
           ? <meshPhysicalMaterial
-              color="#17181d"
-              roughness={0.28}
-              metalness={0.08}
-              clearcoat={0.82}
-              clearcoatRoughness={0.18}
-              envMapIntensity={1.15}
+              color="#2a2c32"
+              roughness={0.42}
+              metalness={0.05}
+              clearcoat={0.46}
+              clearcoatRoughness={0.22}
+              envMapIntensity={1}
             />
           : <meshPhysicalMaterial
               color={bodyColor}
-              roughness={0.25}
-              metalness={0.015}
-              clearcoat={0.72}
-              clearcoatRoughness={0.14}
-              emissive={color}
-              emissiveIntensity={0.24 + THREE.MathUtils.clamp(glow, 0, 1.5) * 0.32}
-              envMapIntensity={1.12}
+              roughness={0.36}
+              metalness={0.01}
+              clearcoat={0.48}
+              clearcoatRoughness={0.2}
+              emissive={bodyColor}
+              emissiveIntensity={0.03 + THREE.MathUtils.clamp(glow, 0, 1.5) * 0.09}
+              envMapIntensity={1.05}
             />}
       </mesh>
 
       <mesh position={[0, 0, -geometry.length * 0.5]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[geometry.radius * 0.76, geometry.radius * 0.76, geometry.length * 1.008, segments, 1, true]} />
-        <meshStandardMaterial color="#090a0d" roughness={0.78} side={THREE.BackSide} />
+        <meshStandardMaterial color="#0f1115" roughness={0.82} side={THREE.BackSide} />
       </mesh>
 
       {dark ? (
         <mesh position={[0, 0, -geometry.radius * 0.62]}>
           <circleGeometry args={[geometry.radius * 0.69, segments]} />
-          <meshStandardMaterial color="#07080a" roughness={0.92} />
+          <meshStandardMaterial color="#090a0d" roughness={0.94} />
         </mesh>
       ) : (
         <mesh position={[0, 0, 0.008]}>
           <circleGeometry args={[geometry.radius * 0.79, segments]} />
           <meshPhysicalMaterial
             color={bodyColor}
-            roughness={0.2}
-            clearcoat={0.9}
-            clearcoatRoughness={0.1}
-            emissive={color}
-            emissiveIntensity={0.12 + THREE.MathUtils.clamp(glow, 0, 1.5) * 0.22}
+            roughness={0.24}
+            clearcoat={0.56}
+            clearcoatRoughness={0.18}
+            emissive={bodyColor}
+            emissiveIntensity={0.02 + THREE.MathUtils.clamp(glow, 0, 1.5) * 0.06}
           />
         </mesh>
       )}
 
       <mesh>
         <torusGeometry args={[geometry.radius * 0.9, geometry.radius * 0.085, 10, segments]} />
-        <meshPhysicalMaterial color="#29282e" roughness={0.24} metalness={0.18} clearcoat={0.65} />
+        <meshPhysicalMaterial color="#4a4d56" roughness={0.32} metalness={0.12} clearcoat={0.36} />
       </mesh>
       {!dark && (
         <mesh position={[0, 0, 0.012]}>
           <torusGeometry args={[geometry.radius * 0.76, geometry.radius * 0.035, 8, segments]} />
-          <meshPhysicalMaterial color={bodyColor} roughness={0.18} clearcoat={0.8} />
+          <meshPhysicalMaterial color={bodyColor} roughness={0.2} clearcoat={0.46} clearcoatRoughness={0.18} />
         </mesh>
       )}
 
       <mesh position={[0, 0, baseZ]} castShadow receiveShadow>
         <circleGeometry args={[geometry.radius * 1.28, segments]} />
-        <meshPhysicalMaterial color="#28282d" roughness={0.34} metalness={0.12} clearcoat={0.55} />
+        <meshPhysicalMaterial color="#55575f" roughness={0.44} metalness={0.06} clearcoat={0.22} />
       </mesh>
       <mesh position={[0, 0, baseZ + 0.018]} castShadow>
         <torusGeometry args={[geometry.radius * 1.13, geometry.radius * 0.13, 10, segments]} />
-        <meshPhysicalMaterial color="#3a3a40" roughness={0.3} metalness={0.2} clearcoat={0.58} />
+        <meshPhysicalMaterial color="#666972" roughness={0.36} metalness={0.1} clearcoat={0.2} />
       </mesh>
       <mesh position={[0, 0, baseZ + geometry.radius * 0.13]} rotation={[Math.PI / 2, 0, 0]} castShadow>
         <cylinderGeometry args={[geometry.radius * 1.04, geometry.radius * 1.04, geometry.radius * 0.25, segments]} />
-        <meshStandardMaterial color="#23242a" roughness={0.38} metalness={0.12} />
+        <meshStandardMaterial color="#454850" roughness={0.46} metalness={0.1} />
       </mesh>
     </group>
   );

@@ -36,6 +36,29 @@ const ENTRY_DECOR_OFFSETS = [
   [-161, -80, "#b6b0ef"],
 ] as const;
 
+const LABEL_OFFSETS = [
+  [64, 16],
+  [72, 16],
+  [70, 14],
+  [66, 14],
+] as const;
+
+const BRIDGE_DECOR = [
+  { sceneIndex: 1, x: 386, y: 1320, width: 106, rise: 22, rotationRad: 0.08, pins: 4 },
+  { sceneIndex: 2, x: 404, y: 2058, width: 124, rise: 24, rotationRad: -0.08, pins: 5 },
+  { sceneIndex: 3, x: 430, y: 2850, width: 148, rise: 28, rotationRad: 0.1, pins: 5 },
+] as const;
+
+export interface KorobeinikiReferenceBridgeDecor {
+  sceneIndex: number;
+  x: number;
+  y: number;
+  width: number;
+  rise: number;
+  rotationRad: number;
+  pins: number;
+}
+
 export function korobeinikiReferenceTubeDepth(index: number) {
   // The supplied reference uses long pipes that reach from the playing plane
   // almost back to the wall; the old ~2.2 depth left the bases visibly floating.
@@ -63,7 +86,8 @@ export function korobeinikiReferenceLabelForScene(sceneIndex: number) {
   const eventIndex = KOROBEINIKI_REFERENCE_SCENE_STARTS[sceneIndex];
   if (eventIndex === undefined) return null;
   const origin = REFERENCE_HITS[eventIndex];
-  return { x: origin[0] - 38, y: origin[1] - 74 };
+  const [dx, dy] = LABEL_OFFSETS[sceneIndex] ?? LABEL_OFFSETS.at(-1)!;
+  return { x: origin[0] + dx, y: origin[1] + dy };
 }
 
 export function korobeinikiReferenceSceneHit(sceneIndex: number) {
@@ -71,6 +95,10 @@ export function korobeinikiReferenceSceneHit(sceneIndex: number) {
   if (eventIndex === undefined) return null;
   const hit = REFERENCE_HITS[eventIndex];
   return { x: hit[0] + MARBLE_STRIKE_OFFSET.x, y: hit[1] + MARBLE_STRIKE_OFFSET.y };
+}
+
+export function korobeinikiReferenceBridgeDecor() {
+  return BRIDGE_DECOR.map((bridge) => ({ ...bridge } satisfies KorobeinikiReferenceBridgeDecor));
 }
 
 export function isKorobeinikiWallLayout(settings: StudioSettings) {

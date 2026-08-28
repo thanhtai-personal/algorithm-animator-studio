@@ -11,6 +11,17 @@ export function usesFixedClientExportSurface(_target: ExportFormat) {
   return true;
 }
 
+interface RhythmicExportFrameStore {
+  setPlaying: (playing: boolean) => void;
+  setTimeMs: (timeMs: number) => void;
+}
+
+/** Move the live scene onto the first exported frame before capture begins. */
+export function prepareRhythmicExportFrame(store: RhythmicExportFrameStore, startMs: number) {
+  store.setPlaying(false);
+  store.setTimeMs(Math.max(0, startMs));
+}
+
 export function settleRhythmicRecordingSurface() {
   return new Promise<void>((resolve) => {
     window.requestAnimationFrame(() => {

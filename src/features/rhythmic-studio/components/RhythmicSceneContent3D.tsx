@@ -30,6 +30,10 @@ import { emitDueRhythmicHits } from "../lib/chaseAudioScheduler";
 import { settingsForChaseOwner } from "../engine/chaseCoursePlanner";
 import { isKorobeinikiWallLayout } from "../lib/korobeinikiReferenceLayout";
 import { KorobeinikiReferenceDecor3D } from "./KorobeinikiReferenceDecor3D";
+import {
+  advanceRhythmicPlaybackFrameClock,
+  createRhythmicPlaybackFrameClock,
+} from "./rhythmicPlaybackFrameClock";
 
 function RendererQuality({ recording, shadowsEnabled, exportFps }: { recording: boolean; shadowsEnabled: boolean; exportFps: number }) {
   const { gl, invalidate } = useThree();
@@ -88,7 +92,11 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
   const impactLightRef = useRef({ index: initialSample.platformIndex, strength: initialImpact });
   const lastImpactRenderRef = useRef(0);
   const currentTimeRef = useRef(props.timeMs);
-  const playbackEpochRef = useRef(performance.now() - props.playbackStartMs);
+  const playbackClockRef = useRef(createRhythmicPlaybackFrameClock(
+    props.playbackToken,
+    props.playbackStartMs,
+    performance.now(),
+  ));
   const nextNoteIndex = useRef(firstEventAtOrAfter(props.events, props.playbackStartMs));
   const lastUiUpdate = useRef(0);
   const endedToken = useRef<number | null>(null);
@@ -265,7 +273,11 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
 
   useEffect(() => {
     currentTimeRef.current = props.playbackStartMs;
-    playbackEpochRef.current = performance.now() - props.playbackStartMs;
+    playbackClockRef.current = createRhythmicPlaybackFrameClock(
+      props.playbackToken,
+      props.playbackStartMs,
+      performance.now(),
+    );
     nextNoteIndex.current = firstEventAtOrAfter(props.events, props.playbackStartMs);
     previousTimeRef.current = props.playbackStartMs;
     initializedRef.current = false;
@@ -288,7 +300,21 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
   useFrame((_, delta) => {
     if (!props.playing) return;
     const endMs = props.playbackEndMs || props.durationMs;
-    const timeMs = Math.min(endMs, Math.max(0, performance.now() - playbackEpochRef.current));
+    const now = performance.now();
+    const frame = advanceRhythmicPlaybackFrameClock(playbackClockRef.current, {
+      playbackToken: props.playbackToken,
+      playbackStartMs: props.playbackStartMs,
+      playbackEndMs: endMs,
+      nowMs: now,
+    });
+    playbackClockRef.current = frame.clock;
+    if (frame.reset) {
+      nextNoteIndex.current = firstEventAtOrAfter(props.events, props.playbackStartMs);
+      previousTimeRef.current = props.playbackStartMs;
+      initializedRef.current = false;
+      endedToken.current = null;
+    }
+    const timeMs = frame.timeMs;
     currentTimeRef.current = timeMs;
     nextNoteIndex.current = emitDueRhythmicHits({
       nextIndex: nextNoteIndex.current,
@@ -299,8 +325,10 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
       courseOverrides: props.courseOverrides,
       onNote: props.onNote,
     });
-    syncScene(timeMs, delta);
-    const now = performance.now();
+    // Starting an export rebuilds the frame clock in a React effect before the
+    // first R3F frame. Carry a one-shot scene snap on the clock itself so the
+    // camera cannot ease from the end of the previous preview into frame zero.
+    syncScene(timeMs, delta, frame.snapScene);
     if (now - lastUiUpdate.current >= RHYTHMIC_UI_UPDATE_MS) {
       lastUiUpdate.current = now;
       props.onTime(timeMs);

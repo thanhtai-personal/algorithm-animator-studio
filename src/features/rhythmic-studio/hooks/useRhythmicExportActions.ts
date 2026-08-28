@@ -6,6 +6,7 @@ import { rhythmicText } from "../i18n";
 import {
   downloadRhythmicBlob,
   pickRecordingMimeType,
+  prepareRhythmicExportFrame,
   settleRhythmicRecordingSurface,
   startRhythmicMediaRecorder,
   usesFixedClientExportSurface,
@@ -63,9 +64,12 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, refs: Canva
       await playback.audioEngineRef.current.attachOriginalAudio(playback.audioElementRef.current);
     }
     await playback.preparePlaybackAudio();
-    // Let React Three Fiber finish its recording DPR/shadow update before the
-    // first encoded frame. Recording the resize itself caused a visible startup
-    // freeze and made audio lead the picture.
+    // Seek while capture is still closed. Otherwise MediaRecorder holds the
+    // final preview frame until playback resets and that stale camera pose is
+    // encoded at the start of the MP4.
+    prepareRhythmicExportFrame(store, clipOnly ? store.trimStartMs : 0);
+    // Let React Three Fiber finish the seek plus recording DPR/shadow update
+    // before the first encoded frame.
     store.setRecording(true, format);
     await settleRhythmicRecordingSurface();
     const preparedCanvas = currentCanvas(store, refs) ?? canvas;

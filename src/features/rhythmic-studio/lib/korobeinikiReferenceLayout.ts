@@ -9,7 +9,6 @@ const REFERENCE_WIDTH = 720;
 const REFERENCE_GRAVITY = 780;
 const REFERENCE_WORLD_SCALE = 0.012;
 const REFERENCE_TUBE_THICKNESS = 40;
-const REFERENCE_SHAFT_CONTACT_RATIO = 0.58;
 const REFERENCE_STEP_MS = 230;
 const REFERENCE_MIN_ARC_HEIGHT = 18;
 
@@ -80,10 +79,11 @@ export function wallScoreTubeHitPoint(
   };
 }
 
-export function wallScoreTubeContactDepth3D(index: number, settings: StudioSettings) {
-  const renderedDepth = korobeinikiReferenceTubeDepth(index)
-    * (0.92 + settings.platformDetail * 0.12);
-  return -renderedDepth * REFERENCE_SHAFT_CONTACT_RATIO;
+export function wallScoreTubeContactDepth3D(_index: number, settings: StudioSettings) {
+  const ballRadius = settings.ballSize * REFERENCE_WORLD_SCALE;
+  // Keep the contact on the upper front rim. The old point sat halfway down the
+  // long tube, so crossings were rendered inside solid plastic.
+  return Math.max(0, ballRadius - 0.001);
 }
 
 export function korobeinikiColorForMidi(midi: number) {
@@ -208,6 +208,26 @@ export function wallScoreReferenceHits(events: readonly NoteEvent[], width: numb
   return points;
 }
 
+function separateWallScoreStrikePoints(
+  visualHits: readonly { x: number; y: number }[],
+  settings: StudioSettings,
+) {
+  const contactOffset = -wallScoreTubeHitPoint({ x: 0, y: 0 }, settings).y;
+  const safeRadius = contactOffset + settings.ballSize * 0.45;
+  const adjusted: { x: number; y: number }[] = [];
+  for (const visual of visualHits) {
+    let y = visual.y;
+    for (const previous of adjusted) {
+      const dx = Math.abs(visual.x - previous.x);
+      if (dx >= safeRadius) continue;
+      const minimumHitY = previous.y + Math.sqrt(safeRadius ** 2 - dx ** 2);
+      y = Math.max(y, minimumHitY + contactOffset);
+    }
+    adjusted.push({ x: visual.x, y });
+  }
+  return adjusted;
+}
+
 export const WALL_SCORE_RAIL_ENTRY_T = 0.18;
 export const WALL_SCORE_RAIL_EXIT_T = 0.78;
 
@@ -313,7 +333,7 @@ export function buildKorobeinikiReferenceCourse(
   width: number,
   onProgress?: (progress: number) => void,
 ): MarblePlatform[] {
-  const visualHits = wallScoreReferenceHits(events, width);
+  const visualHits = separateWallScoreStrikePoints(wallScoreReferenceHits(events, width), settings);
   const hits = visualHits.map((visual) => wallScoreTubeHitPoint(visual, settings));
   const platforms = events.map((event, index) => {
     const visualHit = visualHits[index];

@@ -12,6 +12,7 @@ import type { ChaseCoursePlan } from "../lib/chaseCourse";
 import { instrumentMarbleContactDepth3D } from "./instrumentPlayingSurface3D";
 import {
   isKorobeinikiWallLayout,
+  KOROBEINIKI_BRIDGE_GAP_MS,
   wallScoreTubeContactDepth3D,
 } from "../lib/korobeinikiReferenceLayout";
 
@@ -44,6 +45,11 @@ function seededDirection(index: number) {
 }
 
 function depthForSegment(index: number, phase: number, settings: StudioSettings) {
+  if (isKorobeinikiWallLayout(settings)) {
+    const ballRadius = settings.ballSize * RHYTHMIC_WORLD_SCALE;
+    const contactDepth = wallScoreTubeContactDepth3D(index, settings);
+    return Math.sin(Math.PI * clamp(phase)) * (ballRadius - contactDepth + 0.04);
+  }
   // Wall-mounted instruments are designed around a single physical collision
   // plane. A signed decorative Z weave made the marble periodically move behind
   // the instrument face and read as penetration. Keep those courses planar.
@@ -127,9 +133,13 @@ export function visualMarbleAtTime(
   const contactStartZ = contactDepthForPlatform(platforms[index], segmentSettings, overrides);
   const contactEndZ = contactDepthForPlatform(platforms[index + 1], nextSettings, overrides);
   const contactZ = THREE.MathUtils.lerp(contactStartZ, contactEndZ, phase);
+  const followsKorobeinikiRail = isKorobeinikiWallLayout(segmentSettings)
+    && end - start >= KOROBEINIKI_BRIDGE_GAP_MS;
   return {
     ...point,
-    z: contactZ + (overrideForSegment(index, overrides) ? 0 : depthForSegment(index, phase, segmentSettings)),
+    z: contactZ + (overrideForSegment(index, overrides) || followsKorobeinikiRail
+      ? 0
+      : depthForSegment(index, phase, segmentSettings)),
     segmentIndex: index,
     phase,
     impactAgeMs: timeMs - start,

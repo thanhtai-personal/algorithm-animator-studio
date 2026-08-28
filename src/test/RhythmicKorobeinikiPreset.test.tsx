@@ -31,7 +31,10 @@ import { instrumentPlayingSurface3D } from "../features/rhythmic-studio/componen
 import { wallBoomwhackerGeometry } from "../features/rhythmic-studio/components/wallBoomwhackerGeometry3D";
 import { crossedRhythmicHit } from "../features/rhythmic-studio/components/rhythmicSceneMath3D";
 import { referenceStripedMarbleBandAtUv } from "../features/rhythmic-studio/components/RhythmicMarble3D";
-import { visualMarbleAtTime } from "../features/rhythmic-studio/components/RhythmicMotion3D";
+import {
+  RHYTHMIC_WORLD_SCALE,
+  visualMarbleAtTime,
+} from "../features/rhythmic-studio/components/RhythmicMotion3D";
 
 const PRESET_ID = "reference-korobeiniki-tubes" as const;
 
@@ -88,7 +91,7 @@ describe("Korobeiniki wall-tube reference preset", () => {
     expect(visible.every((platform) => platform.visualStyle === "wall-boomwhacker-tube")).toBe(true);
   }, 30_000);
 
-  it("keeps the tube mouths visible but strikes the upper shaft instead of the mouth", () => {
+  it("keeps the tube mouths visible and strikes the upper shaft near the front rim", () => {
     const geometry = wallBoomwhackerGeometry(1.4, 0.3, 4.05, false);
     const surface = instrumentPlayingSurface3D(
       "wall-boomwhacker-tube",
@@ -116,7 +119,8 @@ describe("Korobeiniki wall-tube reference preset", () => {
     const first = visualMarbleAtTime(events[0].timeMs, events, platforms, settings, []);
 
     expect(platforms[0].visualY! - platforms[0].hitY).toBeGreaterThan(settings.ballSize + 15);
-    expect(first.z).toBeLessThan(-1);
+    expect(first.z).toBeGreaterThan(0);
+    expect(first.z).toBeLessThan(settings.ballSize * RHYTHMIC_WORLD_SCALE);
   });
 
   it("splits the installation at the three long rests and bridges only those gaps", () => {
@@ -257,7 +261,7 @@ describe("Korobeiniki wall-tube reference preset", () => {
     expect(launchSpeed(4)).toBeLessThan(launchSpeed(3) * 1.2);
   });
 
-  it("clears each struck tube instead of travelling through its body", () => {
+  it("clears every tube instead of travelling through played instruments", () => {
     const events = BUILTIN_MELODIES[KOROBEINIKI_MELODY_NAME];
     const settings = { ...DEFAULT_SETTINGS, ...presetById(PRESET_ID).settings };
     const platforms = buildKorobeinikiReferenceCourse(events, settings, 720);
@@ -265,14 +269,22 @@ describe("Korobeiniki wall-tube reference preset", () => {
     for (let index = 0; index < platforms.length - 1; index += 1) {
       const gapMs = events[index + 1].timeMs - events[index].timeMs;
       if (gapMs >= 620) continue;
-      const platform = platforms[index];
-      const visualCenter = { x: platform.visualX!, y: platform.visualY! };
-      const contactRadius = visualCenter.y - platform.hitY;
 
-      for (const elapsedMs of [1, Math.min(12, gapMs * 0.1)]) {
-        const ball = marbleAtTime(events[index].timeMs + elapsedMs, events, platforms, settings);
-        const clearance = Math.hypot(ball.x - visualCenter.x, ball.y - visualCenter.y);
-        expect(clearance, `tube ${index} at +${elapsedMs}ms`).toBeGreaterThanOrEqual(contactRadius - 0.01);
+      for (const elapsedMs of [1, ...Array.from({ length: 15 }, (_, sample) => gapMs * (sample + 1) / 16)]) {
+        const timeMs = events[index].timeMs + elapsedMs;
+        const ball = visualMarbleAtTime(timeMs, events, platforms, settings, []);
+
+        for (const tube of platforms) {
+          const radialClearance = (
+            Math.hypot(ball.x - tube.visualX!, ball.y - tube.visualY!)
+            - (tube.visualY! - tube.hitY)
+          ) * RHYTHMIC_WORLD_SCALE;
+          const frontClearance = ball.z - settings.ballSize * RHYTHMIC_WORLD_SCALE;
+          expect(
+            Math.max(radialClearance, frontClearance),
+            `segment ${index} intersects tube ${tube.index} at +${elapsedMs}ms`,
+          ).toBeGreaterThanOrEqual(-0.001);
+        }
       }
     }
   });

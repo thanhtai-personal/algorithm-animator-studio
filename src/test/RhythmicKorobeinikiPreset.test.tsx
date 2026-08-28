@@ -257,6 +257,26 @@ describe("Korobeiniki wall-tube reference preset", () => {
     expect(launchSpeed(4)).toBeLessThan(launchSpeed(3) * 1.2);
   });
 
+  it("clears each struck tube instead of travelling through its body", () => {
+    const events = BUILTIN_MELODIES[KOROBEINIKI_MELODY_NAME];
+    const settings = { ...DEFAULT_SETTINGS, ...presetById(PRESET_ID).settings };
+    const platforms = buildKorobeinikiReferenceCourse(events, settings, 720);
+
+    for (let index = 0; index < platforms.length - 1; index += 1) {
+      const gapMs = events[index + 1].timeMs - events[index].timeMs;
+      if (gapMs >= 620) continue;
+      const platform = platforms[index];
+      const visualCenter = { x: platform.visualX!, y: platform.visualY! };
+      const contactRadius = visualCenter.y - platform.hitY;
+
+      for (const elapsedMs of [1, Math.min(12, gapMs * 0.1)]) {
+        const ball = marbleAtTime(events[index].timeMs + elapsedMs, events, platforms, settings);
+        const clearance = Math.hypot(ball.x - visualCenter.x, ball.y - visualCenter.y);
+        expect(clearance, `tube ${index} at +${elapsedMs}ms`).toBeGreaterThanOrEqual(contactRadius - 0.01);
+      }
+    }
+  });
+
   it("extends an imported MIDI with the reference wall-score structure without turning upward", () => {
     const settings = { ...DEFAULT_SETTINGS, ...presetById(PRESET_ID).settings };
     const events = Array.from({ length: 52 }, (_, index) => ({

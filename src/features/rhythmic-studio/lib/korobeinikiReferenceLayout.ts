@@ -11,6 +11,7 @@ const REFERENCE_WORLD_SCALE = 0.012;
 const REFERENCE_TUBE_THICKNESS = 40;
 const REFERENCE_SHAFT_CONTACT_RATIO = 0.58;
 const REFERENCE_STEP_MS = 230;
+const REFERENCE_MIN_ARC_HEIGHT = 18;
 
 type ReferencePoint = readonly [x: number, y: number];
 
@@ -321,11 +322,19 @@ export function buildKorobeinikiReferenceCourse(
     const spanSeconds = next
       ? Math.max(0.08, (events[index + 1].timeMs - event.timeMs) / 1000)
       : 0.42;
+    const deltaY = next ? next.y - hit.y : 0;
+    const bounceHeight = Math.max(
+      REFERENCE_MIN_ARC_HEIGHT,
+      deltaY * 0.25 + settings.ballSize * 0.45,
+    );
+    const gravity = next
+      ? 8 * bounceHeight / spanSeconds ** 2
+      : REFERENCE_GRAVITY;
     const previous = hits[index - 1];
     const terminalDirection = previous ? Math.sign(hit.x - previous.x) || 1 : 1;
     const outVX = next ? (next.x - hit.x) / spanSeconds : terminalDirection * 110;
     const outVY = next
-      ? (next.y - hit.y - 0.5 * REFERENCE_GRAVITY * spanSeconds ** 2) / spanSeconds
+      ? (deltaY - 4 * bounceHeight) / spanSeconds
       : Math.max(96, settings.ballSize * 5.5);
     const platform: MarblePlatform = {
       index,
@@ -345,7 +354,7 @@ export function buildKorobeinikiReferenceCourse(
       normalY: -1,
       outVX,
       outVY,
-      gravity: REFERENCE_GRAVITY,
+      gravity,
       contactMode: "surface",
       motionMode: "ballistic",
       event,

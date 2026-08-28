@@ -17,6 +17,9 @@ export function instrumentVoiceForPlatform(
   if (style === "instrument-cymbal") return "cymbal";
   if (style === "gong-disc") return "gong";
   if (style === "flute-pipe") return "flute";
+  if (style === "trumpet-horn") return "trumpet";
+  if (style === "guitar-body") return "guitar";
+  if (style === "bronze-drum") return "bronze-drum";
   if (style === "piano-key" || style === "piano-keyboard") return program >= 4 && program <= 7 ? "fm" : "piano";
   if (["instrument-key", "xylophone-key", "xylophone-bar"].includes(style)) return "xylophone";
   if (style === "marimba-bar") return "marimba";

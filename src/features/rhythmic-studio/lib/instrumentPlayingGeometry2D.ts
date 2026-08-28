@@ -28,6 +28,9 @@ export function instrumentSurfaceAlignment2D(
   }
   if (style === "gong-disc") return centeredBody(compact ? width * 0.42 : Math.max(28, width * 0.42));
   if (style === "flute-pipe") return centeredBody(compact ? thickness * 0.42 : Math.max(8, thickness * 0.42));
+  if (style === "trumpet-horn") return centeredBody(compact ? width * 0.2 : Math.max(14, width * 0.2));
+  if (style === "guitar-body") return centeredBody(compact ? width * 0.28 : Math.max(18, width * 0.28));
+  if (style === "bronze-drum") return centeredBody(compact ? width * 0.4 : Math.max(28, width * 0.4));
   if (style === "instrument-cymbal") {
     const radiusY = compact ? Math.max(1.2, thickness * 0.5) : Math.max(8, thickness * 0.62);
     return centeredBody(radiusY, compact ? radiusY * 1.5 : radiusY * 3.3 + 3);

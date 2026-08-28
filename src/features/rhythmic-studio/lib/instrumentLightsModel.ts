@@ -20,6 +20,9 @@ const NOTE_LIT_STYLES = new Set<PlatformStyle>([
   "drum-disc",
   "gong-disc",
   "flute-pipe",
+  "trumpet-horn",
+  "guitar-body",
+  "bronze-drum",
 ]);
 
 export function isNoteLitInstrumentStyle(style: PlatformStyle) {

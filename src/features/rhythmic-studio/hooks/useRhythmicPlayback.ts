@@ -6,12 +6,46 @@ import { instrumentVoiceForPlatform } from "../lib/instrumentHitProfiles";
 import { rhythmicAudioPresentationDelayMs } from "../lib/playbackSync";
 import { presetForMidiEvent } from "../lib/synthVoices";
 import { instrumentHitForPlatform } from "../lib/instrumentHitEvent";
+import { instrumentMixSegmentForTime } from "../lib/phraseInstrumentMix";
+import { presetObstaclePlan } from "../engine/presetObstaclePlan";
 
 function presetForInstrumentCollision(store: RhythmicStudioStore, hit: InstrumentHitEvent): SynthPreset {
   const { settings } = store;
   if (!settings.instrumentNativeAudio) return settings.synthPreset;
   const midiFallback = settings.midiInstrumentMode === "auto" ? presetForMidiEvent(hit.event) : settings.synthPreset;
   return instrumentVoiceForPlatform(hit.platformStyle, hit.event, midiFallback);
+}
+
+function scheduledMidiPreset(
+  store: RhythmicStudioStore,
+  event: InstrumentHitEvent["event"],
+  sourceIndex: number,
+  visualTimeMs: number,
+  platformPositionByEventId: ReadonlyMap<string, number>,
+): SynthPreset {
+  const { settings } = store;
+  const fallback = settings.midiInstrumentMode === "auto" ? presetForMidiEvent(event) : settings.synthPreset;
+  if (!settings.instrumentNativeAudio) return fallback;
+
+  const indexedPlatform = store.preparedPlatforms[sourceIndex];
+  const platformPosition = indexedPlatform?.event.id === event.id
+    ? sourceIndex
+    : (platformPositionByEventId.get(event.id) ?? -1);
+  if (platformPosition >= 0) {
+    return presetForInstrumentCollision(store, instrumentHitForPlatform(
+      platformPosition,
+      store.preparedPlatforms,
+      settings,
+      store.courseOverrides,
+    ));
+  }
+
+  const segment = settings.instrumentFamily === "mixed"
+    ? instrumentMixSegmentForTime(store.instrumentMixSegments, visualTimeMs)
+    : null;
+  const resolvedSettings = segment ? { ...settings, instrumentFamily: segment.family } : settings;
+  const plan = presetObstaclePlan(sourceIndex, resolvedSettings);
+  return plan ? instrumentVoiceForPlatform(plan.style, event, fallback) : fallback;
 }
 
 export function useRhythmicPlayback(store: RhythmicStudioStore) {
@@ -62,6 +96,9 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
 
   const startMidiAudio = useCallback(async (resumeMs = 0) => {
     if (store.source.type !== "midi" || !store.settings.midiPlaybackEnabled) return;
+    const platformPositionByEventId = new Map(
+      store.preparedPlatforms.map((platform, index) => [platform.event.id, index]),
+    );
     await audioEngineRef.current.scheduleMidi(store.sourceEvents, resumeMs, {
       playbackSpeed: store.settings.playbackSpeed,
       syncOffsetMs: store.settings.syncOffsetMs,
@@ -71,20 +108,13 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
       stereoWidth: store.settings.synthStereoWidth,
       presentationDelayMs: presentationDelayMs(),
       presetForEvent: store.settings.instrumentNativeAudio
-        ? (event, index) => {
-            if (!store.preparedPlatforms[index]) {
-              return store.settings.midiInstrumentMode === "auto"
-                ? presetForMidiEvent(event)
-                : store.settings.synthPreset;
-            }
-            const hit = instrumentHitForPlatform(
-              index,
-              store.preparedPlatforms,
-              store.settings,
-              store.courseOverrides,
-            );
-            return presetForInstrumentCollision(store, hit);
-          }
+        ? (event, index) => scheduledMidiPreset(
+            store,
+            event,
+            index,
+            Math.max(0, event.timeMs / Math.max(0.1, store.settings.playbackSpeed) + store.settings.syncOffsetMs),
+            platformPositionByEventId,
+          )
         : undefined,
     });
   }, [presentationDelayMs, store]);
@@ -99,17 +129,12 @@ export function useRhythmicPlayback(store: RhythmicStudioStore) {
     const voices = [];
     const presets = new Set<SynthPreset>();
     const timeline = store.timeline;
+    const platformPositionByEventId = new Map(
+      store.preparedPlatforms.map((platform, index) => [platform.event.id, index]),
+    );
     for (let index = 0; index < timeline.length; index += 1) {
       const event = timeline[index];
-      const platform = store.preparedPlatforms[index];
-      const preset = platform
-        ? presetForInstrumentCollision(store, instrumentHitForPlatform(
-            index,
-            store.preparedPlatforms,
-            store.settings,
-            store.courseOverrides,
-          ))
-        : (store.settings.midiInstrumentMode === "auto" ? presetForMidiEvent(event) : store.settings.synthPreset);
+      const preset = scheduledMidiPreset(store, event, index, event.timeMs, platformPositionByEventId);
       if (presets.has(preset)) continue;
       presets.add(preset);
       voices.push({ midi: event.midi, velocity: event.velocity, durationMs: event.durationMs, preset });

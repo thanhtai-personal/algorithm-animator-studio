@@ -73,18 +73,19 @@ const TUBE_RESPONSE: ResonanceProfile = {
 
 function resonanceProfile(style: PlatformStyle): ResonanceProfile | null {
   if (style === "piano-key" || style === "piano-keyboard") return null;
-  if (style === "instrument-cymbal" || style === "gong-disc") return METAL_DISC_RESPONSE;
+  if (style === "instrument-cymbal" || style === "gong-disc" || style === "bronze-drum") return METAL_DISC_RESPONSE;
   if (style === "vibraphone-bar" || style === "metallophone-plate" || style.includes("rail") || style === "instrument-wire") {
     return METAL_BAR_RESPONSE;
   }
   if (style === "drum-disc" || style === "instrument-pad") return DRUM_RESPONSE;
-  if (style.includes("tube") || style === "toy-peg" || style === "flute-pipe") return TUBE_RESPONSE;
+  if (style.includes("tube") || style === "toy-peg" || style === "flute-pipe" || style === "trumpet-horn") return TUBE_RESPONSE;
   if (
     style === "instrument-key"
     || style === "xylophone-key"
     || style === "xylophone-bar"
     || style === "marimba-bar"
     || style === "pluck-pad"
+    || style === "guitar-body"
   ) return WOOD_RESPONSE;
   return null;
 }

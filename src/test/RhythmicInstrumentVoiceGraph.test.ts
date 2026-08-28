@@ -67,6 +67,14 @@ function voiceSignature(preset: SynthPreset) {
 }
 
 describe("instrument-specific Web Audio voice graphs", () => {
+  it("builds distinct trumpet, guitar and Vietnamese bronze drum voices", () => {
+    const signatures = (["trumpet", "guitar", "bronze-drum"] as const).map(voiceSignature);
+    expect(new Set(signatures.map((item) => JSON.stringify(item))).size).toBe(3);
+    expect(signatures[0].oscillators).toBeGreaterThanOrEqual(2);
+    expect(signatures[1].maxStop).toBeLessThan(1.2);
+    expect(signatures[2].maxStop).toBeGreaterThan(1.5);
+  });
+
   it("builds observably different drum, cymbal, gong and flute voices", () => {
     const signatures = (["tom", "cymbal", "gong", "flute"] as const).map(voiceSignature);
     expect(new Set(signatures.map((item) => JSON.stringify(item))).size).toBe(4);

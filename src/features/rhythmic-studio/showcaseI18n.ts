@@ -19,6 +19,10 @@ export type ShowcaseTextKey =
   | "family.metallophone"
   | "family.gong"
   | "family.flute"
+  | "family.trumpet"
+  | "family.drum"
+  | "family.guitar"
+  | "family.bronze-drum"
   | "family.mixed"
   | "layout.cascade"
   | "layout.fan"
@@ -46,6 +50,10 @@ const EN: Record<ShowcaseTextKey, string> = {
   "family.metallophone": "Mounted metallophone plates",
   "family.gong": "Note-lit gongs",
   "family.flute": "Note-lit flute pipes",
+  "family.trumpet": "Trumpet horns",
+  "family.drum": "Acoustic drums",
+  "family.guitar": "Guitars",
+  "family.bronze-drum": "Vietnamese bronze drums",
   "family.mixed": "Mixed instrument sections",
   "layout.cascade": "Natural cascade",
   "layout.fan": "Fan / radial wall",
@@ -74,6 +82,10 @@ const VI: typeof EN = {
   "family.metallophone": "Tấm Metallophone gắn khung",
   "family.gong": "Chiêng sáng theo màu nốt",
   "family.flute": "Ống sáo sáng theo màu nốt",
+  "family.trumpet": "Kèn trumpet",
+  "family.drum": "Trống",
+  "family.guitar": "Ghita",
+  "family.bronze-drum": "Trống đồng Việt Nam",
   "family.mixed": "Phối nhiều nhạc cụ theo đoạn",
   "layout.cascade": "Dòng chảy tự nhiên",
   "layout.fan": "Quạt / tỏa tròn trên tường",

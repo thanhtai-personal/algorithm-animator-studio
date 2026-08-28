@@ -39,6 +39,10 @@ const STYLE_BY_FAMILY: Record<Exclude<InstrumentFamily, "auto" | "mixed">, Platf
   metallophone: "metallophone-plate",
   gong: "gong-disc",
   flute: "flute-pipe",
+  trumpet: "trumpet-horn",
+  drum: "drum-disc",
+  guitar: "guitar-body",
+  "bronze-drum": "bronze-drum",
 };
 
 function note(index: number, timeMs: number): NoteEvent {

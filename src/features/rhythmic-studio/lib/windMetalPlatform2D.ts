@@ -1,6 +1,7 @@
 import type { PlatformStyle, StudioSettings } from "../types";
 import { mixHex, type MarblePlatform } from "./marbleCourse";
 import { instrumentSurfaceAlignment2D } from "./instrumentPlayingGeometry2D";
+import { drawFigurativeInstrument2D } from "./figurativeInstrumentPlatform2D";
 
 function gong(ctx: CanvasRenderingContext2D, platform: MarblePlatform, light: number, lowPower: boolean) {
   const radius = platform.visualCompact ? platform.width * 0.42 : Math.max(28, platform.width * 0.42);
@@ -52,6 +53,7 @@ export function drawWindMetalPlatform2D(
   settings: StudioSettings,
   lowPower: boolean,
 ) {
+  if (drawFigurativeInstrument2D(ctx, style, platform, settings.impactPlatformLight ? light : 0, lowPower)) return true;
   if (style === "gong-disc") { gong(ctx, platform, settings.impactPlatformLight ? light : 0, lowPower); return true; }
   if (style === "flute-pipe") { flute(ctx, platform, settings.impactPlatformLight ? light : 0, lowPower); return true; }
   return false;

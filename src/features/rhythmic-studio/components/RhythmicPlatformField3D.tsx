@@ -29,7 +29,7 @@ function PhysicalMount({ terrain, w, h, detail, showcase, frontDepth, receiverZ,
   style: string;
 }) {
   const supportX = Math.min(w * 0.3, showcase ? 0.46 : 0.38);
-  const singleSupport = style === "instrument-pad" || style === "pluck-pad" || style === "instrument-cymbal" || style === "drum-disc" || style === "gong-disc" || style === "metallophone-plate";
+  const singleSupport = style === "instrument-pad" || style === "pluck-pad" || style === "instrument-cymbal" || style === "drum-disc" || style === "gong-disc" || style === "trumpet-horn" || style === "guitar-body" || style === "bronze-drum" || style === "metallophone-plate";
   const supportPositions = singleSupport ? [0] : [-supportX, supportX];
   const mount = wallMountProfile(frontDepth, receiverZ);
   const stemColor = terrain === "xylophone" ? "#77634f" : terrain === "comet" ? "#555b76" : "#5c6670";

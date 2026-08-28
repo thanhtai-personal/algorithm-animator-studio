@@ -34,6 +34,12 @@ function styleFootprint(style: PlatformStyle | undefined, width: number, thickne
     const diameter = Math.max(56, width * 0.84);
     return topAnchored(Math.max(width, diameter), diameter);
   }
+  if (style === "trumpet-horn") return topAnchored(width, Math.max(28, width * 0.4));
+  if (style === "guitar-body") return topAnchored(width, Math.max(36, width * 0.56));
+  if (style === "bronze-drum") {
+    const diameter = Math.max(56, width * 0.8);
+    return topAnchored(Math.max(width, diameter), diameter);
+  }
   if (style === "instrument-cymbal") {
     const radiusY = Math.max(8, thickness * 0.62);
     return topAnchored(Math.max(width, Math.max(28, width * 0.32) * 2), radiusY * 4.3 + 3);
@@ -68,6 +74,9 @@ export function instrumentVisualFootprint(platform: MarblePlatform): InstrumentV
   if (platform.visualCompact) {
     const shallowDepth = Math.max(3, thickness + Math.max(1.2, thickness * 0.3));
     if (platform.visualStyle === "gong-disc") return topAnchored(width, Math.max(shallowDepth, width * 0.84));
+    if (platform.visualStyle === "bronze-drum") return topAnchored(width, Math.max(shallowDepth, width * 0.8));
+    if (platform.visualStyle === "trumpet-horn") return topAnchored(width, Math.max(shallowDepth, width * 0.4));
+    if (platform.visualStyle === "guitar-body") return topAnchored(width, Math.max(shallowDepth, width * 0.56));
     if (platform.visualStyle === "instrument-cymbal") return topAnchored(width, Math.max(shallowDepth, Math.max(1.2, thickness * 0.5) * 2.5 + 0.8));
     if (platform.visualStyle === "drum-disc") {
       const faceRx = Math.max(3.5, width * 0.44);

@@ -16,6 +16,7 @@ import {
 import { DrumDiscMesh } from "./RhythmicDrumMesh3D";
 import { FlutePipeMesh, GongDiscMesh } from "./RhythmicWindMetalMeshes3D";
 import { WallBoomwhackerMesh } from "./RhythmicWallBoomwhacker3D";
+import { BronzeDrumMesh, GuitarBodyMesh, TrumpetHornMesh } from "./RhythmicFigurativeInstrumentMeshes3D";
 
 export interface MeshProps {
   w: number;
@@ -382,6 +383,9 @@ export function PlatformMesh(props: MeshProps) {
   if (style === "drum-disc") return <DrumDiscMesh {...props} />;
   if (style === "gong-disc") return <GongDiscMesh {...props} />;
   if (style === "flute-pipe") return <FlutePipeMesh {...props} />;
+  if (style === "trumpet-horn") return <TrumpetHornMesh {...props} />;
+  if (style === "guitar-body") return <GuitarBodyMesh {...props} />;
+  if (style === "bronze-drum") return <BronzeDrumMesh {...props} />;
   if (style === "comet-pad") return <CometPadMesh {...props} />;
   return <StandardBarMesh {...props} />;
 }

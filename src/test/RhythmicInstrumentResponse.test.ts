@@ -35,6 +35,14 @@ describe("rolling instrument response", () => {
     expect(Math.abs(cymbal.tiltRad) + Math.abs(cymbal.twistRad)).toBeGreaterThan(0);
   });
 
+  it.each(["trumpet-horn", "guitar-body", "bronze-drum"] as const)(
+    "animates the dedicated %s body after impact",
+    (style) => {
+      const moving = instrumentImpactResponseAtTime(style, 1_000, 1_024, 1);
+      expect(moving.normalRecoil).toBeGreaterThan(0);
+    },
+  );
+
   it("does not add a second wobble on piano keys that already depress", () => {
     const response = instrumentImpactResponseAtTime("piano-key", 1_000, 1_024, 0);
 

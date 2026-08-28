@@ -22,7 +22,7 @@ describe("RhythmicStudioStore instrument mix", () => {
     store.selectPreset(MIXED_INSTRUMENT_PRESET_ID, { ...DEFAULT_SETTINGS, instrumentFamily: "mixed" });
 
     expect(store.instrumentMixSegments).toHaveLength(3);
-    expect(store.instrumentMixSegments.map((segment) => segment.family)).toEqual(["piano", "xylophone", "marimba"]);
+    expect(store.instrumentMixSegments.map((segment) => segment.family)).toEqual(["piano", "guitar", "trumpet"]);
 
     const nextEvents = phraseEvents(6);
     store.setSource(nextEvents, { type: "midi", name: "next.mid", durationMs: 8_000, eventCount: nextEvents.length }, { key: "status.ready" });

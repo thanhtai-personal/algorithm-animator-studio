@@ -26,6 +26,9 @@ export const SYNTH_PRESETS = [
   "cymbal",
   "gong",
   "flute",
+  "trumpet",
+  "guitar",
+  "bronze-drum",
   "whoosh",
 ] as const;
 
@@ -70,6 +73,9 @@ export const PLATFORM_STYLES = [
   "drum-disc",
   "gong-disc",
   "flute-pipe",
+  "trumpet-horn",
+  "guitar-body",
+  "bronze-drum",
   "piano-keyboard",
 ] as const;
 
@@ -87,6 +93,10 @@ export const INSTRUMENT_FAMILIES = [
   "metallophone",
   "gong",
   "flute",
+  "trumpet",
+  "drum",
+  "guitar",
+  "bronze-drum",
   "mixed",
 ] as const;
 export type InstrumentFamily = (typeof INSTRUMENT_FAMILIES)[number];

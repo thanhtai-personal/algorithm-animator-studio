@@ -79,6 +79,10 @@ function denseVisualStyle(kind: DenseInstrumentKind, layout: DenseSurfaceLayout,
   if (settings.instrumentFamily === "metallophone") return "metallophone-plate";
   if (settings.instrumentFamily === "gong") return "gong-disc";
   if (settings.instrumentFamily === "flute") return "flute-pipe";
+  if (settings.instrumentFamily === "trumpet") return "trumpet-horn";
+  if (settings.instrumentFamily === "drum") return "drum-disc";
+  if (settings.instrumentFamily === "guitar") return "guitar-body";
+  if (settings.instrumentFamily === "bronze-drum") return "bronze-drum";
   if (layout === "connected-keys") return "piano-key";
   if (kind === "pad-strip") return "instrument-pad";
   const midiStyle = midiInstrumentVisualStyle(event, settings);

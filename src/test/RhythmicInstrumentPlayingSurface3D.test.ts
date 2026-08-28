@@ -21,7 +21,7 @@ function expectBallToTouchFace(style: PlatformStyle) {
 }
 
 describe("3D instrument playing surfaces", () => {
-  it.each<PlatformStyle>(["drum-disc", "gong-disc", "instrument-cymbal", "instrument-pad"])(
+  it.each<PlatformStyle>(["drum-disc", "gong-disc", "trumpet-horn", "guitar-body", "bronze-drum", "instrument-cymbal", "instrument-pad"])(
     "lands on the visible playing face of %s instead of its rim",
     (style) => {
       const surface = expectBallToTouchFace(style);

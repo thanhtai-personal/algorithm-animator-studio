@@ -23,6 +23,9 @@ function widthScale(style: PlatformStyle) {
   if (style === "drum-disc") return 0.7;
   if (style === "gong-disc") return 0.76;
   if (style === "flute-pipe") return 1.06;
+  if (style === "trumpet-horn") return 0.86;
+  if (style === "guitar-body") return 0.92;
+  if (style === "bronze-drum") return 0.78;
   if (style === "instrument-pad") return 0.78;
   if (style === "instrument-cymbal") return 0.62;
   if (style === "instrument-rail") return 0.94;
@@ -64,11 +67,16 @@ function familyPattern(family: InstrumentFamily, index: number): PlatformStyle {
   if (family === "metallophone") return "metallophone-plate";
   if (family === "gong") return "gong-disc";
   if (family === "flute") return "flute-pipe";
+  if (family === "trumpet") return "trumpet-horn";
+  if (family === "drum") return "drum-disc";
+  if (family === "guitar") return "guitar-body";
+  if (family === "bronze-drum") return "bronze-drum";
   if (family === "mixed") {
     // Direct-call fallback. The normal course path resolves Mixed to one
     // concrete family per phrase before this planner is called.
-    const section = Math.floor(index / 16) % 9;
-    return familyPattern((["piano", "xylophone", "marimba", "vibraphone", "boomwhacker", "pluck", "metallophone", "gong", "flute"] as const)[section], index);
+    const families = ["piano", "guitar", "trumpet", "drum", "xylophone", "marimba", "gong", "bronze-drum", "vibraphone", "boomwhacker", "pluck", "metallophone", "flute"] as const;
+    const section = Math.floor(index / 16) % families.length;
+    return familyPattern(families[section], index);
   }
   return "instrument-key";
 }

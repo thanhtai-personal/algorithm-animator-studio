@@ -9,6 +9,9 @@ describe("2D instrument playing geometry", () => {
     "instrument-cymbal",
     "gong-disc",
     "flute-pipe",
+    "trumpet-horn",
+    "guitar-body",
+    "bronze-drum",
     "instrument-wire",
   ])("moves the visible upper boundary of %s onto the physical contact line", (style) => {
     const geometry = instrumentSurfaceAlignment2D(style, 120, 16);

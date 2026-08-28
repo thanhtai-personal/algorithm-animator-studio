@@ -39,6 +39,10 @@ function instrumentFoot(style: PlatformStyle, width: number, thickness: number, 
     const radius = compact ? width * 0.42 : Math.max(28, width * 0.42);
     return { contactY: instrumentSurfaceAlignment2D(style, width, thickness, compact)!.footY, nearWidth: radius * 0.22, flared: true };
   }
+  if (style === "trumpet-horn" || style === "guitar-body" || style === "bronze-drum") {
+    const alignment = instrumentSurfaceAlignment2D(style, width, thickness, compact)!;
+    return { contactY: alignment.footY, nearWidth: width * 0.62, flared: style !== "guitar-body" };
+  }
   if (style === "drum-disc") {
     const drum = drumGeometry2D(width, thickness, compact);
     return {

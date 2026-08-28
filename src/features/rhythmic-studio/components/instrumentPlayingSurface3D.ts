@@ -45,6 +45,21 @@ const PLAYING_FACE_PROFILES: Partial<Record<PlatformStyle, PlayingFaceProfile>> 
     pitchDeg: -54,
     strikePoint: (_height, depth) => ({ y: 0, z: depth * 0.085 }),
   },
+  "trumpet-horn": {
+    faceKind: "front",
+    pitchDeg: -54,
+    strikePoint: (_height, depth) => ({ y: 0, z: depth * 0.46 }),
+  },
+  "guitar-body": {
+    faceKind: "front",
+    pitchDeg: -54,
+    strikePoint: (_height, depth) => ({ y: 0, z: depth * 0.42 }),
+  },
+  "bronze-drum": {
+    faceKind: "front",
+    pitchDeg: -58,
+    strikePoint: (_height, depth) => ({ y: 0, z: depth * 0.422 }),
+  },
   "instrument-pad": {
     faceKind: "front",
     pitchDeg: -54,

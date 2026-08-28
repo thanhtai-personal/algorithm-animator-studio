@@ -8,6 +8,8 @@ import {
   buildPhraseInstrumentPlan,
   createInstrumentMixSettingsResolver,
   createPhraseInstrumentSettingsResolver,
+  PHRASE_INSTRUMENT_SEQUENCE,
+  recommendedInstrumentCountForMidi,
   removeInstrumentMixSegment,
   updateInstrumentMixSegmentFamily,
   updateInstrumentMixSegmentDuration,
@@ -27,6 +29,16 @@ function ninePhraseEvents() {
 }
 
 describe("mixed instruments follow musical phrases", () => {
+  it("offers trumpet, drum, guitar, gong and Vietnamese bronze drum families", () => {
+    expect(PHRASE_INSTRUMENT_SEQUENCE).toEqual(expect.arrayContaining([
+      "trumpet",
+      "drum",
+      "guitar",
+      "gong",
+      "bronze-drum",
+    ]));
+  });
+
   it("finds musical phrases without splitting simultaneous strikes", () => {
     const events = [
       note(0, 0), note(1, 180), note(2, 360), note(3, 360),
@@ -44,12 +56,48 @@ describe("mixed instruments follow musical phrases", () => {
     const plan = buildAutomaticInstrumentMix(events, 12_000);
 
     expect(plan).toHaveLength(3);
-    expect(plan.map((segment) => segment.family)).toEqual(["piano", "xylophone", "marimba"]);
+    expect(plan.map((segment) => segment.family)).toEqual(["piano", "guitar", "trumpet"]);
     expect(plan.map((segment) => [segment.startMs, segment.endMs])).toEqual([
       [0, 4_200],
       [4_200, 8_400],
       [8_400, 12_000],
     ]);
+  });
+
+  it("derives a suitable instrument count from MIDI phrases and program variety", () => {
+    const events = ninePhraseEvents().map((event, index) => ({
+      ...event,
+      program: index < 9 ? 24 : index < 18 ? 56 : 116,
+    }));
+
+    expect(recommendedInstrumentCountForMidi(events)).toBe(3);
+    expect(buildAutomaticInstrumentMix(events, 12_000)).toHaveLength(3);
+  });
+
+  it("never changes instrument before the current MIDI phrase is complete", () => {
+    const events = [
+      note(0, 0), note(1, 380), note(2, 760), note(3, 1_140),
+      note(4, 2_000), note(5, 2_380), note(6, 2_760),
+      note(7, 3_700), note(8, 4_080), note(9, 4_460),
+    ];
+    const automatic = buildAutomaticInstrumentMix(events, 5_000);
+    const withExtraSection = addInstrumentMixSegment(automatic, events, 5_000);
+    const shortened = updateInstrumentMixSegmentDuration(
+      withExtraSection,
+      withExtraSection[0].id,
+      0.5,
+      events,
+      5_000,
+    );
+    const phraseStarts = new Set(buildPhraseInstrumentPlan(events).map((phrase) => phrase.startMs));
+
+    shortened.slice(1).forEach((segment) => expect(phraseStarts.has(segment.startMs)).toBe(true));
+    shortened.forEach((segment) => {
+      const phrases = buildPhraseInstrumentPlan(events).filter(
+        (phrase) => phrase.startMs >= segment.startMs && phrase.startMs < segment.endMs,
+      );
+      expect(phrases.length).toBeGreaterThanOrEqual(1);
+    });
   });
 
   it("snaps a configured duration to a note boundary and keeps the plan continuous", () => {
@@ -70,8 +118,8 @@ describe("mixed instruments follow musical phrases", () => {
     const resolve = createInstrumentMixSettingsResolver(events, plan, () => base);
 
     expect(resolve(8).instrumentFamily).toBe("piano");
-    expect(resolve(9).instrumentFamily).toBe("xylophone");
-    expect(resolve(18).instrumentFamily).toBe("marimba");
+    expect(resolve(9).instrumentFamily).toBe("guitar");
+    expect(resolve(18).instrumentFamily).toBe("trumpet");
   });
 
   it("supports changing, adding and removing configured instrument rows", () => {
@@ -96,7 +144,7 @@ describe("mixed instruments follow musical phrases", () => {
 
     expect(resolve(0).instrumentFamily).toBe("piano");
     expect(resolve(8).instrumentFamily).toBe("piano");
-    expect(resolve(9).instrumentFamily).toBe("xylophone");
+    expect(resolve(9).instrumentFamily).toBe("guitar");
   });
 
   it("changes meshes by configured phrase group without leaving the shared wall-score", () => {
@@ -107,7 +155,7 @@ describe("mixed instruments follow musical phrases", () => {
 
     expect(course[0].visualStyle).toBe("piano-key");
     expect(course[8].visualStyle).toBe("piano-key");
-    expect(course[9].visualStyle).toBe("xylophone-bar");
+    expect(course[9].visualStyle).toBe("guitar-body");
     course.forEach((platform, index) => {
       expect(platform.hitX).toBeCloseTo(expectedHits[index].x, 5);
       expect(platform.hitY).toBeCloseTo(expectedHits[index].y, 5);

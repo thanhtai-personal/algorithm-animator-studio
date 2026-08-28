@@ -26,6 +26,9 @@ export const EN_SYNTH_TEXT = {
   "synth.cymbal": "Cymbal",
   "synth.gong": "Gong",
   "synth.flute": "Flute",
+  "synth.trumpet": "Trumpet",
+  "synth.guitar": "Guitar",
+  "synth.bronze-drum": "Vietnamese bronze drum",
   "synth.whoosh": "Whoosh",
 } as const;
 
@@ -57,5 +60,8 @@ export const VI_SYNTH_TEXT: Record<keyof typeof EN_SYNTH_TEXT, string> = {
   "synth.cymbal": "Chũm chọe",
   "synth.gong": "Chiêng",
   "synth.flute": "Sáo",
+  "synth.trumpet": "Kèn trumpet",
+  "synth.guitar": "Ghita",
+  "synth.bronze-drum": "Trống đồng Việt Nam",
   "synth.whoosh": "Vút gió",
 };

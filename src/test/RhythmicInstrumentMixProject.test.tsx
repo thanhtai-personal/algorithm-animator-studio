@@ -30,6 +30,10 @@ describe("mixed instrument project persistence", () => {
   it("restores the mixed preset identity and its custom schedule", () => {
     const store = new RhythmicStudioStore();
     const loadBuiltin = vi.fn();
+    store.setSource([
+      { id: "phrase-a", timeMs: 0, midi: 60, velocity: 0.8, durationMs: 120 },
+      { id: "phrase-b", timeMs: 1_400, midi: 64, velocity: 0.8, durationMs: 120 },
+    ], { type: "midi", name: "two-phrases.mid", durationMs: 5_040, eventCount: 2 }, { key: "status.ready" });
     const project = saveRhythmicProject(
       "Mix",
       { ...DEFAULT_SETTINGS, instrumentFamily: "mixed" },

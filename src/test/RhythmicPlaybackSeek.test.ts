@@ -13,6 +13,7 @@ vi.mock("../features/rhythmic-studio/lib/audioEngine", () => ({
   AudioEngine: class {
     ensure = audioMocks.ensure;
     stopMidi = audioMocks.stopMidi;
+    stopCue = vi.fn();
     scheduleMidi = audioMocks.scheduleMidi;
     attachOriginalAudio = vi.fn(async () => undefined);
     playNote = vi.fn(async () => undefined);

@@ -218,6 +218,44 @@ function fluteVoice(context: AudioContext, target: AudioNode, when: number, hz: 
   vibrato.stop(when + sustain);
 }
 
+function trumpetVoice(context: AudioContext, target: AudioNode, when: number, hz: number, duration: number, peak: number) {
+  const sustain = Math.max(0.38, Math.min(1.8, duration + 0.16));
+  const env = envelope(context, target, when, peak * 0.78, 0.035, sustain * 0.72, 0.24);
+  const body = context.createBiquadFilter();
+  body.type = "lowpass";
+  body.frequency.setValueAtTime(Math.min(8_600, 2_200 + hz * 7), when);
+  body.Q.value = 1.2;
+  body.connect(env);
+  osc(context, body, when, hz, sustain + 0.25, "sawtooth", 0.42, -4);
+  osc(context, body, when, hz, sustain + 0.25, "square", 0.16, 4);
+  osc(context, body, when, hz * 2, sustain + 0.18, "triangle", 0.12);
+}
+
+function guitarVoice(context: AudioContext, target: AudioNode, when: number, hz: number, peak: number) {
+  noiseBurst(context, target, when, 0.045, peak * 0.08, "highpass", 2_800, 0.52);
+  const env = envelope(context, target, when, peak * 0.82, 0.002, 0.01, 0.62);
+  const body = context.createBiquadFilter();
+  body.type = "lowpass";
+  body.frequency.setValueAtTime(Math.min(7_200, 1_400 + hz * 5.4), when);
+  body.frequency.exponentialRampToValueAtTime(Math.max(680, hz * 2.2), when + 0.55);
+  body.Q.value = 1.4;
+  body.connect(env);
+  osc(context, body, when, hz, 0.76, "sawtooth", 0.36, -2.5);
+  osc(context, body, when, hz, 0.72, "triangle", 0.66, 2.5);
+}
+
+function bronzeDrumVoice(context: AudioContext, target: AudioNode, when: number, hz: number, peak: number) {
+  noiseBurst(context, target, when, 0.2, peak * 0.13, "bandpass", 780, 0.84);
+  partials(context, target, when, Math.max(58, hz * 0.42), 2.35, peak * 0.78, [
+    [1, 1, "sine"],
+    [1.47, 0.48, "triangle"],
+    [2.12, 0.31, "sine"],
+    [2.76, 0.2, "triangle"],
+    [3.68, 0.11, "sine"],
+    [5.2, 0.05, "sine"],
+  ], 0.009);
+}
+
 function sweep(context: AudioContext, target: AudioNode, when: number, preset: SynthPreset, hz: number, peak: number) {
   if (preset === "laser") {
     const env = envelope(context, target, when, peak * 0.38, 0.002, 0.01, 0.28);
@@ -273,6 +311,9 @@ export function playSynthVoice(context: AudioContext, bus: AudioNode, midi: numb
   if (preset === "cymbal") return cymbalVoice(context, target, when, hz, peak);
   if (preset === "gong") return gongVoice(context, target, when, hz, peak);
   if (preset === "flute") return fluteVoice(context, target, when, hz, duration, peak);
+  if (preset === "trumpet") return trumpetVoice(context, target, when, hz, duration, peak);
+  if (preset === "guitar") return guitarVoice(context, target, when, hz, peak);
+  if (preset === "bronze-drum") return bronzeDrumVoice(context, target, when, hz, peak);
 
   if (preset === "piano") pianoVoice(context, target, when, hz, duration, peak);
   else if (preset === "bass") bassVoice(context, target, when, hz, duration, peak);

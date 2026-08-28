@@ -1,8 +1,14 @@
 import type { ConfigurableInstrumentFamily, InstrumentMixSegment, NoteEvent, StudioSettings } from "../types";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
+import {
+  instrumentFamiliesForMidi,
+  midiInstrumentHints,
+  PHRASE_INSTRUMENT_SEQUENCE,
+} from "./instrumentMixCatalog";
 
 export type PhraseInstrumentFamily = ConfigurableInstrumentFamily;
 export type { InstrumentMixSegment } from "../types";
+export { PHRASE_INSTRUMENT_SEQUENCE } from "./instrumentMixCatalog";
 
 export interface PhraseInstrumentSegment {
   id: number;
@@ -16,18 +22,6 @@ export interface PhraseInstrumentSegment {
 // The reference videos read as instrument "sentences": a complete musical phrase
 // lives on one instrument installation, then the next phrase moves to another.
 // Keep the sequence curated and deterministic so Mixed never looks shuffled.
-export const PHRASE_INSTRUMENT_SEQUENCE: readonly PhraseInstrumentFamily[] = [
-  "piano",
-  "xylophone",
-  "marimba",
-  "vibraphone",
-  "boomwhacker",
-  "pluck",
-  "metallophone",
-  "gong",
-  "flute",
-] as const;
-
 export const PHRASE_HARD_REST_MS = 560;
 export const PHRASE_TARGET_MS = 4_200;
 export const PHRASE_MIN_MS = 1_500;
@@ -124,9 +118,12 @@ function eventTimelineEnd(events: readonly NoteEvent[]) {
   );
 }
 
-function phrasesInNextInstrumentGroup(remaining: number) {
-  if (remaining <= 5) return remaining;
-  return Math.min(INSTRUMENT_MIX_TARGET_PHRASES, remaining);
+export function recommendedInstrumentCountForMidi(events: NoteEvent[]) {
+  const phraseCount = buildPhraseInstrumentPlan(events).length;
+  if (phraseCount <= 1) return phraseCount;
+  const phraseBased = Math.ceil(phraseCount / INSTRUMENT_MIX_TARGET_PHRASES);
+  const midiTimbres = midiInstrumentHints(events).length;
+  return Math.max(1, Math.min(phraseCount, PHRASE_INSTRUMENT_SEQUENCE.length, Math.max(phraseBased, midiTimbres)));
 }
 
 export function buildAutomaticInstrumentMix(
@@ -136,20 +133,23 @@ export function buildAutomaticInstrumentMix(
   const phrases = buildPhraseInstrumentPlan(events);
   if (!phrases.length) return [];
   const safeDuration = Math.max(durationMs, eventTimelineEnd(events), INSTRUMENT_MIX_MIN_DURATION_MS);
+  const instrumentCount = recommendedInstrumentCountForMidi(events);
+  const families = instrumentFamiliesForMidi(events, instrumentCount);
   const segments: InstrumentMixSegment[] = [];
   let phraseIndex = 0;
 
-  while (phraseIndex < phrases.length) {
-    const phraseCount = phrasesInNextInstrumentGroup(phrases.length - phraseIndex);
+  for (let segmentIndex = 0; segmentIndex < instrumentCount; segmentIndex += 1) {
+    const remainingPhrases = phrases.length - phraseIndex;
+    const remainingInstruments = instrumentCount - segmentIndex;
+    const phraseCount = Math.ceil(remainingPhrases / remainingInstruments);
     const nextPhrase = phrases[phraseIndex + phraseCount];
     const startMs = segments.at(-1)?.endMs ?? 0;
     const endMs = nextPhrase?.startMs ?? safeDuration;
-    const family = PHRASE_INSTRUMENT_SEQUENCE[segments.length % PHRASE_INSTRUMENT_SEQUENCE.length];
     segments.push({
       id: `instrument-mix-${segments.length}-${Math.round(startMs)}`,
       startMs,
       endMs: Math.max(startMs + INSTRUMENT_MIX_MIN_DURATION_MS, endMs),
-      family,
+      family: families[segmentIndex],
     });
     phraseIndex += phraseCount;
   }
@@ -181,16 +181,39 @@ function snapInstrumentMixBoundary(
   return best;
 }
 
+function closestPhraseBoundary(
+  phrases: readonly PhraseInstrumentSegment[],
+  targetMs: number,
+  minimumPhraseIndex: number,
+  maximumPhraseIndex: number,
+) {
+  let bestIndex = minimumPhraseIndex;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (let index = minimumPhraseIndex; index <= maximumPhraseIndex; index += 1) {
+    const distance = Math.abs(phrases[index].startMs - targetMs);
+    if (distance < bestDistance) {
+      bestIndex = index;
+      bestDistance = distance;
+    }
+  }
+  return bestIndex;
+}
+
 export function normalizeInstrumentMixSegments(
   segments: readonly InstrumentMixSegment[],
   events: readonly NoteEvent[],
   durationMs: number,
 ): InstrumentMixSegment[] {
   const safeDuration = Math.max(INSTRUMENT_MIX_MIN_DURATION_MS, durationMs, eventTimelineEnd(events));
-  const usable = segments.filter((segment) => PHRASE_INSTRUMENT_SEQUENCE.includes(segment.family));
+  const phrases = buildPhraseInstrumentPlan([...events]);
+  const usableLimit = phrases.length || segments.length;
+  const usable = segments
+    .filter((segment) => PHRASE_INSTRUMENT_SEQUENCE.includes(segment.family))
+    .slice(0, usableLimit);
   if (!usable.length) return [];
   const normalized: InstrumentMixSegment[] = [];
   let cursorMs = 0;
+  let phraseIndex = 0;
 
   usable.forEach((segment, index) => {
     const remaining = usable.length - index - 1;
@@ -205,14 +228,24 @@ export function normalizeInstrumentMixSegments(
       cursorMs + INSTRUMENT_MIX_MIN_DURATION_MS,
       safeDuration - remaining * INSTRUMENT_MIX_MIN_DURATION_MS,
     );
-    const endMs = isLast
-      ? safeDuration
-      : snapInstrumentMixBoundary(
+    let endMs = safeDuration;
+    if (!isLast && phrases.length) {
+      const boundaryIndex = closestPhraseBoundary(
+        phrases,
+        cursorMs + rawDuration,
+        phraseIndex + 1,
+        phrases.length - remaining,
+      );
+      phraseIndex = boundaryIndex;
+      endMs = phrases[boundaryIndex].startMs;
+    } else if (!isLast) {
+      endMs = snapInstrumentMixBoundary(
         events,
         cursorMs + rawDuration,
         cursorMs + INSTRUMENT_MIX_MIN_DURATION_MS,
         maximumEndMs,
       );
+    }
     normalized.push({ ...segment, startMs: cursorMs, endMs });
     cursorMs = endMs;
   });
@@ -305,7 +338,7 @@ export function removeInstrumentMixSegment(
   );
 }
 
-function instrumentMixSegmentForTime(segments: readonly InstrumentMixSegment[], timeMs: number) {
+export function instrumentMixSegmentForTime(segments: readonly InstrumentMixSegment[], timeMs: number) {
   if (!segments.length) return null;
   let low = 0;
   let high = segments.length - 1;

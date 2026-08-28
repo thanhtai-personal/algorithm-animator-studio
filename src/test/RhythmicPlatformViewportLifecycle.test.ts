@@ -10,6 +10,7 @@ import {
 } from "../features/rhythmic-studio/lib/presetCamera";
 import {
   KOROBEINIKI_3D_RETAIN_BEHIND_PX,
+  KOROBEINIKI_FULL_MOUNT_LIMIT,
   PLATFORM_3D_PRELOAD_AHEAD_PX,
   PLATFORM_3D_RETAIN_BEHIND_PX,
   PLATFORM_PRELOAD_AHEAD_COUNT,
@@ -67,6 +68,17 @@ describe("rhythmic platform viewport lifecycle", () => {
 
     expect(platformsMountedFor3D(items, 1, settings).map((item) => item.index)).toEqual([0, 1, 2]);
     expect(platformsMountedFor3D(items, 1).map((item) => item.index)).toEqual([1, 2]);
+  });
+
+  it("keeps a compact Korobeiniki wall score mounted for the full take so shadows cannot pop", () => {
+    const settings = { ...DEFAULT_SETTINGS, instrumentFamily: "boomwhacker" as const, instrumentLayout: "wall-score" as const };
+    const items = Array.from({ length: 39 }, (_, index) => platform({
+      index,
+      y: index * 90,
+    }));
+
+    expect(items.length).toBeLessThanOrEqual(KOROBEINIKI_FULL_MOUNT_LIMIT);
+    expect(platformsMountedFor3D(items, 38, settings)).toHaveLength(items.length);
   });
 
   it("preloads a 2D instrument before entry and keeps it after leaving the frame", () => {

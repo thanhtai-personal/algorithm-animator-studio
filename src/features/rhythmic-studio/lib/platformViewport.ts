@@ -9,8 +9,9 @@ export const PLATFORM_PRELOAD_AHEAD_COUNT = 7;
 // could enter the camera. This still keeps a complete upcoming phrase ready.
 export const PLATFORM_3D_RETAIN_BEHIND_PX = 1_000;
 export const PLATFORM_3D_PRELOAD_AHEAD_PX = 2_000;
-export const KOROBEINIKI_3D_RETAIN_BEHIND_PX = 2_800;
-export const KOROBEINIKI_3D_PRELOAD_AHEAD_PX = 2_800;
+export const KOROBEINIKI_3D_RETAIN_BEHIND_PX = 3_600;
+export const KOROBEINIKI_3D_PRELOAD_AHEAD_PX = 3_600;
+export const KOROBEINIKI_FULL_MOUNT_LIMIT = 96;
 const PLATFORM_MIN_VERTICAL_OVERSCAN_PX = 720;
 const PLATFORM_MIN_HORIZONTAL_OVERSCAN_PX = 320;
 
@@ -93,6 +94,11 @@ export function platformsMountedFor3D(
   const next = platforms[Math.min(platforms.length - 1, focusOffset + 1)];
   const courseDirection = Math.sign(displayGeometry(next).y - focusY) || 1;
   const korobeiniki = settings?.instrumentFamily === "boomwhacker" && settings.instrumentLayout === "wall-score";
+  // The reference wall-score is intentionally small (39 tubes). Keep compact
+  // wall scores mounted for the whole take so a caster cannot disappear while
+  // its long projected shadow is still inside the camera. Large imported MIDIs
+  // still use the spatial window below to avoid mounting hundreds of meshes.
+  if (korobeiniki && platforms.length <= KOROBEINIKI_FULL_MOUNT_LIMIT) return platforms;
   const retainBehind = korobeiniki ? KOROBEINIKI_3D_RETAIN_BEHIND_PX : PLATFORM_3D_RETAIN_BEHIND_PX;
   const preloadAhead = korobeiniki ? KOROBEINIKI_3D_PRELOAD_AHEAD_PX : PLATFORM_3D_PRELOAD_AHEAD_PX;
   const minY = focusY - (courseDirection > 0 ? retainBehind : preloadAhead);

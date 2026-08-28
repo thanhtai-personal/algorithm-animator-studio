@@ -24,6 +24,7 @@ interface TrackedKeyLightProps {
   bias?: number;
   normalBias?: number;
   radius?: number;
+  shadowExtent?: number;
   shadowsEnabled: boolean;
 }
 
@@ -36,6 +37,7 @@ function TrackedKeyLight({
   bias = -0.0003,
   normalBias = 0.03,
   radius = 2.6,
+  shadowExtent = 5.8,
   shadowsEnabled,
 }: TrackedKeyLightProps) {
   const lightRef = useRef<THREE.DirectionalLight>(null);
@@ -64,10 +66,10 @@ function TrackedKeyLight({
         castShadow={shadowsEnabled}
         shadow-mapSize-width={mapSize}
         shadow-mapSize-height={mapSize}
-        shadow-camera-left={-5.8}
-        shadow-camera-right={5.8}
-        shadow-camera-top={5.8}
-        shadow-camera-bottom={-5.8}
+        shadow-camera-left={-shadowExtent}
+        shadow-camera-right={shadowExtent}
+        shadow-camera-top={shadowExtent}
+        shadow-camera-bottom={-shadowExtent}
         shadow-camera-near={0.5}
         shadow-camera-far={32}
         shadow-bias={bias}
@@ -101,8 +103,11 @@ export function RhythmicLightingRig3D({ settings, focus, bounds, recording = fal
   const kind = environmentKind(settings);
   const needsShadowReceiver = needsDedicatedShadowReceiver(kind);
   const recordingMapSize = rhythmicRecordingRenderProfile(settings.exportFps).shadowMapSize;
-  const mapSize = (previewSize: number) => recording ? Math.min(previewSize, recordingMapSize) : previewSize;
-  if (isKorobeinikiWallLayout(settings)) {
+  const referenceWall = isKorobeinikiWallLayout(settings);
+  const mapSize = (previewSize: number) => recording && !referenceWall
+    ? Math.min(previewSize, recordingMapSize)
+    : previewSize;
+  if (referenceWall) {
     return (
       <>
         <ReflectionRig settings={settings} />
@@ -116,6 +121,7 @@ export function RhythmicLightingRig3D({ settings, focus, bounds, recording = fal
           bias={-0.0003}
           normalBias={0.025}
           radius={4.2}
+          shadowExtent={8.6}
           shadowsEnabled={settings.instrumentShadowsEnabled}
         />
         <directionalLight position={[4.6, -2.8, 7]} intensity={0.24} color="#c9d4e7" />

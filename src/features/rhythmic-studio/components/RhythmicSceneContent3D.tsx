@@ -35,27 +35,33 @@ import {
   createRhythmicPlaybackFrameClock,
 } from "./rhythmicPlaybackFrameClock";
 
-function RendererQuality({ recording, shadowsEnabled, exportFps }: { recording: boolean; shadowsEnabled: boolean; exportFps: number }) {
+function RendererQuality({ recording, shadowsEnabled, exportFps, continuousRecordingShadows = false }: {
+  recording: boolean;
+  shadowsEnabled: boolean;
+  exportFps: number;
+  continuousRecordingShadows?: boolean;
+}) {
   const { gl, invalidate } = useThree();
   const shadowElapsedRef = useRef(0);
   useEffect(() => {
     const profile = rhythmicRecordingRenderProfile(exportFps);
     gl.transmissionResolutionScale = recording ? profile.transmissionResolutionScale : 0.68;
     gl.shadowMap.enabled = shadowsEnabled;
-    // Shadow maps are one of the most expensive passes in this scene. The
-    // instruments/marble still animate at display FPS, while the shadow pass is
-    // refreshed at a visually-smooth capped rate instead of every frame.
-    gl.shadowMap.autoUpdate = false;
+    // Shadow maps are one of the most expensive passes in this scene. Most
+    // presets refresh them at a capped rate, but the Korobeiniki reference wall
+    // uses long wall shadows that expose a stale shadow-map edge during export.
+    // Refresh that small reference scene every encoded render frame instead.
+    gl.shadowMap.autoUpdate = recording && continuousRecordingShadows;
     gl.shadowMap.needsUpdate = shadowsEnabled;
     shadowElapsedRef.current = 0;
     invalidate();
     return () => {
       gl.shadowMap.autoUpdate = true;
     };
-  }, [exportFps, gl, invalidate, recording, shadowsEnabled]);
+  }, [continuousRecordingShadows, exportFps, gl, invalidate, recording, shadowsEnabled]);
 
   useFrame((_, delta) => {
-    if (!shadowsEnabled) return;
+    if (!shadowsEnabled || (recording && continuousRecordingShadows)) return;
     shadowElapsedRef.current += Math.min(0.1, delta);
     const shadowFps = recording ? Math.min(30, Math.max(20, exportFps)) : 24;
     const interval = 1 / shadowFps;
@@ -341,7 +347,12 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
   });
 
   return <>
-    <RendererQuality recording={props.recording} shadowsEnabled={props.settings.instrumentShadowsEnabled} exportFps={props.settings.exportFps} />
+    <RendererQuality
+      recording={props.recording}
+      shadowsEnabled={props.settings.instrumentShadowsEnabled}
+      exportFps={props.settings.exportFps}
+      continuousRecordingShadows={isKorobeinikiWallLayout(props.settings)}
+    />
     <PerspectiveCamera makeDefault fov={RHYTHMIC_CAMERA_FOV} near={0.1} far={180} position={[0, 0, RHYTHMIC_CAMERA_Z]} />
     <RhythmicTitle3D text={isKorobeinikiWallLayout(props.settings) ? "" : props.settings.titleText} />
     <RhythmicLightingRig3D settings={props.settings} focus={smoothedLook} bounds={backdropBounds} recording={props.recording} />

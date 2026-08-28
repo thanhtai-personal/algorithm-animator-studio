@@ -124,7 +124,7 @@ function RaceScene3DImpl(props: RaceScene3DProps) {
       fov: 52,
       near: 0.1,
       far: 300,
-      position: olympicRoad ? [6, 28, -68] : [7, 73, -22],
+      position: olympicRoad ? [8, 48, -88] : [7, 73, -22],
     }}
     gl={{ antialias: true, alpha: false, powerPreference: "high-performance", stencil: false }}
     onCreated={({ gl }) => {

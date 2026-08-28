@@ -66,7 +66,7 @@ export function RhythmicPlatformField3D({ platforms, settings, courseOverrides, 
   impactStrength: number;
   timeMs: number;
 }) {
-  const visible = useMemo(() => platformsMountedFor3D(platforms, focusIndex), [focusIndex, platforms]);
+  const visible = useMemo(() => platformsMountedFor3D(platforms, focusIndex, settings), [focusIndex, platforms, settings]);
   const receiverZ = shadowReceiverZForSettings(settings);
 
   const denseSupports = useMemo(() => {

@@ -10,14 +10,14 @@ export type OlympicRoadCameraShot = {
 };
 
 export const OLYMPIC_ROAD_CAMERA_SHOTS: readonly OlympicRoadCameraShot[] = [
-  { id: "launch-crane", from: 0, to: 0.1, behind: 10, lift: 9, side: 4, lookAhead: 4, fov: 48 },
-  { id: "hairpin-overhead", from: 0.1, to: 0.27, behind: 1, lift: 16, side: 9, lookAhead: 2, fov: 54 },
-  { id: "spiral-lockoff", from: 0.27, to: 0.49, behind: 0, lift: 18, side: 0, lookAhead: 0, fov: 56 },
-  { id: "choice-gates", from: 0.49, to: 0.58, behind: 7, lift: 11, side: -7, lookAhead: 4, fov: 52 },
-  { id: "switchback-pan", from: 0.58, to: 0.74, behind: 2, lift: 15, side: 8, lookAhead: 2, fov: 55 },
-  { id: "slalom-chase", from: 0.74, to: 0.88, behind: 7, lift: 10, side: -8, lookAhead: 4, fov: 50 },
-  { id: "final-chute-front", from: 0.88, to: 0.95, behind: -8, lift: 10, side: 5, lookAhead: 1, fov: 47 },
-  { id: "finish-podium", from: 0.95, to: 1, behind: -11, lift: 8, side: 3, lookAhead: 0, fov: 46 },
+  { id: "launch-follow", from: 0, to: 0.12, behind: 13, lift: 7.5, side: 5.5, lookAhead: 7, fov: 49 },
+  { id: "s-bend-sweep", from: 0.12, to: 0.27, behind: 11, lift: 8.5, side: -6.5, lookAhead: 6, fov: 50 },
+  { id: "ridge-follow", from: 0.27, to: 0.41, behind: 12, lift: 8, side: 6, lookAhead: 6, fov: 49 },
+  { id: "choice-gates", from: 0.41, to: 0.55, behind: 10, lift: 9, side: -6, lookAhead: 5, fov: 50 },
+  { id: "switchback-chase", from: 0.55, to: 0.69, behind: 11, lift: 9.5, side: 6.5, lookAhead: 5, fov: 51 },
+  { id: "slalom-chase", from: 0.69, to: 0.83, behind: 10, lift: 8, side: -6.5, lookAhead: 6, fov: 49 },
+  { id: "final-slope-chase", from: 0.83, to: 0.95, behind: 12, lift: 7.5, side: 5, lookAhead: 7, fov: 48 },
+  { id: "finish-front", from: 0.95, to: 1, behind: -9, lift: 7, side: 3.5, lookAhead: 1, fov: 46 },
 ];
 
 export function olympicRoadCameraShot(progress: number) {

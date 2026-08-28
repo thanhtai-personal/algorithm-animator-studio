@@ -15,7 +15,7 @@ describe("Marble Tower Map 2 Olympic Road", () => {
   it("adds a distinct long road map without replacing the original tower", () => {
     expect(RACE_MAPS.map((map) => map.id)).toContain(OLYMPIC_ROAD_MAP_ID);
     expect(raceCourseForMap(OLYMPIC_ROAD_MAP_ID)).toBe(OLYMPIC_ROAD_COURSE);
-    expect(OLYMPIC_ROAD_POINTS.length).toBeGreaterThan(45);
+    expect(OLYMPIC_ROAD_POINTS.length).toBeGreaterThan(30);
     expect(OLYMPIC_ROAD_SAMPLES.length).toBeGreaterThanOrEqual(300);
   });
 
@@ -24,8 +24,8 @@ describe("Marble Tower Map 2 Olympic Road", () => {
     const finish = OLYMPIC_ROAD_SAMPLES.at(-1)!.point;
     const courseLength = OLYMPIC_ROAD_SAMPLES.reduce((total, sample) => total + sample.lengthToNext, 0);
     expect(start.y - finish.y).toBeGreaterThan(25);
-    expect(courseLength).toBeGreaterThan(300);
-    expect(courseLength).toBeLessThan(420);
+    expect(courseLength).toBeGreaterThan(400);
+    expect(courseLength).toBeLessThan(480);
     expect(OLYMPIC_ROAD_COURSE.specials.finish).toBeGreaterThan(0.97);
     expect(OLYMPIC_ROAD_COURSE.towerInstruments).toBe(false);
   });
@@ -33,15 +33,24 @@ describe("Marble Tower Map 2 Olympic Road", () => {
   it("contains every major module visible in the reference toy track", () => {
     const sectionIds = OLYMPIC_ROAD_SECTIONS.map((section) => section.id);
     expect(sectionIds).toEqual([
-      "road-launch",
-      "road-showcase-hairpin",
-      "road-spiral-bowl",
+      "road-launch-slope",
+      "road-fast-s-bends",
+      "road-ridge-run",
       "road-choice-gates",
-      "road-switchbacks",
+      "road-downhill-switchbacks",
       "road-slalom",
-      "road-final-chute",
+      "road-final-slope",
       "road-finish-podium",
     ]);
+  });
+
+  it("spreads Map 2 forward as one long descending road instead of spiraling around a tower axis", () => {
+    const z = OLYMPIC_ROAD_POINTS.map((point) => point[2]);
+    const y = OLYMPIC_ROAD_POINTS.map((point) => point[1]);
+    expect(z.every((value, index) => index === 0 || value > z[index - 1])).toBe(true);
+    expect(y.every((value, index) => index === 0 || value <= y[index - 1])).toBe(true);
+    expect(y[0] - y[4]).toBeGreaterThan(7);
+    expect(z.at(-1)! - z[0]).toBeGreaterThan(300);
   });
 
   it("uses varied physical toy obstacles instead of repeating one hazard bar", () => {
@@ -112,7 +121,7 @@ describe("Marble Tower Map 2 Olympic Road", () => {
   });
 
   it("places powered rollers after every long low-energy module", () => {
-    [0.26, 0.48, 0.72, 0.93].forEach((progress) => {
+    [0.33, 0.53, 0.68, 0.93].forEach((progress) => {
       const roller = OLYMPIC_ROAD_COURSE.driveBelts.find((belt) => progress >= belt.from && progress <= belt.to);
       expect(roller, `missing roller at ${progress}`).toBeDefined();
       expect(roller?.targetSpeed).toBeGreaterThanOrEqual(7);

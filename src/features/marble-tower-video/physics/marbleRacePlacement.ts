@@ -72,3 +72,35 @@ export function holdWinnerAtFinish(winner: MarbleRuntime, anchor: CANNON.Vec3) {
   winner.body.force.setZero();
   winner.body.torque.setZero();
 }
+export function eliminateMarbleFromRace(marble: MarbleRuntime, finalPosition: number) {
+  marble.alive = false;
+  marble.finalPosition = Math.max(1, finalPosition);
+  marble.stuckFor = 0;
+  marble.body.velocity.setZero();
+  marble.body.angularVelocity.setZero();
+  marble.body.force.setZero();
+  marble.body.torque.setZero();
+  marble.body.collisionResponse = false;
+  marble.body.collisionFilterMask = 0;
+  marble.body.position.set(0, -120, 0);
+}
+export function marbleHasLeftRaceTrack(
+  marble: MarbleRuntime,
+  sample: CourseSample,
+  trackWidth: number,
+  previousProgressIndex: number,
+) {
+  const body = marble.body;
+  const offsetX = body.position.x - sample.point.x;
+  const offsetY = body.position.y - sample.point.y;
+  const offsetZ = body.position.z - sample.point.z;
+  const distanceSq = offsetX * offsetX + offsetY * offsetY + offsetZ * offsetZ;
+  const lateralDistance = Math.abs(offsetX * sample.right.x + offsetY * sample.right.y + offsetZ * sample.right.z);
+  const surfaceDistance = offsetX * sample.normal.x + offsetY * sample.normal.y + offsetZ * sample.normal.z;
+  const jumpedAcrossCourse = marble.progressIndex - previousProgressIndex > 8;
+  return body.position.y < -8
+    || surfaceDistance < -2.6
+    || lateralDistance > trackWidth / 2 + 1.8
+    || distanceSq > 90
+    || (jumpedAcrossCourse && surfaceDistance < -0.8);
+}

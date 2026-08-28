@@ -2,7 +2,6 @@ import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { RacePhysics } from "../physics/RacePhysics";
 import { courseSupportSamples } from "../track/courseSupportLayout";
-import { OLYMPIC_SPIRAL_CENTER } from "../track/olympicRoadCourse";
 import type { CourseSample } from "../track/towerCourseSampler";
 
 function ribbon(samples: readonly CourseSample[], min: number, max: number, lift = 0.04) {
@@ -48,21 +47,17 @@ function sideWall(samples: readonly CourseSample[], side: -1 | 1, trackWidth: nu
   return geometry;
 }
 
-function TabletopDisplayBase() {
+function LongRoadGround() {
   return (
     <group>
-      <mesh position={[0, -0.28, 11]} receiveShadow>
-        <boxGeometry args={[118, 0.28, 158]} />
-        <meshStandardMaterial color="#aa9c88" roughness={0.96} metalness={0} />
+      <mesh position={[0, -0.32, 90]} receiveShadow>
+        <boxGeometry args={[150, 0.36, 370]} />
+        <meshStandardMaterial color="#12394f" roughness={0.96} metalness={0.02} />
       </mesh>
-      <mesh position={[0, -0.04, 11]} receiveShadow castShadow>
-        <boxGeometry args={[82, 0.3, 146]} />
-        <meshStandardMaterial color="#0874bd" roughness={0.72} metalness={0.08} />
-      </mesh>
-      {[-1, 1].map((side) => (
-        <mesh key={side} position={[side * 40.75, 0.13, 11]}>
-          <boxGeometry args={[0.18, 0.12, 145]} />
-          <meshBasicMaterial color={side > 0 ? "#5aeaff" : "#ff74ce"} toneMapped={false} />
+      {[-50, -25, 0, 25, 50].map((x, index) => (
+        <mesh key={x} position={[x, -0.125, 90]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[0.11, 342]} />
+          <meshBasicMaterial color={index % 2 ? "#1e5972" : "#246985"} toneMapped={false} />
         </mesh>
       ))}
     </group>
@@ -207,27 +202,6 @@ function RoadDetails({ physics }: { physics: RacePhysics }) {
   );
 }
 
-function NeonSpiralBasin() {
-  return (
-    <group position={OLYMPIC_SPIRAL_CENTER}>
-      <mesh>
-        <cylinderGeometry args={[10.8, 4.2, 5.8, 64, 1, true]} />
-        <meshPhysicalMaterial color="#26a9e8" transparent opacity={0.22} roughness={0.12} metalness={0.28} side={THREE.DoubleSide} />
-      </mesh>
-      <mesh position={[0, -2.76, 0]}>
-        <cylinderGeometry args={[3.85, 3.85, 0.22, 64]} />
-        <meshStandardMaterial color="#1285c8" emissive="#0c69a4" emissiveIntensity={0.7} roughness={0.28} />
-      </mesh>
-      {[4.8, 6.4, 8.1, 10.2].map((radius, index) => (
-        <mesh key={radius} rotation={[Math.PI / 2, 0, 0]} position={[0, -2 + index * 1.48, 0]}>
-          <torusGeometry args={[radius, 0.075, 8, 72]} />
-          <meshStandardMaterial color="#45c8ff" emissive="#168fd0" emissiveIntensity={2.2} toneMapped={false} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
 function RoadDriveBelts({ physics }: { physics: RacePhysics }) {
   const samples = physics.course.samples;
   return (
@@ -303,5 +277,5 @@ function FinishChute({ physics }: { physics: RacePhysics }) {
 }
 
 export function OlympicRoadTrack3D({ physics }: { physics: RacePhysics }) {
-  return <group><TabletopDisplayBase /><StartDeck physics={physics} /><LaunchArch physics={physics} /><RoadBase physics={physics} /><CurbsAndRoad physics={physics} /><RoadDetails physics={physics} /><NeonSpiralBasin /><RoadDriveBelts physics={physics} /><FinishChute physics={physics} /></group>;
+  return <group><LongRoadGround /><StartDeck physics={physics} /><LaunchArch physics={physics} /><RoadBase physics={physics} /><CurbsAndRoad physics={physics} /><RoadDetails physics={physics} /><RoadDriveBelts physics={physics} /><FinishChute physics={physics} /></group>;
 }

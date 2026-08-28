@@ -17,7 +17,7 @@ import { useMarbleTowerPlaylist } from "../hooks/useMarbleTowerPlaylist";
 import { raceSessionStore } from "../store/RaceSessionStore";
 import { MarbleTowerControls } from "./MarbleTowerControls";
 import { MarbleTowerTransportBar } from "./MarbleTowerTransportBar";
-import { RaceHudPanel } from "./RaceHudPanel";
+import { RaceHudPanel, RaceTopFiveOverlay } from "./RaceHudPanel";
 import { RaceStartSequence } from "./RaceStartSequence";
 import { WinnerCelebrationOverlay } from "./WinnerCelebrationOverlay";
 
@@ -291,6 +291,7 @@ export const MarbleTowerVideoWorkspace = observer(function MarbleTowerVideoWorks
                 startPlaybackAudio={studio.startPlaybackAudio}
               />
               <CountdownOverlay active={studio.playing || studio.recording || studio.timeMs > 0} />
+              <RaceTopFiveOverlay />
               <WinnerCelebrationOverlay result={raceResult} />
               {studio.recording ? <div className="pointer-events-none absolute right-3 top-3 z-30 rounded-full bg-red-600/90 px-3 py-1 text-xs font-bold text-white shadow">● REC</div> : null}
             </div>

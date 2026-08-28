@@ -35,3 +35,34 @@ export const RaceHudPanel = observer(function RaceHudPanel({ result }: { result?
 function Metric({ icon: Icon, label, value }: { icon: typeof Gauge; label: string; value: string }) {
   return <div className="rounded-lg bg-muted/45 p-2"><Icon className="mb-1 h-3.5 w-3.5 text-primary" /><p className="text-[10px] uppercase text-muted-foreground">{label}</p><p className="truncate font-semibold">{value}</p></div>;
 }
+
+export const RaceTopFiveOverlay = observer(function RaceTopFiveOverlay() {
+  if (raceSessionStore.phase !== "racing") return null;
+  const topFive = raceSessionStore.standings.filter((standing) => standing.alive).slice(0, 5);
+  if (!topFive.length) return null;
+
+  return (
+    <div className="pointer-events-none absolute left-3 top-3 z-20 w-[min(250px,48%)] rounded-xl border border-white/20 bg-black/58 p-2.5 text-white shadow-2xl backdrop-blur-md">
+      <div className="mb-1.5 flex items-center justify-between text-[10px] font-black uppercase tracking-[0.16em] text-white/70">
+        <span>Top 5</span>
+        <span>{raceSessionStore.alive} racing</span>
+      </div>
+      <div className="space-y-1">
+        {topFive.map((standing) => {
+          const marble = marbleById(standing.id);
+          const swatch = marble?.stripeColor
+            ? `linear-gradient(135deg, ${marble.color} 0 42%, ${marble.stripeColor} 43% 58%, ${marble.color} 59%)`
+            : marble?.color ?? "#64748b";
+          return (
+            <div key={standing.id} className="flex items-center gap-2 rounded-md bg-white/[0.07] px-2 py-1.5">
+              <b className="w-4 text-right text-xs tabular-nums">{standing.position}</b>
+              <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-white/50" style={{ background: swatch }} />
+              <span className="min-w-0 flex-1 truncate text-[11px] font-semibold">{marble?.name ?? standing.id}</span>
+              <span className="text-[10px] tabular-nums text-white/60">{Math.round(standing.progress * 100)}%</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+});

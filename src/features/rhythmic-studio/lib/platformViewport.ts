@@ -9,6 +9,8 @@ export const PLATFORM_PRELOAD_AHEAD_COUNT = 7;
 // could enter the camera. This still keeps a complete upcoming phrase ready.
 export const PLATFORM_3D_RETAIN_BEHIND_PX = 1_000;
 export const PLATFORM_3D_PRELOAD_AHEAD_PX = 2_000;
+export const KOROBEINIKI_3D_RETAIN_BEHIND_PX = 2_800;
+export const KOROBEINIKI_3D_PRELOAD_AHEAD_PX = 2_800;
 const PLATFORM_MIN_VERTICAL_OVERSCAN_PX = 720;
 const PLATFORM_MIN_HORIZONTAL_OVERSCAN_PX = 320;
 
@@ -79,15 +81,22 @@ export function platformIsInside2DRenderWindow(platform: MarblePlatform, setting
  * preserves instruments before entry and after exit without constructing an
  * entire multi-minute course in the first React frame.
  */
-export function platformsMountedFor3D(platforms: readonly MarblePlatform[], focusIndex: number): readonly MarblePlatform[] {
+export function platformsMountedFor3D(
+  platforms: readonly MarblePlatform[],
+  focusIndex: number,
+  settings?: StudioSettings,
+): readonly MarblePlatform[] {
   if (!platforms.length) return platforms;
   const focusOffset = Math.max(0, platforms.findIndex((platform) => platform.index === focusIndex));
   const focus = platforms[focusOffset] ?? platforms[0];
   const focusY = displayGeometry(focus).y;
   const next = platforms[Math.min(platforms.length - 1, focusOffset + 1)];
   const courseDirection = Math.sign(displayGeometry(next).y - focusY) || 1;
-  const minY = focusY - (courseDirection > 0 ? PLATFORM_3D_RETAIN_BEHIND_PX : PLATFORM_3D_PRELOAD_AHEAD_PX);
-  const maxY = focusY + (courseDirection > 0 ? PLATFORM_3D_PRELOAD_AHEAD_PX : PLATFORM_3D_RETAIN_BEHIND_PX);
+  const korobeiniki = settings?.instrumentFamily === "boomwhacker" && settings.instrumentLayout === "wall-score";
+  const retainBehind = korobeiniki ? KOROBEINIKI_3D_RETAIN_BEHIND_PX : PLATFORM_3D_RETAIN_BEHIND_PX;
+  const preloadAhead = korobeiniki ? KOROBEINIKI_3D_PRELOAD_AHEAD_PX : PLATFORM_3D_PRELOAD_AHEAD_PX;
+  const minY = focusY - (courseDirection > 0 ? retainBehind : preloadAhead);
+  const maxY = focusY + (courseDirection > 0 ? preloadAhead : retainBehind);
 
   return platforms.filter((platform) => {
     const display = displayGeometry(platform);

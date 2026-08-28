@@ -11,7 +11,7 @@ import { impactVelocity, MarbleInteractionSystem, type MarbleImpactSound } from 
 import { chimeBounceImpulse, driveBeltForce, jumpImpulse, launchImpulse, pianoBoostImpulse, recoveryImpulse } from "./marbleForces";
 import { PIANO_TRAIL_SECONDS, pianoTrailStrength } from "./marbleBoostTrail";
 import { updateBeatSpinners, updateStartGate } from "./obstacleMotion";
-import { freezeWinnerAtFinish, holdWinnerAtFinish, recoverMarbleToCourse, vec3 } from "./marbleRacePlacement";
+import { eliminateMarbleFromRace, freezeWinnerAtFinish, holdWinnerAtFinish, marbleHasLeftRaceTrack, vec3 } from "./marbleRacePlacement";
 import { CourseObjectLifecycle, type CourseObjectId } from "./CourseObjectLifecycle";
 import { createRaceMaterials } from "./createRaceMaterials";
 import { buildRaceSnapshot } from "./raceSnapshot";
@@ -238,6 +238,7 @@ export class RacePhysics {
   }
   private updateRace(dt: number) {
     const leaderAtStart = this.getLeader()?.id ?? null;
+    let aliveCount = this.getRanked().filter((candidate) => candidate.alive).length;
     for (const marble of this.marbles.values()) {
       if (!marble.alive || marble.id === this.winnerId) continue;
       const body = marble.body;
@@ -245,12 +246,11 @@ export class RacePhysics {
       marble.progressIndex = nearestSampleIndexIn(this.course.samples, body.position, marble.progressIndex);
       const progress = marble.progressIndex / (this.course.samples.length - 1);
       const sample = this.course.samples[marble.progressIndex];
-      const dx = body.position.x - sample.point.x;
-      const dy = body.position.y - sample.point.y;
-      const dz = body.position.z - sample.point.z;
-      const distanceSq = dx * dx + dy * dy + dz * dz;
-      if (body.position.y < -8 || distanceSq > 90) {
-        recoverMarbleToCourse(marble, sample, this.marbleRadius, this.course.trackWidth);
+      if (marbleHasLeftRaceTrack(marble, sample, this.course.trackWidth, previous)) {
+        eliminateMarbleFromRace(marble, aliveCount--);
+        this.bodyToMarble.delete(marble.body.id);
+        this.rankingDirty = true;
+        raceSessionStore.flash(`${marble.id.toUpperCase()} OUT`);
         continue;
       }
       if (!marble.hitJump && progress >= this.course.specials.jump) {

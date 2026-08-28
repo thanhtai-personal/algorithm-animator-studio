@@ -5,29 +5,29 @@ import {
   olympicRoadCameraShot,
 } from "../features/marble-tower-video/camera/olympicRoadCameraPlan";
 
-describe("Marble Tower Map 2 reference camera", () => {
-  it("covers the eight visual modules with deliberate overhead and tracking shots", () => {
+describe("Marble Tower Map 2 long-road camera", () => {
+  it("covers the eight road sectors with chase and side-follow shots", () => {
     expect(OLYMPIC_ROAD_CAMERA_SHOTS.map((shot) => shot.id)).toEqual([
-      "launch-crane",
-      "hairpin-overhead",
-      "spiral-lockoff",
+      "launch-follow",
+      "s-bend-sweep",
+      "ridge-follow",
       "choice-gates",
-      "switchback-pan",
+      "switchback-chase",
       "slalom-chase",
-      "final-chute-front",
-      "finish-podium",
+      "final-slope-chase",
+      "finish-front",
     ]);
   });
 
-  it("locks the spiral bowl into a readable top-down composition", () => {
-    const shot = olympicRoadCameraShot(0.38);
-    expect(shot.id).toBe("spiral-lockoff");
-    expect(shot.lift).toBeGreaterThanOrEqual(15);
-    expect(Math.abs(shot.behind)).toBeLessThanOrEqual(3);
-    expect(Math.abs(shot.side)).toBeLessThanOrEqual(3);
+  it("keeps the camera behind or beside the pack until the finish instead of locking above a spiral", () => {
+    OLYMPIC_ROAD_CAMERA_SHOTS.slice(0, -1).forEach((shot) => {
+      expect(shot.behind, shot.id).toBeGreaterThanOrEqual(9);
+      expect(shot.lift, shot.id).toBeLessThanOrEqual(10);
+    });
+    expect(olympicRoadCameraShot(0.98).behind).toBeLessThan(0);
   });
 
-  it("holds a fixed camera position while the pack crosses each module", () => {
+  it("retains a stable per-sector midpoint for preview thumbnails and editor helpers", () => {
     OLYMPIC_ROAD_CAMERA_SHOTS.forEach((shot) => {
       const anchor = olympicRoadCameraAnchorProgress(shot);
       expect(anchor, shot.id).toBeGreaterThan(shot.from);
@@ -36,20 +36,19 @@ describe("Marble Tower Map 2 reference camera", () => {
     });
   });
 
-  it("pans around the modular road and finishes from ahead of the marbles", () => {
+  it("alternates side angles while keeping the final camera ahead of the marbles", () => {
     const sides = OLYMPIC_ROAD_CAMERA_SHOTS.map((shot) => Math.sign(shot.side));
     expect(sides).toContain(-1);
     expect(sides).toContain(1);
-    expect(olympicRoadCameraShot(0.93).behind).toBeLessThan(0);
     expect(olympicRoadCameraShot(0.98).behind).toBeLessThan(0);
   });
 
-  it("keeps every shot wide and elevated enough to show the toy-track obstacle context", () => {
+  it("keeps every shot wide enough to show road context without revealing stacked decks", () => {
     OLYMPIC_ROAD_CAMERA_SHOTS.forEach((shot) => {
       expect(Math.hypot(shot.behind, shot.lift, shot.side), shot.id).toBeGreaterThanOrEqual(10);
       expect(shot.lift, shot.id).toBeGreaterThanOrEqual(7);
       expect(shot.fov, shot.id).toBeGreaterThanOrEqual(46);
-      expect(shot.fov, shot.id).toBeLessThanOrEqual(58);
+      expect(shot.fov, shot.id).toBeLessThanOrEqual(52);
     });
   });
 });

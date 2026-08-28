@@ -9,6 +9,7 @@ import {
   unprojectPresetCamera,
 } from "../features/rhythmic-studio/lib/presetCamera";
 import {
+  KOROBEINIKI_3D_RETAIN_BEHIND_PX,
   PLATFORM_3D_PRELOAD_AHEAD_PX,
   PLATFORM_3D_RETAIN_BEHIND_PX,
   PLATFORM_PRELOAD_AHEAD_COUNT,
@@ -53,6 +54,19 @@ describe("rhythmic platform viewport lifecycle", () => {
     ];
 
     expect(platformsMountedFor3D(items, 2).map((item) => item.index)).toEqual([1, 2, 3]);
+  });
+
+  it("keeps Korobeiniki wall tubes mounted longer so their shadows do not pop out early", () => {
+    const focusY = 5_000;
+    const settings = { ...DEFAULT_SETTINGS, instrumentFamily: "boomwhacker" as const, instrumentLayout: "wall-score" as const };
+    const items = [
+      platform({ index: 0, y: focusY - KOROBEINIKI_3D_RETAIN_BEHIND_PX + 120 }),
+      platform({ index: 1, y: focusY }),
+      platform({ index: 2, y: focusY + 400 }),
+    ];
+
+    expect(platformsMountedFor3D(items, 1, settings).map((item) => item.index)).toEqual([0, 1, 2]);
+    expect(platformsMountedFor3D(items, 1).map((item) => item.index)).toEqual([1, 2]);
   });
 
   it("preloads a 2D instrument before entry and keeps it after leaving the frame", () => {

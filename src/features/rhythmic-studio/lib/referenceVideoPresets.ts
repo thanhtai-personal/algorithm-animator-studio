@@ -48,7 +48,7 @@ export const REFERENCE_VIDEO_PRESETS: ReferenceVideoPreset[] = [
       platformPrimaryStyle: "wall-boomwhacker-tube", platformSecondaryStyle: "wall-boomwhacker-tube", platformAccentStyle: "instrument-wire", platformMixMode: "single", platformAccentEvery: 12,
       instrumentFamily: "boomwhacker", instrumentLayout: "wall-score", showcaseRails: true, showcaseRailDensity: 0.4, showcaseDuet: false,
       platformWidth: 116, platformThickness: 32, platformGap: 136, laneSpread: 278, platformTilt: 4, minBounceDistance: 48, bounceHeight: 54,
-      curveIntensity: 0, curvePathLength: 0, cameraAnchor: 0.28, cameraSmoothing: 0.18, cameraDistance: 1.02, cameraLookAhead: 1.08,
+      curveIntensity: 0, curvePathLength: 0, cameraAnchor: 0.28, cameraSmoothing: 0.18, cameraDistance: 1.14, cameraLookAhead: 1.08,
       platformGlow: 0.02, platformDetail: 0.94, trailLength: 0, particleCount: 0, spectralDensity: 0.02, animationSensitivity: 0.18,
       pulseAnimation: true, glowAnimation: false, impactRipple: false, impactPlatformLight: false,
       synthPreset: "boomwhacker", midiInstrumentMode: "single", midiPlaybackEnabled: true, instrumentNativeAudio: true,

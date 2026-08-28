@@ -75,7 +75,7 @@ describe("Korobeiniki wall-tube reference preset", () => {
       particleCount: 0,
       backgroundColor: "#8e8b9a",
       cameraAnchor: 0.28,
-      cameraDistance: 1.02,
+      cameraDistance: 1.14,
     });
   });
 

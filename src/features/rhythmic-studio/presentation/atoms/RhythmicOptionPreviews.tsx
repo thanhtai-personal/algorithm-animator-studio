@@ -233,9 +233,6 @@ function ReferencePresetThumbnail({ presetId }: { presetId: ReferenceVideoPreset
     {[0, 1, 2].map((index) => <div key={index} className="absolute h-4 w-8 origin-right bg-gradient-to-b from-[#303136] to-[#111216] shadow-[4px_6px_6px_rgba(0,0,0,.32)]" style={{ left: `${9 + index * 22}px`, bottom: `${1 + index * 6}px`, transform: `rotate(${index % 2 ? -11 : 9}deg)`, clipPath: "polygon(0 30%,100% 0,100% 100%,0 70%)" }}><span className="absolute -right-2 top-0 h-4 w-4 rounded-full border-2 border-[#18191d] bg-[radial-gradient(circle,#050506_0_52%,#28292d_56%)]" /></div>)}
     <div className="absolute right-3 top-6 h-5 w-5 rounded-full border border-pink-100/70 bg-[repeating-linear-gradient(155deg,#5f177e_0_5px,#f59ad0_6px_9px)] shadow-[0_5px_9px_rgba(50,15,70,.35)]" />
   </SceneFrame>;
-  if (presetId === "reference-wooden-marimba") return <SceneFrame className="h-16 bg-[#d9e4e5]">
-    {[0, 1, 2, 3].map((index) => <div key={index} className="absolute h-3 w-12 rounded-sm border border-amber-950/30 bg-gradient-to-b from-amber-700 to-amber-950 shadow-[5px_7px_7px_rgba(0,0,0,.25)]" style={{ left: `${7 + index * 17}px`, top: `${7 + index * 13}px`, transform: `rotate(${index % 2 ? 12 : -8}deg)` }} />)}
-  </SceneFrame>;
   if (presetId === "reference-cyan-piano") return <SceneFrame className="h-16 bg-[radial-gradient(circle_at_50%_42%,#0d6478_0%,#062b44_42%,#020813_100%)]">
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,rgba(34,211,238,.2),transparent_55%)]" />
     {[0, 1, 2, 3].map((index) => <div key={index} className="absolute h-4 w-14 rounded-sm border border-cyan-100/70 bg-slate-100 shadow-[0_0_12px_rgba(34,211,238,.48),6px_8px_8px_rgba(0,0,0,.5)]" style={{ left: `${4 + index * 19}px`, top: `${6 + index * 13}px`, transform: `rotate(${index % 2 ? -12 : 9}deg)` }} />)}
@@ -244,10 +241,6 @@ function ReferencePresetThumbnail({ presetId }: { presetId: ReferenceVideoPreset
     {[0, 1, 2].map((row) => <div key={`left-${row}`} className="absolute h-4 w-4 rotate-[-14deg] rounded-sm border border-slate-400 bg-slate-700 shadow-[4px_5px_6px_rgba(15,23,42,.28)]" style={{ left: `${12 + row * 4}px`, top: `${7 + row * 17}px` }} />)}
     {[0, 1, 2].map((row) => <div key={`right-${row}`} className="absolute h-4 w-4 rotate-[14deg] rounded-sm border border-slate-400 bg-slate-700 shadow-[4px_5px_6px_rgba(15,23,42,.28)]" style={{ right: `${12 + row * 4}px`, top: `${7 + row * 17}px` }} />)}
     <div className="absolute left-1/2 top-[24px] h-5 w-5 -translate-x-1/2 rounded-full border border-white bg-[radial-gradient(circle_at_32%_28%,#fff,#a7f3d0_35%,#22c55e_100%)] shadow-[0_5px_8px_rgba(15,23,42,.24)]" />
-  </SceneFrame>;
-  if (presetId === "reference-faceted-metallophone") return <SceneFrame className="h-16 bg-[radial-gradient(circle_at_50%_34%,#5d6370,#171b29_72%)]">
-    {[0, 1, 2].map((index) => <div key={index} className="absolute h-3 w-11 rounded-sm border border-slate-300 bg-slate-100 shadow-[5px_7px_7px_rgba(0,0,0,.42)]" style={{ left: `${8 + index * 22}px`, top: `${8 + index * 17}px`, transform: `rotate(${index % 2 ? 13 : -9}deg)` }}><span className="absolute left-2 top-1 h-1 w-1 rounded-full bg-slate-800" /><span className="absolute right-2 top-1 h-1 w-1 rounded-full bg-slate-800" /></div>)}
-    <div className="absolute right-3 top-3 h-6 w-6 rounded-full border border-white/60 bg-[conic-gradient(#22c8e8,#2c70ed,#ff3cad,#ef3340,#ffb11b,#21c56b,#22c8e8)] shadow-[0_0_14px_rgba(255,255,255,.35)]" />
   </SceneFrame>;
   return <SceneFrame className="h-16 bg-[radial-gradient(circle_at_55%_40%,#31159b,#090022_65%)]">
     {[0, 1, 2].map((row) => <div key={row} className="absolute flex h-3 w-16 -rotate-12 overflow-hidden rounded-full shadow-[0_0_12px_rgba(32,233,255,.7)]" style={{ left: `${10 + row * 13}px`, top: `${9 + row * 17}px` }}>{Array.from({ length: 8 }, (_, index) => <span key={index} className={`h-full flex-1 ${index % 2 ? "bg-blue-700" : "bg-cyan-300"}`} />)}</div>)}

@@ -7,25 +7,23 @@ export const REFERENCE_CLIP_PRESET_MAP = {
   "3949": "vibraphone-wall",
   "4739": "vibraphone-wall",
   "4fd7": "boomwhacker-wall",
-  "54ce": "reference-wooden-marimba",
-  "57c8": "reference-faceted-metallophone",
+  "54ce": "vibraphone-wall",
+  "57c8": "vibraphone-wall",
   a154: "reference-cyan-piano",
-  ad97: "reference-checker-rails",
+  ad97: "neon-comet",
   hB8lCZ8xGZo_005: "reference-era-corridor",
   tXxHSu15xU8_002: "reference-korobeiniki-tubes",
 } as const;
 
 export const NEW_REFERENCE_PRESET_IDS = [
-  "reference-wooden-marimba",
   "reference-cyan-piano",
-  "reference-checker-rails",
   "reference-era-corridor",
-  "reference-faceted-metallophone",
   "reference-korobeiniki-tubes",
 ] as const;
 
 export const REFERENCE_VIDEO_PRESET_IDS = [
   "toy-pegboard",
+  "neon-comet",
   "boomwhacker-wall",
   "vibraphone-wall",
   ...NEW_REFERENCE_PRESET_IDS,
@@ -60,19 +58,6 @@ export const REFERENCE_VIDEO_PRESETS: ReferenceVideoPreset[] = [
     },
   },
   {
-    id: "reference-wooden-marimba",
-    referenceClipIds: ["54ce"],
-    settings: {
-      terrainProfile: "xylophone", cameraProfile: "xylophone", backgroundPreset: "instrument-room", backgroundColor: "#d9e4e5",
-      colorPaletteMode: "duotone", prismStart: "#8b4d2d", prismEnd: "#d29a64", ballStyle: "water", ballBaseColor: "#38bdf8", ballSize: 16,
-      platformPrimaryStyle: "marimba-bar", platformSecondaryStyle: "pluck-pad", platformAccentStyle: "instrument-rail", platformMixMode: "accent", platformAccentEvery: 8,
-      instrumentFamily: "marimba", instrumentLayout: "cascade", showcaseRails: true, showcaseRailDensity: 0.78,
-      platformWidth: 132, platformThickness: 18, platformGap: 148, laneSpread: 230, minBounceDistance: 56, bounceHeight: 62,
-      curveIntensity: 0, curvePathLength: 0, cameraAnchor: 0.5, cameraSmoothing: 0.22, cameraDistance: 1.16, cameraLookAhead: 1.1,
-      platformGlow: 0.2, platformDetail: 0.96, trailLength: 6, particleCount: 2,
-    },
-  },
-  {
     id: "reference-cyan-piano",
     referenceClipIds: ["a154"],
     settings: {
@@ -86,19 +71,6 @@ export const REFERENCE_VIDEO_PRESETS: ReferenceVideoPreset[] = [
     },
   },
   {
-    id: "reference-checker-rails",
-    referenceClipIds: ["ad97"],
-    settings: {
-      terrainProfile: "balanced", cameraProfile: "follow", backgroundPreset: "deep-space", backgroundColor: "#090022",
-      colorPaletteMode: "neon-galaxy", prismStart: "#20e9ff", prismEnd: "#6646ff", ballStyle: "neon", ballBaseColor: "#81eeff", ballSize: 16,
-      platformPrimaryStyle: "dual-rail", platformSecondaryStyle: "prism", platformAccentStyle: "light-pods", platformMixMode: "accent", platformAccentEvery: 5,
-      instrumentFamily: "auto", instrumentLayout: "gallery", showcaseRails: true, showcaseRailDensity: 0.9,
-      platformWidth: 118, platformThickness: 15, platformGap: 152, laneSpread: 236, minBounceDistance: 62, bounceHeight: 82,
-      curveIntensity: 0, curvePathLength: 0, cameraAnchor: 0.47, cameraSmoothing: 0.17, cameraDistance: 1.2, cameraLookAhead: 1.2,
-      platformGlow: 0.72, platformDetail: 1, trailLength: 7, particleCount: 2, impactRipple: true,
-    },
-  },
-  {
     id: "reference-era-corridor",
     referenceClipIds: ["hB8lCZ8xGZo_005"],
     settings: {
@@ -109,19 +81,6 @@ export const REFERENCE_VIDEO_PRESETS: ReferenceVideoPreset[] = [
       platformWidth: 106, platformThickness: 18, platformGap: 132, laneSpread: 260, minBounceDistance: 44, bounceHeight: 56,
       curveIntensity: 0, curvePathLength: 0, cameraAnchor: 0.48, cameraSmoothing: 0.18, cameraDistance: 1.08, cameraLookAhead: 1.16,
       platformGlow: 0.16, platformDetail: 0.94, trailLength: 3, particleCount: 1, impactRipple: false,
-    },
-  },
-  {
-    id: "reference-faceted-metallophone",
-    referenceClipIds: ["57c8"],
-    settings: {
-      terrainProfile: "xylophone", cameraProfile: "xylophone", backgroundPreset: "spotlight", backgroundColor: "#171b29",
-      colorPaletteMode: "key-rainbow", prismStart: "#f4f4f2", prismEnd: "#20e9ff", ballStyle: "patchwork", ballBaseColor: "#24c7e8", ballStripeColor: "#ff3cad", ballSize: 17,
-      platformPrimaryStyle: "metallophone-plate", platformSecondaryStyle: "dual-rail", platformAccentStyle: "instrument-rail", platformMixMode: "accent", platformAccentEvery: 9,
-      instrumentFamily: "metallophone", instrumentLayout: "gallery", showcaseRails: true, showcaseRailDensity: 0.84,
-      platformWidth: 124, platformThickness: 15, platformGap: 138, laneSpread: 252, minBounceDistance: 48, bounceHeight: 60,
-      curveIntensity: 0, curvePathLength: 0, cameraAnchor: 0.48, cameraSmoothing: 0.19, cameraDistance: 1.12, cameraLookAhead: 1.16,
-      platformGlow: 0.66, platformDetail: 1, trailLength: 4, particleCount: 8, impactRipple: true,
     },
   },
 ];

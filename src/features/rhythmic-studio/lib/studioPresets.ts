@@ -55,6 +55,7 @@ export const RHYTHMIC_STUDIO_PRESETS: RhythmicStudioPreset[] = [
   },
   {
     id: "neon-comet",
+    referenceClipIds: ["ad97"],
     settings: {
       terrainProfile: "comet",
       cameraProfile: "comet",
@@ -136,7 +137,7 @@ export const RHYTHMIC_STUDIO_PRESETS: RhythmicStudioPreset[] = [
   },
   {
     id: "vibraphone-wall",
-    referenceClipIds: ["3949", "4739"],
+    referenceClipIds: ["3949", "4739", "54ce", "57c8"],
     settings: {
       terrainProfile: "xylophone",
       cameraProfile: "xylophone",

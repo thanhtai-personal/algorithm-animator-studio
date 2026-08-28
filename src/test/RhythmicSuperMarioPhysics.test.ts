@@ -22,7 +22,7 @@ function incomingAt(platforms: MarblePlatform[], index: number): Vec2 {
     : { x: previous.outVX, y: previous.outVY };
 }
 
-const PHYSICS_PRESET_IDS = ["neon-comet", ...REFERENCE_VIDEO_PRESET_IDS] as const;
+const PHYSICS_PRESET_IDS = REFERENCE_VIDEO_PRESET_IDS;
 
 describe.each(PHYSICS_PRESET_IDS)("Super Mario Maker physics · %s", (presetId) => {
   let platforms: MarblePlatform[] = [];

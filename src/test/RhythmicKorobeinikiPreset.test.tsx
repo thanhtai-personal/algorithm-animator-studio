@@ -236,6 +236,27 @@ describe("Korobeiniki wall-tube reference preset", () => {
     expect(afterLastHit.y).toBeGreaterThan(platforms.at(-1)!.hitY);
   });
 
+  it("compresses fast-note tubes instead of making the marble move unnaturally faster", () => {
+    const events = BUILTIN_MELODIES[KOROBEINIKI_MELODY_NAME];
+    const settings = { ...DEFAULT_SETTINGS, ...presetById(PRESET_ID).settings };
+    const platforms = buildKorobeinikiReferenceCourse(events, settings, 720);
+    const segmentDistance = (index: number) => Math.hypot(
+      platforms[index + 1].hitX - platforms[index].hitX,
+      platforms[index + 1].hitY - platforms[index].hitY,
+    );
+    const launchSpeed = (index: number) => Math.hypot(
+      platforms[index].outVX,
+      platforms[index].outVY,
+    );
+
+    // Note 4 -> 5 has half the duration of note 3 -> 4, so its two tubes
+    // should be about half as far apart while the marble keeps a readable speed.
+    expect(events[5].timeMs - events[4].timeMs).toBe(115);
+    expect(events[4].timeMs - events[3].timeMs).toBe(230);
+    expect(segmentDistance(4)).toBeLessThan(segmentDistance(3) * 0.65);
+    expect(launchSpeed(4)).toBeLessThan(launchSpeed(3) * 1.2);
+  });
+
   it("extends an imported MIDI with the reference wall-score structure without turning upward", () => {
     const settings = { ...DEFAULT_SETTINGS, ...presetById(PRESET_ID).settings };
     const events = Array.from({ length: 52 }, (_, index) => ({

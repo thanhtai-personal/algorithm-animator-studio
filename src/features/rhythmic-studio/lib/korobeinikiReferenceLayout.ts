@@ -10,6 +10,7 @@ const REFERENCE_GRAVITY = 780;
 const REFERENCE_WORLD_SCALE = 0.012;
 const REFERENCE_TUBE_THICKNESS = 40;
 const REFERENCE_SHAFT_CONTACT_RATIO = 0.58;
+const REFERENCE_STEP_MS = 230;
 
 type ReferencePoint = readonly [x: number, y: number];
 
@@ -175,7 +176,7 @@ export function wallScoreReferenceHits(events: readonly NoteEvent[], width: numb
   let localIndex = 0;
   let sceneOriginY = 220;
 
-  events.forEach((_event, index) => {
+  events.forEach((event, index) => {
     if (sceneStarts.has(index)) {
       sceneIndex += 1;
       localIndex = 0;
@@ -186,7 +187,21 @@ export function wallScoreReferenceHits(events: readonly NoteEvent[], width: numb
     }
     const template = REFERENCE_SCENE_POINTS[sceneIndex % REFERENCE_SCENE_POINTS.length];
     const [x, localY] = extendedScenePoint(template, localIndex);
-    points.push({ x: x * width / REFERENCE_WIDTH, y: sceneOriginY + localY });
+    const previousPoint = points.at(-1);
+    if (localIndex === 0 || !previousPoint) {
+      points.push({ x: x * width / REFERENCE_WIDTH, y: sceneOriginY + localY });
+    } else {
+      const [previousX, previousLocalY] = extendedScenePoint(template, localIndex - 1);
+      const gapMs = Math.max(0, event.timeMs - events[index - 1].timeMs);
+      // The measured reference layout assumes a regular 230 ms step. When two
+      // notes arrive faster, compress that step by the same ratio so the marble
+      // keeps its readable travel speed instead of sprinting across a full gap.
+      const spacingScale = Math.min(1, gapMs / REFERENCE_STEP_MS);
+      points.push({
+        x: previousPoint.x + (x - previousX) * width / REFERENCE_WIDTH * spacingScale,
+        y: previousPoint.y + (localY - previousLocalY) * spacingScale,
+      });
+    }
     localIndex += 1;
   });
   return points;

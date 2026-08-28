@@ -212,10 +212,6 @@ export function PresetThumbnail({ presetId }: { presetId: RhythmicPresetId }) {
     <div className="absolute right-4 top-4 h-6 w-6 rounded-full bg-[linear-gradient(145deg,#7dd3fc,#7c3aed_40%,#ec4899_85%)] shadow-[0_0_18px_rgba(236,72,153,.45)]" />
     <div className="absolute left-5 right-14 top-[34px] h-1.5 rounded-full bg-cyan-300/85 blur-[1px]" />
   </SceneFrame>;
-  if (presetId === "boomwhacker-wall") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#d8d2cb,#bcb5ae)]">
-    {[0,1,2,3].map((index) => <div key={index} className="absolute h-3 w-10 rounded-full shadow-[0_5px_8px_rgba(0,0,0,.2)]" style={{ left: `${12 + index * 10}px`, top: `${12 + index * 10}px`, transform: `rotate(${18 + index * 7}deg)`, background: ["#f97316","#65a30d","#2563eb","#dc2626"][index] }} />)}
-    <div className="absolute right-3 top-3 h-5 w-5 rounded-full bg-[radial-gradient(circle_at_35%_30%,#fff,#7c3aed_45%,#34145c)]" />
-  </SceneFrame>;
   if (presetId === "vibraphone-wall") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#d9d5d0,#c3beb8)]">
     {[0,1,2,3].map((index) => <div key={index} className="absolute h-3 w-11 rounded-sm border border-white/30 bg-gradient-to-b from-slate-200 to-slate-500 shadow-[0_5px_8px_rgba(0,0,0,.18)]" style={{ left: `${12 + index * 12}px`, top: `${10 + index * 11}px`, transform: `rotate(${index % 2 ? -8 : 8}deg)` }} />)}
     <div className="absolute right-3 bottom-2 h-4 w-4 rounded-full bg-green-500" />
@@ -232,15 +228,6 @@ function ReferencePresetThumbnail({ presetId }: { presetId: ReferenceVideoPreset
     {["#93e9d5", "#f4a4d5", "#b6a2f4", "#f2d59d", "#92cbed"].map((color, index) => <div key={color} className="absolute h-4 w-9 origin-right shadow-[4px_6px_6px_rgba(0,0,0,.28)]" style={{ left: `${4 + index * 15}px`, top: `${3 + index * 10}px`, transform: `rotate(${index % 2 ? 12 : -10}deg)`, background: `linear-gradient(180deg,${color},color-mix(in_srgb,${color},#222 34%))`, clipPath: "polygon(0 30%,100% 0,100% 100%,0 70%)" }}><span className="absolute -right-2 top-0 h-4 w-4 rounded-full border-2 border-black/55" style={{ background: `radial-gradient(circle,#17171a 0 46%,${color} 49% 70%,#111 74%)` }} /></div>)}
     {[0, 1, 2].map((index) => <div key={index} className="absolute h-4 w-8 origin-right bg-gradient-to-b from-[#303136] to-[#111216] shadow-[4px_6px_6px_rgba(0,0,0,.32)]" style={{ left: `${9 + index * 22}px`, bottom: `${1 + index * 6}px`, transform: `rotate(${index % 2 ? -11 : 9}deg)`, clipPath: "polygon(0 30%,100% 0,100% 100%,0 70%)" }}><span className="absolute -right-2 top-0 h-4 w-4 rounded-full border-2 border-[#18191d] bg-[radial-gradient(circle,#050506_0_52%,#28292d_56%)]" /></div>)}
     <div className="absolute right-3 top-6 h-5 w-5 rounded-full border border-pink-100/70 bg-[repeating-linear-gradient(155deg,#5f177e_0_5px,#f59ad0_6px_9px)] shadow-[0_5px_9px_rgba(50,15,70,.35)]" />
-  </SceneFrame>;
-  if (presetId === "reference-cyan-piano") return <SceneFrame className="h-16 bg-[radial-gradient(circle_at_50%_42%,#0d6478_0%,#062b44_42%,#020813_100%)]">
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,rgba(34,211,238,.2),transparent_55%)]" />
-    {[0, 1, 2, 3].map((index) => <div key={index} className="absolute h-4 w-14 rounded-sm border border-cyan-100/70 bg-slate-100 shadow-[0_0_12px_rgba(34,211,238,.48),6px_8px_8px_rgba(0,0,0,.5)]" style={{ left: `${4 + index * 19}px`, top: `${6 + index * 13}px`, transform: `rotate(${index % 2 ? -12 : 9}deg)` }} />)}
-  </SceneFrame>;
-  if (presetId === "reference-era-corridor") return <SceneFrame className="h-16 bg-[linear-gradient(180deg,#e6ebef,#c7d0d8)]">
-    {[0, 1, 2].map((row) => <div key={`left-${row}`} className="absolute h-4 w-4 rotate-[-14deg] rounded-sm border border-slate-400 bg-slate-700 shadow-[4px_5px_6px_rgba(15,23,42,.28)]" style={{ left: `${12 + row * 4}px`, top: `${7 + row * 17}px` }} />)}
-    {[0, 1, 2].map((row) => <div key={`right-${row}`} className="absolute h-4 w-4 rotate-[14deg] rounded-sm border border-slate-400 bg-slate-700 shadow-[4px_5px_6px_rgba(15,23,42,.28)]" style={{ right: `${12 + row * 4}px`, top: `${7 + row * 17}px` }} />)}
-    <div className="absolute left-1/2 top-[24px] h-5 w-5 -translate-x-1/2 rounded-full border border-white bg-[radial-gradient(circle_at_32%_28%,#fff,#a7f3d0_35%,#22c55e_100%)] shadow-[0_5px_8px_rgba(15,23,42,.24)]" />
   </SceneFrame>;
   return <SceneFrame className="h-16 bg-[radial-gradient(circle_at_55%_40%,#31159b,#090022_65%)]">
     {[0, 1, 2].map((row) => <div key={row} className="absolute flex h-3 w-16 -rotate-12 overflow-hidden rounded-full shadow-[0_0_12px_rgba(32,233,255,.7)]" style={{ left: `${10 + row * 13}px`, top: `${9 + row * 17}px` }}>{Array.from({ length: 8 }, (_, index) => <span key={index} className={`h-full flex-1 ${index % 2 ? "bg-blue-700" : "bg-cyan-300"}`} />)}</div>)}

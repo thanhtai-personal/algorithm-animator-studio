@@ -8,8 +8,7 @@ import {
 } from "../features/rhythmic-studio/engine/marbleCourseConstraints";
 import { buildPhysicsCourse } from "../features/rhythmic-studio/engine/marbleCoursePlanner";
 import { marbleAtTime } from "../features/rhythmic-studio/lib/marbleCourse";
-import { presetById } from "../features/rhythmic-studio/lib/studioPresets";
-import type { NoteEvent } from "../features/rhythmic-studio/types";
+import type { NoteEvent, StudioSettings } from "../features/rhythmic-studio/types";
 
 const rapidEvents: NoteEvent[] = Array.from({ length: 28 }, (_, index) => ({
   id: `corridor-${index}`,
@@ -20,9 +19,34 @@ const rapidEvents: NoteEvent[] = Array.from({ length: 28 }, (_, index) => ({
   isDrum: index % 7 === 5,
 }));
 
-const settings = {
+const settings: StudioSettings = {
   ...DEFAULT_SETTINGS,
-  ...presetById("reference-era-corridor" as never).settings,
+  terrainProfile: "xylophone",
+  cameraProfile: "xylophone",
+  backgroundPreset: "spotlight",
+  backgroundColor: "#d7dee5",
+  colorPaletteMode: "duotone",
+  prismStart: "#303238",
+  prismEnd: "#d6dbe0",
+  ballStyle: "glass",
+  ballBaseColor: "#9fffc8",
+  platformPrimaryStyle: "instrument-pad",
+  platformSecondaryStyle: "instrument-cymbal",
+  platformAccentStyle: "piano-key",
+  platformMixMode: "accent",
+  platformAccentEvery: 8,
+  instrumentFamily: "mixed",
+  instrumentLayout: "corridor",
+  showcaseRails: true,
+  showcaseRailDensity: 0.86,
+  platformWidth: 106,
+  platformThickness: 18,
+  platformGap: 132,
+  laneSpread: 260,
+  minBounceDistance: 44,
+  bounceHeight: 56,
+  curveIntensity: 0,
+  curvePathLength: 0,
 };
 
 describe("fast reference corridor", () => {

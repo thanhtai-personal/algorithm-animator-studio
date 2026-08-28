@@ -1,7 +1,7 @@
 import type { StudioSettings } from "../types";
 import { NEW_REFERENCE_PRESET_IDS, REFERENCE_VIDEO_PRESETS } from "./referenceVideoPresets";
 
-const ORIGINAL_PRESET_IDS = ["toy-pegboard", "neon-comet", "boomwhacker-wall", "vibraphone-wall"] as const;
+const ORIGINAL_PRESET_IDS = ["toy-pegboard", "neon-comet", "vibraphone-wall"] as const;
 export const RHYTHMIC_PRESET_IDS = [...ORIGINAL_PRESET_IDS, ...NEW_REFERENCE_PRESET_IDS] as const;
 export type RhythmicPresetId = (typeof RHYTHMIC_PRESET_IDS)[number];
 
@@ -94,50 +94,8 @@ export const RHYTHMIC_STUDIO_PRESETS: RhythmicStudioPreset[] = [
     },
   },
   {
-    id: "boomwhacker-wall",
-    referenceClipIds: ["0e70", "4fd7"],
-    settings: {
-      terrainProfile: "xylophone",
-      cameraProfile: "xylophone",
-      colorPaletteMode: "key-rainbow",
-      backgroundPreset: "spotlight",
-      backgroundColor: "#c8c1b9",
-      ballStyle: "fire",
-      ballBaseColor: "#ff4b18",
-      ballStripeColor: "#ffe96a",
-      instrumentFamily: "boomwhacker",
-      instrumentLayout: "fan",
-      showcaseRails: true,
-      showcaseRailDensity: 0.72,
-      showcaseDuet: false,
-      platformPrimaryStyle: "boomwhacker-tube",
-      platformSecondaryStyle: "xylophone-bar",
-      platformAccentStyle: "instrument-rail",
-      platformMixMode: "accent",
-      platformAccentEvery: 8,
-      platformWidth: 138,
-      platformThickness: 19,
-      platformGap: 142,
-      laneSpread: 236,
-      platformTilt: 3,
-      minBounceDistance: 58,
-      bounceHeight: 66,
-      curveIntensity: 0,
-      curvePathLength: 0,
-      cameraAnchor: 0.49,
-      cameraSmoothing: 0.2,
-      cameraDistance: 1.12,
-      cameraLookAhead: 1.12,
-      platformGlow: 0.38,
-      platformDetail: 0.86,
-      trailLength: 14,
-      particleCount: 20,
-      impactRipple: true,
-    },
-  },
-  {
     id: "vibraphone-wall",
-    referenceClipIds: ["3949", "4739", "54ce", "57c8"],
+    referenceClipIds: ["0e70", "3949", "4739", "4fd7", "54ce", "57c8", "a154", "hB8lCZ8xGZo_005"],
     settings: {
       terrainProfile: "xylophone",
       cameraProfile: "xylophone",

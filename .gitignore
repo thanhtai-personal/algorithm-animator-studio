@@ -43,3 +43,4 @@ models/**/*.download
 models/**/*.tmp
 src/assets/audios/bg-audio/
 server/.env.temp
+NUL

@@ -6,7 +6,7 @@ import {
   KOROBEINIKI_MELODY_NAME,
 } from "../features/rhythmic-studio/defaults";
 import { useRhythmicPresetActions } from "../features/rhythmic-studio/hooks/useRhythmicPresetActions";
-import { buildMarbleCourse } from "../features/rhythmic-studio/lib/marbleCourse";
+import { buildMarbleCourse, marbleAtTime } from "../features/rhythmic-studio/lib/marbleCourse";
 import { instrumentBodyColorAtTime } from "../features/rhythmic-studio/lib/instrumentLifecycle";
 import {
   buildKorobeinikiReferenceCourse,
@@ -17,6 +17,10 @@ import {
   korobeinikiReferenceTubeDepth,
   KOROBEINIKI_REFERENCE_SCENE_STARTS,
   korobeinikiSceneForIndex,
+  WALL_SCORE_RAIL_ENTRY_T,
+  WALL_SCORE_RAIL_EXIT_T,
+  wallScoreRailSegments,
+  wallScoreSceneStartIndices,
 } from "../features/rhythmic-studio/lib/korobeinikiReferenceLayout";
 import { referenceEventsForImportedAudio } from "../features/rhythmic-studio/lib/referenceAudio";
 import { REFERENCE_CLIP_PRESET_MAP } from "../features/rhythmic-studio/lib/referenceVideoPresets";
@@ -27,6 +31,7 @@ import { instrumentPlayingSurface3D } from "../features/rhythmic-studio/componen
 import { wallBoomwhackerGeometry } from "../features/rhythmic-studio/components/wallBoomwhackerGeometry3D";
 import { crossedRhythmicHit } from "../features/rhythmic-studio/components/rhythmicSceneMath3D";
 import { referenceStripedMarbleBandAtUv } from "../features/rhythmic-studio/components/RhythmicMarble3D";
+import { visualMarbleAtTime } from "../features/rhythmic-studio/components/RhythmicMotion3D";
 
 const PRESET_ID = "reference-korobeiniki-tubes" as const;
 
@@ -83,7 +88,7 @@ describe("Korobeiniki wall-tube reference preset", () => {
     expect(visible.every((platform) => platform.visualStyle === "wall-boomwhacker-tube")).toBe(true);
   }, 30_000);
 
-  it("uses open tube mouths facing the marble instead of horizontal bars", () => {
+  it("keeps the tube mouths visible but strikes the upper shaft instead of the mouth", () => {
     const geometry = wallBoomwhackerGeometry(1.4, 0.3, 4.05, false);
     const surface = instrumentPlayingSurface3D(
       "wall-boomwhacker-tube",
@@ -104,6 +109,14 @@ describe("Korobeiniki wall-tube reference preset", () => {
     expect(wallBoomwhackerGeometry(1.4, 0.3, 4.08, false).length).toBe(4.08);
     expect(korobeinikiReferenceTubeDepth(0)).toBe(4.08);
     expect(korobeinikiReferenceTubeDepth(3)).toBeCloseTo(4.245, 6);
+
+    const events = BUILTIN_MELODIES[KOROBEINIKI_MELODY_NAME];
+    const settings = { ...DEFAULT_SETTINGS, ...presetById(PRESET_ID).settings };
+    const platforms = buildKorobeinikiReferenceCourse(events, settings, 720);
+    const first = visualMarbleAtTime(events[0].timeMs, events, platforms, settings, []);
+
+    expect(platforms[0].visualY! - platforms[0].hitY).toBeGreaterThan(settings.ballSize + 15);
+    expect(first.z).toBeLessThan(-1);
   });
 
   it("splits the installation at the three long rests and bridges only those gaps", () => {
@@ -122,6 +135,52 @@ describe("Korobeiniki wall-tube reference preset", () => {
     ]);
   });
 
+  it("builds exactly one guide rail on the physical marble trajectory for each long rest", () => {
+    const events = BUILTIN_MELODIES[KOROBEINIKI_MELODY_NAME];
+    const settings = { ...DEFAULT_SETTINGS, ...presetById(PRESET_ID).settings };
+    const platforms = buildKorobeinikiReferenceCourse(events, settings, 720);
+    const rails = wallScoreRailSegments(platforms, settings.ballSize);
+
+    expect(rails.map((rail) => rail.afterIndex)).toEqual([14, 20, 26]);
+    expect(rails.every((rail) => rail.points.length >= 8)).toBe(true);
+    for (const rail of rails) {
+      const start = platforms[rail.afterIndex];
+      const end = platforms[rail.afterIndex + 1];
+      const spanSeconds = (end.event.timeMs - start.event.timeMs) / 1000;
+      const entryTimeMs = start.event.timeMs + spanSeconds * 1_000 * WALL_SCORE_RAIL_ENTRY_T;
+      const ball = marbleAtTime(entryTimeMs, events, platforms, settings);
+      const first = rail.points[0];
+      expect(Math.hypot(first.x - ball.x, first.y - ball.y)).toBeCloseTo(settings.ballSize, 5);
+      const xs = rail.points.map((point) => point.x);
+      const ys = rail.points.map((point) => point.y);
+      expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan((Math.max(...ys) - Math.min(...ys)) * 1.5);
+
+      const middleIndex = Math.floor(rail.points.length / 2);
+      const middle = rail.points[middleIndex];
+      const last = rail.points.at(-1)!;
+      expect(middle.y).toBeGreaterThan((first.y + last.y) / 2 + 2);
+
+      const middlePhase = WALL_SCORE_RAIL_ENTRY_T
+        + (WALL_SCORE_RAIL_EXIT_T - WALL_SCORE_RAIL_ENTRY_T) * middleIndex / (rail.points.length - 1);
+      const middleTimeMs = start.event.timeMs + spanSeconds * 1_000 * middlePhase;
+      const rollingBall = marbleAtTime(middleTimeMs, events, platforms, settings);
+      const ballisticElapsed = spanSeconds * middlePhase;
+      const ballistic = {
+        x: start.hitX + start.outVX * ballisticElapsed,
+        y: start.hitY + start.outVY * ballisticElapsed + 0.5 * start.gravity * ballisticElapsed ** 2,
+      };
+      expect(Math.hypot(rollingBall.x - middle.x, rollingBall.y - middle.y)).toBeCloseTo(settings.ballSize, 4);
+      expect(Math.hypot(rollingBall.x - ballistic.x, rollingBall.y - ballistic.y)).toBeGreaterThan(12);
+
+      const phaseDelta = 0.04;
+      const before = marbleAtTime(start.event.timeMs + spanSeconds * 1_000 * (middlePhase - phaseDelta), events, platforms, settings);
+      const after = marbleAtTime(start.event.timeMs + spanSeconds * 1_000 * (middlePhase + phaseDelta), events, platforms, settings);
+      const rollingSpeed = Math.hypot(after.x - before.x, after.y - before.y) / (spanSeconds * phaseDelta * 2);
+      const ballisticSpeed = Math.hypot(start.outVX, start.outVY + start.gravity * ballisticElapsed);
+      expect(rollingSpeed).toBeLessThan(ballisticSpeed * 0.8);
+    }
+  });
+
   it("uses the measured pastel pitch lights from the supplied reference", () => {
     expect([76, 71, 72, 74, 77, 79, 81].map(korobeinikiColorForMidi)).toEqual([
       "#5ffbf8",
@@ -134,7 +193,7 @@ describe("Korobeiniki wall-tube reference preset", () => {
     ]);
   });
 
-  it("repeats the five measured entry tubes at the start of every wall cluster", () => {
+  it("keeps the five measured lead-in tubes at the entry without cloning extra tubes into later clusters", () => {
     const decor = korobeinikiReferenceDecorForScene(0);
 
     expect(decor.map(({ x, y, color }) => [x, y, color])).toEqual([
@@ -145,7 +204,8 @@ describe("Korobeiniki wall-tube reference preset", () => {
       [165, 140, "#b6b0ef"],
     ]);
     expect(korobeinikiReferenceLabelForScene(0)).toEqual({ x: 390, y: 236 });
-    expect(korobeinikiReferenceDecorForScene(1)[0].y).toBeGreaterThan(1_000);
+    expect(korobeinikiReferenceDecorForScene(1)).toEqual([]);
+    expect(korobeinikiReferenceDecorForScene(2)).toEqual([]);
   });
 
   it("places each phrase in a measured wall cluster instead of a continuous generated fall", () => {
@@ -161,12 +221,36 @@ describe("Korobeiniki wall-tube reference preset", () => {
       [455, 372],
       [286, 430],
     ]);
-    expect([platforms[0].hitX, platforms[0].hitY]).toEqual([368, 150]);
+    expect(platforms[0].hitX).toBe(326);
+    expect(platforms[0].hitY).toBeLessThan(220);
     expect(KOROBEINIKI_REFERENCE_SCENE_STARTS).toEqual([0, 15, 21, 27]);
-    expect(platforms[15].hitY - platforms[14].hitY).toBeGreaterThan(260);
-    expect(platforms[21].hitY - platforms[20].hitY).toBeGreaterThan(260);
-    expect(platforms[27].hitY - platforms[26].hitY).toBeGreaterThan(260);
+    for (const [before, after] of [[14, 15], [20, 21], [26, 27]]) {
+      expect(platforms[after].hitY - platforms[before].hitY).toBeGreaterThanOrEqual(60);
+      expect(platforms[after].hitY - platforms[before].hitY).toBeLessThanOrEqual(150);
+    }
     expect(platforms.every((platform) => platform.visualStyle === "wall-boomwhacker-tube")).toBe(true);
+    expect(platforms.every((platform) => platform.hitX === platform.visualX && platform.hitY < platform.visualY!)).toBe(true);
+    expect(platforms.slice(1).every((platform, index) => platform.hitY > platforms[index].hitY)).toBe(true);
+
+    const afterLastHit = marbleAtTime(events.at(-1)!.timeMs + 240, events, platforms, settings);
+    expect(afterLastHit.y).toBeGreaterThan(platforms.at(-1)!.hitY);
+  });
+
+  it("extends an imported MIDI with the reference wall-score structure without turning upward", () => {
+    const settings = { ...DEFAULT_SETTINGS, ...presetById(PRESET_ID).settings };
+    const events = Array.from({ length: 52 }, (_, index) => ({
+      id: `imported-${index}`,
+      timeMs: index * 230 + (index >= 18 ? 760 : 0) + (index >= 34 ? 920 : 0),
+      midi: 60 + (index % 17),
+      velocity: 0.82,
+      durationMs: 150,
+    }));
+    const platforms = buildKorobeinikiReferenceCourse(events, settings, 720);
+
+    expect(platforms).toHaveLength(events.length);
+    expect(wallScoreSceneStartIndices(events)).toEqual([0, 18, 34]);
+    expect(platforms.slice(1).every((platform, index) => platform.hitY > platforms[index].hitY)).toBe(true);
+    expect(platforms.every((platform) => platform.hitX === platform.visualX && platform.hitY < platform.visualY!)).toBe(true);
   });
 
   it("keeps unplayed reference tubes black, then lights and retains the struck color", () => {

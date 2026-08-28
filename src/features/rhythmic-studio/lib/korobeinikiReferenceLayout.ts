@@ -7,20 +7,37 @@ export const KOROBEINIKI_REFERENCE_SCENE_STARTS = [0, ...KOROBEINIKI_PHRASE_STAR
 
 const REFERENCE_WIDTH = 720;
 const REFERENCE_GRAVITY = 780;
-const MARBLE_STRIKE_OFFSET = { x: 42, y: -70 } as const;
+const REFERENCE_WORLD_SCALE = 0.012;
+const REFERENCE_TUBE_THICKNESS = 40;
+const REFERENCE_SHAFT_CONTACT_RATIO = 0.58;
 
-// Measured from the supplied 720x1280 reference. Each long musical rest starts
-// a new wall cluster; within a cluster the tubes use the same alternating score
-// pattern as the source instead of an unconstrained procedural fall.
-const REFERENCE_HITS = [
-  [326, 220], [455, 266], [292, 318], [455, 372], [286, 430],
-  [450, 492], [280, 558], [446, 626], [275, 698], [440, 772],
-  [270, 848], [434, 926], [266, 1004], [428, 1084], [262, 1166],
-  [330, 1500], [470, 1560], [240, 1630], [450, 1710], [260, 1795], [410, 1885],
-  [350, 2240], [500, 2310], [270, 2390], [465, 2480], [245, 2570], [410, 2660],
-  [340, 3040], [500, 3110], [260, 3190], [470, 3280], [230, 3380], [430, 3480],
-  [520, 3400], [550, 3280], [480, 3160], [390, 3070], [300, 3020], [250, 3040],
+type ReferencePoint = readonly [x: number, y: number];
+
+// Measured wall-score phrases from the supplied 720x1280 reference. Coordinates
+// are local to a phrase so the same construction can be applied to any imported
+// MIDI instead of replaying one hard-coded 39-note path. The final phrase keeps
+// descending; the old last six points folded back upward to fake a loop.
+const REFERENCE_SCENE_POINTS: readonly (readonly ReferencePoint[])[] = [
+  [
+    [326, 0], [455, 46], [292, 98], [455, 152], [286, 210],
+    [450, 272], [280, 338], [446, 406], [275, 478], [440, 552],
+    [270, 628], [434, 706], [266, 784], [428, 864], [262, 946],
+  ],
+  [[430, 0], [470, 60], [240, 130], [450, 210], [260, 295], [410, 385]],
+  [[240, 0], [500, 70], [270, 150], [465, 240], [245, 330], [410, 420]],
+  [
+    [520, 0], [500, 70], [260, 150], [470, 240], [230, 340], [430, 440],
+    [520, 520], [550, 600], [480, 680], [390, 760], [300, 840], [250, 920],
+  ],
 ] as const;
+
+// Keep the two short bridge phrases close in Y so their ballistic apexes form
+// the shallow, side-running wire bridges visible in the reference.
+const REFERENCE_SCENE_GAPS = [60, 150, 60, 100] as const;
+const REFERENCE_HITS: readonly ReferencePoint[] = REFERENCE_SCENE_POINTS.flatMap((scene, sceneIndex) => {
+  const starts = [220, 1226, 1761, 2241] as const;
+  return scene.map(([x, y]) => [x, y + starts[sceneIndex]] as const);
+});
 
 const REFERENCE_COLOR_BY_PITCH_CLASS = [
   "#f5a6bf", "#efb49d", "#f2d18f", "#b9dda0",
@@ -43,26 +60,28 @@ const LABEL_OFFSETS = [
   [66, 14],
 ] as const;
 
-const BRIDGE_DECOR = [
-  { sceneIndex: 1, x: 386, y: 1320, width: 106, rise: 22, rotationRad: 0.08, pins: 4 },
-  { sceneIndex: 2, x: 404, y: 2058, width: 124, rise: 24, rotationRad: -0.08, pins: 5 },
-  { sceneIndex: 3, x: 430, y: 2850, width: 148, rise: 28, rotationRad: 0.1, pins: 5 },
-] as const;
-
-export interface KorobeinikiReferenceBridgeDecor {
-  sceneIndex: number;
-  x: number;
-  y: number;
-  width: number;
-  rise: number;
-  rotationRad: number;
-  pins: number;
-}
-
 export function korobeinikiReferenceTubeDepth(index: number) {
   // The supplied reference uses long pipes that reach from the playing plane
   // almost back to the wall; the old ~2.2 depth left the bases visibly floating.
   return 4.08 + (Math.max(0, index) % 4) * 0.055;
+}
+
+export function wallScoreTubeHitPoint(
+  visual: { x: number; y: number },
+  settings: StudioSettings,
+) {
+  const tubeDiameter = Math.max(REFERENCE_TUBE_THICKNESS, settings.platformThickness);
+  const tubeRadius = Math.max(0.135 / REFERENCE_WORLD_SCALE, tubeDiameter * 0.52);
+  return {
+    x: visual.x,
+    y: visual.y - tubeRadius - settings.ballSize,
+  };
+}
+
+export function wallScoreTubeContactDepth3D(index: number, settings: StudioSettings) {
+  const renderedDepth = korobeinikiReferenceTubeDepth(index)
+    * (0.92 + settings.platformDetail * 0.12);
+  return -renderedDepth * REFERENCE_SHAFT_CONTACT_RATIO;
 }
 
 export function korobeinikiColorForMidi(midi: number) {
@@ -70,35 +89,40 @@ export function korobeinikiColorForMidi(midi: number) {
   return REFERENCE_COLOR_BY_PITCH_CLASS[pitchClass];
 }
 
+export function wallScoreEntryDecor(origin: { x: number; y: number }) {
+  return ENTRY_DECOR_OFFSETS.map(([dx, dy, color], index) => ({
+    index,
+    x: origin.x + dx,
+    y: origin.y + dy,
+    color,
+  }));
+}
+
 export function korobeinikiReferenceDecorForScene(sceneIndex: number) {
+  if (sceneIndex !== 0) return [];
   const eventIndex = KOROBEINIKI_REFERENCE_SCENE_STARTS[sceneIndex];
   if (eventIndex === undefined) return [];
   const origin = REFERENCE_HITS[eventIndex];
-  return ENTRY_DECOR_OFFSETS.map(([dx, dy, color], index) => ({
-    index,
-    x: origin[0] + dx,
-    y: origin[1] + dy,
-    color,
-  }));
+  return wallScoreEntryDecor({ x: origin[0], y: origin[1] });
+}
+
+export function wallScoreLabelPosition(origin: { x: number; y: number }, sceneIndex: number) {
+  const [dx, dy] = LABEL_OFFSETS[sceneIndex % LABEL_OFFSETS.length] ?? LABEL_OFFSETS.at(-1)!;
+  return { x: origin.x + dx, y: origin.y + dy };
 }
 
 export function korobeinikiReferenceLabelForScene(sceneIndex: number) {
   const eventIndex = KOROBEINIKI_REFERENCE_SCENE_STARTS[sceneIndex];
   if (eventIndex === undefined) return null;
   const origin = REFERENCE_HITS[eventIndex];
-  const [dx, dy] = LABEL_OFFSETS[sceneIndex] ?? LABEL_OFFSETS.at(-1)!;
-  return { x: origin[0] + dx, y: origin[1] + dy };
+  return wallScoreLabelPosition({ x: origin[0], y: origin[1] }, sceneIndex);
 }
 
 export function korobeinikiReferenceSceneHit(sceneIndex: number) {
   const eventIndex = KOROBEINIKI_REFERENCE_SCENE_STARTS[sceneIndex];
   if (eventIndex === undefined) return null;
   const hit = REFERENCE_HITS[eventIndex];
-  return { x: hit[0] + MARBLE_STRIKE_OFFSET.x, y: hit[1] + MARBLE_STRIKE_OFFSET.y };
-}
-
-export function korobeinikiReferenceBridgeDecor() {
-  return BRIDGE_DECOR.map((bridge) => ({ ...bridge } satisfies KorobeinikiReferenceBridgeDecor));
+  return { x: hit[0], y: hit[1] };
 }
 
 export function isKorobeinikiWallLayout(settings: StudioSettings) {
@@ -127,13 +151,144 @@ export function korobeinikiSceneForIndex(index: number) {
   };
 }
 
-function referenceHit(index: number, width: number) {
-  const lap = Math.floor(index / REFERENCE_HITS.length);
-  const point = REFERENCE_HITS[index % REFERENCE_HITS.length];
+export function wallScoreSceneStartIndices(events: readonly NoteEvent[]) {
+  if (!events.length) return [];
+  return [0, ...korobeinikiBridgeAfterIndices(events).map((index) => index + 1)];
+}
+
+function extendedScenePoint(template: readonly ReferencePoint[], localIndex: number): ReferencePoint {
+  const measured = template[localIndex];
+  if (measured) return measured;
+  const last = template.at(-1) ?? [REFERENCE_WIDTH / 2, 0];
+  const extra = localIndex - template.length + 1;
+  const center = 350 - Math.min(54, extra * 4);
+  const spread = 82 + Math.min(42, extra * 3);
+  const x = localIndex % 2 === 0 ? center - spread : center + spread;
+  return [x, last[1] + extra * (82 + Math.min(14, extra * 2))];
+}
+
+export function wallScoreReferenceHits(events: readonly NoteEvent[], width: number) {
+  if (!events.length) return [];
+  const sceneStarts = new Set(wallScoreSceneStartIndices(events));
+  const points: { x: number; y: number }[] = [];
+  let sceneIndex = -1;
+  let localIndex = 0;
+  let sceneOriginY = 220;
+
+  events.forEach((_event, index) => {
+    if (sceneStarts.has(index)) {
+      sceneIndex += 1;
+      localIndex = 0;
+      if (index > 0) {
+        const previousY = points.at(-1)?.y ?? sceneOriginY;
+        sceneOriginY = previousY + REFERENCE_SCENE_GAPS[(sceneIndex - 1) % REFERENCE_SCENE_GAPS.length];
+      }
+    }
+    const template = REFERENCE_SCENE_POINTS[sceneIndex % REFERENCE_SCENE_POINTS.length];
+    const [x, localY] = extendedScenePoint(template, localIndex);
+    points.push({ x: x * width / REFERENCE_WIDTH, y: sceneOriginY + localY });
+    localIndex += 1;
+  });
+  return points;
+}
+
+export const WALL_SCORE_RAIL_ENTRY_T = 0.18;
+export const WALL_SCORE_RAIL_EXIT_T = 0.78;
+
+export interface WallScoreRailSegment {
+  afterIndex: number;
+  points: { x: number; y: number }[];
+}
+
+interface WallScoreBridgeGeometry {
+  entry: { x: number; y: number };
+  exit: { x: number; y: number };
+  sag: number;
+}
+
+function wallScoreBridgeGeometry(start: MarblePlatform, end: MarblePlatform): WallScoreBridgeGeometry {
+  const dx = end.hitX - start.hitX;
+  const dy = end.hitY - start.hitY;
+  const bridgeY = start.hitY + dy * 0.42 - Math.min(10, Math.abs(dx) * 0.05);
   return {
-    x: point[0] * width / REFERENCE_WIDTH,
-    y: point[1] + lap * 3_300,
+    entry: { x: start.hitX + dx * 0.28, y: bridgeY },
+    exit: { x: start.hitX + dx * 0.7, y: bridgeY + dy * 0.06 },
+    sag: Math.min(14, Math.max(9, Math.abs(dx) * 0.06)),
   };
+}
+
+function shortBridgeFlight(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  phase: number,
+) {
+  const p = Math.max(0, Math.min(1, phase));
+  return {
+    x: from.x + (to.x - from.x) * p,
+    y: from.y + (to.y - from.y) * p - Math.sin(Math.PI * p) * 14,
+  };
+}
+
+function wallScoreRailCenter(geometry: WallScoreBridgeGeometry, phase: number) {
+  const p = Math.max(0, Math.min(1, phase));
+  return {
+    x: geometry.entry.x + (geometry.exit.x - geometry.entry.x) * p,
+    y: geometry.entry.y + (geometry.exit.y - geometry.entry.y) * p
+      + Math.sin(Math.PI * p) * geometry.sag,
+  };
+}
+
+export function wallScoreMarblePointAtPhase(
+  start: MarblePlatform,
+  end: MarblePlatform,
+  phase: number,
+) {
+  const p = Math.max(0, Math.min(1, phase));
+  const geometry = wallScoreBridgeGeometry(start, end);
+  if (p < WALL_SCORE_RAIL_ENTRY_T) {
+    return shortBridgeFlight(start, geometry.entry, p / WALL_SCORE_RAIL_ENTRY_T);
+  }
+  if (p <= WALL_SCORE_RAIL_EXIT_T) {
+    return wallScoreRailCenter(
+      geometry,
+      (p - WALL_SCORE_RAIL_ENTRY_T) / (WALL_SCORE_RAIL_EXIT_T - WALL_SCORE_RAIL_ENTRY_T),
+    );
+  }
+  return shortBridgeFlight(
+    geometry.exit,
+    end,
+    (p - WALL_SCORE_RAIL_EXIT_T) / (1 - WALL_SCORE_RAIL_EXIT_T),
+  );
+}
+
+function wallScoreRailPoint(start: MarblePlatform, end: MarblePlatform, ratio: number, ballRadius: number) {
+  const ball = wallScoreMarblePointAtPhase(start, end, ratio);
+  const sample = 0.001;
+  const before = wallScoreMarblePointAtPhase(start, end, Math.max(WALL_SCORE_RAIL_ENTRY_T, ratio - sample));
+  const after = wallScoreMarblePointAtPhase(start, end, Math.min(WALL_SCORE_RAIL_EXIT_T, ratio + sample));
+  const velocity = { x: after.x - before.x, y: after.y - before.y };
+  const speed = Math.max(0.001, Math.hypot(velocity.x, velocity.y));
+  let normal = { x: -velocity.y / speed, y: velocity.x / speed };
+  if (normal.y < 0) normal = { x: -normal.x, y: -normal.y };
+  return { x: ball.x + normal.x * ballRadius, y: ball.y + normal.y * ballRadius };
+}
+
+export function wallScoreRailSegments(platforms: readonly MarblePlatform[], ballRadius: number): WallScoreRailSegment[] {
+  const segments: WallScoreRailSegment[] = [];
+  for (let index = 0; index < platforms.length - 1; index += 1) {
+    const start = platforms[index];
+    const end = platforms[index + 1];
+    const spanMs = end.event.timeMs - start.event.timeMs;
+    if (spanMs < KOROBEINIKI_BRIDGE_GAP_MS) continue;
+    const steps = 10;
+    const points = Array.from({ length: steps + 1 }, (_, pointIndex) => {
+      const ratio = WALL_SCORE_RAIL_ENTRY_T
+        + (WALL_SCORE_RAIL_EXIT_T - WALL_SCORE_RAIL_ENTRY_T) * pointIndex / steps;
+      return wallScoreRailPoint(start, end, ratio, ballRadius);
+    });
+    segments.push({ afterIndex: index, points });
+  }
+  return segments;
 }
 
 export function buildKorobeinikiReferenceCourse(
@@ -142,35 +297,30 @@ export function buildKorobeinikiReferenceCourse(
   width: number,
   onProgress?: (progress: number) => void,
 ): MarblePlatform[] {
+  const visualHits = wallScoreReferenceHits(events, width);
+  const hits = visualHits.map((visual) => wallScoreTubeHitPoint(visual, settings));
   const platforms = events.map((event, index) => {
-    const visualHit = referenceHit(index, width);
-    const hit = {
-      x: visualHit.x + MARBLE_STRIKE_OFFSET.x * width / REFERENCE_WIDTH,
-      y: visualHit.y + MARBLE_STRIKE_OFFSET.y,
-    };
-    const nextVisualHit = index + 1 < events.length ? referenceHit(index + 1, width) : null;
-    const next = nextVisualHit ? {
-      x: nextVisualHit.x + MARBLE_STRIKE_OFFSET.x * width / REFERENCE_WIDTH,
-      y: nextVisualHit.y + MARBLE_STRIKE_OFFSET.y,
-    } : null;
+    const visualHit = visualHits[index];
+    const hit = hits[index];
+    const next = hits[index + 1] ?? null;
     const spanSeconds = next
       ? Math.max(0.08, (events[index + 1].timeMs - event.timeMs) / 1000)
       : 0.42;
-    const outVX = next ? (next.x - hit.x) / spanSeconds : -150;
+    const previous = hits[index - 1];
+    const terminalDirection = previous ? Math.sign(hit.x - previous.x) || 1 : 1;
+    const outVX = next ? (next.x - hit.x) / spanSeconds : terminalDirection * 110;
     const outVY = next
       ? (next.y - hit.y - 0.5 * REFERENCE_GRAVITY * spanSeconds ** 2) / spanSeconds
-      : -260;
-    const centerInset = settings.ballSize * 0.92;
-    const scene = korobeinikiSceneForIndex(index);
+      : Math.max(96, settings.ballSize * 5.5);
     const platform: MarblePlatform = {
       index,
       x: hit.x,
-      y: hit.y + centerInset,
+      y: hit.y,
       visualX: visualHit.x,
       visualY: visualHit.y,
       width: settings.platformWidth * 0.58,
       thickness: settings.platformThickness,
-      tiltRad: ((index % 5) - 2) * 0.012,
+      tiltRad: 0,
       color: korobeinikiColorForMidi(event.midi),
       contactX: hit.x,
       contactY: hit.y,
@@ -181,13 +331,13 @@ export function buildKorobeinikiReferenceCourse(
       outVX,
       outVY,
       gravity: REFERENCE_GRAVITY,
-      contactMode: "cap",
+      contactMode: "surface",
       motionMode: "ballistic",
       event,
       visualStyle: "wall-boomwhacker-tube",
       visualThickness: Math.max(40, settings.platformThickness),
+      visualTiltRad: 0,
     };
-    if (scene.sceneStart) platform.visualTiltRad = 0;
     onProgress?.(Math.min(1, (index + 1) / Math.max(1, events.length)));
     return platform;
   });

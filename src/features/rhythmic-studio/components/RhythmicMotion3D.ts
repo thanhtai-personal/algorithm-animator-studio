@@ -10,6 +10,10 @@ import { settingsForChaseOwner } from "../engine/chaseCoursePlanner";
 import type { ChaseOwner } from "../engine/chaseStrikeOwnership";
 import type { ChaseCoursePlan } from "../lib/chaseCourse";
 import { instrumentMarbleContactDepth3D } from "./instrumentPlayingSurface3D";
+import {
+  isKorobeinikiWallLayout,
+  wallScoreTubeContactDepth3D,
+} from "../lib/korobeinikiReferenceLayout";
 
 export const RHYTHMIC_COURSE_WIDTH = 720;
 export const RHYTHMIC_WORLD_SCALE = 0.012;
@@ -63,6 +67,9 @@ function contactDepthForPlatform(
   if (override && !isPlatformCourseItem(override.style)) return 0;
   const style = platform.visualStyle
     ?? (override && isPlatformCourseItem(override.style) ? override.style : resolvePlatformStyle(platform.index, settings));
+  if (style === "wall-boomwhacker-tube" && isKorobeinikiWallLayout(settings)) {
+    return wallScoreTubeContactDepth3D(platform.index, settings);
+  }
   return instrumentMarbleContactDepth3D(style, settings.ballSize * RHYTHMIC_WORLD_SCALE);
 }
 

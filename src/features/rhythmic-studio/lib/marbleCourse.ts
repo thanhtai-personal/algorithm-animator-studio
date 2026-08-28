@@ -8,7 +8,12 @@ import { presetObstaclePlan } from "../engine/presetObstaclePlan";
 import { instrumentScenePlan } from "../engine/instrumentScenePlan";
 import { noteColorForMidi } from "./noteColors";
 import { createPhraseInstrumentSettingsResolver } from "./phraseInstrumentMix";
-import { buildKorobeinikiReferenceCourse, isKorobeinikiWallLayout } from "./korobeinikiReferenceLayout";
+import {
+  buildKorobeinikiReferenceCourse,
+  isKorobeinikiWallLayout,
+  KOROBEINIKI_BRIDGE_GAP_MS,
+  wallScoreMarblePointAtPhase,
+} from "./korobeinikiReferenceLayout";
 
 export type { MarblePlatform, MarblePoint } from "../engine/marblePhysicsTypes";
 
@@ -259,6 +264,16 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
   if (segmentOverride) {
     const guided = guidedCoursePoint(start, end, rawT, segmentOverride.style, segmentSettings);
     if (guided) return { x: guided.x, y: guided.y, color: mixHex(start.color, end.color, rawT), platformIndex: index };
+  }
+
+  if (isKorobeinikiWallLayout(segmentSettings) && span >= KOROBEINIKI_BRIDGE_GAP_MS) {
+    const rolling = wallScoreMarblePointAtPhase(start, end, rawT);
+    return {
+      x: rolling.x,
+      y: rolling.y,
+      color: mixHex(start.color, end.color, rawT),
+      platformIndex: index,
+    };
   }
 
   if (start.motionMode === "hold") {

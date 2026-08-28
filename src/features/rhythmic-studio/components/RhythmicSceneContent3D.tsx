@@ -318,7 +318,7 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     <RhythmicTitle3D text={isKorobeinikiWallLayout(props.settings) ? "" : props.settings.titleText} />
     <RhythmicLightingRig3D settings={props.settings} focus={smoothedLook} bounds={backdropBounds} recording={props.recording} />
     <RhythmicEnvironment3D settings={props.settings} backgroundUrl={props.backgroundUrl} bounds={backdropBounds} />
-    {isKorobeinikiWallLayout(props.settings) && <KorobeinikiReferenceDecor3D />}
+    {isKorobeinikiWallLayout(props.settings) && <KorobeinikiReferenceDecor3D platforms={props.platforms} />}
     <RhythmicCourseItems3D platforms={props.platforms} overrides={props.courseOverrides} settings={props.settings} focusIndex={focusIndex} events={props.events} resolveSettings={props.resolveSettings} />
     <RhythmicGuideRails3D platforms={props.platforms} settings={props.settings} focusIndex={focusIndex} />
     <RhythmicPlatformField3D platforms={props.platforms} settings={props.settings} courseOverrides={props.courseOverrides} focusIndex={focusIndex} selectedNodeIndex={props.selectedNodeIndex} onSelectNode={props.onSelectNode} resolveSettings={props.resolveSettings} impactIndex={impactLight.index} impactStrength={impactLight.strength} timeMs={currentTimeRef.current} />

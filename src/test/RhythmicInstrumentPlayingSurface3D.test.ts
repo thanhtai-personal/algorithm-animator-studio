@@ -54,6 +54,12 @@ describe("3D instrument playing surfaces", () => {
     ["tube-cylinder", 0.11],
     ["toy-peg", 0.12],
     ["flute-pipe", 0.085],
+    ["xylophone-bar", 0.07],
+    ["piano-key", 0.07],
+    ["marimba-bar", 0.07],
+    ["pluck-pad", 0.07],
+    ["vibraphone-bar", 0.07],
+    ["metallophone-plate", 0.07],
     ["instrument-wire", 0.126],
     ["instrument-rail", 0.145],
   ])("uses the actual upper tangent of %s as its playing surface", (style, expectedTop) => {

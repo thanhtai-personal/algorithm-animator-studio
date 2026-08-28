@@ -29,6 +29,7 @@ import {
 import { emitDueRhythmicHits } from "../lib/chaseAudioScheduler";
 import { settingsForChaseOwner } from "../engine/chaseCoursePlanner";
 import { isKorobeinikiWallLayout } from "../lib/korobeinikiReferenceLayout";
+import { usesSharedWallScore } from "../lib/wallScoreLayout";
 import { KorobeinikiReferenceDecor3D } from "./KorobeinikiReferenceDecor3D";
 import {
   advanceRhythmicPlaybackFrameClock,
@@ -211,7 +212,7 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     const isTubeBoard = frameSettings.cameraProfile === "tube-board";
     const isComet = frameSettings.cameraProfile === "comet";
     const isShowcase = frameSettings.instrumentFamily !== "auto";
-    const isWallScore = isKorobeinikiWallLayout(frameSettings);
+    const isWallScore = usesSharedWallScore(frameSettings);
     const depthProfile = cameraDepthProfile(frameSettings);
     const adaptiveZ = THREE.MathUtils.clamp(
       RHYTHMIC_CAMERA_Z + depthProfile.offset + jumpDistance * (isComet ? 0.15 : 0.13) + Math.min(0.42, speed * 0.015) - Math.min(rollingSurface ? 0.24 : 0.58, density * (rollingSurface ? 0.012 : 0.028)),

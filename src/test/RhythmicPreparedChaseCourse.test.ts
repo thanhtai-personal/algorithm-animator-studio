@@ -8,6 +8,8 @@ import {
   buildMarbleCourse,
   hasCompleteMarblePlatforms,
 } from "../features/rhythmic-studio/lib/marbleCourse";
+import { instrumentVoiceForPlatform } from "../features/rhythmic-studio/lib/instrumentHitProfiles";
+import type { InstrumentMixSegment } from "../features/rhythmic-studio/lib/phraseInstrumentMix";
 import type { NoteEvent } from "../features/rhythmic-studio/types";
 
 const events: NoteEvent[] = [
@@ -82,6 +84,31 @@ describe("prepared marble course mode boundary", () => {
     settings.secondaryMarble.ballStyle = "classic";
     expect(payload.settings.secondaryMarble.ballStyle).toBe("multicolor-glass");
     expect(payload.settings.secondaryMarble).not.toBe(settings.secondaryMarble);
+    expect(() => structuredClone(payload)).not.toThrow();
+  });
+
+  it("serializes a custom instrument schedule and changes both mesh and voice at its boundary", () => {
+    const instrumentMixSegments: InstrumentMixSegment[] = [
+      { id: "gong-section", family: "gong", startMs: 0, endMs: 200 },
+      { id: "flute-section", family: "flute", startMs: 200, endMs: 1_000 },
+    ];
+    const settings = { ...DEFAULT_SETTINGS, instrumentFamily: "mixed" as const };
+    const payload = createMarbleCourseWorkerPayload({
+      events,
+      settings,
+      width: 720,
+      presetMixEnabled: false,
+      presetMixSeed: 17,
+      instrumentMixSegments,
+    });
+    const result = prepareMarbleCourse(payload);
+
+    instrumentMixSegments[0].family = "piano";
+    expect(payload.instrumentMixSegments[0].family).toBe("gong");
+    expect(result.platforms[0].visualStyle).toBe("gong-disc");
+    expect(result.platforms[3].visualStyle).toBe("flute-pipe");
+    expect(instrumentVoiceForPlatform(result.platforms[0].visualStyle!, events[0], "piano")).toBe("gong");
+    expect(instrumentVoiceForPlatform(result.platforms[3].visualStyle!, events[3], "piano")).toBe("flute");
     expect(() => structuredClone(payload)).not.toThrow();
   });
 });

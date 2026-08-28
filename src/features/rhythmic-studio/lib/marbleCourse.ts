@@ -14,6 +14,7 @@ import {
   KOROBEINIKI_BRIDGE_GAP_MS,
   wallScoreMarblePointAtPhase,
 } from "./korobeinikiReferenceLayout";
+import { buildSharedWallScoreCourse, usesSharedWallScore } from "./wallScoreLayout";
 
 export type { MarblePlatform, MarblePoint } from "../engine/marblePhysicsTypes";
 
@@ -184,6 +185,9 @@ export function buildMarbleCourse(
   }
   const baseResolver: StudioSettingsResolver = resolveSettings ?? (() => settings);
   const phraseResolver = createPhraseInstrumentSettingsResolver(events, baseResolver);
+  if (usesSharedWallScore(settings)) {
+    return buildSharedWallScoreCourse(events, settings, width, phraseResolver, onProgress);
+  }
   return buildPhysicsCourse(
     events,
     settings,
@@ -266,7 +270,7 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
     if (guided) return { x: guided.x, y: guided.y, color: mixHex(start.color, end.color, rawT), platformIndex: index };
   }
 
-  if (isKorobeinikiWallLayout(segmentSettings) && span >= KOROBEINIKI_BRIDGE_GAP_MS) {
+  if (usesSharedWallScore(segmentSettings) && span >= KOROBEINIKI_BRIDGE_GAP_MS) {
     const rolling = wallScoreMarblePointAtPhase(start, end, rawT);
     return {
       x: rolling.x,

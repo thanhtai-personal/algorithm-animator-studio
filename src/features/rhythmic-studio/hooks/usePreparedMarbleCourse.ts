@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { NoteEvent, StudioSettings } from "../types";
+import type { InstrumentMixSegment, NoteEvent, StudioSettings } from "../types";
 import type { MarblePlatform } from "../engine/marblePhysicsTypes";
 import type { ChaseCoursePlan } from "../lib/chaseCourse";
 import type { MarbleCoursePreparationResult } from "../engine/marbleCoursePreparation";
@@ -57,6 +57,7 @@ export function usePreparedMarbleCourse(
   width: number,
   presetMixEnabled: boolean,
   presetMixSeed: number,
+  instrumentMixSegments: InstrumentMixSegment[] = [],
 ): PreparedMarbleCourse {
   const requestId = useRef(0);
   const [state, setState] = useState<PreparedMarbleCourse>({
@@ -96,14 +97,21 @@ export function usePreparedMarbleCourse(
       setState((current) => ({ ...current, isPreparing: false, error: event.message || "Course worker failed" }));
       worker.terminate();
     };
-    const input = createMarbleCourseWorkerPayload({ events, settings, width, presetMixEnabled, presetMixSeed });
+    const input = createMarbleCourseWorkerPayload({
+      events,
+      settings,
+      width,
+      presetMixEnabled,
+      presetMixSeed,
+      instrumentMixSegments,
+    });
     const postError = postCourseWorkerRequest(worker, id, input);
     if (postError) {
       worker.terminate();
       setState((current) => ({ ...current, isPreparing: false, error: postError }));
     }
     return () => worker.terminate();
-  }, [events, presetMixEnabled, presetMixSeed, settings, width]);
+  }, [events, instrumentMixSegments, presetMixEnabled, presetMixSeed, settings, width]);
 
   return state;
 }

@@ -1,4 +1,5 @@
 import type { StudioSettings } from "../types";
+import { usesSharedWallScore } from "./wallScoreLayout";
 
 export interface CameraPoint { x: number; y: number }
 
@@ -9,6 +10,7 @@ export function presetCameraAnchorX(settings: StudioSettings) {
 }
 
 export function presetCameraScale(settings: StudioSettings) {
+  if (usesSharedWallScore(settings)) return 1.22;
   // 2D instruments need to keep a readable face size. The old xylophone value
   // (0.82) zoomed out by 18%, which made dense/fast runs look like distant
   // thumbnails. These close-up values keep instrument faces legible and let

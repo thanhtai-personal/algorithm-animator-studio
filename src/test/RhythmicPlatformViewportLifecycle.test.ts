@@ -59,7 +59,7 @@ describe("rhythmic platform viewport lifecycle", () => {
 
   it("keeps Korobeiniki wall tubes mounted longer so their shadows do not pop out early", () => {
     const focusY = 5_000;
-    const settings = { ...DEFAULT_SETTINGS, instrumentFamily: "boomwhacker" as const, instrumentLayout: "wall-score" as const };
+    const settings = { ...DEFAULT_SETTINGS, instrumentFamily: "boomwhacker" as const, instrumentLayout: "wall-score" as const, platformPrimaryStyle: "wall-boomwhacker-tube" as const };
     const items = [
       platform({ index: 0, y: focusY - KOROBEINIKI_3D_RETAIN_BEHIND_PX + 120 }),
       platform({ index: 1, y: focusY }),
@@ -71,7 +71,7 @@ describe("rhythmic platform viewport lifecycle", () => {
   });
 
   it("keeps a compact Korobeiniki wall score mounted for the full take so shadows cannot pop", () => {
-    const settings = { ...DEFAULT_SETTINGS, instrumentFamily: "boomwhacker" as const, instrumentLayout: "wall-score" as const };
+    const settings = { ...DEFAULT_SETTINGS, instrumentFamily: "boomwhacker" as const, instrumentLayout: "wall-score" as const, platformPrimaryStyle: "wall-boomwhacker-tube" as const };
     const items = Array.from({ length: 39 }, (_, index) => platform({
       index,
       y: index * 90,
@@ -79,6 +79,18 @@ describe("rhythmic platform viewport lifecycle", () => {
 
     expect(items.length).toBeLessThanOrEqual(KOROBEINIKI_FULL_MOUNT_LIMIT);
     expect(platformsMountedFor3D(items, 38, settings)).toHaveLength(items.length);
+  });
+
+  it("uses the extended wall-score preload window for every concrete instrument", () => {
+    const focusY = 5_000;
+    const settings = { ...DEFAULT_SETTINGS, instrumentFamily: "piano" as const, instrumentLayout: "gallery" as const };
+    const items = [
+      platform({ index: 0, y: focusY - PLATFORM_3D_RETAIN_BEHIND_PX - 600 }),
+      platform({ index: 1, y: focusY }),
+      platform({ index: 2, y: focusY + 400 }),
+    ];
+
+    expect(platformsMountedFor3D(items, 1, settings).map((item) => item.index)).toEqual([0, 1, 2]);
   });
 
   it("preloads a 2D instrument before entry and keeps it after leaving the frame", () => {

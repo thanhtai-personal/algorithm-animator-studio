@@ -7,6 +7,7 @@ import { guidedCoursePoint, isLongCourseItem, overrideForSegment } from "../lib/
 import type { NoteEvent } from "../types";
 import { RHYTHMIC_COURSE_WIDTH, RHYTHMIC_WORLD_SCALE } from "./RhythmicMotion3D";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
+import { usesAutomaticLongGapTube } from "../lib/longGapTube";
 
 function worldPoint(x: number, y: number, z = 0) {
   return new THREE.Vector3(
@@ -210,7 +211,7 @@ export function RhythmicCourseItems3D({ platforms, overrides, settings, focusInd
     const segments: { start: MarblePlatform; end: MarblePlatform; color: string; key: string; settings: StudioSettings }[] = [];
     for (let index = 0; index < platforms.length - 1; index += 1) {
       const segmentSettings = resolveSettings?.(index) ?? settings;
-      if (segmentSettings.terrainProfile === "comet" || segmentSettings.terrainProfile === "xylophone") continue;
+      if (!usesAutomaticLongGapTube(segmentSettings)) continue;
       const span = events[index + 1].timeMs - events[index].timeMs;
       if (span < LONG_GAP_TUBE_MS || overrideForSegment(index, overrides)) continue;
       const start = platforms[index];

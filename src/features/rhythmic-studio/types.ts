@@ -90,6 +90,14 @@ export const INSTRUMENT_FAMILIES = [
   "mixed",
 ] as const;
 export type InstrumentFamily = (typeof INSTRUMENT_FAMILIES)[number];
+export type ConfigurableInstrumentFamily = Exclude<InstrumentFamily, "auto" | "mixed">;
+
+export interface InstrumentMixSegment {
+  id: string;
+  startMs: number;
+  endMs: number;
+  family: ConfigurableInstrumentFamily;
+}
 
 export const INSTRUMENT_LAYOUTS = ["cascade", "fan", "gallery", "split", "corridor", "wall-score"] as const;
 export type InstrumentLayout = (typeof INSTRUMENT_LAYOUTS)[number];
@@ -324,6 +332,7 @@ export interface StoredProject {
   source?: AudioSourceMeta;
   courseOverrides?: CourseItemOverride[];
   presetMixEnabled?: boolean;
+  instrumentMixSegments?: InstrumentMixSegment[];
   createdAt: string;
   updatedAt: string;
 }

@@ -6,13 +6,21 @@ import { rhythmicText } from "../i18n";
 import { deleteRhythmicProject, saveRhythmicProject } from "../lib/projectStorage";
 import type { StoredProject } from "../types";
 import type { RhythmicStudioStore } from "../store/RhythmicStudioStore";
+import { MIXED_INSTRUMENT_PRESET_ID } from "../lib/studioPresets";
 
 export function useRhythmicProjectActions(store: RhythmicStudioStore, loadBuiltin: (name: string) => void) {
   const lang = useSystemLang();
 
   const saveProject = useCallback(() => {
     const name = store.projectName.trim() || rhythmicText(lang, "default.untitled");
-    const saved = saveRhythmicProject(name, store.settings, store.source, store.courseOverrides, store.presetMixEnabled);
+    const saved = saveRhythmicProject(
+      name,
+      store.settings,
+      store.source,
+      store.courseOverrides,
+      store.presetMixEnabled,
+      store.instrumentMixSegments,
+    );
     store.setProjects([saved, ...store.projects.filter((item) => item.id !== saved.id)]);
     store.setStatus({ key: "status.projectSaved" });
     toast.success(rhythmicText(lang, "toast.presetSaved"));
@@ -30,6 +38,11 @@ export function useRhythmicProjectActions(store: RhythmicStudioStore, loadBuilti
     store.setSelectedNode(null);
     if (project.source?.type === "builtin" && BUILTIN_MELODIES[project.source.name]) loadBuiltin(project.source.name);
     else store.setStatus({ key: project.source ? "status.presetReimport" : "status.presetLoaded" });
+    if (project.settings.instrumentFamily === "mixed") {
+      store.setActivePresetId(MIXED_INSTRUMENT_PRESET_ID);
+      if (project.instrumentMixSegments?.length) store.setInstrumentMixSegments(project.instrumentMixSegments);
+      else store.resetInstrumentMixPlan();
+    }
   }, [loadBuiltin, store]);
 
   return { saveProject, removeProject, loadProject };

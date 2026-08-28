@@ -5,11 +5,12 @@ import type { StudioSettings } from "../types";
 import { RHYTHMIC_COURSE_WIDTH, RHYTHMIC_WORLD_SCALE } from "./RhythmicMotion3D";
 import {
   isKorobeinikiWallLayout,
-  WALL_SCORE_RAIL_ENTRY_T,
-  WALL_SCORE_RAIL_EXIT_T,
   wallScoreRailSegments,
   wallScoreTubeContactDepth3D,
 } from "../lib/korobeinikiReferenceLayout";
+import { usesSharedWallScore } from "../lib/wallScoreLayout";
+import { resolvePlatformStyle } from "../lib/platformStyles";
+import { instrumentMarbleContactDepth3D } from "./instrumentPlayingSurface3D";
 
 function worldPoint(point: Pick<MarblePlatform, "hitX" | "hitY"> | { x: number; y: number }, z = -0.2) {
   const x = "hitX" in point ? point.hitX : point.x;
@@ -40,6 +41,36 @@ function RailSegment({ points, offset }: { points: THREE.Vector3[]; offset: numb
   );
 }
 
+function railContactDepth(platform: MarblePlatform, settings: StudioSettings) {
+  const style = platform.visualStyle ?? resolvePlatformStyle(platform.index, settings);
+  if (style === "wall-boomwhacker-tube" && isKorobeinikiWallLayout(settings)) {
+    return wallScoreTubeContactDepth3D(platform.index, settings);
+  }
+  return instrumentMarbleContactDepth3D(style, settings.ballSize * RHYTHMIC_WORLD_SCALE);
+}
+
+export function wallScoreGuideRailGroups3D(
+  platforms: MarblePlatform[],
+  settings: StudioSettings,
+  focusIndex: number,
+) {
+  if (!settings.showcaseRails || platforms.length < 2 || !usesSharedWallScore(settings)) {
+    return [] as THREE.Vector3[][];
+  }
+  return wallScoreRailSegments(platforms, settings.ballSize)
+    .filter((segment) => Math.abs(segment.afterIndex - focusIndex) <= 24)
+    .map((segment) => {
+      const start = platforms[segment.afterIndex];
+      const end = platforms[segment.afterIndex + 1];
+      const startZ = railContactDepth(start, settings);
+      const endZ = railContactDepth(end, settings);
+      return segment.points.map((point, pointIndex) => worldPoint(
+        point,
+        THREE.MathUtils.lerp(startZ, endZ, pointIndex / Math.max(1, segment.points.length - 1)),
+      ));
+    });
+}
+
 export function RhythmicGuideRails3D({ platforms, settings, focusIndex }: {
   platforms: MarblePlatform[];
   settings: StudioSettings;
@@ -47,19 +78,7 @@ export function RhythmicGuideRails3D({ platforms, settings, focusIndex }: {
 }) {
   const groups = useMemo(() => {
     if (!settings.showcaseRails || platforms.length < 2) return [] as THREE.Vector3[][];
-    if (isKorobeinikiWallLayout(settings)) {
-      return wallScoreRailSegments(platforms, settings.ballSize)
-        .filter((segment) => Math.abs(segment.afterIndex - focusIndex) <= 24)
-        .map((segment) => {
-          const startZ = wallScoreTubeContactDepth3D(segment.afterIndex, settings);
-          const endZ = wallScoreTubeContactDepth3D(segment.afterIndex + 1, settings);
-          return segment.points.map((point, pointIndex) => {
-            const phase = WALL_SCORE_RAIL_ENTRY_T
-              + (WALL_SCORE_RAIL_EXIT_T - WALL_SCORE_RAIL_ENTRY_T) * pointIndex / (segment.points.length - 1);
-            return worldPoint(point, THREE.MathUtils.lerp(startZ, endZ, phase));
-          });
-        });
-    }
+    if (usesSharedWallScore(settings)) return wallScoreGuideRailGroups3D(platforms, settings, focusIndex);
     if (platforms.length < 4) return [] as THREE.Vector3[][];
     const visible = platforms.filter((platform) => Math.abs(platform.index - focusIndex) <= 24);
     const stride = Math.max(4, Math.round(10 - settings.showcaseRailDensity * 5));

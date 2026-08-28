@@ -237,7 +237,7 @@ describe("Korobeiniki wall-tube reference preset", () => {
     expect(platforms.slice(1).every((platform, index) => platform.hitY > platforms[index].hitY)).toBe(true);
 
     const afterLastHit = marbleAtTime(events.at(-1)!.timeMs + 240, events, platforms, settings);
-    expect(afterLastHit.y).toBeGreaterThan(platforms.at(-1)!.hitY);
+    expect(afterLastHit.y).toBeLessThan(platforms.at(-1)!.hitY);
   });
 
   it("compresses fast-note tubes instead of making the marble move unnaturally faster", () => {

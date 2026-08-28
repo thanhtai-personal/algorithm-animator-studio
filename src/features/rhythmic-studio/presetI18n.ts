@@ -22,10 +22,12 @@ const EN: Record<PresetTextKey, string> = {
   "toy-pegboard": "Reference · Color Pegs",
   "neon-comet": "Reference · Neon Course",
   "vibraphone-wall": "Reference · Instrument Gallery",
+  "mixed-instruments": "Mixed instruments",
   "reference-korobeiniki-tubes": "Reference · Korobeiniki Tubes",
-  "toy-pegboard.hint": "Matches clip 013b: sparse colorful pegs and a candy-flower marble",
-  "neon-comet.hint": "Consolidates the dark neon references, including clip ad97: luminous rails, prisms, pads and controlled jumps",
+  "toy-pegboard.hint": "Colorful pegs arranged as a Korobeiniki wall score, with compressed spacing for fast notes",
+  "neon-comet.hint": "Neon pads arranged on the Korobeiniki wall-score path with stable, planar collisions",
   "vibraphone-wall.hint": "Consolidates the near-identical showcase references (0e70, 3949, 4739, 4fd7, 54ce, 57c8, a154 and hB8lCZ8xGZo_005) into one instrument-gallery preset",
+  "mixed-instruments.hint": "Changes instrument after several MIDI phrases; open the editor to choose each instrument and duration",
   "reference-korobeiniki-tubes.hint": "Matches tXxHSu15xU8_002: loads the 39-note Korobeiniki performance, pastel wall tubes, compact wire bridges and a purple striped marble",
 };
 
@@ -40,10 +42,12 @@ const VI: typeof EN = {
   "toy-pegboard": "Mẫu · Chốt đa sắc",
   "neon-comet": "Mẫu · Đường neon",
   "vibraphone-wall": "Mẫu · Cụm nhạc cụ",
+  "mixed-instruments": "Nhạc cụ hỗn hợp",
   "reference-korobeiniki-tubes": "Mẫu · Ống Korobeiniki",
-  "toy-pegboard.hint": "Theo clip 013b: chốt màu thưa thoáng và bi hoa kẹo",
-  "neon-comet.hint": "Gộp nhóm neon tối, gồm clip ad97: ray sáng, lăng kính, bệ phát sáng và cú nảy có kiểm soát",
+  "toy-pegboard.hint": "Chốt màu xếp theo wall-score Korobeiniki; nốt nhanh được đặt sát nhau",
+  "neon-comet.hint": "Bệ neon xếp theo đường wall-score Korobeiniki với va chạm ổn định trên mặt tường",
   "vibraphone-wall.hint": "Gộp 8 clip có kết quả gần như cùng kiểu trình diễn vào một preset Cụm nhạc cụ để tránh loãng danh sách",
+  "mixed-instruments.hint": "Đổi nhạc cụ sau vài câu MIDI; mở form để chọn từng nhạc cụ và thời gian chạy",
   "reference-korobeiniki-tubes.hint": "Theo clip tXxHSu15xU8_002: tự tải bản Korobeiniki 39 nốt, ống tường pastel, cầu dây ngắn và bi tím sọc",
 };
 

@@ -8,6 +8,7 @@ import { UploadCard } from "../atoms/UploadCard";
 import { BallStyleFrame } from "../sections/BallStyleFrame";
 import { BackgroundStyleFrame } from "../sections/BackgroundStyleFrame";
 import { RhythmicAdvancedControlsDrawer } from "./RhythmicAdvancedControlsDrawer";
+import { InstrumentMixDrawer } from "../InstrumentMixDrawer";
 
 export function RhythmicPresetControls({ studio }: { studio: RhythmicStudioController }) {
   const lang = useSystemLang();
@@ -20,8 +21,9 @@ export function RhythmicPresetControls({ studio }: { studio: RhythmicStudioContr
         <PresetMixButton studio={studio} compact />
       </div>
     </header>
-    <div className="max-h-[calc(100dvh-190px)] overflow-y-auto p-3 rhythmic-scrollbar">
+    <div className="max-h-[calc(100dvh-190px)] space-y-3 overflow-y-auto p-3 rhythmic-scrollbar">
       <QuickPresetBar studio={studio} embedded showMix={false} />
+      <InstrumentMixDrawer studio={studio} />
     </div>
   </aside>;
 }

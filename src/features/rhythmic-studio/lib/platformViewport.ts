@@ -1,6 +1,8 @@
 import type { MarblePlatform } from "../engine/marblePhysicsTypes";
 import type { StudioSettings } from "../types";
 import { presetCameraScale, projectPresetCamera } from "./presetCamera";
+import { isKorobeinikiWallLayout } from "./korobeinikiReferenceLayout";
+import { usesSharedWallScore } from "./wallScoreLayout";
 
 export const PLATFORM_PRELOAD_AHEAD_COUNT = 7;
 // Roughly three screens behind and six screens ahead at the default WebGL
@@ -93,14 +95,15 @@ export function platformsMountedFor3D(
   const focusY = displayGeometry(focus).y;
   const next = platforms[Math.min(platforms.length - 1, focusOffset + 1)];
   const courseDirection = Math.sign(displayGeometry(next).y - focusY) || 1;
-  const korobeiniki = settings?.instrumentFamily === "boomwhacker" && settings.instrumentLayout === "wall-score";
+  const wallScore = settings ? usesSharedWallScore(settings) : false;
+  const korobeiniki = settings ? isKorobeinikiWallLayout(settings) : false;
   // The reference wall-score is intentionally small (39 tubes). Keep compact
   // wall scores mounted for the whole take so a caster cannot disappear while
   // its long projected shadow is still inside the camera. Large imported MIDIs
   // still use the spatial window below to avoid mounting hundreds of meshes.
   if (korobeiniki && platforms.length <= KOROBEINIKI_FULL_MOUNT_LIMIT) return platforms;
-  const retainBehind = korobeiniki ? KOROBEINIKI_3D_RETAIN_BEHIND_PX : PLATFORM_3D_RETAIN_BEHIND_PX;
-  const preloadAhead = korobeiniki ? KOROBEINIKI_3D_PRELOAD_AHEAD_PX : PLATFORM_3D_PRELOAD_AHEAD_PX;
+  const retainBehind = wallScore ? KOROBEINIKI_3D_RETAIN_BEHIND_PX : PLATFORM_3D_RETAIN_BEHIND_PX;
+  const preloadAhead = wallScore ? KOROBEINIKI_3D_PRELOAD_AHEAD_PX : PLATFORM_3D_PRELOAD_AHEAD_PX;
   const minY = focusY - (courseDirection > 0 ? retainBehind : preloadAhead);
   const maxY = focusY + (courseDirection > 0 ? preloadAhead : retainBehind);
 

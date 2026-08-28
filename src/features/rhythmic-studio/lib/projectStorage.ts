@@ -1,4 +1,4 @@
-import type { AudioSourceMeta, CourseItemOverride, StoredProject, StudioSettings } from "../types";
+import type { AudioSourceMeta, CourseItemOverride, InstrumentMixSegment, StoredProject, StudioSettings } from "../types";
 
 const STORAGE_KEY = "kai-studio.rhythmic-projects.v1";
 
@@ -12,7 +12,14 @@ export function listRhythmicProjects(): StoredProject[] {
   }
 }
 
-export function saveRhythmicProject(name: string, settings: StudioSettings, source?: AudioSourceMeta, courseOverrides: CourseItemOverride[] = [], presetMixEnabled = false): StoredProject {
+export function saveRhythmicProject(
+  name: string,
+  settings: StudioSettings,
+  source?: AudioSourceMeta,
+  courseOverrides: CourseItemOverride[] = [],
+  presetMixEnabled = false,
+  instrumentMixSegments: InstrumentMixSegment[] = [],
+): StoredProject {
   const now = new Date().toISOString();
   const project: StoredProject = {
     id: crypto.randomUUID(),
@@ -21,6 +28,7 @@ export function saveRhythmicProject(name: string, settings: StudioSettings, sour
     source,
     courseOverrides,
     presetMixEnabled,
+    instrumentMixSegments: instrumentMixSegments.map((segment) => ({ ...segment })),
     createdAt: now,
     updatedAt: now,
   };

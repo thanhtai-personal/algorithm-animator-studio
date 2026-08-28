@@ -129,7 +129,8 @@ export function korobeinikiReferenceSceneHit(sceneIndex: number) {
 
 export function isKorobeinikiWallLayout(settings: StudioSettings) {
   return settings.instrumentFamily === "boomwhacker"
-    && settings.instrumentLayout === "wall-score";
+    && settings.instrumentLayout === "wall-score"
+    && settings.platformPrimaryStyle === "wall-boomwhacker-tube";
 }
 
 export function korobeinikiBridgeAfterIndices(
@@ -355,7 +356,7 @@ export function buildKorobeinikiReferenceCourse(
     const outVX = next ? (next.x - hit.x) / spanSeconds : terminalDirection * 110;
     const outVY = next
       ? (deltaY - 4 * bounceHeight) / spanSeconds
-      : Math.max(96, settings.ballSize * 5.5);
+      : -Math.max(160, settings.ballSize * 10);
     const platform: MarblePlatform = {
       index,
       x: hit.x,

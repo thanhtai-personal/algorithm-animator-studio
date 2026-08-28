@@ -1,5 +1,6 @@
 import type { NoteEvent, StudioSettings } from "../types";
 import type { MarbleCoursePreparationInput } from "./marbleCoursePreparation";
+import type { InstrumentMixSegment } from "../lib/phraseInstrumentMix";
 
 export interface MarbleCourseWorkerPayloadInput {
   events: NoteEvent[];
@@ -7,6 +8,7 @@ export interface MarbleCourseWorkerPayloadInput {
   width: number;
   presetMixEnabled: boolean;
   presetMixSeed: number;
+  instrumentMixSegments?: InstrumentMixSegment[];
 }
 
 function snapshotOptionalNumber(value: number | undefined): number | undefined {
@@ -41,6 +43,12 @@ export function createMarbleCourseWorkerPayload(
     width: Number(input.width),
     presetMixEnabled: Boolean(input.presetMixEnabled),
     presetMixSeed: Number(input.presetMixSeed),
+    instrumentMixSegments: (input.instrumentMixSegments ?? []).map((segment) => ({
+      id: String(segment.id),
+      family: segment.family,
+      startMs: Number(segment.startMs),
+      endMs: Number(segment.endMs),
+    })),
   };
 }
 

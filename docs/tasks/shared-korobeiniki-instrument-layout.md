@@ -4,14 +4,14 @@
 
 Mọi họ nhạc cụ thật trong Rhythmic Studio dùng chung ngôn ngữ bố trí wall-score của Korobeiniki: nhạc cụ gắn trên tường thành từng cụm câu, nốt nhanh được đặt gần nhau, khoảng nghỉ dài có đoạn chuyển rõ ràng và camera đủ rộng để người xem theo dõi mà không chóng mặt.
 
-Phạm vi gồm `piano`, `xylophone`, `marimba`, `vibraphone`, `boomwhacker`, `pluck`, `metallophone`, `gong`, `flute` và các họ nhạc cụ được resolver của `mixed` chọn theo từng đoạn. Các course phi nhạc cụ như Color Pegs và Neon Comet giữ bố trí riêng.
+Phạm vi gồm `piano`, `xylophone`, `marimba`, `vibraphone`, `boomwhacker`, `pluck`, `metallophone`, `gong`, `flute`, các họ nhạc cụ được resolver của `mixed` chọn theo từng đoạn, cùng hai preset Chốt đa sắc và Đường neon theo xác nhận bổ sung của người dùng.
 
 ## Assumptions
 
 1. “Giống Korobeiniki” là giống thuật toán bố trí, nhịp chuyển cụm, ray và camera; không biến mọi nhạc cụ thành ống.
 2. Mỗi họ giữ đúng mesh, playing surface, collision footprint, màu nốt và âm thanh riêng.
 3. Mỗi nhạc cụ được xoay theo pháp tuyến va chạm đã giải để mặt chơi đón hướng bi đến và hướng nảy đi hợp lý; góc xoay không chỉ dùng để trang trí.
-4. Wall-score trở thành bố trí mặc định/bắt buộc cho mọi họ nhạc cụ thật; các layout cũ không còn thay đổi course của nhóm này.
+4. Wall-score trở thành bố trí mặc định/bắt buộc cho mọi họ nhạc cụ thật, Chốt đa sắc và Đường neon; các layout cũ không còn thay đổi course của nhóm này.
 5. Trang trí chữ Korobeiniki và năm ống dẫn nhập chỉ xuất hiện trong preset tham chiếu Korobeiniki.
 6. Preview 2D, preview 3D và video export phải dùng cùng course và settings resolver.
 
@@ -42,7 +42,9 @@ Phạm vi gồm `piano`, `xylophone`, `marimba`, `vibraphone`, `boomwhacker`, `p
 
 ```ts
 export function usesSharedWallScore(settings: StudioSettings) {
-  return settings.instrumentFamily !== "auto";
+  return settings.instrumentFamily !== "auto"
+    || settings.platformPrimaryStyle === "toy-peg"
+    || settings.platformPrimaryStyle === "comet-pad";
 }
 
 export function wallScoreStyleForFamily(
@@ -68,7 +70,7 @@ export function wallScoreStyleForFamily(
 ## Boundaries
 
 - Always: giữ timing MIDI; giữ geometry/audio riêng; dùng cùng course cho preview/export; bảo toàn Korobeiniki reference.
-- Ask first: biến các preset phi nhạc cụ thành wall-score; xóa lựa chọn layout khỏi UI; thay đổi tempo hoặc thời gian nốt.
+- Ask first: biến thêm preset phi nhạc cụ khác thành wall-score; xóa lựa chọn layout khỏi UI; thay đổi tempo hoặc thời gian nốt.
 - Never: hard-code mọi platform thành `wall-boomwhacker-tube`; dùng tốc độ bi cao để bù nốt nhanh; bỏ collision test.
 
 ## Success Criteria
@@ -91,6 +93,6 @@ export function wallScoreStyleForFamily(
 4. Tổng quát hóa camera, ray, viewport lifecycle, góc xoay theo collision normal và collision clearance.
 5. Chạy regression cho toàn bộ family, Korobeiniki, 2D/3D và build.
 
-## Open Questions
+## Confirmed Expansion
 
-- Cần xác nhận các assumptions, đặc biệt việc giữ Color Pegs/Neon ngoài phạm vi và không biến mọi nhạc cụ thành ống.
+- Người dùng đã xác nhận áp dụng wall-score Korobeiniki cho Chốt đa sắc và Đường neon, nhưng vẫn giữ mesh, màu và audio riêng của từng preset.

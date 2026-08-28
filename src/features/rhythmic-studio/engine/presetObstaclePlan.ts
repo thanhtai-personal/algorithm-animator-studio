@@ -89,7 +89,10 @@ export function presetObstaclePlan(index: number, settings: StudioSettings): Pre
       sceneIndex: referenceScene?.sceneIndex ?? Math.floor(index / sectionLength),
     };
   }
-  if (settings.terrainProfile === "tube-board" && settings.platformPrimaryStyle === "tube-cylinder") {
+  if (
+    settings.terrainProfile === "tube-board"
+    && (settings.platformPrimaryStyle === "tube-cylinder" || settings.platformPrimaryStyle === "toy-peg")
+  ) {
     const accentEvery = Math.max(4, settings.platformAccentEvery);
     const style = index > 0 && index % accentEvery === 0
       ? settings.platformAccentStyle

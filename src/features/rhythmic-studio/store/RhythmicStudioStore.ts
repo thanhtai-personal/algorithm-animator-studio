@@ -7,7 +7,20 @@ import { normalizeRhythmicOutputPreset } from "../lib/outputSize";
 import { normalizeChaseSettings, secondaryMarbleForStyle } from "../lib/chaseSettings";
 import type { LyricFormat } from "../lib/lyrics";
 import type { RhythmicTextKey } from "../i18n";
-import type { RhythmicPresetId } from "../lib/studioPresets";
+import {
+  MIXED_INSTRUMENT_PRESET_ID,
+  presetById,
+  type RhythmicPresetId,
+} from "../lib/studioPresets";
+import {
+  addInstrumentMixSegment,
+  buildAutomaticInstrumentMix,
+  normalizeInstrumentMixSegments,
+  removeInstrumentMixSegment,
+  updateInstrumentMixSegmentDuration,
+  updateInstrumentMixSegmentFamily,
+  type PhraseInstrumentFamily,
+} from "../lib/phraseInstrumentMix";
 import { normalizeBackgroundPreset } from "../types";
 import type { MarblePlatform } from "../engine/marblePhysicsTypes";
 import type {
@@ -20,6 +33,7 @@ import type {
   RhythmicRendererMode,
   BallStyle,
   MarbleAvatar,
+  InstrumentMixSegment,
 } from "../types";
 
 export type MessageToken = { key: RhythmicTextKey; values?: Record<string, string | number> };
@@ -31,11 +45,18 @@ const DEFAULT_SOURCE: AudioSourceMeta = {
   eventCount: BUILTIN_MELODIES["Neon Scale"].length,
 };
 
-export class RhythmicStudioStore {
-  settings: StudioSettings = {
+const DEFAULT_ACTIVE_PRESET_ID: RhythmicPresetId = "toy-pegboard";
+
+function createInitialSettings(): StudioSettings {
+  return {
     ...DEFAULT_SETTINGS,
+    ...presetById(DEFAULT_ACTIVE_PRESET_ID).settings,
     secondaryMarble: { ...DEFAULT_SETTINGS.secondaryMarble },
   };
+}
+
+export class RhythmicStudioStore {
+  settings: StudioSettings = createInitialSettings();
   sourceEvents: NoteEvent[] = [...BUILTIN_MELODIES["Neon Scale"]];
   source: AudioSourceMeta = DEFAULT_SOURCE;
   audioUrl: string | null = null;
@@ -60,9 +81,10 @@ export class RhythmicStudioStore {
   lyricRaw = "";
   lyrics: LyricCue[] = [];
   lyricFormat: LyricFormat | null = null;
-  activePresetId: RhythmicPresetId | null = "toy-pegboard";
+  activePresetId: RhythmicPresetId | null = DEFAULT_ACTIVE_PRESET_ID;
   presetMixEnabled = false;
   presetMixSeed = 1;
+  instrumentMixSegments: InstrumentMixSegment[] = [];
   rendererMode: RhythmicRendererMode = "three";
   // Runtime-only copy of the exact prepared course. Audio scheduling reads this
   // so a rendered drum/gong/key receives its matching voice without waiting for
@@ -120,6 +142,8 @@ export class RhythmicStudioStore {
     this.courseOverrides = [];
     this.selectedNodeIndex = null;
     this.preparedPlatforms = [];
+    if (id === MIXED_INSTRUMENT_PRESET_ID) this.resetInstrumentMixPlan();
+    else this.instrumentMixSegments = [];
   }
 
   applyVisualPreset(id: RhythmicPresetId, settings: Partial<StudioSettings>) {
@@ -127,6 +151,8 @@ export class RhythmicStudioStore {
     next.backgroundPreset = normalizeBackgroundPreset(next.backgroundPreset);
     this.settings = next;
     this.activePresetId = id;
+    if (id === MIXED_INSTRUMENT_PRESET_ID) this.resetInstrumentMixPlan();
+    else this.instrumentMixSegments = [];
   }
 
   replaceSettings(settings: StudioSettings) {
@@ -135,6 +161,7 @@ export class RhythmicStudioStore {
     next.outputPreset = normalizeRhythmicOutputPreset(next.outputPreset);
     this.settings = next;
     this.activePresetId = null;
+    this.instrumentMixSegments = [];
   }
 
   setSource(events: NoteEvent[], source: AudioSourceMeta, info: MessageToken, audioUrl: string | null = null) {
@@ -149,6 +176,52 @@ export class RhythmicStudioStore {
     this.timeMs = 0;
     this.playbackToken += 1;
     this.resetRanges(source.durationMs || this.durationMs);
+    if (this.activePresetId === MIXED_INSTRUMENT_PRESET_ID) this.resetInstrumentMixPlan();
+  }
+
+  resetInstrumentMixPlan() {
+    this.instrumentMixSegments = buildAutomaticInstrumentMix(this.timeline, this.durationMs);
+    this.preparedPlatforms = [];
+  }
+
+  setInstrumentMixSegments(segments: readonly InstrumentMixSegment[]) {
+    this.instrumentMixSegments = normalizeInstrumentMixSegments(segments, this.timeline, this.durationMs);
+    this.preparedPlatforms = [];
+  }
+
+  setInstrumentMixFamily(id: string, family: PhraseInstrumentFamily) {
+    this.instrumentMixSegments = updateInstrumentMixSegmentFamily(this.instrumentMixSegments, id, family);
+    this.preparedPlatforms = [];
+  }
+
+  setInstrumentMixDuration(id: string, durationSeconds: number) {
+    this.instrumentMixSegments = updateInstrumentMixSegmentDuration(
+      this.instrumentMixSegments,
+      id,
+      durationSeconds,
+      this.timeline,
+      this.durationMs,
+    );
+    this.preparedPlatforms = [];
+  }
+
+  addInstrumentMixSection() {
+    this.instrumentMixSegments = addInstrumentMixSegment(
+      this.instrumentMixSegments,
+      this.timeline,
+      this.durationMs,
+    );
+    this.preparedPlatforms = [];
+  }
+
+  removeInstrumentMixSection(id: string) {
+    this.instrumentMixSegments = removeInstrumentMixSegment(
+      this.instrumentMixSegments,
+      id,
+      this.timeline,
+      this.durationMs,
+    );
+    this.preparedPlatforms = [];
   }
 
   resetRanges(durationMs = this.durationMs) {
@@ -214,6 +287,7 @@ export class RhythmicStudioStore {
   setLyrics(raw: string, cues: LyricCue[], format: LyricFormat | null) { this.lyricRaw = raw; this.lyrics = cues; this.lyricFormat = format; }
   setLyricRaw(raw: string) { this.lyricRaw = raw; }
   setRendererMode(mode: RhythmicRendererMode) { this.rendererMode = mode; }
+  setActivePresetId(id: RhythmicPresetId | null) { this.activePresetId = id; }
   setPresetMixEnabled(enabled: boolean) { this.presetMixEnabled = enabled; }
   setPresetMixSeed(seed: number) { this.presetMixSeed = Math.max(1, Math.floor(seed)); }
   setSelectedNode(index: number | null) { this.selectedNodeIndex = index; }

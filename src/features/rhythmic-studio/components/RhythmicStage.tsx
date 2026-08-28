@@ -20,6 +20,7 @@ import { RhythmicShadowToggle } from "./RhythmicShadowToggle";
 import { RhythmicOriginalAudioToggle } from "./RhythmicOriginalAudioToggle";
 import { RhythmicMagicToggle } from "./RhythmicMagicToggle";
 import { hasCompleteMarblePlatforms } from "../lib/marbleCourse";
+import { createInstrumentMixSettingsResolver } from "../lib/phraseInstrumentMix";
 
 type Studio = ReturnType<typeof useRhythmicStudio>;
 
@@ -222,8 +223,24 @@ export function RhythmicStage({ studio }: { studio: Studio }) {
   const useThreeRenderer = studio.rendererMode === "three" && webglAvailable;
   const outputSize = rhythmicOutputSize(studio.settings.outputPreset);
   const mixPlan = useMemo(() => buildPresetMixPlan(studio.timeline, studio.presetMixEnabled, studio.presetMixSeed), [studio.presetMixEnabled, studio.presetMixSeed, studio.timeline]);
-  const resolveSettings = useMemo(() => createPresetMixSettingsResolver(studio.settings, mixPlan), [mixPlan, studio.settings]);
-  const course = usePreparedMarbleCourse(studio.timeline, studio.settings, RHYTHMIC_COURSE_WIDTH, studio.presetMixEnabled, studio.presetMixSeed);
+  const resolvePresetSettings = useMemo(
+    () => createPresetMixSettingsResolver(studio.settings, mixPlan),
+    [mixPlan, studio.settings],
+  );
+  const resolveSettings = useMemo(
+    () => studio.instrumentMixSegments.length
+      ? createInstrumentMixSettingsResolver(studio.timeline, studio.instrumentMixSegments, resolvePresetSettings)
+      : resolvePresetSettings,
+    [resolvePresetSettings, studio.instrumentMixSegments, studio.timeline],
+  );
+  const course = usePreparedMarbleCourse(
+    studio.timeline,
+    studio.settings,
+    RHYTHMIC_COURSE_WIDTH,
+    studio.presetMixEnabled,
+    studio.presetMixSeed,
+    studio.instrumentMixSegments,
+  );
   const requestedMode = studio.settings.marbleMode;
   const courseReady = !course.isPreparing
     && !course.error

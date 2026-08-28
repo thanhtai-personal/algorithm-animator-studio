@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { CHORD_GAP_MS } from "../engine/denseInstrumentRuns";
 import type { NoteEvent, StudioSettings } from "../types";
+import { usesSharedWallScore } from "../lib/wallScoreLayout";
 
 export const RHYTHMIC_CAMERA_Z = 10.15;
 export const RHYTHMIC_CAMERA_FOV = 37;
@@ -132,7 +133,7 @@ export function shadowRigPose(focus: Point3D, offset: Point3D) {
 }
 
 export function cameraDepthProfile(settings: StudioSettings) {
-  if (settings.instrumentFamily !== "auto") return { offset: -1.75, near: 7.6, far: 10.2 };
+  if (usesSharedWallScore(settings)) return { offset: -1.2, near: 8.1, far: 10.7 };
   if (settings.cameraProfile === "xylophone") return { offset: -0.6, near: 8.4, far: 11.2 };
   if (settings.cameraProfile === "tube-board") return { offset: -0.25, near: 8.4, far: 11.5 };
   if (settings.cameraProfile === "comet") return { offset: 0.15, near: 9.2, far: 12.5 };

@@ -8,6 +8,13 @@ import {
   type LongGapTubeGeometry,
   type MarblePlatform,
 } from "./marbleCourse";
+import { usesSharedWallScore } from "./wallScoreLayout";
+
+export function usesAutomaticLongGapTube(settings: StudioSettings) {
+  return !usesSharedWallScore(settings)
+    && settings.terrainProfile !== "comet"
+    && settings.terrainProfile !== "xylophone";
+}
 
 interface SamplePoint {
   x: number;
@@ -124,7 +131,7 @@ export function drawLongGapTubes(
   settings: StudioSettings,
   overrides: CourseItemOverride[] = [],
 ) {
-  if (settings.terrainProfile === "comet" || settings.terrainProfile === "xylophone") return;
+  if (!usesAutomaticLongGapTube(settings)) return;
   for (let index = 0; index < platforms.length - 1; index += 1) {
     const span = events[index + 1].timeMs - events[index].timeMs;
     if (span < LONG_GAP_TUBE_MS || overrideForSegment(index, overrides)) continue;

@@ -115,8 +115,8 @@ function makeBrandTexture(ad: AlgorithmVideoAd, slotLabel: string, style: "facad
   canvas.height = 420;
   const ctx = canvas.getContext("2d")!;
 
-  if (ad.creative === "kata_rental") drawKataRentalCreative(ctx, canvas, ad);
-  else if (ad.creative === "thiendaochilo") drawThienDaoChiLoCreative(ctx, canvas, ad);
+  if (ad.creative === "kata_rental") drawKataRentalCreative(ctx, canvas, ad, style);
+  else if (ad.creative === "thiendaochilo") drawThienDaoChiLoCreative(ctx, canvas, ad, style);
   else drawStandardCreative(ctx, canvas, ad, slotLabel, style);
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -166,7 +166,12 @@ function drawStandardCreative(
   ctx.strokeRect(18, 18, canvas.width - 36, canvas.height - 36);
 }
 
-function drawKataRentalCreative(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, ad: AlgorithmVideoAd) {
+function drawKataRentalCreative(
+  ctx: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+  ad: AlgorithmVideoAd,
+  style: "facade" | "billboard",
+) {
   const burgundy = ad.accent;
   const gold = ad.accentSecondary ?? "#c5a163";
   const cream = "#efe4cf";
@@ -207,43 +212,79 @@ function drawKataRentalCreative(ctx: CanvasRenderingContext2D, canvas: HTMLCanva
   ctx.fillText("KATA RENTAL", 146, 65);
 
   ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
   ctx.fillStyle = burgundy;
-  ctx.font = "900 134px Georgia, 'Times New Roman', serif";
-  ctx.fillText(ad.brand, 58, 180);
+  ctx.font = style === "billboard"
+    ? "900 122px Georgia, 'Times New Roman', serif"
+    : "900 134px Georgia, 'Times New Roman', serif";
+  ctx.fillText(ad.brand, 58, 174);
 
-  ctx.fillStyle = "#553b3a";
-  ctx.font = "700 41px Arial, Helvetica, sans-serif";
-  ctx.fillText(ad.subtitle ?? "TIỆM THUÊ ĐỒ · MAKEUP", 390, 164, 730);
+  if (style === "billboard") {
+    ctx.fillStyle = "#553b3a";
+    ctx.font = "800 33px Arial, Helvetica, sans-serif";
+    ctx.fillText(ad.subtitle ?? "TIỆM THUÊ ĐỒ · MAKEUP", 60, 224, 520);
 
-  ctx.fillStyle = gold;
-  ctx.fillRect(392, 196, 650, 3);
+    ctx.fillStyle = gold;
+    ctx.globalAlpha = 0.82;
+    ctx.fillRect(60, 244, 470, 3);
+    ctx.globalAlpha = 1;
 
-  ctx.fillStyle = "rgba(77,54,51,0.84)";
-  ctx.font = "700 25px Arial, Helvetica, sans-serif";
-  ctx.fillText("TRANG PHỤC  ·  PHỤ KIỆN  ·  MAKEUP", 392, 232, 720);
+    roundedRect(ctx, 60, 272, 370, 62, 16);
+    ctx.fillStyle = burgundy;
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,248,236,0.96)";
+    ctx.font = "800 24px Arial, Helvetica, sans-serif";
+    ctx.fillText("XEM MẪU & THÔNG TIN THUÊ", 84, 309);
 
-  // CTA is deliberately more prominent than the raw full URL: it remains legible
-  // after a 1080p video is scaled down by Shorts/Reels players.
-  roundedRect(ctx, 54, 292, 555, 72, 16);
-  ctx.fillStyle = burgundy;
-  ctx.fill();
-  ctx.fillStyle = "rgba(255,248,236,0.96)";
-  ctx.font = "800 21px Arial, Helvetica, sans-serif";
-  ctx.fillText("XEM MẪU & THÔNG TIN THUÊ", 78, 318);
-  ctx.fillStyle = "rgba(255,248,236,0.78)";
-  ctx.font = "600 22px Arial, Helvetica, sans-serif";
-  ctx.fillText(ad.displayUrl ?? "kata.makeup/vi/kata", 78, 345, 500);
+    ctx.fillStyle = "#523938";
+    ctx.font = "800 25px Arial, Helvetica, sans-serif";
+    ctx.fillText(ad.contact ?? "", 470, 296, 250);
+    ctx.fillStyle = "rgba(75,53,49,0.82)";
+    ctx.font = "700 21px Arial, Helvetica, sans-serif";
+    ctx.fillText(ad.displayUrl ?? "kata.makeup/vi/kata", 470, 327, 300);
 
-  ctx.fillStyle = "#523938";
-  ctx.font = "800 25px Arial, Helvetica, sans-serif";
-  ctx.fillText(ad.contact ?? "", 665, 309, 450);
-  ctx.fillStyle = "rgba(75,53,49,0.74)";
-  ctx.font = "600 20px Arial, Helvetica, sans-serif";
-  ctx.fillText(ad.address ?? "", 665, 344, 465);
+    ctx.fillStyle = "rgba(75,53,49,0.70)";
+    ctx.font = "600 17px Arial, Helvetica, sans-serif";
+    ctx.fillText("TRANG PHỤC · PHỤ KIỆN · MAKEUP", 760, 220, 380);
+    ctx.fillText("63 Nơ Trang Long · Kiến Đức · Lâm Đồng", 760, 252, 380);
+  } else {
+    ctx.fillStyle = "#553b3a";
+    ctx.font = "700 41px Arial, Helvetica, sans-serif";
+    ctx.fillText(ad.subtitle ?? "TIỆM THUÊ ĐỒ · MAKEUP", 390, 164, 730);
+
+    ctx.fillStyle = gold;
+    ctx.fillRect(392, 196, 650, 3);
+
+    ctx.fillStyle = "rgba(77,54,51,0.84)";
+    ctx.font = "700 25px Arial, Helvetica, sans-serif";
+    ctx.fillText("TRANG PHỤC  ·  PHỤ KIỆN  ·  MAKEUP", 392, 232, 720);
+
+    roundedRect(ctx, 54, 292, 555, 72, 16);
+    ctx.fillStyle = burgundy;
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,248,236,0.96)";
+    ctx.font = "800 21px Arial, Helvetica, sans-serif";
+    ctx.fillText("XEM MẪU & THÔNG TIN THUÊ", 78, 318);
+    ctx.fillStyle = "rgba(255,248,236,0.78)";
+    ctx.font = "600 22px Arial, Helvetica, sans-serif";
+    ctx.fillText(ad.displayUrl ?? "kata.makeup/vi/kata", 78, 345, 500);
+
+    ctx.fillStyle = "#523938";
+    ctx.font = "800 25px Arial, Helvetica, sans-serif";
+    ctx.fillText(ad.contact ?? "", 665, 309, 450);
+    ctx.fillStyle = "rgba(75,53,49,0.74)";
+    ctx.font = "600 20px Arial, Helvetica, sans-serif";
+    ctx.fillText(ad.address ?? "", 665, 344, 465);
+  }
 }
 
 
-function drawThienDaoChiLoCreative(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, ad: AlgorithmVideoAd) {
+function drawThienDaoChiLoCreative(
+  ctx: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+  ad: AlgorithmVideoAd,
+  style: "facade" | "billboard",
+) {
   const crimson = ad.accent;
   const gold = ad.accentSecondary ?? "#e8c97a";
   const ink = "#090607";
@@ -296,8 +337,11 @@ function drawThienDaoChiLoCreative(ctx: CanvasRenderingContext2D, canvas: HTMLCa
   ctx.fillText(ad.eyebrow ?? "TIÊN HIỆP · HUYỀN HUYỄN", 194, 64);
 
   ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
   ctx.fillStyle = parchment;
-  ctx.font = "900 78px Georgia, 'Times New Roman', serif";
+  ctx.font = style === "billboard"
+    ? "900 72px Georgia, 'Times New Roman', serif"
+    : "900 78px Georgia, 'Times New Roman', serif";
   ctx.fillText(ad.brand, 56, 154, 1000);
 
   ctx.fillStyle = gold;

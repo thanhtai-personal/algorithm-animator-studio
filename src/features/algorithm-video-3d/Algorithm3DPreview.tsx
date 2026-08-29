@@ -4,9 +4,9 @@ import type { Lang } from "@/lib/i18n";
 import type { Theme } from "@/lib/renderer";
 import { AlgorithmScene3D } from "./AlgorithmScene3D";
 import { eventLabel } from "./algorithm3dMath";
-import type { AlgorithmVideoAdId } from "@/lib/algorithmVideoAds";
+import type { AlgorithmVideoAdSelection } from "@/lib/algorithmVideoAds";
 
-export function Algorithm3DPreview({ frame, previousFrame, frameIndex, transitionProgress, width, height, theme, title, subtitle, code, showCode, complexity, lang, adId = "none" }: {
+export function Algorithm3DPreview({ frame, previousFrame, frameIndex, transitionProgress, width, height, theme, title, subtitle, code, showCode, complexity, lang, ads }: {
   frame: Frame;
   previousFrame?: Frame | null;
   frameIndex: number;
@@ -20,7 +20,7 @@ export function Algorithm3DPreview({ frame, previousFrame, frameIndex, transitio
   showCode: boolean;
   complexity?: { time: string; best?: string; worst?: string; space: string };
   lang: Lang;
-  adId?: AlgorithmVideoAdId;
+  ads?: AlgorithmVideoAdSelection;
 }) {
   const portrait = height > width;
   return (
@@ -36,7 +36,7 @@ export function Algorithm3DPreview({ frame, previousFrame, frameIndex, transitio
         height={height}
         theme={theme}
         deterministicProgress={transitionProgress}
-        adId={adId}
+        ads={ads}
       />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[18%] bg-gradient-to-b from-black/30 to-transparent" />
       <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/[0.05]" />

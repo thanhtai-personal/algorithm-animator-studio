@@ -3,9 +3,9 @@ import * as THREE from "three";
 import type { Theme } from "@/lib/renderer";
 import { AlgorithmBranding3D } from "./AlgorithmBranding3D";
 
-import type { AlgorithmVideoAdId } from "@/lib/algorithmVideoAds";
+import { createDefaultAlgorithmVideoAds, type AlgorithmVideoAdSelection } from "@/lib/algorithmVideoAds";
 
-export function AlgorithmStage3D({ theme, graph, adId = "none" }: { theme: Theme; graph: boolean; adId?: AlgorithmVideoAdId }) {
+export function AlgorithmStage3D({ theme, graph, ads = createDefaultAlgorithmVideoAds() }: { theme: Theme; graph: boolean; ads?: AlgorithmVideoAdSelection }) {
   const palette = useMemo(() => makePalette(theme), [theme]);
   return (
     <>
@@ -18,7 +18,7 @@ export function AlgorithmStage3D({ theme, graph, adId = "none" }: { theme: Theme
 
       <OpenConstructionGround palette={palette} theme={theme} graph={graph} />
       <DistantCity palette={palette} />
-      {!graph ? <AlgorithmBranding3D adId={adId} /> : null}
+      {!graph ? <AlgorithmBranding3D ads={ads} /> : null}
       {!graph ? <TransportLanes theme={theme} palette={palette} /> : null}
       <SiteFurniture palette={palette} theme={theme} graph={graph} />
     </>

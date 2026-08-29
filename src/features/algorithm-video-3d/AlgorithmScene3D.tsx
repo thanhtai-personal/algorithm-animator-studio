@@ -37,7 +37,7 @@ export type AlgorithmScene3DProps = {
   deterministicProgress?: number;
   canvasRef?: MutableRefObject<HTMLCanvasElement | null>;
   exportMode?: boolean;
-  adId?: AlgorithmVideoAdId;
+  ads?: AlgorithmVideoAdSelection;
 };
 
 export function AlgorithmScene3D(props: AlgorithmScene3DProps) {
@@ -72,7 +72,7 @@ export function AlgorithmScene3D(props: AlgorithmScene3DProps) {
         if (props.canvasRef) props.canvasRef.current = gl.domElement;
       }}
     >
-      <AlgorithmStage3D theme={props.theme} graph={graph} adId={props.adId} />
+      <AlgorithmStage3D theme={props.theme} graph={graph} ads={props.ads} />
       <AlgorithmCamera3D frame={props.frame} width={props.width} height={props.height} />
       <RenderInvalidator frameIndex={props.frameIndex} progress={progress} width={props.width} height={props.height} />
       {props.frame.graph ? (

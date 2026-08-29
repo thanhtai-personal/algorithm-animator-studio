@@ -1,39 +1,64 @@
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
-import { getAlgorithmVideoAd, type AlgorithmVideoAdId } from "@/lib/algorithmVideoAds";
+import {
+  ALGORITHM_VIDEO_AD_SLOTS,
+  createDefaultAlgorithmVideoAds,
+  getAlgorithmVideoAd,
+  type AlgorithmVideoAdSelection,
+  type AlgorithmVideoAdSlotId,
+} from "@/lib/algorithmVideoAds";
 
-export function AlgorithmBranding3D({ adId = "none" }: { adId?: AlgorithmVideoAdId }) {
-  const ad = getAlgorithmVideoAd(adId);
-  if (ad.id === "none") return null;
-  return ad.placement === "facade" ? (
-    <FacadeAd
-      position={[-6.35, 2.48, -9.4]}
-      width={4.25}
-      height={1.45}
-      brand={ad.brand}
-      url={ad.url}
-      accent={ad.accent}
-    />
-  ) : (
-    <RoadsideBillboard
-      position={[5.15, 2.55, -10.9]}
-      rotationY={-0.14}
-      brand={ad.brand}
-      url={ad.url}
-      accent={ad.accent}
-    />
+export function AlgorithmBranding3D({ ads = createDefaultAlgorithmVideoAds() }: { ads?: AlgorithmVideoAdSelection }) {
+  return (
+    <group>
+      {ALGORITHM_VIDEO_AD_SLOTS.map((slot) => {
+        const ad = getAlgorithmVideoAd(ads[slot.id]);
+        if (slot.placement === "facade") {
+          return (
+            <FacadeAd
+              key={slot.id}
+              slotId={slot.id}
+              position={[-6.35, 2.48, -9.4]}
+              width={4.25}
+              height={1.45}
+              brand={ad.brand}
+              subtitle={ad.id === "test" ? slot.label.vi : ad.subtitle}
+              url={ad.url}
+              accent={ad.accent}
+              empty={ad.id === "none"}
+            />
+          );
+        }
+        return (
+          <RoadsideBillboard
+            key={slot.id}
+            slotId={slot.id}
+            position={[5.15, 2.55, -10.9]}
+            rotationY={-0.14}
+            brand={ad.brand}
+            subtitle={ad.id === "test" ? slot.label.vi : ad.subtitle}
+            url={ad.url}
+            accent={ad.accent}
+            empty={ad.id === "none"}
+          />
+        );
+      })}
+    </group>
   );
 }
 
-function FacadeAd({ position, width, height, brand, url, accent }: {
+function FacadeAd({ position, width, height, brand, subtitle, url, accent, empty }: {
+  slotId: AlgorithmVideoAdSlotId;
   position: [number, number, number];
   width: number;
   height: number;
   brand: string;
-  url: string;
+  subtitle?: string;
+  url?: string;
   accent: string;
+  empty: boolean;
 }) {
-  const texture = useBrandTexture(brand, url, accent, "facade");
+  const texture = useBrandTexture(brand, subtitle, url, accent, "facade", empty);
   return (
     <group position={position} rotation={[0, 0.1, 0]}>
       <mesh position={[0, -1.10, -0.28]}>
@@ -52,14 +77,17 @@ function FacadeAd({ position, width, height, brand, url, accent }: {
   );
 }
 
-function RoadsideBillboard({ position, brand, url, accent, rotationY = 0 }: {
+function RoadsideBillboard({ position, brand, subtitle, url, accent, empty, rotationY = 0 }: {
+  slotId: AlgorithmVideoAdSlotId;
   position: [number, number, number];
   brand: string;
-  url: string;
+  subtitle?: string;
+  url?: string;
   accent: string;
+  empty: boolean;
   rotationY?: number;
 }) {
-  const texture = useBrandTexture(brand, url, accent, "billboard");
+  const texture = useBrandTexture(brand, subtitle, url, accent, "billboard", empty);
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
       {[-2.1, 2.1].map((x) => (
@@ -86,13 +114,30 @@ function RoadsideBillboard({ position, brand, url, accent, rotationY = 0 }: {
   );
 }
 
-function useBrandTexture(brand: string, url: string, accent: string, style: "facade" | "billboard") {
-  const texture = useMemo(() => makeBrandTexture(brand, url, accent, style), [brand, url, accent, style]);
+function useBrandTexture(
+  brand: string,
+  subtitle: string | undefined,
+  url: string | undefined,
+  accent: string,
+  style: "facade" | "billboard",
+  empty: boolean,
+) {
+  const texture = useMemo(
+    () => makeBrandTexture(brand, subtitle, url, accent, style, empty),
+    [brand, subtitle, url, accent, style, empty],
+  );
   useEffect(() => () => texture.dispose(), [texture]);
   return texture;
 }
 
-function makeBrandTexture(brand: string, url: string, accent: string, style: "facade" | "billboard") {
+function makeBrandTexture(
+  brand: string,
+  subtitle: string | undefined,
+  url: string | undefined,
+  accent: string,
+  style: "facade" | "billboard",
+  empty: boolean,
+) {
   const canvas = document.createElement("canvas");
   canvas.width = 1200;
   canvas.height = 420;
@@ -103,20 +148,25 @@ function makeBrandTexture(brand: string, url: string, accent: string, style: "fa
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle = accent;
-  ctx.globalAlpha = 0.80;
-  ctx.fillRect(58, 58, 8, 304);
-  ctx.globalAlpha = 1;
+  if (!empty) {
+    ctx.fillStyle = accent;
+    ctx.globalAlpha = 0.80;
+    ctx.fillRect(58, 58, 8, 304);
+    ctx.globalAlpha = 1;
 
-  ctx.textAlign = "left";
-  ctx.textBaseline = "middle";
-  ctx.fillStyle = "rgba(255,255,255,0.92)";
-  ctx.font = `800 ${brand.length > 18 ? 76 : 92}px Arial, Helvetica, sans-serif`;
-  ctx.fillText(brand, 104, 178, 990);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.font = `800 ${brand.length > 18 ? 72 : 88}px Arial, Helvetica, sans-serif`;
+    ctx.fillText(brand, 104, 168, 990);
 
-  ctx.fillStyle = "rgba(233,238,241,0.60)";
-  ctx.font = "600 42px Arial, Helvetica, sans-serif";
-  ctx.fillText(url, 108, 282, 930);
+    const secondary = url || subtitle || "";
+    if (secondary) {
+      ctx.fillStyle = "rgba(233,238,241,0.60)";
+      ctx.font = "600 38px Arial, Helvetica, sans-serif";
+      ctx.fillText(secondary, 108, 276, 930);
+    }
+  }
 
   ctx.strokeStyle = "rgba(255,255,255,0.08)";
   ctx.lineWidth = 2;

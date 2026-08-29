@@ -12,7 +12,7 @@ import { SHORT_VIDEO_TYPES, type ShortVideoType } from "@/lib/shortVideoTypes";
 import { AlgorithmStudio } from "./useAlgorithmStudio";
 import { uiText } from "@/lib/i18n";
 import { canUseAlgorithm3DVideo, hasWebGLVideoSupport, type AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
-import { ALGORITHM_VIDEO_ADS, type AlgorithmVideoAdId } from "@/lib/algorithmVideoAds";
+import { ALGORITHM_VIDEO_ADS, ALGORITHM_VIDEO_AD_SLOTS, type AlgorithmVideoAdId } from "@/lib/algorithmVideoAds";
 
 type Props = { studio: AlgorithmStudio };
 
@@ -176,17 +176,26 @@ function VideoRenderModeSelect({ studio: s }: Props) {
         </p>
       ) : null}
       {s.videoRenderMode === "3d" && available ? (
-        <div className="mt-3">
-          <Label>{s.lang === "vi" ? "Quảng cáo trong không gian 3D" : "3D scene advertisement"}</Label>
-          <Select value={s.algorithmVideoAdId} onValueChange={(value) => s.setAlgorithmVideoAdId(value as AlgorithmVideoAdId)}>
-            <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {ALGORITHM_VIDEO_ADS.map((item) => <SelectItem key={item.id} value={item.id}>{item.label[s.lang]}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <p className="mt-2 text-xs text-white/60">
-            {s.lang === "vi" ? "Mỗi video chỉ hiển thị 1 quảng cáo, đặt trong hậu cảnh để không lấn át nội dung chính." : "Only one ad is shown per video, placed in the background so it does not overpower the main content."}
-          </p>
+        <div className="mt-3 space-y-3 rounded-lg border border-white/10 bg-white/[0.025] p-3">
+          <div>
+            <Label>{s.lang === "vi" ? "Quảng cáo trong không gian 3D" : "3D scene advertisements"}</Label>
+            <p className="mt-1 text-[11px] text-white/55">
+              {s.lang === "vi"
+                ? "Mỗi vị trí quảng cáo có lựa chọn riêng. Mặc định scene hiển thị TEST quảng cáo để bạn thấy đúng vị trí trước khi chọn thương hiệu."
+                : "Each ad slot has its own selection. TEST advertisements are shown by default so you can see the exact placement before choosing a brand."}
+            </p>
+          </div>
+          {ALGORITHM_VIDEO_AD_SLOTS.map((slot) => (
+            <div key={slot.id}>
+              <Label className="text-xs text-white/75">{slot.label[s.lang]}</Label>
+              <Select value={s.algorithmVideoAds[slot.id]} onValueChange={(value) => s.setAlgorithmVideoAdForSlot(slot.id, value as AlgorithmVideoAdId)}>
+                <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ALGORITHM_VIDEO_ADS.map((item) => <SelectItem key={item.id} value={item.id}>{item.label[s.lang]}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          ))}
         </div>
       ) : null}
     </div>

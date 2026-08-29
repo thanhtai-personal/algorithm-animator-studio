@@ -3,7 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import type { Frame } from "@/lib/algorithms";
 import type { Theme } from "@/lib/renderer";
 import { AlgorithmScene3D } from "./AlgorithmScene3D";
-import type { AlgorithmVideoAdId } from "@/lib/algorithmVideoAds";
+import type { AlgorithmVideoAdSelection } from "@/lib/algorithmVideoAds";
 
 export type Algorithm3DExportSurface = {
   canvas: HTMLCanvasElement;
@@ -18,7 +18,7 @@ export async function createAlgorithm3DExportSurface(params: {
   width: number;
   height: number;
   theme: Theme;
-  adId?: AlgorithmVideoAdId;
+  ads?: AlgorithmVideoAdSelection;
 }): Promise<Algorithm3DExportSurface> {
   const host = document.createElement("div");
   host.style.position = "fixed";
@@ -36,7 +36,7 @@ export async function createAlgorithm3DExportSurface(params: {
     renderRoot(root, {
       frame, previousFrame, frameIndex,
       width: params.width, height: params.height, theme: params.theme,
-      deterministicProgress: progress, canvasRef, exportMode: true, adId: params.adId,
+      deterministicProgress: progress, canvasRef, exportMode: true, ads: params.ads,
     });
     await nextPaint();
   };

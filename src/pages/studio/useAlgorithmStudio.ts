@@ -21,7 +21,7 @@ import { Lang, PLATFORMS, readSystemLang, subscribeSystemLang, t, writeSystemLan
 import { THEMES, Theme } from "@/lib/renderer";
 import type { ShortVideoType } from "@/lib/shortVideoTypes";
 import type { AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
-import type { AlgorithmVideoAdId } from "@/lib/algorithmVideoAds";
+import { createDefaultAlgorithmVideoAds, type AlgorithmVideoAdId, type AlgorithmVideoAdSlotId } from "@/lib/algorithmVideoAds";
 import { buildMazeTournamentSeriesYoutubeMetadata, buildMazeTournamentYoutubeMetadata, buildYoutubeMetadata } from "@/lib/youtubeMetadata";
 import { ExportFormat } from "./exportFormats";
 import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm, maxDemoSizeForAlgorithm, shouldUseAlgorithmDemo } from "./demoArrays";
@@ -84,7 +84,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const [showCode, setShowCode] = useState(options.initialShowCode ?? true);
   const [shortVideoType, setShortVideoType] = useState<ShortVideoType>("classic");
   const [videoRenderMode, setVideoRenderMode] = useState<AlgorithmVideoRenderMode>("2d");
-  const [algorithmVideoAdId, setAlgorithmVideoAdId] = useState<AlgorithmVideoAdId>("none");
+  const [algorithmVideoAds, setAlgorithmVideoAds] = useState(createDefaultAlgorithmVideoAds);
   const [worldVideoMode, setWorldVideoModeState] = useState<AlgorithmWorldVideoMode>(options.initialWorldVideoMode ?? "short");
   const [worldCompareEnabled, setWorldCompareEnabledState] = useState(options.initialWorldCompareEnabled ?? (options.initialWorldVideoMode === "long"));
   const [worldPresentationMode, setWorldPresentationModeState] = useState<AlgorithmWorldPresentationMode>(options.initialWorldPresentationMode ?? "vehicle_race");
@@ -371,7 +371,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
         lang,
         shortVideoType,
         videoRenderMode,
-        algorithmVideoAdId,
+        algorithmVideoAds,
         platformId: platform.id,
         exportFormat,
         animalColumns,
@@ -440,7 +440,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     subtitle, setSubtitle: (value: string) => runConfigAction(() => setSubtitle(value)),
     shortVideoType, setShortVideoType: (value: ShortVideoType) => runConfigAction(() => setShortVideoType(value)),
     videoRenderMode, setVideoRenderMode: (value: AlgorithmVideoRenderMode) => runConfigAction(() => setVideoRenderMode(value)),
-    algorithmVideoAdId, setAlgorithmVideoAdId: (value: AlgorithmVideoAdId) => runConfigAction(() => setAlgorithmVideoAdId(value)),
+    algorithmVideoAds, setAlgorithmVideoAdForSlot: (slotId: AlgorithmVideoAdSlotId, value: AlgorithmVideoAdId) => runConfigAction(() => setAlgorithmVideoAds((current) => ({ ...current, [slotId]: value }))),
     worldVideoMode,
     worldCompareEnabled,
     setWorldVideoMode: (value: AlgorithmWorldVideoMode) => runConfigAction(() => { setWorldVideoModeState(value); setPlatformId(value === "long" ? "landscape" : "shorts"); if (value === "long") { setWorldCompareEnabledState(true); setShowCode(false); } setFrameIdx(0); setPlaying(false); }),

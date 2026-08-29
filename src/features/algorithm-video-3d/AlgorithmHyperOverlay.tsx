@@ -14,14 +14,19 @@ export function AlgorithmHyperOverlay({ frame, frameIndex, frameCount, lang, the
   const state = getAlgorithm3DHyperState({ frame, frameIndex, frameCount, lang, transitionProgress });
   const percent = Math.round(state.progress * 100);
   const accent = state.role === "finish" ? theme.sorted : state.role === "swap" ? theme.swap : theme.highlight;
-  const cutFlash = state.cut ? Math.max(0, 1 - transitionProgress / 0.28) : 0;
+  const cutPulse = state.cut ? Math.max(0, 1 - transitionProgress / 0.22) : 0;
   const punch = 1 + Math.sin(Math.min(1, transitionProgress) * Math.PI) * (state.role === "swap" ? 0.055 : 0.035);
 
   return (
     <>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[20%] bg-gradient-to-b from-black/52 to-transparent" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[18%] bg-gradient-to-t from-black/58 to-transparent" />
-      {cutFlash > 0 ? <div className="pointer-events-none absolute inset-0 bg-white" style={{ opacity: cutFlash * 0.22 }} /> : null}
+      {cutPulse > 0 ? (
+        <div
+          className="pointer-events-none absolute inset-[2px] rounded-[inherit] border"
+          style={{ borderColor: accent, opacity: cutPulse * 0.34, boxShadow: `inset 0 0 18px ${accent}22` }}
+        />
+      ) : null}
 
       <div className="pointer-events-none absolute left-4 right-4 top-4 flex items-center justify-between sm:left-5 sm:right-5 sm:top-5">
         <div className="rounded-full border border-white/10 bg-black/42 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.20em] text-white/58 sm:text-[9px]">

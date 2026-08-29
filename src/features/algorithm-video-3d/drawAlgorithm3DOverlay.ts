@@ -83,9 +83,18 @@ function drawHyperRetentionOverlay(
   ctx.fillStyle = bottom;
   ctx.fillRect(0, h * 0.79, w, h * 0.21);
 
-  if (state.cut && transitionProgress < 0.28) {
-    ctx.fillStyle = `rgba(255,255,255,${Math.max(0, (1 - transitionProgress / 0.28) * 0.22)})`;
-    ctx.fillRect(0, 0, w, h);
+  if (state.cut && transitionProgress < 0.22) {
+    // Keep timeline compression invisible to the eye. A full-screen white flash
+    // made every skipped block look like a display flicker after swaps. Use only
+    // a short edge pulse so the scene luminance stays stable.
+    const cutPulse = Math.max(0, 1 - transitionProgress / 0.22);
+    const lineWidth = Math.max(2, Math.min(w, h) * 0.004);
+    ctx.save();
+    ctx.globalAlpha = cutPulse * 0.34;
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = lineWidth;
+    ctx.strokeRect(lineWidth / 2, lineWidth / 2, w - lineWidth, h - lineWidth);
+    ctx.restore();
   }
 
   const micro = Math.max(10, h * (portrait ? 0.009 : 0.013));

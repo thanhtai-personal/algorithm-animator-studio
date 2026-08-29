@@ -176,7 +176,7 @@ function VideoRenderModeSelect({ studio: s }: Props) {
             ? (s.videoRenderMode === "3d-story"
               ? (s.lang === "vi" ? "Story Mode thêm hook, dự đoán, reward và progress nhưng giữ nguyên camera cố định." : "Story Mode adds hooks, prediction, rewards and progress while keeping the camera locked.")
               : s.videoRenderMode === "3d-hyper"
-                ? (s.lang === "vi" ? "Hyper Mode nén timeline thành các beat rất ngắn, ưu tiên swap/milestone và hard-cut có flash để hợp Shorts/Reels." : "Hyper Mode compresses the timeline into short swap/milestone beats with masked hard cuts for Shorts/Reels.")
+                ? (s.lang === "vi" ? "Hyper Mode nén timeline thành các beat rất ngắn, ưu tiên swap/milestone; hard-cut chỉ dùng viền nhấn nhẹ, không chớp toàn màn hình." : "Hyper Mode compresses the timeline into short swap/milestone beats; hard cuts use only a subtle edge pulse with no full-screen flash.")
                 : (s.lang === "vi" ? "Preview và video xuất sẽ dùng scene 3D. Mode 2D gốc vẫn được giữ nguyên." : "Preview and export use the 3D scene. The original 2D mode remains unchanged."))
             : (s.lang === "vi" ? "3D không khả dụng với scene/mode hiện tại; hệ thống sẽ dùng 2D gốc." : "3D is unavailable for the current scene/mode; the original 2D renderer will be used.")}
         </p>

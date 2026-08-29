@@ -4,6 +4,7 @@ import type { Frame } from "@/lib/algorithms";
 import type { Lang } from "@/lib/i18n";
 import type { Theme } from "@/lib/renderer";
 import { MazePreviewScene } from "./MazePreviewScene";
+import { videoPreviewViewportStyle } from "@/lib/videoPreviewViewport";
 
 type Props = {
   frame: Frame | null | undefined;
@@ -15,7 +16,6 @@ type Props = {
   lang: Lang;
 };
 
-const PREVIEW_MAX_HEIGHT = "min(70vh, 1920px)";
 
 export function PhaserMazePreview({ frame, width, height, title, subtitle, theme, lang }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -55,8 +55,8 @@ export function PhaserMazePreview({ frame, width, height, title, subtitle, theme
   return (
     <div
       ref={hostRef}
-      className="w-full overflow-hidden rounded-lg bg-slate-950 shadow-[0_0_35px_rgba(34,211,238,0.14)]"
-      style={{ aspectRatio: `${width}/${height}`, maxHeight: PREVIEW_MAX_HEIGHT }}
+      className="mx-auto overflow-hidden rounded-lg bg-slate-950 shadow-[0_0_35px_rgba(34,211,238,0.14)]"
+      style={videoPreviewViewportStyle(width, height)}
     />
   );
 }

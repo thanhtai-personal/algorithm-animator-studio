@@ -492,7 +492,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     speed, setSpeed: (value: number) => runConfigAction(() => setSpeed(value)),
     playing, setPlaying, frameIdx, setFrameIdx, transitionProgress,
     exporting, exportProgress, exportFormat, setExportFormat: (value: ExportFormat) => runConfigAction(() => setExportFormat(value)),
-    platformId, setPlatformId: (value: typeof platformId) => runConfigAction(() => setPlatformId(value)), platform,
+    platformId, setPlatformId: (value: typeof platformId) => runConfigAction(() => { setPlatformId(value); setTransitionProgress(1); setPlaying(false); }), platform,
     W, H, sfxCompare, setSfxCompare: (value: SfxKind) => runConfigAction(() => setSfxCompare(value)),
     sfxSwap, setSfxSwap: (value: SfxKind) => runConfigAction(() => setSfxSwap(value)),
     sfxVol, setSfxVol: (value: number) => runConfigAction(() => setSfxVol(value)),

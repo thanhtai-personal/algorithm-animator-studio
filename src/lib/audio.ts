@@ -1,6 +1,7 @@
 export type ProceduralSfxKind =
   | "off" | "pop" | "click" | "beep" | "marimba" | "piano" | "key" | "retro" | "blip"
-  | "swap-snap" | "swap-whoosh" | "swap-tick" | "swap-punch" | "swap-spark" | "engine";
+  | "swap-snap" | "swap-whoosh" | "swap-tick" | "swap-punch" | "swap-spark" | "engine"
+  | "data-step" | "crane-hook" | "crane-lift" | "crane-drive" | "crane-set";
 export type AssetSfxId = `asset-sfx:${string}`;
 export type SfxKind = ProceduralSfxKind | AssetSfxId;
 export type MusicPreset = "off" | "lofi" | "ambient" | "chill" | "upbeat" | "custom";
@@ -371,6 +372,31 @@ export class AudioEngine {
       case "engine": {
         oneShot("sawtooth", 70 + p * 45, 95 + p * 55, 0.13, 0.12);
         oneShot("square", 42 + p * 28, 38 + p * 22, 0.11, 0.08, 0.02);
+        break;
+      }
+      case "data-step": {
+        oneShot("sine", 520 + p * 180, 680 + p * 220, 0.055, 0.09);
+        oneShot("triangle", 1040 + p * 220, 860 + p * 180, 0.08, 0.035, 0.015);
+        break;
+      }
+      case "crane-hook": {
+        oneShot("triangle", 820, 520, 0.07, 0.11);
+        oneShot("sine", 1640, 980, 0.05, 0.045, 0.025);
+        break;
+      }
+      case "crane-lift": {
+        oneShot("sawtooth", 92, 142, 0.26, 0.065);
+        oneShot("sine", 188, 238, 0.30, 0.075, 0.02);
+        break;
+      }
+      case "crane-drive": {
+        oneShot("sawtooth", 78, 108, 0.32, 0.055);
+        oneShot("triangle", 156, 196, 0.24, 0.045, 0.035);
+        break;
+      }
+      case "crane-set": {
+        oneShot("sine", 150, 68, 0.18, 0.12);
+        oneShot("triangle", 460, 260, 0.085, 0.06, 0.025);
         break;
       }
     }

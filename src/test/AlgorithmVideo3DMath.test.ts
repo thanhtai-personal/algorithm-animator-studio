@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Frame } from "@/lib/algorithms";
 import { THEMES } from "@/lib/renderer";
-import { arrayLayout, getBarMotion, getSwapPair } from "@/features/algorithm-video-3d/algorithm3dMath";
+import { arrayLayout, craneSwapPose3D, getBarMotion, getSwapPair } from "@/features/algorithm-video-3d/algorithm3dMath";
 
 function frame(arr: number[], overrides: Partial<Frame> = {}): Frame {
   return {
@@ -31,6 +31,16 @@ describe("algorithm video 3D math", () => {
     const previous = frame([9, 2, 5]);
     const current = frame([9, 2, 5], { event: "swap", swap: [0, 1] });
     expect(getSwapPair(current, previous)).toBeNull();
+  });
+
+  it("routes the two swapped buildings through separate front/back crane lanes", () => {
+    const right = craneSwapPose3D(-4, 4, 0.5);
+    const left = craneSwapPose3D(4, -4, 0.5);
+    expect(right.laneZ).toBeGreaterThan(0);
+    expect(left.laneZ).toBeLessThan(0);
+    expect(right.building.position[1]).toBeGreaterThan(0);
+    expect(left.building.position[1]).toBeGreaterThan(0);
+    expect(right.building.position[2]).not.toBe(left.building.position[2]);
   });
 
   it("keeps larger values visually taller across negative ranges", () => {

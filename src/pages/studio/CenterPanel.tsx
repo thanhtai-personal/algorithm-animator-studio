@@ -47,6 +47,7 @@ export function CenterPanel({ studio: s }: Props) {
                 frame={s.current}
                 previousFrame={previousFrame}
                 frameIndex={s.frameIdx}
+                transitionProgress={s.transitionProgress}
                 width={s.W}
                 height={s.H}
                 theme={s.theme}

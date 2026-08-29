@@ -16,144 +16,121 @@ export function drawAlgorithm3DOverlay(ctx: CanvasRenderingContext2D, params: {
 }) {
   const { width: w, height: h } = params;
   const portrait = h > w;
-  const pad = Math.round(Math.min(w, h) * 0.038);
-  const titleSize = Math.max(24, Math.round(h * (portrait ? 0.026 : 0.043)));
+  const pad = Math.round(Math.min(w, h) * 0.036);
+  const titleSize = Math.max(22, Math.round(h * (portrait ? 0.025 : 0.041)));
 
   ctx.save();
-  cinematicFade(ctx, w, h);
+  topFade(ctx, w, h);
   cornerMarks(ctx, w, h, pad);
   titleBlock(ctx, params, pad, titleSize);
   statusBlock(ctx, params, pad, titleSize);
   stateBlock(ctx, params, pad, portrait);
-  if (params.showCode) drawCode(ctx, params, pad, portrait);
+  if (params.showCode) drawExecutionDock(ctx, params, pad, portrait);
   ctx.restore();
 }
 
 function titleBlock(ctx: CanvasRenderingContext2D, params: Parameters<typeof drawAlgorithm3DOverlay>[1], pad: number, titleSize: number) {
   const { width: w, height: h } = params;
-  const x = pad;
-  const y = pad;
-  const accent = "#67e8f9";
-  ctx.fillStyle = accent;
-  ctx.fillRect(x, y, Math.max(2, h * 0.0022), titleSize * 1.85);
-
+  ctx.fillStyle = "#67e8f9";
+  ctx.fillRect(pad, pad, Math.max(2, h * 0.002), titleSize * 1.65);
   ctx.textAlign = "left";
-  ctx.fillStyle = "rgba(255,255,255,0.48)";
-  ctx.font = `900 ${Math.max(11, titleSize * 0.29)}px ui-sans-serif,system-ui`;
-  ctx.fillText("ALGORITHM VISUALIZATION · 3D", x + titleSize * 0.32, y + titleSize * 0.38);
-
+  ctx.fillStyle = "rgba(255,255,255,0.54)";
+  ctx.font = `900 ${Math.max(10, titleSize * 0.27)}px ui-sans-serif,system-ui`;
+  ctx.fillText("DATA CONSTRUCTION · 3D", pad + titleSize * 0.30, pad + titleSize * 0.34);
   ctx.fillStyle = "#ffffff";
   ctx.font = `900 ${titleSize}px ui-sans-serif,system-ui`;
-  ctx.shadowColor = "rgba(0,0,0,0.55)";
-  ctx.shadowBlur = 14;
-  ctx.fillText(params.title, x + titleSize * 0.32, y + titleSize * 1.18, w * 0.58);
-  ctx.shadowBlur = 0;
-
+  ctx.fillText(params.title, pad + titleSize * 0.30, pad + titleSize * 1.08, w * 0.56);
   if (params.subtitle) {
-    ctx.fillStyle = "rgba(226,232,240,0.62)";
-    ctx.font = `600 ${Math.max(12, titleSize * 0.38)}px ui-sans-serif,system-ui`;
-    ctx.fillText(params.subtitle, x + titleSize * 0.32, y + titleSize * 1.68, w * 0.5);
+    ctx.fillStyle = "rgba(235,241,244,0.62)";
+    ctx.font = `600 ${Math.max(11, titleSize * 0.36)}px ui-sans-serif,system-ui`;
+    ctx.fillText(params.subtitle, pad + titleSize * 0.30, pad + titleSize * 1.55, w * 0.48);
   }
 }
 
 function statusBlock(ctx: CanvasRenderingContext2D, params: Parameters<typeof drawAlgorithm3DOverlay>[1], pad: number, titleSize: number) {
   const { width: w, height: h } = params;
-  const status = `${eventLabel(params.frame)} · ${String(params.frameIndex + 1).padStart(3, "0")}`;
-  drawPill(ctx, w - pad, pad + titleSize * 0.1, status, "#67e8f9", h);
+  const swap = params.frame.event === "swap";
+  drawPill(ctx, w - pad, pad + titleSize * 0.08, `${eventLabel(params.frame)} · ${String(params.frameIndex + 1).padStart(3, "0")}`, swap ? "#fb7185" : "#67e8f9", h);
   if (!params.complexity) return;
-  drawPill(ctx, w - pad, pad + titleSize * 0.82, `T ${params.complexity.time}`, "#fde68a", h);
-  drawPill(ctx, w - pad, pad + titleSize * 1.44, `S ${params.complexity.space}`, "#86efac", h);
+  drawPill(ctx, w - pad, pad + titleSize * 0.75, `T ${params.complexity.time}`, "#fde68a", h);
+  drawPill(ctx, w - pad, pad + titleSize * 1.34, `S ${params.complexity.space}`, "#86efac", h);
 }
 
 function stateBlock(ctx: CanvasRenderingContext2D, params: Parameters<typeof drawAlgorithm3DOverlay>[1], pad: number, portrait: boolean) {
   const { width: w, height: h } = params;
-  const vars = Object.entries(params.frame.vars).slice(0, 6).map(([k, v]) => `${k}=${v}`).join("   ");
-  const text = vars || (params.lang === "vi" ? "Đang khởi tạo trạng thái…" : "Initializing state…");
-  const font = Math.max(12, h * 0.014);
-  const maxWidth = params.showCode && !portrait ? w * 0.48 : w * 0.76;
-  const y = h - pad;
-
+  const vars = Object.entries(params.frame.vars).slice(0, 5).map(([k, v]) => `${k}=${v}`).join("   ");
+  const text = vars || (params.lang === "vi" ? "Đang khởi tạo…" : "Initializing…");
+  const font = Math.max(10, h * 0.0125);
+  const codeDockH = params.showCode ? h * (portrait ? 0.13 : 0.14) : 0;
+  const y = h - pad - codeDockH;
   ctx.textAlign = "left";
   ctx.fillStyle = "rgba(255,255,255,0.34)";
-  ctx.font = `900 ${font * 0.82}px ui-sans-serif,system-ui`;
-  ctx.fillText(`STATE · ${String(params.frameIndex + 1).padStart(3, "0")}`, pad, y - font * 2.25);
-
-  ctx.font = `700 ${font}px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace`;
-  const textWidth = Math.min(maxWidth, ctx.measureText(text).width + font * 2.2);
-  softPanel(ctx, pad, y - font * 1.75, textWidth, font * 1.75, Math.max(8, font * 0.45));
+  ctx.font = `900 ${font * 0.75}px ui-sans-serif,system-ui`;
+  ctx.fillText(`STATE · ${String(params.frameIndex + 1).padStart(3, "0")}`, pad, y - font * 1.6);
+  ctx.font = `650 ${font}px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace`;
+  const maxWidth = portrait ? w * 0.78 : w * 0.42;
+  const textWidth = Math.min(maxWidth, ctx.measureText(text).width + font * 1.8);
+  softPanel(ctx, pad, y - font * 1.28, textWidth, font * 1.5, Math.max(6, font * 0.36), 0.56);
   ctx.fillStyle = "rgba(241,245,249,0.76)";
-  ctx.fillText(text, pad + font, y - font * 0.62, textWidth - font * 2);
+  ctx.fillText(text, pad + font * 0.8, y - font * 0.30, textWidth - font * 1.6);
 }
 
-function drawCode(ctx: CanvasRenderingContext2D, params: Parameters<typeof drawAlgorithm3DOverlay>[1], pad: number, portrait: boolean) {
+function drawExecutionDock(ctx: CanvasRenderingContext2D, params: Parameters<typeof drawAlgorithm3DOverlay>[1], pad: number, portrait: boolean) {
   const { width: w, height: h, code, frame } = params;
-  const x = portrait ? pad : w * 0.64;
-  const y = portrait ? h * 0.67 : h * 0.30;
-  const panelW = portrait ? w - pad * 2 : w - x - pad;
-  const panelH = portrait ? h * 0.22 : h * 0.59;
-  softPanel(ctx, x, y, panelW, panelH, Math.max(14, h * 0.012));
+  const panelW = portrait ? w - pad * 2 : w * 0.58;
+  const panelH = h * (portrait ? 0.12 : 0.13);
+  const x = (w - panelW) / 2;
+  const y = h - pad - panelH;
+  softPanel(ctx, x, y, panelW, panelH, Math.max(10, h * 0.009), 0.76);
 
-  const font = Math.max(11, Math.round(h * (portrait ? 0.0115 : 0.0155)));
+  const font = Math.max(10, Math.round(h * (portrait ? 0.010 : 0.0125)));
   ctx.textAlign = "left";
   ctx.fillStyle = "rgba(255,255,255,0.42)";
-  ctx.font = `900 ${font * 0.9}px ui-sans-serif,system-ui`;
-  ctx.fillText(params.lang === "vi" ? "MÃ ĐANG THỰC THI" : "EXECUTION TRACE", x + font * 1.35, y + font * 1.7);
-
+  ctx.font = `900 ${font * 0.78}px ui-sans-serif,system-ui`;
+  ctx.fillText(params.lang === "vi" ? "LỆNH ĐANG CHẠY" : "EXECUTING", x + font * 1.05, y + font * 1.25);
   ctx.fillStyle = "#67e8f9";
   ctx.beginPath();
-  ctx.arc(x + font * 0.72, y + font * 1.45, Math.max(2, font * 0.16), 0, Math.PI * 2);
+  ctx.arc(x + font * 0.52, y + font * 1.05, Math.max(2, font * 0.13), 0, Math.PI * 2);
   ctx.fill();
 
   const lines = code.split("\n");
-  const maxLines = Math.max(4, Math.floor((panelH - font * 3.2) / (font * 1.48)));
-  const start = Math.max(0, Math.min(lines.length - 1, frame.line - 3));
+  const visibleCount = portrait ? 2 : 3;
+  const start = Math.max(0, Math.min(lines.length - 1, frame.line - 2));
   ctx.font = `650 ${font}px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace`;
-  lines.slice(start, start + maxLines).forEach((line, offset) => {
+  lines.slice(start, start + visibleCount).forEach((line, offset) => {
     const lineNo = start + offset + 1;
-    const yy = y + font * 3.1 + offset * font * 1.48;
+    const yy = y + font * 2.35 + offset * font * 1.35;
     const active = lineNo === frame.line;
     if (active) {
-      ctx.fillStyle = "rgba(255,255,255,0.055)";
-      roundedRect(ctx, x + font * 0.65, yy - font * 0.93, panelW - font * 1.3, font * 1.26, 6);
+      ctx.fillStyle = "rgba(255,255,255,0.065)";
+      roundedRect(ctx, x + font * 0.46, yy - font * 0.9, panelW - font * 0.92, font * 1.16, 5);
       ctx.fill();
       ctx.fillStyle = "#67e8f9";
-      ctx.fillRect(x + font * 0.65, yy - font * 0.91, Math.max(2, font * 0.13), font * 1.18);
+      ctx.fillRect(x + font * 0.46, yy - font * 0.88, Math.max(2, font * 0.11), font * 1.08);
     }
-    ctx.fillStyle = active ? "rgba(248,250,252,0.96)" : "rgba(203,213,225,0.48)";
-    ctx.fillText(`${String(lineNo).padStart(2, "0")}  ${line}`, x + font * 1.15, yy, panelW - font * 2.1);
+    ctx.fillStyle = active ? "rgba(248,250,252,0.94)" : "rgba(203,213,225,0.44)";
+    ctx.fillText(`${String(lineNo).padStart(2, "0")}  ${line}`, x + font * 0.9, yy, panelW - font * 1.6);
   });
 }
 
-function cinematicFade(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  const top = ctx.createLinearGradient(0, 0, 0, h * 0.32);
-  top.addColorStop(0, "rgba(2,6,23,0.42)");
-  top.addColorStop(1, "rgba(2,6,23,0)");
-  ctx.fillStyle = top;
-  ctx.fillRect(0, 0, w, h * 0.34);
-
-  const bottom = ctx.createLinearGradient(0, h * 0.62, 0, h);
-  bottom.addColorStop(0, "rgba(2,6,23,0)");
-  bottom.addColorStop(1, "rgba(2,6,23,0.46)");
-  ctx.fillStyle = bottom;
-  ctx.fillRect(0, h * 0.6, w, h * 0.4);
-
-  const vignette = ctx.createRadialGradient(w / 2, h * 0.44, Math.min(w, h) * 0.28, w / 2, h * 0.46, Math.max(w, h) * 0.74);
-  vignette.addColorStop(0, "rgba(2,6,23,0)");
-  vignette.addColorStop(1, "rgba(0,0,0,0.22)");
-  ctx.fillStyle = vignette;
-  ctx.fillRect(0, 0, w, h);
+function topFade(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  const gradient = ctx.createLinearGradient(0, 0, 0, h * 0.22);
+  gradient.addColorStop(0, "rgba(4,9,12,0.42)");
+  gradient.addColorStop(1, "rgba(4,9,12,0)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, w, h * 0.24);
 }
 
 function drawPill(ctx: CanvasRenderingContext2D, right: number, y: number, text: string, color: string, height: number) {
-  const font = Math.max(11, height * 0.0128);
+  const font = Math.max(10, height * 0.0122);
   ctx.font = `850 ${font}px ui-sans-serif,system-ui`;
-  const width = ctx.measureText(text).width + font * 1.9;
-  const pillH = font * 1.82;
+  const width = ctx.measureText(text).width + font * 1.7;
+  const pillH = font * 1.68;
   const x = right - width;
-  softPanel(ctx, x, y, width, pillH, pillH * 0.36, 0.58);
+  softPanel(ctx, x, y, width, pillH, pillH * 0.34, 0.54);
   ctx.strokeStyle = alpha(color, 0.42);
-  ctx.lineWidth = 1.2;
-  roundedRect(ctx, x, y, width, pillH, pillH * 0.36);
+  ctx.lineWidth = 1.1;
+  roundedRect(ctx, x, y, width, pillH, pillH * 0.34);
   ctx.stroke();
   ctx.fillStyle = color;
   ctx.textAlign = "center";
@@ -162,24 +139,22 @@ function drawPill(ctx: CanvasRenderingContext2D, right: number, y: number, text:
   ctx.textBaseline = "alphabetic";
 }
 
-function softPanel(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, radius: number, opacity = 0.66) {
+function softPanel(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, radius: number, opacity = 0.62) {
   roundedRect(ctx, x, y, w, h, radius);
-  ctx.fillStyle = `rgba(3,7,18,${opacity})`;
+  ctx.fillStyle = `rgba(4,10,14,${opacity})`;
   ctx.fill();
   ctx.strokeStyle = "rgba(255,255,255,0.08)";
-  ctx.lineWidth = 1.2;
+  ctx.lineWidth = 1.1;
   ctx.stroke();
 }
 
 function cornerMarks(ctx: CanvasRenderingContext2D, w: number, h: number, pad: number) {
-  const size = Math.max(11, Math.min(w, h) * 0.014);
-  ctx.strokeStyle = "rgba(255,255,255,0.18)";
-  ctx.lineWidth = Math.max(1, Math.min(w, h) * 0.0012);
+  const size = Math.max(10, Math.min(w, h) * 0.013);
+  ctx.strokeStyle = "rgba(255,255,255,0.15)";
+  ctx.lineWidth = Math.max(1, Math.min(w, h) * 0.001);
   const points = [
-    [pad * 0.55, pad * 0.55, 1, 1],
-    [w - pad * 0.55, pad * 0.55, -1, 1],
-    [pad * 0.55, h - pad * 0.55, 1, -1],
-    [w - pad * 0.55, h - pad * 0.55, -1, -1],
+    [pad * 0.55, pad * 0.55, 1, 1], [w - pad * 0.55, pad * 0.55, -1, 1],
+    [pad * 0.55, h - pad * 0.55, 1, -1], [w - pad * 0.55, h - pad * 0.55, -1, -1],
   ] as const;
   points.forEach(([x, y, sx, sy]) => {
     ctx.beginPath();

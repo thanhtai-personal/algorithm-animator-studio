@@ -302,6 +302,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     setTransitionProgress,
     algoId,
     shortVideoType,
+    videoRenderMode,
     sfxCompare,
     sfxSwap,
   });
@@ -477,7 +478,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     animalHighlightJump, setAnimalHighlightJump: (value: boolean) => runConfigAction(() => setAnimalHighlightJump(value)),
     fps, setFps: (value: number) => runConfigAction(() => setFps(value)),
     speed, setSpeed: (value: number) => runConfigAction(() => setSpeed(value)),
-    playing, setPlaying, frameIdx, setFrameIdx,
+    playing, setPlaying, frameIdx, setFrameIdx, transitionProgress,
     exporting, exportProgress, exportFormat, setExportFormat: (value: ExportFormat) => runConfigAction(() => setExportFormat(value)),
     platformId, setPlatformId: (value: typeof platformId) => runConfigAction(() => setPlatformId(value)), platform,
     W, H, sfxCompare, setSfxCompare: (value: SfxKind) => runConfigAction(() => setSfxCompare(value)),

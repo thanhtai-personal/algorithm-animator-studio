@@ -1,5 +1,4 @@
-import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import * as THREE from "three";
 import type { Frame } from "@/lib/algorithms";
 import type { Theme } from "@/lib/renderer";
@@ -73,23 +72,16 @@ function GraphNode3D({ position, label, distance, color, current, start, end, vi
   visited: boolean;
   deterministicProgress?: number;
 }) {
-  const ref = useRef<THREE.Group>(null);
-  useFrame(({ clock }) => {
-    if (!ref.current) return;
-    const pulse = deterministicProgress != null
-      ? Math.sin(Math.PI * deterministicProgress)
-      : (Math.sin(clock.elapsedTime * 3.2 + position[0] * 0.2) + 1) * 0.5;
-    const scale = current ? 1 + pulse * 0.07 : 1;
-    ref.current.scale.setScalar(scale);
-  });
+  const pulse = Math.sin(Math.PI * (deterministicProgress ?? 1));
+  const scale = current ? 1 + pulse * 0.055 : 1;
   const featured = current || start || end;
 
   return (
-    <group ref={ref} position={position}>
+    <group position={position} scale={scale}>
       {featured ? <AlgorithmGlowSprite3D position={[0, 0.2, -0.08]} scale={[2.4, 2.4, 1]} color={color} opacity={current ? 0.19 : 0.11} /> : null}
       <NodePedestal color={color} featured={featured} />
       <mesh position={[0, 0.12, 0]} castShadow receiveShadow>
-        <sphereGeometry args={[0.63, 40, 28]} />
+        <sphereGeometry args={[0.63, 22, 14]} />
         <meshPhysicalMaterial
           color={darken(color, featured ? 0.15 : visited ? 0.32 : 0.46)}
           roughness={featured ? 0.12 : 0.2}
@@ -101,22 +93,22 @@ function GraphNode3D({ position, label, distance, color, current, start, end, vi
         />
       </mesh>
       <mesh position={[0, 0.12, 0.515]} renderOrder={6}>
-        <circleGeometry args={[0.285, 32]} />
+        <circleGeometry args={[0.285, 20]} />
         <meshBasicMaterial color={color} transparent opacity={featured ? 0.94 : 0.56} toneMapped={false} depthWrite={false} />
       </mesh>
       <mesh position={[0, 0.12, -0.02]}>
-        <sphereGeometry args={[0.39, 30, 20]} />
+        <sphereGeometry args={[0.39, 18, 12]} />
         <meshPhysicalMaterial color={lighten(color, 0.32)} transparent opacity={0.34} roughness={0.04} metalness={0.18} emissive={color} emissiveIntensity={0.2} depthWrite={false} />
       </mesh>
 
       {featured ? (
         <group position={[0, -0.54, 0]} rotation={[Math.PI / 2, 0, 0]}>
           <mesh>
-            <torusGeometry args={[0.86, current ? 0.045 : 0.028, 10, 64]} />
+            <torusGeometry args={[0.86, current ? 0.045 : 0.028, 7, 36]} />
             <meshBasicMaterial color={color} transparent opacity={current ? 0.95 : 0.66} toneMapped={false} depthWrite={false} />
           </mesh>
           <mesh>
-            <torusGeometry args={[1.03, 0.012, 8, 64]} />
+            <torusGeometry args={[1.03, 0.012, 6, 36]} />
             <meshBasicMaterial color={color} transparent opacity={0.22} toneMapped={false} depthWrite={false} />
           </mesh>
         </group>
@@ -132,11 +124,11 @@ function NodePedestal({ color, featured }: { color: string; featured: boolean })
   return (
     <group position={[0, -0.54, 0]}>
       <mesh receiveShadow castShadow>
-        <cylinderGeometry args={[0.72, 0.92, 0.19, 32]} />
+        <cylinderGeometry args={[0.72, 0.92, 0.19, 18]} />
         <meshStandardMaterial color="#111827" roughness={0.28} metalness={0.82} />
       </mesh>
       <mesh position={[0, 0.105, 0]}>
-        <cylinderGeometry args={[0.64, 0.64, 0.026, 32]} />
+        <cylinderGeometry args={[0.64, 0.64, 0.026, 18]} />
         <meshBasicMaterial color={color} transparent opacity={featured ? 0.85 : 0.22} toneMapped={false} />
       </mesh>
     </group>
@@ -151,16 +143,10 @@ function GraphEdge3D({ a, b, color, active, onPath, deterministicProgress }: {
   onPath: boolean;
   deterministicProgress?: number;
 }) {
-  const dotRef = useRef<THREE.Mesh>(null);
   const curve = useMemo(() => makeEdgeCurve(a, b), [a.x, a.y, a.z, b.x, b.y, b.z]);
-  const outerGeometry = useMemo(() => new THREE.TubeGeometry(curve, 24, onPath ? 0.075 : active ? 0.065 : 0.045, 10, false), [curve, active, onPath]);
-  const coreGeometry = useMemo(() => new THREE.TubeGeometry(curve, 24, onPath ? 0.032 : active ? 0.027 : 0.014, 8, false), [curve, active, onPath]);
-
-  useFrame(({ clock }) => {
-    if (!dotRef.current || (!active && !onPath)) return;
-    const t = deterministicProgress != null ? deterministicProgress : (clock.elapsedTime * 0.54) % 1;
-    dotRef.current.position.copy(curve.getPointAt(THREE.MathUtils.clamp(t, 0, 1)));
-  });
+  const outerGeometry = useMemo(() => new THREE.TubeGeometry(curve, 16, onPath ? 0.075 : active ? 0.065 : 0.045, 6, false), [curve, active, onPath]);
+  const coreGeometry = useMemo(() => new THREE.TubeGeometry(curve, 16, onPath ? 0.032 : active ? 0.027 : 0.014, 5, false), [curve, active, onPath]);
+  const dotPosition = useMemo(() => curve.getPointAt(THREE.MathUtils.clamp(deterministicProgress ?? 1, 0, 1)), [curve, deterministicProgress]);
 
   return (
     <group>
@@ -171,8 +157,8 @@ function GraphEdge3D({ a, b, color, active, onPath, deterministicProgress }: {
         <meshBasicMaterial color={color} transparent opacity={active ? 0.92 : onPath ? 0.78 : 0.19} toneMapped={false} depthWrite={false} />
       </mesh>
       {(active || onPath) ? (
-        <mesh ref={dotRef} renderOrder={7}>
-          <sphereGeometry args={[active ? 0.12 : 0.095, 18, 12]} />
+        <mesh position={dotPosition} renderOrder={7}>
+          <sphereGeometry args={[active ? 0.12 : 0.095, 12, 8]} />
           <meshBasicMaterial color={color} toneMapped={false} />
         </mesh>
       ) : null}

@@ -1,14 +1,12 @@
-import { RoundedBox } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import * as THREE from "three";
 import type { Frame } from "@/lib/algorithms";
 import type { Theme } from "@/lib/renderer";
 import { AlgorithmGlowSprite3D } from "./AlgorithmGlowSprite3D";
 import { AlgorithmTextSprite3D } from "./AlgorithmTextSprite3D";
-import { arrayLayout, getBarMotion } from "./algorithm3dMath";
+import { arrayLayout, getBarMotion, swapPose3D, type BarPose3D } from "./algorithm3dMath";
 
-export function AlgorithmBars3D({ frame, previousFrame, theme, deterministicProgress }: {
+export function AlgorithmBars3D({ frame, previousFrame, theme, deterministicProgress = 1 }: {
   frame: Frame;
   previousFrame?: Frame | null;
   theme: Theme;
@@ -16,18 +14,18 @@ export function AlgorithmBars3D({ frame, previousFrame, theme, deterministicProg
 }) {
   const layout = arrayLayout(frame.arr);
   const bars = getBarMotion(frame, previousFrame, theme);
+  const moving = bars.filter((bar) => bar.fromIndex !== bar.targetIndex);
   return (
-    <group position={[0, 0, 0.55]}>
-      <BarRunway3D layout={layout} theme={theme} />
-      {bars.map((bar) => (
-        <AnimatedBar3D
-          key={`${frame.line}-${frame.event ?? "step"}-${bar.index}-${bar.value}`}
-          bar={bar}
-          layout={layout}
-          showLabel={frame.arr.length <= 32}
-          deterministicProgress={deterministicProgress}
-        />
+    <group position={[0, 0, 0.42]}>
+      <BarFloorMarkers count={layout.count} layout={layout} theme={theme} />
+      <InstancedBuildingField bars={bars} layout={layout} />
+      {moving.map((bar) => (
+        <MovingBuilding3D key={`moving-${bar.index}`} bar={bar} layout={layout} progress={deterministicProgress} />
       ))}
+      {bars.filter((bar) => bar.emphasized).map((bar) => (
+        <ActiveBuildingMarker key={`active-${bar.index}`} bar={bar} layout={layout} progress={deterministicProgress} />
+      ))}
+      <BarLabels bars={bars} layout={layout} progress={deterministicProgress} swapping={moving.length > 0} />
     </group>
   );
 }
@@ -35,146 +33,159 @@ export function AlgorithmBars3D({ frame, previousFrame, theme, deterministicProg
 type Layout = ReturnType<typeof arrayLayout>;
 type Motion = ReturnType<typeof getBarMotion>[number];
 
-function AnimatedBar3D({ bar, layout, showLabel, deterministicProgress }: {
-  bar: Motion;
-  layout: Layout;
-  showLabel: boolean;
-  deterministicProgress?: number;
-}) {
-  const ref = useRef<THREE.Group>(null);
-  const progress = useRef(deterministicProgress ?? 0);
-  const height = layout.heightFor(bar.value);
-  const targetX = layout.xFor(bar.targetIndex);
-  const fromX = layout.xFor(bar.fromIndex);
-  const moving = bar.fromIndex !== bar.targetIndex;
-  const depth = Math.max(0.48, layout.width * 1.04);
-  const radius = Math.min(0.14, layout.width * 0.22, height * 0.08);
+function InstancedBuildingField({ bars, layout }: { bars: Motion[]; layout: Layout }) {
+  const bodyRef = useRef<THREE.InstancedMesh>(null);
+  const faceRef = useRef<THREE.InstancedMesh>(null);
+  const roofRef = useRef<THREE.InstancedMesh>(null);
+  const baseRef = useRef<THREE.InstancedMesh>(null);
+  const depth = Math.max(0.42, layout.width * 0.94);
 
-  useFrame(({ clock }, delta) => {
-    const group = ref.current;
-    if (!group) return;
-    if (deterministicProgress != null) {
-      applyPose(group, fromX, targetX, deterministicProgress, moving);
-      return;
-    }
-    progress.current = Math.min(1, progress.current + delta * (moving ? 3.45 : 6.5));
-    applyPose(group, fromX, targetX, progress.current, moving);
-    if (!moving && bar.emphasized) group.position.y += Math.sin(clock.elapsedTime * 4.2 + bar.index * 0.7) * 0.035;
-  });
+  useLayoutEffect(() => {
+    const body = bodyRef.current;
+    const face = faceRef.current;
+    const roof = roofRef.current;
+    const base = baseRef.current;
+    if (!body || !face || !roof || !base) return;
+    const color = new THREE.Color();
+    bars.forEach((bar, index) => {
+      const height = layout.heightFor(bar.value);
+      const x = layout.xFor(bar.targetIndex);
+      const moving = bar.fromIndex !== bar.targetIndex;
+      setStaticInstance(body, index, [x, height / 2, 0], moving ? [0, 0, 0] : [layout.width, height, depth]);
+      setStaticInstance(face, index, [x, height / 2, depth / 2 + 0.011], moving ? [0, 0, 0] : [layout.width * 0.58, Math.max(0.16, height * 0.82), 0.022]);
+      setStaticInstance(roof, index, [x, height + 0.035, 0], moving ? [0, 0, 0] : [layout.width * 0.90, 0.07, depth * 0.86]);
+      setStaticInstance(base, index, [x, 0.055, 0], [layout.width * 1.10, 0.11, depth * 1.12]);
+      body.setColorAt(index, color.set(darken(bar.color, bar.emphasized ? 0.18 : 0.40)));
+      face.setColorAt(index, color.set(bar.color));
+      roof.setColorAt(index, color.set(lighten(bar.color, 0.15)));
+      base.setColorAt(index, color.set(bar.emphasized ? darken(bar.color, 0.56) : "#23292e"));
+    });
+    [body, face, roof, base].forEach((mesh) => {
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    });
+  }, [bars, layout, depth]);
 
-  const initialProgress = deterministicProgress ?? (moving ? 0 : 1);
-  const faceOpacity = bar.emphasized ? 0.96 : 0.72;
   return (
-    <group ref={ref} position={poseFor(fromX, targetX, initialProgress, moving).position} rotation={poseFor(fromX, targetX, initialProgress, moving).rotation}>
-      {bar.emphasized ? (
-        <AlgorithmGlowSprite3D
-          position={[0, height * 0.56, -0.06]}
-          scale={[Math.max(1.15, layout.width * 2.2), Math.max(1.8, height * 0.78), 1]}
-          color={bar.color}
-          opacity={0.14}
-          renderOrder={1}
-        />
-      ) : null}
+    <>
+      <instancedMesh ref={baseRef} args={[undefined, undefined, bars.length]} frustumCulled={false}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#ffffff" roughness={0.70} metalness={0.30} />
+      </instancedMesh>
+      <instancedMesh ref={bodyRef} args={[undefined, undefined, bars.length]} frustumCulled={false}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#ffffff" roughness={0.38} metalness={0.48} />
+      </instancedMesh>
+      <instancedMesh ref={faceRef} args={[undefined, undefined, bars.length]} frustumCulled={false} renderOrder={3}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.54} toneMapped={false} depthWrite={false} />
+      </instancedMesh>
+      <instancedMesh ref={roofRef} args={[undefined, undefined, bars.length]} frustumCulled={false}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#ffffff" roughness={0.32} metalness={0.54} />
+      </instancedMesh>
+    </>
+  );
+}
 
-      <RoundedBox position={[0, height / 2, 0]} args={[layout.width, height, depth]} radius={radius} smoothness={5} castShadow receiveShadow>
-        <meshPhysicalMaterial
-          color={darken(bar.color, bar.emphasized ? 0.26 : 0.42)}
-          roughness={bar.emphasized ? 0.16 : 0.23}
-          metalness={0.68}
-          clearcoat={0.92}
-          clearcoatRoughness={0.13}
-          emissive={bar.color}
-          emissiveIntensity={bar.emphasized ? 0.12 : 0.018}
-        />
-      </RoundedBox>
-
-      <RoundedBox
-        position={[0, height / 2, depth / 2 + 0.021]}
-        args={[layout.width * 0.66, Math.max(0.18, height * 0.88), 0.034]}
-        radius={Math.min(0.075, layout.width * 0.14)}
-        smoothness={4}
-        renderOrder={5}
-      >
-        <meshBasicMaterial color={bar.color} transparent opacity={faceOpacity} toneMapped={false} />
-      </RoundedBox>
-
-      <RoundedBox position={[0, height + 0.045, 0]} args={[layout.width * 0.88, 0.09, depth * 0.86]} radius={Math.min(0.055, layout.width * 0.12)} smoothness={4} castShadow>
-        <meshPhysicalMaterial color={lighten(bar.color, 0.22)} roughness={0.14} metalness={0.52} clearcoat={1} emissive={bar.color} emissiveIntensity={bar.emphasized ? 0.18 : 0.045} />
-      </RoundedBox>
-
-      <BarPedestal3D width={layout.width} depth={depth} color={bar.color} emphasized={bar.emphasized} />
-      {showLabel ? <AlgorithmTextSprite3D text={String(bar.value)} position={[0, height + 0.62, 0.08]} color={bar.color} scale={0.58} /> : null}
+function MovingBuilding3D({ bar, layout, progress }: { bar: Motion; layout: Layout; progress: number }) {
+  const pose = poseForBar(bar, layout, progress);
+  const height = layout.heightFor(bar.value);
+  const depth = Math.max(0.42, layout.width * 0.94);
+  return (
+    <group position={pose.position} rotation={pose.rotation}>
+      <mesh position={[0, height / 2, 0]}>
+        <boxGeometry args={[layout.width, height, depth]} />
+        <meshStandardMaterial color={darken(bar.color, 0.16)} roughness={0.34} metalness={0.50} />
+      </mesh>
+      <mesh position={[0, height / 2, depth / 2 + 0.012]} renderOrder={5}>
+        <boxGeometry args={[layout.width * 0.60, Math.max(0.16, height * 0.84), 0.024]} />
+        <meshBasicMaterial color={bar.color} transparent opacity={0.76} toneMapped={false} />
+      </mesh>
+      <mesh position={[0, height + 0.04, 0]}>
+        <boxGeometry args={[layout.width * 0.92, 0.08, depth * 0.88]} />
+        <meshStandardMaterial color={lighten(bar.color, 0.18)} roughness={0.30} metalness={0.56} />
+      </mesh>
+      <AlgorithmGlowSprite3D
+        position={[0, height * 0.52, -0.05]}
+        scale={[Math.max(0.80, layout.width * 1.8), Math.max(1.1, height * 0.54), 1]}
+        color={bar.color}
+        opacity={0.08}
+      />
     </group>
   );
 }
 
-function BarPedestal3D({ width, depth, color, emphasized }: { width: number; depth: number; color: string; emphasized: boolean }) {
+function ActiveBuildingMarker({ bar, layout, progress }: { bar: Motion; layout: Layout; progress: number }) {
+  const pose = poseForBar(bar, layout, progress);
+  const moving = bar.fromIndex !== bar.targetIndex;
+  const pulse = moving ? Math.sin(Math.PI * progress) : 0.35;
   return (
-    <group>
-      <RoundedBox position={[0, 0.09, 0]} args={[width * 1.26, 0.18, depth * 1.26]} radius={Math.min(0.1, width * 0.16)} smoothness={4} receiveShadow castShadow>
-        <meshStandardMaterial color="#111827" roughness={0.3} metalness={0.82} />
-      </RoundedBox>
-      <mesh position={[0, 0.195, 0]} rotation={[Math.PI / 2, 0, 0]} renderOrder={4}>
-        <torusGeometry args={[Math.max(0.18, width * 0.5), 0.018, 8, 36]} />
-        <meshBasicMaterial color={color} transparent opacity={emphasized ? 0.94 : 0.22} toneMapped={false} depthWrite={false} />
+    <group position={pose.position} rotation={pose.rotation}>
+      <mesh position={[0, 0.075, 0]} rotation={[Math.PI / 2, 0, 0]} renderOrder={4}>
+        <torusGeometry args={[Math.max(0.16, layout.width * 0.56), 0.016, 6, 24]} />
+        <meshBasicMaterial color={bar.color} transparent opacity={0.42 + pulse * 0.32} toneMapped={false} depthWrite={false} />
       </mesh>
     </group>
   );
 }
 
-function BarRunway3D({ layout, theme }: { layout: Layout; theme: Theme }) {
-  if (layout.count > 40) return null;
+function BarLabels({ bars, layout, progress, swapping }: { bars: Motion[]; layout: Layout; progress: number; swapping: boolean }) {
+  const stride = Math.max(1, Math.ceil(bars.length / 12));
   return (
-    <group position={[0, 0.082, 0]}>
-      {Array.from({ length: layout.count }, (_, index) => (
-        <group key={index} position={[layout.xFor(index), 0, 0]}>
-          <mesh rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[Math.max(0.04, layout.width * 0.18), 3.4]} />
-            <meshBasicMaterial color={index % 2 ? theme.highlight : theme.sorted} transparent opacity={0.045} toneMapped={false} depthWrite={false} />
-          </mesh>
-          <mesh position={[0, 0, 1.63]} rotation={[-Math.PI / 2, 0, 0]}>
-            <circleGeometry args={[Math.max(0.028, layout.width * 0.12), 18]} />
-            <meshBasicMaterial color={theme.highlight} transparent opacity={0.18} toneMapped={false} depthWrite={false} />
-          </mesh>
-        </group>
+    <>
+      {bars.map((bar) => {
+        if (swapping && !bar.emphasized) return null;
+        if (!bar.emphasized && bars.length > 18 && bar.index % stride !== 0) return null;
+        const pose = poseForBar(bar, layout, progress);
+        const height = layout.heightFor(bar.value);
+        return (
+          <AlgorithmTextSprite3D
+            key={`label-${bar.index}`}
+            text={String(bar.value)}
+            position={[pose.position[0], pose.position[1] + height + 0.42, pose.position[2] + 0.02]}
+            color={bar.emphasized ? bar.color : "#e4e8ea"}
+            scale={bar.emphasized ? 0.54 : 0.40}
+            subtle={!bar.emphasized}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+function BarFloorMarkers({ count, layout, theme }: { count: number; layout: Layout; theme: Theme }) {
+  if (count > 28) return null;
+  return (
+    <group position={[0, 0.064, 0]}>
+      {Array.from({ length: count }, (_, index) => (
+        <mesh key={index} position={[layout.xFor(index), 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[Math.max(0.025, layout.width * 0.10), 1.4]} />
+          <meshBasicMaterial color={theme.highlight} transparent opacity={0.028} toneMapped={false} depthWrite={false} />
+        </mesh>
       ))}
     </group>
   );
 }
 
-function poseFor(fromX: number, targetX: number, progress: number, moving: boolean) {
-  const t = THREE.MathUtils.clamp(progress, 0, 1);
-  if (!moving) return { position: [targetX, 0, 0] as [number, number, number], rotation: [0, 0, 0] as [number, number, number] };
-  const eased = smootherStep(t);
-  const direction = targetX >= fromX ? 1 : -1;
-  const travel = Math.abs(targetX - fromX);
-  const anticipation = t < 0.12 ? Math.sin((t / 0.12) * Math.PI) * -direction * Math.min(0.12, travel * 0.035) : 0;
-  const x = THREE.MathUtils.lerp(fromX, targetX, eased) + anticipation;
-  const arc = Math.sin(Math.PI * eased);
-  const y = arc * (1.15 + Math.min(0.9, travel * 0.075));
-  const z = arc * direction * (0.92 + Math.min(0.5, travel * 0.045));
-  const yaw = -direction * arc * 0.12;
-  const roll = direction * Math.sin(Math.PI * 2 * eased) * 0.025;
-  return {
-    position: [x, y, z] as [number, number, number],
-    rotation: [0, yaw, roll] as [number, number, number],
-  };
+function poseForBar(bar: Motion, layout: Layout, progress: number): BarPose3D {
+  if (bar.fromIndex === bar.targetIndex) return { position: [layout.xFor(bar.targetIndex), 0, 0], rotation: [0, 0, 0] };
+  return swapPose3D(layout.xFor(bar.fromIndex), layout.xFor(bar.targetIndex), progress);
 }
 
-function applyPose(group: THREE.Group, fromX: number, targetX: number, progress: number, moving: boolean) {
-  const pose = poseFor(fromX, targetX, progress, moving);
-  group.position.set(...pose.position);
-  group.rotation.set(...pose.rotation);
-}
-
-function smootherStep(value: number) {
-  return value * value * value * (value * (value * 6 - 15) + 10);
+function setStaticInstance(mesh: THREE.InstancedMesh, index: number, position: [number, number, number], scale: [number, number, number]) {
+  const matrix = new THREE.Matrix4().compose(
+    new THREE.Vector3(...position),
+    new THREE.Quaternion(),
+    new THREE.Vector3(...scale),
+  );
+  mesh.setMatrixAt(index, matrix);
 }
 
 function darken(color: string, amount: number) {
-  return `#${new THREE.Color(color).lerp(new THREE.Color("#060b14"), amount).getHexString()}`;
+  return `#${new THREE.Color(color).lerp(new THREE.Color("#12171b"), amount).getHexString()}`;
 }
 
 function lighten(color: string, amount: number) {
-  return `#${new THREE.Color(color).lerp(new THREE.Color("#ffffff"), amount).getHexString()}`;
+  return `#${new THREE.Color(color).lerp(new THREE.Color("#f7fbff"), amount).getHexString()}`;
 }

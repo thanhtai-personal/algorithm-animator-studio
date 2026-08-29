@@ -9,7 +9,7 @@ import { drawAlgorithm3DOverlay } from "@/features/algorithm-video-3d/drawAlgori
 import { getExportFormat } from "./exportFormats";
 import type { ExportVideoParams } from "./videoExport";
 
-const SWAP_EXPORT_SECONDS = 0.35;
+const SWAP_EXPORT_SECONDS = 0.95;
 const TREE_SORT_EXPORT_SECONDS = 0.12;
 const PIGEONHOLE_EXPORT_SECONDS = 0.16;
 
@@ -99,8 +99,16 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
       const previousFrame = frameIndex > 0 ? params.frames[frameIndex - 1] : null;
       const transitionFrames = getTransitionFrameCount(params, params.frames[frameIndex], previousFrame);
 
+      let liftPlayed = false;
+      let drivePlayed = false;
+      let setPlayed = false;
+      const craneSwap = shouldAnimateSwap(params.frames[frameIndex], previousFrame);
       for (let step = 1; step <= transitionFrames; step += 1) {
-        await renderFrame(frameIndex, previousFrame, step / transitionFrames);
+        const progress = step / transitionFrames;
+        if (craneSwap && progress >= 0.14 && !liftPlayed) { liftPlayed = true; audioEngine.playSfx("crane-lift"); }
+        if (craneSwap && progress >= 0.32 && !drivePlayed) { drivePlayed = true; audioEngine.playSfx("crane-drive"); }
+        if (craneSwap && progress >= 0.79 && !setPlayed) { setPlayed = true; audioEngine.playSfx("crane-set"); }
+        await renderFrame(frameIndex, previousFrame, progress);
         track.requestFrame();
         await waitFrame(params.fps);
       }

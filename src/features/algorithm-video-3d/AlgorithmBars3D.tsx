@@ -7,11 +7,12 @@ import { AlgorithmTextSprite3D } from "./AlgorithmTextSprite3D";
 import { arrayLayout, getBarMotion, swapPose3D, type BarPose3D } from "./algorithm3dMath";
 import { selectionReveal3D } from "./algorithm3dTiming";
 
-export function AlgorithmBars3D({ frame, previousFrame, theme, deterministicProgress = 1 }: {
+export function AlgorithmBars3D({ frame, previousFrame, theme, deterministicProgress = 1, storyMode = false }: {
   frame: Frame;
   previousFrame?: Frame | null;
   theme: Theme;
   deterministicProgress?: number;
+  storyMode?: boolean;
 }) {
   const layout = useMemo(() => arrayLayout(frame.arr), [frame.arr]);
   const bars = useMemo(() => getBarMotion(frame, previousFrame, theme), [frame, previousFrame, theme]);
@@ -27,6 +28,7 @@ export function AlgorithmBars3D({ frame, previousFrame, theme, deterministicProg
       {bars.filter((bar) => bar.emphasized).map((bar) => (
         <ActiveBuildingMarker key={`active-${bar.index}`} bar={bar} layout={layout} progress={deterministicProgress} selectionStrength={selectionStrength} />
       ))}
+      {storyMode ? <StoryLockedBuildings frame={frame} layout={layout} theme={theme} /> : null}
       <BarLabels bars={bars} layout={layout} progress={deterministicProgress} swapping={moving.length > 0} />
     </group>
   );
@@ -138,6 +140,31 @@ function ActiveBuildingMarker({ bar, layout, progress, selectionStrength }: {
         <torusGeometry args={[Math.max(0.16, layout.width * 0.56), 0.016, 6, 24]} />
         <meshBasicMaterial color={bar.color} transparent opacity={0.16 + pulse * 0.42} toneMapped={false} depthWrite={false} />
       </mesh>
+    </group>
+  );
+}
+
+function StoryLockedBuildings({ frame, layout, theme }: { frame: Frame; layout: Layout; theme: Theme }) {
+  if (!frame.sorted.length) return null;
+  const complete = frame.arr.length > 0 && frame.sorted.length >= frame.arr.length;
+  return (
+    <group>
+      {frame.sorted.filter((index) => index >= 0 && index < frame.arr.length).map((index) => {
+        const height = layout.heightFor(frame.arr[index]);
+        const depth = Math.max(0.42, layout.width * 0.94);
+        return (
+          <group key={`story-locked-${index}`} position={[layout.xFor(index), 0, 0]}>
+            <mesh position={[0, 0.075, 0]} rotation={[Math.PI / 2, 0, 0]} renderOrder={6}>
+              <torusGeometry args={[Math.max(0.15, layout.width * 0.58), 0.018, 6, 24]} />
+              <meshBasicMaterial color={theme.sorted} transparent opacity={complete ? 0.72 : 0.42} toneMapped={false} depthWrite={false} />
+            </mesh>
+            <mesh position={[0, height * 0.52, depth / 2 + 0.035]} renderOrder={7}>
+              <planeGeometry args={[Math.max(0.035, layout.width * 0.16), Math.max(0.20, height * 0.76)]} />
+              <meshBasicMaterial color={theme.sorted} transparent opacity={complete ? 0.72 : 0.38} toneMapped={false} depthWrite={false} />
+            </mesh>
+          </group>
+        );
+      })}
     </group>
   );
 }

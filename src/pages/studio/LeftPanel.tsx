@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SHORT_VIDEO_TYPES, type ShortVideoType } from "@/lib/shortVideoTypes";
 import { AlgorithmStudio } from "./useAlgorithmStudio";
 import { uiText } from "@/lib/i18n";
-import { canUseAlgorithm3DVideo, hasWebGLVideoSupport, type AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
+import { canUseAlgorithm3DVideo, hasWebGLVideoSupport, isAlgorithm3DRenderMode, type AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
 import { ALGORITHM_VIDEO_ADS, ALGORITHM_VIDEO_AD_SLOTS, type AlgorithmVideoAdId } from "@/lib/algorithmVideoAds";
 
 type Props = { studio: AlgorithmStudio };
@@ -166,16 +166,19 @@ function VideoRenderModeSelect({ studio: s }: Props) {
         <SelectContent>
           <SelectItem value="2d">{s.lang === "vi" ? "2D — chế độ gốc" : "2D — original mode"}</SelectItem>
           <SelectItem value="3d" disabled={!available}>3D — WebGL</SelectItem>
+          <SelectItem value="3d-story" disabled={!available || s.algo.category !== "sort"}>{s.lang === "vi" ? "3D Story — Giữ chân người xem" : "3D Story — Retention"}</SelectItem>
         </SelectContent>
       </Select>
-      {s.videoRenderMode === "3d" ? (
+      {isAlgorithm3DRenderMode(s.videoRenderMode) ? (
         <p className={`mt-2 text-xs ${available ? "text-cyan-300" : "text-amber-300"}`}>
           {available
-            ? (s.lang === "vi" ? "Preview và video xuất sẽ dùng scene 3D. Mode 2D gốc vẫn được giữ nguyên." : "Preview and export use the 3D scene. The original 2D mode remains unchanged.")
+            ? (s.videoRenderMode === "3d-story"
+              ? (s.lang === "vi" ? "Story Mode thêm hook, dự đoán, reward và progress nhưng giữ nguyên camera cố định." : "Story Mode adds hooks, prediction, rewards and progress while keeping the camera locked.")
+              : (s.lang === "vi" ? "Preview và video xuất sẽ dùng scene 3D. Mode 2D gốc vẫn được giữ nguyên." : "Preview and export use the 3D scene. The original 2D mode remains unchanged."))
             : (s.lang === "vi" ? "3D không khả dụng với scene/mode hiện tại; hệ thống sẽ dùng 2D gốc." : "3D is unavailable for the current scene/mode; the original 2D renderer will be used.")}
         </p>
       ) : null}
-      {s.videoRenderMode === "3d" && available ? (
+      {isAlgorithm3DRenderMode(s.videoRenderMode) && available ? (
         <div className="mt-3 space-y-3 rounded-lg border border-white/10 bg-white/[0.025] p-3">
           <div>
             <Label>{s.lang === "vi" ? "Quảng cáo trong không gian 3D" : "3D scene advertisements"}</Label>

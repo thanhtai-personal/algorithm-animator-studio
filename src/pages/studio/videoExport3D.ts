@@ -6,7 +6,8 @@ import type { Frame } from "@/lib/algorithms";
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
 import { createAlgorithm3DExportSurface } from "@/features/algorithm-video-3d/algorithm3dExportSurface";
 import { drawAlgorithm3DOverlay } from "@/features/algorithm-video-3d/drawAlgorithm3DOverlay";
-import { CRANE_AUDIO_CUES, CRANE_SWAP_SECONDS, getAlgorithm3DFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dTiming";
+import { CRANE_AUDIO_CUES, CRANE_SWAP_SECONDS, getAlgorithm3DFrameSeconds, getAlgorithm3DStoryFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dTiming";
+import { isAlgorithm3DStoryMode } from "@/lib/algorithmVideoRenderMode";
 import { getExportFormat } from "./exportFormats";
 import type { ExportVideoParams } from "./videoExport";
 
@@ -14,6 +15,7 @@ const TREE_SORT_EXPORT_SECONDS = 0.12;
 const PIGEONHOLE_EXPORT_SECONDS = 0.16;
 
 export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
+  const storyMode = isAlgorithm3DStoryMode(params.videoRenderMode);
   const format = getExportFormat(params.exportFormat);
   const mimeType = format.mimeCandidates.find((candidate) => MediaRecorder.isTypeSupported(candidate));
   if (!mimeType) {
@@ -36,6 +38,7 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
     height: params.height,
     theme: params.theme,
     ads: params.algorithmVideoAds,
+    storyMode,
   });
 
   const renderFrame = async (frameIndex: number, previousFrame: Frame | null, progress: number) => {
@@ -54,6 +57,10 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
       showCode: params.showCode,
       complexity: params.complexity,
       lang: params.lang,
+      theme: params.theme,
+      storyMode,
+      frameCount: params.frames.length,
+      transitionProgress: progress,
     });
   };
 
@@ -136,7 +143,7 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
   const url = URL.createObjectURL(blob);
   const fileName = buildVideoExportFileName({
     youtubeTitle: params.youtubeMetadata?.title,
-    fallbackTitle: `${params.algoName} ${params.platformId} 3D`,
+    fallbackTitle: `${params.algoName} ${params.platformId} ${storyMode ? "3D Story" : "3D"}`,
     lang: params.lang,
     extension: format.id,
   });
@@ -156,7 +163,10 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
 function getTransitionFrameCount(params: ExportVideoParams, frame: Frame, previousFrame: Frame | null) {
   if (shouldAnimateSwap(frame, previousFrame)) return Math.max(8, Math.round(params.fps * CRANE_SWAP_SECONDS));
   if (frame.event === "compare" || frame.event === "visit" || frame.event === "found") {
-    return Math.max(3, Math.round(params.fps * getAlgorithm3DFrameSeconds(frame)));
+    const seconds = isAlgorithm3DStoryMode(params.videoRenderMode)
+      ? getAlgorithm3DStoryFrameSeconds(frame)
+      : getAlgorithm3DFrameSeconds(frame);
+    return Math.max(3, Math.round(params.fps * seconds));
   }
   if (params.algorithmId === "tree_sort") return Math.max(2, Math.round(params.fps * TREE_SORT_EXPORT_SECONDS));
   if (params.algorithmId === "pigeonhole") return Math.max(3, Math.round(params.fps * PIGEONHOLE_EXPORT_SECONDS));

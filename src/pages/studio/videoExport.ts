@@ -10,7 +10,7 @@ import type { ShortVideoType } from "@/lib/shortVideoTypes";
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
 import type { YoutubeAlgorithmMetadata } from "@/lib/youtubeMetadata";
 import { getExportFormat, ExportFormat } from "./exportFormats";
-import { canUseAlgorithm3DVideo, type AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
+import { canUseAlgorithm3DVideo, isAlgorithm3DRenderMode, type AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
 import type { AlgorithmVideoAdSelection } from "@/lib/algorithmVideoAds";
 
 const SWAP_EXPORT_SECONDS = 0.35;
@@ -59,7 +59,7 @@ export type ExportVideoParams = {
 export async function exportAlgorithmVideo(params: ExportVideoParams) {
   if (!params.frames.length) return false;
 
-  const wants3D = params.videoRenderMode === "3d" && canUseAlgorithm3DVideo({
+  const wants3D = isAlgorithm3DRenderMode(params.videoRenderMode) && canUseAlgorithm3DVideo({
     shortVideoType: params.shortVideoType,
     columnVisualMode: params.animalColumns.mode,
     hasWorldScene: params.frames.some((frame) => Boolean(frame.world || frame.worldCompare)),

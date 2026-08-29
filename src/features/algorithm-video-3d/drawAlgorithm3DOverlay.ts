@@ -1,6 +1,8 @@
 import type { Frame } from "@/lib/algorithms";
 import type { Lang } from "@/lib/i18n";
+import type { Theme } from "@/lib/renderer";
 import { eventLabel } from "./algorithm3dMath";
+import { getAlgorithm3DStoryState } from "./algorithm3dStory";
 
 export function drawAlgorithm3DOverlay(ctx: CanvasRenderingContext2D, params: {
   frame: Frame;
@@ -13,6 +15,11 @@ export function drawAlgorithm3DOverlay(ctx: CanvasRenderingContext2D, params: {
   showCode: boolean;
   complexity?: { time: string; best?: string; worst?: string; space: string };
   lang: Lang;
+  theme?: Theme;
+  storyMode?: boolean;
+  storyHook?: boolean;
+  frameCount?: number;
+  transitionProgress?: number;
 }) {
   const { width: w, height: h } = params;
   const portrait = h > w;
@@ -20,6 +27,11 @@ export function drawAlgorithm3DOverlay(ctx: CanvasRenderingContext2D, params: {
   const titleSize = Math.max(22, Math.round(h * (portrait ? 0.025 : 0.041)));
 
   ctx.save();
+  if (params.storyMode) {
+    drawStoryRetentionOverlay(ctx, params, pad, portrait);
+    ctx.restore();
+    return;
+  }
   topFade(ctx, w, h);
   cornerMarks(ctx, w, h, pad);
   titleBlock(ctx, params, pad, titleSize);
@@ -27,6 +39,90 @@ export function drawAlgorithm3DOverlay(ctx: CanvasRenderingContext2D, params: {
   stateBlock(ctx, params, pad, portrait);
   if (params.showCode) drawExecutionDock(ctx, params, pad, portrait);
   ctx.restore();
+}
+
+function drawStoryRetentionOverlay(
+  ctx: CanvasRenderingContext2D,
+  params: Parameters<typeof drawAlgorithm3DOverlay>[1],
+  pad: number,
+  portrait: boolean,
+) {
+  const { width: w, height: h } = params;
+  const frameCount = Math.max(1, params.frameCount ?? 1);
+  const story = getAlgorithm3DStoryState({
+    frame: params.frame,
+    frameIndex: params.frameIndex,
+    frameCount,
+    title: params.title,
+    lang: params.lang,
+    hook: Boolean(params.storyHook || (params.frameIndex <= 1 && frameCount > 3)),
+    transitionProgress: params.transitionProgress ?? 1,
+  });
+  const theme = params.theme;
+  const accent = story.complete ? (theme?.sorted ?? "#22c55e") : params.frame.event === "swap" ? (theme?.swap ?? "#fb7185") : (theme?.highlight ?? "#facc15");
+
+  const top = ctx.createLinearGradient(0, 0, 0, h * 0.27);
+  top.addColorStop(0, "rgba(3,7,10,0.58)");
+  top.addColorStop(1, "rgba(3,7,10,0)");
+  ctx.fillStyle = top;
+  ctx.fillRect(0, 0, w, h * 0.28);
+  const bottom = ctx.createLinearGradient(0, h, 0, h * 0.72);
+  bottom.addColorStop(0, "rgba(3,7,10,0.64)");
+  bottom.addColorStop(1, "rgba(3,7,10,0)");
+  ctx.fillStyle = bottom;
+  ctx.fillRect(0, h * 0.70, w, h * 0.30);
+
+  cornerMarks(ctx, w, h, pad);
+  ctx.textBaseline = "alphabetic";
+  ctx.textAlign = "left";
+  const micro = Math.max(10, h * (portrait ? 0.010 : 0.014));
+  ctx.fillStyle = "rgba(255,255,255,0.46)";
+  ctx.font = `900 ${micro}px ui-sans-serif,system-ui`;
+  ctx.fillText("3D STORY · RETENTION", pad, pad + micro);
+  ctx.fillStyle = "rgba(255,255,255,0.72)";
+  ctx.font = `750 ${micro * 1.35}px ui-sans-serif,system-ui`;
+  ctx.fillText(params.title, pad, pad + micro * 2.8, w * 0.52);
+
+  const percent = Math.round(story.progress * 100);
+  drawPill(ctx, w - pad, pad * 0.88, `${percent}%`, theme?.sorted ?? "#86efac", h);
+
+  const headlineSize = Math.max(24, h * (story.complete ? (portrait ? 0.036 : 0.052) : portrait ? 0.030 : 0.044));
+  const centerY = h * (story.complete ? 0.21 : 0.16);
+  ctx.textAlign = "center";
+  ctx.fillStyle = accent;
+  ctx.font = `900 ${Math.max(10, headlineSize * 0.28)}px ui-sans-serif,system-ui`;
+  ctx.fillText(story.kicker, w / 2, centerY, w * 0.82);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `950 ${headlineSize}px ui-sans-serif,system-ui`;
+  ctx.shadowColor = "rgba(0,0,0,0.72)";
+  ctx.shadowBlur = Math.max(8, headlineSize * 0.38);
+  ctx.fillText(story.headline, w / 2, centerY + headlineSize * 1.18, w * 0.88);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(244,247,248,0.62)";
+  ctx.font = `650 ${Math.max(10, headlineSize * 0.34)}px ui-sans-serif,system-ui`;
+  ctx.fillText(story.detail, w / 2, centerY + headlineSize * 1.76, w * 0.82);
+
+  const barX = pad;
+  const barW = w - pad * 2;
+  const barH = Math.max(6, h * 0.006);
+  const barY = h - pad - barH;
+  ctx.textAlign = "left";
+  ctx.fillStyle = "rgba(255,255,255,0.40)";
+  ctx.font = `850 ${Math.max(9, micro * 0.82)}px ui-sans-serif,system-ui`;
+  ctx.fillText(params.lang === "vi" ? "TIẾN ĐỘ KHÔI PHỤC" : "CITY RESTORATION", barX, barY - micro * 0.66);
+  ctx.textAlign = "right";
+  ctx.fillText(`${story.completed}/${Math.max(1, params.frame.arr.length)} ${params.lang === "vi" ? "ĐÃ KHÓA" : "LOCKED"}`, barX + barW, barY - micro * 0.66);
+  roundedRect(ctx, barX, barY, barW, barH, barH / 2);
+  ctx.fillStyle = "rgba(255,255,255,0.10)";
+  ctx.fill();
+  const progressW = Math.max(barH, barW * Math.max(0.02, story.progress));
+  const gradient = ctx.createLinearGradient(barX, 0, barX + barW, 0);
+  gradient.addColorStop(0, theme?.highlight ?? "#facc15");
+  gradient.addColorStop(1, theme?.sorted ?? "#22c55e");
+  roundedRect(ctx, barX, barY, progressW, barH, barH / 2);
+  ctx.fillStyle = gradient;
+  ctx.fill();
+  ctx.textBaseline = "alphabetic";
 }
 
 function titleBlock(ctx: CanvasRenderingContext2D, params: Parameters<typeof drawAlgorithm3DOverlay>[1], pad: number, titleSize: number) {

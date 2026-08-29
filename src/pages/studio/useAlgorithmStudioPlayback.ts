@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { Frame } from "@/lib/algorithms";
 import { audioEngine, type SfxKind } from "@/lib/audio";
-import type { AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
+import { isAlgorithm3DRenderMode, isAlgorithm3DStoryMode, type AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
 import type { ShortVideoType } from "@/lib/shortVideoTypes";
-import { CRANE_AUDIO_CUES, getAlgorithm3DFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dTiming";
+import { CRANE_AUDIO_CUES, getAlgorithm3DFrameSeconds, getAlgorithm3DStoryFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dTiming";
 
 const SWAP_TRANSITION_MULTIPLIER = 1.8;
 const KINETIC_ODD_EVEN_FRAME_MULTIPLIER = 8;
@@ -37,6 +37,7 @@ export function useAlgorithmStudioPlayback(params: PlaybackParams) {
   const lastRef = useRef(0);
   const craneAudioRef = useRef({ frameIdx: -1, approach: false, hook: false, lift: false, transport: false, lower: false, return: false });
   const last3DPitchRef = useRef(0.5);
+  const lastStorySortedRef = useRef(0);
 
   const playEvent = useCallback((frame: Frame | null | undefined) => {
     if (!frame) return;
@@ -50,11 +51,20 @@ export function useAlgorithmStudioPlayback(params: PlaybackParams) {
       audioEngine.playSfx("engine", 0.45 + (frame.line % 5) * 0.08);
       return;
     }
-    if (videoRenderMode === "3d") {
+    if (isAlgorithm3DRenderMode(videoRenderMode)) {
       const easedPitch = last3DPitchRef.current + (pitch - last3DPitchRef.current) * 0.36;
       last3DPitchRef.current = easedPitch;
       if (event === "found") audioEngine.playSfx("swap-spark", easedPitch);
       else if (event === "compare" || event === "visit") audioEngine.playSfx("data-step", easedPitch);
+      if (isAlgorithm3DStoryMode(videoRenderMode)) {
+        const sortedCount = frame.sorted.length;
+        if (sortedCount < lastStorySortedRef.current) lastStorySortedRef.current = sortedCount;
+        const milestone = Math.max(1, Math.ceil(Math.max(1, frame.arr.length) / 4));
+        if (sortedCount > lastStorySortedRef.current && (sortedCount >= frame.arr.length || sortedCount % milestone === 0)) {
+          audioEngine.playSfx("swap-spark", Math.min(0.95, 0.58 + sortedCount / Math.max(1, frame.arr.length) * 0.34));
+        }
+        lastStorySortedRef.current = sortedCount;
+      }
       return;
     }
     if (event === "compare") audioEngine.playSfx(sfxCompare, pitch);
@@ -102,18 +112,18 @@ export function useAlgorithmStudioPlayback(params: PlaybackParams) {
       const previousFrame = frameIdx > 0 ? frames[frameIdx - 1] : null;
       const algorithmMultiplier = getAlgorithmFrameMultiplier(shortVideoType, algoId);
       const animatedSwap = shouldAnimateSwap(currentFrame, previousFrame);
-      const natural3DInterval = getAlgorithm3DFrameSeconds(currentFrame) * 1000 / Math.max(0.1, speed);
+      const natural3DInterval = (isAlgorithm3DStoryMode(videoRenderMode) ? getAlgorithm3DStoryFrameSeconds(currentFrame) : getAlgorithm3DFrameSeconds(currentFrame)) * 1000 / Math.max(0.1, speed);
       const interval = animatedSwap
-        ? videoRenderMode === "3d"
+        ? isAlgorithm3DRenderMode(videoRenderMode)
           ? Math.max(baseInterval * SWAP_TRANSITION_MULTIPLIER * algorithmMultiplier, natural3DInterval)
           : baseInterval * SWAP_TRANSITION_MULTIPLIER * algorithmMultiplier
-        : videoRenderMode === "3d"
+        : isAlgorithm3DRenderMode(videoRenderMode)
           ? Math.max(baseInterval * algorithmMultiplier, natural3DInterval)
           : baseInterval * algorithmMultiplier;
       const elapsed = time - lastRef.current;
       const progress = Math.min(1, elapsed / interval);
       setTransitionProgress(progress);
-      if (videoRenderMode === "3d" && animatedSwap) playCraneMotionSfx(frameIdx, progress);
+      if (isAlgorithm3DRenderMode(videoRenderMode) && animatedSwap) playCraneMotionSfx(frameIdx, progress);
 
       if (elapsed >= interval) {
         lastRef.current = time;

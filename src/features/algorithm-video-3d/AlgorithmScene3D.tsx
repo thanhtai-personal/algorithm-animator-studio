@@ -3,6 +3,7 @@ import { Canvas, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { Frame } from "@/lib/algorithms";
 import type { Theme } from "@/lib/renderer";
+import type { AlgorithmVideoAdSelection } from "@/lib/algorithmVideoAds";
 import { AlgorithmBars3D } from "./AlgorithmBars3D";
 import { AlgorithmGraph3D } from "./AlgorithmGraph3D";
 import { AlgorithmStage3D } from "./AlgorithmStage3D";
@@ -38,6 +39,7 @@ export type AlgorithmScene3DProps = {
   canvasRef?: MutableRefObject<HTMLCanvasElement | null>;
   exportMode?: boolean;
   ads?: AlgorithmVideoAdSelection;
+  storyMode?: boolean;
 };
 
 export function AlgorithmScene3D(props: AlgorithmScene3DProps) {
@@ -79,7 +81,7 @@ export function AlgorithmScene3D(props: AlgorithmScene3DProps) {
         <AlgorithmGraph3D frame={props.frame} theme={props.theme} deterministicProgress={progress} />
       ) : (
         <>
-          <AlgorithmBars3D frame={props.frame} previousFrame={props.previousFrame} theme={props.theme} deterministicProgress={progress} />
+          <AlgorithmBars3D frame={props.frame} previousFrame={props.previousFrame} theme={props.theme} deterministicProgress={progress} storyMode={props.storyMode} />
           <AlgorithmSwapCranes3D frame={props.frame} previousFrame={props.previousFrame} theme={props.theme} progress={progress} />
         </>
       )}

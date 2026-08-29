@@ -20,7 +20,7 @@ import type { BackgroundMusicId } from "@/lib/backgroundMusic";
 import { Lang, PLATFORMS, readSystemLang, subscribeSystemLang, t, writeSystemLang } from "@/lib/i18n";
 import { THEMES, Theme } from "@/lib/renderer";
 import type { ShortVideoType } from "@/lib/shortVideoTypes";
-import type { AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
+import { isAlgorithm3DStoryMode, type AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
 import { createDefaultAlgorithmVideoAds, type AlgorithmVideoAdId, type AlgorithmVideoAdSlotId } from "@/lib/algorithmVideoAds";
 import { buildMazeTournamentSeriesYoutubeMetadata, buildMazeTournamentYoutubeMetadata, buildYoutubeMetadata } from "@/lib/youtubeMetadata";
 import { ExportFormat } from "./exportFormats";
@@ -149,6 +149,9 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     if (!mazePathfindingEnabled && algoId === "astar") setAlgoId("bubble");
   }, [algoId, mazePathfindingEnabled]);
   const isGraph = algo.category === "graph";
+  useEffect(() => {
+    if (algo.category !== "sort" && isAlgorithm3DStoryMode(videoRenderMode)) setVideoRenderMode("3d");
+  }, [algo.category, videoRenderMode]);
   const parsedGraph = useMemo(() => isGraph ? parseGraph(graphInput) : null, [isGraph, graphInput]);
   const graphLabels = parsedGraph?.nodes.map((n) => n.label ?? String(n.id)) ?? [];
   const startId = graphLabels.indexOf(startLabel);

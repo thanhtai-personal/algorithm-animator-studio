@@ -20,6 +20,15 @@ export function getAlgorithm3DFrameSeconds(frame: Frame | null | undefined) {
   return 0.105;
 }
 
+export function getAlgorithm3DStoryFrameSeconds(frame: Frame | null | undefined) {
+  if (!frame) return 0.18;
+  if (frame.event === "compare") return 0.40;
+  if (frame.event === "visit") return 0.28;
+  if (frame.event === "found") return 0.46;
+  if (frame.event === "swap") return CRANE_SWAP_SECONDS;
+  return 0.15;
+}
+
 /** Gentle reveal used by compare/visit markers. It fades in, then holds instead of strobing. */
 export function selectionReveal3D(progress: number) {
   const t = clamp01(progress / 0.34);

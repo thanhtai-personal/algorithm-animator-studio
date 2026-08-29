@@ -1,7 +1,15 @@
 import type { ColumnVisualMode } from "@/lib/animalColumns";
 import type { ShortVideoType } from "@/lib/shortVideoTypes";
 
-export type AlgorithmVideoRenderMode = "2d" | "3d";
+export type AlgorithmVideoRenderMode = "2d" | "3d" | "3d-story";
+
+export function isAlgorithm3DRenderMode(mode: AlgorithmVideoRenderMode) {
+  return mode === "3d" || mode === "3d-story";
+}
+
+export function isAlgorithm3DStoryMode(mode: AlgorithmVideoRenderMode) {
+  return mode === "3d-story";
+}
 
 export function canUseAlgorithm3DVideo(params: {
   shortVideoType: ShortVideoType;

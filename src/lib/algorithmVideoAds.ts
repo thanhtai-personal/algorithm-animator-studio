@@ -1,13 +1,21 @@
 export type AlgorithmVideoAdId = "test" | "none" | "kata" | "thiendaochilo" | "kata_rental";
 export type AlgorithmVideoAdSlotId = "left_facade" | "right_billboard";
 
+export type AlgorithmVideoAdCreative = "default" | "kata_rental";
+
 export type AlgorithmVideoAd = {
   id: AlgorithmVideoAdId;
   label: { vi: string; en: string };
   brand: string;
+  eyebrow?: string;
   subtitle?: string;
   url?: string;
+  displayUrl?: string;
+  contact?: string;
+  address?: string;
   accent: string;
+  accentSecondary?: string;
+  creative?: AlgorithmVideoAdCreative;
 };
 
 export type AlgorithmVideoAdSlot = {
@@ -53,10 +61,17 @@ export const ALGORITHM_VIDEO_ADS: readonly AlgorithmVideoAd[] = [
   },
   {
     id: "kata_rental",
-    label: { vi: "KATA Thuê Đồ", en: "KATA Rental" },
-    brand: "KATA THUÊ ĐỒ",
-    subtitle: "TIỆM THUÊ ĐỒ KATA",
-    accent: "#c9986d",
+    label: { vi: "KATA · Thuê đồ & Makeup", en: "KATA · Rental & Makeup" },
+    brand: "KATA",
+    eyebrow: "KATA RENTAL",
+    subtitle: "TIỆM THUÊ ĐỒ · MAKEUP",
+    url: "https://www.kata.makeup/vi/kata",
+    displayUrl: "kata.makeup/vi/kata",
+    contact: "0393 545 364",
+    address: "63 Nơ Trang Long · Kiến Đức · Lâm Đồng",
+    accent: "#6f3345",
+    accentSecondary: "#c5a163",
+    creative: "kata_rental",
   },
 ] as const;
 

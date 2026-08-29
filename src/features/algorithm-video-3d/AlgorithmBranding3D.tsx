@@ -116,6 +116,7 @@ function makeBrandTexture(ad: AlgorithmVideoAd, slotLabel: string, style: "facad
   const ctx = canvas.getContext("2d")!;
 
   if (ad.creative === "kata_rental") drawKataRentalCreative(ctx, canvas, ad);
+  else if (ad.creative === "thiendaochilo") drawThienDaoChiLoCreative(ctx, canvas, ad);
   else drawStandardCreative(ctx, canvas, ad, slotLabel, style);
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -239,6 +240,131 @@ function drawKataRentalCreative(ctx: CanvasRenderingContext2D, canvas: HTMLCanva
   ctx.fillStyle = "rgba(75,53,49,0.74)";
   ctx.font = "600 20px Arial, Helvetica, sans-serif";
   ctx.fillText(ad.address ?? "", 665, 344, 465);
+}
+
+
+function drawThienDaoChiLoCreative(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, ad: AlgorithmVideoAd) {
+  const crimson = ad.accent;
+  const gold = ad.accentSecondary ?? "#e8c97a";
+  const ink = "#090607";
+  const parchment = "#eadfca";
+
+  const sky = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  sky.addColorStop(0, "#050607");
+  sky.addColorStop(0.48, "#12090a");
+  sky.addColorStop(1, "#2a0e10");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // A restrained crimson horizon and mist keep the board cinematic without
+  // competing with the algorithm visualization around it.
+  const horizon = ctx.createRadialGradient(870, 260, 30, 870, 260, 510);
+  horizon.addColorStop(0, "rgba(161,27,27,0.32)");
+  horizon.addColorStop(0.55, "rgba(91,17,20,0.14)");
+  horizon.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = horizon;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  drawMountainSilhouette(ctx, canvas.width, canvas.height, "#250d10", 0.70, 292);
+  drawMountainSilhouette(ctx, canvas.width, canvas.height, "#12090b", 0.92, 336);
+
+  const moon = ctx.createRadialGradient(942, 88, 3, 942, 88, 62);
+  moon.addColorStop(0, "rgba(244,221,163,0.92)");
+  moon.addColorStop(0.35, "rgba(232,201,122,0.56)");
+  moon.addColorStop(1, "rgba(232,201,122,0)");
+  ctx.fillStyle = moon;
+  ctx.beginPath();
+  ctx.arc(942, 88, 62, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(232,201,122,0.34)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(24, 24, canvas.width - 48, canvas.height - 48);
+  ctx.strokeStyle = "rgba(161,27,27,0.54)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(38, 38, canvas.width - 76, canvas.height - 76);
+
+  roundedRect(ctx, 56, 46, 275, 36, 18);
+  ctx.fillStyle = "rgba(8,6,7,0.76)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(232,201,122,0.28)";
+  ctx.stroke();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = gold;
+  ctx.font = "700 17px Georgia, 'Times New Roman', serif";
+  ctx.fillText(ad.eyebrow ?? "TIÊN HIỆP · HUYỀN HUYỄN", 194, 64);
+
+  ctx.textAlign = "left";
+  ctx.fillStyle = parchment;
+  ctx.font = "900 78px Georgia, 'Times New Roman', serif";
+  ctx.fillText(ad.brand, 56, 154, 1000);
+
+  ctx.fillStyle = gold;
+  ctx.font = "800 36px Georgia, 'Times New Roman', serif";
+  ctx.fillText(ad.subtitle ?? "MỘT BƯỚC LÊN TRỜI", 60, 214, 690);
+
+  ctx.fillStyle = "rgba(234,223,202,0.68)";
+  ctx.font = "600 22px Arial, Helvetica, sans-serif";
+  ctx.fillText("Bước vào con đường tu luyện · mỗi lựa chọn đổi vận mệnh", 60, 250, 760);
+
+  roundedRect(ctx, 56, 294, 456, 68, 14);
+  ctx.fillStyle = crimson;
+  ctx.fill();
+  ctx.strokeStyle = "rgba(232,201,122,0.38)";
+  ctx.stroke();
+  ctx.fillStyle = "#fff4df";
+  ctx.font = "800 21px Arial, Helvetica, sans-serif";
+  ctx.fillText("ĐỌC TRUYỆN NGAY", 80, 318);
+  ctx.fillStyle = "rgba(255,244,223,0.78)";
+  ctx.font = "600 20px Arial, Helvetica, sans-serif";
+  ctx.fillText(ad.displayUrl ?? "thiendaochilo.vercel.app", 80, 344, 400);
+
+  ctx.textAlign = "right";
+  ctx.fillStyle = "rgba(232,201,122,0.78)";
+  ctx.font = "700 20px Georgia, 'Times New Roman', serif";
+  ctx.fillText(ad.contact ?? "", 1138, 334, 500);
+  ctx.fillStyle = "rgba(234,223,202,0.42)";
+  ctx.font = "600 15px Arial, Helvetica, sans-serif";
+  ctx.fillText("WEB NOVEL · THIÊN ĐẠO CHI LỘ", 1138, 362, 500);
+
+  // Fine gold divider visually anchors the commercial creative at small sizes.
+  ctx.fillStyle = gold;
+  ctx.globalAlpha = 0.46;
+  ctx.fillRect(536, 326, 190, 2);
+  ctx.globalAlpha = 1;
+
+  // Keep the main content legible if billboard downscaling becomes aggressive.
+  ctx.fillStyle = ink;
+  ctx.globalAlpha = 0.10;
+  ctx.fillRect(0, 386, canvas.width, 34);
+  ctx.globalAlpha = 1;
+}
+
+function drawMountainSilhouette(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  color: string,
+  alpha: number,
+  baseline: number,
+) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(0, height);
+  ctx.lineTo(0, baseline);
+  const points = [
+    [95, baseline - 32], [176, baseline - 10], [270, baseline - 76], [350, baseline - 28],
+    [465, baseline - 112], [555, baseline - 46], [680, baseline - 96], [790, baseline - 38],
+    [905, baseline - 126], [1010, baseline - 54], [1110, baseline - 86], [width, baseline - 42],
+  ];
+  points.forEach(([x, y]) => ctx.lineTo(x, y));
+  ctx.lineTo(width, height);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
 }
 
 function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {

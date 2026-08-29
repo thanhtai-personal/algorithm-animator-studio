@@ -1,7 +1,7 @@
 export type AlgorithmVideoAdId = "test" | "none" | "kata" | "thiendaochilo" | "kata_rental";
 export type AlgorithmVideoAdSlotId = "left_facade" | "right_billboard";
 
-export type AlgorithmVideoAdCreative = "default" | "kata_rental";
+export type AlgorithmVideoAdCreative = "default" | "kata_rental" | "thiendaochilo";
 
 export type AlgorithmVideoAd = {
   id: AlgorithmVideoAdId;
@@ -54,10 +54,16 @@ export const ALGORITHM_VIDEO_ADS: readonly AlgorithmVideoAd[] = [
   },
   {
     id: "thiendaochilo",
-    label: { vi: "Thiên Đạo Chi Lộ", en: "Thiên Đạo Chi Lộ" },
+    label: { vi: "Thiên Đạo Chi Lộ · Web novel", en: "Thiên Đạo Chi Lộ · Web novel" },
     brand: "THIÊN ĐẠO CHI LỘ",
+    eyebrow: "TIÊN HIỆP · HUYỀN HUYỄN",
+    subtitle: "MỘT BƯỚC LÊN TRỜI",
     url: "https://thiendaochilo.vercel.app/",
-    accent: "#c4a55f",
+    displayUrl: "thiendaochilo.vercel.app",
+    contact: "TÁC GIẢ · DẠ TỬ LAM",
+    accent: "#a11b1b",
+    accentSecondary: "#e8c97a",
+    creative: "thiendaochilo",
   },
   {
     id: "kata_rental",

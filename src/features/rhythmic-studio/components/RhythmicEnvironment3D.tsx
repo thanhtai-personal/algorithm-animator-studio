@@ -9,12 +9,14 @@ import { RHYTHMIC_ROOM_BACKDROP_WIDTH, RHYTHMIC_ROOM_SIDE_X, type RhythmicBackdr
 import { isKorobeinikiWallLayout } from "../lib/korobeinikiReferenceLayout";
 import { sampledBackdropRepeatIndices } from "../lib/backdropRepeatLayout";
 
-export type EnvironmentKind = "tube-board" | "comet" | "xylophone" | "brick" | "neutral";
+export type EnvironmentKind = "tube-board" | "comet" | "xylophone" | "brick" | "stage" | "sunrise" | "neutral";
 
 export function environmentKind(settings: StudioSettings): EnvironmentKind {
   if (settings.backgroundPreset === "brick-wall") return "brick";
+  if (settings.backgroundPreset === "velvet-stage") return "stage";
   if (settings.backgroundPreset === "tube-board-dark") return "tube-board";
   if (settings.backgroundPreset === "comet-void" || settings.backgroundPreset === "deep-space") return "comet";
+  if (settings.backgroundPreset === "sunrise-panels") return "sunrise";
   if (settings.backgroundPreset === "xylophone-room" || settings.backgroundPreset === "instrument-room") return "xylophone";
   if (settings.backgroundPreset === "spotlight") return "neutral";
   if (settings.terrainProfile === "tube-board" || settings.terrainProfile === "comet" || settings.terrainProfile === "xylophone") return settings.terrainProfile;
@@ -27,7 +29,9 @@ function artBackgroundColor(settings: StudioSettings) {
     : kind === "xylophone" ? new THREE.Color("#b9afa2")
       : kind === "tube-board" ? new THREE.Color("#10141a")
         : kind === "brick" ? new THREE.Color("#08090a")
-        : new THREE.Color(settings.backgroundColor);
+          : kind === "stage" ? new THREE.Color("#14060d")
+            : kind === "sunrise" ? new THREE.Color("#ecd7c0")
+            : new THREE.Color(settings.backgroundColor);
   if (kind !== "neutral") artColor.lerp(new THREE.Color(settings.backgroundColor), 0.22);
   return artColor;
 }
@@ -79,7 +83,7 @@ function SceneAtmosphere({ settings }: { settings: StudioSettings }) {
     scene.background = background;
     scene.fog = kind === "comet"
       ? new THREE.FogExp2(background.clone().lerp(new THREE.Color("#07091a"), 0.62), 0.024)
-      : new THREE.Fog(background, kind === "brick" ? 18 : kind === "xylophone" ? 15 : 13, kind === "brick" ? 38 : kind === "xylophone" ? 34 : 30);
+      : new THREE.Fog(background, kind === "brick" ? 18 : kind === "xylophone" || kind === "sunrise" ? 15 : kind === "stage" ? 14 : 13, kind === "brick" ? 38 : kind === "xylophone" || kind === "sunrise" ? 34 : kind === "stage" ? 32 : 30);
     return () => {
       scene.background = previousBackground;
       scene.fog = previousFog;
@@ -90,7 +94,7 @@ function SceneAtmosphere({ settings }: { settings: StudioSettings }) {
 
 export function ReflectionRig({ settings }: { settings: StudioSettings }) {
   const kind = environmentKind(settings);
-  const warm = kind === "xylophone";
+  const warm = kind === "xylophone" || kind === "sunrise" || kind === "stage";
   const comet = kind === "comet";
   return (
     <Environment resolution={64} frames={1}>
@@ -108,7 +112,7 @@ function BackgroundMotion({ settings, children }: { settings: StudioSettings; ch
     if (!group) return;
     const kind = environmentKind(settings);
     const motion = THREE.MathUtils.clamp(settings.backgroundMotion, 0, 1.5);
-    const strength = kind === "comet" ? 1 : kind === "tube-board" ? 0.16 : kind === "xylophone" ? 0.06 : kind === "brick" ? 0.02 : 0.1;
+    const strength = kind === "comet" ? 1 : kind === "tube-board" ? 0.16 : kind === "xylophone" || kind === "sunrise" ? 0.06 : kind === "stage" ? 0.04 : kind === "brick" ? 0.02 : 0.1;
     const time = clock.elapsedTime;
     group.position.x = Math.sin(time * 0.11) * 0.12 * motion * strength;
     group.position.z = Math.cos(time * 0.08) * 0.05 * motion * strength;
@@ -356,6 +360,51 @@ function KorobeinikiReferenceWall({ color, bounds }: { color: string; bounds: Rh
   );
 }
 
+function VelvetStage({ color, bounds }: { color: string; bounds: RhythmicBackdropBounds }) {
+  return (
+    <group>
+      <RoundedBox position={[0, bounds.centerY, -4.2]} args={[RHYTHMIC_ROOM_BACKDROP_WIDTH, bounds.height, 0.6]} radius={0.14} smoothness={4} receiveShadow>
+        <meshStandardMaterial color={color} roughness={0.94} metalness={0.03} />
+      </RoundedBox>
+      {[-5.6, -2.8, 0, 2.8, 5.6].map((x) => (
+        <RoundedBox key={x} position={[x, bounds.centerY, -3.82]} args={[0.4, bounds.height, 0.16]} radius={0.08} smoothness={3}>
+          <meshStandardMaterial color="#5f1b31" roughness={0.82} metalness={0.02} />
+        </RoundedBox>
+      ))}
+      <mesh position={[0, bounds.bottomY + 1.2, -2.1]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[16.8, 4.4]} />
+        <meshStandardMaterial color="#7c4524" roughness={0.44} metalness={0.08} />
+      </mesh>
+      <GlowSprite position={[0, bounds.centerY + bounds.height * 0.22, -2.4]} scale={[10, 18, 1]} color="#ffd28d" opacity={0.18} />
+      <GlowSprite position={[0, bounds.bottomY + 2.3, -1.9]} scale={[13, 7, 1]} color="#ffb14f" opacity={0.16} />
+    </group>
+  );
+}
+
+function SunrisePanels({ bounds }: { bounds: RhythmicBackdropBounds }) {
+  return (
+    <group>
+      <RoundedBox position={[0, bounds.centerY, -4.1]} args={[RHYTHMIC_ROOM_BACKDROP_WIDTH, bounds.height, 0.56]} radius={0.14} smoothness={4} receiveShadow>
+        <meshStandardMaterial color="#f1dcc7" roughness={0.8} metalness={0.04} />
+      </RoundedBox>
+      <RoundedBox position={[0, bounds.centerY + 0.4, -3.86]} args={[10.6, Math.max(4, bounds.height - 8), 0.08]} radius={0.12} smoothness={3}>
+        <meshStandardMaterial color="#ffffff" roughness={0.52} metalness={0.02} transparent opacity={0.18} />
+      </RoundedBox>
+      {[-3.2, -1.05, 1.05, 3.2].map((x) => (
+        <mesh key={x} position={[x, bounds.centerY + 0.4, -3.76]}>
+          <boxGeometry args={[0.06, Math.max(4, bounds.height - 8), 0.08]} />
+          <meshStandardMaterial color="#9c7e6a" roughness={0.52} metalness={0.08} />
+        </mesh>
+      ))}
+      <mesh position={[0, bounds.bottomY + 1.1, -2.2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[15.2, 4.8]} />
+        <meshStandardMaterial color="#99644a" roughness={0.56} metalness={0.06} />
+      </mesh>
+      <GlowSprite position={[0, bounds.topY - 4.2, -3.15]} scale={[12, 10, 1]} color="#ffe3ab" opacity={0.22} />
+    </group>
+  );
+}
+
 function NeutralStudio({ color, bounds }: { color: string; bounds: RhythmicBackdropBounds }) {
   return (
     <group>
@@ -384,6 +433,8 @@ export function RhythmicEnvironment3D({ settings, backgroundUrl, bounds, childre
         {kind === "tube-board" && <TubeBoardRoom bounds={bounds} />}
         {kind === "comet" && <CometSpace bounds={bounds} />}
         {kind === "xylophone" && <XylophoneRoom bounds={bounds} />}
+        {kind === "stage" && <VelvetStage color={settings.backgroundColor} bounds={bounds} />}
+        {kind === "sunrise" && <SunrisePanels bounds={bounds} />}
         {kind === "neutral" && (isKorobeinikiWallLayout(settings)
           ? <KorobeinikiReferenceWall color={settings.backgroundColor} bounds={bounds} />
           : settings.instrumentFamily !== "auto"

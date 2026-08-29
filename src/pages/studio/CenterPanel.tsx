@@ -12,12 +12,14 @@ import { uiText } from "@/lib/i18n";
 import { videoPreviewViewportStyle } from "@/lib/videoPreviewViewport";
 
 const PhaserMazePreview = lazy(() => import("../algorithm-world/PhaserMazePreview").then((module) => ({ default: module.PhaserMazePreview })));
+const MazePreview3D = lazy(() => import("../algorithm-world/MazePreview3D").then((module) => ({ default: module.MazePreview3D })));
 const Algorithm3DPreview = lazy(() => import("@/features/algorithm-video-3d/Algorithm3DPreview").then((module) => ({ default: module.Algorithm3DPreview })));
 
 type Props = { studio: AlgorithmStudio };
 
 export function CenterPanel({ studio: s }: Props) {
   const showPhaserMaze = Boolean(s.current?.world || s.current?.worldCompare);
+  const showMaze3D = showPhaserMaze && s.worldSceneMode === "three" && hasWebGLVideoSupport();
   const showAlgorithm3D = Boolean(
     isAlgorithm3DRenderMode(s.videoRenderMode)
     && s.current
@@ -36,8 +38,10 @@ export function CenterPanel({ studio: s }: Props) {
       <Card className="w-full min-w-0 overflow-hidden bg-card/50 p-3">
         {showPhaserMaze ? (
           <>
-            <Suspense fallback={<div className="mx-auto grid place-items-center rounded-lg bg-slate-950 text-sm text-cyan-200" style={previewStyle}>{uiText("Loading Phaser scene...")}</div>}>
-              <PhaserMazePreview key={`${s.W}x${s.H}`} frame={s.current} width={s.W} height={s.H} title={s.title} subtitle={s.subtitle} theme={s.theme} lang={s.lang} />
+            <Suspense fallback={<div className="mx-auto grid place-items-center rounded-lg bg-slate-950 text-sm text-cyan-200" style={previewStyle}>{showMaze3D ? (s.lang === "vi" ? "Đang tải mê cung 3D..." : "Loading 3D maze scene...") : uiText("Loading Phaser scene...")}</div>}>
+              {showMaze3D
+                ? <MazePreview3D key={`maze3d-${s.W}x${s.H}`} frame={s.current} width={s.W} height={s.H} title={s.title} subtitle={s.subtitle} theme={s.theme} lang={s.lang} />
+                : <PhaserMazePreview key={`${s.W}x${s.H}`} frame={s.current} width={s.W} height={s.H} title={s.title} subtitle={s.subtitle} theme={s.theme} lang={s.lang} />}
             </Suspense>
             <canvas ref={s.canvasRef} width={s.W} height={s.H} className="hidden" />
           </>

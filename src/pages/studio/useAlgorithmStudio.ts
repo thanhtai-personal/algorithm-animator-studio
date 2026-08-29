@@ -10,6 +10,7 @@ import {
   type AlgorithmWorldMazeId,
   type AlgorithmWorldPresentationMode,
   type AlgorithmWorldProblemType,
+  type AlgorithmWorldSceneMode,
   type AlgorithmWorldTournamentResults,
   type AlgorithmWorldTournamentRound,
   type AlgorithmWorldVideoMode,
@@ -47,6 +48,7 @@ type UseAlgorithmStudioOptions = {
   initialPlatformId?: (typeof PLATFORMS)[number]["id"];
   initialShowCode?: boolean;
   initialWorldVideoMode?: AlgorithmWorldVideoMode;
+  initialWorldSceneMode?: AlgorithmWorldSceneMode;
   initialWorldCompareEnabled?: boolean;
   initialWorldPresentationMode?: AlgorithmWorldPresentationMode;
   initialWorldProblemType?: AlgorithmWorldProblemType;
@@ -87,6 +89,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const [videoRenderMode, setVideoRenderMode] = useState<AlgorithmVideoRenderMode>("2d");
   const [algorithmVideoAds, setAlgorithmVideoAds] = useState(createDefaultAlgorithmVideoAds);
   const [worldVideoMode, setWorldVideoModeState] = useState<AlgorithmWorldVideoMode>(options.initialWorldVideoMode ?? "short");
+  const [worldSceneMode, setWorldSceneModeState] = useState<AlgorithmWorldSceneMode>(options.initialWorldSceneMode ?? "classic");
   const [worldCompareEnabled, setWorldCompareEnabledState] = useState(options.initialWorldCompareEnabled ?? (options.initialWorldVideoMode === "long"));
   const [worldPresentationMode, setWorldPresentationModeState] = useState<AlgorithmWorldPresentationMode>(options.initialWorldPresentationMode ?? "vehicle_race");
   const [worldProblemType, setWorldProblemTypeState] = useState<AlgorithmWorldProblemType>(options.initialWorldProblemType ?? "escape");
@@ -450,8 +453,10 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     videoRenderMode, setVideoRenderMode: (value: AlgorithmVideoRenderMode) => runConfigAction(() => { setVideoRenderMode(value); setFrameIdx(0); setTransitionProgress(1); setPlaying(false); }),
     algorithmVideoAds, setAlgorithmVideoAdForSlot: (slotId: AlgorithmVideoAdSlotId, value: AlgorithmVideoAdId) => runConfigAction(() => setAlgorithmVideoAds((current) => ({ ...current, [slotId]: value }))),
     worldVideoMode,
+    worldSceneMode,
     worldCompareEnabled,
     setWorldVideoMode: (value: AlgorithmWorldVideoMode) => runConfigAction(() => { setWorldVideoModeState(value); setPlatformId(value === "long" ? "landscape" : "shorts"); if (value === "long") { setWorldCompareEnabledState(true); setShowCode(false); } setFrameIdx(0); setPlaying(false); }),
+    setWorldSceneMode: (value: AlgorithmWorldSceneMode) => runConfigAction(() => { setWorldSceneModeState(value); setFrameIdx(0); setTransitionProgress(1); setPlaying(false); }),
     setWorldCompareEnabled: (value: boolean) => runConfigAction(() => { setWorldCompareEnabledState(value); if (value) setShowCode(false); setFrameIdx(0); setPlaying(false); }),
     worldPresentationMode,
     setWorldPresentationMode: (value: AlgorithmWorldPresentationMode) => runConfigAction(() => { setWorldPresentationModeState(value); if (value === "vehicle_race") { setWorldCompareEnabledState(true); setShowCode(false); } setFrameIdx(0); setPlaying(false); }),

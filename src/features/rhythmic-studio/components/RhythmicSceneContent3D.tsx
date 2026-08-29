@@ -214,6 +214,7 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     const isComet = frameSettings.cameraProfile === "comet";
     const isShowcase = frameSettings.instrumentFamily !== "auto";
     const isWallScore = usesSharedWallScore(frameSettings);
+    const isStableKorobeiniki = isKorobeinikiWallLayout(frameSettings);
     const depthProfile = cameraDepthProfile(frameSettings);
     const adaptiveZ = THREE.MathUtils.clamp(
       RHYTHMIC_CAMERA_Z + depthProfile.offset + jumpDistance * (isComet ? 0.15 : 0.13) + Math.min(0.42, speed * 0.015) - Math.min(rollingSurface ? 0.24 : 0.58, density * (rollingSurface ? 0.012 : 0.028)),
@@ -221,22 +222,22 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
       depthProfile.far,
     ) * THREE.MathUtils.clamp(frameSettings.cameraDistance, 0.8, 1.3);
     const anchorOffset = (0.5 - frameSettings.cameraAnchor) * 6.4;
-    const lateralFactor = isWallScore ? 0.038 : rollingSurface ? 0.075 : isShowcase ? 0.09 : isXylophone ? 0.13 : isTubeBoard ? 0.16 : 0.2;
-    const lateralClamp = isWallScore ? 0.12 : rollingSurface ? 0.26 : isShowcase ? 0.3 : isXylophone ? 0.42 : isTubeBoard ? 0.48 : 0.62;
-    const verticalFactor = isWallScore ? 0.0042 : isXylophone ? 0.006 : isTubeBoard ? 0.0075 : 0.009;
-    const frameLead = isWallScore ? 0.14 : isShowcase ? 0.2 : isComet ? 0.2 : isTubeBoard ? 0.15 : isXylophone ? 0.13 : 0.15;
+    const lateralFactor = isStableKorobeiniki ? 0.018 : isWallScore ? 0.038 : rollingSurface ? 0.075 : isShowcase ? 0.09 : isXylophone ? 0.13 : isTubeBoard ? 0.16 : 0.2;
+    const lateralClamp = isStableKorobeiniki ? 0.1 : isWallScore ? 0.12 : rollingSurface ? 0.26 : isShowcase ? 0.3 : isXylophone ? 0.42 : isTubeBoard ? 0.48 : 0.62;
+    const verticalFactor = isStableKorobeiniki ? 0.0024 : isWallScore ? 0.0042 : isXylophone ? 0.006 : isTubeBoard ? 0.0075 : 0.009;
+    const frameLead = isStableKorobeiniki ? 0.08 : isWallScore ? 0.14 : isShowcase ? 0.2 : isComet ? 0.2 : isTubeBoard ? 0.15 : isXylophone ? 0.13 : 0.15;
     const nearFramedX = THREE.MathUtils.lerp(world.x, aheadWorld.x, frameLead);
     const nearFramedY = THREE.MathUtils.lerp(world.y, aheadWorld.y, frameLead * 0.72);
-    const futureWeight = isWallScore ? 0.09 : isShowcase ? 0.19 : isComet ? 0.12 : 0.08;
+    const futureWeight = isStableKorobeiniki ? 0.03 : isWallScore ? 0.09 : isShowcase ? 0.19 : isComet ? 0.12 : 0.08;
     const framedX = THREE.MathUtils.lerp(nearFramedX, farAheadWorld.x, futureWeight);
     const framedY = THREE.MathUtils.lerp(nearFramedY, farAheadWorld.y, futureWeight * 0.72);
     const lateralLead = THREE.MathUtils.clamp((aheadWorld.x - world.x) * lateralFactor + velocity.x * (lateralFactor * 0.04), -lateralClamp, lateralClamp);
     const verticalLag = THREE.MathUtils.clamp(velocity.y * verticalFactor, -0.18, 0.24);
-    const observerOffsetX = isWallScore ? 0.48 : isShowcase ? 0.78 : isXylophone ? 0.62 : isTubeBoard ? 0.52 : isComet ? -0.38 : 0.3;
-    const observerLiftY = isWallScore ? 0.22 : isShowcase ? 0.42 : isXylophone ? 0.34 : isTubeBoard ? 0.22 : isComet ? 0.12 : 0.16;
+    const observerOffsetX = isStableKorobeiniki ? 0.42 : isWallScore ? 0.48 : isShowcase ? 0.78 : isXylophone ? 0.62 : isTubeBoard ? 0.52 : isComet ? -0.38 : 0.3;
+    const observerLiftY = isStableKorobeiniki ? 0.26 : isWallScore ? 0.22 : isShowcase ? 0.42 : isXylophone ? 0.34 : isTubeBoard ? 0.22 : isComet ? 0.12 : 0.16;
     cameraTarget.set(framedX + lateralLead + observerOffsetX, framedY + anchorOffset - verticalLag + observerLiftY, adaptiveZ + world.z * (isComet ? 0.14 : 0.08));
 
-    const damping = 5.4 + THREE.MathUtils.clamp(frameSettings.cameraSmoothing, 0.03, 0.65) * 12.5;
+    const damping = (isStableKorobeiniki ? 8.5 : 5.4) + THREE.MathUtils.clamp(frameSettings.cameraSmoothing, 0.03, 0.65) * (isStableKorobeiniki ? 16.5 : 12.5);
     if (snapCamera || !Number.isFinite(camera.position.x)) camera.position.copy(cameraTarget);
     else {
       camera.position.x = THREE.MathUtils.damp(camera.position.x, cameraTarget.x, damping, deltaSeconds);
@@ -244,8 +245,8 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
       camera.position.z = THREE.MathUtils.damp(camera.position.z, cameraTarget.z, damping * 0.74, deltaSeconds);
     }
 
-    const lookX = THREE.MathUtils.lerp(world.x, aheadWorld.x, isShowcase ? 0.64 : isComet ? 0.62 : isTubeBoard ? 0.58 : 0.55);
-    const lookDrop = isWallScore ? 0.18 : isShowcase ? 0.12 : isXylophone ? 0.18 : 0.28;
+    const lookX = THREE.MathUtils.lerp(world.x, aheadWorld.x, isStableKorobeiniki ? 0.4 : isShowcase ? 0.64 : isComet ? 0.62 : isTubeBoard ? 0.58 : 0.55);
+    const lookDrop = isStableKorobeiniki ? 0.14 : isWallScore ? 0.18 : isShowcase ? 0.12 : isXylophone ? 0.18 : 0.28;
     const lookY = THREE.MathUtils.lerp(world.y - lookDrop, aheadWorld.y, isShowcase ? 0.5 : isComet ? 0.48 : 0.43);
     lookTarget.set(
       THREE.MathUtils.lerp(lookX, farAheadWorld.x, isComet ? 0.08 : 0.05),
@@ -262,7 +263,7 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
 
     const perspective = camera as THREE.PerspectiveCamera;
     const targetFov = isWallScore
-      ? THREE.MathUtils.clamp(36.2 + jumpDistance * 0.06 - density * 0.01, 35.5, 37.8)
+      ? THREE.MathUtils.clamp((isStableKorobeiniki ? 36.6 : 36.2) + jumpDistance * (isStableKorobeiniki ? 0.02 : 0.06) - density * (isStableKorobeiniki ? 0.004 : 0.01), isStableKorobeiniki ? 36.1 : 35.5, isStableKorobeiniki ? 37.1 : 37.8)
       : THREE.MathUtils.clamp(
           RHYTHMIC_CAMERA_FOV + jumpDistance * (isShowcase ? 0.24 : isComet ? 0.48 : isXylophone ? 0.32 : 0.35) - density * (rollingSurface ? 0.018 : 0.045),
           isShowcase ? 35 : isComet ? 35.5 : isXylophone ? 34 : 34.5,
@@ -273,8 +274,8 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
       perspective.fov = nextFov;
       perspective.updateProjectionMatrix();
     }
-    const bankStrength = rollingSurface ? 0.0007 : isShowcase ? 0.0012 : isWallScore ? 0.0006 : isXylophone ? 0.0022 : isTubeBoard ? 0.0028 : 0.0042;
-    const bankLimit = rollingSurface ? 0.006 : isShowcase ? 0.008 : isWallScore ? 0.005 : isXylophone ? 0.014 : isTubeBoard ? 0.018 : 0.028;
+    const bankStrength = isStableKorobeiniki ? 0.00015 : rollingSurface ? 0.0007 : isShowcase ? 0.0012 : isWallScore ? 0.0006 : isXylophone ? 0.0022 : isTubeBoard ? 0.0028 : 0.0042;
+    const bankLimit = isStableKorobeiniki ? 0.004 : rollingSurface ? 0.006 : isShowcase ? 0.008 : isWallScore ? 0.005 : isXylophone ? 0.014 : isTubeBoard ? 0.018 : 0.028;
     const bankTarget = THREE.MathUtils.clamp(-velocity.x * bankStrength, -bankLimit, bankLimit);
     perspective.rotation.z = snapCamera ? bankTarget : THREE.MathUtils.damp(perspective.rotation.z, bankTarget, 4.8, deltaSeconds);
   }, [afterWorld, aheadWorld, beforeWorld, farAheadWorld, camera, cameraTarget, deltaQuaternion, displacement, lookTarget, previousWorld, props.chasePlan, props.courseOverrides, props.durationMs, props.events, props.platforms, props.resolveSettings, props.settings, rollAxis, smoothedLook, velocity, world]);

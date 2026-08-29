@@ -3,6 +3,7 @@ export type AlgorithmWorldCell = { x: number; y: number };
 export type AlgorithmWorldAlgorithmId = "dfs" | "bfs" | "dijkstra" | "astar" | "greedy" | "weighted_astar" | "beam" | "bidirectional_bfs" | "wall_follower" | "tremaux" | "fringe" | "theta_star";
 export type AlgorithmWorldProblemType = "escape" | "fastest";
 export type AlgorithmWorldVideoMode = "short" | "long";
+export type AlgorithmWorldSceneMode = "classic" | "three";
 export type AlgorithmWorldPresentationMode = "explainer" | "vehicle_race";
 export type AlgorithmWorldTournamentRound = 0 | 1 | 2;
 export type AlgorithmWorldTournamentResults = Record<string, AlgorithmWorldAlgorithmId>;

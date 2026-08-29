@@ -178,9 +178,11 @@ export type RhythmicOutputPreset = "portrait-720p" | "landscape-720p";
 export const BACKGROUND_PRESETS = [
   "brick-wall",
   "spotlight",
+  "velvet-stage",
   "deep-space",
   "comet-void",
   "instrument-room",
+  "sunrise-panels",
 ] as const;
 
 const LEGACY_BACKGROUND_PRESETS = [

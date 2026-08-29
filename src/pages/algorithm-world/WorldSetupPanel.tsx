@@ -1,5 +1,5 @@
 import type React from "react";
-import { Activity, Car, Dice5, EyeOff, Flag, GitCompare, Lock, Map, RotateCcw, Route, Sparkles, Trophy, Zap } from "lucide-react";
+import { Activity, Boxes, Car, Dice5, EyeOff, Flag, GitCompare, Lock, Map, RotateCcw, Route, Sparkles, Trophy, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -64,6 +64,7 @@ export function WorldSetupPanel({ studio: s }: Props) {
         <TabsContent value="setup" className="space-y-4">
           <VideoLayoutCard s={s} isLong={isLong} isRace={isRace} compareEnabled={compareEnabled} t={t} />
           <ProblemTypeCard s={s} t={t} />
+          <SceneModeCard s={s} t={t} />
           <PresentationCard s={s} isRace={isRace} t={t} />
           <TournamentCard s={s} t={t} compact />
         </TabsContent>
@@ -128,6 +129,23 @@ function PresentationCard({ s, isRace, t }: PanelProps & { isRace: boolean }) {
           <p>{t("Trong mode đua xe, cả hai map hiện đầy đủ từ đầu và giống nhau. Xe chỉ được chạy sang ô lân cận không bị tường chắn.", "In car race mode, both full maps are visible from the start and identical. Cars may only move to adjacent unblocked cells.")}</p>
         </div>
       ) : null}
+    </Card>
+  );
+}
+
+function SceneModeCard({ s, t }: PanelProps) {
+  return (
+    <Card className="space-y-3 p-4">
+      <div className="flex items-center gap-2"><Boxes className="h-4 w-4 text-sky-300" /><Label>{t("Không gian preview", "Preview scene")}</Label></div>
+      <div className="grid grid-cols-2 gap-2">
+        <ModeButton active={s.worldSceneMode === "classic"} title={t("2D gốc", "Classic 2D")} desc={t("nhẹ, rõ logic", "lightweight, logic-first")} onClick={() => s.setWorldSceneMode("classic")} />
+        <ModeButton active={s.worldSceneMode === "three"} title={t("3D mới", "New 3D")} desc={t("ổn định, đỡ chóng mặt", "stable, easier on the eyes")} onClick={() => s.setWorldSceneMode("three")} />
+      </div>
+      <p className="rounded-lg border border-sky-300/25 bg-sky-400/10 p-3 text-xs text-sky-50">
+        {s.worldSceneMode === "three"
+          ? t("Mode 3D dùng camera cố định góc xiên, tường khối, highlight rõ open/closed/path và tối ưu để xem preview đỡ lắc mắt hơn.", "3D mode uses a fixed oblique camera, block walls, and clear open/closed/path highlighting for a steadier preview.")
+          : t("Mode 2D gốc giữ đúng cách nhìn cũ. Bạn có thể đổi qua 3D bất kỳ lúc nào để xem mê cung sinh động hơn.", "Classic 2D keeps the original view. Switch to 3D anytime for a more dimensional maze.")}
+      </p>
     </Card>
   );
 }

@@ -276,6 +276,70 @@ function drawInstrumentRoom(ctx: CanvasRenderingContext2D, width: number, height
   }
 }
 
+function drawVelvetStage(ctx: CanvasRenderingContext2D, width: number, height: number, settings: StudioSettings, pulse = 0) {
+  const gradient = ctx.createLinearGradient(0, 0, 0, height);
+  gradient.addColorStop(0, "#1b0711");
+  gradient.addColorStop(0.48, settings.backgroundColor);
+  gradient.addColorStop(1, "#090205");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = "rgba(255,255,255,.05)";
+  const stripeWidth = Math.max(28, width * 0.08);
+  for (let x = -stripeWidth / 2; x < width + stripeWidth; x += stripeWidth * 1.4) {
+    ctx.fillRect(x, 0, stripeWidth * 0.2, height * 0.82);
+  }
+  const spotlight = ctx.createRadialGradient(width * 0.5, height * 0.06, 8, width * 0.5, height * 0.3, height * 0.66);
+  spotlight.addColorStop(0, `rgba(255,236,175,${0.5 + pulse * 0.08})`);
+  spotlight.addColorStop(0.28, "rgba(255,197,93,.18)");
+  spotlight.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = spotlight;
+  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = "rgba(255,186,71,.2)";
+  ctx.beginPath();
+  ctx.moveTo(width * 0.1, height);
+  ctx.lineTo(width * 0.2, height * 0.76);
+  ctx.lineTo(width * 0.8, height * 0.76);
+  ctx.lineTo(width * 0.9, height);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawSunrisePanels(ctx: CanvasRenderingContext2D, width: number, height: number, settings: StudioSettings) {
+  const gradient = ctx.createLinearGradient(0, 0, 0, height);
+  gradient.addColorStop(0, "#f8e2c8");
+  gradient.addColorStop(0.58, settings.backgroundColor);
+  gradient.addColorStop(1, "#67455b");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = "rgba(255,255,255,.2)";
+  const panelInset = width * 0.16;
+  const panelWidth = width - panelInset * 2;
+  ctx.fillRect(panelInset, height * 0.14, panelWidth, height * 0.52);
+  ctx.strokeStyle = "rgba(96,58,47,.22)";
+  ctx.lineWidth = Math.max(1, width * 0.0025);
+  for (let i = 1; i < 5; i += 1) {
+    const x = panelInset + panelWidth * (i / 5);
+    ctx.beginPath();
+    ctx.moveTo(x, height * 0.14);
+    ctx.lineTo(x, height * 0.66);
+    ctx.stroke();
+  }
+  const glow = ctx.createRadialGradient(width * 0.5, height * 0.1, 10, width * 0.5, height * 0.28, width * 0.42);
+  glow.addColorStop(0, "rgba(255,246,220,.55)");
+  glow.addColorStop(0.45, "rgba(255,212,142,.22)");
+  glow.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = "#875c43";
+  ctx.beginPath();
+  ctx.moveTo(0, height);
+  ctx.lineTo(width * 0.25, height * 0.72);
+  ctx.lineTo(width * 0.75, height * 0.72);
+  ctx.lineTo(width, height);
+  ctx.closePath();
+  ctx.fill();
+}
+
 export function drawPresetBackground(
   ctx: CanvasRenderingContext2D,
   width: number,
@@ -288,6 +352,10 @@ export function drawPresetBackground(
     drawBrickWallBackground2D(ctx, width, height, pulse, timeMs);
     return true;
   }
+  if (settings.backgroundPreset === "velvet-stage") {
+    drawVelvetStage(ctx, width, height, settings, pulse);
+    return true;
+  }
   if (settings.backgroundPreset === "tube-board-dark") {
     drawTubeBoardDark(ctx, width, height);
     return true;
@@ -298,6 +366,10 @@ export function drawPresetBackground(
   }
   if (settings.backgroundPreset === "instrument-room") {
     drawInstrumentRoom(ctx, width, height, settings, false);
+    return true;
+  }
+  if (settings.backgroundPreset === "sunrise-panels") {
+    drawSunrisePanels(ctx, width, height, settings);
     return true;
   }
   if (settings.backgroundPreset === "xylophone-room") {

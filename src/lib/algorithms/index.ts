@@ -45,6 +45,7 @@ export type {
   AlgorithmWorldPhase,
   AlgorithmWorldPresentationMode,
   AlgorithmWorldProblemType,
+  AlgorithmWorldSceneMode,
   AlgorithmWorldScenarioOptions,
   AlgorithmWorldState,
   AlgorithmWorldTournamentMatch,

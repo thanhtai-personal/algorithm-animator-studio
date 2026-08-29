@@ -175,8 +175,18 @@ export function BackgroundPresetPreview({ preset }: { preset: BackgroundPreset }
     <div className="absolute inset-3 rounded-xl border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,.08),rgba(0,0,0,.18))]" />
     {Array.from({ length: 4 }).map((_, col) => <div key={col} className="absolute top-4 bottom-4 w-4 rounded-full border border-slate-200/20 bg-white/10" style={{ left: `${14 + col * 20}px` }} />)}
   </SceneFrame>;
+  if (preset === "velvet-stage") return <SceneFrame className="bg-[linear-gradient(180deg,#1e0712,#3a0f1f_50%,#12050b)]">
+    <div className="absolute inset-x-0 top-0 h-full bg-[linear-gradient(90deg,rgba(255,255,255,.05),transparent_18%,transparent_82%,rgba(255,255,255,.05))]" />
+    <div className="absolute inset-x-[18%] top-[10px] h-12 rounded-t-[999px] border border-amber-200/20 bg-[radial-gradient(circle_at_50%_0%,rgba(255,234,173,.65),rgba(255,214,102,.08)_42%,transparent_70%)]" />
+    <div className="absolute inset-x-3 bottom-0 h-7 bg-[linear-gradient(180deg,rgba(255,191,36,.25),rgba(54,20,7,.85))]" style={{ clipPath: "polygon(0 100%,100% 100%,88% 0,12% 0)" }} />
+  </SceneFrame>;
   if (preset === "comet-void") return <SceneFrame className="bg-[radial-gradient(circle_at_50%_40%,rgba(126,201,255,.2),rgba(2,6,23,0)_28%),linear-gradient(180deg,#02040a,#0d1327)]">
     {Array.from({ length: 4 }).map((_, index) => <div key={index} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[999px] border border-cyan-300/35" style={{ width: `${32 + index * 22}px`, height: `${20 + index * 14}px` }} />)}
+  </SceneFrame>;
+  if (preset === "sunrise-panels") return <SceneFrame className="bg-[linear-gradient(180deg,#fbe3c1,#f4c6a3_55%,#9a6680)]">
+    <div className="absolute inset-x-2 top-3 bottom-10 rounded-xl border border-white/25 bg-[linear-gradient(90deg,rgba(255,255,255,.45),rgba(255,255,255,.08)_18%,rgba(255,255,255,.1)_82%,rgba(255,255,255,.32))]" />
+    {Array.from({ length: 4 }).map((_, index) => <div key={index} className="absolute top-4 bottom-10 w-px bg-orange-900/18" style={{ left: `${19 + index * 15}px` }} />)}
+    <div className="absolute inset-x-0 bottom-0 h-9 bg-[linear-gradient(180deg,#b67d52,#6a422f)]" style={{ clipPath: "polygon(0 100%,100% 100%,74% 0,26% 0)" }} />
   </SceneFrame>;
   if (preset === "instrument-room" || preset === "xylophone-room") return <SceneFrame className="bg-[linear-gradient(180deg,#efe8dc,#d0d7e4)]">
     <div className="absolute inset-x-0 bottom-0 h-8 bg-[linear-gradient(180deg,#c79f74,#8c6545)]" style={{ clipPath: "polygon(0 100%,100% 100%,74% 0,26% 0)" }} />

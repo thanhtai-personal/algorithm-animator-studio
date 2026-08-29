@@ -167,6 +167,7 @@ function VideoRenderModeSelect({ studio: s }: Props) {
           <SelectItem value="2d">{s.lang === "vi" ? "2D — chế độ gốc" : "2D — original mode"}</SelectItem>
           <SelectItem value="3d" disabled={!available}>3D — WebGL</SelectItem>
           <SelectItem value="3d-story" disabled={!available || s.algo.category !== "sort"}>{s.lang === "vi" ? "3D Story — Giữ chân người xem" : "3D Story — Retention"}</SelectItem>
+          <SelectItem value="3d-hyper" disabled={!available || s.algo.category !== "sort"}>{s.lang === "vi" ? "3D Hyper — Shorts / Reels" : "3D Hyper — Shorts / Reels"}</SelectItem>
         </SelectContent>
       </Select>
       {isAlgorithm3DRenderMode(s.videoRenderMode) ? (
@@ -174,7 +175,9 @@ function VideoRenderModeSelect({ studio: s }: Props) {
           {available
             ? (s.videoRenderMode === "3d-story"
               ? (s.lang === "vi" ? "Story Mode thêm hook, dự đoán, reward và progress nhưng giữ nguyên camera cố định." : "Story Mode adds hooks, prediction, rewards and progress while keeping the camera locked.")
-              : (s.lang === "vi" ? "Preview và video xuất sẽ dùng scene 3D. Mode 2D gốc vẫn được giữ nguyên." : "Preview and export use the 3D scene. The original 2D mode remains unchanged."))
+              : s.videoRenderMode === "3d-hyper"
+                ? (s.lang === "vi" ? "Hyper Mode nén timeline thành các beat rất ngắn, ưu tiên swap/milestone và hard-cut có flash để hợp Shorts/Reels." : "Hyper Mode compresses the timeline into short swap/milestone beats with masked hard cuts for Shorts/Reels.")
+                : (s.lang === "vi" ? "Preview và video xuất sẽ dùng scene 3D. Mode 2D gốc vẫn được giữ nguyên." : "Preview and export use the 3D scene. The original 2D mode remains unchanged."))
             : (s.lang === "vi" ? "3D không khả dụng với scene/mode hiện tại; hệ thống sẽ dùng 2D gốc." : "3D is unavailable for the current scene/mode; the original 2D renderer will be used.")}
         </p>
       ) : null}

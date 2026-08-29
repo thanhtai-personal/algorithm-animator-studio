@@ -7,7 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { audioEngine } from "@/lib/audio";
 import { AlgorithmStudio } from "./useAlgorithmStudio";
 import { COMPLEXITY } from "@/lib/algorithms";
-import { canUseAlgorithm3DVideo, hasWebGLVideoSupport, isAlgorithm3DRenderMode, isAlgorithm3DStoryMode } from "@/lib/algorithmVideoRenderMode";
+import { canUseAlgorithm3DVideo, hasWebGLVideoSupport, isAlgorithm3DHyperMode, isAlgorithm3DRenderMode, isAlgorithm3DStoryMode } from "@/lib/algorithmVideoRenderMode";
 import { uiText } from "@/lib/i18n";
 
 const PhaserMazePreview = lazy(() => import("../algorithm-world/PhaserMazePreview").then((module) => ({ default: module.PhaserMazePreview })));
@@ -59,6 +59,7 @@ export function CenterPanel({ studio: s }: Props) {
                 lang={s.lang}
                 ads={s.algorithmVideoAds}
                 storyMode={isAlgorithm3DStoryMode(s.videoRenderMode)}
+                hyperMode={isAlgorithm3DHyperMode(s.videoRenderMode)}
                 frameCount={s.frames.length}
               />
             </Suspense>

@@ -20,7 +20,7 @@ import type { BackgroundMusicId } from "@/lib/backgroundMusic";
 import { Lang, PLATFORMS, readSystemLang, subscribeSystemLang, t, writeSystemLang } from "@/lib/i18n";
 import { THEMES, Theme } from "@/lib/renderer";
 import type { ShortVideoType } from "@/lib/shortVideoTypes";
-import { isAlgorithm3DStoryMode, type AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
+import { isAlgorithm3DHyperMode, isAlgorithm3DStoryMode, type AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
 import { createDefaultAlgorithmVideoAds, type AlgorithmVideoAdId, type AlgorithmVideoAdSlotId } from "@/lib/algorithmVideoAds";
 import { buildMazeTournamentSeriesYoutubeMetadata, buildMazeTournamentYoutubeMetadata, buildYoutubeMetadata } from "@/lib/youtubeMetadata";
 import { ExportFormat } from "./exportFormats";
@@ -32,6 +32,7 @@ import { getWorldVehicle } from "@/lib/algorithmWorldVehicles";
 import { nextTournamentEntrants, normalizeTournamentEntrants, normalizeTournamentMatch, normalizeTournamentRound, tournamentResultKey } from "@/lib/algorithmWorldTournament";
 import { createWorldRandomSeed, readTournamentResults, readTournamentSettings, tournamentMusicForFrame, tournamentMusicLicenseText, writeTournamentResults, writeTournamentSettings, type StoredTournamentSettings } from "./studioTournamentStorage";
 import { useAlgorithmStudioPlayback } from "./useAlgorithmStudioPlayback";
+import { buildAlgorithm3DHyperTimeline } from "@/features/algorithm-video-3d/algorithm3dHyper";
 import { useAlgorithmStudioMusic } from "./useAlgorithmStudioMusic";
 import { useAlgorithmStudioArrayControls } from "./useAlgorithmStudioArrayControls";
 
@@ -150,7 +151,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   }, [algoId, mazePathfindingEnabled]);
   const isGraph = algo.category === "graph";
   useEffect(() => {
-    if (algo.category !== "sort" && isAlgorithm3DStoryMode(videoRenderMode)) setVideoRenderMode("3d");
+    if (algo.category !== "sort" && (isAlgorithm3DStoryMode(videoRenderMode) || isAlgorithm3DHyperMode(videoRenderMode))) setVideoRenderMode("3d");
   }, [algo.category, videoRenderMode]);
   const parsedGraph = useMemo(() => isGraph ? parseGraph(graphInput) : null, [isGraph, graphInput]);
   const graphLabels = parsedGraph?.nodes.map((n) => n.label ?? String(n.id)) ?? [];
@@ -193,7 +194,11 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
       results: {},
     };
   }, [algo, arr, target, customCode, parsedGraph, startId, endId, worldVideoMode, worldCompareEnabled, worldPresentationMode, worldProblemType, worldMazeId, worldPrimaryAlgorithm, worldSecondaryAlgorithm, worldPrimaryVehicleColor, worldSecondaryVehicleColor, worldPrimaryVehicleId, worldSecondaryVehicleId, worldTournamentActive, worldTournamentRound, worldTournamentMatch, worldTournamentResults, worldTournamentEntrants, worldRandomSeed, mazePathfindingEnabled]);
-  const frames: Frame[] = generatedTimeline.frames;
+  const rawFrames: Frame[] = generatedTimeline.frames;
+  const frames: Frame[] = useMemo(
+    () => isAlgorithm3DHyperMode(videoRenderMode) ? buildAlgorithm3DHyperTimeline(rawFrames) : rawFrames,
+    [rawFrames, videoRenderMode],
+  );
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const current = frames[Math.min(frameIdx, frames.length - 1)];
@@ -442,7 +447,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     title, setTitle: (value: string) => runConfigAction(() => setTitle(value)),
     subtitle, setSubtitle: (value: string) => runConfigAction(() => setSubtitle(value)),
     shortVideoType, setShortVideoType: (value: ShortVideoType) => runConfigAction(() => setShortVideoType(value)),
-    videoRenderMode, setVideoRenderMode: (value: AlgorithmVideoRenderMode) => runConfigAction(() => setVideoRenderMode(value)),
+    videoRenderMode, setVideoRenderMode: (value: AlgorithmVideoRenderMode) => runConfigAction(() => { setVideoRenderMode(value); setFrameIdx(0); setTransitionProgress(1); setPlaying(false); }),
     algorithmVideoAds, setAlgorithmVideoAdForSlot: (slotId: AlgorithmVideoAdSlotId, value: AlgorithmVideoAdId) => runConfigAction(() => setAlgorithmVideoAds((current) => ({ ...current, [slotId]: value }))),
     worldVideoMode,
     worldCompareEnabled,

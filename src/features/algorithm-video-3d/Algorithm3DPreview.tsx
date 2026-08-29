@@ -6,8 +6,9 @@ import { AlgorithmScene3D } from "./AlgorithmScene3D";
 import { eventLabel } from "./algorithm3dMath";
 import type { AlgorithmVideoAdSelection } from "@/lib/algorithmVideoAds";
 import { AlgorithmStoryOverlay } from "./AlgorithmStoryOverlay";
+import { AlgorithmHyperOverlay } from "./AlgorithmHyperOverlay";
 
-export function Algorithm3DPreview({ frame, previousFrame, frameIndex, transitionProgress, width, height, theme, title, subtitle, code, showCode, complexity, lang, ads, storyMode = false, frameCount = 1 }: {
+export function Algorithm3DPreview({ frame, previousFrame, frameIndex, transitionProgress, width, height, theme, title, subtitle, code, showCode, complexity, lang, ads, storyMode = false, hyperMode = false, frameCount = 1 }: {
   frame: Frame;
   previousFrame?: Frame | null;
   frameIndex: number;
@@ -23,6 +24,7 @@ export function Algorithm3DPreview({ frame, previousFrame, frameIndex, transitio
   lang: Lang;
   ads?: AlgorithmVideoAdSelection;
   storyMode?: boolean;
+  hyperMode?: boolean;
   frameCount?: number;
 }) {
   const portrait = height > width;
@@ -40,10 +42,10 @@ export function Algorithm3DPreview({ frame, previousFrame, frameIndex, transitio
         theme={theme}
         deterministicProgress={transitionProgress}
         ads={ads}
-        storyMode={storyMode}
+        storyMode={storyMode || hyperMode}
       />
       <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/[0.05]" />
-      {storyMode ? <AlgorithmStoryOverlay frame={frame} frameIndex={frameIndex} frameCount={frameCount} title={title} lang={lang} theme={theme} transitionProgress={transitionProgress} /> : <>
+      {hyperMode ? <AlgorithmHyperOverlay frame={frame} frameIndex={frameIndex} frameCount={frameCount} lang={lang} theme={theme} transitionProgress={transitionProgress} /> : storyMode ? <AlgorithmStoryOverlay frame={frame} frameIndex={frameIndex} frameCount={frameCount} title={title} lang={lang} theme={theme} transitionProgress={transitionProgress} /> : <>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[18%] bg-gradient-to-b from-black/30 to-transparent" />
 
       <header className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-4 p-4 sm:p-5">

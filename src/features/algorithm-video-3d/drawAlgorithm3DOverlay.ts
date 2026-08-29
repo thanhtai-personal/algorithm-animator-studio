@@ -3,6 +3,7 @@ import type { Lang } from "@/lib/i18n";
 import type { Theme } from "@/lib/renderer";
 import { eventLabel } from "./algorithm3dMath";
 import { getAlgorithm3DStoryState } from "./algorithm3dStory";
+import { getAlgorithm3DHyperState } from "./algorithm3dHyper";
 
 export function drawAlgorithm3DOverlay(ctx: CanvasRenderingContext2D, params: {
   frame: Frame;
@@ -17,6 +18,7 @@ export function drawAlgorithm3DOverlay(ctx: CanvasRenderingContext2D, params: {
   lang: Lang;
   theme?: Theme;
   storyMode?: boolean;
+  hyperMode?: boolean;
   storyHook?: boolean;
   frameCount?: number;
   transitionProgress?: number;
@@ -27,6 +29,11 @@ export function drawAlgorithm3DOverlay(ctx: CanvasRenderingContext2D, params: {
   const titleSize = Math.max(22, Math.round(h * (portrait ? 0.025 : 0.041)));
 
   ctx.save();
+  if (params.hyperMode) {
+    drawHyperRetentionOverlay(ctx, params, pad, portrait);
+    ctx.restore();
+    return;
+  }
   if (params.storyMode) {
     drawStoryRetentionOverlay(ctx, params, pad, portrait);
     ctx.restore();
@@ -39,6 +46,92 @@ export function drawAlgorithm3DOverlay(ctx: CanvasRenderingContext2D, params: {
   stateBlock(ctx, params, pad, portrait);
   if (params.showCode) drawExecutionDock(ctx, params, pad, portrait);
   ctx.restore();
+}
+
+
+function drawHyperRetentionOverlay(
+  ctx: CanvasRenderingContext2D,
+  params: Parameters<typeof drawAlgorithm3DOverlay>[1],
+  pad: number,
+  portrait: boolean,
+) {
+  const { width: w, height: h } = params;
+  const frameCount = Math.max(1, params.frameCount ?? 1);
+  const state = getAlgorithm3DHyperState({
+    frame: params.frame,
+    frameIndex: params.frameIndex,
+    frameCount,
+    lang: params.lang,
+    transitionProgress: params.transitionProgress ?? 1,
+  });
+  const theme = params.theme;
+  const accent = state.role === "finish"
+    ? (theme?.sorted ?? "#22c55e")
+    : state.role === "swap"
+      ? (theme?.swap ?? "#fb7185")
+      : (theme?.highlight ?? "#facc15");
+  const transitionProgress = params.transitionProgress ?? 1;
+
+  const top = ctx.createLinearGradient(0, 0, 0, h * 0.21);
+  top.addColorStop(0, "rgba(3,7,10,0.56)");
+  top.addColorStop(1, "rgba(3,7,10,0)");
+  ctx.fillStyle = top;
+  ctx.fillRect(0, 0, w, h * 0.22);
+  const bottom = ctx.createLinearGradient(0, h, 0, h * 0.80);
+  bottom.addColorStop(0, "rgba(3,7,10,0.62)");
+  bottom.addColorStop(1, "rgba(3,7,10,0)");
+  ctx.fillStyle = bottom;
+  ctx.fillRect(0, h * 0.79, w, h * 0.21);
+
+  if (state.cut && transitionProgress < 0.28) {
+    ctx.fillStyle = `rgba(255,255,255,${Math.max(0, (1 - transitionProgress / 0.28) * 0.22)})`;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  const micro = Math.max(10, h * (portrait ? 0.009 : 0.013));
+  ctx.textBaseline = "alphabetic";
+  ctx.textAlign = "left";
+  ctx.fillStyle = "rgba(255,255,255,0.52)";
+  ctx.font = `900 ${micro}px ui-sans-serif,system-ui`;
+  ctx.fillText("3D HYPER · SHORTS", pad, pad + micro);
+  ctx.textAlign = "right";
+  ctx.fillStyle = "rgba(255,255,255,0.78)";
+  ctx.fillText(`${state.completed}/${state.total}`, w - pad, pad + micro);
+
+  const headlineSize = Math.max(30, h * (portrait ? 0.042 : 0.060));
+  const centerY = h * 0.15;
+  const punch = 1 + Math.sin(Math.min(1, transitionProgress) * Math.PI) * (state.role === "swap" ? 0.055 : 0.035);
+  ctx.save();
+  ctx.translate(w / 2, centerY + headlineSize * 0.65);
+  ctx.scale(punch, punch);
+  ctx.textAlign = "center";
+  ctx.fillStyle = accent;
+  ctx.font = `950 ${Math.max(10, headlineSize * 0.23)}px ui-sans-serif,system-ui`;
+  ctx.fillText(state.kicker, 0, -headlineSize * 0.72, w * 0.84);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `950 ${headlineSize}px ui-sans-serif,system-ui`;
+  ctx.shadowColor = "rgba(0,0,0,0.76)";
+  ctx.shadowBlur = Math.max(8, headlineSize * 0.34);
+  ctx.fillText(state.headline, 0, 0, w * 0.88);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(244,247,248,0.62)";
+  ctx.font = `900 ${Math.max(10, headlineSize * 0.25)}px ui-sans-serif,system-ui`;
+  ctx.fillText(state.detail, 0, headlineSize * 0.50, w * 0.78);
+  ctx.restore();
+
+  const barW = w - pad * 2;
+  const barH = Math.max(5, h * 0.0048);
+  const barY = h - pad - barH;
+  roundedRect(ctx, pad, barY, barW, barH, barH / 2);
+  ctx.fillStyle = "rgba(255,255,255,0.10)";
+  ctx.fill();
+  const progressW = Math.max(barH, barW * Math.max(0.02, state.progress));
+  const gradient = ctx.createLinearGradient(pad, 0, pad + barW, 0);
+  gradient.addColorStop(0, theme?.highlight ?? "#facc15");
+  gradient.addColorStop(1, theme?.sorted ?? "#22c55e");
+  roundedRect(ctx, pad, barY, progressW, barH, barH / 2);
+  ctx.fillStyle = gradient;
+  ctx.fill();
 }
 
 function drawStoryRetentionOverlay(

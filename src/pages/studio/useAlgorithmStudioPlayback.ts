@@ -2,9 +2,10 @@ import { useCallback, useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { Frame } from "@/lib/algorithms";
 import { audioEngine, type SfxKind } from "@/lib/audio";
-import { isAlgorithm3DRenderMode, isAlgorithm3DStoryMode, type AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
+import { isAlgorithm3DHyperMode, isAlgorithm3DRenderMode, isAlgorithm3DStoryMode, type AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
 import type { ShortVideoType } from "@/lib/shortVideoTypes";
 import { CRANE_AUDIO_CUES, getAlgorithm3DFrameSeconds, getAlgorithm3DStoryFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dTiming";
+import { getAlgorithm3DHyperFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dHyper";
 
 const SWAP_TRANSITION_MULTIPLIER = 1.8;
 const KINETIC_ODD_EVEN_FRAME_MULTIPLIER = 8;
@@ -54,6 +55,13 @@ export function useAlgorithmStudioPlayback(params: PlaybackParams) {
     if (isAlgorithm3DRenderMode(videoRenderMode)) {
       const easedPitch = last3DPitchRef.current + (pitch - last3DPitchRef.current) * 0.36;
       last3DPitchRef.current = easedPitch;
+      if (isAlgorithm3DHyperMode(videoRenderMode)) {
+        const role = String(frame.vars.__hyperRole ?? "beat");
+        if (role === "predict" || event === "compare" || event === "visit") audioEngine.playSfx("data-step", Math.min(0.92, easedPitch + 0.08));
+        if (role === "milestone") audioEngine.playSfx("swap-spark", 0.82);
+        if (role === "finish") audioEngine.playSfx("swap-spark", 0.96);
+        return;
+      }
       if (event === "found") audioEngine.playSfx("swap-spark", easedPitch);
       else if (event === "compare" || event === "visit") audioEngine.playSfx("data-step", easedPitch);
       if (isAlgorithm3DStoryMode(videoRenderMode)) {
@@ -76,6 +84,13 @@ export function useAlgorithmStudioPlayback(params: PlaybackParams) {
       craneAudioRef.current = { frameIdx: index, approach: false, hook: false, lift: false, transport: false, lower: false, return: false };
     }
     const state = craneAudioRef.current;
+    if (isAlgorithm3DHyperMode(videoRenderMode)) {
+      if (progress >= 0.04 && !state.approach) { state.approach = true; audioEngine.playSfx("crane-drive", 0.42); }
+      if (progress >= 0.27 && !state.lift) { state.lift = true; audioEngine.playSfx("crane-lift", 0.58); }
+      if (progress >= 0.48 && !state.transport) { state.transport = true; audioEngine.playSfx("swap-spark", 0.72); }
+      if (progress >= 0.82 && !state.lower) { state.lower = true; audioEngine.playSfx("crane-set", 0.54); }
+      return;
+    }
     if (progress >= CRANE_AUDIO_CUES.approach && !state.approach) {
       state.approach = true;
       audioEngine.playSfx("crane-drive", 0.34);
@@ -100,7 +115,7 @@ export function useAlgorithmStudioPlayback(params: PlaybackParams) {
       state.return = true;
       audioEngine.playSfx("crane-drive", 0.28);
     }
-  }, []);
+  }, [videoRenderMode]);
 
   useEffect(() => {
     if (!playing) return;
@@ -112,7 +127,12 @@ export function useAlgorithmStudioPlayback(params: PlaybackParams) {
       const previousFrame = frameIdx > 0 ? frames[frameIdx - 1] : null;
       const algorithmMultiplier = getAlgorithmFrameMultiplier(shortVideoType, algoId);
       const animatedSwap = shouldAnimateSwap(currentFrame, previousFrame);
-      const natural3DInterval = (isAlgorithm3DStoryMode(videoRenderMode) ? getAlgorithm3DStoryFrameSeconds(currentFrame) : getAlgorithm3DFrameSeconds(currentFrame)) * 1000 / Math.max(0.1, speed);
+      const natural3DSeconds = isAlgorithm3DHyperMode(videoRenderMode)
+        ? getAlgorithm3DHyperFrameSeconds(currentFrame)
+        : isAlgorithm3DStoryMode(videoRenderMode)
+          ? getAlgorithm3DStoryFrameSeconds(currentFrame)
+          : getAlgorithm3DFrameSeconds(currentFrame);
+      const natural3DInterval = natural3DSeconds * 1000 / Math.max(0.1, speed);
       const interval = animatedSwap
         ? isAlgorithm3DRenderMode(videoRenderMode)
           ? Math.max(baseInterval * SWAP_TRANSITION_MULTIPLIER * algorithmMultiplier, natural3DInterval)

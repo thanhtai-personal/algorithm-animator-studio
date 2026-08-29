@@ -20,6 +20,7 @@ export async function createAlgorithm3DExportSurface(params: {
   theme: Theme;
   ads?: AlgorithmVideoAdSelection;
   storyMode?: boolean;
+  hyperMode?: boolean;
 }): Promise<Algorithm3DExportSurface> {
   const host = document.createElement("div");
   host.style.position = "fixed";
@@ -37,7 +38,7 @@ export async function createAlgorithm3DExportSurface(params: {
     renderRoot(root, {
       frame, previousFrame, frameIndex,
       width: params.width, height: params.height, theme: params.theme,
-      deterministicProgress: progress, canvasRef, exportMode: true, ads: params.ads, storyMode: params.storyMode,
+      deterministicProgress: progress, canvasRef, exportMode: true, ads: params.ads, storyMode: Boolean(params.storyMode || params.hyperMode),
     });
     await nextPaint();
   };

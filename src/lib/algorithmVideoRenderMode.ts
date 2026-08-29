@@ -1,14 +1,18 @@
 import type { ColumnVisualMode } from "@/lib/animalColumns";
 import type { ShortVideoType } from "@/lib/shortVideoTypes";
 
-export type AlgorithmVideoRenderMode = "2d" | "3d" | "3d-story";
+export type AlgorithmVideoRenderMode = "2d" | "3d" | "3d-story" | "3d-hyper";
 
 export function isAlgorithm3DRenderMode(mode: AlgorithmVideoRenderMode) {
-  return mode === "3d" || mode === "3d-story";
+  return mode === "3d" || mode === "3d-story" || mode === "3d-hyper";
 }
 
 export function isAlgorithm3DStoryMode(mode: AlgorithmVideoRenderMode) {
   return mode === "3d-story";
+}
+
+export function isAlgorithm3DHyperMode(mode: AlgorithmVideoRenderMode) {
+  return mode === "3d-hyper";
 }
 
 export function canUseAlgorithm3DVideo(params: {

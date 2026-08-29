@@ -7,7 +7,8 @@ import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
 import { createAlgorithm3DExportSurface } from "@/features/algorithm-video-3d/algorithm3dExportSurface";
 import { drawAlgorithm3DOverlay } from "@/features/algorithm-video-3d/drawAlgorithm3DOverlay";
 import { CRANE_AUDIO_CUES, CRANE_SWAP_SECONDS, getAlgorithm3DFrameSeconds, getAlgorithm3DStoryFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dTiming";
-import { isAlgorithm3DStoryMode } from "@/lib/algorithmVideoRenderMode";
+import { isAlgorithm3DHyperMode, isAlgorithm3DStoryMode } from "@/lib/algorithmVideoRenderMode";
+import { getAlgorithm3DHyperFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dHyper";
 import { getExportFormat } from "./exportFormats";
 import type { ExportVideoParams } from "./videoExport";
 
@@ -16,6 +17,7 @@ const PIGEONHOLE_EXPORT_SECONDS = 0.16;
 
 export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
   const storyMode = isAlgorithm3DStoryMode(params.videoRenderMode);
+  const hyperMode = isAlgorithm3DHyperMode(params.videoRenderMode);
   const format = getExportFormat(params.exportFormat);
   const mimeType = format.mimeCandidates.find((candidate) => MediaRecorder.isTypeSupported(candidate));
   if (!mimeType) {
@@ -39,6 +41,7 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
     theme: params.theme,
     ads: params.algorithmVideoAds,
     storyMode,
+    hyperMode,
   });
 
   const renderFrame = async (frameIndex: number, previousFrame: Frame | null, progress: number) => {
@@ -59,6 +62,7 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
       lang: params.lang,
       theme: params.theme,
       storyMode,
+      hyperMode,
       frameCount: params.frames.length,
       transitionProgress: progress,
     });
@@ -118,7 +122,10 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
       const craneSwap = shouldAnimateSwap(params.frames[frameIndex], previousFrame);
       for (let step = 1; step <= transitionFrames; step += 1) {
         const progress = step / transitionFrames;
-        if (craneSwap) playCraneExportCue(progress, cueState);
+        if (craneSwap) {
+          if (hyperMode) playHyperCraneExportCue(progress, cueState);
+          else playCraneExportCue(progress, cueState);
+        }
         await renderFrame(frameIndex, previousFrame, progress);
         track.requestFrame();
         await waitFrame(params.fps);
@@ -127,7 +134,8 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
     }
 
     await renderFrame(params.frames.length - 1, null, 1);
-    for (let hold = 0; hold < params.fps * 3; hold += 1) {
+    const finalHoldSeconds = hyperMode ? 0.8 : 3;
+    for (let hold = 0; hold < params.fps * finalHoldSeconds; hold += 1) {
       track.requestFrame();
       await waitFrame(params.fps);
     }
@@ -143,7 +151,7 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
   const url = URL.createObjectURL(blob);
   const fileName = buildVideoExportFileName({
     youtubeTitle: params.youtubeMetadata?.title,
-    fallbackTitle: `${params.algoName} ${params.platformId} ${storyMode ? "3D Story" : "3D"}`,
+    fallbackTitle: `${params.algoName} ${params.platformId} ${hyperMode ? "3D Hyper" : storyMode ? "3D Story" : "3D"}`,
     lang: params.lang,
     extension: format.id,
   });
@@ -161,6 +169,9 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
 }
 
 function getTransitionFrameCount(params: ExportVideoParams, frame: Frame, previousFrame: Frame | null) {
+  if (isAlgorithm3DHyperMode(params.videoRenderMode)) {
+    return Math.max(3, Math.round(params.fps * getAlgorithm3DHyperFrameSeconds(frame)));
+  }
   if (shouldAnimateSwap(frame, previousFrame)) return Math.max(8, Math.round(params.fps * CRANE_SWAP_SECONDS));
   if (frame.event === "compare" || frame.event === "visit" || frame.event === "found") {
     const seconds = isAlgorithm3DStoryMode(params.videoRenderMode)
@@ -174,6 +185,14 @@ function getTransitionFrameCount(params: ExportVideoParams, frame: Frame, previo
 }
 
 type CraneCueState = { approach: boolean; hook: boolean; lift: boolean; transport: boolean; lower: boolean; return: boolean };
+
+
+function playHyperCraneExportCue(progress: number, state: CraneCueState) {
+  if (progress >= 0.04 && !state.approach) { state.approach = true; audioEngine.playSfx("crane-drive", 0.42); }
+  if (progress >= 0.27 && !state.lift) { state.lift = true; audioEngine.playSfx("crane-lift", 0.58); }
+  if (progress >= 0.48 && !state.transport) { state.transport = true; audioEngine.playSfx("swap-spark", 0.72); }
+  if (progress >= 0.82 && !state.lower) { state.lower = true; audioEngine.playSfx("crane-set", 0.54); }
+}
 
 function playCraneExportCue(progress: number, state: CraneCueState) {
   if (progress >= CRANE_AUDIO_CUES.approach && !state.approach) { state.approach = true; audioEngine.playSfx("crane-drive", 0.34); }

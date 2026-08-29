@@ -1,12 +1,12 @@
 import { useEffect, useRef, type MutableRefObject } from "react";
-import { Environment, Lightformer } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { Frame } from "@/lib/algorithms";
 import type { Theme } from "@/lib/renderer";
 import { AlgorithmBars3D } from "./AlgorithmBars3D";
 import { AlgorithmGraph3D } from "./AlgorithmGraph3D";
-
+import { AlgorithmStage3D } from "./AlgorithmStage3D";
+import { arrayLayout } from "./algorithm3dMath";
 
 let cachedWebGLSupport: boolean | null = null;
 
@@ -40,108 +40,113 @@ export type AlgorithmScene3DProps = {
 };
 
 export function AlgorithmScene3D(props: AlgorithmScene3DProps) {
+  const graph = Boolean(props.frame.graph);
   useEffect(() => () => {
     if (props.canvasRef) props.canvasRef.current = null;
   }, [props.canvasRef]);
+
   return (
     <Canvas
       frameloop={props.exportMode ? "demand" : "always"}
-      dpr={props.exportMode ? 1 : [1, 1.15]}
+      dpr={props.exportMode ? 1 : [1, 1.35]}
       shadows
-      camera={{ fov: props.height > props.width ? 41 : 38, near: 0.1, far: 120, position: [10, 8.8, 15] }}
-      gl={{ antialias: true, alpha: false, powerPreference: "high-performance", stencil: false, preserveDrawingBuffer: Boolean(props.exportMode) }}
+      camera={{
+        fov: props.height > props.width ? 39 : 34,
+        near: 0.1,
+        far: 120,
+        position: [10.5, 8.4, 16.8],
+      }}
+      gl={{
+        antialias: true,
+        alpha: false,
+        powerPreference: "high-performance",
+        stencil: false,
+        preserveDrawingBuffer: Boolean(props.exportMode),
+      }}
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.08;
+        gl.toneMappingExposure = 1.13;
         gl.shadowMap.enabled = true;
         gl.shadowMap.type = THREE.PCFSoftShadowMap;
         if (props.canvasRef) props.canvasRef.current = gl.domElement;
       }}
     >
-      <AlgorithmEnvironment3D theme={props.theme} />
-      <AlgorithmCamera3D frame={props.frame} width={props.width} height={props.height} exportMode={Boolean(props.exportMode)} />
+      <AlgorithmStage3D theme={props.theme} graph={graph} />
+      <AlgorithmCamera3D
+        frame={props.frame}
+        width={props.width}
+        height={props.height}
+        exportMode={Boolean(props.exportMode)}
+        deterministicProgress={props.deterministicProgress}
+      />
       {props.frame.graph ? (
-        <AlgorithmGraph3D frame={props.frame} theme={props.theme} />
+        <AlgorithmGraph3D frame={props.frame} theme={props.theme} deterministicProgress={props.deterministicProgress} />
       ) : (
-        <AlgorithmBars3D frame={props.frame} previousFrame={props.previousFrame} theme={props.theme} deterministicProgress={props.deterministicProgress} />
+        <AlgorithmBars3D
+          frame={props.frame}
+          previousFrame={props.previousFrame}
+          theme={props.theme}
+          deterministicProgress={props.deterministicProgress}
+        />
       )}
     </Canvas>
   );
 }
 
-function AlgorithmEnvironment3D({ theme }: { theme: Theme }) {
-  return (
-    <>
-      <color attach="background" args={[theme.bg]} />
-      <fog attach="fog" args={[theme.bg, 23, 55]} />
-      <hemisphereLight args={["#dbeafe", "#020617", 0.72]} />
-      <directionalLight
-        castShadow
-        position={[-9, 14, 10]}
-        intensity={2.65}
-        color="#fff7ed"
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-        shadow-camera-left={-16}
-        shadow-camera-right={16}
-        shadow-camera-top={15}
-        shadow-camera-bottom={-10}
-        shadow-camera-near={0.5}
-        shadow-camera-far={48}
-        shadow-bias={-0.00035}
-        shadow-normalBias={0.03}
-      />
-      <pointLight position={[10, 7, 5]} intensity={22} distance={32} decay={2} color={theme.highlight} />
-      <pointLight position={[-9, 4, -8]} intensity={16} distance={28} decay={2} color={theme.swap} />
-      <Environment resolution={64}>
-        <Lightformer form="rect" intensity={4.5} color="#e0f2fe" position={[-7, 10, 8]} scale={[8, 12, 1]} />
-        <Lightformer form="rect" intensity={3.2} color={theme.highlight} position={[8, 6, -6]} rotation={[0, Math.PI, 0]} scale={[6, 10, 1]} />
-      </Environment>
-      <mesh position={[0, -0.22, 0]} receiveShadow>
-        <boxGeometry args={[28, 0.38, 22]} />
-        <meshStandardMaterial color="#0b1220" roughness={0.72} metalness={0.28} />
-      </mesh>
-      <GridFloor3D color={theme.highlight} />
-      <mesh position={[0, 6.5, -8.8]} receiveShadow>
-        <boxGeometry args={[28, 13, 0.28]} />
-        <meshStandardMaterial color="#111827" roughness={0.62} metalness={0.18} />
-      </mesh>
-      <mesh position={[0, 6.5, -8.62]}>
-        <planeGeometry args={[20, 7.6]} />
-        <meshStandardMaterial color="#0f172a" emissive={theme.highlight} emissiveIntensity={0.025} roughness={0.36} metalness={0.42} />
-      </mesh>
-    </>
-  );
-}
-
-function GridFloor3D({ color }: { color: string }) {
-  return <gridHelper args={[28, 28, color, "#1e293b"]} position={[0, 0.01, 0]} />;
-}
-
-function AlgorithmCamera3D({ frame, width, height, exportMode }: { frame: Frame; width: number; height: number; exportMode: boolean }) {
+function AlgorithmCamera3D({ frame, width, height, exportMode, deterministicProgress }: {
+  frame: Frame;
+  width: number;
+  height: number;
+  exportMode: boolean;
+  deterministicProgress?: number;
+}) {
   const { camera } = useThree();
-  const target = useRef(new THREE.Vector3(0, frame.graph ? 1.2 : 3.5, 0));
+  const target = useRef(new THREE.Vector3(0, frame.graph ? 1.3 : 3.2, 0));
   const desired = useRef(new THREE.Vector3());
   const desiredTarget = useRef(new THREE.Vector3());
-  useFrame((_, delta) => {
+
+  useFrame(({ clock }, delta) => {
     const portrait = height > width;
     const graph = Boolean(frame.graph);
+    const focusX = graph ? graphFocusX(frame) : barFocusX(frame);
+    const progress = deterministicProgress ?? ((Math.sin(clock.elapsedTime * 0.45) + 1) * 0.5);
+    const eventPush = frame.event === "swap" ? Math.sin(Math.PI * progress) : 0;
+    const orbit = exportMode ? 0 : Math.sin(clock.elapsedTime * 0.16) * 0.22;
+
     desired.current.set(
-      graph ? (portrait ? 10.8 : 12.4) : (portrait ? 10.5 : 11.8),
-      graph ? (portrait ? 13.2 : 11.4) : (portrait ? 9.6 : 8.6),
-      graph ? (portrait ? 17.8 : 15.2) : (portrait ? 18.8 : 15.4),
+      (graph ? (portrait ? 10.4 : 11.9) : (portrait ? 9.8 : 11.25)) + orbit + focusX * 0.08,
+      graph ? (portrait ? 12.6 : 10.8) : (portrait ? 9.25 : 8.05),
+      (graph ? (portrait ? 18.4 : 16.25) : (portrait ? 19.4 : 16.55)) - eventPush * 0.48,
     );
-    desiredTarget.current.set(0, graph ? 1.2 : 3.4, graph ? 0.2 : 0);
-    const ease = exportMode ? 1 : 1 - Math.exp(-delta * 5.5);
+    desiredTarget.current.set(focusX * 0.2, graph ? 1.15 : 3.15 + eventPush * 0.12, graph ? 0.15 : 0.35);
+
+    const ease = exportMode ? 1 : 1 - Math.exp(-delta * 4.2);
     camera.position.lerp(desired.current, ease);
     target.current.lerp(desiredTarget.current, ease);
     camera.lookAt(target.current);
+    camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, frame.event === "swap" ? -0.008 * eventPush : 0, ease);
+
     if (camera instanceof THREE.PerspectiveCamera) {
-      const desiredFov = portrait ? (graph ? 43 : 39) : (graph ? 40 : 36);
-      camera.fov = THREE.MathUtils.lerp(camera.fov, desiredFov, ease);
+      const desiredFov = portrait ? (graph ? 41 : 37) : (graph ? 37 : 33.5);
+      camera.fov = THREE.MathUtils.lerp(camera.fov, desiredFov + eventPush * 0.7, ease);
       camera.updateProjectionMatrix();
     }
   });
   return null;
+}
+
+function barFocusX(frame: Frame) {
+  const active = [...frame.swap, ...frame.highlight, ...(frame.pivot != null ? [frame.pivot] : [])]
+    .filter((value, index, array) => value >= 0 && array.indexOf(value) === index);
+  if (!active.length || !frame.arr.length) return 0;
+  const layout = arrayLayout(frame.arr);
+  return active.reduce((sum, index) => sum + layout.xFor(index), 0) / active.length;
+}
+
+function graphFocusX(frame: Frame) {
+  const graph = frame.graph;
+  if (!graph || graph.current == null) return 0;
+  const node = graph.nodes.find((candidate) => candidate.id === graph.current) ?? graph.nodes[graph.current];
+  return node ? (node.x - 0.5) * 13.5 : 0;
 }

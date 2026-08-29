@@ -12,6 +12,7 @@ import { SHORT_VIDEO_TYPES, type ShortVideoType } from "@/lib/shortVideoTypes";
 import { AlgorithmStudio } from "./useAlgorithmStudio";
 import { uiText } from "@/lib/i18n";
 import { canUseAlgorithm3DVideo, hasWebGLVideoSupport, type AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
+import { ALGORITHM_VIDEO_ADS, type AlgorithmVideoAdId } from "@/lib/algorithmVideoAds";
 
 type Props = { studio: AlgorithmStudio };
 
@@ -173,6 +174,20 @@ function VideoRenderModeSelect({ studio: s }: Props) {
             ? (s.lang === "vi" ? "Preview và video xuất sẽ dùng scene 3D. Mode 2D gốc vẫn được giữ nguyên." : "Preview and export use the 3D scene. The original 2D mode remains unchanged.")
             : (s.lang === "vi" ? "3D không khả dụng với scene/mode hiện tại; hệ thống sẽ dùng 2D gốc." : "3D is unavailable for the current scene/mode; the original 2D renderer will be used.")}
         </p>
+      ) : null}
+      {s.videoRenderMode === "3d" && available ? (
+        <div className="mt-3">
+          <Label>{s.lang === "vi" ? "Quảng cáo trong không gian 3D" : "3D scene advertisement"}</Label>
+          <Select value={s.algorithmVideoAdId} onValueChange={(value) => s.setAlgorithmVideoAdId(value as AlgorithmVideoAdId)}>
+            <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {ALGORITHM_VIDEO_ADS.map((item) => <SelectItem key={item.id} value={item.id}>{item.label[s.lang]}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <p className="mt-2 text-xs text-white/60">
+            {s.lang === "vi" ? "Mỗi video chỉ hiển thị 1 quảng cáo, đặt trong hậu cảnh để không lấn át nội dung chính." : "Only one ad is shown per video, placed in the background so it does not overpower the main content."}
+          </p>
+        </div>
       ) : null}
     </div>
   );

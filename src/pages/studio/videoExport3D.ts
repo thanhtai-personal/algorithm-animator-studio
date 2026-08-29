@@ -35,6 +35,7 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
     width: params.width,
     height: params.height,
     theme: params.theme,
+    adId: params.algorithmVideoAdId,
   });
 
   const renderFrame = async (frameIndex: number, previousFrame: Frame | null, progress: number) => {

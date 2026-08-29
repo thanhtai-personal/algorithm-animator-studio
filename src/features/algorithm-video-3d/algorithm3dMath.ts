@@ -56,10 +56,10 @@ export function arrayLayout(values: number[]) {
   const min = Math.min(0, ...values);
   const max = Math.max(1, ...values);
   const range = Math.max(1, max - min);
-  const span = Math.min(20, Math.max(8, count * 0.82));
+  const span = Math.min(16.8, Math.max(7.8, count * 0.72));
   const step = span / count;
-  const width = Math.max(0.22, step * 0.68);
-  const maxHeight = 8.2;
+  const width = Math.max(0.20, step * 0.60);
+  const maxHeight = count > 16 ? 6.5 : 6.9;
   const heightFor = (value: number) => Math.max(0.28, ((value - min) / range) * (maxHeight - 0.4) + 0.4);
   const xFor = (index: number) => -span / 2 + step * (index + 0.5);
   return { count, min, max, range, span, step, width, maxHeight, heightFor, xFor };

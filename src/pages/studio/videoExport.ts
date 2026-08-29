@@ -11,6 +11,7 @@ import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
 import type { YoutubeAlgorithmMetadata } from "@/lib/youtubeMetadata";
 import { getExportFormat, ExportFormat } from "./exportFormats";
 import { canUseAlgorithm3DVideo, type AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
+import type { AlgorithmVideoAdId } from "@/lib/algorithmVideoAds";
 
 const SWAP_EXPORT_SECONDS = 0.35;
 const KINETIC_ODD_EVEN_SWAP_SECONDS = 0.62;
@@ -39,6 +40,7 @@ export type ExportVideoParams = {
   lang: "en" | "vi";
   shortVideoType: ShortVideoType;
   videoRenderMode: AlgorithmVideoRenderMode;
+  algorithmVideoAdId: AlgorithmVideoAdId;
   platformId: string;
   exportFormat: ExportFormat;
   animalColumns: AnimalColumnSettings;

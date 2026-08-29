@@ -57,6 +57,7 @@ export function CenterPanel({ studio: s }: Props) {
                 showCode={s.showCode}
                 complexity={COMPLEXITY[s.algoId]}
                 lang={s.lang}
+                adId={s.algorithmVideoAdId}
               />
             </Suspense>
             <canvas ref={s.canvasRef} width={s.W} height={s.H} className="hidden" />

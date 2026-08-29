@@ -1,25 +1,27 @@
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
+import { getAlgorithmVideoAd, type AlgorithmVideoAdId } from "@/lib/algorithmVideoAds";
 
-export function AlgorithmBranding3D() {
-  return (
-    <group>
-      <FacadeAd
-        position={[-8.9, 2.6, -8.7]}
-        width={5.0}
-        height={1.75}
-        brand="KATA.MAKEUP"
-        url="https://www.kata.makeup/"
-        accent="#d792a4"
-      />
-      <RoadsideBillboard
-        position={[6.85, 2.95, -11.6]}
-        rotationY={-0.26}
-        brand="THIÊN ĐẠO CHI LỘ"
-        url="https://thiendaochilo.vercel.app/"
-        accent="#c4a55f"
-      />
-    </group>
+export function AlgorithmBranding3D({ adId = "none" }: { adId?: AlgorithmVideoAdId }) {
+  const ad = getAlgorithmVideoAd(adId);
+  if (ad.id === "none") return null;
+  return ad.placement === "facade" ? (
+    <FacadeAd
+      position={[-6.35, 2.48, -9.4]}
+      width={4.25}
+      height={1.45}
+      brand={ad.brand}
+      url={ad.url}
+      accent={ad.accent}
+    />
+  ) : (
+    <RoadsideBillboard
+      position={[5.15, 2.55, -10.9]}
+      rotationY={-0.14}
+      brand={ad.brand}
+      url={ad.url}
+      accent={ad.accent}
+    />
   );
 }
 

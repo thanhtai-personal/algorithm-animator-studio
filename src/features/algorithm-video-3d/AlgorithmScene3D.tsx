@@ -37,6 +37,7 @@ export type AlgorithmScene3DProps = {
   deterministicProgress?: number;
   canvasRef?: MutableRefObject<HTMLCanvasElement | null>;
   exportMode?: boolean;
+  adId?: AlgorithmVideoAdId;
 };
 
 export function AlgorithmScene3D(props: AlgorithmScene3DProps) {
@@ -71,7 +72,7 @@ export function AlgorithmScene3D(props: AlgorithmScene3DProps) {
         if (props.canvasRef) props.canvasRef.current = gl.domElement;
       }}
     >
-      <AlgorithmStage3D theme={props.theme} graph={graph} />
+      <AlgorithmStage3D theme={props.theme} graph={graph} adId={props.adId} />
       <AlgorithmCamera3D frame={props.frame} width={props.width} height={props.height} />
       <RenderInvalidator frameIndex={props.frameIndex} progress={progress} width={props.width} height={props.height} />
       {props.frame.graph ? (
@@ -95,15 +96,15 @@ function AlgorithmCamera3D({ frame, width, height }: { frame: Frame; width: numb
     // Keep the composition locked. Selection/compare/visit are communicated by
     // lighting only; moving lookAt/FOV on every active index makes the video jitter.
     const position = graph
-      ? new THREE.Vector3(portrait ? 8.6 : 9.6, portrait ? 12.2 : 10.5, portrait ? 19.5 : 17.2)
-      : new THREE.Vector3(portrait ? 8.2 : 9.2, portrait ? 9.5 : 8.35, portrait ? 22.0 : 19.4);
-    const target = new THREE.Vector3(0, graph ? 1.0 : 2.55, graph ? -0.2 : -0.35);
+      ? new THREE.Vector3(portrait ? 7.8 : 8.8, portrait ? 11.8 : 10.0, portrait ? 21.5 : 18.4)
+      : new THREE.Vector3(portrait ? 6.7 : 7.4, portrait ? 8.7 : 7.45, portrait ? 25.2 : 22.8);
+    const target = new THREE.Vector3(0, graph ? 1.0 : 2.15, graph ? -0.2 : 0.18);
 
     camera.position.copy(position);
     camera.lookAt(target);
     camera.rotation.z = 0;
     if (camera instanceof THREE.PerspectiveCamera) {
-      camera.fov = portrait ? (graph ? 43 : 40) : (graph ? 39 : 37);
+      camera.fov = portrait ? (graph ? 44 : 42) : (graph ? 40 : 39);
       camera.updateProjectionMatrix();
     }
   }, [camera, portrait, graph]);

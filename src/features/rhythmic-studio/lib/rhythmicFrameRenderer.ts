@@ -16,7 +16,7 @@ import { platformIsInside2DRenderWindow } from "./platformViewport";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 import type { ChaseCoursePlan } from "./chaseCourse";
 import { drawChasePerformers2D } from "./chaseFrameRenderer2D";
-import { drawSubscribeReminder2D } from "./subscribeReminder";
+import { drawSubscribeWallSign2D, subscribeWallMount } from "./subscribeReminder";
 
 interface DrawFrameArgs {
   ctx: CanvasRenderingContext2D;
@@ -180,6 +180,12 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
   if (live) drawLongGapTubes(ctx, platforms, events, cameraY, timeMs, settings, courseOverrides);
   if (live || courseOverrides.length) drawCourseLongItems(ctx, platforms, courseOverrides, cameraY, settings);
   drawDenseSurfaces2D(ctx, platforms, cameraY, settings);
+  const firstPlatform = platforms[0];
+  const wallMount = subscribeWallMount({
+    x: firstPlatform.visualX ?? firstPlatform.x,
+    y: firstPlatform.visualY ?? firstPlatform.y,
+  });
+  drawSubscribeWallSign2D(ctx, { ...wallMount, y: wallMount.y - cameraY }, timeMs);
   for (let platformIndex = 0; platformIndex < platforms.length; platformIndex += 1) {
     const platform = platforms[platformIndex];
     if (platform.visualHidden) continue;
@@ -261,5 +267,4 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
     ctx.fillStyle = mixHex(settings.prismStart, settings.prismEnd, progress);
     roundedRect(ctx, 76, height - 48, (width - 152) * progress, 5, 3); ctx.fill();
   }
-  drawSubscribeReminder2D(ctx, width, height, timeMs);
 }

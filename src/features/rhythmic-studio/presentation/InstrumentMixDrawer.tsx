@@ -15,7 +15,6 @@ import { useSystemLang } from "@/hooks/use-system-lang";
 import type { RhythmicStudioController } from "../hooks/useRhythmicStudioController";
 import { instrumentMixText } from "../instrumentMixI18n";
 import { PHRASE_INSTRUMENT_SEQUENCE, type PhraseInstrumentFamily } from "../lib/phraseInstrumentMix";
-import { MIXED_INSTRUMENT_PRESET_ID } from "../lib/studioPresets";
 import { showcaseText, type ShowcaseTextKey } from "../showcaseI18n";
 
 function familyLabelKey(family: PhraseInstrumentFamily): ShowcaseTextKey {
@@ -53,7 +52,7 @@ export const InstrumentMixDrawer = observer(function InstrumentMixDrawer({ studi
   studio: RhythmicStudioController;
 }) {
   const lang = useSystemLang();
-  if (studio.activePresetId !== MIXED_INSTRUMENT_PRESET_ID) return null;
+  if (studio.settings?.instrumentFamily !== "mixed") return null;
 
   return <Sheet>
     <SheetTrigger asChild>

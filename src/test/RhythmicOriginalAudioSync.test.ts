@@ -7,6 +7,7 @@ const audioMocks = vi.hoisted(() => ({ attachOriginalAudio: vi.fn(async () => un
 
 vi.mock("../features/rhythmic-studio/lib/audioEngine", () => ({
   AudioEngine: class {
+    dispose = vi.fn();
     attachOriginalAudio = audioMocks.attachOriginalAudio;
     ensure = vi.fn(async () => undefined);
     stopMidi = vi.fn();

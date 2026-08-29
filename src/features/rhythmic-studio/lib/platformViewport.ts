@@ -14,6 +14,7 @@ export const PLATFORM_3D_PRELOAD_AHEAD_PX = 2_000;
 export const KOROBEINIKI_3D_RETAIN_BEHIND_PX = 3_600;
 export const KOROBEINIKI_3D_PRELOAD_AHEAD_PX = 3_600;
 export const KOROBEINIKI_FULL_MOUNT_LIMIT = 96;
+export const PLATFORM_3D_MOUNT_LIMIT = 72;
 const PLATFORM_MIN_VERTICAL_OVERSCAN_PX = 720;
 const PLATFORM_MIN_HORIZONTAL_OVERSCAN_PX = 320;
 
@@ -107,10 +108,18 @@ export function platformsMountedFor3D(
   const minY = focusY - (courseDirection > 0 ? retainBehind : preloadAhead);
   const maxY = focusY + (courseDirection > 0 ? preloadAhead : retainBehind);
 
-  return platforms.filter((platform) => {
+  const mounted = platforms.filter((platform) => {
     const display = displayGeometry(platform);
     const halfVerticalExtent = Math.abs(Math.sin(display.angle)) * display.width * 0.5
       + Math.abs(Math.cos(display.angle)) * display.thickness * 0.5;
     return display.y + halfVerticalExtent >= minY && display.y - halfVerticalExtent <= maxY;
   });
+  if (mounted.length <= PLATFORM_3D_MOUNT_LIMIT) return mounted;
+  const mountedFocus = Math.max(0, mounted.findIndex((platform) => platform.index === focus.index));
+  const retainedBehind = Math.floor(PLATFORM_3D_MOUNT_LIMIT * 0.42);
+  const start = Math.max(0, Math.min(
+    mounted.length - PLATFORM_3D_MOUNT_LIMIT,
+    mountedFocus - retainedBehind,
+  ));
+  return mounted.slice(start, start + PLATFORM_3D_MOUNT_LIMIT);
 }

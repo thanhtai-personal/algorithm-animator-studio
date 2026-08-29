@@ -1,23 +1,26 @@
-import { useEffect, useMemo, type MutableRefObject } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useMemo, useRef, type MutableRefObject } from "react";
+import { RoundedBox } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import type { StudioSettings } from "../types";
+import type { MarblePlatform } from "../lib/marbleCourse";
 import {
   drawSubscribeButtonFace2D,
   subscribeReminderFrameAt,
-  subscribeReminderLayout,
+  subscribeWallMount,
 } from "../lib/subscribeReminder";
-import { RHYTHMIC_CAMERA_FOV } from "./rhythmicSceneMath3D";
+import { RHYTHMIC_COURSE_WIDTH, RHYTHMIC_WORLD_SCALE } from "./RhythmicMotion3D";
+import { shadowReceiverZForSettings } from "./rhythmicSceneMath3D";
 
-const TEXTURE_WIDTH = 1_024;
-const TEXTURE_HEIGHT = 320;
-const FACE_WIDTH = 880;
+const TEXTURE_WIDTH = 1_128;
+const TEXTURE_HEIGHT = 240;
+const FACE_WIDTH = 1_070;
 const FACE_HEIGHT = FACE_WIDTH / 4.7;
-const SPRITE_DEPTH = 8;
 
 interface RhythmicSubscribeReminder3DProps {
   timeRef: MutableRefObject<number>;
-  frameWidth: number;
-  frameHeight: number;
+  platforms: MarblePlatform[];
+  settings: StudioSettings;
 }
 
 function makeSubscribeTexture() {
@@ -36,65 +39,91 @@ function makeSubscribeTexture() {
   return texture;
 }
 
+function HangingCord({ endX, topY, endY, z }: {
+  endX: number;
+  topY: number;
+  endY: number;
+  z: number;
+}) {
+  const length = Math.hypot(endX, topY - endY);
+  const angle = Math.atan2(endX, topY - endY);
+  return (
+    <mesh position={[endX / 2, (topY + endY) / 2, z]} rotation={[0, 0, angle]} castShadow>
+      <cylinderGeometry args={[0.018, 0.018, length, 10]} />
+      <meshStandardMaterial color="#aeb8c0" roughness={0.31} metalness={0.72} />
+    </mesh>
+  );
+}
+
 export function RhythmicSubscribeReminder3D({
   timeRef,
-  frameWidth,
-  frameHeight,
+  platforms,
+  settings,
 }: RhythmicSubscribeReminder3DProps) {
-  const { camera } = useThree();
+  const faceMaterialRef = useRef<THREE.MeshStandardMaterial>(null);
   const texture = useMemo(makeSubscribeTexture, []);
-  const material = useMemo(() => new THREE.SpriteMaterial({
-    map: texture,
-    transparent: true,
-    depthTest: false,
-    depthWrite: false,
-    toneMapped: false,
-  }), [texture]);
-  const sprite = useMemo(() => {
-    const value = new THREE.Sprite(material);
-    value.visible = false;
-    value.frustumCulled = false;
-    value.renderOrder = 1_200;
-    return value;
-  }, [material]);
-  const geometry = useMemo(() => {
-    const layout = subscribeReminderLayout(frameWidth, frameHeight);
-    const viewHeight = 2 * Math.tan(THREE.MathUtils.degToRad(RHYTHMIC_CAMERA_FOV / 2)) * SPRITE_DEPTH;
-    const viewWidth = viewHeight * (frameWidth / frameHeight);
-    const faceWorldWidth = viewWidth * (layout.width / frameWidth);
-    const spriteWidth = faceWorldWidth * (TEXTURE_WIDTH / FACE_WIDTH);
-    return {
-      baseY: (0.5 - layout.centerY / frameHeight) * viewHeight,
-      spriteWidth,
-      spriteHeight: spriteWidth * (TEXTURE_HEIGHT / TEXTURE_WIDTH),
-      viewHeight,
-    };
-  }, [frameHeight, frameWidth]);
+  const mount = useMemo(() => {
+    const first = platforms[0];
+    if (!first) return null;
+    return subscribeWallMount({
+      x: first.visualX ?? first.x,
+      y: first.visualY ?? first.y,
+    }, RHYTHMIC_COURSE_WIDTH);
+  }, [platforms]);
 
-  useEffect(() => {
-    camera.add(sprite);
-    return () => camera.remove(sprite);
-  }, [camera, sprite]);
-
-  useEffect(() => () => {
-    material.dispose();
-    texture.dispose();
-  }, [material, texture]);
+  useEffect(() => () => texture.dispose(), [texture]);
 
   useFrame(() => {
+    const material = faceMaterialRef.current;
+    if (!material) return;
     const frame = subscribeReminderFrameAt(timeRef.current);
-    sprite.visible = frame.visible && frame.opacity > 0;
-    if (!sprite.visible) return;
-
-    material.opacity = frame.opacity;
-    const translateWorldY = (frame.translateY / frameHeight) * geometry.viewHeight;
-    sprite.position.set(0, geometry.baseY - translateWorldY, -SPRITE_DEPTH);
-    sprite.scale.set(
-      geometry.spriteWidth * frame.scale,
-      geometry.spriteHeight * frame.scale,
-      1,
-    );
+    material.emissiveIntensity = 0.08 + (frame.visible ? frame.opacity : 0) * 0.62;
   });
 
-  return null;
+  if (!mount) return null;
+  const x = (mount.x - RHYTHMIC_COURSE_WIDTH / 2) * RHYTHMIC_WORLD_SCALE;
+  const y = -mount.y * RHYTHMIC_WORLD_SCALE;
+  const faceWidth = mount.width * RHYTHMIC_WORLD_SCALE;
+  const faceHeight = mount.height * RHYTHMIC_WORLD_SCALE;
+  const plateWidth = faceWidth + faceHeight * 0.28;
+  const plateHeight = faceHeight * 1.26;
+  const topY = plateHeight * 0.98;
+  const cordEndY = plateHeight * 0.48;
+  const receiverZ = shadowReceiverZForSettings(settings);
+
+  return (
+    <group position={[x, y, receiverZ]}>
+      <HangingCord endX={-plateWidth * 0.34} topY={topY} endY={cordEndY} z={0.08} />
+      <HangingCord endX={plateWidth * 0.34} topY={topY} endY={cordEndY} z={0.08} />
+      <mesh position={[0, topY, 0.085]} castShadow>
+        <sphereGeometry args={[faceHeight * 0.075, 16, 12]} />
+        <meshStandardMaterial color="#dce3e8" roughness={0.28} metalness={0.76} />
+      </mesh>
+      <RoundedBox
+        position={[0, 0, 0.12]}
+        args={[plateWidth, plateHeight, 0.2]}
+        radius={faceHeight * 0.24}
+        smoothness={4}
+        castShadow
+        receiveShadow
+      >
+        <meshStandardMaterial color="#242a31" roughness={0.46} metalness={0.32} />
+      </RoundedBox>
+      <mesh position={[0, 0, 0.225]} castShadow>
+        <planeGeometry args={[faceWidth, faceHeight]} />
+        <meshStandardMaterial
+          ref={faceMaterialRef}
+          map={texture}
+          emissive="#5c0718"
+          emissiveMap={texture}
+          emissiveIntensity={0.08}
+          transparent
+          alphaTest={0.02}
+          roughness={0.32}
+          metalness={0.08}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  );
 }

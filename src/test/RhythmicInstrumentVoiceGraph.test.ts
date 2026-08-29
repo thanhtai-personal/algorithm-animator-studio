@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { playSynthVoice } from "../features/rhythmic-studio/lib/synthVoices";
 import type { SynthPreset } from "../features/rhythmic-studio/types";
 
@@ -18,8 +18,9 @@ class FakeParam {
 }
 
 class FakeNode {
+  disconnected = false;
   connect() { return this; }
-  disconnect() {}
+  disconnect() { this.disconnected = true; }
 }
 
 function voiceSignature(preset: SynthPreset) {
@@ -67,6 +68,47 @@ function voiceSignature(preset: SynthPreset) {
 }
 
 describe("instrument-specific Web Audio voice graphs", () => {
+  it("disconnects a completed voice from the live audio bus", () => {
+    vi.useFakeTimers();
+    try {
+      const panners: FakeNode[] = [];
+      const context = {
+        currentTime: 0,
+        sampleRate: 48_000,
+        createGain: () => Object.assign(new FakeNode(), { gain: new FakeParam() }),
+        createBiquadFilter: () => Object.assign(new FakeNode(), { type: "lowpass", frequency: new FakeParam(), Q: new FakeParam() }),
+        createStereoPanner: () => {
+          const panner = Object.assign(new FakeNode(), { pan: new FakeParam() });
+          panners.push(panner);
+          return panner;
+        },
+        createOscillator: () => Object.assign(new FakeNode(), {
+          type: "sine" as OscillatorType,
+          frequency: new FakeParam(),
+          detune: new FakeParam(),
+          start: () => undefined,
+          stop: () => undefined,
+        }),
+      };
+
+      playSynthVoice(
+        context as unknown as AudioContext,
+        new FakeNode() as unknown as AudioNode,
+        60,
+        0.8,
+        1_200,
+        "piano",
+      );
+      expect(panners[0]?.disconnected).toBe(false);
+
+      vi.advanceTimersByTime(6_000);
+
+      expect(panners[0]?.disconnected).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("builds distinct trumpet, guitar and Vietnamese bronze drum voices", () => {
     const signatures = (["trumpet", "guitar", "bronze-drum"] as const).map(voiceSignature);
     expect(new Set(signatures.map((item) => JSON.stringify(item))).size).toBe(3);

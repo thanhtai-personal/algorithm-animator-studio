@@ -7,6 +7,7 @@ import { RhythmicBackplate3D } from "./RhythmicBackplate3D";
 import { RhythmicBrickWall3D } from "./RhythmicBrickWall3D";
 import { RHYTHMIC_ROOM_BACKDROP_WIDTH, RHYTHMIC_ROOM_SIDE_X, type RhythmicBackdropBounds } from "./rhythmicSceneMath3D";
 import { isKorobeinikiWallLayout } from "../lib/korobeinikiReferenceLayout";
+import { sampledBackdropRepeatIndices } from "../lib/backdropRepeatLayout";
 
 export type EnvironmentKind = "tube-board" | "comet" | "xylophone" | "brick" | "neutral";
 
@@ -117,7 +118,7 @@ function BackgroundMotion({ settings, children }: { settings: StudioSettings; ch
 }
 
 function TubeBoardRoom({ bounds }: { bounds: RhythmicBackdropBounds }) {
-  const sections = useMemo(() => Array.from({ length: Math.ceil(bounds.height / 11.2) }, (_, i) => i), [bounds.height]);
+  const sections = useMemo(() => sampledBackdropRepeatIndices(bounds.height, 11.2, 48), [bounds.height]);
   return (
     <group>
       <RoundedBox position={[0, bounds.centerY, -4.45]} args={[RHYTHMIC_ROOM_BACKDROP_WIDTH, bounds.height, 0.56]} radius={0.14} smoothness={4} receiveShadow renderOrder={-30}>
@@ -197,7 +198,7 @@ function StarField({ bounds }: { bounds: RhythmicBackdropBounds }) {
 }
 
 function CometSpace({ bounds }: { bounds: RhythmicBackdropBounds }) {
-  const rings = useMemo(() => Array.from({ length: Math.ceil(bounds.height / 14.4) }, (_, i) => i), [bounds.height]);
+  const rings = useMemo(() => sampledBackdropRepeatIndices(bounds.height, 14.4, 64), [bounds.height]);
   return (
     <group>
       <StarField bounds={bounds} />
@@ -234,7 +235,7 @@ function CometSpace({ bounds }: { bounds: RhythmicBackdropBounds }) {
 }
 
 function XylophoneRoom({ bounds }: { bounds: RhythmicBackdropBounds }) {
-  const floorSlats = useMemo(() => Array.from({ length: Math.ceil(bounds.height / 10.4) }, (_, i) => i), [bounds.height]);
+  const floorSlats = useMemo(() => sampledBackdropRepeatIndices(bounds.height, 10.4, 48), [bounds.height]);
   const shelfItems = useMemo(() => Array.from({ length: 7 }, (_, i) => i), []);
   const accents = ["#f2b457", "#ef6d7a", "#59c7a3", "#74b6ff", "#9d7bf2", "#ff9f6b"];
   return (
@@ -372,7 +373,7 @@ function NeutralStudio({ color, bounds }: { color: string; bounds: RhythmicBackd
   );
 }
 
-export function RhythmicEnvironment3D({ settings, backgroundUrl, bounds }: { settings: StudioSettings; backgroundUrl?: string; bounds: RhythmicBackdropBounds }) {
+export function RhythmicEnvironment3D({ settings, backgroundUrl, bounds, children }: { settings: StudioSettings; backgroundUrl?: string; bounds: RhythmicBackdropBounds; children?: ReactNode }) {
   const kind = environmentKind(settings);
   return (
     <>
@@ -388,6 +389,7 @@ export function RhythmicEnvironment3D({ settings, backgroundUrl, bounds }: { set
           : settings.instrumentFamily !== "auto"
             ? <ShowcaseWall color={settings.backgroundColor} bounds={bounds} />
             : <NeutralStudio color={settings.backgroundColor} bounds={bounds} />)}
+        {children}
       </BackgroundMotion>
     </>
   );

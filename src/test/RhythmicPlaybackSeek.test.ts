@@ -4,6 +4,8 @@ import { useRhythmicPlayback } from "../features/rhythmic-studio/hooks/useRhythm
 import { RhythmicStudioStore } from "../features/rhythmic-studio/store/RhythmicStudioStore";
 
 const audioMocks = vi.hoisted(() => ({
+  construct: vi.fn(),
+  dispose: vi.fn(),
   ensure: vi.fn(async () => undefined),
   stopMidi: vi.fn(),
   scheduleMidi: vi.fn(async () => undefined),
@@ -11,6 +13,8 @@ const audioMocks = vi.hoisted(() => ({
 
 vi.mock("../features/rhythmic-studio/lib/audioEngine", () => ({
   AudioEngine: class {
+    constructor() { audioMocks.construct(); }
+    dispose = audioMocks.dispose;
     ensure = audioMocks.ensure;
     stopMidi = audioMocks.stopMidi;
     stopCue = vi.fn();
@@ -27,6 +31,28 @@ vi.mock("../features/rhythmic-studio/lib/audioEngine", () => ({
 
 describe("rhythmic playback seek", () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it("keeps one audio engine across React renders and disposes it on unmount", () => {
+    const store = new RhythmicStudioStore();
+    const playback = renderHook(() => useRhythmicPlayback(store));
+
+    playback.rerender();
+
+    expect(audioMocks.construct).toHaveBeenCalledOnce();
+    playback.unmount();
+    expect(audioMocks.dispose).toHaveBeenCalledOnce();
+  });
+
+  it("stops an unfinished export when the studio is closed", () => {
+    const store = new RhythmicStudioStore();
+    const playback = renderHook(() => useRhythmicPlayback(store));
+    const stop = vi.fn();
+    playback.result.current.recorderRef.current = { state: "recording", stop } as unknown as MediaRecorder;
+
+    playback.unmount();
+
+    expect(stop).toHaveBeenCalledOnce();
+  });
 
   it("updates a paused preview without starting audio", async () => {
     const store = new RhythmicStudioStore();

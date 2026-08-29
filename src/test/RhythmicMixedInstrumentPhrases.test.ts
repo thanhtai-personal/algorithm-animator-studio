@@ -51,6 +51,16 @@ describe("mixed instruments follow musical phrases", () => {
     expect(plan.map((segment) => [segment.startIndex, segment.endIndex])).toEqual([[0, 3], [4, 6], [7, 9]]);
   });
 
+  it("does not mistake the spacing between sustained notes for a silent phrase break", () => {
+    const events = [0, 700, 1_400, 2_100].map((timeMs, index) => ({
+      ...note(index, timeMs),
+      durationMs: 900,
+    }));
+
+    expect(buildPhraseInstrumentPlan(events)).toHaveLength(1);
+    expect(buildAutomaticInstrumentMix(events, 3_200)).toHaveLength(1);
+  });
+
   it("automatically keeps one instrument for three phrases before switching", () => {
     const events = ninePhraseEvents();
     const plan = buildAutomaticInstrumentMix(events, 12_000);
@@ -62,6 +72,21 @@ describe("mixed instruments follow musical phrases", () => {
       [4_200, 8_400],
       [8_400, 12_000],
     ]);
+  });
+
+  it("prefers the clearest nearby rest when choosing an automatic instrument change", () => {
+    const phraseStarts = [0, 1_400, 2_800, 4_200, 6_400, 7_800];
+    const events = phraseStarts.flatMap((startMs, phrase) => [
+      note(phrase * 3, startMs),
+      note(phrase * 3 + 1, startMs + 180),
+      note(phrase * 3 + 2, startMs + 360),
+    ]);
+
+    const plan = buildAutomaticInstrumentMix(events, 9_000);
+
+    expect(plan).toHaveLength(2);
+    expect(plan[0].endMs).toBe(6_400);
+    expect(plan[1].startMs).toBe(6_400);
   });
 
   it("derives a suitable instrument count from MIDI phrases and program variety", () => {
@@ -109,6 +134,17 @@ describe("mixed instruments follow musical phrases", () => {
     expect(updated[1].startMs).toBe(updated[0].endMs);
     expect(updated[2].startMs).toBe(updated[1].endMs);
     expect(updated.at(-1)?.endMs).toBe(12_000);
+  });
+
+  it("lets the last instrument configure its duration by moving the previous phrase boundary", () => {
+    const events = ninePhraseEvents();
+    const plan = buildAutomaticInstrumentMix(events, 12_000);
+    const updated = updateInstrumentMixSegmentDuration(plan, plan.at(-1)!.id, 5, events, 12_000);
+
+    expect(updated.at(-1)?.startMs).toBe(7_000);
+    expect(updated.at(-1)?.endMs).toBe(12_000);
+    expect(updated.at(-1)!.endMs - updated.at(-1)!.startMs).toBe(5_000);
+    updated.slice(1).forEach((segment, index) => expect(segment.startMs).toBe(updated[index].endMs));
   });
 
   it("resolves the configured family on both sides of a custom boundary", () => {

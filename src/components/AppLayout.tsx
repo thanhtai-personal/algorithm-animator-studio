@@ -72,7 +72,7 @@ export function AppLayout({ children }: PropsWithChildren) {
         {children}
       </div>
       <ChillMusicNotifier enabled={fantasticMode && chillModeEnabled} />
-      <BackgroundJobsNotifier />
+      {!rhythmicStudioActive ? <BackgroundJobsNotifier /> : null}
     </div>
   );
 }

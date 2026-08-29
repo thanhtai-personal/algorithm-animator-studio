@@ -50,9 +50,19 @@ function scheduledMidiPreset(
 
 export function useRhythmicPlayback(store: RhythmicStudioStore) {
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
-  const audioEngineRef = useRef(new AudioEngine());
+  const audioEngineRef = useRef<AudioEngine>(null!);
+  if (!audioEngineRef.current) audioEngineRef.current = new AudioEngine();
   const recorderRef = useRef<MediaRecorder | null>(null);
   const audioStartGenerationRef = useRef(0);
+
+  useEffect(() => {
+    const engine = audioEngineRef.current;
+    return () => {
+      const recorder = recorderRef.current;
+      if (recorder && recorder.state !== "inactive") recorder.stop();
+      engine.dispose();
+    };
+  }, []);
 
   const presentationDelayMs = useCallback(() => rhythmicAudioPresentationDelayMs({
     rendererMode: store.rendererMode,

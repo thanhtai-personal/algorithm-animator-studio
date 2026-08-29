@@ -10,9 +10,9 @@ export interface SubscribeReminderFrame {
   translateY: number;
 }
 
-export interface SubscribeReminderLayout {
-  centerX: number;
-  centerY: number;
+export interface SubscribeWallMount {
+  x: number;
+  y: number;
   width: number;
   height: number;
 }
@@ -58,14 +58,16 @@ export function subscribeReminderFrameAt(timeMs: number): SubscribeReminderFrame
   };
 }
 
-export function subscribeReminderLayout(width: number, height: number): SubscribeReminderLayout {
-  const buttonWidth = Math.min(width * 0.58, height * 0.42, 460);
-  const buttonHeight = buttonWidth / 4.7;
+export function subscribeWallMount(
+  firstInstrument: { x: number; y: number },
+  courseWidth = 720,
+): SubscribeWallMount {
+  const buttonWidth = 270;
   return {
-    centerX: width / 2,
-    centerY: Math.min(height * 0.82, height * 0.9 - buttonHeight / 2),
+    x: firstInstrument.x <= courseWidth / 2 ? courseWidth * 0.77 : courseWidth * 0.23,
+    y: firstInstrument.y - 165,
     width: buttonWidth,
-    height: buttonHeight,
+    height: buttonWidth / 4.7,
   };
 }
 
@@ -134,20 +136,47 @@ export function drawSubscribeButtonFace2D(
   ctx.restore();
 }
 
-export function drawSubscribeReminder2D(
+export function drawSubscribeWallSign2D(
   ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
+  mount: SubscribeWallMount,
   timeMs: number,
 ) {
   const frame = subscribeReminderFrameAt(timeMs);
-  if (!frame.visible || frame.opacity <= 0) return;
-
-  const layout = subscribeReminderLayout(width, height);
+  const light = frame.visible ? frame.opacity : 0;
+  const baseAlpha = ctx.globalAlpha;
+  const plateWidth = mount.width + mount.height * 0.28;
+  const plateHeight = mount.height + mount.height * 0.26;
   ctx.save();
-  ctx.globalAlpha *= frame.opacity;
-  ctx.translate(layout.centerX, layout.centerY + frame.translateY);
-  ctx.scale(frame.scale, frame.scale);
-  drawSubscribeButtonFace2D(ctx, layout.width, layout.height);
+  ctx.translate(mount.x, mount.y);
+
+  ctx.lineWidth = Math.max(2, mount.height * 0.055);
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "rgba(194, 204, 214, .78)";
+  ctx.beginPath();
+  ctx.moveTo(0, -plateHeight * 0.98);
+  ctx.lineTo(-plateWidth * 0.34, -plateHeight * 0.48);
+  ctx.moveTo(0, -plateHeight * 0.98);
+  ctx.lineTo(plateWidth * 0.34, -plateHeight * 0.48);
+  ctx.stroke();
+
+  ctx.shadowColor = "rgba(0, 0, 0, .5)";
+  ctx.shadowBlur = mount.height * 0.24;
+  ctx.shadowOffsetY = mount.height * 0.12;
+  ctx.fillStyle = "#242a31";
+  roundedRect(ctx, -plateWidth / 2, -plateHeight / 2, plateWidth, plateHeight, mount.height * 0.29);
+  ctx.fill();
+
+  ctx.shadowColor = light > 0 ? `rgba(255, 0, 51, ${0.32 * light})` : "transparent";
+  ctx.shadowBlur = mount.height * (0.08 + light * 0.25);
+  ctx.shadowOffsetY = 0;
+  ctx.globalAlpha = baseAlpha * (0.88 + light * 0.12);
+  drawSubscribeButtonFace2D(ctx, mount.width, mount.height);
+
+  ctx.globalAlpha = baseAlpha;
+  ctx.shadowColor = "transparent";
+  ctx.fillStyle = "#dce3e8";
+  ctx.beginPath();
+  ctx.arc(0, -plateHeight * 0.98, mount.height * 0.075, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }

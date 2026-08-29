@@ -1,6 +1,7 @@
 import type { NoteEvent, SynthPreset } from "../types";
 
 const EPSILON = 0.0001;
+const VOICE_OUTPUT_LIFETIME_SECONDS = 4.2;
 const noiseBufferCache = new WeakMap<AudioContext, Map<number, AudioBuffer>>();
 
 export interface SynthVoiceOptions {
@@ -24,6 +25,11 @@ function voiceOutput(context: AudioContext, bus: AudioNode, midi: number, option
   pan.pan.value = Math.sin(midi * 0.73) * Math.max(0, Math.min(1, options.stereoWidth ?? 0.3));
   filter.connect(pan);
   pan.connect(bus);
+  const startTime = Math.max(context.currentTime, options.when ?? context.currentTime);
+  setTimeout(() => {
+    try { filter.disconnect(); } catch { /* already disconnected */ }
+    try { pan.disconnect(); } catch { /* already disconnected */ }
+  }, Math.ceil((startTime - context.currentTime + VOICE_OUTPUT_LIFETIME_SECONDS) * 1_000));
   return filter;
 }
 

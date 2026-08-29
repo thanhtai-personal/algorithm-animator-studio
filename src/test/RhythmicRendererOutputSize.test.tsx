@@ -105,6 +105,19 @@ describe("rhythmic renderer output dimensions", () => {
     expect(screen.getByTestId("three-canvas")).toHaveAttribute("data-shadows", "false");
   });
 
+  it("does not preserve the WebGL drawing buffer during normal preview", () => {
+    render(
+      <RhythmicScene3D
+        {...sharedProps}
+        timeMs={0}
+        frameWidth={720}
+        frameHeight={1280}
+      />,
+    );
+
+    expect(screen.getByTestId("three-canvas")).toHaveAttribute("data-preserve-buffer", "false");
+  });
+
   it("caps recording pixel density so capture does not drop most frames", () => {
     render(
       <RhythmicScene3D

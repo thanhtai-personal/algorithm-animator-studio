@@ -20,12 +20,16 @@ describe("Bong Dung Muon Khoc_Khac.mid regression", () => {
     const melodyCollisions = timeline.filter((event) => leadOnsets.has(event.timeMs));
 
     expect(sourceEvents).toHaveLength(431);
-    expect(timeline).toHaveLength(169);
-    expect(melodyCollisions.length).toBeGreaterThan(70);
-    expect(melodyCollisions.every((event) => event.channel === 0)).toBe(true);
+    expect(timeline).toHaveLength(81);
+    expect(melodyCollisions).toHaveLength(timeline.length);
+    expect(timeline.every((event) => event.channel === 0)).toBe(true);
+    expect(timeline.some((event, index) => {
+      const next = timeline[index + 1];
+      return next && next.timeMs - (event.timeMs + event.durationMs) >= 480;
+    })).toBe(true);
   });
 
-  it("maps the program-71 melody to the same wind family in audio and automatic mixing", () => {
+  it("switches the program-71 melody only after a real MIDI release gap", () => {
     const bytes = readFileSync(MIDI_PATH);
     const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
     const timeline = buildRhythmicTimeline(parseMidi(buffer), DEFAULT_SETTINGS);
@@ -33,11 +37,13 @@ describe("Bong Dung Muon Khoc_Khac.mid regression", () => {
 
     expect(melody?.program).toBe(71);
     expect(melody && presetForMidiEvent(melody)).toBe("flute");
-    expect(buildAutomaticInstrumentMix(timeline).map((segment) => segment.family)).toEqual([
-      "piano",
-      "flute",
-      "pluck",
-      "drum",
-    ]);
+    const mix = buildAutomaticInstrumentMix(timeline);
+    expect(mix[0]?.family).toBe("flute");
+    expect(mix.length).toBeGreaterThan(1);
+    for (const segment of mix.slice(1)) {
+      const nextIndex = timeline.findIndex((event) => event.timeMs === segment.startMs);
+      const previous = timeline[nextIndex - 1];
+      expect(segment.startMs - (previous.timeMs + previous.durationMs)).toBeGreaterThanOrEqual(180);
+    }
   });
 });

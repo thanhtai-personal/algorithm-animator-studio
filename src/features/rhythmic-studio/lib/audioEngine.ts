@@ -357,8 +357,9 @@ export class AudioEngine {
 
     const scheduleWindow = () => {
       if (this.midiSession !== session) return;
+      if (context.state === "suspended") void context.resume().catch(() => undefined);
       const elapsedMs = Math.max(0, context.currentTime - base) * 1000 + resumeMs;
-      const horizonMs = elapsedMs + 1450;
+      const horizonMs = elapsedMs + 3_500;
       while (index < events.length) {
         const eventIndex = index;
         const event = events[eventIndex];
@@ -380,5 +381,20 @@ export class AudioEngine {
     };
     scheduleWindow();
     if (index < events.length) this.midiTimer = setInterval(scheduleWindow, 180);
+  }
+  dispose() {
+    this.stopMidi();
+    this.stopCue();
+    this.mediaElement?.pause();
+    for (const node of [this.mediaSource, this.musicBus, this.sfxInput, this.sfxTone, this.sfxDry, this.reverbSend, this.reverbWet, this.master, this.outputCompressor]) {
+      try { node?.disconnect(); } catch { /* already disconnected */ }
+    }
+    this.recordDestination?.stream.getTracks().forEach((track) => track.stop());
+    this.cueBuffers.clear();
+    this.warmedVoices.clear();
+    const context = this.context;
+    this.context = null; this.mediaElement = null; this.mediaSource = null;
+    if (activeAudioEngine === this) activeAudioEngine = null;
+    if (context && context.state !== "closed") void context.close().catch(() => undefined);
   }
 }

@@ -11,7 +11,9 @@ vi.mock("../components/AppHeader", () => ({
 vi.mock("../components/AppSidebar", () => ({
   AppSidebar: ({ mode }: { mode: string }) => <div>Sidebar mode: {mode}</div>,
 }));
-vi.mock("../components/BackgroundJobsNotifier", () => ({ BackgroundJobsNotifier: () => null }));
+vi.mock("../components/BackgroundJobsNotifier", () => ({
+  BackgroundJobsNotifier: () => <div data-testid="background-jobs-notifier" />,
+}));
 vi.mock("../components/ChillMusicNotifier", () => ({ ChillMusicNotifier: () => null }));
 vi.mock("../components/FantasticModeBackdrop", () => ({ FantasticModeBackdrop: () => null }));
 vi.mock("@/hooks/use-fantastic-frame-motion", () => ({ useFantasticFrameMotion: () => undefined }));
@@ -32,5 +34,12 @@ describe("AppLayout mobile sidebar", () => {
     fireEvent.click(screen.getByRole("button", { name: "Header sidebar: hidden" }));
     expect(screen.getByText("Sidebar mode: expanded")).toBeInTheDocument();
     expect(window.localStorage.getItem("kai-studio.sidebar.mode")).toBe("expanded");
+    expect(screen.queryByTestId("background-jobs-notifier")).not.toBeInTheDocument();
+  });
+
+  it("keeps the background job connection available outside rendering-heavy studios", () => {
+    render(<MemoryRouter initialEntries={["/videos"]}><AppLayout><div>Videos page</div></AppLayout></MemoryRouter>);
+
+    expect(screen.getByTestId("background-jobs-notifier")).toBeInTheDocument();
   });
 });

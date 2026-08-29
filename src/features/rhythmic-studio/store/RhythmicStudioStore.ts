@@ -107,12 +107,25 @@ export class RhythmicStudioStore {
   }
 
   patch<K extends keyof StudioSettings>(key: K, value: StudioSettings[K]) {
+    const previousInstrumentFamily = this.settings.instrumentFamily;
     const styleSettings = key === "ballStyle"
       ? settingsForBallStyle(value as StudioSettings["ballStyle"])
       : null;
     const next = { ...this.settings, [key]: value, ...styleSettings };
     next.backgroundPreset = normalizeBackgroundPreset(next.backgroundPreset);
     this.settings = next;
+    if (key === "instrumentFamily") {
+      if (next.instrumentFamily === "mixed") {
+        this.activePresetId = MIXED_INSTRUMENT_PRESET_ID;
+        if (previousInstrumentFamily !== "mixed" || !this.instrumentMixSegments.length) {
+          this.resetInstrumentMixPlan();
+        }
+      } else if (previousInstrumentFamily === "mixed" || this.activePresetId === MIXED_INSTRUMENT_PRESET_ID) {
+        this.activePresetId = null;
+        this.instrumentMixSegments = [];
+        this.preparedPlatforms = [];
+      }
+    }
     // Keep the selected preset identity while the user fine-tunes it. Clearing the
     // id here made preset cards appear impossible to select when a controlled field
     // emitted a follow-up change after the preset was applied.

@@ -5,7 +5,7 @@ import { usesSharedWallScore } from "../lib/wallScoreLayout";
 
 export const RHYTHMIC_CAMERA_Z = 10.15;
 export const RHYTHMIC_CAMERA_FOV = 37;
-export const RHYTHMIC_UI_UPDATE_MS = 96;
+export const RHYTHMIC_UI_UPDATE_MS = 180;
 
 type Point3D = { x: number; y: number; z: number };
 

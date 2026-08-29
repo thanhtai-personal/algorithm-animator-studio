@@ -63,6 +63,7 @@ function RhythmicScene3DImpl(props: RhythmicScene3DProps) {
       style={{ aspectRatio: `${props.frameWidth} / ${props.frameHeight}`, width: `min(100%, calc(66vh * ${props.frameWidth / props.frameHeight}))` }}
     >
       <Canvas
+        key={props.recording ? "recording" : "preview"}
         frameloop={props.playing || props.recording ? "always" : "demand"}
         dpr={props.recording ? recordingProfile.dpr : props.playing ? [1, 1.15] : [1, 1.1]}
         shadows={props.settings.instrumentShadowsEnabled}
@@ -73,7 +74,7 @@ function RhythmicScene3DImpl(props: RhythmicScene3DProps) {
           stencil: false,
           // Export repaints this WebGL canvas onto a fixed-size 2D surface on a
           // separate timer. Preserve the completed frame until that copy runs.
-          preserveDrawingBuffer: true,
+          preserveDrawingBuffer: props.recording,
         }}
         onCreated={({ gl }) => {
           gl.outputColorSpace = THREE.SRGBColorSpace;

@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  drawSubscribeReminder2D,
+  drawSubscribeWallSign2D,
   subscribeReminderFrameAt,
-  subscribeReminderLayout,
+  subscribeWallMount,
 } from "../features/rhythmic-studio/lib/subscribeReminder";
 
 describe("rhythmic subscribe reminder", () => {
@@ -24,18 +24,17 @@ describe("rhythmic subscribe reminder", () => {
     expect(subscribeReminderFrameAt(4_700)).toMatchObject({ visible: false, opacity: 0 });
   });
 
-  it("stays inside a lower safe area on landscape and portrait video", () => {
-    for (const [width, height] of [[1_920, 1_080], [1_080, 1_920]]) {
-      const layout = subscribeReminderLayout(width, height);
-      expect(layout.centerY / height).toBeGreaterThan(0.74);
-      expect(layout.centerY / height).toBeLessThan(0.88);
-      expect(layout.centerX - layout.width / 2).toBeGreaterThanOrEqual(width * 0.06);
-      expect(layout.centerX + layout.width / 2).toBeLessThanOrEqual(width * 0.94);
-      expect(layout.centerY + layout.height / 2).toBeLessThan(height * 0.9);
-    }
+  it("mounts on the opposite side of the opening instrument instead of screen center", () => {
+    const rightWall = subscribeWallMount({ x: 120, y: 620 });
+    const leftWall = subscribeWallMount({ x: 610, y: 720 });
+
+    expect(rightWall.x).toBeGreaterThan(360);
+    expect(leftWall.x).toBeLessThan(360);
+    expect(rightWall.y).toBeLessThan(620);
+    expect(leftWall.y).toBeLessThan(720);
   });
 
-  it("draws the subscribe label only while the reminder is active", () => {
+  it("draws a persistent wall plaque at course coordinates while only its light animates", () => {
     const fillText = vi.fn();
     const method = vi.fn();
     const context = {
@@ -56,10 +55,13 @@ describe("rhythmic subscribe reminder", () => {
       globalAlpha: 1,
     } as unknown as CanvasRenderingContext2D;
 
-    drawSubscribeReminder2D(context, 1_920, 1_080, 400);
-    expect(fillText).not.toHaveBeenCalled();
+    const mount = subscribeWallMount({ x: 120, y: 620 });
+    drawSubscribeWallSign2D(context, mount, 400);
+    expect(method).toHaveBeenCalledWith(mount.x, mount.y);
+    expect(fillText).toHaveBeenCalledWith("SUBSCRIBE", expect.any(Number), 0);
 
-    drawSubscribeReminder2D(context, 1_920, 1_080, 2_000);
+    fillText.mockClear();
+    drawSubscribeWallSign2D(context, mount, 4_700);
     expect(fillText).toHaveBeenCalledWith("SUBSCRIBE", expect.any(Number), 0);
   });
 });

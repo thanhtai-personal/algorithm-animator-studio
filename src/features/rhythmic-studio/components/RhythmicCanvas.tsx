@@ -11,6 +11,7 @@ import { drawRhythmicFrame } from "../lib/rhythmicFrameRenderer";
 import type { ChaseCoursePlan } from "../lib/chaseCourse";
 import { chaseFocusAtTime } from "../lib/chaseFrameRenderer2D";
 import { emitDueRhythmicHits } from "../lib/chaseAudioScheduler";
+import { RHYTHMIC_UI_UPDATE_MS } from "./rhythmicSceneMath3D";
 
 interface Props {
   events: NoteEvent[];
@@ -166,7 +167,7 @@ export function RhythmicCanvas({ events, settings, durationMs, frameWidth, frame
         backgroundImage, lyrics, courseOverrides, selectedNodeIndex, recording, quality: "live",
         chasePlan, resolveSettings,
       });
-      if (now - lastUiUpdate.current >= 64) { lastUiUpdate.current = now; onTime(time); }
+      if (now - lastUiUpdate.current >= RHYTHMIC_UI_UPDATE_MS) { lastUiUpdate.current = now; onTime(time); }
       if (time >= playbackEndMs) { onTime(playbackEndMs); onEnded(); return; }
       scheduleNext(loop);
     };

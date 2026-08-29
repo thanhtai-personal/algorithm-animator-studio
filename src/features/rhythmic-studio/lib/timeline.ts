@@ -6,6 +6,7 @@ interface ChannelStats {
   channel: number;
   noteCount: number;
   midiTotal: number;
+  velocityTotal: number;
   onsets: Set<number>;
 }
 
@@ -19,26 +20,43 @@ function leadChannelForTimeline(events: readonly NoteEvent[]) {
       channel: event.channel,
       noteCount: 0,
       midiTotal: 0,
+      velocityTotal: 0,
       onsets: new Set<number>(),
     };
     current.noteCount += 1;
     current.midiTotal += event.midi;
+    current.velocityTotal += event.velocity;
     current.onsets.add(event.timeMs);
     stats.set(event.channel, current);
   }
   let best: { channel: number; score: number } | null = null;
   for (const channel of stats.values()) {
     const averageMidi = channel.midiTotal / Math.max(1, channel.noteCount);
+    const averageVelocity = channel.velocityTotal / Math.max(1, channel.noteCount);
     const monophony = channel.onsets.size / Math.max(1, channel.noteCount);
     const coverage = channel.onsets.size / Math.max(1, allOnsets.size);
     const score = averageMidi
+      + averageVelocity * 18
       + monophony * 12
       + Math.log2(channel.onsets.size + 1) * 2
       + coverage * 8
       + (channel.channel === 0 ? 4 : 0);
     if (!best || score > best.score) best = { channel: channel.channel, score };
   }
-  return best?.channel ?? null;
+  if (!best) return { channel: null, exclusive: false, startMs: Number.POSITIVE_INFINITY };
+  const lead = stats.get(best.channel)!;
+  const others = [...stats.values()].filter((channel) => channel.channel !== lead.channel);
+  const leadMidi = lead.midiTotal / lead.noteCount;
+  const leadVelocity = lead.velocityTotal / lead.noteCount;
+  const highestOtherMidi = Math.max(...others.map((channel) => channel.midiTotal / channel.noteCount), -Infinity);
+  const loudestOther = Math.max(...others.map((channel) => channel.velocityTotal / channel.noteCount), -Infinity);
+  return {
+    channel: lead.channel,
+    exclusive: lead.onsets.size >= 8
+      && leadMidi >= highestOtherMidi + 5
+      && leadVelocity >= loudestOther + 0.12,
+    startMs: Math.min(...lead.onsets),
+  };
 }
 
 function representativeForOnset(events: readonly NoteEvent[], leadChannel: number | null) {
@@ -50,23 +68,27 @@ function representativeForOnset(events: readonly NoteEvent[], leadChannel: numbe
   ));
 }
 
-function representativeMidiEvents(events: readonly NoteEvent[]) {
+function representativeMidiEvents(events: readonly NoteEvent[], preferSingleLead: boolean) {
   const sorted = [...events].sort((a, b) => a.timeMs - b.timeMs || a.midi - b.midi);
-  const leadChannel = leadChannelForTimeline(sorted);
+  const lead = leadChannelForTimeline(sorted);
+  const retainIntro = preferSingleLead && lead.startMs >= 1_500;
+  const visualEvents = (lead.exclusive || (preferSingleLead && lead.channel !== null))
+    ? sorted.filter((event) => event.channel === lead.channel || (retainIntro && event.timeMs < lead.startMs))
+    : sorted;
   const representatives: NoteEvent[] = [];
   let groupStart = 0;
-  while (groupStart < sorted.length) {
-    const anchorMs = sorted[groupStart].timeMs;
+  while (groupStart < visualEvents.length) {
+    const anchorMs = visualEvents[groupStart].timeMs;
     let groupEnd = groupStart + 1;
-    while (groupEnd < sorted.length && sorted[groupEnd].timeMs - anchorMs <= ONSET_GROUP_MS) groupEnd += 1;
-    representatives.push(representativeForOnset(sorted.slice(groupStart, groupEnd), leadChannel));
+    while (groupEnd < visualEvents.length && visualEvents[groupEnd].timeMs - anchorMs <= ONSET_GROUP_MS) groupEnd += 1;
+    representatives.push(representativeForOnset(visualEvents.slice(groupStart, groupEnd), lead.channel));
     groupStart = groupEnd;
   }
   return representatives;
 }
 
 export function buildRhythmicTimeline(events: NoteEvent[], settings: StudioSettings): NoteEvent[] {
-  const sorted = representativeMidiEvents(events);
+  const sorted = representativeMidiEvents(events, settings.instrumentFamily === "mixed");
   const filtered: NoteEvent[] = [];
   let last = -Infinity;
   for (const event of sorted) {

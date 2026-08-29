@@ -22,7 +22,8 @@ export interface PhraseInstrumentSegment {
 // The reference videos read as instrument "sentences": a complete musical phrase
 // lives on one instrument installation, then the next phrase moves to another.
 // Keep the sequence curated and deterministic so Mixed never looks shuffled.
-export const PHRASE_HARD_REST_MS = 560;
+export const PHRASE_HARD_REST_MS = 480;
+export const PHRASE_SOFT_REST_MS = 180;
 export const PHRASE_TARGET_MS = 4_200;
 export const PHRASE_MIN_MS = 1_500;
 export const PHRASE_MAX_MS = 7_200;
@@ -55,7 +56,6 @@ interface BoundaryCandidate {
 function choosePhraseBoundary(events: NoteEvent[], startIndex: number) {
   const startMs = events[startIndex]?.timeMs ?? 0;
   let bestSoft: BoundaryCandidate | null = null;
-  let lastSafeIndex: number | null = null;
 
   for (let index = startIndex; index < events.length - 1; index += 1) {
     const nextMs = events[index + 1].timeMs;
@@ -63,24 +63,21 @@ function choosePhraseBoundary(events: NoteEvent[], startIndex: number) {
     const onsetGap = onsetGapAfter(events, index);
     if (onsetGap <= 0) continue; // never split a chord / simultaneous strike
 
-    lastSafeIndex = index;
-    const quietGap = Math.max(onsetGap, releaseGapAfter(events, index));
+    const quietGap = releaseGapAfter(events, index);
 
     // A real breath is the preferred end of the musical sentence.
     if (runMs >= 420 && quietGap >= PHRASE_HARD_REST_MS) return index;
 
-    if (runMs >= PHRASE_MIN_MS) {
+    if (runMs >= PHRASE_MIN_MS && quietGap >= PHRASE_SOFT_REST_MS) {
       // For dense songs without clean rests, use the most phrase-like local gap
       // near the target duration instead of changing instruments every N notes.
       const durationPenalty = Math.abs(runMs - PHRASE_TARGET_MS) * 0.22;
-      const gapReward = Math.min(900, quietGap) * 1.8 + Math.min(520, onsetGap) * 0.8;
+      const gapReward = Math.min(900, quietGap) * 2.4 + Math.min(520, onsetGap) * 0.3;
       const score = durationPenalty - gapReward;
       if (!bestSoft || score < bestSoft.score) bestSoft = { index, score, quietGap };
     }
 
-    if (runMs >= PHRASE_MAX_MS) {
-      return bestSoft?.index ?? lastSafeIndex ?? index;
-    }
+    if (runMs >= PHRASE_MAX_MS && bestSoft) return bestSoft.index;
   }
 
   return null;
@@ -126,6 +123,24 @@ export function recommendedInstrumentCountForMidi(events: NoteEvent[]) {
   return Math.max(1, Math.min(phraseCount, PHRASE_INSTRUMENT_SEQUENCE.length, Math.max(phraseBased, midiTimbres)));
 }
 
+function phraseCountBeforeBestRest(
+  events: NoteEvent[], phrases: PhraseInstrumentSegment[], start: number, instruments: number,
+) {
+  const remaining = phrases.length - start;
+  if (instruments <= 1) return remaining;
+  const minimum = remaining >= instruments * 2 ? 2 : 1;
+  const maximum = Math.min(5, remaining - (instruments - 1) * minimum);
+  let best = minimum;
+  let bestScore = Number.NEGATIVE_INFINITY;
+  for (let count = minimum; count <= maximum; count += 1) {
+    const boundary = phrases[start + count];
+    const quietGap = boundary ? releaseGapAfter(events, boundary.startIndex - 1) : 0;
+    const score = quietGap - Math.abs(count - INSTRUMENT_MIX_TARGET_PHRASES) * 140;
+    if (score > bestScore) { best = count; bestScore = score; }
+  }
+  return best;
+}
+
 export function buildAutomaticInstrumentMix(
   events: NoteEvent[],
   durationMs = eventTimelineEnd(events),
@@ -139,9 +154,8 @@ export function buildAutomaticInstrumentMix(
   let phraseIndex = 0;
 
   for (let segmentIndex = 0; segmentIndex < instrumentCount; segmentIndex += 1) {
-    const remainingPhrases = phrases.length - phraseIndex;
     const remainingInstruments = instrumentCount - segmentIndex;
-    const phraseCount = Math.ceil(remainingPhrases / remainingInstruments);
+    const phraseCount = phraseCountBeforeBestRest(events, phrases, phraseIndex, remainingInstruments);
     const nextPhrase = phrases[phraseIndex + phraseCount];
     const startMs = segments.at(-1)?.endMs ?? 0;
     const endMs = nextPhrase?.startMs ?? safeDuration;
@@ -253,21 +267,23 @@ export function normalizeInstrumentMixSegments(
   return normalized.filter((segment) => segment.endMs > segment.startMs);
 }
 
-export function updateInstrumentMixSegmentDuration(
-  segments: readonly InstrumentMixSegment[],
-  id: string,
-  durationSeconds: number,
-  events: readonly NoteEvent[],
-  durationMs: number,
-) {
+export function updateInstrumentMixSegmentDuration(segments: readonly InstrumentMixSegment[], id: string, durationSeconds: number, events: readonly NoteEvent[], durationMs: number) {
   const requestedMs = Math.max(
     INSTRUMENT_MIX_MIN_DURATION_MS,
     Number.isFinite(durationSeconds) ? durationSeconds * 1_000 : INSTRUMENT_MIX_MIN_DURATION_MS,
   );
-  return normalizeInstrumentMixSegments(
-    segments.map((segment) => segment.id === id
+  const segmentIndex = segments.findIndex((segment) => segment.id === id);
+  const lastIndex = segments.length - 1;
+  const safeDuration = Math.max(INSTRUMENT_MIX_MIN_DURATION_MS, durationMs, eventTimelineEnd(events));
+  const updated = segmentIndex === lastIndex && segmentIndex > 0
+    ? segments.map((segment, index) => index === segmentIndex - 1
+      ? { ...segment, endMs: safeDuration - requestedMs }
+      : segment)
+    : segments.map((segment) => segment.id === id
       ? { ...segment, endMs: segment.startMs + requestedMs }
-      : segment),
+      : segment);
+  return normalizeInstrumentMixSegments(
+    updated,
     events,
     durationMs,
   );

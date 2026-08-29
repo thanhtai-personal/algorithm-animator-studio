@@ -43,4 +43,18 @@ describe("RhythmicStudioStore instrument mix", () => {
     expect(store.instrumentMixSegments[0].family).toBe("gong");
     expect(store.instrumentMixSegments[0].endMs).toBe(5_600);
   });
+
+  it("keeps mixed-family settings, preset identity, and the editable plan in sync", () => {
+    const store = new RhythmicStudioStore();
+    const events = phraseEvents(6);
+    store.setSource(events, { type: "midi", name: "advanced.mid", durationMs: 8_000, eventCount: events.length }, { key: "status.ready" });
+
+    store.patch("instrumentFamily", "mixed");
+    expect(store.activePresetId).toBe(MIXED_INSTRUMENT_PRESET_ID);
+    expect(store.instrumentMixSegments.length).toBeGreaterThan(0);
+
+    store.patch("instrumentFamily", "piano");
+    expect(store.activePresetId).toBeNull();
+    expect(store.instrumentMixSegments).toEqual([]);
+  });
 });

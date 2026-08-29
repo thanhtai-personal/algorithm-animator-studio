@@ -60,4 +60,33 @@ describe("quick MIDI upload", () => {
     expect(within(screen.getByRole("dialog")).queryByText("Upload MIDI notes")).not.toBeInTheDocument();
     expect(screen.getAllByText("Upload MIDI notes")).toHaveLength(1);
   });
+
+  it("shows the imported MIDI filename and parse summary on the main upload card", () => {
+    stubLayoutObservers();
+    window.localStorage.setItem(SYSTEM_LANG_STORAGE_KEY, "vi");
+    const studio = {
+      settings: { ...DEFAULT_SETTINGS },
+      source: { type: "midi", name: "Bong Dung Muon Khoc_Khac.mid" },
+      audioFileInfo: "Bong Dung Muon Khoc_Khac.mid · 4 KB · 431 nốt",
+      importMidi: vi.fn(),
+      patch: vi.fn(),
+      loadBuiltin: vi.fn(),
+      importAudio: vi.fn(),
+      backgroundName: null,
+      importBackground: vi.fn(),
+      clearBackground: vi.fn(),
+      lyricRaw: "",
+      setLyricRaw: vi.fn(),
+      lyrics: [],
+      lyricFormat: null,
+      importLyrics: vi.fn(),
+      applyLyrics: vi.fn(),
+      clearLyrics: vi.fn(),
+    } as unknown as RhythmicStudioController;
+
+    render(<RhythmicWorkflowControls studio={studio} />);
+
+    expect(screen.getByText("Bong Dung Muon Khoc_Khac.mid")).toBeInTheDocument();
+    expect(screen.getByText(/431 nốt/)).toBeInTheDocument();
+  });
 });

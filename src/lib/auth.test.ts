@@ -58,4 +58,31 @@ describe("auth profile cache", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
+
+  it("treats a rejected profile request as a guest session without blocking public pages", async () => {
+    localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, "revoked-access-token");
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ error: "Unauthorized" }, 401));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { getOptionalCurrentProfile } = await importAuth();
+
+    await expect(getOptionalCurrentProfile()).resolves.toBeNull();
+    expect(localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)).toBeNull();
+
+    await expect(getOptionalCurrentProfile()).resolves.toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops an expired JWT before requesting the user endpoint", async () => {
+    const payload = btoa(JSON.stringify({ exp: 1 })).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+    localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, `header.${payload}.signature`);
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { getOptionalCurrentProfile } = await importAuth();
+
+    await expect(getOptionalCurrentProfile()).resolves.toBeNull();
+    expect(localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });

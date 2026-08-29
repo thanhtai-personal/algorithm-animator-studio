@@ -31,6 +31,8 @@ export function RhythmicPresetControls({ studio }: { studio: RhythmicStudioContr
 export function RhythmicWorkflowControls({ studio }: { studio: RhythmicStudioController }) {
   const lang = useSystemLang();
   const t = (key: Parameters<typeof rhythmicText>[1]) => rhythmicText(lang, key);
+  const midiTitle = studio.source.type === "midi" ? studio.source.name : t("song.uploadMidi");
+  const midiHint = studio.source.type === "midi" ? studio.audioFileInfo : t("song.uploadMidiHint");
   return <aside className="rhythmic-side-panel rhythmic-workflow-panel flex min-w-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#101419]/95 shadow-2xl xl:sticky xl:top-[81px] xl:max-h-[calc(100dvh-97px)]">
     <div className="shrink-0 border-b border-white/10 px-4 py-4">
       <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-cyan-300">
@@ -41,7 +43,7 @@ export function RhythmicWorkflowControls({ studio }: { studio: RhythmicStudioCon
     </div>
     <div className="min-h-0 flex-1 overflow-y-auto rhythmic-scrollbar">
       <div className="space-y-3 p-3">
-        <UploadCard icon={FileMusic} title={t("song.uploadMidi")} hint={t("song.uploadMidiHint")} accept=".mid,.midi,audio/midi" onFile={studio.importMidi} />
+        <UploadCard icon={FileMusic} title={midiTitle} hint={midiHint} accept=".mid,.midi,audio/midi" onFile={studio.importMidi} />
         <BallStyleFrame studio={studio} />
         <BackgroundStyleFrame studio={studio} />
       </div>

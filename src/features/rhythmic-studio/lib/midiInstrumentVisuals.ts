@@ -22,7 +22,7 @@ export function midiInstrumentVisualStyle(
   if (program <= 23) return "piano-key";
   if (program <= 39) return "pluck-pad";
   if (program <= 55) return "instrument-wire";
-  if (program <= 63) return "instrument-rail";
+  if (program <= 63) return "trumpet-horn";
   if (program <= 79) return "flute-pipe";
   if (program <= 95) return "instrument-key";
   if (program <= 111) return "vibraphone-bar";

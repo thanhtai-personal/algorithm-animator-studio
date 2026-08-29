@@ -288,8 +288,8 @@ export function presetForMidiEvent(event: NoteEvent): SynthPreset {
   if (program <= 31) return "pluck";
   if (program <= 39) return "bass";
   if (program <= 55) return "strings";
-  if (program <= 63) return "fm";
-  if (program <= 79) return "vibraphone";
+  if (program <= 63) return "trumpet";
+  if (program <= 79) return "flute";
   if (program <= 95) return program <= 87 ? "fm" : "glass";
   if (program <= 103) return "sparkle";
   if (program <= 111) return program <= 107 ? "kalimba" : "marimba";

@@ -7,7 +7,7 @@ import type { SidebarMode } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFantasticMode } from "@/hooks/use-fantastic-mode";
-import { AUTH_STATE_EVENT, AuthProfile, getCurrentProfile, signOut } from "@/lib/auth";
+import { AUTH_STATE_EVENT, AuthProfile, getOptionalCurrentProfile, signOut } from "@/lib/auth";
 import { requestChillPlayback } from "@/lib/chillMusicSettings";
 import { t, type Lang, readSystemLang, subscribeSystemLang, writeSystemLang  } from "@/lib/i18n";
 
@@ -31,12 +31,9 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
 
   const refreshProfile = useCallback(() => {
     let active = true;
-    getCurrentProfile()
+    getOptionalCurrentProfile()
       .then((nextProfile) => {
         if (active) setProfile(nextProfile);
-      })
-      .catch(() => {
-        if (active) setProfile(null);
       });
 
     return () => {

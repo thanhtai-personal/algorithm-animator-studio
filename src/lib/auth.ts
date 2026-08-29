@@ -82,6 +82,27 @@ function readRefreshToken(): string | null {
   return sanitize(localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY));
 }
 
+function jwtExpiresAtMs(token: string): number | null {
+  const encodedPayload = token.split(".")[1];
+  if (!encodedPayload) return null;
+
+  try {
+    const base64 = encodedPayload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const payload = JSON.parse(atob(padded)) as { exp?: unknown };
+    return typeof payload.exp === "number" && Number.isFinite(payload.exp)
+      ? payload.exp * 1_000
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function discardExpiredAccessToken(): void {
+  clearProfileCache();
+  localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+}
+
 export function clearAuthTokens(): void {
   clearProfileCache();
   localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
@@ -146,6 +167,11 @@ async function refreshAuthSession(): Promise<string | null> {
 
 export async function getCurrentProfile(): Promise<AuthProfile> {
   let accessToken = readAccessToken();
+  const expiresAtMs = accessToken ? jwtExpiresAtMs(accessToken) : null;
+  if (accessToken && expiresAtMs !== null && expiresAtMs <= Date.now() + 30_000) {
+    discardExpiredAccessToken();
+    accessToken = null;
+  }
   if (!accessToken) accessToken = await refreshAuthSession();
   if (!accessToken) throw new Error("Unauthorized");
 
@@ -161,6 +187,14 @@ export async function getCurrentProfile(): Promise<AuthProfile> {
     return await request;
   } finally {
     if (profileRequestCache?.request === request) profileRequestCache = null;
+  }
+}
+
+export async function getOptionalCurrentProfile(): Promise<AuthProfile | null> {
+  try {
+    return await getCurrentProfile();
+  } catch {
+    return null;
   }
 }
 

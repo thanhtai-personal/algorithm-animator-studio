@@ -11,6 +11,7 @@ import { RhythmicMarble3D } from "./RhythmicMarble3D";
 import { RhythmicChaseMarbles3D, type RhythmicChaseMarblesHandle } from "./RhythmicChaseMarbles3D";
 import { RhythmicPlatformField3D } from "./RhythmicPlatformField3D";
 import { RhythmicTitle3D } from "./RhythmicTitle3D";
+import { RhythmicSubscribeReminder3D } from "./RhythmicSubscribeReminder3D";
 import { RhythmicVfx3D, type RhythmicVfxHandle } from "./RhythmicVfx3D";
 import { impactSquash, RHYTHMIC_WORLD_SCALE, setWorldPoint, visualChaseFocusAtTime, visualMarbleAtTime } from "./RhythmicMotion3D";
 import {
@@ -356,6 +357,7 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     />
     <PerspectiveCamera makeDefault fov={RHYTHMIC_CAMERA_FOV} near={0.1} far={180} position={[0, 0, RHYTHMIC_CAMERA_Z]} />
     <RhythmicTitle3D text={isKorobeinikiWallLayout(props.settings) ? "" : props.settings.titleText} />
+    <RhythmicSubscribeReminder3D timeRef={currentTimeRef} frameWidth={props.frameWidth} frameHeight={props.frameHeight} />
     <RhythmicLightingRig3D settings={props.settings} focus={smoothedLook} bounds={backdropBounds} recording={props.recording} />
     <RhythmicEnvironment3D settings={props.settings} backgroundUrl={props.backgroundUrl} bounds={backdropBounds} />
     {isKorobeinikiWallLayout(props.settings) && <KorobeinikiReferenceDecor3D platforms={props.platforms} />}

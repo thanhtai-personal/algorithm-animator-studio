@@ -23,7 +23,7 @@ function midiFamilyHint(event: NoteEvent): ConfigurableInstrumentFamily {
   if (program <= 15) return program <= 11 ? "vibraphone" : "marimba";
   if (program >= 24 && program <= 31) return "guitar";
   if (program >= 56 && program <= 63) return "trumpet";
-  if (program >= 72 && program <= 79) return "flute";
+  if (program >= 64 && program <= 79) return "flute";
   if (program >= 112 && program <= 115) return "gong";
   if (program >= 116 && program <= 119) return "bronze-drum";
   if (program >= 8 && program <= 23) return "metallophone";

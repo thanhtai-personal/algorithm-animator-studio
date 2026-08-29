@@ -16,6 +16,7 @@ import { platformIsInside2DRenderWindow } from "./platformViewport";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 import type { ChaseCoursePlan } from "./chaseCourse";
 import { drawChasePerformers2D } from "./chaseFrameRenderer2D";
+import { drawSubscribeReminder2D } from "./subscribeReminder";
 
 interface DrawFrameArgs {
   ctx: CanvasRenderingContext2D;
@@ -260,4 +261,5 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
     ctx.fillStyle = mixHex(settings.prismStart, settings.prismEnd, progress);
     roundedRect(ctx, 76, height - 48, (width - 152) * progress, 5, 3); ctx.fill();
   }
+  drawSubscribeReminder2D(ctx, width, height, timeMs);
 }

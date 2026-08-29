@@ -5,7 +5,7 @@ export function AlgorithmBranding3D() {
   return (
     <group>
       <FacadeAd
-        position={[-8.7, 2.55, -8.0]}
+        position={[-8.9, 2.6, -8.7]}
         width={5.0}
         height={1.75}
         brand="KATA.MAKEUP"
@@ -13,7 +13,8 @@ export function AlgorithmBranding3D() {
         accent="#d792a4"
       />
       <RoadsideBillboard
-        position={[8.4, 3.25, -9.1]}
+        position={[6.85, 2.95, -11.6]}
+        rotationY={-0.26}
         brand="THIÊN ĐẠO CHI LỘ"
         url="https://thiendaochilo.vercel.app/"
         accent="#c4a55f"
@@ -32,7 +33,7 @@ function FacadeAd({ position, width, height, brand, url, accent }: {
 }) {
   const texture = useBrandTexture(brand, url, accent, "facade");
   return (
-    <group position={position}>
+    <group position={position} rotation={[0, 0.1, 0]}>
       <mesh position={[0, -1.10, -0.28]}>
         <boxGeometry args={[width + 0.7, height + 2.5, 1.25]} />
         <meshStandardMaterial color="#3e454a" roughness={0.88} metalness={0.12} />
@@ -49,27 +50,34 @@ function FacadeAd({ position, width, height, brand, url, accent }: {
   );
 }
 
-function RoadsideBillboard({ position, brand, url, accent }: {
+function RoadsideBillboard({ position, brand, url, accent, rotationY = 0 }: {
   position: [number, number, number];
   brand: string;
   url: string;
   accent: string;
+  rotationY?: number;
 }) {
   const texture = useBrandTexture(brand, url, accent, "billboard");
   return (
-    <group position={position}>
+    <group position={position} rotation={[0, rotationY, 0]}>
       {[-2.1, 2.1].map((x) => (
-        <mesh key={x} position={[x, -1.75, -0.12]}>
-          <boxGeometry args={[0.12, 3.5, 0.12]} />
-          <meshStandardMaterial color="#5b6267" roughness={0.54} metalness={0.70} />
-        </mesh>
+        <group key={x} position={[x, -1.85, -0.12]}>
+          <mesh position={[0, 0.1, 0]}>
+            <boxGeometry args={[0.14, 3.7, 0.14]} />
+            <meshStandardMaterial color="#5b6267" roughness={0.54} metalness={0.70} />
+          </mesh>
+          <mesh position={[0, -1.82, 0]}>
+            <boxGeometry args={[0.52, 0.18, 0.52]} />
+            <meshStandardMaterial color="#444b50" roughness={0.76} metalness={0.24} />
+          </mesh>
+        </group>
       ))}
-      <mesh>
-        <boxGeometry args={[5.6, 2.05, 0.13]} />
+      <mesh position={[0, 0.06, -0.02]}>
+        <boxGeometry args={[5.7, 2.14, 0.16]} />
         <meshStandardMaterial color="#272d31" roughness={0.60} metalness={0.50} />
       </mesh>
-      <mesh position={[0, 0, 0.073]} renderOrder={2}>
-        <planeGeometry args={[5.38, 1.83]} />
+      <mesh position={[0, 0.06, 0.09]} renderOrder={2}>
+        <planeGeometry args={[5.34, 1.76]} />
         <meshBasicMaterial map={texture} toneMapped={false} />
       </mesh>
     </group>

@@ -1,10 +1,11 @@
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { Frame } from "@/lib/algorithms";
 import type { Theme } from "@/lib/renderer";
 import { AlgorithmGlowSprite3D } from "./AlgorithmGlowSprite3D";
 import { AlgorithmTextSprite3D } from "./AlgorithmTextSprite3D";
 import { arrayLayout, getBarMotion, swapPose3D, type BarPose3D } from "./algorithm3dMath";
+import { selectionReveal3D } from "./algorithm3dTiming";
 
 export function AlgorithmBars3D({ frame, previousFrame, theme, deterministicProgress = 1 }: {
   frame: Frame;
@@ -12,18 +13,19 @@ export function AlgorithmBars3D({ frame, previousFrame, theme, deterministicProg
   theme: Theme;
   deterministicProgress?: number;
 }) {
-  const layout = arrayLayout(frame.arr);
-  const bars = getBarMotion(frame, previousFrame, theme);
+  const layout = useMemo(() => arrayLayout(frame.arr), [frame.arr]);
+  const bars = useMemo(() => getBarMotion(frame, previousFrame, theme), [frame, previousFrame, theme]);
   const moving = bars.filter((bar) => bar.fromIndex !== bar.targetIndex);
+  const selectionStrength = frame.event === "swap" ? 1 : selectionReveal3D(deterministicProgress);
   return (
     <group position={[0, 0, 0.42]}>
       <BarFloorMarkers count={layout.count} layout={layout} theme={theme} />
-      <InstancedBuildingField bars={bars} layout={layout} />
+      <InstancedBuildingField bars={bars} layout={layout} theme={theme} />
       {moving.map((bar) => (
         <MovingBuilding3D key={`moving-${bar.index}`} bar={bar} layout={layout} progress={deterministicProgress} />
       ))}
       {bars.filter((bar) => bar.emphasized).map((bar) => (
-        <ActiveBuildingMarker key={`active-${bar.index}`} bar={bar} layout={layout} progress={deterministicProgress} />
+        <ActiveBuildingMarker key={`active-${bar.index}`} bar={bar} layout={layout} progress={deterministicProgress} selectionStrength={selectionStrength} />
       ))}
       <BarLabels bars={bars} layout={layout} progress={deterministicProgress} swapping={moving.length > 0} />
     </group>
@@ -33,7 +35,11 @@ export function AlgorithmBars3D({ frame, previousFrame, theme, deterministicProg
 type Layout = ReturnType<typeof arrayLayout>;
 type Motion = ReturnType<typeof getBarMotion>[number];
 
-function InstancedBuildingField({ bars, layout }: { bars: Motion[]; layout: Layout }) {
+function InstancedBuildingField({ bars, layout, theme }: {
+  bars: Motion[];
+  layout: Layout;
+  theme: Theme;
+}) {
   const bodyRef = useRef<THREE.InstancedMesh>(null);
   const faceRef = useRef<THREE.InstancedMesh>(null);
   const roofRef = useRef<THREE.InstancedMesh>(null);
@@ -55,16 +61,17 @@ function InstancedBuildingField({ bars, layout }: { bars: Motion[]; layout: Layo
       setStaticInstance(face, index, [x, height / 2, depth / 2 + 0.011], moving ? [0, 0, 0] : [layout.width * 0.58, Math.max(0.16, height * 0.82), 0.022]);
       setStaticInstance(roof, index, [x, height + 0.035, 0], moving ? [0, 0, 0] : [layout.width * 0.90, 0.07, depth * 0.86]);
       setStaticInstance(base, index, [x, 0.055, 0], [layout.width * 1.10, 0.11, depth * 1.12]);
-      body.setColorAt(index, color.set(darken(bar.color, bar.emphasized ? 0.18 : 0.40)));
-      face.setColorAt(index, color.set(bar.color));
-      roof.setColorAt(index, color.set(lighten(bar.color, 0.15)));
-      base.setColorAt(index, color.set(bar.emphasized ? darken(bar.color, 0.56) : "#23292e"));
+      const displayColor = bar.emphasized ? mixColor(theme.bar, bar.color, 0.72) : bar.color;
+      body.setColorAt(index, color.set(darken(displayColor, bar.emphasized ? 0.24 : 0.40)));
+      face.setColorAt(index, color.set(displayColor));
+      roof.setColorAt(index, color.set(lighten(displayColor, 0.15)));
+      base.setColorAt(index, color.set(bar.emphasized ? darken(displayColor, 0.58) : "#23292e"));
     });
     [body, face, roof, base].forEach((mesh) => {
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     });
-  }, [bars, layout, depth]);
+  }, [bars, layout, depth, theme.bar]);
 
   return (
     <>
@@ -116,15 +123,20 @@ function MovingBuilding3D({ bar, layout, progress }: { bar: Motion; layout: Layo
   );
 }
 
-function ActiveBuildingMarker({ bar, layout, progress }: { bar: Motion; layout: Layout; progress: number }) {
+function ActiveBuildingMarker({ bar, layout, progress, selectionStrength }: {
+  bar: Motion;
+  layout: Layout;
+  progress: number;
+  selectionStrength: number;
+}) {
   const pose = poseForBar(bar, layout, progress);
   const moving = bar.fromIndex !== bar.targetIndex;
-  const pulse = moving ? Math.sin(Math.PI * progress) : 0.35;
+  const pulse = moving ? 0.55 + Math.sin(Math.PI * progress) * 0.35 : selectionStrength;
   return (
     <group position={pose.position} rotation={pose.rotation}>
       <mesh position={[0, 0.075, 0]} rotation={[Math.PI / 2, 0, 0]} renderOrder={4}>
         <torusGeometry args={[Math.max(0.16, layout.width * 0.56), 0.016, 6, 24]} />
-        <meshBasicMaterial color={bar.color} transparent opacity={0.42 + pulse * 0.32} toneMapped={false} depthWrite={false} />
+        <meshBasicMaterial color={bar.color} transparent opacity={0.16 + pulse * 0.42} toneMapped={false} depthWrite={false} />
       </mesh>
     </group>
   );
@@ -188,4 +200,8 @@ function darken(color: string, amount: number) {
 
 function lighten(color: string, amount: number) {
   return `#${new THREE.Color(color).lerp(new THREE.Color("#f7fbff"), amount).getHexString()}`;
+}
+
+function mixColor(from: string, to: string, amount: number) {
+  return `#${new THREE.Color(from).lerp(new THREE.Color(to), THREE.MathUtils.clamp(amount, 0, 1)).getHexString()}`;
 }

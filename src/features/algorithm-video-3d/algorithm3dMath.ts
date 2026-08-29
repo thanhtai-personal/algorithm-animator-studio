@@ -24,7 +24,10 @@ export type CraneSwapPose3D = {
   boomReachZ: number;
   hookHeight: number;
   cableSlack: number;
-  phase: "hook" | "lift" | "transport" | "lower" | "release";
+  rigDeploy: number;
+  phaseProgress: number;
+  truckYaw: number;
+  phase: "approach" | "align" | "hook" | "lift" | "transport" | "lower" | "release" | "return";
 };
 
 export function getBarMotion(frame: Frame, previousFrame: Frame | null | undefined, theme: Theme): BarMotion[] {
@@ -76,73 +79,109 @@ export function getSwapPair(frame: Frame, previousFrame: Frame | null | undefine
  * One building always travels on the near lane, the other on the far lane, so they never
  * visually intersect. The building does not start translating until the hook has lifted it.
  */
-export function craneSwapPose3D(fromX: number, targetX: number, progress: number): CraneSwapPose3D {
+export function craneSwapPose3D(fromX: number, targetX: number, progress: number, parkingX?: number): CraneSwapPose3D {
   const t = THREE.MathUtils.clamp(progress, 0, 1);
   if (Math.abs(targetX - fromX) < 0.0001) {
     return {
       building: { position: [targetX, 0, 0], rotation: [0, 0, 0] },
-      truckX: targetX,
+      truckX: parkingX ?? targetX,
       laneZ: 0,
       boomReachZ: 0,
       hookHeight: 0,
       cableSlack: 0,
-      phase: "release",
+      rigDeploy: 0,
+      phaseProgress: 1,
+      truckYaw: 0,
+      phase: "return",
     };
   }
 
   const direction = targetX > fromX ? 1 : -1;
   const laneZ = direction > 0 ? 3.35 : -3.35;
   const transportZ = direction > 0 ? 0.82 : -0.82;
+  const parkX = parkingX ?? fromX - direction * 2.8;
   const travel = Math.abs(targetX - fromX);
-  const liftHeight = 1.35 + Math.min(0.65, travel * 0.045);
+  const liftHeight = 1.22 + Math.min(0.56, travel * 0.04);
+  const travelYaw = direction > 0 ? 0 : Math.PI;
+  const returnYaw = direction > 0 ? Math.PI : 0;
 
   let x = fromX;
   let y = 0;
   let z = 0;
-  let truckX = fromX;
-  let phase: CraneSwapPose3D["phase"] = "hook";
+  let truckX = parkX;
+  let phase: CraneSwapPose3D["phase"] = "approach";
+  let phaseProgress = 0;
+  let rigDeploy = 0;
+  let truckYaw = travelYaw;
 
-  if (t < 0.12) {
+  if (t < 0.18) {
+    phase = "approach";
+    phaseProgress = smootherStep(t / 0.18);
+    truckX = THREE.MathUtils.lerp(parkX, fromX, phaseProgress);
+  } else if (t < 0.24) {
+    phase = "align";
+    phaseProgress = smooth01((t - 0.18) / 0.06);
+    truckX = fromX;
+    rigDeploy = phaseProgress;
+  } else if (t < 0.31) {
     phase = "hook";
-  } else if (t < 0.30) {
+    phaseProgress = smooth01((t - 0.24) / 0.07);
+    truckX = fromX;
+    rigDeploy = 1;
+  } else if (t < 0.43) {
     phase = "lift";
-    const p = smooth01((t - 0.12) / 0.18);
-    y = THREE.MathUtils.lerp(0, liftHeight, p);
-    z = THREE.MathUtils.lerp(0, transportZ, p * 0.92);
-  } else if (t < 0.72) {
+    phaseProgress = smooth01((t - 0.31) / 0.12);
+    truckX = fromX;
+    rigDeploy = 1;
+    y = THREE.MathUtils.lerp(0, liftHeight, phaseProgress);
+    z = THREE.MathUtils.lerp(0, transportZ, phaseProgress * 0.92);
+  } else if (t < 0.68) {
     phase = "transport";
-    const p = smootherStep((t - 0.30) / 0.42);
-    x = THREE.MathUtils.lerp(fromX, targetX, p);
+    phaseProgress = smootherStep((t - 0.43) / 0.25);
+    x = THREE.MathUtils.lerp(fromX, targetX, phaseProgress);
     truckX = x;
-    y = liftHeight + Math.sin(p * Math.PI * 2) * 0.045;
+    rigDeploy = 1;
+    y = liftHeight + Math.sin(phaseProgress * Math.PI) * 0.035;
     z = transportZ;
-  } else if (t < 0.92) {
+  } else if (t < 0.80) {
     phase = "lower";
-    const p = smooth01((t - 0.72) / 0.20);
+    phaseProgress = smooth01((t - 0.68) / 0.12);
     x = targetX;
     truckX = targetX;
-    y = THREE.MathUtils.lerp(liftHeight, 0, p);
-    z = THREE.MathUtils.lerp(transportZ, 0, p);
-  } else {
+    rigDeploy = 1;
+    y = THREE.MathUtils.lerp(liftHeight, 0, phaseProgress);
+    z = THREE.MathUtils.lerp(transportZ, 0, phaseProgress);
+  } else if (t < 0.85) {
     phase = "release";
+    phaseProgress = smooth01((t - 0.80) / 0.05);
     x = targetX;
     truckX = targetX;
-    const p = smooth01((t - 0.92) / 0.08);
-    y = Math.sin(p * Math.PI) * 0.035;
+    rigDeploy = 1;
+    y = Math.sin(phaseProgress * Math.PI) * 0.022;
+  } else {
+    phase = "return";
+    phaseProgress = smootherStep((t - 0.85) / 0.15);
+    x = targetX;
+    truckX = THREE.MathUtils.lerp(targetX, parkX, phaseProgress);
+    rigDeploy = 1 - phaseProgress;
+    truckYaw = returnYaw;
   }
 
   const moving = phase === "transport";
-  const sway = moving ? Math.sin(((t - 0.30) / 0.42) * Math.PI * 2) * 0.028 : 0;
+  const sway = moving ? Math.sin(phaseProgress * Math.PI * 2) * 0.018 : 0;
   return {
     building: {
       position: [x, y, z],
-      rotation: [0, direction * sway * 0.6, -direction * sway],
+      rotation: [0, direction * sway * 0.45, -direction * sway],
     },
     truckX,
     laneZ,
     boomReachZ: THREE.MathUtils.lerp(laneZ, z, 0.82),
     hookHeight: y,
-    cableSlack: phase === "hook" || phase === "release" ? 0.16 : 0.03,
+    cableSlack: phase === "hook" || phase === "release" ? 0.10 : 0.025,
+    rigDeploy,
+    phaseProgress,
+    truckYaw,
     phase,
   };
 }

@@ -4,9 +4,9 @@ import type { Frame } from "@/lib/algorithms";
 import { audioEngine, type SfxKind } from "@/lib/audio";
 import type { AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
 import type { ShortVideoType } from "@/lib/shortVideoTypes";
+import { CRANE_AUDIO_CUES, getAlgorithm3DFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dTiming";
 
 const SWAP_TRANSITION_MULTIPLIER = 1.8;
-const CRANE_SWAP_MS = 1050;
 const KINETIC_ODD_EVEN_FRAME_MULTIPLIER = 8;
 const KINETIC_PANCAKE_FRAME_MULTIPLIER = 9;
 const TREE_SORT_FRAME_MULTIPLIER = 2.4;
@@ -35,7 +35,8 @@ export function useAlgorithmStudioPlayback(params: PlaybackParams) {
   } = params;
   const rafRef = useRef<number | null>(null);
   const lastRef = useRef(0);
-  const craneAudioRef = useRef({ frameIdx: -1, lift: false, drive: false, set: false });
+  const craneAudioRef = useRef({ frameIdx: -1, approach: false, hook: false, lift: false, transport: false, lower: false, return: false });
+  const last3DPitchRef = useRef(0.5);
 
   const playEvent = useCallback((frame: Frame | null | undefined) => {
     if (!frame) return;
@@ -50,9 +51,10 @@ export function useAlgorithmStudioPlayback(params: PlaybackParams) {
       return;
     }
     if (videoRenderMode === "3d") {
-      if (event === "swap") audioEngine.playSfx("crane-hook", pitch);
-      else if (event === "found") audioEngine.playSfx("swap-spark", pitch);
-      else if (event === "compare" || event === "visit") audioEngine.playSfx("data-step", pitch);
+      const easedPitch = last3DPitchRef.current + (pitch - last3DPitchRef.current) * 0.36;
+      last3DPitchRef.current = easedPitch;
+      if (event === "found") audioEngine.playSfx("swap-spark", easedPitch);
+      else if (event === "compare" || event === "visit") audioEngine.playSfx("data-step", easedPitch);
       return;
     }
     if (event === "compare") audioEngine.playSfx(sfxCompare, pitch);
@@ -61,20 +63,32 @@ export function useAlgorithmStudioPlayback(params: PlaybackParams) {
 
   const playCraneMotionSfx = useCallback((index: number, progress: number) => {
     if (craneAudioRef.current.frameIdx !== index) {
-      craneAudioRef.current = { frameIdx: index, lift: false, drive: false, set: false };
+      craneAudioRef.current = { frameIdx: index, approach: false, hook: false, lift: false, transport: false, lower: false, return: false };
     }
     const state = craneAudioRef.current;
-    if (progress >= 0.14 && !state.lift) {
+    if (progress >= CRANE_AUDIO_CUES.approach && !state.approach) {
+      state.approach = true;
+      audioEngine.playSfx("crane-drive", 0.34);
+    }
+    if (progress >= CRANE_AUDIO_CUES.hook && !state.hook) {
+      state.hook = true;
+      audioEngine.playSfx("crane-hook", 0.48);
+    }
+    if (progress >= CRANE_AUDIO_CUES.lift && !state.lift) {
       state.lift = true;
-      audioEngine.playSfx("crane-lift");
+      audioEngine.playSfx("crane-lift", 0.50);
     }
-    if (progress >= 0.32 && !state.drive) {
-      state.drive = true;
-      audioEngine.playSfx("crane-drive");
+    if (progress >= CRANE_AUDIO_CUES.transport && !state.transport) {
+      state.transport = true;
+      audioEngine.playSfx("crane-drive", 0.60);
     }
-    if (progress >= 0.79 && !state.set) {
-      state.set = true;
-      audioEngine.playSfx("crane-set");
+    if (progress >= CRANE_AUDIO_CUES.lower && !state.lower) {
+      state.lower = true;
+      audioEngine.playSfx("crane-set", 0.46);
+    }
+    if (progress >= CRANE_AUDIO_CUES.return && !state.return) {
+      state.return = true;
+      audioEngine.playSfx("crane-drive", 0.28);
     }
   }, []);
 
@@ -88,11 +102,14 @@ export function useAlgorithmStudioPlayback(params: PlaybackParams) {
       const previousFrame = frameIdx > 0 ? frames[frameIdx - 1] : null;
       const algorithmMultiplier = getAlgorithmFrameMultiplier(shortVideoType, algoId);
       const animatedSwap = shouldAnimateSwap(currentFrame, previousFrame);
+      const natural3DInterval = getAlgorithm3DFrameSeconds(currentFrame) * 1000 / Math.max(0.1, speed);
       const interval = animatedSwap
         ? videoRenderMode === "3d"
-          ? Math.max(baseInterval * SWAP_TRANSITION_MULTIPLIER * algorithmMultiplier, CRANE_SWAP_MS / Math.max(0.1, speed))
+          ? Math.max(baseInterval * SWAP_TRANSITION_MULTIPLIER * algorithmMultiplier, natural3DInterval)
           : baseInterval * SWAP_TRANSITION_MULTIPLIER * algorithmMultiplier
-        : baseInterval * algorithmMultiplier;
+        : videoRenderMode === "3d"
+          ? Math.max(baseInterval * algorithmMultiplier, natural3DInterval)
+          : baseInterval * algorithmMultiplier;
       const elapsed = time - lastRef.current;
       const progress = Math.min(1, elapsed / interval);
       setTransitionProgress(progress);

@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { Theme } from "@/lib/renderer";
+import { AlgorithmBranding3D } from "./AlgorithmBranding3D";
 
 export function AlgorithmStage3D({ theme, graph }: { theme: Theme; graph: boolean }) {
   const palette = useMemo(() => makePalette(theme), [theme]);
@@ -15,6 +16,7 @@ export function AlgorithmStage3D({ theme, graph }: { theme: Theme; graph: boolea
 
       <OpenConstructionGround palette={palette} theme={theme} graph={graph} />
       <DistantCity palette={palette} />
+      {!graph ? <AlgorithmBranding3D /> : null}
       {!graph ? <TransportLanes theme={theme} palette={palette} /> : null}
       <SiteFurniture palette={palette} theme={theme} graph={graph} />
     </>

@@ -92,7 +92,7 @@ function AlgorithmCamera3D({ frame, width, height, progress }: { frame: Frame; w
   const portrait = height > width;
   const graph = Boolean(frame.graph);
   const focusX = graph ? graphFocusX(frame) : barFocusX(frame);
-  const swapWide = frame.event === "swap" ? Math.sin(Math.PI * progress) : 0;
+  const swapWide = frame.event === "swap" ? 1.15 + Math.sin(Math.PI * progress) * 0.85 : 0;
   const position = useMemo(() => new THREE.Vector3(
     graph ? (portrait ? 8.6 : 9.6) : (portrait ? 8.2 : 9.2),
     graph ? (portrait ? 12.2 : 10.5) : (portrait ? 9.5 : 8.35),

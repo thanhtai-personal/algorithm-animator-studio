@@ -6,10 +6,10 @@ import type { Frame } from "@/lib/algorithms";
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
 import { createAlgorithm3DExportSurface } from "@/features/algorithm-video-3d/algorithm3dExportSurface";
 import { drawAlgorithm3DOverlay } from "@/features/algorithm-video-3d/drawAlgorithm3DOverlay";
+import { CRANE_AUDIO_CUES, CRANE_SWAP_SECONDS, getAlgorithm3DFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dTiming";
 import { getExportFormat } from "./exportFormats";
 import type { ExportVideoParams } from "./videoExport";
 
-const SWAP_EXPORT_SECONDS = 0.95;
 const TREE_SORT_EXPORT_SECONDS = 0.12;
 const PIGEONHOLE_EXPORT_SECONDS = 0.16;
 
@@ -99,15 +99,11 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
       const previousFrame = frameIndex > 0 ? params.frames[frameIndex - 1] : null;
       const transitionFrames = getTransitionFrameCount(params, params.frames[frameIndex], previousFrame);
 
-      let liftPlayed = false;
-      let drivePlayed = false;
-      let setPlayed = false;
+      const cueState = { approach: false, hook: false, lift: false, transport: false, lower: false, return: false };
       const craneSwap = shouldAnimateSwap(params.frames[frameIndex], previousFrame);
       for (let step = 1; step <= transitionFrames; step += 1) {
         const progress = step / transitionFrames;
-        if (craneSwap && progress >= 0.14 && !liftPlayed) { liftPlayed = true; audioEngine.playSfx("crane-lift"); }
-        if (craneSwap && progress >= 0.32 && !drivePlayed) { drivePlayed = true; audioEngine.playSfx("crane-drive"); }
-        if (craneSwap && progress >= 0.79 && !setPlayed) { setPlayed = true; audioEngine.playSfx("crane-set"); }
+        if (craneSwap) playCraneExportCue(progress, cueState);
         await renderFrame(frameIndex, previousFrame, progress);
         track.requestFrame();
         await waitFrame(params.fps);
@@ -149,10 +145,24 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
 }
 
 function getTransitionFrameCount(params: ExportVideoParams, frame: Frame, previousFrame: Frame | null) {
-  if (shouldAnimateSwap(frame, previousFrame)) return Math.max(6, Math.round(params.fps * SWAP_EXPORT_SECONDS));
+  if (shouldAnimateSwap(frame, previousFrame)) return Math.max(8, Math.round(params.fps * CRANE_SWAP_SECONDS));
+  if (frame.event === "compare" || frame.event === "visit" || frame.event === "found") {
+    return Math.max(3, Math.round(params.fps * getAlgorithm3DFrameSeconds(frame)));
+  }
   if (params.algorithmId === "tree_sort") return Math.max(2, Math.round(params.fps * TREE_SORT_EXPORT_SECONDS));
   if (params.algorithmId === "pigeonhole") return Math.max(3, Math.round(params.fps * PIGEONHOLE_EXPORT_SECONDS));
   return 1;
+}
+
+type CraneCueState = { approach: boolean; hook: boolean; lift: boolean; transport: boolean; lower: boolean; return: boolean };
+
+function playCraneExportCue(progress: number, state: CraneCueState) {
+  if (progress >= CRANE_AUDIO_CUES.approach && !state.approach) { state.approach = true; audioEngine.playSfx("crane-drive", 0.34); }
+  if (progress >= CRANE_AUDIO_CUES.hook && !state.hook) { state.hook = true; audioEngine.playSfx("crane-hook", 0.48); }
+  if (progress >= CRANE_AUDIO_CUES.lift && !state.lift) { state.lift = true; audioEngine.playSfx("crane-lift", 0.50); }
+  if (progress >= CRANE_AUDIO_CUES.transport && !state.transport) { state.transport = true; audioEngine.playSfx("crane-drive", 0.60); }
+  if (progress >= CRANE_AUDIO_CUES.lower && !state.lower) { state.lower = true; audioEngine.playSfx("crane-set", 0.46); }
+  if (progress >= CRANE_AUDIO_CUES.return && !state.return) { state.return = true; audioEngine.playSfx("crane-drive", 0.28); }
 }
 
 function shouldAnimateSwap(frame: Frame, previousFrame: Frame | null) {

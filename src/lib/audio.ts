@@ -324,6 +324,26 @@ export class AudioEngine {
       o.start(start); o.stop(start + dur + 0.02);
     };
 
+    const softShot = (type: OscillatorType, f0: number, f1: number, dur: number, gain = 0.08, attack = 0.018, offset = 0) => {
+      const start = t0 + offset;
+      const end = start + dur;
+      const peak = start + Math.min(attack, dur * 0.35);
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      const filter = this.ctx.createBiquadFilter();
+      o.type = type;
+      o.frequency.setValueAtTime(Math.max(40, f0), start);
+      if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(40, f1), end);
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(type === "sine" ? 3200 : 1250, start);
+      filter.Q.value = 0.7;
+      g.gain.setValueAtTime(0.0001, start);
+      g.gain.linearRampToValueAtTime(gain, peak);
+      g.gain.exponentialRampToValueAtTime(0.001, end);
+      o.connect(filter).connect(g).connect(this.sfxGain);
+      o.start(start); o.stop(end + 0.025);
+    };
+
     // pitched base ~ 220–880 Hz
     const pitched = 220 + p * 660;
 
@@ -375,28 +395,28 @@ export class AudioEngine {
         break;
       }
       case "data-step": {
-        oneShot("sine", 520 + p * 180, 680 + p * 220, 0.055, 0.09);
-        oneShot("triangle", 1040 + p * 220, 860 + p * 180, 0.08, 0.035, 0.015);
+        softShot("sine", 430 + p * 150, 515 + p * 165, 0.12, 0.050, 0.020);
+        softShot("triangle", 760 + p * 130, 690 + p * 120, 0.14, 0.018, 0.026, 0.018);
         break;
       }
       case "crane-hook": {
-        oneShot("triangle", 820, 520, 0.07, 0.11);
-        oneShot("sine", 1640, 980, 0.05, 0.045, 0.025);
+        softShot("triangle", 650, 470, 0.15, 0.052, 0.012);
+        softShot("sine", 1180, 840, 0.13, 0.020, 0.010, 0.028);
         break;
       }
       case "crane-lift": {
-        oneShot("sawtooth", 92, 142, 0.26, 0.065);
-        oneShot("sine", 188, 238, 0.30, 0.075, 0.02);
+        softShot("triangle", 92 + p * 14, 128 + p * 18, 0.31, 0.046, 0.045);
+        softShot("sine", 176 + p * 20, 214 + p * 24, 0.34, 0.038, 0.055, 0.018);
         break;
       }
       case "crane-drive": {
-        oneShot("sawtooth", 78, 108, 0.32, 0.055);
-        oneShot("triangle", 156, 196, 0.24, 0.045, 0.035);
+        softShot("triangle", 70 + p * 18, 88 + p * 22, 0.28, 0.036, 0.055);
+        softShot("sine", 138 + p * 28, 158 + p * 32, 0.30, 0.027, 0.060, 0.018);
         break;
       }
       case "crane-set": {
-        oneShot("sine", 150, 68, 0.18, 0.12);
-        oneShot("triangle", 460, 260, 0.085, 0.06, 0.025);
+        softShot("sine", 132, 76, 0.22, 0.060, 0.010);
+        softShot("triangle", 350, 230, 0.16, 0.026, 0.012, 0.022);
         break;
       }
     }

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Frame } from "@/lib/algorithms";
 import { THEMES } from "@/lib/renderer";
 import { arrayLayout, craneSwapPose3D, getBarMotion, getSwapPair } from "@/features/algorithm-video-3d/algorithm3dMath";
+import { getAlgorithm3DFrameSeconds, selectionReveal3D } from "@/features/algorithm-video-3d/algorithm3dTiming";
 
 function frame(arr: number[], overrides: Partial<Frame> = {}): Frame {
   return {
@@ -48,4 +49,22 @@ describe("algorithm video 3D math", () => {
     expect(layout.heightFor(6)).toBeGreaterThan(layout.heightFor(-1));
     expect(layout.heightFor(-1)).toBeGreaterThan(layout.heightFor(-8));
   });
+  it("drives the crane in from parking before touching the building", () => {
+    const start = craneSwapPose3D(-2, 4, 0, -12);
+    const arrived = craneSwapPose3D(-2, 4, 0.18, -12);
+    const finished = craneSwapPose3D(-2, 4, 1, -12);
+    expect(start.truckX).toBeCloseTo(-12);
+    expect(start.building.position).toEqual([-2, 0, 0]);
+    expect(arrived.truckX).toBeCloseTo(-2);
+    expect(arrived.building.position[0]).toBeCloseTo(-2);
+    expect(finished.truckX).toBeCloseTo(-12);
+    expect(finished.building.position[0]).toBeCloseTo(4);
+  });
+
+  it("gives 3D selection enough dwell time and a soft reveal", () => {
+    expect(getAlgorithm3DFrameSeconds(frame([3, 2, 1], { event: "compare" }))).toBeGreaterThanOrEqual(0.18);
+    expect(selectionReveal3D(0.05)).toBeLessThan(selectionReveal3D(0.25));
+    expect(selectionReveal3D(1)).toBe(1);
+  });
+
 });

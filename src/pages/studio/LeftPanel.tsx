@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SHORT_VIDEO_TYPES, type ShortVideoType } from "@/lib/shortVideoTypes";
 import { AlgorithmStudio } from "./useAlgorithmStudio";
 import { uiText } from "@/lib/i18n";
+import { canUseAlgorithm3DVideo, hasWebGLVideoSupport, type AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
 
 type Props = { studio: AlgorithmStudio };
 
@@ -78,6 +79,7 @@ export function LeftPanel({ studio }: Props) {
             </p>
           ) : null}
         </div>
+        <VideoRenderModeSelect studio={s} />
         {!s.isGraph && (
           <div>
             <Label>{s.tr("inputArr")}</Label>
@@ -142,6 +144,36 @@ export function LeftPanel({ studio }: Props) {
             : "—"}
         </div>
       </Card>
+    </div>
+  );
+}
+
+function VideoRenderModeSelect({ studio: s }: Props) {
+  const compatible = canUseAlgorithm3DVideo({
+    shortVideoType: s.shortVideoType,
+    columnVisualMode: s.columnVisualMode,
+    hasWorldScene: Boolean(s.current?.world || s.current?.worldCompare),
+  });
+  const webgl = hasWebGLVideoSupport();
+  const available = compatible && webgl;
+
+  return (
+    <div>
+      <Label>{s.lang === "vi" ? "Chế độ hiển thị" : "Render mode"}</Label>
+      <Select value={s.videoRenderMode} onValueChange={(value) => s.setVideoRenderMode(value as AlgorithmVideoRenderMode)}>
+        <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="2d">{s.lang === "vi" ? "2D — chế độ gốc" : "2D — original mode"}</SelectItem>
+          <SelectItem value="3d" disabled={!available}>3D — WebGL</SelectItem>
+        </SelectContent>
+      </Select>
+      {s.videoRenderMode === "3d" ? (
+        <p className={`mt-2 text-xs ${available ? "text-cyan-300" : "text-amber-300"}`}>
+          {available
+            ? (s.lang === "vi" ? "Preview và video xuất sẽ dùng scene 3D. Mode 2D gốc vẫn được giữ nguyên." : "Preview and export use the 3D scene. The original 2D mode remains unchanged.")
+            : (s.lang === "vi" ? "3D không khả dụng với scene/mode hiện tại; hệ thống sẽ dùng 2D gốc." : "3D is unavailable for the current scene/mode; the original 2D renderer will be used.")}
+        </p>
+      ) : null}
     </div>
   );
 }

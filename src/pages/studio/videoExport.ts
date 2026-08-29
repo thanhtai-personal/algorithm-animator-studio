@@ -10,8 +10,7 @@ import type { ShortVideoType } from "@/lib/shortVideoTypes";
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
 import type { YoutubeAlgorithmMetadata } from "@/lib/youtubeMetadata";
 import { getExportFormat, ExportFormat } from "./exportFormats";
-import { createAlgorithm3DExportSurface, type Algorithm3DExportSurface } from "@/features/algorithm-video-3d/algorithm3dExportSurface";
-import { drawAlgorithm3DOverlay } from "@/features/algorithm-video-3d/drawAlgorithm3DOverlay";
+import { canUseAlgorithm3DVideo, type AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
 
 const SWAP_EXPORT_SECONDS = 0.35;
 const KINETIC_ODD_EVEN_SWAP_SECONDS = 0.62;
@@ -24,7 +23,7 @@ const KINETIC_GRAPH_HOLD_SECONDS = 0.42;
 const TREE_SORT_EXPORT_SECONDS = 0.12;
 const PIGEONHOLE_EXPORT_SECONDS = 0.16;
 
-type ExportVideoParams = {
+export type ExportVideoParams = {
   frames: Frame[];
   fps: number;
   width: number;
@@ -39,6 +38,7 @@ type ExportVideoParams = {
   algoName: string;
   lang: "en" | "vi";
   shortVideoType: ShortVideoType;
+  videoRenderMode: AlgorithmVideoRenderMode;
   platformId: string;
   exportFormat: ExportFormat;
   animalColumns: AnimalColumnSettings;
@@ -56,6 +56,25 @@ type ExportVideoParams = {
 
 export async function exportAlgorithmVideo(params: ExportVideoParams) {
   if (!params.frames.length) return false;
+
+  const wants3D = params.videoRenderMode === "3d" && canUseAlgorithm3DVideo({
+    shortVideoType: params.shortVideoType,
+    columnVisualMode: params.animalColumns.mode,
+    hasWorldScene: params.frames.some((frame) => Boolean(frame.world || frame.worldCompare)),
+  });
+  if (wants3D) {
+    try {
+      const { exportAlgorithmVideo3D } = await import("./videoExport3D");
+      return await exportAlgorithmVideo3D(params);
+    } catch (error) {
+      console.warn("3D export failed; retrying with the untouched 2D export pipeline.", error);
+    }
+  }
+
+  return exportAlgorithmVideo2D(params);
+}
+
+async function exportAlgorithmVideo2D(params: ExportVideoParams) {
 
   const format = getExportFormat(params.exportFormat);
   const mimeType = format.mimeCandidates.find((m) => MediaRecorder.isTypeSupported(m));
@@ -82,25 +101,11 @@ export async function exportAlgorithmVideo(params: ExportVideoParams) {
     animalColumns: params.animalColumns,
     lang: params.lang,
   };
-  const useAlgorithm3D = shouldUseAlgorithm3D(params);
-  let threeSurface: Algorithm3DExportSurface | null = null;
-  if (useAlgorithm3D) {
-    try {
-      threeSurface = await createAlgorithm3DExportSurface({
-        frame: params.frames[0], previousFrame: null, frameIndex: 0,
-        width: params.width, height: params.height, theme: params.theme,
-      });
-    } catch (error) {
-      console.warn("Algorithm 3D export unavailable; falling back to Canvas 2D.", error);
-    }
-  }
-  await renderExportFrame(ctx, params, 0, null, 1, renderOpts, threeSurface);
+
+  renderShortFrame(ctx, params, 0, null, 1, renderOpts);
   const videoStream = canvas.captureStream(0) as MediaStream;
   const track = videoStream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack | undefined;
-  if (!track) {
-    threeSurface?.dispose();
-    return false;
-  }
+  if (!track) return false;
 
   audioEngine.resume();
   const audioStream = audioEngine.getRecordStream();
@@ -127,7 +132,7 @@ export async function exportAlgorithmVideo(params: ExportVideoParams) {
       const transitionFrames = getTransitionFrameCount(params, params.frames[i], previousFrame);
 
       for (let step = 1; step <= transitionFrames; step++) {
-        await renderExportFrame(ctx, params, i, previousFrame, step / transitionFrames, renderOpts, threeSurface);
+        renderShortFrame(ctx, params, i, previousFrame, step / transitionFrames, renderOpts);
         track.requestFrame();
         await waitFrame(params.fps);
       }
@@ -135,14 +140,13 @@ export async function exportAlgorithmVideo(params: ExportVideoParams) {
     }
 
     const lastFrame = params.frames[params.frames.length - 1];
-    await renderExportFrame(ctx, params, params.frames.length - 1, null, 1, renderOpts, threeSurface);
+    renderShortFrame(ctx, params, params.frames.length - 1, null, 1, renderOpts);
     for (let i = 0; i < params.fps * 3; i++) {
       track.requestFrame();
       await waitFrame(params.fps);
     }
   } finally {
     recorder.stop();
-    threeSurface?.dispose();
     audioEngine.stopMusic();
     audioEngine.setMusicPreset("off");
   }
@@ -175,35 +179,6 @@ export async function exportAlgorithmVideo(params: ExportVideoParams) {
     audioEngine.setMusicPreset("custom");
     audioEngine.startMusic();
   }
-}
-
-async function renderExportFrame(
-  ctx: CanvasRenderingContext2D,
-  params: ExportVideoParams,
-  frameIndex: number,
-  previousFrame: Frame | null,
-  transitionProgress: number,
-  renderOpts: Parameters<typeof renderFrame>[2],
-  threeSurface: Algorithm3DExportSurface | null,
-) {
-  if (!threeSurface) {
-    renderShortFrame(ctx, params, frameIndex, previousFrame, transitionProgress, renderOpts);
-    return;
-  }
-  const frame = params.frames[frameIndex];
-  await threeSurface.render(frame, previousFrame, frameIndex, transitionProgress);
-  ctx.clearRect(0, 0, params.width, params.height);
-  ctx.drawImage(threeSurface.canvas, 0, 0, params.width, params.height);
-  drawAlgorithm3DOverlay(ctx, {
-    frame, frameIndex, width: params.width, height: params.height,
-    title: params.title, subtitle: params.subtitle, code: params.code,
-    showCode: params.showCode, complexity: params.complexity, lang: params.lang,
-  });
-}
-
-function shouldUseAlgorithm3D(params: ExportVideoParams) {
-  if (params.shortVideoType === "kinetic-typography" || params.animalColumns.mode === "animal") return false;
-  return !params.frames.some((frame) => frame.world || frame.worldCompare);
 }
 
 function renderShortFrame(

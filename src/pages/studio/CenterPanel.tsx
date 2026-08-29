@@ -6,19 +6,28 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { audioEngine } from "@/lib/audio";
 import { AlgorithmStudio } from "./useAlgorithmStudio";
-import { Algorithm3DPreview } from "@/features/algorithm-video-3d/Algorithm3DPreview";
-import { hasAlgorithm3DWebGLSupport } from "@/features/algorithm-video-3d/AlgorithmScene3D";
 import { COMPLEXITY } from "@/lib/algorithms";
+import { canUseAlgorithm3DVideo, hasWebGLVideoSupport } from "@/lib/algorithmVideoRenderMode";
 import { uiText } from "@/lib/i18n";
 
 const PhaserMazePreview = lazy(() => import("../algorithm-world/PhaserMazePreview").then((module) => ({ default: module.PhaserMazePreview })));
+const Algorithm3DPreview = lazy(() => import("@/features/algorithm-video-3d/Algorithm3DPreview").then((module) => ({ default: module.Algorithm3DPreview })));
 const PHASER_FALLBACK_HEIGHT = "min(70vh, 1920px)";
 
 type Props = { studio: AlgorithmStudio };
 
 export function CenterPanel({ studio: s }: Props) {
   const showPhaserMaze = Boolean(s.current?.world || s.current?.worldCompare);
-  const showAlgorithm3D = Boolean(s.current && !showPhaserMaze && s.shortVideoType !== "kinetic-typography" && s.columnVisualMode !== "animal" && hasAlgorithm3DWebGLSupport());
+  const showAlgorithm3D = Boolean(
+    s.videoRenderMode === "3d"
+    && s.current
+    && hasWebGLVideoSupport()
+    && canUseAlgorithm3DVideo({
+      shortVideoType: s.shortVideoType,
+      columnVisualMode: s.columnVisualMode,
+      hasWorldScene: showPhaserMaze,
+    }),
+  );
   const previousFrame = s.frameIdx > 0 ? s.frames[s.frameIdx - 1] : null;
 
   return (
@@ -33,20 +42,22 @@ export function CenterPanel({ studio: s }: Props) {
           </>
         ) : showAlgorithm3D && s.current ? (
           <>
-            <Algorithm3DPreview
-              frame={s.current}
-              previousFrame={previousFrame}
-              frameIndex={s.frameIdx}
-              width={s.W}
-              height={s.H}
-              theme={s.theme}
-              title={s.title}
-              subtitle={s.subtitle}
-              code={s.codeForPanel}
-              showCode={s.showCode}
-              complexity={COMPLEXITY[s.algoId]}
-              lang={s.lang}
-            />
+            <Suspense fallback={<div className="grid w-full place-items-center rounded-lg bg-slate-950 text-sm text-cyan-200" style={{ maxHeight: PHASER_FALLBACK_HEIGHT, aspectRatio: `${s.W}/${s.H}` }}>{s.lang === "vi" ? "Đang tải scene 3D..." : "Loading 3D scene..."}</div>}>
+              <Algorithm3DPreview
+                frame={s.current}
+                previousFrame={previousFrame}
+                frameIndex={s.frameIdx}
+                width={s.W}
+                height={s.H}
+                theme={s.theme}
+                title={s.title}
+                subtitle={s.subtitle}
+                code={s.codeForPanel}
+                showCode={s.showCode}
+                complexity={COMPLEXITY[s.algoId]}
+                lang={s.lang}
+              />
+            </Suspense>
             <canvas ref={s.canvasRef} width={s.W} height={s.H} className="hidden" />
           </>
         ) : (

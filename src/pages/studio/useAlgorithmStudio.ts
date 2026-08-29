@@ -20,6 +20,7 @@ import type { BackgroundMusicId } from "@/lib/backgroundMusic";
 import { Lang, PLATFORMS, readSystemLang, subscribeSystemLang, t, writeSystemLang } from "@/lib/i18n";
 import { THEMES, Theme } from "@/lib/renderer";
 import type { ShortVideoType } from "@/lib/shortVideoTypes";
+import type { AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
 import { buildMazeTournamentSeriesYoutubeMetadata, buildMazeTournamentYoutubeMetadata, buildYoutubeMetadata } from "@/lib/youtubeMetadata";
 import { ExportFormat } from "./exportFormats";
 import { demoAnimalArray, demoArrayForAlgorithm, demoSizeForAlgorithm, maxDemoSizeForAlgorithm, shouldUseAlgorithmDemo } from "./demoArrays";
@@ -81,6 +82,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
   const [subtitle, setSubtitle] = useState(options.initialSubtitle ?? "");
   const [showCode, setShowCode] = useState(options.initialShowCode ?? true);
   const [shortVideoType, setShortVideoType] = useState<ShortVideoType>("classic");
+  const [videoRenderMode, setVideoRenderMode] = useState<AlgorithmVideoRenderMode>("2d");
   const [worldVideoMode, setWorldVideoModeState] = useState<AlgorithmWorldVideoMode>(options.initialWorldVideoMode ?? "short");
   const [worldCompareEnabled, setWorldCompareEnabledState] = useState(options.initialWorldCompareEnabled ?? (options.initialWorldVideoMode === "long"));
   const [worldPresentationMode, setWorldPresentationModeState] = useState<AlgorithmWorldPresentationMode>(options.initialWorldPresentationMode ?? "vehicle_race");
@@ -365,6 +367,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
         algoName: algo.name,
         lang,
         shortVideoType,
+        videoRenderMode,
         platformId: platform.id,
         exportFormat,
         animalColumns,
@@ -432,6 +435,7 @@ export function useAlgorithmStudio(options: UseAlgorithmStudioOptions = {}) {
     title, setTitle: (value: string) => runConfigAction(() => setTitle(value)),
     subtitle, setSubtitle: (value: string) => runConfigAction(() => setSubtitle(value)),
     shortVideoType, setShortVideoType: (value: ShortVideoType) => runConfigAction(() => setShortVideoType(value)),
+    videoRenderMode, setVideoRenderMode: (value: AlgorithmVideoRenderMode) => runConfigAction(() => setVideoRenderMode(value)),
     worldVideoMode,
     worldCompareEnabled,
     setWorldVideoMode: (value: AlgorithmWorldVideoMode) => runConfigAction(() => { setWorldVideoModeState(value); setPlatformId(value === "long" ? "landscape" : "shorts"); if (value === "long") { setWorldCompareEnabledState(true); setShowCode(false); } setFrameIdx(0); setPlaying(false); }),

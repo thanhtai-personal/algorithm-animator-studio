@@ -120,7 +120,13 @@ async function exportAlgorithmVideo2D(params: ExportVideoParams) {
   });
 
   let activeMusicPreset: BackgroundMusicId | null = null;
-  await applyExportMusic(params, params.resolveMusicPreset?.(params.frames[0]) ?? params.musicPreset);
+  audioEngine.setOutputMuted(true);
+  try {
+    await applyExportMusic(params, params.resolveMusicPreset?.(params.frames[0]) ?? params.musicPreset);
+  } catch (error) {
+    audioEngine.setOutputMuted(false);
+    throw error;
+  }
 
   recorder.start();
   track.requestFrame();
@@ -151,6 +157,7 @@ async function exportAlgorithmVideo2D(params: ExportVideoParams) {
     recorder.stop();
     audioEngine.stopMusic();
     audioEngine.setMusicPreset("off");
+    audioEngine.setOutputMuted(false);
   }
 
   const blob = await done;

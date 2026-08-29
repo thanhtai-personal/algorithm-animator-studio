@@ -9,6 +9,7 @@ export type MusicPreset = "off" | "lofi" | "ambient" | "chill" | "upbeat" | "cus
 export class AudioEngine {
   ctx: AudioContext;
   master: GainNode;
+  monitorGain: GainNode;
   sfxGain: GainNode;
   musicGain: GainNode;
   voiceGain: GainNode;
@@ -35,7 +36,10 @@ export class AudioEngine {
     this.ctx = new Ctx();
     this.master = this.ctx.createGain();
     this.master.gain.value = 1;
-    this.master.connect(this.ctx.destination);
+    this.monitorGain = this.ctx.createGain();
+    this.monitorGain.gain.value = 1;
+    this.master.connect(this.monitorGain);
+    this.monitorGain.connect(this.ctx.destination);
     this.sfxGain = this.ctx.createGain();
     this.sfxGain.gain.value = 0.6;
     this.sfxGain.connect(this.master);
@@ -54,6 +58,17 @@ export class AudioEngine {
   setSfxVolume(v: number) { this.sfxGain.gain.value = v; }
   setMusicVolume(v: number) { this.musicGain.gain.value = v; }
   setVoiceVolume(v: number) { this.voiceGain.gain.value = v; }
+
+  /**
+   * Mute only the physical speaker/headphone monitor. Recording keeps receiving
+   * music, SFX and voice through MediaStreamDestination at full configured mix.
+   */
+  setOutputMuted(muted: boolean) {
+    const now = this.ctx.currentTime;
+    const gain = this.monitorGain.gain;
+    gain.cancelScheduledValues(now);
+    gain.setTargetAtTime(muted ? 0 : 1, now, 0.008);
+  }
 
   loadAssetSfx(id: AssetSfxId, url: string): Promise<AudioBuffer> {
     const cached = this.sfxBuffers.get(id);

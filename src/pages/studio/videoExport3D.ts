@@ -88,7 +88,14 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
     audioEngine.startMusic();
   };
 
-  await applyMusic(params.resolveMusicPreset?.(params.frames[0]) ?? params.musicPreset);
+  audioEngine.setOutputMuted(true);
+  try {
+    await applyMusic(params.resolveMusicPreset?.(params.frames[0]) ?? params.musicPreset);
+  } catch (error) {
+    audioEngine.setOutputMuted(false);
+    surface.dispose();
+    throw error;
+  }
   recorder.start();
   track.requestFrame();
 
@@ -122,6 +129,7 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
     surface.dispose();
     audioEngine.stopMusic();
     audioEngine.setMusicPreset("off");
+    audioEngine.setOutputMuted(false);
   }
 
   const blob = await done;

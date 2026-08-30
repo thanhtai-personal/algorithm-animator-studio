@@ -1,10 +1,23 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   pickRecordingMimeType,
+  rhythmicExportFileName,
   settleRhythmicRecordingSurface,
   startRhythmicMediaRecorder,
   usesFixedClientExportSurface,
 } from "../features/rhythmic-studio/lib/rhythmicExport";
+
+describe("rhythmic export filename", () => {
+  it("uses the imported song title plus the Marble-music suffix", () => {
+    expect(rhythmicExportFileName("Đất Nước Trọn Niềm Vui.mid", "webm"))
+      .toBe("Đất Nước Trọn Niềm Vui-Marble-music.webm");
+  });
+
+  it("keeps clip timing before the required Marble-music suffix", () => {
+    expect(rhythmicExportFileName("Bản nhạc.mp3", "mp4", { startMs: 10_100, endMs: 21_600 }))
+      .toBe("Bản nhạc-clip-10-22-Marble-music.mp4");
+  });
+});
 
 describe("rhythmic capture policy", () => {
   afterEach(() => {

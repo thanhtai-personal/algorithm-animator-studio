@@ -53,6 +53,30 @@ export function startRhythmicMediaRecorder(
   });
 }
 
+const SOURCE_MEDIA_EXTENSION = /\.(?:mid|midi|mp3|wav|ogg|oga|m4a|aac|flac|webm|mp4|mov|mkv)$/i;
+
+function safeSongTitle(value: string) {
+  const withoutExtension = value.trim().replace(SOURCE_MEDIA_EXTENSION, "");
+  return withoutExtension
+    .normalize("NFC")
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-")
+    .replace(/\s+/g, " ")
+    .replace(/^[. -]+|[. -]+$/g, "")
+    || "Marble Music";
+}
+
+export function rhythmicExportFileName(
+  sourceName: string,
+  extension: string,
+  clipRange?: { startMs: number; endMs: number },
+) {
+  const songTitle = safeSongTitle(sourceName);
+  const clip = clipRange
+    ? `-clip-${Math.round(clipRange.startMs / 1000)}-${Math.round(clipRange.endMs / 1000)}`
+    : "";
+  return `${songTitle}${clip}-Marble-music.${extension}`;
+}
+
 export function downloadRhythmicBlob(blob: Blob, fileName: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");

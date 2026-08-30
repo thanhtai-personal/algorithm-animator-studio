@@ -13,7 +13,11 @@ export { decorateChordClusters, decorateDenseInstrumentRuns } from "./denseInstr
 // marble between distant obstacles.
 const DENSE_GAP_MS = 260;
 const MIN_RUN_STRIKES = 3;
-const MICRO_BURST_GAP_MS = 130;
+// Imported MIDIs commonly encode 16th-note ornaments around 136 ms (110 BPM).
+// Keep those two-hit bursts on one playable surface; forcing a full ballistic
+// bounce into that window reads as a sudden drop even though the note timing is
+// correct. 160 ms still leaves ordinary eighth-note passages as real bounces.
+const MICRO_BURST_GAP_MS = 160;
 const MAX_RUN_STRIKES = 14;
 // A shallower grade reads as a perfectly horizontal shelf in the perspective
 // camera, so the marble seems to propel itself. About eight degrees remains

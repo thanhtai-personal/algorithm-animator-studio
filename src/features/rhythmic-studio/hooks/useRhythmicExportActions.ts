@@ -7,6 +7,7 @@ import {
   downloadRhythmicBlob,
   pickRecordingMimeType,
   prepareRhythmicExportFrame,
+  rhythmicExportFileName,
   settleRhythmicRecordingSurface,
   startRhythmicMediaRecorder,
   usesFixedClientExportSurface,
@@ -16,10 +17,6 @@ import { rhythmicOutputSize } from "../lib/outputSize";
 import { useRhythmicExportMutation } from "../queries/useRhythmicExportMutation";
 import type { AudioEngine } from "../lib/audioEngine";
 import type { RhythmicStudioStore } from "../store/RhythmicStudioStore";
-
-function safeFileName(value: string) {
-  return value.trim().replace(/[^a-z0-9-_]+/gi, "-").replace(/^-+|-+$/g, "") || "rhythmic-run";
-}
 
 type PlaybackDeps = {
   audioEngineRef: MutableRefObject<AudioEngine>;
@@ -106,8 +103,11 @@ export function useRhythmicExportActions(store: RhythmicStudioStore, refs: Canva
               height: outputSize.height,
             })
           : intermediate;
-        const clipSuffix = clipOnly ? `-clip-${Math.round(store.trimStartMs / 1000)}-${Math.round(store.trimEndMs / 1000)}` : "";
-        downloadRhythmicBlob(blob, `${safeFileName(store.projectName)}${clipSuffix}.${exportFormat.id}`);
+        downloadRhythmicBlob(blob, rhythmicExportFileName(
+          store.source.name,
+          exportFormat.id,
+          clipOnly ? { startMs: store.trimStartMs, endMs: store.trimEndMs } : undefined,
+        ));
         store.setStatus({ key: "status.exported", values: { format: exportFormat.label, size: (blob.size / (1024 * 1024)).toFixed(1) } });
         toast.success(rhythmicText(lang, "toast.exported", { format: exportFormat.label }));
       } catch (error) {

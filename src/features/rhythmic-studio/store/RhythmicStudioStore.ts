@@ -19,8 +19,8 @@ import {
   removeInstrumentMixSegment,
   updateInstrumentMixSegmentDuration,
   updateInstrumentMixSegmentFamily,
-  type PhraseInstrumentFamily,
 } from "../lib/phraseInstrumentMix";
+import type { InstrumentMixSelection } from "../lib/instrumentMixCatalog";
 import { normalizeBackgroundPreset } from "../types";
 import type { MarblePlatform } from "../engine/marblePhysicsTypes";
 import type {
@@ -202,7 +202,7 @@ export class RhythmicStudioStore {
     this.preparedPlatforms = [];
   }
 
-  setInstrumentMixFamily(id: string, family: PhraseInstrumentFamily) {
+  setInstrumentMixFamily(id: string, family: InstrumentMixSelection) {
     this.instrumentMixSegments = updateInstrumentMixSegmentFamily(this.instrumentMixSegments, id, family);
     this.preparedPlatforms = [];
   }

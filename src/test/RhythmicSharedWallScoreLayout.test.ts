@@ -4,6 +4,7 @@ import { wallScoreGuideRailGroups3D } from "../features/rhythmic-studio/componen
 import { buildMarbleCourse, marbleAtTime } from "../features/rhythmic-studio/lib/marbleCourse";
 import {
   wallScoreMarblePointAtPhase,
+  wallScoreRailSegments,
   wallScoreReferenceHits,
 } from "../features/rhythmic-studio/lib/korobeinikiReferenceLayout";
 import type {
@@ -147,22 +148,29 @@ describe("shared Korobeiniki wall-score instrument layout", () => {
     expect(fastStep).toBeLessThan(regularStep * 0.75);
   });
 
-  it("uses the same rolling rail transition for a long rest", () => {
+  it("keeps a sub-second rest ballistic instead of forcing a short rail", () => {
     const settings = settingsFor("piano");
     const course = buildMarbleCourse(EVENTS, settings, WIDTH);
     const longGapStart = 5;
     const midpointMs = (EVENTS[longGapStart].timeMs + EVENTS[longGapStart + 1].timeMs) / 2;
-    const expected = wallScoreMarblePointAtPhase(
-      course[longGapStart],
-      course[longGapStart + 1],
-      0.5,
-    );
+    const expected = wallScoreMarblePointAtPhase(course[longGapStart], course[longGapStart + 1], 0.5);
     const marble = marbleAtTime(midpointMs, EVENTS, course, settings);
     const rails = wallScoreGuideRailGroups3D(course, settings, longGapStart);
 
     expect(marble.x).toBeCloseTo(expected.x, 5);
     expect(marble.y).toBeCloseTo(expected.y, 5);
-    expect(rails).toHaveLength(1);
-    expect(rails[0].length).toBeGreaterThan(8);
+    expect(rails).toHaveLength(0);
+  });
+
+  it("skips a long-timed rail when its physical path is still too short", () => {
+    const settings = settingsFor("piano");
+    const course = buildMarbleCourse(EVENTS, settings, WIDTH);
+    const start = { ...course[0], outVX: 12, outVY: -8, gravity: 8 };
+    const end = {
+      ...course[1],
+      event: { ...course[1].event, timeMs: start.event.timeMs + 1_500 },
+    };
+
+    expect(wallScoreRailSegments([start, end], settings.ballSize)).toHaveLength(0);
   });
 });

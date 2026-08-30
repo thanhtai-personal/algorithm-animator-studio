@@ -2,7 +2,12 @@ import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 import type { MarblePlatform, Vec2 } from "../engine/marblePhysicsTypes";
 import { presetObstaclePlan } from "../engine/presetObstaclePlan";
 import type { NoteEvent, StudioSettings } from "../types";
-import { wallScoreReferenceHits } from "./korobeinikiReferenceLayout";
+import {
+  isKorobeinikiWallLayout,
+  korobeinikiColorForMidi,
+  wallScoreReferenceHits,
+  wallScoreTubeHitPoint,
+} from "./korobeinikiReferenceLayout";
 import { noteColorForMidi } from "./noteColors";
 
 const WALL_SCORE_MIN_ARC_HEIGHT = 18;
@@ -89,6 +94,7 @@ function collisionSurface(incoming: Vec2, outgoing: Vec2) {
 }
 
 function visualPlan(index: number, settings: StudioSettings) {
+  if (isKorobeinikiWallLayout(settings)) return presetObstaclePlan(index, settings);
   // The legacy selector no longer controls concrete-instrument geometry. Use it
   // only to ask the existing family resolver for that instrument's real mesh.
   return presetObstaclePlan(index, { ...settings, instrumentLayout: "gallery" });
@@ -101,18 +107,33 @@ export function buildSharedWallScoreCourse(
   resolveSettings: StudioSettingsResolver,
   onProgress?: (progress: number) => void,
 ): MarblePlatform[] {
-  const hits = wallScoreReferenceHits(events, width);
-  const flights = events.map((_, index) => wallScoreFlight(index, events, hits, resolveSettings(index)));
+  const visualHits = wallScoreReferenceHits(events, width);
+  const settingsByIndex = events.map((_, index) => resolveSettings(index));
+  const hits = visualHits.map((hit, index) => {
+    const localSettings = settingsByIndex[index];
+    return isKorobeinikiWallLayout(localSettings)
+      ? wallScoreTubeHitPoint(hit, localSettings)
+      : hit;
+  });
+  const flights = events.map((_, index) => wallScoreFlight(index, events, hits, settingsByIndex[index]));
 
   return events.map((event, index) => {
-    const localSettings = resolveSettings(index);
+    const localSettings = settingsByIndex[index];
+    const korobeinikiTube = isKorobeinikiWallLayout(localSettings);
     const flight = flights[index];
     const incoming = incomingVelocity(index, flights, localSettings);
-    const surface = collisionSurface(incoming, { x: flight.outVX, y: flight.outVY });
+    const surface = korobeinikiTube
+      ? { angle: 0, normal: { x: 0, y: -1 } }
+      : collisionSurface(incoming, { x: flight.outVX, y: flight.outVY });
     const plan = visualPlan(index, localSettings);
-    const platformWidth = localSettings.platformWidth * 0.58 * (plan?.widthScale ?? 1);
-    const visualX = flight.hit.x - surface.normal.x * localSettings.ballSize;
-    const visualY = flight.hit.y - surface.normal.y * localSettings.ballSize;
+    const platformWidth = localSettings.platformWidth * 0.58
+      * (korobeinikiTube ? 1 : plan?.widthScale ?? 1);
+    const visualX = korobeinikiTube
+      ? visualHits[index].x
+      : flight.hit.x - surface.normal.x * localSettings.ballSize;
+    const visualY = korobeinikiTube
+      ? visualHits[index].y
+      : flight.hit.y - surface.normal.y * localSettings.ballSize;
 
     const platform: MarblePlatform = {
       index,
@@ -123,10 +144,14 @@ export function buildSharedWallScoreCourse(
       width: platformWidth,
       visualWidth: platformWidth,
       thickness: localSettings.platformThickness,
-      visualThickness: localSettings.platformThickness,
+      visualThickness: korobeinikiTube
+        ? Math.max(40, localSettings.platformThickness)
+        : localSettings.platformThickness,
       tiltRad: surface.angle,
       visualTiltRad: surface.angle,
-      color: noteColorForMidi(event.midi),
+      color: korobeinikiTube
+        ? korobeinikiColorForMidi(event.midi)
+        : noteColorForMidi(event.midi),
       contactX: flight.hit.x,
       contactY: flight.hit.y,
       hitX: flight.hit.x,

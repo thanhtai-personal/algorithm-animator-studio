@@ -139,13 +139,13 @@ describe("Korobeiniki wall-tube reference preset", () => {
     ]);
   });
 
-  it("builds exactly one guide rail on the physical marble trajectory for each long rest", () => {
+  it("builds a guide rail only for the longest rest without slowing the marble", () => {
     const events = BUILTIN_MELODIES[KOROBEINIKI_MELODY_NAME];
     const settings = { ...DEFAULT_SETTINGS, ...presetById(PRESET_ID).settings };
     const platforms = buildKorobeinikiReferenceCourse(events, settings, 720);
     const rails = wallScoreRailSegments(platforms, settings.ballSize);
 
-    expect(rails.map((rail) => rail.afterIndex)).toEqual([14, 20, 26]);
+    expect(rails.map((rail) => rail.afterIndex)).toEqual([20]);
     expect(rails.every((rail) => rail.points.length >= 8)).toBe(true);
     for (const rail of rails) {
       const start = platforms[rail.afterIndex];
@@ -155,14 +155,8 @@ describe("Korobeiniki wall-tube reference preset", () => {
       const ball = marbleAtTime(entryTimeMs, events, platforms, settings);
       const first = rail.points[0];
       expect(Math.hypot(first.x - ball.x, first.y - ball.y)).toBeCloseTo(settings.ballSize, 5);
-      const xs = rail.points.map((point) => point.x);
-      const ys = rail.points.map((point) => point.y);
-      expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan((Math.max(...ys) - Math.min(...ys)) * 1.5);
-
       const middleIndex = Math.floor(rail.points.length / 2);
       const middle = rail.points[middleIndex];
-      const last = rail.points.at(-1)!;
-      expect(middle.y).toBeGreaterThan((first.y + last.y) / 2 + 2);
 
       const middlePhase = WALL_SCORE_RAIL_ENTRY_T
         + (WALL_SCORE_RAIL_EXIT_T - WALL_SCORE_RAIL_ENTRY_T) * middleIndex / (rail.points.length - 1);
@@ -174,14 +168,15 @@ describe("Korobeiniki wall-tube reference preset", () => {
         y: start.hitY + start.outVY * ballisticElapsed + 0.5 * start.gravity * ballisticElapsed ** 2,
       };
       expect(Math.hypot(rollingBall.x - middle.x, rollingBall.y - middle.y)).toBeCloseTo(settings.ballSize, 4);
-      expect(Math.hypot(rollingBall.x - ballistic.x, rollingBall.y - ballistic.y)).toBeGreaterThan(12);
+      expect(rollingBall.x).toBeCloseTo(ballistic.x, 5);
+      expect(rollingBall.y).toBeCloseTo(ballistic.y, 5);
 
       const phaseDelta = 0.04;
       const before = marbleAtTime(start.event.timeMs + spanSeconds * 1_000 * (middlePhase - phaseDelta), events, platforms, settings);
       const after = marbleAtTime(start.event.timeMs + spanSeconds * 1_000 * (middlePhase + phaseDelta), events, platforms, settings);
       const rollingSpeed = Math.hypot(after.x - before.x, after.y - before.y) / (spanSeconds * phaseDelta * 2);
       const ballisticSpeed = Math.hypot(start.outVX, start.outVY + start.gravity * ballisticElapsed);
-      expect(rollingSpeed).toBeLessThan(ballisticSpeed * 0.8);
+      expect(rollingSpeed).toBeCloseTo(ballisticSpeed, -1);
     }
   });
 

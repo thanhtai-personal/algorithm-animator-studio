@@ -11,7 +11,7 @@ import { createPhraseInstrumentSettingsResolver } from "./phraseInstrumentMix";
 import {
   buildKorobeinikiReferenceCourse,
   isKorobeinikiWallLayout,
-  KOROBEINIKI_BRIDGE_GAP_MS,
+  WALL_SCORE_RAIL_MIN_GAP_MS,
   wallScoreMarblePointAtPhase,
 } from "./korobeinikiReferenceLayout";
 import { buildSharedWallScoreCourse, usesSharedWallScore } from "./wallScoreLayout";
@@ -270,7 +270,7 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
     if (guided) return { x: guided.x, y: guided.y, color: mixHex(start.color, end.color, rawT), platformIndex: index };
   }
 
-  if (usesSharedWallScore(segmentSettings) && span >= KOROBEINIKI_BRIDGE_GAP_MS) {
+  if (usesSharedWallScore(segmentSettings) && span >= WALL_SCORE_RAIL_MIN_GAP_MS) {
     const rolling = wallScoreMarblePointAtPhase(start, end, rawT);
     return {
       x: rolling.x,

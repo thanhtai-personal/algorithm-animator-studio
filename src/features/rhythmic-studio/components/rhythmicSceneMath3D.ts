@@ -133,11 +133,32 @@ export function shadowRigPose(focus: Point3D, offset: Point3D) {
 }
 
 export function cameraDepthProfile(settings: StudioSettings) {
-  if (usesSharedWallScore(settings)) return { offset: -1.2, near: 8.1, far: 10.7 };
+  if (usesSharedWallScore(settings)) return { offset: -0.35, near: 9, far: 12.2 };
   if (settings.cameraProfile === "xylophone") return { offset: -0.6, near: 8.4, far: 11.2 };
   if (settings.cameraProfile === "tube-board") return { offset: -0.25, near: 8.4, far: 11.5 };
   if (settings.cameraProfile === "comet") return { offset: 0.15, near: 9.2, far: 12.5 };
   return { offset: -0.1, near: 8.8, far: 12 };
+}
+
+export function steadyCameraAxisTarget(current: number, desired: number, deadZone: number) {
+  const radius = Math.max(0, deadZone);
+  const delta = desired - current;
+  if (Math.abs(delta) <= radius) return current;
+  return desired - Math.sign(delta) * radius;
+}
+
+export function cameraFollowDamping(smoothing: number, wallScore: boolean) {
+  const response = THREE.MathUtils.clamp(smoothing, 0.03, 0.65);
+  return wallScore ? 2.6 + response * 6 : 5.4 + response * 12.5;
+}
+
+export function wallScoreCameraFov(jumpDistance: number, density: number, stable: boolean) {
+  const base = stable ? 41.4 : 41;
+  return THREE.MathUtils.clamp(
+    base + jumpDistance * (stable ? 0.012 : 0.025) - density * 0.003,
+    stable ? 40.9 : 40.5,
+    stable ? 42 : 42.4,
+  );
 }
 
 export function firstEventAtOrAfter(events: NoteEvent[], timeMs: number) {

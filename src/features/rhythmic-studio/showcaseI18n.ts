@@ -11,6 +11,7 @@ export type ShowcaseTextKey =
   | "secondBall"
   | "family.auto"
   | "family.boomwhacker"
+  | "family.korobeiniki"
   | "family.xylophone"
   | "family.piano"
   | "family.marimba"
@@ -42,6 +43,7 @@ const EN: Record<ShowcaseTextKey, string> = {
   secondBall: "Second marble color",
   "family.auto": "Preset / automatic",
   "family.boomwhacker": "Boomwhacker tubes",
+  "family.korobeiniki": "Korobeiniki tubes",
   "family.xylophone": "Xylophone bars",
   "family.piano": "Electric piano keys",
   "family.marimba": "Marimba wood bars",
@@ -74,6 +76,7 @@ const VI: typeof EN = {
   secondBall: "Màu viên bi thứ hai",
   "family.auto": "Theo preset / tự động",
   "family.boomwhacker": "Ống Boomwhacker",
+  "family.korobeiniki": "Ống Korobeiniki",
   "family.xylophone": "Thanh Xylophone",
   "family.piano": "Phím Electric Piano",
   "family.marimba": "Thanh gỗ Marimba",

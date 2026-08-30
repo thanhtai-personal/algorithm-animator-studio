@@ -1,4 +1,4 @@
-import type { ConfigurableInstrumentFamily, NoteEvent } from "../types";
+import type { ConfigurableInstrumentFamily, InstrumentMixSegment, NoteEvent } from "../types";
 
 export const PHRASE_INSTRUMENT_SEQUENCE: readonly ConfigurableInstrumentFamily[] = [
   "piano",
@@ -15,6 +15,20 @@ export const PHRASE_INSTRUMENT_SEQUENCE: readonly ConfigurableInstrumentFamily[]
   "metallophone",
   "flute",
 ] as const;
+
+export const KOROBEINIKI_INSTRUMENT_MIX_SELECTION = "korobeiniki-tubes" as const;
+export type InstrumentMixSelection = ConfigurableInstrumentFamily
+  | typeof KOROBEINIKI_INSTRUMENT_MIX_SELECTION;
+export const INSTRUMENT_MIX_SELECTIONS: readonly InstrumentMixSelection[] = [
+  ...PHRASE_INSTRUMENT_SEQUENCE,
+  KOROBEINIKI_INSTRUMENT_MIX_SELECTION,
+];
+
+export function instrumentMixSelectionForSegment(segment: InstrumentMixSegment): InstrumentMixSelection {
+  return segment.variant === KOROBEINIKI_INSTRUMENT_MIX_SELECTION
+    ? KOROBEINIKI_INSTRUMENT_MIX_SELECTION
+    : segment.family;
+}
 
 function midiFamilyHint(event: NoteEvent): ConfigurableInstrumentFamily {
   if (event.isDrum || event.channel === 9) return "drum";

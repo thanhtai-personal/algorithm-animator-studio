@@ -63,12 +63,12 @@ export function RhythmicSubscribeReminder3D({
   const faceMaterialRef = useRef<THREE.MeshStandardMaterial>(null);
   const texture = useMemo(makeSubscribeTexture, []);
   const mount = useMemo(() => {
-    const first = platforms[0];
-    if (!first) return null;
-    return subscribeWallMount({
-      x: first.visualX ?? first.x,
-      y: first.visualY ?? first.y,
-    }, RHYTHMIC_COURSE_WIDTH);
+    if (!platforms.length) return null;
+    return subscribeWallMount(platforms.map((platform) => ({
+      x: platform.visualX ?? platform.x,
+      y: platform.visualY ?? platform.y,
+      timeMs: platform.event.timeMs,
+    })), RHYTHMIC_COURSE_WIDTH);
   }, [platforms]);
 
   useEffect(() => () => texture.dispose(), [texture]);
@@ -76,7 +76,7 @@ export function RhythmicSubscribeReminder3D({
   useFrame(() => {
     const material = faceMaterialRef.current;
     if (!material) return;
-    const frame = subscribeReminderFrameAt(timeRef.current);
+    const frame = subscribeReminderFrameAt(timeRef.current, mount?.cueTimeMs);
     material.emissiveIntensity = 0.08 + (frame.visible ? frame.opacity : 0) * 0.62;
   });
 

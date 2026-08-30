@@ -6,32 +6,51 @@ import {
 } from "../features/rhythmic-studio/lib/subscribeReminder";
 
 describe("rhythmic subscribe reminder", () => {
-  it("enters after the opening beat, holds briefly, then leaves", () => {
-    expect(subscribeReminderFrameAt(500)).toMatchObject({ visible: false, opacity: 0 });
+  const course = [
+    { x: 120, y: 300, timeMs: 0 },
+    { x: 180, y: 520, timeMs: 1_000 },
+    { x: 610, y: 740, timeMs: 2_000 },
+    { x: 560, y: 960, timeMs: 7_000 },
+    { x: 140, y: 1_180, timeMs: 8_000 },
+  ];
 
-    const entering = subscribeReminderFrameAt(1_050);
+  it("lights up when the camera reaches its middle-course mount", () => {
+    expect(subscribeReminderFrameAt(2_000, 4_000)).toMatchObject({ visible: false, opacity: 0 });
+
+    const entering = subscribeReminderFrameAt(3_050, 4_000);
     expect(entering.visible).toBe(true);
     expect(entering.opacity).toBeGreaterThan(0);
     expect(entering.opacity).toBeLessThan(1);
     expect(entering.scale).toBeLessThan(1);
 
-    expect(subscribeReminderFrameAt(2_000)).toMatchObject({
+    expect(subscribeReminderFrameAt(4_000, 4_000)).toMatchObject({
       visible: true,
       opacity: 1,
       scale: 1,
       translateY: 0,
     });
-    expect(subscribeReminderFrameAt(4_700)).toMatchObject({ visible: false, opacity: 0 });
+    expect(subscribeReminderFrameAt(6_700, 4_000)).toMatchObject({ visible: false, opacity: 0 });
   });
 
-  it("mounts on the opposite side of the opening instrument instead of screen center", () => {
-    const rightWall = subscribeWallMount({ x: 120, y: 620 });
-    const leftWall = subscribeWallMount({ x: 610, y: 720 });
+  it("mounts in the emptiest side of the longest middle-song rest", () => {
+    const mount = subscribeWallMount(course);
 
-    expect(rightWall.x).toBeGreaterThan(360);
-    expect(leftWall.x).toBeLessThan(360);
-    expect(rightWall.y).toBeLessThan(620);
-    expect(leftWall.y).toBeLessThan(720);
+    expect(mount.x).toBeLessThan(360);
+    expect(mount.y).toBeGreaterThan(course[2].y);
+    expect(mount.y).toBeLessThan(course[3].y);
+    expect(mount.cueTimeMs).toBe(4_500);
+  });
+
+  it("prefers a middle-song rest over a longer intro gap", () => {
+    const mount = subscribeWallMount([
+      { x: 120, y: 200, timeMs: 0 },
+      { x: 580, y: 420, timeMs: 5_000 },
+      { x: 540, y: 560, timeMs: 6_000 },
+      { x: 160, y: 780, timeMs: 8_500 },
+      { x: 220, y: 980, timeMs: 12_000 },
+    ]);
+
+    expect(mount.cueTimeMs).toBe(7_250);
   });
 
   it("draws a persistent wall plaque at course coordinates while only its light animates", () => {
@@ -55,7 +74,7 @@ describe("rhythmic subscribe reminder", () => {
       globalAlpha: 1,
     } as unknown as CanvasRenderingContext2D;
 
-    const mount = subscribeWallMount({ x: 120, y: 620 });
+    const mount = subscribeWallMount(course);
     drawSubscribeWallSign2D(context, mount, 400);
     expect(method).toHaveBeenCalledWith(mount.x, mount.y);
     expect(fillText).toHaveBeenCalledWith("SUBSCRIBE", expect.any(Number), 0);

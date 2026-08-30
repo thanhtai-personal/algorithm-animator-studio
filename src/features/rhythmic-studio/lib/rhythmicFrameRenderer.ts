@@ -180,11 +180,11 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
   if (live) drawLongGapTubes(ctx, platforms, events, cameraY, timeMs, settings, courseOverrides);
   if (live || courseOverrides.length) drawCourseLongItems(ctx, platforms, courseOverrides, cameraY, settings);
   drawDenseSurfaces2D(ctx, platforms, cameraY, settings);
-  const firstPlatform = platforms[0];
-  const wallMount = subscribeWallMount({
-    x: firstPlatform.visualX ?? firstPlatform.x,
-    y: firstPlatform.visualY ?? firstPlatform.y,
-  });
+  const wallMount = subscribeWallMount(platforms.map((platform) => ({
+    x: platform.visualX ?? platform.x,
+    y: platform.visualY ?? platform.y,
+    timeMs: platform.event.timeMs,
+  })));
   drawSubscribeWallSign2D(ctx, { ...wallMount, y: wallMount.y - cameraY }, timeMs);
   for (let platformIndex = 0; platformIndex < platforms.length; platformIndex += 1) {
     const platform = platforms[platformIndex];

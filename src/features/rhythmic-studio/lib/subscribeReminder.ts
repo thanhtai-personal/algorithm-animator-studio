@@ -2,6 +2,9 @@ const REMINDER_START_MS = 850;
 const REMINDER_ENTER_END_MS = 1_250;
 const REMINDER_EXIT_START_MS = 3_900;
 const REMINDER_END_MS = 4_650;
+const REMINDER_DEFAULT_CUE_MS = 2_000;
+const REMINDER_COURSE_PROGRESS = 0.52;
+const REMINDER_MIN_REST_MS = 1_000;
 
 export interface SubscribeReminderFrame {
   visible: boolean;
@@ -15,6 +18,13 @@ export interface SubscribeWallMount {
   y: number;
   width: number;
   height: number;
+  cueTimeMs: number;
+}
+
+export interface SubscribeCoursePoint {
+  x: number;
+  y: number;
+  timeMs: number;
 }
 
 function clamp01(value: number) {
@@ -30,13 +40,17 @@ function smoothstep(value: number) {
   return t * t * (3 - 2 * t);
 }
 
-export function subscribeReminderFrameAt(timeMs: number): SubscribeReminderFrame {
-  if (timeMs <= REMINDER_START_MS || timeMs >= REMINDER_END_MS) {
+export function subscribeReminderFrameAt(
+  timeMs: number,
+  cueTimeMs = REMINDER_DEFAULT_CUE_MS,
+): SubscribeReminderFrame {
+  const localTimeMs = timeMs - cueTimeMs + REMINDER_DEFAULT_CUE_MS;
+  if (localTimeMs <= REMINDER_START_MS || localTimeMs >= REMINDER_END_MS) {
     return { visible: false, opacity: 0, scale: 0.92, translateY: 14 };
   }
 
-  if (timeMs < REMINDER_ENTER_END_MS) {
-    const progress = easeOutCubic((timeMs - REMINDER_START_MS) / (REMINDER_ENTER_END_MS - REMINDER_START_MS));
+  if (localTimeMs < REMINDER_ENTER_END_MS) {
+    const progress = easeOutCubic((localTimeMs - REMINDER_START_MS) / (REMINDER_ENTER_END_MS - REMINDER_START_MS));
     return {
       visible: true,
       opacity: progress,
@@ -45,11 +59,11 @@ export function subscribeReminderFrameAt(timeMs: number): SubscribeReminderFrame
     };
   }
 
-  if (timeMs <= REMINDER_EXIT_START_MS) {
+  if (localTimeMs <= REMINDER_EXIT_START_MS) {
     return { visible: true, opacity: 1, scale: 1, translateY: 0 };
   }
 
-  const progress = smoothstep((timeMs - REMINDER_EXIT_START_MS) / (REMINDER_END_MS - REMINDER_EXIT_START_MS));
+  const progress = smoothstep((localTimeMs - REMINDER_EXIT_START_MS) / (REMINDER_END_MS - REMINDER_EXIT_START_MS));
   return {
     visible: true,
     opacity: 1 - progress,
@@ -59,15 +73,58 @@ export function subscribeReminderFrameAt(timeMs: number): SubscribeReminderFrame
 }
 
 export function subscribeWallMount(
-  firstInstrument: { x: number; y: number },
+  instruments: readonly SubscribeCoursePoint[],
   courseWidth = 720,
 ): SubscribeWallMount {
-  const buttonWidth = 270;
+  const fallback = { x: courseWidth / 2, y: 320, timeMs: REMINDER_DEFAULT_CUE_MS };
+  const first = instruments[0] ?? fallback;
+  const last = instruments.at(-1) ?? first;
+  const targetTimeMs = first.timeMs + (last.timeMs - first.timeMs) * REMINDER_COURSE_PROGRESS;
+  const buttonWidth = 250;
+  const buttonHeight = buttonWidth / 4.7;
+  const halfPlateWidth = (buttonWidth + buttonHeight * 0.28) / 2;
+  const edgePadding = 24;
+  const rests = instruments.slice(0, -1).map((start, index) => {
+    const end = instruments[index + 1];
+    const spanMs = end.timeMs - start.timeMs;
+    const cueTimeMs = start.timeMs + spanMs / 2;
+    return { start, end, spanMs, cueTimeMs };
+  }).filter((candidate) => candidate.spanMs >= REMINDER_MIN_REST_MS);
+  const courseSpanMs = Math.max(1, last.timeMs - first.timeMs);
+  const middleRests = rests.filter((candidate) => (
+    candidate.cueTimeMs >= first.timeMs + courseSpanMs * 0.3
+      && candidate.cueTimeMs <= first.timeMs + courseSpanMs * 0.78
+  ));
+  const rest = [...(middleRests.length ? middleRests : rests)].sort((a, b) => {
+    const score = (candidate: typeof a) => (
+      candidate.spanMs - Math.abs(candidate.cueTimeMs - targetTimeMs) * 0.12
+    );
+    return score(b) - score(a);
+  })[0];
+  const anchor = instruments.reduce((closest, instrument) => (
+    Math.abs(instrument.timeMs - targetTimeMs) < Math.abs(closest.timeMs - targetTimeMs)
+      ? instrument
+      : closest
+  ), first);
+  const cueTimeMs = rest?.cueTimeMs ?? anchor.timeMs;
+  const y = rest ? (rest.start.y + rest.end.y) / 2 : anchor.y + 48;
+  const minX = halfPlateWidth + edgePadding;
+  const maxX = courseWidth - halfPlateWidth - edgePadding;
+  const candidates = [minX, courseWidth / 2, maxX];
+  const x = rest
+    ? candidates.reduce((best, candidate) => {
+        const clearance = (position: number) => Math.min(...instruments.map((instrument) => (
+          Math.hypot((instrument.x - position) * 0.82, instrument.y - y)
+        )));
+        return clearance(candidate) > clearance(best) ? candidate : best;
+      }, candidates[0])
+    : Math.max(minX, Math.min(maxX, anchor.x <= courseWidth / 2 ? anchor.x + 190 : anchor.x - 190));
   return {
-    x: firstInstrument.x <= courseWidth / 2 ? courseWidth * 0.77 : courseWidth * 0.23,
-    y: firstInstrument.y - 165,
+    x,
+    y,
     width: buttonWidth,
-    height: buttonWidth / 4.7,
+    height: buttonHeight,
+    cueTimeMs,
   };
 }
 
@@ -141,7 +198,7 @@ export function drawSubscribeWallSign2D(
   mount: SubscribeWallMount,
   timeMs: number,
 ) {
-  const frame = subscribeReminderFrameAt(timeMs);
+  const frame = subscribeReminderFrameAt(timeMs, mount.cueTimeMs);
   const light = frame.visible ? frame.opacity : 0;
   const baseAlpha = ctx.globalAlpha;
   const plateWidth = mount.width + mount.height * 0.28;

@@ -12,7 +12,7 @@ import type { ChaseCoursePlan } from "../lib/chaseCourse";
 import { instrumentMarbleContactDepth3D } from "./instrumentPlayingSurface3D";
 import {
   isKorobeinikiWallLayout,
-  KOROBEINIKI_BRIDGE_GAP_MS,
+  WALL_SCORE_RAIL_MIN_GAP_MS,
   wallScoreTubeContactDepth3D,
 } from "../lib/korobeinikiReferenceLayout";
 import { usesSharedWallScore } from "../lib/wallScoreLayout";
@@ -136,7 +136,7 @@ export function visualMarbleAtTime(
   const contactEndZ = contactDepthForPlatform(platforms[index + 1], nextSettings, overrides);
   const contactZ = THREE.MathUtils.lerp(contactStartZ, contactEndZ, phase);
   const followsWallScoreRail = usesSharedWallScore(segmentSettings)
-    && end - start >= KOROBEINIKI_BRIDGE_GAP_MS;
+    && end - start >= WALL_SCORE_RAIL_MIN_GAP_MS;
   return {
     ...point,
     z: contactZ + (overrideForSegment(index, overrides) || followsWallScoreRail

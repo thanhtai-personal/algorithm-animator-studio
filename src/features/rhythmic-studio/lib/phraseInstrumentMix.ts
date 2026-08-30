@@ -1,14 +1,18 @@
-import type { ConfigurableInstrumentFamily, InstrumentMixSegment, NoteEvent, StudioSettings } from "../types";
+import type { ConfigurableInstrumentFamily, InstrumentMixSegment, NoteEvent } from "../types";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
+import { createInstrumentMixSettingsResolver } from "./instrumentMixResolver";
 import {
   instrumentFamiliesForMidi,
+  KOROBEINIKI_INSTRUMENT_MIX_SELECTION,
   midiInstrumentHints,
   PHRASE_INSTRUMENT_SEQUENCE,
+  type InstrumentMixSelection,
 } from "./instrumentMixCatalog";
 
 export type PhraseInstrumentFamily = ConfigurableInstrumentFamily;
 export type { InstrumentMixSegment } from "../types";
 export { PHRASE_INSTRUMENT_SEQUENCE } from "./instrumentMixCatalog";
+export { createInstrumentMixSettingsResolver, instrumentMixSegmentForTime } from "./instrumentMixResolver";
 
 export interface PhraseInstrumentSegment {
   id: number;
@@ -220,7 +224,7 @@ export function normalizeInstrumentMixSegments(
 ): InstrumentMixSegment[] {
   const safeDuration = Math.max(INSTRUMENT_MIX_MIN_DURATION_MS, durationMs, eventTimelineEnd(events));
   const phrases = buildPhraseInstrumentPlan([...events]);
-  const usableLimit = phrases.length || segments.length;
+  const usableLimit = Math.max(1, Math.floor(safeDuration / INSTRUMENT_MIX_MIN_DURATION_MS));
   const usable = segments
     .filter((segment) => PHRASE_INSTRUMENT_SEQUENCE.includes(segment.family))
     .slice(0, usableLimit);
@@ -243,12 +247,14 @@ export function normalizeInstrumentMixSegments(
       safeDuration - remaining * INSTRUMENT_MIX_MIN_DURATION_MS,
     );
     let endMs = safeDuration;
-    if (!isLast && phrases.length) {
+    const minimumPhraseIndex = phraseIndex + 1;
+    const maximumPhraseIndex = phrases.length - remaining;
+    if (!isLast && minimumPhraseIndex <= maximumPhraseIndex) {
       const boundaryIndex = closestPhraseBoundary(
         phrases,
         cursorMs + rawDuration,
-        phraseIndex + 1,
-        phrases.length - remaining,
+        minimumPhraseIndex,
+        maximumPhraseIndex,
       );
       phraseIndex = boundaryIndex;
       endMs = phrases[boundaryIndex].startMs;
@@ -292,10 +298,17 @@ export function updateInstrumentMixSegmentDuration(segments: readonly Instrument
 export function updateInstrumentMixSegmentFamily(
   segments: readonly InstrumentMixSegment[],
   id: string,
-  family: PhraseInstrumentFamily,
+  family: InstrumentMixSelection,
 ) {
+  if (family === KOROBEINIKI_INSTRUMENT_MIX_SELECTION) {
+    return segments.map((segment) => segment.id === id
+      ? { ...segment, family: "boomwhacker" as const, variant: family }
+      : segment);
+  }
   if (!PHRASE_INSTRUMENT_SEQUENCE.includes(family)) return [...segments];
-  return segments.map((segment) => segment.id === id ? { ...segment, family } : segment);
+  return segments.map((segment) => segment.id === id
+    ? { ...segment, family, variant: undefined }
+    : segment);
 }
 
 export function addInstrumentMixSegment(
@@ -352,39 +365,6 @@ export function removeInstrumentMixSegment(
     events,
     durationMs,
   );
-}
-
-export function instrumentMixSegmentForTime(segments: readonly InstrumentMixSegment[], timeMs: number) {
-  if (!segments.length) return null;
-  let low = 0;
-  let high = segments.length - 1;
-  while (low < high) {
-    const mid = Math.floor((low + high + 1) / 2);
-    if (segments[mid].startMs <= timeMs) low = mid;
-    else high = mid - 1;
-  }
-  return segments[low] ?? null;
-}
-
-export function createInstrumentMixSettingsResolver(
-  events: readonly NoteEvent[],
-  segments: readonly InstrumentMixSegment[],
-  resolveBaseSettings: StudioSettingsResolver,
-): StudioSettingsResolver {
-  const cache = new Map<string, StudioSettings>();
-  return (index: number) => {
-    const base = resolveBaseSettings(index);
-    if (base.instrumentFamily !== "mixed") return base;
-    const event = events[index];
-    const segment = event ? instrumentMixSegmentForTime(segments, event.timeMs) : null;
-    if (!segment) return base;
-    const key = `${segment.id}:${segment.family}:${base.instrumentLayout}:${base.terrainProfile}`;
-    const cached = cache.get(key);
-    if (cached) return cached;
-    const resolved = { ...base, instrumentFamily: segment.family };
-    cache.set(key, resolved);
-    return resolved;
-  };
 }
 
 export function createPhraseInstrumentSettingsResolver(

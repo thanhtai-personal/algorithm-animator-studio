@@ -46,6 +46,7 @@ export function createMarbleCourseWorkerPayload(
     instrumentMixSegments: (input.instrumentMixSegments ?? []).map((segment) => ({
       id: String(segment.id),
       family: segment.family,
+      variant: segment.variant,
       startMs: Number(segment.startMs),
       endMs: Number(segment.endMs),
     })),

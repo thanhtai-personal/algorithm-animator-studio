@@ -107,6 +107,7 @@ export interface InstrumentMixSegment {
   startMs: number;
   endMs: number;
   family: ConfigurableInstrumentFamily;
+  variant?: "korobeiniki-tubes";
 }
 
 export const INSTRUMENT_LAYOUTS = ["cascade", "fan", "gallery", "split", "corridor", "wall-score"] as const;

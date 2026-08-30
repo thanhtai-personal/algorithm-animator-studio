@@ -16,6 +16,7 @@ import { RhythmicVfx3D, type RhythmicVfxHandle } from "./RhythmicVfx3D";
 import { impactSquash, RHYTHMIC_WORLD_SCALE, setWorldPoint, visualChaseFocusAtTime, visualMarbleAtTime } from "./RhythmicMotion3D";
 import {
   cameraDepthProfile,
+  cameraFollowDamping,
   cameraLookAheadMs,
   courseBackdropBounds,
   crossedRhythmicHit,
@@ -26,6 +27,8 @@ import {
   RHYTHMIC_CAMERA_FOV,
   RHYTHMIC_CAMERA_Z,
   RHYTHMIC_UI_UPDATE_MS,
+  steadyCameraAxisTarget,
+  wallScoreCameraFov,
 } from "./rhythmicSceneMath3D";
 import { emitDueRhythmicHits } from "../lib/chaseAudioScheduler";
 import { settingsForChaseOwner } from "../engine/chaseCoursePlanner";
@@ -235,9 +238,17 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     const verticalLag = THREE.MathUtils.clamp(velocity.y * verticalFactor, -0.18, 0.24);
     const observerOffsetX = isStableKorobeiniki ? 0.42 : isWallScore ? 0.48 : isShowcase ? 0.78 : isXylophone ? 0.62 : isTubeBoard ? 0.52 : isComet ? -0.38 : 0.3;
     const observerLiftY = isStableKorobeiniki ? 0.26 : isWallScore ? 0.22 : isShowcase ? 0.42 : isXylophone ? 0.34 : isTubeBoard ? 0.22 : isComet ? 0.12 : 0.16;
-    cameraTarget.set(framedX + lateralLead + observerOffsetX, framedY + anchorOffset - verticalLag + observerLiftY, adaptiveZ + world.z * (isComet ? 0.14 : 0.08));
+    const desiredCameraX = framedX + lateralLead + observerOffsetX;
+    const stableCameraX = isWallScore && !snapCamera
+      ? steadyCameraAxisTarget(camera.position.x, desiredCameraX, isStableKorobeiniki ? 0.56 : 0.48)
+      : desiredCameraX;
+    const desiredCameraY = framedY + anchorOffset - verticalLag + observerLiftY;
+    const stableCameraY = isWallScore && !snapCamera
+      ? steadyCameraAxisTarget(camera.position.y, desiredCameraY, isStableKorobeiniki ? 0.34 : 0.28)
+      : desiredCameraY;
+    cameraTarget.set(stableCameraX, stableCameraY, adaptiveZ + world.z * (isComet ? 0.14 : 0.08));
 
-    const damping = (isStableKorobeiniki ? 8.5 : 5.4) + THREE.MathUtils.clamp(frameSettings.cameraSmoothing, 0.03, 0.65) * (isStableKorobeiniki ? 16.5 : 12.5);
+    const damping = cameraFollowDamping(frameSettings.cameraSmoothing, isWallScore);
     if (snapCamera || !Number.isFinite(camera.position.x)) camera.position.copy(cameraTarget);
     else {
       camera.position.x = THREE.MathUtils.damp(camera.position.x, cameraTarget.x, damping, deltaSeconds);
@@ -248,9 +259,17 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
     const lookX = THREE.MathUtils.lerp(world.x, aheadWorld.x, isStableKorobeiniki ? 0.4 : isShowcase ? 0.64 : isComet ? 0.62 : isTubeBoard ? 0.58 : 0.55);
     const lookDrop = isStableKorobeiniki ? 0.14 : isWallScore ? 0.18 : isShowcase ? 0.12 : isXylophone ? 0.18 : 0.28;
     const lookY = THREE.MathUtils.lerp(world.y - lookDrop, aheadWorld.y, isShowcase ? 0.5 : isComet ? 0.48 : 0.43);
+    const desiredLookX = THREE.MathUtils.lerp(lookX, farAheadWorld.x, isComet ? 0.08 : 0.05);
+    const stableLookX = isWallScore && !snapCamera && smoothedLook.lengthSq() > 0
+      ? steadyCameraAxisTarget(smoothedLook.x, desiredLookX, isStableKorobeiniki ? 0.3 : 0.24)
+      : desiredLookX;
+    const desiredLookY = THREE.MathUtils.lerp(lookY, farAheadWorld.y, isComet ? 0.06 : 0.04);
+    const stableLookY = isWallScore && !snapCamera && smoothedLook.lengthSq() > 0
+      ? steadyCameraAxisTarget(smoothedLook.y, desiredLookY, isStableKorobeiniki ? 0.2 : 0.16)
+      : desiredLookY;
     lookTarget.set(
-      THREE.MathUtils.lerp(lookX, farAheadWorld.x, isComet ? 0.08 : 0.05),
-      THREE.MathUtils.lerp(lookY, farAheadWorld.y, isComet ? 0.06 : 0.04),
+      stableLookX,
+      stableLookY,
       THREE.MathUtils.lerp(world.z, aheadWorld.z, isComet ? 0.42 : 0.3),
     );
     if (snapCamera || smoothedLook.lengthSq() === 0) smoothedLook.copy(lookTarget);
@@ -263,7 +282,7 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
 
     const perspective = camera as THREE.PerspectiveCamera;
     const targetFov = isWallScore
-      ? THREE.MathUtils.clamp((isStableKorobeiniki ? 36.6 : 36.2) + jumpDistance * (isStableKorobeiniki ? 0.02 : 0.06) - density * (isStableKorobeiniki ? 0.004 : 0.01), isStableKorobeiniki ? 36.1 : 35.5, isStableKorobeiniki ? 37.1 : 37.8)
+      ? wallScoreCameraFov(jumpDistance, density, isStableKorobeiniki)
       : THREE.MathUtils.clamp(
           RHYTHMIC_CAMERA_FOV + jumpDistance * (isShowcase ? 0.24 : isComet ? 0.48 : isXylophone ? 0.32 : 0.35) - density * (rollingSurface ? 0.018 : 0.045),
           isShowcase ? 35 : isComet ? 35.5 : isXylophone ? 34 : 34.5,
@@ -274,8 +293,8 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
       perspective.fov = nextFov;
       perspective.updateProjectionMatrix();
     }
-    const bankStrength = isStableKorobeiniki ? 0.00015 : rollingSurface ? 0.0007 : isShowcase ? 0.0012 : isWallScore ? 0.0006 : isXylophone ? 0.0022 : isTubeBoard ? 0.0028 : 0.0042;
-    const bankLimit = isStableKorobeiniki ? 0.004 : rollingSurface ? 0.006 : isShowcase ? 0.008 : isWallScore ? 0.005 : isXylophone ? 0.014 : isTubeBoard ? 0.018 : 0.028;
+    const bankStrength = isWallScore ? 0 : rollingSurface ? 0.0007 : isShowcase ? 0.0012 : isXylophone ? 0.0022 : isTubeBoard ? 0.0028 : 0.0042;
+    const bankLimit = isWallScore ? 0 : rollingSurface ? 0.006 : isShowcase ? 0.008 : isXylophone ? 0.014 : isTubeBoard ? 0.018 : 0.028;
     const bankTarget = THREE.MathUtils.clamp(-velocity.x * bankStrength, -bankLimit, bankLimit);
     perspective.rotation.z = snapCamera ? bankTarget : THREE.MathUtils.damp(perspective.rotation.z, bankTarget, 4.8, deltaSeconds);
   }, [afterWorld, aheadWorld, beforeWorld, farAheadWorld, camera, cameraTarget, deltaQuaternion, displacement, lookTarget, previousWorld, props.chasePlan, props.courseOverrides, props.durationMs, props.events, props.platforms, props.resolveSettings, props.settings, rollAxis, smoothedLook, velocity, world]);

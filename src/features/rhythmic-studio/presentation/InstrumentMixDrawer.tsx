@@ -14,11 +14,18 @@ import {
 import { useSystemLang } from "@/hooks/use-system-lang";
 import type { RhythmicStudioController } from "../hooks/useRhythmicStudioController";
 import { instrumentMixText } from "../instrumentMixI18n";
-import { PHRASE_INSTRUMENT_SEQUENCE, type PhraseInstrumentFamily } from "../lib/phraseInstrumentMix";
+import {
+  INSTRUMENT_MIX_SELECTIONS,
+  instrumentMixSelectionForSegment,
+  KOROBEINIKI_INSTRUMENT_MIX_SELECTION,
+  type InstrumentMixSelection,
+} from "../lib/instrumentMixCatalog";
 import { showcaseText, type ShowcaseTextKey } from "../showcaseI18n";
 
-function familyLabelKey(family: PhraseInstrumentFamily): ShowcaseTextKey {
-  return `family.${family}`;
+function familyLabelKey(selection: InstrumentMixSelection): ShowcaseTextKey {
+  return selection === KOROBEINIKI_INSTRUMENT_MIX_SELECTION
+    ? "family.korobeiniki"
+    : `family.${selection}`;
 }
 
 function InstrumentDurationInput({ durationSeconds, label, onCommit }: {
@@ -112,12 +119,12 @@ export const InstrumentMixDrawer = observer(function InstrumentMixDrawer({ studi
                   <span>{instrumentMixText(lang, "instrument")}</span>
                   <select
                     className="h-10 w-full rounded-md border border-white/10 bg-[#0b0f14] px-3 text-sm text-slate-100 outline-none focus:border-amber-300/60"
-                    value={segment.family}
+                    value={instrumentMixSelectionForSegment(segment)}
                     aria-label={`${instrumentMixText(lang, "instrument")} ${number}`}
-                    onChange={(event) => studio.setInstrumentMixFamily(segment.id, event.target.value as PhraseInstrumentFamily)}
+                    onChange={(event) => studio.setInstrumentMixFamily(segment.id, event.target.value as InstrumentMixSelection)}
                   >
-                    {PHRASE_INSTRUMENT_SEQUENCE.map((family) => <option key={family} value={family}>
-                      {showcaseText(lang, familyLabelKey(family))}
+                    {INSTRUMENT_MIX_SELECTIONS.map((selection) => <option key={selection} value={selection}>
+                      {showcaseText(lang, familyLabelKey(selection))}
                     </option>)}
                   </select>
                 </label>

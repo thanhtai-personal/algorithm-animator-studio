@@ -2,6 +2,7 @@ import type { NoteEvent, StudioSettings } from "../types";
 import type { MarblePlatform } from "../engine/marblePhysicsTypes";
 
 export const KOROBEINIKI_BRIDGE_GAP_MS = 620;
+export const WALL_SCORE_RAIL_MIN_GAP_MS = 1_000;
 export const KOROBEINIKI_PHRASE_STARTS = [15, 21, 27] as const;
 export const KOROBEINIKI_REFERENCE_SCENE_STARTS = [0, ...KOROBEINIKI_PHRASE_STARTS] as const;
 
@@ -237,65 +238,18 @@ export interface WallScoreRailSegment {
   points: { x: number; y: number }[];
 }
 
-interface WallScoreBridgeGeometry {
-  entry: { x: number; y: number };
-  exit: { x: number; y: number };
-  sag: number;
-}
-
-function wallScoreBridgeGeometry(start: MarblePlatform, end: MarblePlatform): WallScoreBridgeGeometry {
-  const dx = end.hitX - start.hitX;
-  const dy = end.hitY - start.hitY;
-  const bridgeY = start.hitY + dy * 0.42 - Math.min(10, Math.abs(dx) * 0.05);
-  return {
-    entry: { x: start.hitX + dx * 0.28, y: bridgeY },
-    exit: { x: start.hitX + dx * 0.7, y: bridgeY + dy * 0.06 },
-    sag: Math.min(14, Math.max(9, Math.abs(dx) * 0.06)),
-  };
-}
-
-function shortBridgeFlight(
-  from: { x: number; y: number },
-  to: { x: number; y: number },
-  phase: number,
-) {
-  const p = Math.max(0, Math.min(1, phase));
-  return {
-    x: from.x + (to.x - from.x) * p,
-    y: from.y + (to.y - from.y) * p - Math.sin(Math.PI * p) * 14,
-  };
-}
-
-function wallScoreRailCenter(geometry: WallScoreBridgeGeometry, phase: number) {
-  const p = Math.max(0, Math.min(1, phase));
-  return {
-    x: geometry.entry.x + (geometry.exit.x - geometry.entry.x) * p,
-    y: geometry.entry.y + (geometry.exit.y - geometry.entry.y) * p
-      + Math.sin(Math.PI * p) * geometry.sag,
-  };
-}
-
 export function wallScoreMarblePointAtPhase(
   start: MarblePlatform,
   end: MarblePlatform,
   phase: number,
 ) {
   const p = Math.max(0, Math.min(1, phase));
-  const geometry = wallScoreBridgeGeometry(start, end);
-  if (p < WALL_SCORE_RAIL_ENTRY_T) {
-    return shortBridgeFlight(start, geometry.entry, p / WALL_SCORE_RAIL_ENTRY_T);
-  }
-  if (p <= WALL_SCORE_RAIL_EXIT_T) {
-    return wallScoreRailCenter(
-      geometry,
-      (p - WALL_SCORE_RAIL_ENTRY_T) / (WALL_SCORE_RAIL_EXIT_T - WALL_SCORE_RAIL_ENTRY_T),
-    );
-  }
-  return shortBridgeFlight(
-    geometry.exit,
-    end,
-    (p - WALL_SCORE_RAIL_EXIT_T) / (1 - WALL_SCORE_RAIL_EXIT_T),
-  );
+  const spanSeconds = Math.max(0.001, (end.event.timeMs - start.event.timeMs) / 1_000);
+  const elapsed = spanSeconds * p;
+  return {
+    x: start.hitX + start.outVX * elapsed,
+    y: start.hitY + start.outVY * elapsed + 0.5 * start.gravity * elapsed ** 2,
+  };
 }
 
 function wallScoreRailPoint(start: MarblePlatform, end: MarblePlatform, ratio: number, ballRadius: number) {
@@ -316,13 +270,17 @@ export function wallScoreRailSegments(platforms: readonly MarblePlatform[], ball
     const start = platforms[index];
     const end = platforms[index + 1];
     const spanMs = end.event.timeMs - start.event.timeMs;
-    if (spanMs < KOROBEINIKI_BRIDGE_GAP_MS) continue;
+    if (spanMs < WALL_SCORE_RAIL_MIN_GAP_MS) continue;
     const steps = 10;
     const points = Array.from({ length: steps + 1 }, (_, pointIndex) => {
       const ratio = WALL_SCORE_RAIL_ENTRY_T
         + (WALL_SCORE_RAIL_EXIT_T - WALL_SCORE_RAIL_ENTRY_T) * pointIndex / steps;
       return wallScoreRailPoint(start, end, ratio, ballRadius);
     });
+    const railLength = points.slice(1).reduce((length, point, pointIndex) => (
+      length + Math.hypot(point.x - points[pointIndex].x, point.y - points[pointIndex].y)
+    ), 0);
+    if (railLength < Math.max(120, ballRadius * 6)) continue;
     segments.push({ afterIndex: index, points });
   }
   return segments;

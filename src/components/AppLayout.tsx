@@ -30,8 +30,9 @@ export function AppLayout({ children }: PropsWithChildren) {
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>(readResponsiveSidebarMode);
   const [fantasticMode] = useFantasticMode();
   const [chillModeEnabled, setChillModeEnabled] = useState(() => readChillModeEnabled());
+  const algorithmStudioActive = location.pathname === "/algorithms" || location.pathname.startsWith("/algorithms/");
   const rhythmicStudioActive = location.pathname.startsWith("/algorithms/rhythmic") || location.pathname.startsWith("/algorithms/marble-tower");
-  const fantasticVisualsEnabled = fantasticMode && !rhythmicStudioActive;
+  const fantasticVisualsEnabled = fantasticMode && !algorithmStudioActive;
 
   useEffect(() => subscribeSystemLang(setLang), []);
   useEffect(() => subscribeChillMode(setChillModeEnabled), []);
@@ -43,8 +44,9 @@ export function AppLayout({ children }: PropsWithChildren) {
     query.addEventListener("change", syncSidebarToViewport);
     return () => query.removeEventListener("change", syncSidebarToViewport);
   }, []);
-  // Rhythmic Studio already owns a continuously updated preview canvas. Keep
-  // the decorative fullscreen Fantastic canvas off this route to avoid stacked render loops.
+  // Algorithm studios own large Canvas/WebGL previews. Keep the decorative
+  // fullscreen canvas and entrance filters off these routes to avoid stacking
+  // GPU/compositor work while the editor is mounting.
   useFantasticFrameMotion(fantasticVisualsEnabled, location.pathname);
 
   useEffect(() => {

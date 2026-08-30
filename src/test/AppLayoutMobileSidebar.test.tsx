@@ -15,9 +15,13 @@ vi.mock("../components/BackgroundJobsNotifier", () => ({
   BackgroundJobsNotifier: () => <div data-testid="background-jobs-notifier" />,
 }));
 vi.mock("../components/ChillMusicNotifier", () => ({ ChillMusicNotifier: () => null }));
-vi.mock("../components/FantasticModeBackdrop", () => ({ FantasticModeBackdrop: () => null }));
+vi.mock("../components/FantasticModeBackdrop", () => ({
+  FantasticModeBackdrop: ({ enabled }: { enabled: boolean }) => (
+    <div data-enabled={String(enabled)} data-testid="fantastic-backdrop" />
+  ),
+}));
 vi.mock("@/hooks/use-fantastic-frame-motion", () => ({ useFantasticFrameMotion: () => undefined }));
-vi.mock("@/hooks/use-fantastic-mode", () => ({ useFantasticMode: () => [false] }));
+vi.mock("@/hooks/use-fantastic-mode", () => ({ useFantasticMode: () => [true] }));
 vi.mock("@/lib/chillMusicSettings", () => ({ readChillModeEnabled: () => false, subscribeChillMode: () => () => undefined }));
 vi.mock("@/lib/i18n", () => ({ readSystemLang: () => "vi", subscribeSystemLang: () => () => undefined }));
 
@@ -41,5 +45,12 @@ describe("AppLayout mobile sidebar", () => {
     render(<MemoryRouter initialEntries={["/videos"]}><AppLayout><div>Videos page</div></AppLayout></MemoryRouter>);
 
     expect(screen.getByTestId("background-jobs-notifier")).toBeInTheDocument();
+    expect(screen.getByTestId("fantastic-backdrop")).toHaveAttribute("data-enabled", "true");
+  });
+
+  it("disables the GPU-heavy Fantastic backdrop on the algorithm channel", () => {
+    render(<MemoryRouter initialEntries={["/algorithms"]}><AppLayout><div>Algorithms page</div></AppLayout></MemoryRouter>);
+
+    expect(screen.getByTestId("fantastic-backdrop")).toHaveAttribute("data-enabled", "false");
   });
 });

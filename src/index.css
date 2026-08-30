@@ -148,21 +148,19 @@ All colors MUST be HSL.
     width: 42rem;
     height: 42rem;
     border-radius: 9999px;
-    filter: blur(42px);
-    mix-blend-mode: screen;
     opacity: 0.48;
   }
 
   .fantastic-orb-a {
     left: -10rem;
     top: -12rem;
-    background: hsl(var(--primary) / 0.5);
+    background: radial-gradient(circle, hsl(var(--primary) / 0.5), transparent 70%);
   }
 
   .fantastic-orb-b {
     right: -14rem;
     top: 22vh;
-    background: hsl(var(--accent) / 0.42);
+    background: radial-gradient(circle, hsl(var(--accent) / 0.42), transparent 70%);
   }
 
   .fantastic-beam {
@@ -172,8 +170,7 @@ All colors MUST be HSL.
     width: 88vw;
     height: 9rem;
     transform: rotate(-18deg);
-    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.22), hsl(var(--accent) / 0.18), transparent);
-    filter: blur(12px);
+    background: linear-gradient(90deg, transparent 0%, hsl(var(--primary) / 0.12) 24%, hsl(var(--primary) / 0.22) 44%, hsl(var(--accent) / 0.18) 62%, transparent 100%);
     opacity: 0.4;
   }
 

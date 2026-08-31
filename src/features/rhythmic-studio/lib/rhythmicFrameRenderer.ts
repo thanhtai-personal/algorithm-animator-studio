@@ -4,6 +4,7 @@ import { noteLightColorsForPlatform } from "./instrumentLightsModel";
 import { drawCourseLongItems, isPlatformCourseItem, overrideForNode } from "./courseItems";
 import { activeLyricAt } from "./lyrics";
 import { drawLongGapTubes } from "./longGapTube";
+import { drawAutomaticLongGapRails } from "./longGapRail";
 import { clamp, collisionStrength, hasCompleteMarblePlatforms, marbleAtTime, mixHex, type MarblePlatform, type MarblePoint } from "./marbleCourse";
 import { applyPresetCamera } from "./presetCamera";
 import { drawPresetMarble } from "./presetMarbleRenderer";
@@ -177,6 +178,7 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
   ctx.save();
   applyPresetCamera(ctx, settings, width, height);
   ctx.translate(-cameraX, 0);
+  drawAutomaticLongGapRails(ctx, platforms, cameraY, settings);
   if (live) drawLongGapTubes(ctx, platforms, events, cameraY, timeMs, settings, courseOverrides);
   if (live || courseOverrides.length) drawCourseLongItems(ctx, platforms, courseOverrides, cameraY, settings);
   drawDenseSurfaces2D(ctx, platforms, cameraY, settings);

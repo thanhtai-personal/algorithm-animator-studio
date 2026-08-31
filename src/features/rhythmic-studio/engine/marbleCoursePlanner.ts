@@ -5,6 +5,11 @@ import type { MarblePlatform, Vec2 } from "./marblePhysicsTypes";
 import { marbleEntrySpeed, marblePhysicsProfile, type MarblePhysicsProfile } from "./marblePhysicsProfiles";
 import { presetObstaclePlan } from "./presetObstaclePlan";
 import {
+  LONG_GAP_RAIL_MS,
+  extendedLongGapRailRouteCandidate,
+  longGapRailRouteForTarget,
+} from "./longGapRailRouting";
+import {
   adjacentSpacingPenalty,
   courseWorldBounds,
   nextImpactClearancePenalty,
@@ -836,9 +841,23 @@ function routeCandidatesForStep(
   const smoothExit = denseEnd && index < context.events.length - 1
     ? rollingExitCandidate(state.hit, state.incoming, spanMs, settings, context.width, profile.gravity)
     : null;
-  return smoothExit
-    ? [smoothExit]
-    : bounceCandidates(index, state.hit, state.incoming, spanMs, state.preferredDirection, pitch, settings, context.width);
+  if (smoothExit) return [smoothExit];
+  const bounces = bounceCandidates(index, state.hit, state.incoming, spanMs, state.preferredDirection, pitch, settings, context.width);
+  if (spanMs < LONG_GAP_RAIL_MS || settings.terrainProfile === "comet") return bounces;
+  const rails = bounces
+    .map((bounce) => longGapRailRouteForTarget(state.hit, state.incoming, bounce.target, spanMs, bounce.score))
+    .filter((route): route is NonNullable<typeof route> => route !== null);
+  const extendedRail = extendedLongGapRailRouteCandidate(
+    state.hit,
+    state.incoming,
+    spanMs,
+    state.preferredDirection,
+    settings,
+    context.width,
+  );
+  return rails.length
+    ? [...rails, ...(extendedRail ? [extendedRail] : []), ...bounces]
+    : extendedRail ? [extendedRail, ...bounces] : bounces;
 }
 
 function createExpansionStep(context: PlannerContext, index: number, state: SearchState): ExpansionStep | null {
@@ -943,11 +962,16 @@ function createPlatformForRoute(
     step.platformWidth,
     step.profile.gravity,
   );
+  const routeMotionMode = "motionMode" in route ? route.motionMode : undefined;
   platform.motionMode = step.chord
     ? "hold"
     : step.denseRun
-      ? ("motionMode" in route ? route.motionMode : undefined) ?? "roll"
-      : "ballistic";
+      ? routeMotionMode ?? "roll"
+      : routeMotionMode ?? "ballistic";
+  platform.longRail = !step.chord
+    && !step.denseRun
+    && step.spanMs >= LONG_GAP_RAIL_MS
+    && routeMotionMode === "roll";
   platform.denseRunId = step.denseNode?.id;
   platform.denseSurfaceId = step.denseNode?.surfaceId;
   platform.chordClusterId = step.chordNode?.id;

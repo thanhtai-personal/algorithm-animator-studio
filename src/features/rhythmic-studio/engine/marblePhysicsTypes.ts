@@ -29,6 +29,8 @@ export interface MarblePlatform {
   contactMode: ContactMode;
   event: NoteEvent;
   motionMode?: SegmentMotionMode;
+  /** Physical support used to keep long note gaps moving at a natural speed. */
+  longRail?: boolean;
   denseRunId?: number;
   denseSurfaceId?: number;
   denseLayout?: DenseSurfaceLayout;

@@ -10,6 +10,7 @@ import {
 } from "../lib/korobeinikiReferenceLayout";
 import { usesSharedWallScore } from "../lib/wallScoreLayout";
 import { resolvePlatformStyle } from "../lib/platformStyles";
+import { isAutomaticLongGapRail, longGapRailPoints } from "../lib/longGapRail";
 import { instrumentMarbleContactDepth3D } from "./instrumentPlayingSurface3D";
 
 function worldPoint(point: Pick<MarblePlatform, "hitX" | "hitY"> | { x: number; y: number }, z = -0.2) {
@@ -77,29 +78,51 @@ export function RhythmicGuideRails3D({ platforms, settings, focusIndex }: {
   focusIndex: number;
 }) {
   const groups = useMemo(() => {
-    if (!settings.showcaseRails || platforms.length < 2) return [] as THREE.Vector3[][];
-    if (usesSharedWallScore(settings)) return wallScoreGuideRailGroups3D(platforms, settings, focusIndex);
-    if (platforms.length < 4) return [] as THREE.Vector3[][];
-    const visible = platforms.filter((platform) => Math.abs(platform.index - focusIndex) <= 24);
-    const stride = Math.max(4, Math.round(10 - settings.showcaseRailDensity * 5));
-    const length = Math.max(4, Math.round(4 + settings.showcaseRailDensity * 3));
-    const result: THREE.Vector3[][] = [];
-    for (let start = 1; start < visible.length - 2; start += stride) {
-      const slice = visible.slice(start, Math.min(visible.length, start + length));
-      if (slice.length < 4) continue;
-      result.push(slice.map((platform) => worldPoint(platform)));
+    const result: Array<{ points: THREE.Vector3[]; halfGap: number }> = [];
+    for (let index = 0; index < platforms.length - 1; index += 1) {
+      const start = platforms[index];
+      const end = platforms[index + 1];
+      if (!isAutomaticLongGapRail(start, end) || Math.abs(index - focusIndex) > 24) continue;
+      const startZ = railContactDepth(start, settings);
+      const endZ = railContactDepth(end, settings);
+      const points = longGapRailPoints(start, end, 10).map((point, pointIndex, all) => worldPoint(
+        point,
+        THREE.MathUtils.lerp(startZ, endZ, pointIndex / Math.max(1, all.length - 1)),
+      ));
+      result.push({
+        points,
+        halfGap: Math.max(0.05, settings.ballSize * RHYTHMIC_WORLD_SCALE * 0.48),
+      });
     }
+
+    if (!settings.showcaseRails || platforms.length < 2) return result;
+    const showcaseGroups = usesSharedWallScore(settings)
+      ? wallScoreGuideRailGroups3D(platforms, settings, focusIndex)
+      : (() => {
+          if (platforms.length < 4) return [] as THREE.Vector3[][];
+          const visible = platforms.filter((platform) => Math.abs(platform.index - focusIndex) <= 24);
+          const stride = Math.max(4, Math.round(10 - settings.showcaseRailDensity * 5));
+          const groupLength = Math.max(4, Math.round(4 + settings.showcaseRailDensity * 3));
+          const decorated: THREE.Vector3[][] = [];
+          for (let start = 1; start < visible.length - 2; start += stride) {
+            const slice = visible.slice(start, Math.min(visible.length, start + groupLength));
+            if (slice.length < 4) continue;
+            decorated.push(slice.map((platform) => worldPoint(platform)));
+          }
+          return decorated;
+        })();
+    showcaseGroups.forEach((points) => result.push({ points, halfGap: 0.035 }));
     return result;
   }, [focusIndex, platforms, settings]);
 
   if (!groups.length) return null;
   return (
     <group renderOrder={-2}>
-      {groups.map((points, index) => (
+      {groups.map((group, index) => (
         <group key={index}>
-          <RailSegment points={points} offset={-0.035} />
-          <RailSegment points={points} offset={0.035} />
-          {points.filter((_, pointIndex) => pointIndex % 3 === 0).map((point, pointIndex) => (
+          <RailSegment points={group.points} offset={-group.halfGap} />
+          <RailSegment points={group.points} offset={group.halfGap} />
+          {group.points.filter((_, pointIndex) => pointIndex % 3 === 0).map((point, pointIndex) => (
             <group key={pointIndex} position={point}>
               <mesh position={[0, 0, -0.34]} rotation={[Math.PI / 2, 0, 0]} castShadow>
                 <cylinderGeometry args={[0.01, 0.01, 0.42, 8]} />

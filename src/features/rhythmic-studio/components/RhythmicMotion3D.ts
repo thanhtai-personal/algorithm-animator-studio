@@ -137,9 +137,10 @@ export function visualMarbleAtTime(
   const contactZ = THREE.MathUtils.lerp(contactStartZ, contactEndZ, phase);
   const followsWallScoreRail = usesSharedWallScore(segmentSettings)
     && end - start >= WALL_SCORE_RAIL_MIN_GAP_MS;
+  const followsAutomaticLongRail = platforms[index]?.longRail === true;
   return {
     ...point,
-    z: contactZ + (overrideForSegment(index, overrides) || followsWallScoreRail
+    z: contactZ + (overrideForSegment(index, overrides) || followsWallScoreRail || followsAutomaticLongRail
       ? 0
       : depthForSegment(index, phase, segmentSettings)),
     segmentIndex: index,

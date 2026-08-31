@@ -137,6 +137,7 @@ export function drawLongGapTubes(
     if (span < LONG_GAP_TUBE_MS || overrideForSegment(index, overrides)) continue;
     const start = platforms[index];
     const end = platforms[index + 1];
+    if (start.longRail) continue;
     const minWorldY = Math.min(start.hitY, end.hitY);
     const maxWorldY = Math.max(start.hitY, end.hitY);
     if (maxWorldY < cameraY - 180 || minWorldY > cameraY + 1460) continue;

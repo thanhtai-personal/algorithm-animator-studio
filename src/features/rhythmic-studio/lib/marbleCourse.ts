@@ -22,7 +22,6 @@ export type { MarblePlatform, MarblePoint } from "../engine/marblePhysicsTypes";
 export function platformContactPoint(platform: MarblePlatform) {
   return { x: platform.contactX ?? platform.x, y: platform.contactY ?? platform.y };
 }
-
 export function marbleHitPoint(platform: MarblePlatform) {
   if (Number.isFinite(platform.hitX) && Number.isFinite(platform.hitY)) return { x: platform.hitX, y: platform.hitY };
   const contact = platformContactPoint(platform);
@@ -46,7 +45,6 @@ export interface LongGapTubeGeometry {
   exitX: number;
   exitY: number;
 }
-
 export function longGapTubeGeometry(start: MarblePlatform, end: MarblePlatform, _settings: StudioSettings): LongGapTubeGeometry {
   const startHit = marbleHitPoint(start);
   const endHit = marbleHitPoint(end);
@@ -89,8 +87,7 @@ export function longGapTubeGeometry(start: MarblePlatform, end: MarblePlatform, 
   const exitVelocity = ballisticVelocity(exitRatio);
   const tubeSeconds = spanSeconds * (exitRatio - TUBE_ENTRY_T);
 
-  // Generic automatic tubes still wrap the real ballistic arc. Wall-score pipes
-  // use the detached S-curve above so the marble visibly falls into and exits the tube.
+  // Generic tubes wrap the ballistic arc; wall-score pipes use the detached S-curve above.
   return {
     entryX: entry.x,
     entryY: entry.y,
@@ -105,7 +102,6 @@ export function longGapTubeGeometry(start: MarblePlatform, end: MarblePlatform, 
     exitY: exit.y,
   };
 }
-
 function rawLongGapTubePoint(geometry: LongGapTubeGeometry, t: number) {
   const p = clamp(t);
   const inv = 1 - p;
@@ -123,7 +119,6 @@ function rawLongGapTubePoint(geometry: LongGapTubeGeometry, t: number) {
     * geometry.waveAmplitude * envelope * geometry.waveDirection;
   return { x: base.x + wave, y: base.y };
 }
-
 interface LongGapTubeArcTable {
   points: { x: number; y: number }[];
   lengths: number[];

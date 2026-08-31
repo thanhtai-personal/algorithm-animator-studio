@@ -37,8 +37,11 @@ export const INSTRUMENT_MIX_TARGET_PHRASES = 2;
 // Reference Shorts change the visual installation frequently enough to keep the
 // eye moving. Long songs therefore get additional sections even when the MIDI
 // parser found only a handful of large musical phrases.
-export const INSTRUMENT_MIX_TARGET_SECTION_MS = 7_000;
-export const INSTRUMENT_MIX_MAX_SECTION_MS = 9_000;
+// The Maroon 5 reference changes each instrument installation after roughly
+// 3-5 seconds. Keep that visual rhythm on long songs, while phrase snapping
+// below still prevents a timbre change in the middle of a musical sentence.
+export const INSTRUMENT_MIX_TARGET_SECTION_MS = 4_200;
+export const INSTRUMENT_MIX_MAX_SECTION_MS = 5_500;
 export const INSTRUMENT_MIX_MIN_DURATION_MS = 500;
 
 function onsetGapAfter(events: NoteEvent[], index: number) {
@@ -146,10 +149,20 @@ export function recommendedInstrumentCountForMidi(events: NoteEvent[]) {
   const phraseBased = Math.ceil(phraseCount / INSTRUMENT_MIX_TARGET_PHRASES);
   const durationBased = Math.ceil(eventTimelineEnd(events) / INSTRUMENT_MIX_TARGET_SECTION_MS);
   const midiTimbres = midiInstrumentHints(events).length;
+  const releaseBased = 1 + events.slice(0, -1).filter((_, index) => (
+    releaseGapAfter(events, index) >= PHRASE_SOFT_REST_MS
+  )).length;
   // The curated family order may repeat after one cycle on long songs. Capping
   // by the number of unique families made a 2-minute MIDI collapse into a few
   // 20+ second sections.
-  return Math.max(1, Math.min(phraseCount, Math.max(phraseBased, durationBased, midiTimbres)));
+  const desired = Math.max(phraseBased, durationBased, midiTimbres);
+  // When a song offers plenty of true release gaps, never create more visual
+  // sections than can be separated cleanly. Sustained MIDIs with few release
+  // gaps keep the onset fallback so their visuals do not stagnate.
+  const cleanBoundaryLimit = releaseBased >= Math.ceil(phraseCount / 2)
+    ? releaseBased
+    : phraseCount;
+  return Math.max(1, Math.min(phraseCount, cleanBoundaryLimit, desired));
 }
 
 function phraseCountBeforeBestRest(
@@ -188,10 +201,16 @@ export function buildAutomaticInstrumentMix(
   events: NoteEvent[],
   durationMs = eventTimelineEnd(events),
 ): InstrumentMixSegment[] {
-  const phrases = buildPhraseInstrumentPlan(events);
-  if (!phrases.length) return [];
+  const detectedPhrases = buildPhraseInstrumentPlan(events);
+  if (!detectedPhrases.length) return [];
+  const releasePhrases = detectedPhrases.filter((phrase, index) => (
+    index === 0 || releaseGapAfter(events, phrase.startIndex - 1) >= PHRASE_SOFT_REST_MS
+  ));
+  const phrases = releasePhrases.length >= Math.ceil(detectedPhrases.length / 2)
+    ? releasePhrases
+    : detectedPhrases;
   const safeDuration = Math.max(durationMs, eventTimelineEnd(events), INSTRUMENT_MIX_MIN_DURATION_MS);
-  const instrumentCount = recommendedInstrumentCountForMidi(events);
+  const instrumentCount = Math.min(phrases.length, recommendedInstrumentCountForMidi(events));
   const families = instrumentFamiliesForMidi(events, instrumentCount);
   const segments: InstrumentMixSegment[] = [];
   let phraseIndex = 0;
@@ -354,62 +373,6 @@ export function updateInstrumentMixSegmentFamily(
   return segments.map((segment) => segment.id === id
     ? { ...segment, family, variant: undefined }
     : segment);
-}
-
-export function addInstrumentMixSegment(
-  segments: readonly InstrumentMixSegment[],
-  events: readonly NoteEvent[],
-  durationMs: number,
-) {
-  if (!segments.length) return buildAutomaticInstrumentMix([...events], durationMs);
-  let splitIndex = -1;
-  let longestDuration = 0;
-  segments.forEach((segment, index) => {
-    const segmentDuration = segment.endMs - segment.startMs;
-    if (segmentDuration >= INSTRUMENT_MIX_MIN_DURATION_MS * 2 && segmentDuration > longestDuration) {
-      longestDuration = segmentDuration;
-      splitIndex = index;
-    }
-  });
-  if (splitIndex < 0) return [...segments];
-
-  const segment = segments[splitIndex];
-  const boundaryMs = snapInstrumentMixBoundary(
-    events,
-    segment.startMs + longestDuration * 0.5,
-    segment.startMs + INSTRUMENT_MIX_MIN_DURATION_MS,
-    segment.endMs - INSTRUMENT_MIX_MIN_DURATION_MS,
-  );
-  const familyIndex = Math.max(0, PHRASE_INSTRUMENT_SEQUENCE.indexOf(segment.family));
-  const nextFamily = PHRASE_INSTRUMENT_SEQUENCE[(familyIndex + 1) % PHRASE_INSTRUMENT_SEQUENCE.length];
-  const split = [
-    { ...segment, endMs: boundaryMs },
-    {
-      id: `instrument-mix-custom-${segments.length}-${Math.round(boundaryMs)}`,
-      startMs: boundaryMs,
-      endMs: segment.endMs,
-      family: nextFamily,
-    },
-  ];
-  return normalizeInstrumentMixSegments(
-    [...segments.slice(0, splitIndex), ...split, ...segments.slice(splitIndex + 1)],
-    events,
-    durationMs,
-  );
-}
-
-export function removeInstrumentMixSegment(
-  segments: readonly InstrumentMixSegment[],
-  id: string,
-  events: readonly NoteEvent[],
-  durationMs: number,
-) {
-  if (segments.length <= 1) return [...segments];
-  return normalizeInstrumentMixSegments(
-    segments.filter((segment) => segment.id !== id),
-    events,
-    durationMs,
-  );
 }
 
 export function createPhraseInstrumentSettingsResolver(

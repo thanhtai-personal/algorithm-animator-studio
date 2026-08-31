@@ -3,17 +3,19 @@ import { DEFAULT_SETTINGS } from "../features/rhythmic-studio/defaults";
 import { buildMarbleCourse } from "../features/rhythmic-studio/lib/marbleCourse";
 import { wallScoreTwoColumnHits } from "../features/rhythmic-studio/lib/korobeinikiReferenceLayout";
 import {
-  addInstrumentMixSegment,
   buildAutomaticInstrumentMix,
   buildPhraseInstrumentPlan,
   createInstrumentMixSettingsResolver,
   createPhraseInstrumentSettingsResolver,
   PHRASE_INSTRUMENT_SEQUENCE,
   recommendedInstrumentCountForMidi,
-  removeInstrumentMixSegment,
   updateInstrumentMixSegmentFamily,
   updateInstrumentMixSegmentDuration,
 } from "../features/rhythmic-studio/lib/phraseInstrumentMix";
+import {
+  addInstrumentMixSegment,
+  removeInstrumentMixSegment,
+} from "../features/rhythmic-studio/lib/instrumentMixRows";
 import type { NoteEvent } from "../features/rhythmic-studio/types";
 
 function note(index: number, timeMs: number): NoteEvent {

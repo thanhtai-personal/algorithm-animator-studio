@@ -13,13 +13,12 @@ import {
   type RhythmicPresetId,
 } from "../lib/studioPresets";
 import {
-  addInstrumentMixSegment,
   buildAutomaticInstrumentMix,
   normalizeInstrumentMixSegments,
-  removeInstrumentMixSegment,
   updateInstrumentMixSegmentDuration,
   updateInstrumentMixSegmentFamily,
 } from "../lib/phraseInstrumentMix";
+import { addInstrumentMixSegment, removeInstrumentMixSegment } from "../lib/instrumentMixRows";
 import type { InstrumentMixSelection } from "../lib/instrumentMixCatalog";
 import { normalizeBackgroundPreset } from "../types";
 import type { MarblePlatform } from "../engine/marblePhysicsTypes";

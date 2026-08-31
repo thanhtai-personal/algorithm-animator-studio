@@ -245,7 +245,9 @@ export function wallScoreTwoColumnHits(events: readonly NoteEvent[], width: numb
     const gapMs = index > 0 ? Math.max(0, events[index].timeMs - events[index - 1].timeMs) : 0;
     const localOffset = gapMs >= WALL_SCORE_RAIL_MIN_GAP_MS
       ? 0
-      : Math.max(-12, Math.min(12, (point.x - center) * 0.08));
+      : Math.max(-26, Math.min(26,
+        (point.x - center) * 0.12 + Math.sin(index * 0.53) * 9,
+      ));
     return {
       x: center + side * halfSpread + localOffset,
       y: point.y,
@@ -322,7 +324,7 @@ export function wallScoreRailSegments(platforms: readonly MarblePlatform[], ball
   for (let index = 0; index < platforms.length - 1; index += 1) {
     const start = platforms[index];
     const end = platforms[index + 1];
-    if (start.longRail) continue;
+    if (start.longRouteKind) continue;
     const spanMs = end.event.timeMs - start.event.timeMs;
     if (spanMs < WALL_SCORE_RAIL_MIN_GAP_MS) continue;
     const steps = 10;

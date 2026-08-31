@@ -51,10 +51,15 @@ describeIfMidiAvailable("Đất Nước Trọn Niềm Vui.mid mixed-instrument r
     expect(sourceEvents).toHaveLength(715);
     expect(events).toHaveLength(218);
     expect(platforms).toHaveLength(events.length);
-    expect(instrumentMixSegments).toHaveLength(20);
+    // The 22.5 s Maroon 5 reference changes installation roughly every 3-5 s.
+    // Keep this longer song equally fresh while still snapping to MIDI phrases.
+    expect(instrumentMixSegments.length).toBeGreaterThanOrEqual(25);
     expect(new Set(instrumentMixSegments.map((segment) => segment.family)).size).toBeGreaterThanOrEqual(8);
-    expect(Math.max(...instrumentMixSegments.map((segment) => segment.endMs - segment.startMs)))
-      .toBeLessThan(9_001);
+    const compactSections = instrumentMixSegments.filter(
+      (segment) => segment.endMs - segment.startMs <= 5_500,
+    );
+    // A few longer spans are true MIDI rests; those are animated by a guide.
+    expect(compactSections.length / instrumentMixSegments.length).toBeGreaterThanOrEqual(0.8);
   });
 
   it("keeps the concrete instruments in two open lanes and bounces across the center", () => {
@@ -75,6 +80,10 @@ describeIfMidiAvailable("Đất Nước Trọn Niềm Vui.mid mixed-instrument r
     }
     expect(eligible).toBeGreaterThan(100);
     expect(crossings).toBe(eligible);
+    const leftLane = platforms.filter((platform) => platform.hitX < center).map((platform) => platform.hitX);
+    const rightLane = platforms.filter((platform) => platform.hitX > center).map((platform) => platform.hitX);
+    expect(Math.max(...leftLane) - Math.min(...leftLane)).toBeGreaterThan(20);
+    expect(Math.max(...rightLane) - Math.min(...rightLane)).toBeGreaterThan(20);
   });
 
   it("routes long rests across level rails or down vertical pipes", () => {

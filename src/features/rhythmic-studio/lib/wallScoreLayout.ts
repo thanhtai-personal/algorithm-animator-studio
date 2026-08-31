@@ -112,7 +112,12 @@ function incomingVelocity(index: number, flights: readonly WallScoreFlight[], se
   };
 }
 
-function collisionSurface(incoming: Vec2, outgoing: Vec2) {
+function collisionSurface(
+  incoming: Vec2,
+  outgoing: Vec2,
+  gravity: number,
+  spanSeconds: number,
+) {
   const impulse = {
     x: outgoing.x - incoming.x,
     y: outgoing.y - incoming.y,
@@ -132,14 +137,17 @@ function collisionSurface(incoming: Vec2, outgoing: Vec2) {
   const candidates = Array.from({ length: 73 }, (_, index) => (
     -MAX_PLAYING_FACE_TILT_RAD + index * MAX_PLAYING_FACE_TILT_RAD * 2 / 72
   ));
+  const departureSeconds = Math.min(1 / 60, spanSeconds * 0.2);
   const angle = candidates
     .map((candidate) => {
       const normal = { x: Math.sin(candidate), y: -Math.cos(candidate) };
       const incomingSpeed = incoming.x * normal.x + incoming.y * normal.y;
       const outgoingSpeed = outgoing.x * normal.x + outgoing.y * normal.y;
+      const firstFrameSeparation = outgoingSpeed * departureSeconds
+        + 0.5 * gravity * normal.y * departureSeconds ** 2;
       return {
         angle: candidate,
-        valid: incomingSpeed < -2 && outgoingSpeed > 42,
+        valid: incomingSpeed < -2 && firstFrameSeparation > 0.24,
         score: Math.abs(candidate - solvedAngle),
       };
     })
@@ -190,7 +198,12 @@ export function buildSharedWallScoreCourse(
     const incoming = incomingVelocity(index, flights, localSettings);
     const surface = korobeinikiTube
       ? { angle: 0, normal: { x: 0, y: -1 } }
-      : collisionSurface(incoming, { x: flight.outVX, y: flight.outVY });
+      : collisionSurface(
+        incoming,
+        { x: flight.outVX, y: flight.outVY },
+        flight.gravity,
+        flight.spanSeconds,
+      );
     const plan = visualPlan(index, localSettings);
     const platformWidth = localSettings.platformWidth * 0.58
       * (korobeinikiTube ? 1 : plan?.widthScale ?? 1);

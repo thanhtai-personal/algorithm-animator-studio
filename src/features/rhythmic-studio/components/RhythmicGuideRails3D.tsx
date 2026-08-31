@@ -10,7 +10,11 @@ import {
 } from "../lib/korobeinikiReferenceLayout";
 import { usesSharedWallScore } from "../lib/wallScoreLayout";
 import { resolvePlatformStyle } from "../lib/platformStyles";
-import { isAutomaticLongGapRail, longGapRailPoints } from "../lib/longGapRail";
+import {
+  isAutomaticLongGapRail,
+  longGapRailPoints,
+  longGapRailSupportPoints,
+} from "../lib/longGapRail";
 import { instrumentMarbleContactDepth3D } from "./instrumentPlayingSurface3D";
 
 function worldPoint(point: Pick<MarblePlatform, "hitX" | "hitY"> | { x: number; y: number }, z = -0.2) {
@@ -23,9 +27,22 @@ function worldPoint(point: Pick<MarblePlatform, "hitX" | "hitY"> | { x: number; 
   );
 }
 
-function RailSegment({ points, offset }: { points: THREE.Vector3[]; offset: number }) {
+interface GuideRailGroup3D {
+  points: THREE.Vector3[];
+  halfGap: number;
+  offsetAxis: "depth" | "surface-normal";
+}
+
+function RailSegment({ points, offset, offsetAxis }: {
+  points: THREE.Vector3[];
+  offset: number;
+  offsetAxis: GuideRailGroup3D["offsetAxis"];
+}) {
   const curve = useMemo(() => {
     const shifted = points.map((point, index) => {
+      if (offsetAxis === "depth") {
+        return point.clone().add(new THREE.Vector3(0, 0, offset));
+      }
       const previous = points[Math.max(0, index - 1)];
       const next = points[Math.min(points.length - 1, index + 1)];
       const tangent = next.clone().sub(previous);
@@ -33,7 +50,7 @@ function RailSegment({ points, offset }: { points: THREE.Vector3[]; offset: numb
       return point.clone().add(new THREE.Vector3(-tangent.y / length * offset, tangent.x / length * offset, 0));
     });
     return new THREE.CatmullRomCurve3(shifted, false, "catmullrom", 0.34);
-  }, [offset, points]);
+  }, [offset, offsetAxis, points]);
   return (
     <mesh castShadow receiveShadow>
       <tubeGeometry args={[curve, Math.max(24, points.length * 12), 0.012, 8, false]} />
@@ -72,28 +89,43 @@ export function wallScoreGuideRailGroups3D(
     });
 }
 
+export function automaticLongGapRailGroups3D(
+  platforms: MarblePlatform[],
+  settings: StudioSettings,
+  focusIndex: number,
+): GuideRailGroup3D[] {
+  const result: GuideRailGroup3D[] = [];
+  for (let index = 0; index < platforms.length - 1; index += 1) {
+    const start = platforms[index];
+    const end = platforms[index + 1];
+    if (!isAutomaticLongGapRail(start, end) || Math.abs(index - focusIndex) > 24) continue;
+    const startZ = railContactDepth(start, settings);
+    const endZ = railContactDepth(end, settings);
+    const physicalSupport = start.longRouteKind === "horizontal-rail";
+    const routePoints = physicalSupport
+      ? longGapRailSupportPoints(start, end, settings.ballSize, 10)
+      : longGapRailPoints(start, end, 10);
+    const points = routePoints
+      .map((point, pointIndex, all) => worldPoint(
+        point,
+        THREE.MathUtils.lerp(startZ, endZ, pointIndex / Math.max(1, all.length - 1)),
+      ));
+    result.push({
+      points,
+      halfGap: Math.max(0.05, settings.ballSize * RHYTHMIC_WORLD_SCALE * 0.48),
+      offsetAxis: physicalSupport ? "depth" : "surface-normal",
+    });
+  }
+  return result;
+}
+
 export function RhythmicGuideRails3D({ platforms, settings, focusIndex }: {
   platforms: MarblePlatform[];
   settings: StudioSettings;
   focusIndex: number;
 }) {
   const groups = useMemo(() => {
-    const result: Array<{ points: THREE.Vector3[]; halfGap: number }> = [];
-    for (let index = 0; index < platforms.length - 1; index += 1) {
-      const start = platforms[index];
-      const end = platforms[index + 1];
-      if (!isAutomaticLongGapRail(start, end) || Math.abs(index - focusIndex) > 24) continue;
-      const startZ = railContactDepth(start, settings);
-      const endZ = railContactDepth(end, settings);
-      const points = longGapRailPoints(start, end, 10).map((point, pointIndex, all) => worldPoint(
-        point,
-        THREE.MathUtils.lerp(startZ, endZ, pointIndex / Math.max(1, all.length - 1)),
-      ));
-      result.push({
-        points,
-        halfGap: Math.max(0.05, settings.ballSize * RHYTHMIC_WORLD_SCALE * 0.48),
-      });
-    }
+    const result = automaticLongGapRailGroups3D(platforms, settings, focusIndex);
 
     if (!settings.showcaseRails || platforms.length < 2) return result;
     const showcaseGroups = usesSharedWallScore(settings)
@@ -111,7 +143,11 @@ export function RhythmicGuideRails3D({ platforms, settings, focusIndex }: {
           }
           return decorated;
         })();
-    showcaseGroups.forEach((points) => result.push({ points, halfGap: 0.035 }));
+    showcaseGroups.forEach((points) => result.push({
+      points,
+      halfGap: 0.035,
+      offsetAxis: "surface-normal",
+    }));
     return result;
   }, [focusIndex, platforms, settings]);
 
@@ -120,8 +156,8 @@ export function RhythmicGuideRails3D({ platforms, settings, focusIndex }: {
     <group renderOrder={-2}>
       {groups.map((group, index) => (
         <group key={index}>
-          <RailSegment points={group.points} offset={-group.halfGap} />
-          <RailSegment points={group.points} offset={group.halfGap} />
+          <RailSegment points={group.points} offset={-group.halfGap} offsetAxis={group.offsetAxis} />
+          <RailSegment points={group.points} offset={group.halfGap} offsetAxis={group.offsetAxis} />
           {group.points.filter((_, pointIndex) => pointIndex % 3 === 0).map((point, pointIndex) => (
             <group key={pointIndex} position={point}>
               <mesh position={[0, 0, -0.34]} rotation={[Math.PI / 2, 0, 0]} castShadow>

@@ -31,6 +31,7 @@ export function marbleHitPoint(platform: MarblePlatform) {
 export const LONG_GAP_TUBE_MS = REST_GAP_MS;
 export const TUBE_ENTRY_T = 0.18;
 export const TUBE_EXIT_T = 0.82;
+const WALL_SCORE_PIPE_EXIT_T = 0.96;
 
 export interface LongGapTubeGeometry {
   entryX: number;
@@ -60,11 +61,14 @@ export function longGapTubeGeometry(start: MarblePlatform, end: MarblePlatform, 
     y: start.outVY + start.gravity * spanSeconds * ratio,
   });
 
+  const exitRatio = start.longRouteKind === "vertical-pipe"
+    ? WALL_SCORE_PIPE_EXIT_T
+    : TUBE_EXIT_T;
   const entry = ballisticPoint(TUBE_ENTRY_T);
-  const exit = ballisticPoint(TUBE_EXIT_T);
+  const exit = ballisticPoint(exitRatio);
   const entryVelocity = ballisticVelocity(TUBE_ENTRY_T);
-  const exitVelocity = ballisticVelocity(TUBE_EXIT_T);
-  const tubeSeconds = spanSeconds * (TUBE_EXIT_T - TUBE_ENTRY_T);
+  const exitVelocity = ballisticVelocity(exitRatio);
+  const tubeSeconds = spanSeconds * (exitRatio - TUBE_ENTRY_T);
 
   // A ballistic parabola can be represented exactly by a cubic Bezier when the
   // endpoint derivatives are used as the two controls. The guide/tube is now

@@ -1,4 +1,4 @@
-import type { CourseItemOverride, NoteEvent, StudioSettings } from "../types";
+import type { CourseItemOverride, StudioSettings } from "../types";
 import { overrideForSegment } from "./courseGuide";
 import {
   LONG_GAP_TUBE_MS,
@@ -14,6 +14,19 @@ export function usesAutomaticLongGapTube(settings: StudioSettings) {
   return !usesSharedWallScore(settings)
     && settings.terrainProfile !== "comet"
     && settings.terrainProfile !== "xylophone";
+}
+
+export function isAutomaticLongGapTubeSegment(
+  start: MarblePlatform,
+  end: MarblePlatform | undefined,
+  settings: StudioSettings,
+) {
+  if (!end) return false;
+  if (start.longRouteKind === "vertical-pipe" && start.longTube) return true;
+  const span = end.event.timeMs - start.event.timeMs;
+  return usesAutomaticLongGapTube(settings)
+    && span >= LONG_GAP_TUBE_MS
+    && !start.longRail;
 }
 
 interface SamplePoint {
@@ -125,19 +138,16 @@ function drawGlassTube(
 export function drawLongGapTubes(
   ctx: CanvasRenderingContext2D,
   platforms: MarblePlatform[],
-  events: NoteEvent[],
   cameraY: number,
   timeMs: number,
   settings: StudioSettings,
   overrides: CourseItemOverride[] = [],
 ) {
-  if (!usesAutomaticLongGapTube(settings)) return;
   for (let index = 0; index < platforms.length - 1; index += 1) {
-    const span = events[index + 1].timeMs - events[index].timeMs;
-    if (span < LONG_GAP_TUBE_MS || overrideForSegment(index, overrides)) continue;
     const start = platforms[index];
     const end = platforms[index + 1];
-    if (start.longRail) continue;
+    if (!isAutomaticLongGapTubeSegment(start, end, settings)
+      || overrideForSegment(index, overrides)) continue;
     const minWorldY = Math.min(start.hitY, end.hitY);
     const maxWorldY = Math.max(start.hitY, end.hitY);
     if (maxWorldY < cameraY - 180 || minWorldY > cameraY + 1460) continue;

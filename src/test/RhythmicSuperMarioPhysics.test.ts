@@ -48,7 +48,9 @@ describe.each(PHYSICS_PRESET_IDS)("Super Mario Maker physics · %s", (presetId) 
   it("never reverses a passive rolling lane against its incoming motion", () => {
     for (let index = 1; index < platforms.length; index += 1) {
       const platform = platforms[index];
-      if (platform.motionMode !== "roll") continue;
+      // A guided long-gap route may redirect the marble at a rail/pipe entrance;
+      // only dense/passive rolling lanes must preserve incoming direction.
+      if (platform.motionMode !== "roll" || platform.longRouteKind) continue;
       const incoming = incomingAt(platforms, index);
       const outgoing = { x: platform.outVX, y: platform.outVY };
       const speed = Math.hypot(outgoing.x, outgoing.y);

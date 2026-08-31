@@ -9,6 +9,11 @@ import {
   wallScoreTubeHitPoint,
 } from "./korobeinikiReferenceLayout";
 import { noteColorForMidi } from "./noteColors";
+import {
+  type WallScoreLongRouteKind,
+  wallScoreLongRouteKind,
+  wallScoreLongRouteMotion,
+} from "./wallScoreMotion";
 
 const WALL_SCORE_MIN_ARC_HEIGHT = 18;
 const WALL_SCORE_TERMINAL_GRAVITY = 780;
@@ -18,8 +23,13 @@ interface WallScoreFlight {
   hit: Vec2;
   outVX: number;
   outVY: number;
+  endVX: number;
+  endVY: number;
   gravity: number;
   spanSeconds: number;
+  longRail: boolean;
+  longTube: boolean;
+  longRouteKind?: WallScoreLongRouteKind;
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -43,24 +53,52 @@ function wallScoreFlight(
   const spanSeconds = next
     ? Math.max(0.08, (events[index + 1].timeMs - event.timeMs) / 1_000)
     : 0.42;
+  const spanMs = spanSeconds * 1_000;
   const deltaY = next ? next.y - hit.y : 0;
+  const longRouteKind = next
+    ? wallScoreLongRouteKind(hit, next, spanMs)
+    : undefined;
+  if (next && longRouteKind) {
+    const route = wallScoreLongRouteMotion(hit, next, spanMs, longRouteKind);
+    return {
+      hit,
+      spanSeconds,
+      outVX: route.startVelocity.x,
+      outVY: route.startVelocity.y,
+      endVX: route.endVelocity.x,
+      endVY: route.endVelocity.y,
+      // Guided segments sample their route directly. Keep an equivalent average
+      // acceleration so inspection/collision code can recover end velocity.
+      gravity: route.gravity,
+      longRail: longRouteKind === "horizontal-rail",
+      longTube: longRouteKind === "vertical-pipe",
+      longRouteKind,
+    };
+  }
   const bounceHeight = Math.max(
     WALL_SCORE_MIN_ARC_HEIGHT,
-    deltaY * 0.25 + settings.ballSize * 0.45,
+    deltaY * 0.25 + 110 * spanSeconds * 0.25,
   );
-  const previous = hits[index - 1];
-  const terminalDirection = previous ? Math.sign(hit.x - previous.x) || 1 : 1;
+  const previousHit = hits[index - 1];
+  const terminalDirection = previousHit ? Math.sign(hit.x - previousHit.x) || 1 : 1;
 
+  const outVX = next ? (next.x - hit.x) / spanSeconds : terminalDirection * 110;
+  const outVY = next
+    ? (deltaY - 4 * bounceHeight) / spanSeconds
+    : -Math.max(160, settings.ballSize * 10);
+  const gravity = next
+    ? 8 * bounceHeight / spanSeconds ** 2
+    : WALL_SCORE_TERMINAL_GRAVITY;
   return {
     hit,
     spanSeconds,
-    outVX: next ? (next.x - hit.x) / spanSeconds : terminalDirection * 110,
-    outVY: next
-      ? (deltaY - 4 * bounceHeight) / spanSeconds
-      : -Math.max(160, settings.ballSize * 10),
-    gravity: next
-      ? 8 * bounceHeight / spanSeconds ** 2
-      : WALL_SCORE_TERMINAL_GRAVITY,
+    outVX,
+    outVY,
+    endVX: outVX,
+    endVY: outVY + gravity * spanSeconds,
+    gravity,
+    longRail: false,
+    longTube: false,
   };
 }
 
@@ -68,8 +106,8 @@ function incomingVelocity(index: number, flights: readonly WallScoreFlight[], se
   if (index === 0) return { x: 0, y: Math.max(128, settings.ballSize * 7.5) };
   const previous = flights[index - 1];
   return {
-    x: previous.outVX,
-    y: previous.outVY + previous.gravity * previous.spanSeconds,
+    x: previous.endVX,
+    y: previous.endVY,
   };
 }
 
@@ -85,8 +123,27 @@ function collisionSurface(incoming: Vec2, outgoing: Vec2) {
   const upwardNormal = solvedNormal.y < 0
     ? solvedNormal
     : { x: -solvedNormal.x, y: -solvedNormal.y };
-  const solvedAngle = Math.atan2(upwardNormal.x, -upwardNormal.y);
-  const angle = clamp(solvedAngle, -MAX_PLAYING_FACE_TILT_RAD, MAX_PLAYING_FACE_TILT_RAD);
+  const solvedAngle = clamp(
+    Math.atan2(upwardNormal.x, -upwardNormal.y),
+    -MAX_PLAYING_FACE_TILT_RAD,
+    MAX_PLAYING_FACE_TILT_RAD,
+  );
+  const candidates = Array.from({ length: 73 }, (_, index) => (
+    -MAX_PLAYING_FACE_TILT_RAD + index * MAX_PLAYING_FACE_TILT_RAD * 2 / 72
+  ));
+  const angle = candidates
+    .map((candidate) => {
+      const normal = { x: Math.sin(candidate), y: -Math.cos(candidate) };
+      const incomingSpeed = incoming.x * normal.x + incoming.y * normal.y;
+      const outgoingSpeed = outgoing.x * normal.x + outgoing.y * normal.y;
+      return {
+        angle: candidate,
+        valid: incomingSpeed < -2 && outgoingSpeed > 42,
+        score: Math.abs(candidate - solvedAngle),
+      };
+    })
+    .filter((candidate) => candidate.valid)
+    .sort((a, b) => a.score - b.score)[0]?.angle ?? solvedAngle;
   return {
     angle,
     normal: { x: Math.sin(angle), y: -Math.cos(angle) },
@@ -115,7 +172,10 @@ export function buildSharedWallScoreCourse(
       ? wallScoreTubeHitPoint(hit, localSettings)
       : hit;
   });
-  const flights = events.map((_, index) => wallScoreFlight(index, events, hits, settingsByIndex[index]));
+  const flights: WallScoreFlight[] = [];
+  events.forEach((_, index) => {
+    flights.push(wallScoreFlight(index, events, hits, settingsByIndex[index]));
+  });
 
   return events.map((event, index) => {
     const localSettings = settingsByIndex[index];
@@ -162,7 +222,10 @@ export function buildSharedWallScoreCourse(
       outVY: flight.outVY,
       gravity: flight.gravity,
       contactMode: "surface",
-      motionMode: "ballistic",
+      motionMode: flight.longRouteKind ? "roll" : "ballistic",
+      longRail: flight.longRail || undefined,
+      longTube: flight.longTube || undefined,
+      longRouteKind: flight.longRouteKind,
       event,
       visualStyle: plan?.style,
     };

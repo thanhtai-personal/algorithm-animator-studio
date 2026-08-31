@@ -179,7 +179,7 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
   applyPresetCamera(ctx, settings, width, height);
   ctx.translate(-cameraX, 0);
   drawAutomaticLongGapRails(ctx, platforms, cameraY, settings);
-  if (live) drawLongGapTubes(ctx, platforms, events, cameraY, timeMs, settings, courseOverrides);
+  if (live) drawLongGapTubes(ctx, platforms, cameraY, timeMs, settings, courseOverrides);
   if (live || courseOverrides.length) drawCourseLongItems(ctx, platforms, courseOverrides, cameraY, settings);
   drawDenseSurfaces2D(ctx, platforms, cameraY, settings);
   const wallMount = subscribeWallMount(platforms.map((platform) => ({

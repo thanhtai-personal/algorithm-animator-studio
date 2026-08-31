@@ -8,6 +8,7 @@ export interface Vec2 {
 export type ContactMode = "cap" | "surface" | "bumper";
 export type SegmentMotionMode = "ballistic" | "roll" | "hold";
 export type DenseSurfaceLayout = "parallel-rails" | "connected-keys" | "button-strip";
+export type LongRouteKind = "horizontal-rail" | "vertical-pipe";
 
 export interface MarblePlatform {
   index: number;
@@ -31,6 +32,10 @@ export interface MarblePlatform {
   motionMode?: SegmentMotionMode;
   /** Physical support used to keep long note gaps moving at a natural speed. */
   longRail?: boolean;
+  /** Enclosed gravity route used when a long gap cannot fit across the stage. */
+  longTube?: boolean;
+  /** Physical guide selected for this long wall-score transition. */
+  longRouteKind?: LongRouteKind;
   denseRunId?: number;
   denseSurfaceId?: number;
   denseLayout?: DenseSurfaceLayout;

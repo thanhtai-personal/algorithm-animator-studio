@@ -2,12 +2,11 @@ import { useMemo } from "react";
 import { RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
 import type { CourseItemOverride, CourseLongItem, StudioSettings } from "../types";
-import { LONG_GAP_TUBE_MS, longGapTubeGeometry, longGapTubePoint, type MarblePlatform } from "../lib/marbleCourse";
+import { longGapTubeGeometry, longGapTubePoint, type MarblePlatform } from "../lib/marbleCourse";
 import { guidedCoursePoint, isLongCourseItem, overrideForSegment } from "../lib/courseGuide";
-import type { NoteEvent } from "../types";
 import { RHYTHMIC_COURSE_WIDTH, RHYTHMIC_WORLD_SCALE } from "./RhythmicMotion3D";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
-import { usesAutomaticLongGapTube } from "../lib/longGapTube";
+import { isAutomaticLongGapTubeSegment } from "../lib/longGapTube";
 
 function worldPoint(x: number, y: number, z = 0) {
   return new THREE.Vector3(
@@ -32,8 +31,7 @@ function segmentCurve(start: MarblePlatform, end: MarblePlatform, style: CourseL
 }
 
 
-function autoTubeCurve(start: MarblePlatform, end: MarblePlatform, settings: StudioSettings) {
-  const geometry = longGapTubeGeometry(start, end, settings);
+function autoTubeCurve(geometry: ReturnType<typeof longGapTubeGeometry>) {
   const points: THREE.Vector3[] = [];
   const steps = 28;
   for (let index = 0; index <= steps; index += 1) {
@@ -44,7 +42,8 @@ function autoTubeCurve(start: MarblePlatform, end: MarblePlatform, settings: Stu
 }
 
 function AutoGlassTubeSegment({ start, end, settings, color }: Omit<SegmentProps, "style">) {
-  const curve = useMemo(() => autoTubeCurve(start, end, settings), [end, settings, start]);
+  const geometry = useMemo(() => longGapTubeGeometry(start, end, settings), [end, settings, start]);
+  const curve = useMemo(() => autoTubeCurve(geometry), [geometry]);
   const radius = settings.terrainProfile === "tube-board" ? 0.19 : 0.17;
   return (
     <group>
@@ -71,8 +70,17 @@ function AutoGlassTubeSegment({ start, end, settings, color }: Omit<SegmentProps
         <tubeGeometry args={[curve, Math.round(44 + settings.platformDetail * 24), radius * 0.68, Math.round(10 + settings.platformDetail * 6), false]} />
         <meshPhysicalMaterial color="#edf9ff" transparent opacity={0.08} roughness={0.04} side={THREE.BackSide} />
       </mesh>
-      {[start, end].map((platform, index) => (
-        <mesh key={index} position={worldPoint(platform.hitX, platform.hitY, 0)} rotation={[0, 0, Math.PI / 2]}>
+      {[
+        { x: geometry.entryX, y: geometry.entryY },
+        { x: geometry.exitX, y: geometry.exitY },
+      ].map((point, index) => (
+        <mesh
+          key={index}
+          position={worldPoint(point.x, point.y, 0)}
+          rotation={start.longRouteKind === "vertical-pipe"
+            ? [Math.PI / 2, 0, 0]
+            : [0, 0, Math.PI / 2]}
+        >
           <torusGeometry args={[radius * 0.94, radius * 0.1, 10, 24]} />
           <meshStandardMaterial color="#dceaf4" roughness={0.18} metalness={0.74} />
         </mesh>
@@ -192,12 +200,11 @@ function LongSegment(props: SegmentProps) {
   return <GlassTubeSegment {...props} />;
 }
 
-export function RhythmicCourseItems3D({ platforms, overrides, settings, focusIndex, events, resolveSettings }: {
+export function RhythmicCourseItems3D({ platforms, overrides, settings, focusIndex, resolveSettings }: {
   platforms: MarblePlatform[];
   overrides: CourseItemOverride[];
   settings: StudioSettings;
   focusIndex: number;
-  events: NoteEvent[];
   resolveSettings?: StudioSettingsResolver;
 }) {
   const visibleOverrides = useMemo(() => overrides.filter((override) => {
@@ -211,18 +218,17 @@ export function RhythmicCourseItems3D({ platforms, overrides, settings, focusInd
     const segments: { start: MarblePlatform; end: MarblePlatform; color: string; key: string; settings: StudioSettings }[] = [];
     for (let index = 0; index < platforms.length - 1; index += 1) {
       const segmentSettings = resolveSettings?.(index) ?? settings;
-      if (!usesAutomaticLongGapTube(segmentSettings)) continue;
-      const span = events[index + 1].timeMs - events[index].timeMs;
-      if (span < LONG_GAP_TUBE_MS || overrideForSegment(index, overrides)) continue;
       const start = platforms[index];
       const end = platforms[index + 1];
-      if (!start || !end) continue;
+      if (!start || !end
+        || !isAutomaticLongGapTubeSegment(start, end, segmentSettings)
+        || overrideForSegment(index, overrides)) continue;
       if (index < focusIndex - 18 || index > focusIndex + 18) continue;
       const color = `#${new THREE.Color(start.color).lerp(new THREE.Color(end.color), 0.5).getHexString()}`;
       segments.push({ start, end, color, key: `auto-gap:${index}`, settings: segmentSettings });
     }
     return segments;
-  }, [events, focusIndex, overrides, platforms, resolveSettings, settings]);
+  }, [focusIndex, overrides, platforms, resolveSettings, settings]);
 
   return (
     <group>

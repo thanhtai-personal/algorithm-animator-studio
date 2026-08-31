@@ -1,6 +1,11 @@
 import type { MarblePlatform } from "../engine/marblePhysicsTypes";
 import type { StudioSettings } from "../types";
 import { marbleHitPoint } from "./marbleCourse";
+import {
+  WALL_SCORE_HORIZONTAL_RAIL_ENTRY_T,
+  WALL_SCORE_HORIZONTAL_RAIL_EXIT_T,
+  wallScoreLongRoutePoint,
+} from "./wallScoreMotion";
 
 export interface LongGapRailPoint { x: number; y: number }
 
@@ -14,8 +19,31 @@ export function longGapRailPoints(start: MarblePlatform, end: MarblePlatform, st
   const count = Math.max(2, steps + 1);
   return Array.from({ length: count }, (_, index) => {
     const t = index / Math.max(1, count - 1);
+    if (start.longRouteKind === "horizontal-rail") {
+      const phase = WALL_SCORE_HORIZONTAL_RAIL_ENTRY_T
+        + (WALL_SCORE_HORIZONTAL_RAIL_EXIT_T - WALL_SCORE_HORIZONTAL_RAIL_ENTRY_T) * t;
+      return wallScoreLongRoutePoint(
+        from,
+        to,
+        end.event.timeMs - start.event.timeMs,
+        phase,
+        "horizontal-rail",
+      );
+    }
     return { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t };
   });
+}
+
+export function longGapRailSupportPoints(
+  start: MarblePlatform,
+  end: MarblePlatform,
+  ballRadius: number,
+  steps = 8,
+) {
+  return longGapRailPoints(start, end, steps).map((point) => ({
+    x: point.x,
+    y: point.y + ballRadius,
+  }));
 }
 
 function offsetPoints(points: LongGapRailPoint[], distance: number) {
@@ -49,13 +77,17 @@ export function drawAutomaticLongGapRails(
     const start = platforms[index];
     const end = platforms[index + 1];
     if (!isAutomaticLongGapRail(start, end)) continue;
-    const points = longGapRailPoints(start, end, 10);
+    const physicalSupport = start.longRouteKind === "horizontal-rail";
+    const points = physicalSupport
+      ? longGapRailSupportPoints(start, end, settings.ballSize, 10)
+      : longGapRailPoints(start, end, 10);
     const minY = Math.min(...points.map((point) => point.y));
     const maxY = Math.max(...points.map((point) => point.y));
     if (maxY < cameraY - 140 || minY > cameraY + 1440) continue;
 
-    const left = offsetPoints(points, -halfGap);
-    const right = offsetPoints(points, halfGap);
+    const supportHalfThickness = physicalSupport ? 2 : halfGap;
+    const left = offsetPoints(points, -supportHalfThickness);
+    const right = offsetPoints(points, supportHalfThickness);
     ctx.save();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";

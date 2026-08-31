@@ -1,8 +1,13 @@
 import type { NoteEvent, StudioSettings } from "../types";
 import type { MarblePlatform } from "../engine/marblePhysicsTypes";
+import {
+  spaceWallScoreHitsByTiming,
+  WALL_SCORE_RAIL_MIN_GAP_MS,
+  wallScoreLongRoutePoint,
+} from "./wallScoreMotion";
 
 export const KOROBEINIKI_BRIDGE_GAP_MS = 620;
-export const WALL_SCORE_RAIL_MIN_GAP_MS = 1_000;
+export { WALL_SCORE_RAIL_MIN_GAP_MS } from "./wallScoreMotion";
 export const KOROBEINIKI_PHRASE_STARTS = [15, 21, 27] as const;
 export const KOROBEINIKI_REFERENCE_SCENE_STARTS = [0, ...KOROBEINIKI_PHRASE_STARTS] as const;
 
@@ -171,7 +176,7 @@ function extendedScenePoint(template: readonly ReferencePoint[], localIndex: num
   return [x, last[1] + extra * (82 + Math.min(14, extra * 2))];
 }
 
-export function wallScoreReferenceHits(events: readonly NoteEvent[], width: number) {
+export function wallScoreReferenceTemplateHits(events: readonly NoteEvent[], width: number) {
   if (!events.length) return [];
   const sceneStarts = new Set(wallScoreSceneStartIndices(events));
   const points: { x: number; y: number }[] = [];
@@ -210,6 +215,10 @@ export function wallScoreReferenceHits(events: readonly NoteEvent[], width: numb
   return points;
 }
 
+export function wallScoreReferenceHits(events: readonly NoteEvent[], width: number) {
+  return spaceWallScoreHitsByTiming(events, wallScoreReferenceTemplateHits(events, width), width);
+}
+
 function separateWallScoreStrikePoints(
   visualHits: readonly { x: number; y: number }[],
   settings: StudioSettings,
@@ -244,6 +253,15 @@ export function wallScoreMarblePointAtPhase(
   phase: number,
 ) {
   const p = Math.max(0, Math.min(1, phase));
+  if (start.longRouteKind) {
+    return wallScoreLongRoutePoint(
+      { x: start.hitX, y: start.hitY },
+      { x: end.hitX, y: end.hitY },
+      end.event.timeMs - start.event.timeMs,
+      p,
+      start.longRouteKind,
+    );
+  }
   const spanSeconds = Math.max(0.001, (end.event.timeMs - start.event.timeMs) / 1_000);
   const elapsed = spanSeconds * p;
   return {
@@ -269,6 +287,7 @@ export function wallScoreRailSegments(platforms: readonly MarblePlatform[], ball
   for (let index = 0; index < platforms.length - 1; index += 1) {
     const start = platforms[index];
     const end = platforms[index + 1];
+    if (start.longRail) continue;
     const spanMs = end.event.timeMs - start.event.timeMs;
     if (spanMs < WALL_SCORE_RAIL_MIN_GAP_MS) continue;
     const steps = 10;
@@ -292,7 +311,7 @@ export function buildKorobeinikiReferenceCourse(
   width: number,
   onProgress?: (progress: number) => void,
 ): MarblePlatform[] {
-  const visualHits = separateWallScoreStrikePoints(wallScoreReferenceHits(events, width), settings);
+  const visualHits = separateWallScoreStrikePoints(wallScoreReferenceTemplateHits(events, width), settings);
   const hits = visualHits.map((visual) => wallScoreTubeHitPoint(visual, settings));
   const platforms = events.map((event, index) => {
     const visualHit = visualHits[index];

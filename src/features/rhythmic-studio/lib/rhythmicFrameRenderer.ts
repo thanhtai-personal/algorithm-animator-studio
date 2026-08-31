@@ -17,6 +17,8 @@ import { platformIsInside2DRenderWindow } from "./platformViewport";
 import type { StudioSettingsResolver } from "../engine/marbleCoursePlanner";
 import type { ChaseCoursePlan } from "./chaseCourse";
 import { drawChasePerformers2D } from "./chaseFrameRenderer2D";
+import { terminalMarbleGoalForCourse } from "./terminalMarbleGoal";
+import { drawTerminalMarbleGoalBack2D, drawTerminalMarbleGoalFront2D } from "./terminalMarbleGoalRenderer2D";
 import { drawSubscribeWallSign2D, subscribeWallMount } from "./subscribeReminder";
 
 interface DrawFrameArgs {
@@ -175,6 +177,7 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
   // transition it must never enter the physics renderer because all indexing
   // below intentionally assumes one prepared platform per source event.
   if (!hasCompleteMarblePlatforms(events, platforms)) return;
+  const terminalGoal = chasePlan ? null : terminalMarbleGoalForCourse(platforms, settings);
   ctx.save();
   applyPresetCamera(ctx, settings, width, height);
   ctx.translate(-cameraX, 0);
@@ -217,6 +220,7 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
       ctx.beginPath(); ctx.arc(selected.hitX, y, Math.max(22, settings.ballSize + 11), 0, Math.PI * 2); ctx.stroke(); ctx.restore();
     }
   }
+  if (terminalGoal) drawTerminalMarbleGoalBack2D(ctx, terminalGoal, cameraY, settings, timeMs);
   if (chasePlan) {
     if (live) drawParticles(ctx, platforms, cameraY, timeMs, settings);
     drawChasePerformers2D({
@@ -247,6 +251,7 @@ export function drawRhythmicFrame(args: DrawFrameArgs) {
       }
     } else drawIdleMarble(ctx, marble, cameraY, settings);
   }
+  if (terminalGoal) drawTerminalMarbleGoalFront2D(ctx, terminalGoal, cameraY, settings);
   ctx.restore();
   drawLyrics(ctx, width, height, timeMs, lyrics, settings);
 

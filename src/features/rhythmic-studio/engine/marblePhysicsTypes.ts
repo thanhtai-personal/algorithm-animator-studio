@@ -36,6 +36,8 @@ export interface MarblePlatform {
   longTube?: boolean;
   /** Physical guide selected for this long wall-score transition. */
   longRouteKind?: LongRouteKind;
+  /** Final mixed-instrument strike feeds a dedicated receiving funnel. */
+  terminalGoal?: boolean;
   denseRunId?: number;
   denseSurfaceId?: number;
   denseLayout?: DenseSurfaceLayout;

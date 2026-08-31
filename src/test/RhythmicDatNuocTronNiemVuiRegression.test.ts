@@ -20,6 +20,7 @@ import {
 } from "../features/rhythmic-studio/lib/wallScoreMotion";
 import { presetById } from "../features/rhythmic-studio/lib/studioPresets";
 import { buildRhythmicTimeline } from "../features/rhythmic-studio/lib/timeline";
+import { terminalMarbleGoalForCourse } from "../features/rhythmic-studio/lib/terminalMarbleGoal";
 
 const MIDI_PATH = process.env.RHYTHMIC_TEST_MIDI
   ?? "C:\\Users\\Kai.Tran\\Music\\midi\\Đất Nước Trọn Niềm Vui.mid";
@@ -202,5 +203,23 @@ describeIfMidiAvailable("Đất Nước Trọn Niềm Vui.mid mixed-instrument r
       expect(arrival.x, `arrival x ${index}`).toBeCloseTo(end.hitX, 5);
       expect(arrival.y, `arrival y ${index}`).toBeCloseTo(end.hitY, 5);
     }
+  });
+
+  it("finishes inside a deep on-stage destination while the final MIDI note sustains", () => {
+    const { settings, events, platforms } = prepareUserCourse();
+    const goal = terminalMarbleGoalForCourse(platforms, settings, 720);
+    const finalPlatform = platforms.at(-1)!;
+
+    expect(goal).not.toBeNull();
+    expect(finalPlatform.outVX * (360 - finalPlatform.hitX)).toBeGreaterThan(0);
+    expect(goal!.bottomY - finalPlatform.hitY).toBeGreaterThanOrEqual(300);
+    expect(goal!.centerX - goal!.mouthWidth / 2).toBeGreaterThanOrEqual(48);
+    expect(goal!.centerX + goal!.mouthWidth / 2).toBeLessThanOrEqual(672);
+
+    const lastEventMs = events.at(-1)!.timeMs;
+    const settled = marbleAtTime(lastEventMs + goal!.settleTimeMs, events, platforms, settings);
+    const heldDuringSustain = marbleAtTime(lastEventMs + 3_600, events, platforms, settings);
+    expect(settled).toMatchObject({ x: goal!.restX, y: goal!.bottomY });
+    expect(heldDuringSustain).toMatchObject({ x: goal!.restX, y: goal!.bottomY });
   });
 });

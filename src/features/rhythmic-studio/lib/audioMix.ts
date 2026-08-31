@@ -5,8 +5,11 @@ export const DEFAULT_COLLISION_VOLUME = 0.62;
 // catches dense overlaps, while this gain keeps a single hit clearly audible.
 export const COLLISION_VOICE_GAIN = 1.45;
 export const MIDI_SESSION_GAIN = 0.82;
-export const MIDI_VOICE_GAIN = 0.55;
-export const MIDI_DRUM_GAIN = 0.45;
+// MIDI carries the song, so a normal melody note must not sit 5-6 dB below
+// the collision transient. Dense chords are still caught by the output
+// compressor; these values restore clarity without raising the master bus.
+export const MIDI_VOICE_GAIN = 0.78;
+export const MIDI_DRUM_GAIN = 0.62;
 
 const VOICE_BASE_PEAK = 0.24;
 

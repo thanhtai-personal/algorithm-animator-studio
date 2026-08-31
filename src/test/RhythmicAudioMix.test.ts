@@ -13,9 +13,12 @@ describe("rhythmic audio mastering", () => {
     expect(estimatedCollisionPeak(1, 1)).toBeLessThan(0.32);
   });
 
-  it("keeps MIDI playback audible without approaching clipping", () => {
-    const peak = estimatedMidiPeak(0.82, DEFAULT_SETTINGS.musicVolume);
-    expect(peak).toBeGreaterThanOrEqual(0.07);
-    expect(peak).toBeLessThan(0.2);
+  it("keeps mixed-instrument MIDI clearly above the quiet masking range", () => {
+    const midiPeak = estimatedMidiPeak(0.82, DEFAULT_SETTINGS.musicVolume);
+    const collisionPeak = estimatedCollisionPeak(0.82, DEFAULT_SETTINGS.synthVolume);
+
+    expect(midiPeak).toBeGreaterThanOrEqual(0.115);
+    expect(midiPeak / collisionPeak).toBeGreaterThanOrEqual(0.72);
+    expect(midiPeak).toBeLessThan(0.2);
   });
 });

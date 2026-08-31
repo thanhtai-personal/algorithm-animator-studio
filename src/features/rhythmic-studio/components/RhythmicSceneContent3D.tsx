@@ -12,6 +12,7 @@ import { RhythmicChaseMarbles3D, type RhythmicChaseMarblesHandle } from "./Rhyth
 import { RhythmicPlatformField3D } from "./RhythmicPlatformField3D";
 import { RhythmicTitle3D } from "./RhythmicTitle3D";
 import { RhythmicSubscribeReminder3D } from "./RhythmicSubscribeReminder3D";
+import { RhythmicTerminalGoal3D } from "./RhythmicTerminalGoal3D";
 import { RhythmicVfx3D, type RhythmicVfxHandle } from "./RhythmicVfx3D";
 import { impactSquash, RHYTHMIC_WORLD_SCALE, setWorldPoint, visualChaseFocusAtTime, visualMarbleAtTime } from "./RhythmicMotion3D";
 import {
@@ -34,6 +35,7 @@ import { emitDueRhythmicHits } from "../lib/chaseAudioScheduler";
 import { settingsForChaseOwner } from "../engine/chaseCoursePlanner";
 import { isKorobeinikiWallLayout } from "../lib/korobeinikiReferenceLayout";
 import { usesSharedWallScore } from "../lib/wallScoreLayout";
+import { terminalMarbleGoalForCourse } from "../lib/terminalMarbleGoal";
 import { KorobeinikiReferenceDecor3D } from "./KorobeinikiReferenceDecor3D";
 import {
   advanceRhythmicPlaybackFrameClock,
@@ -127,9 +129,11 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
   const lookTarget = useMemo(() => new THREE.Vector3(), []);
   const smoothedLook = useMemo(() => new THREE.Vector3(), []);
   const initializedRef = useRef(false);
-  const backdropBounds = useMemo(() => courseBackdropBounds(props.platforms.map((platform) => (
-    -(platform.visualY ?? platform.y) * RHYTHMIC_WORLD_SCALE
-  ))), [props.platforms]);
+  const terminalGoal = useMemo(() => terminalMarbleGoalForCourse(props.platforms, props.settings), [props.platforms, props.settings]);
+  const backdropBounds = useMemo(() => courseBackdropBounds([
+    ...props.platforms.map((platform) => -(platform.visualY ?? platform.y) * RHYTHMIC_WORLD_SCALE),
+    ...(terminalGoal ? [-terminalGoal.bottomY * RHYTHMIC_WORLD_SCALE] : []),
+  ]), [props.platforms, terminalGoal]);
 
   const syncScene = useCallback((timeMs: number, deltaSeconds: number, snapCamera = false) => {
     const sample = sceneSampleAt(props, timeMs);
@@ -382,6 +386,7 @@ export function RhythmicSceneContent3D(props: RhythmicScene3DProps) {
       <RhythmicSubscribeReminder3D timeRef={currentTimeRef} platforms={props.platforms} settings={props.settings} />
     </RhythmicEnvironment3D>
     {isKorobeinikiWallLayout(props.settings) && <KorobeinikiReferenceDecor3D platforms={props.platforms} />}
+    {terminalGoal && <RhythmicTerminalGoal3D goal={terminalGoal} settings={props.settings} />}
     <RhythmicCourseItems3D platforms={props.platforms} overrides={props.courseOverrides} settings={props.settings} focusIndex={focusIndex} resolveSettings={props.resolveSettings} />
     <RhythmicGuideRails3D platforms={props.platforms} settings={props.settings} focusIndex={focusIndex} />
     <RhythmicPlatformField3D platforms={props.platforms} settings={props.settings} courseOverrides={props.courseOverrides} focusIndex={focusIndex} selectedNodeIndex={props.selectedNodeIndex} onSelectNode={props.onSelectNode} resolveSettings={props.resolveSettings} impactIndex={impactLight.index} impactStrength={impactLight.strength} timeMs={currentTimeRef.current} />

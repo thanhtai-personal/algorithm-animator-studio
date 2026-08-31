@@ -16,9 +16,8 @@ import {
 } from "./korobeinikiReferenceLayout";
 import { buildSharedWallScoreCourse, usesSharedWallScore } from "./wallScoreLayout";
 import { wallScoreLongRouteGuideGeometry } from "./wallScoreMotion";
-
+import { terminalMarbleGoalForCourse, terminalMarbleGoalPoint } from "./terminalMarbleGoal";
 export type { MarblePlatform, MarblePoint } from "../engine/marblePhysicsTypes";
-
 export function platformContactPoint(platform: MarblePlatform) {
   return { x: platform.contactX ?? platform.x, y: platform.contactY ?? platform.y };
 }
@@ -27,11 +26,9 @@ export function marbleHitPoint(platform: MarblePlatform) {
   const contact = platformContactPoint(platform);
   return { x: contact.x, y: contact.y };
 }
-
 export const LONG_GAP_TUBE_MS = REST_GAP_MS;
 export const TUBE_ENTRY_T = 0.18;
 export const TUBE_EXIT_T = 0.82;
-
 export interface LongGapTubeGeometry {
   entryX: number;
   entryY: number;
@@ -49,7 +46,6 @@ export function longGapTubeGeometry(start: MarblePlatform, end: MarblePlatform, 
   const startHit = marbleHitPoint(start);
   const endHit = marbleHitPoint(end);
   const spanMs = end.event.timeMs - start.event.timeMs;
-
   if (start.longRouteKind === "vertical-pipe") {
     const guide = wallScoreLongRouteGuideGeometry(startHit, endHit, spanMs, "vertical-pipe");
     return {
@@ -66,7 +62,6 @@ export function longGapTubeGeometry(start: MarblePlatform, end: MarblePlatform, 
       exitY: guide.exit.y,
     };
   }
-
   const spanSeconds = Math.max(0.001, spanMs / 1000);
   const ballisticPoint = (ratio: number) => {
     const t = spanSeconds * ratio;
@@ -79,14 +74,12 @@ export function longGapTubeGeometry(start: MarblePlatform, end: MarblePlatform, 
     x: start.outVX,
     y: start.outVY + start.gravity * spanSeconds * ratio,
   });
-
   const exitRatio = TUBE_EXIT_T;
   const entry = ballisticPoint(TUBE_ENTRY_T);
   const exit = ballisticPoint(exitRatio);
   const entryVelocity = ballisticVelocity(TUBE_ENTRY_T);
   const exitVelocity = ballisticVelocity(exitRatio);
   const tubeSeconds = spanSeconds * (exitRatio - TUBE_ENTRY_T);
-
   // Generic tubes wrap the ballistic arc; wall-score pipes use the detached S-curve above.
   return {
     entryX: entry.x,
@@ -124,9 +117,7 @@ interface LongGapTubeArcTable {
   lengths: number[];
   total: number;
 }
-
 const longGapTubeArcTableCache = new WeakMap<LongGapTubeGeometry, LongGapTubeArcTable>();
-
 function longGapTubeArcTable(geometry: LongGapTubeGeometry) {
   const cached = longGapTubeArcTableCache.get(geometry);
   if (cached) return cached;
@@ -323,6 +314,15 @@ export function marbleAtTime(timeMs: number, events: NoteEvent[], platforms: Mar
     const last = platforms[platforms.length - 1];
     const hit = marbleHitPoint(last);
     const elapsed = Math.max(0, timeMs - events[events.length - 1].timeMs) / 1000;
+    const terminalGoal = terminalMarbleGoalForCourse(platforms, settings);
+    if (terminalGoal) {
+      const point = terminalMarbleGoalPoint(terminalGoal, elapsed * 1_000);
+      return {
+        ...point,
+        color: last.color,
+        platformIndex: last.index,
+      };
+    }
     // The final platform is prepared with a safe outgoing launch. Continue that
     // physical trajectory after the last note so preview/export does not freeze
     // the marble on the playing face while the terminal instrument is still on screen.

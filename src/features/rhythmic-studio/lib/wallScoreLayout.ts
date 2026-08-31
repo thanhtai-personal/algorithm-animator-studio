@@ -47,6 +47,7 @@ function wallScoreFlight(
   events: readonly NoteEvent[],
   hits: readonly Vec2[],
   settings: StudioSettings,
+  finishTowardCenter = false,
 ): WallScoreFlight {
   const event = events[index];
   const hit = hits[index];
@@ -81,7 +82,10 @@ function wallScoreFlight(
     deltaY * 0.25 + 110 * spanSeconds * 0.25,
   );
   const previousHit = hits[index - 1];
-  const terminalDirection = previousHit ? Math.sign(hit.x - previousHit.x) || 1 : 1;
+  const stageCenter = hits.reduce((sum, point) => sum + point.x, 0) / Math.max(1, hits.length);
+  const terminalDirection = finishTowardCenter
+    ? Math.sign(stageCenter - hit.x) || (previousHit ? -Math.sign(hit.x - previousHit.x) || 1 : 1)
+    : previousHit ? Math.sign(hit.x - previousHit.x) || 1 : 1;
 
   const outVX = next ? (next.x - hit.x) / spanSeconds : terminalDirection * 110;
   const outVY = next
@@ -188,7 +192,13 @@ export function buildSharedWallScoreCourse(
   });
   const flights: WallScoreFlight[] = [];
   events.forEach((_, index) => {
-    flights.push(wallScoreFlight(index, events, hits, settingsByIndex[index]));
+    flights.push(wallScoreFlight(
+      index,
+      events,
+      hits,
+      settingsByIndex[index],
+      settings.instrumentFamily === "mixed" && index === events.length - 1,
+    ));
   });
 
   return events.map((event, index) => {
@@ -245,6 +255,7 @@ export function buildSharedWallScoreCourse(
       longRail: flight.longRail || undefined,
       longTube: flight.longTube || undefined,
       longRouteKind: flight.longRouteKind,
+      terminalGoal: settings.instrumentFamily === "mixed" && index === events.length - 1,
       event,
       visualStyle: plan?.style,
     };

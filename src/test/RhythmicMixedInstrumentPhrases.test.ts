@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS } from "../features/rhythmic-studio/defaults";
 import { buildMarbleCourse } from "../features/rhythmic-studio/lib/marbleCourse";
-import { wallScoreReferenceHits } from "../features/rhythmic-studio/lib/korobeinikiReferenceLayout";
+import { wallScoreTwoColumnHits } from "../features/rhythmic-studio/lib/korobeinikiReferenceLayout";
 import {
   addInstrumentMixSegment,
   buildAutomaticInstrumentMix,
@@ -61,20 +61,38 @@ describe("mixed instruments follow musical phrases", () => {
     expect(buildAutomaticInstrumentMix(events, 3_200)).toHaveLength(1);
   });
 
-  it("automatically keeps one instrument for three phrases before switching", () => {
+  it("still splits a long held-note MIDI when onset spacing marks new visual phrases", () => {
+    const events = Array.from({ length: 14 }, (_, index) => ({
+      ...note(index, index * 700),
+      durationMs: 900,
+    }));
+    const phrases = buildPhraseInstrumentPlan(events);
+
+    expect(phrases.length).toBeGreaterThan(1);
+    phrases.slice(0, -1).forEach((phrase) => {
+      const next = phrases[phrase.id + 1];
+      expect(next.startMs - phrase.startMs).toBeLessThanOrEqual(5_600);
+    });
+  });
+
+  it("keeps instrument sections compact by switching after about two phrases", () => {
     const events = ninePhraseEvents();
     const plan = buildAutomaticInstrumentMix(events, 12_000);
 
-    expect(plan).toHaveLength(3);
-    expect(plan.map((segment) => segment.family)).toEqual(["piano", "guitar", "trumpet"]);
+    expect(plan).toHaveLength(5);
+    expect(plan.map((segment) => segment.family)).toEqual([
+      "piano", "guitar", "trumpet", "drum", "xylophone",
+    ]);
     expect(plan.map((segment) => [segment.startMs, segment.endMs])).toEqual([
-      [0, 4_200],
-      [4_200, 8_400],
-      [8_400, 12_000],
+      [0, 2_800],
+      [2_800, 5_600],
+      [5_600, 8_400],
+      [8_400, 11_200],
+      [11_200, 12_000],
     ]);
   });
 
-  it("prefers the clearest nearby rest when choosing an automatic instrument change", () => {
+  it("keeps compact sections while preserving a conspicuous musical rest as a boundary", () => {
     const phraseStarts = [0, 1_400, 2_800, 4_200, 6_400, 7_800];
     const events = phraseStarts.flatMap((startMs, phrase) => [
       note(phrase * 3, startMs),
@@ -84,9 +102,9 @@ describe("mixed instruments follow musical phrases", () => {
 
     const plan = buildAutomaticInstrumentMix(events, 9_000);
 
-    expect(plan).toHaveLength(2);
-    expect(plan[0].endMs).toBe(6_400);
-    expect(plan[1].startMs).toBe(6_400);
+    expect(plan).toHaveLength(3);
+    expect(plan.map((segment) => segment.startMs)).toEqual([0, 2_800, 6_400]);
+    expect(plan[1].endMs).toBe(6_400);
   });
 
   it("derives a suitable instrument count from MIDI phrases and program variety", () => {
@@ -95,8 +113,8 @@ describe("mixed instruments follow musical phrases", () => {
       program: index < 9 ? 24 : index < 18 ? 56 : 116,
     }));
 
-    expect(recommendedInstrumentCountForMidi(events)).toBe(3);
-    expect(buildAutomaticInstrumentMix(events, 12_000)).toHaveLength(3);
+    expect(recommendedInstrumentCountForMidi(events)).toBe(5);
+    expect(buildAutomaticInstrumentMix(events, 12_000)).toHaveLength(5);
   });
 
   it("never changes instrument before the current MIDI phrase is complete", () => {
@@ -141,9 +159,9 @@ describe("mixed instruments follow musical phrases", () => {
     const plan = buildAutomaticInstrumentMix(events, 12_000);
     const updated = updateInstrumentMixSegmentDuration(plan, plan.at(-1)!.id, 5, events, 12_000);
 
-    expect(updated.at(-1)?.startMs).toBe(7_000);
+    const phraseStarts = new Set(buildPhraseInstrumentPlan(events).map((phrase) => phrase.startMs));
     expect(updated.at(-1)?.endMs).toBe(12_000);
-    expect(updated.at(-1)!.endMs - updated.at(-1)!.startMs).toBe(5_000);
+    expect(phraseStarts.has(updated.at(-1)!.startMs)).toBe(true);
     updated.slice(1).forEach((segment, index) => expect(segment.startMs).toBe(updated[index].endMs));
   });
 
@@ -153,9 +171,9 @@ describe("mixed instruments follow musical phrases", () => {
     const base = { ...DEFAULT_SETTINGS, instrumentFamily: "mixed" as const };
     const resolve = createInstrumentMixSettingsResolver(events, plan, () => base);
 
-    expect(resolve(8).instrumentFamily).toBe("piano");
-    expect(resolve(9).instrumentFamily).toBe("guitar");
-    expect(resolve(18).instrumentFamily).toBe("trumpet");
+    expect(resolve(5).instrumentFamily).toBe("piano");
+    expect(resolve(6).instrumentFamily).toBe("guitar");
+    expect(resolve(12).instrumentFamily).toBe("trumpet");
   });
 
   it("supports changing, adding and removing configured instrument rows", () => {
@@ -179,19 +197,19 @@ describe("mixed instruments follow musical phrases", () => {
     const resolve = createPhraseInstrumentSettingsResolver(events, () => base);
 
     expect(resolve(0).instrumentFamily).toBe("piano");
-    expect(resolve(8).instrumentFamily).toBe("piano");
-    expect(resolve(9).instrumentFamily).toBe("guitar");
+    expect(resolve(5).instrumentFamily).toBe("piano");
+    expect(resolve(6).instrumentFamily).toBe("guitar");
   });
 
   it("changes meshes by configured phrase group without leaving the shared wall-score", () => {
     const events = ninePhraseEvents();
     const settings = { ...DEFAULT_SETTINGS, instrumentFamily: "mixed" as const };
     const course = buildMarbleCourse(events, settings, 720);
-    const expectedHits = wallScoreReferenceHits(events, 720);
+    const expectedHits = wallScoreTwoColumnHits(events, 720);
 
     expect(course[0].visualStyle).toBe("piano-key");
-    expect(course[8].visualStyle).toBe("piano-key");
-    expect(course[9].visualStyle).toBe("guitar-body");
+    expect(course[5].visualStyle).toBe("piano-key");
+    expect(course[6].visualStyle).toBe("guitar-body");
     course.forEach((platform, index) => {
       expect(platform.hitX).toBeCloseTo(expectedHits[index].x, 5);
       expect(platform.hitY).toBeCloseTo(expectedHits[index].y, 5);

@@ -28,10 +28,17 @@ export interface PhraseInstrumentSegment {
 // Keep the sequence curated and deterministic so Mixed never looks shuffled.
 export const PHRASE_HARD_REST_MS = 480;
 export const PHRASE_SOFT_REST_MS = 180;
-export const PHRASE_TARGET_MS = 4_200;
-export const PHRASE_MIN_MS = 1_500;
-export const PHRASE_MAX_MS = 7_200;
-export const INSTRUMENT_MIX_TARGET_PHRASES = 3;
+export const PHRASE_TARGET_MS = 3_400;
+export const PHRASE_MIN_MS = 1_400;
+export const PHRASE_MAX_MS = 5_200;
+// Two compact musical phrases per installation keeps a Shorts-style course
+// visually fresh without changing instrument on every few notes.
+export const INSTRUMENT_MIX_TARGET_PHRASES = 2;
+// Reference Shorts change the visual installation frequently enough to keep the
+// eye moving. Long songs therefore get additional sections even when the MIDI
+// parser found only a handful of large musical phrases.
+export const INSTRUMENT_MIX_TARGET_SECTION_MS = 7_000;
+export const INSTRUMENT_MIX_MAX_SECTION_MS = 9_000;
 export const INSTRUMENT_MIX_MIN_DURATION_MS = 500;
 
 function onsetGapAfter(events: NoteEvent[], index: number) {
@@ -60,6 +67,7 @@ interface BoundaryCandidate {
 function choosePhraseBoundary(events: NoteEvent[], startIndex: number) {
   const startMs = events[startIndex]?.timeMs ?? 0;
   let bestSoft: BoundaryCandidate | null = null;
+  let bestOnset: BoundaryCandidate | null = null;
 
   for (let index = startIndex; index < events.length - 1; index += 1) {
     const nextMs = events[index + 1].timeMs;
@@ -68,6 +76,19 @@ function choosePhraseBoundary(events: NoteEvent[], startIndex: number) {
     if (onsetGap <= 0) continue; // never split a chord / simultaneous strike
 
     const quietGap = releaseGapAfter(events, index);
+
+    if (runMs >= PHRASE_MIN_MS) {
+      // Some imported MIDI keeps each note held almost until the next section,
+      // so releaseGap can stay near zero even when the onset spacing clearly
+      // marks a phrase boundary. Keep an onset-only fallback to prevent 20-30 s
+      // installations that become visually repetitive.
+      const durationPenalty = Math.abs(runMs - PHRASE_TARGET_MS) * 0.2;
+      const onsetReward = Math.min(1_200, onsetGap) * 0.78;
+      const score = durationPenalty - onsetReward;
+      if (!bestOnset || score < bestOnset.score) {
+        bestOnset = { index, score, quietGap: onsetGap };
+      }
+    }
 
     // A real breath is the preferred end of the musical sentence.
     if (runMs >= 420 && quietGap >= PHRASE_HARD_REST_MS) return index;
@@ -81,7 +102,7 @@ function choosePhraseBoundary(events: NoteEvent[], startIndex: number) {
       if (!bestSoft || score < bestSoft.score) bestSoft = { index, score, quietGap };
     }
 
-    if (runMs >= PHRASE_MAX_MS && bestSoft) return bestSoft.index;
+    if (runMs >= PHRASE_MAX_MS) return bestSoft?.index ?? bestOnset?.index ?? index;
   }
 
   return null;
@@ -123,23 +144,41 @@ export function recommendedInstrumentCountForMidi(events: NoteEvent[]) {
   const phraseCount = buildPhraseInstrumentPlan(events).length;
   if (phraseCount <= 1) return phraseCount;
   const phraseBased = Math.ceil(phraseCount / INSTRUMENT_MIX_TARGET_PHRASES);
+  const durationBased = Math.ceil(eventTimelineEnd(events) / INSTRUMENT_MIX_TARGET_SECTION_MS);
   const midiTimbres = midiInstrumentHints(events).length;
-  return Math.max(1, Math.min(phraseCount, PHRASE_INSTRUMENT_SEQUENCE.length, Math.max(phraseBased, midiTimbres)));
+  // The curated family order may repeat after one cycle on long songs. Capping
+  // by the number of unique families made a 2-minute MIDI collapse into a few
+  // 20+ second sections.
+  return Math.max(1, Math.min(phraseCount, Math.max(phraseBased, durationBased, midiTimbres)));
 }
 
 function phraseCountBeforeBestRest(
-  events: NoteEvent[], phrases: PhraseInstrumentSegment[], start: number, instruments: number,
+  events: NoteEvent[],
+  phrases: PhraseInstrumentSegment[],
+  start: number,
+  instruments: number,
+  segmentStartMs: number,
 ) {
   const remaining = phrases.length - start;
   if (instruments <= 1) return remaining;
   const minimum = remaining >= instruments * 2 ? 2 : 1;
-  const maximum = Math.min(5, remaining - (instruments - 1) * minimum);
+  const maximum = Math.min(
+    INSTRUMENT_MIX_TARGET_PHRASES,
+    remaining - (instruments - 1) * minimum,
+  );
   let best = minimum;
   let bestScore = Number.NEGATIVE_INFINITY;
   for (let count = minimum; count <= maximum; count += 1) {
     const boundary = phrases[start + count];
     const quietGap = boundary ? releaseGapAfter(events, boundary.startIndex - 1) : 0;
-    const score = quietGap - Math.abs(count - INSTRUMENT_MIX_TARGET_PHRASES) * 140;
+    const sectionEndMs = boundary?.startMs ?? eventTimelineEnd(events);
+    const sectionMs = Math.max(0, sectionEndMs - segmentStartMs);
+    // Prefer a clean musical rest, but never keep two phrases together when
+    // that would create a visually stale 10-20 second installation.
+    if (count > minimum && sectionMs > INSTRUMENT_MIX_MAX_SECTION_MS) continue;
+    const score = quietGap
+      - Math.abs(count - INSTRUMENT_MIX_TARGET_PHRASES) * 140
+      - Math.abs(sectionMs - INSTRUMENT_MIX_TARGET_SECTION_MS) * 0.08;
     if (score > bestScore) { best = count; bestScore = score; }
   }
   return best;
@@ -159,9 +198,15 @@ export function buildAutomaticInstrumentMix(
 
   for (let segmentIndex = 0; segmentIndex < instrumentCount; segmentIndex += 1) {
     const remainingInstruments = instrumentCount - segmentIndex;
-    const phraseCount = phraseCountBeforeBestRest(events, phrases, phraseIndex, remainingInstruments);
-    const nextPhrase = phrases[phraseIndex + phraseCount];
     const startMs = segments.at(-1)?.endMs ?? 0;
+    const phraseCount = phraseCountBeforeBestRest(
+      events,
+      phrases,
+      phraseIndex,
+      remainingInstruments,
+      startMs,
+    );
+    const nextPhrase = phrases[phraseIndex + phraseCount];
     const endMs = nextPhrase?.startMs ?? safeDuration;
     segments.push({
       id: `instrument-mix-${segments.length}-${Math.round(startMs)}`,

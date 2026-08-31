@@ -2,8 +2,7 @@ import type { MarblePlatform } from "../engine/marblePhysicsTypes";
 import type { StudioSettings } from "../types";
 import { marbleHitPoint } from "./marbleCourse";
 import {
-  WALL_SCORE_HORIZONTAL_RAIL_ENTRY_T,
-  WALL_SCORE_HORIZONTAL_RAIL_EXIT_T,
+  wallScoreLongRouteGuideWindow,
   wallScoreLongRoutePoint,
 } from "./wallScoreMotion";
 
@@ -20,12 +19,13 @@ export function longGapRailPoints(start: MarblePlatform, end: MarblePlatform, st
   return Array.from({ length: count }, (_, index) => {
     const t = index / Math.max(1, count - 1);
     if (start.longRouteKind === "horizontal-rail") {
-      const phase = WALL_SCORE_HORIZONTAL_RAIL_ENTRY_T
-        + (WALL_SCORE_HORIZONTAL_RAIL_EXIT_T - WALL_SCORE_HORIZONTAL_RAIL_ENTRY_T) * t;
+      const spanMs = end.event.timeMs - start.event.timeMs;
+      const window = wallScoreLongRouteGuideWindow(spanMs, "horizontal-rail");
+      const phase = window.entryT + (window.exitT - window.entryT) * t;
       return wallScoreLongRoutePoint(
         from,
         to,
-        end.event.timeMs - start.event.timeMs,
+        spanMs,
         phase,
         "horizontal-rail",
       );
@@ -40,10 +40,20 @@ export function longGapRailSupportPoints(
   ballRadius: number,
   steps = 8,
 ) {
-  return longGapRailPoints(start, end, steps).map((point) => ({
-    x: point.x,
-    y: point.y + ballRadius,
-  }));
+  const points = longGapRailPoints(start, end, steps);
+  return points.map((point, index) => {
+    const previous = points[Math.max(0, index - 1)];
+    const next = points[Math.min(points.length - 1, index + 1)];
+    const dx = next.x - previous.x;
+    const dy = next.y - previous.y;
+    const size = Math.max(0.001, Math.hypot(dx, dy));
+    let normal = { x: -dy / size, y: dx / size };
+    if (normal.y < 0) normal = { x: -normal.x, y: -normal.y };
+    return {
+      x: point.x + normal.x * ballRadius,
+      y: point.y + normal.y * ballRadius,
+    };
+  });
 }
 
 function offsetPoints(points: LongGapRailPoint[], distance: number) {

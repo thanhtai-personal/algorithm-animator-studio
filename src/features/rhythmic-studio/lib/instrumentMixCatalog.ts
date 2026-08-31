@@ -55,8 +55,8 @@ export function midiInstrumentHints(events: readonly NoteEvent[]) {
 }
 
 export function instrumentFamiliesForMidi(events: readonly NoteEvent[], count: number) {
-  const requested = Math.max(1, Math.min(PHRASE_INSTRUMENT_SEQUENCE.length, Math.floor(count)));
+  const requested = Math.max(1, Math.floor(count));
   const candidates = [...midiInstrumentHints(events), ...PHRASE_INSTRUMENT_SEQUENCE];
   const unique = candidates.filter((family, index) => candidates.indexOf(family) === index);
-  return unique.slice(0, requested);
+  return Array.from({ length: requested }, (_, index) => unique[index % unique.length]);
 }

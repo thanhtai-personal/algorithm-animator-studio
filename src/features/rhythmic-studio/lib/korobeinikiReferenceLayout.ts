@@ -219,6 +219,41 @@ export function wallScoreReferenceHits(events: readonly NoteEvent[], width: numb
   return spaceWallScoreHitsByTiming(events, wallScoreReferenceTemplateHits(events, width), width);
 }
 
+const WALL_SCORE_TWO_COLUMN_MIN_CROSS_MS = 170;
+
+/**
+ * Concrete instruments should read as two open vertical lanes, not a single
+ * center stack. Normal note gaps alternate between left/right lanes so the
+ * marble visibly bounces across the empty center. Very fast notes stay in the
+ * current lane because forcing a full-width crossing in ~100 ms would require
+ * an implausible horizontal launch speed.
+ */
+export function wallScoreTwoColumnHits(events: readonly NoteEvent[], width: number) {
+  const source = wallScoreReferenceTemplateHits(events, width);
+  if (!source.length) return [];
+  const center = width / 2;
+  const halfSpread = Math.max(98, Math.min(width * 0.175, 132));
+  let side = source[0].x <= center ? -1 : 1;
+  const lanes = source.map((point, index) => {
+    if (index > 0) {
+      const gapMs = Math.max(0, events[index].timeMs - events[index - 1].timeMs);
+      if (gapMs >= WALL_SCORE_TWO_COLUMN_MIN_CROSS_MS) side *= -1;
+    }
+    // Keep each lane alive rather than ruler-straight: a small inherited offset
+    // from the reference path gives gentle diagonal variation while preserving
+    // a clearly empty center corridor.
+    const gapMs = index > 0 ? Math.max(0, events[index].timeMs - events[index - 1].timeMs) : 0;
+    const localOffset = gapMs >= WALL_SCORE_RAIL_MIN_GAP_MS
+      ? 0
+      : Math.max(-12, Math.min(12, (point.x - center) * 0.08));
+    return {
+      x: center + side * halfSpread + localOffset,
+      y: point.y,
+    };
+  });
+  return spaceWallScoreHitsByTiming(events, lanes, width, { preserveSourceColumns: true });
+}
+
 function separateWallScoreStrikePoints(
   visualHits: readonly { x: number; y: number }[],
   settings: StudioSettings,

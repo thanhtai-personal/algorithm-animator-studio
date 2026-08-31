@@ -6,6 +6,7 @@ import {
   isKorobeinikiWallLayout,
   korobeinikiColorForMidi,
   wallScoreReferenceHits,
+  wallScoreTwoColumnHits,
   wallScoreTubeHitPoint,
 } from "./korobeinikiReferenceLayout";
 import { noteColorForMidi } from "./noteColors";
@@ -164,8 +165,13 @@ export function buildSharedWallScoreCourse(
   resolveSettings: StudioSettingsResolver,
   onProgress?: (progress: number) => void,
 ): MarblePlatform[] {
-  const visualHits = wallScoreReferenceHits(events, width);
   const settingsByIndex = events.map((_, index) => resolveSettings(index));
+  const usesConcreteInstrumentLanes = settingsByIndex.some((localSettings) => (
+    localSettings.instrumentFamily !== "auto" && !isKorobeinikiWallLayout(localSettings)
+  ));
+  const visualHits = usesConcreteInstrumentLanes
+    ? wallScoreTwoColumnHits(events, width)
+    : wallScoreReferenceHits(events, width);
   const hits = visualHits.map((hit, index) => {
     const localSettings = settingsByIndex[index];
     return isKorobeinikiWallLayout(localSettings)

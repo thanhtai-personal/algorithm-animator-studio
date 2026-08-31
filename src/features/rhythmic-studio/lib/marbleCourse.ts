@@ -15,6 +15,7 @@ import {
   wallScoreMarblePointAtPhase,
 } from "./korobeinikiReferenceLayout";
 import { buildSharedWallScoreCourse, usesSharedWallScore } from "./wallScoreLayout";
+import { wallScoreLongRouteGuideGeometry } from "./wallScoreMotion";
 
 export type { MarblePlatform, MarblePoint } from "../engine/marblePhysicsTypes";
 
@@ -31,7 +32,6 @@ export function marbleHitPoint(platform: MarblePlatform) {
 export const LONG_GAP_TUBE_MS = REST_GAP_MS;
 export const TUBE_ENTRY_T = 0.18;
 export const TUBE_EXIT_T = 0.82;
-const WALL_SCORE_PIPE_EXIT_T = 0.96;
 
 export interface LongGapTubeGeometry {
   entryX: number;
@@ -41,6 +41,7 @@ export interface LongGapTubeGeometry {
   control2X: number;
   control2Y: number;
   waveAmplitude: number;
+  waveCount: number;
   waveDirection: number;
   exitX: number;
   exitY: number;
@@ -48,7 +49,27 @@ export interface LongGapTubeGeometry {
 
 export function longGapTubeGeometry(start: MarblePlatform, end: MarblePlatform, _settings: StudioSettings): LongGapTubeGeometry {
   const startHit = marbleHitPoint(start);
-  const spanSeconds = Math.max(0.001, (end.event.timeMs - start.event.timeMs) / 1000);
+  const endHit = marbleHitPoint(end);
+  const spanMs = end.event.timeMs - start.event.timeMs;
+
+  if (start.longRouteKind === "vertical-pipe") {
+    const guide = wallScoreLongRouteGuideGeometry(startHit, endHit, spanMs, "vertical-pipe");
+    return {
+      entryX: guide.entry.x,
+      entryY: guide.entry.y,
+      control1X: guide.control1.x,
+      control1Y: guide.control1.y,
+      control2X: guide.control2.x,
+      control2Y: guide.control2.y,
+      waveAmplitude: guide.waveAmplitude,
+      waveCount: guide.waveCount,
+      waveDirection: guide.waveDirection,
+      exitX: guide.exit.x,
+      exitY: guide.exit.y,
+    };
+  }
+
+  const spanSeconds = Math.max(0.001, spanMs / 1000);
   const ballisticPoint = (ratio: number) => {
     const t = spanSeconds * ratio;
     return {
@@ -61,19 +82,15 @@ export function longGapTubeGeometry(start: MarblePlatform, end: MarblePlatform, 
     y: start.outVY + start.gravity * spanSeconds * ratio,
   });
 
-  const exitRatio = start.longRouteKind === "vertical-pipe"
-    ? WALL_SCORE_PIPE_EXIT_T
-    : TUBE_EXIT_T;
+  const exitRatio = TUBE_EXIT_T;
   const entry = ballisticPoint(TUBE_ENTRY_T);
   const exit = ballisticPoint(exitRatio);
   const entryVelocity = ballisticVelocity(TUBE_ENTRY_T);
   const exitVelocity = ballisticVelocity(exitRatio);
   const tubeSeconds = spanSeconds * (exitRatio - TUBE_ENTRY_T);
 
-  // A ballistic parabola can be represented exactly by a cubic Bezier when the
-  // endpoint derivatives are used as the two controls. The guide/tube is now
-  // built around the marble's real gravity path instead of a decorative S-curve
-  // that the marble visibly leaves behind midway through a long gap.
+  // Generic automatic tubes still wrap the real ballistic arc. Wall-score pipes
+  // use the detached S-curve above so the marble visibly falls into and exits the tube.
   return {
     entryX: entry.x,
     entryY: entry.y,
@@ -82,22 +99,82 @@ export function longGapTubeGeometry(start: MarblePlatform, end: MarblePlatform, 
     control2X: exit.x - exitVelocity.x * tubeSeconds / 3,
     control2Y: exit.y - exitVelocity.y * tubeSeconds / 3,
     waveAmplitude: 0,
+    waveCount: 0,
     waveDirection: 1,
     exitX: exit.x,
     exitY: exit.y,
   };
 }
 
-export function longGapTubePoint(geometry: LongGapTubeGeometry, t: number) {
+function rawLongGapTubePoint(geometry: LongGapTubeGeometry, t: number) {
   const p = clamp(t);
   const inv = 1 - p;
   const a = inv * inv * inv;
   const b = 3 * inv * inv * p;
   const c = 3 * inv * p * p;
   const d = p * p * p;
-  return {
+  const base = {
     x: a * geometry.entryX + b * geometry.control1X + c * geometry.control2X + d * geometry.exitX,
     y: a * geometry.entryY + b * geometry.control1Y + c * geometry.control2Y + d * geometry.exitY,
+  };
+  if (geometry.waveAmplitude <= 0 || geometry.waveCount <= 0) return base;
+  const envelope = Math.sin(Math.PI * p) ** 2;
+  const wave = Math.sin(Math.PI * 2 * geometry.waveCount * p)
+    * geometry.waveAmplitude * envelope * geometry.waveDirection;
+  return { x: base.x + wave, y: base.y };
+}
+
+interface LongGapTubeArcTable {
+  points: { x: number; y: number }[];
+  lengths: number[];
+  total: number;
+}
+
+const longGapTubeArcTableCache = new WeakMap<LongGapTubeGeometry, LongGapTubeArcTable>();
+
+function longGapTubeArcTable(geometry: LongGapTubeGeometry) {
+  const cached = longGapTubeArcTableCache.get(geometry);
+  if (cached) return cached;
+  const steps = 120;
+  const points = [rawLongGapTubePoint(geometry, 0)];
+  const lengths = [0];
+  let total = 0;
+  for (let index = 1; index <= steps; index += 1) {
+    const point = rawLongGapTubePoint(geometry, index / steps);
+    const previous = points[index - 1];
+    total += Math.hypot(point.x - previous.x, point.y - previous.y);
+    points.push(point);
+    lengths.push(total);
+  }
+  const table = { points, lengths, total };
+  longGapTubeArcTableCache.set(geometry, table);
+  return table;
+}
+
+export function longGapTubePoint(geometry: LongGapTubeGeometry, t: number) {
+  if (geometry.waveAmplitude <= 0 || geometry.waveCount <= 0) {
+    return rawLongGapTubePoint(geometry, t);
+  }
+  // Render and motion both advance by arc length, not by raw Bezier parameter.
+  // That keeps the marble's speed visually steady through tight and shallow bends.
+  const targetRatio = clamp(t);
+  const { points, lengths, total } = longGapTubeArcTable(geometry);
+  if (total <= 1e-6) return points[0];
+  const target = total * targetRatio;
+  let low = 0;
+  let high = lengths.length - 1;
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2);
+    if (lengths[mid] < target) low = mid + 1;
+    else high = mid;
+  }
+  const upper = Math.max(1, low);
+  const lower = upper - 1;
+  const segmentLength = Math.max(1e-6, lengths[upper] - lengths[lower]);
+  const local = (target - lengths[lower]) / segmentLength;
+  return {
+    x: points[lower].x + (points[upper].x - points[lower].x) * local,
+    y: points[lower].y + (points[upper].y - points[lower].y) * local,
   };
 }
 

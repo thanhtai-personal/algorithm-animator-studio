@@ -6,6 +6,7 @@ import {
   wallScoreMarblePointAtPhase,
   wallScoreRailSegments,
   wallScoreReferenceHits,
+  wallScoreTwoColumnHits,
 } from "../features/rhythmic-studio/lib/korobeinikiReferenceLayout";
 import type {
   InstrumentFamily,
@@ -80,7 +81,7 @@ describe("shared Korobeiniki wall-score instrument layout", () => {
     "uses identical note positions for %s while retaining its own mesh",
     (family, expectedStyle) => {
       const course = buildMarbleCourse(EVENTS, settingsFor(family), WIDTH);
-      const expectedHits = wallScoreReferenceHits(EVENTS, WIDTH);
+      const expectedHits = wallScoreTwoColumnHits(EVENTS, WIDTH);
 
       expect(course).toHaveLength(EVENTS.length);
       course.forEach((platform, index) => {
@@ -90,6 +91,21 @@ describe("shared Korobeiniki wall-score instrument layout", () => {
       });
     },
   );
+
+  it("keeps concrete instruments in two open columns and crosses the center on playable gaps", () => {
+    const course = buildMarbleCourse(EVENTS, settingsFor("drum"), WIDTH);
+    const center = WIDTH / 2;
+    const centerClearance = Math.min(...course.map((platform) => Math.abs(platform.hitX - center)));
+
+    expect(centerClearance).toBeGreaterThan(90);
+    for (let index = 1; index < course.length; index += 1) {
+      const gapMs = EVENTS[index].timeMs - EVENTS[index - 1].timeMs;
+      if (gapMs < 170 || gapMs >= 760) continue;
+      expect(Math.sign(course[index].hitX - center), `column ${index}`).toBe(
+        -Math.sign(course[index - 1].hitX - center),
+      );
+    }
+  });
 
   it.each(["toy-pegboard", "neon-comet"] as RhythmicPresetId[])(
     "uses the Korobeiniki hit arrangement for %s while retaining its preset meshes",

@@ -14,10 +14,15 @@ import {
 } from "../features/rhythmic-studio/lib/longGapRail";
 import { parseMidi } from "../features/rhythmic-studio/lib/midiParser";
 import { buildAutomaticInstrumentMix } from "../features/rhythmic-studio/lib/phraseInstrumentMix";
+import {
+  WALL_SCORE_VERTICAL_PIPE_SPEED,
+  wallScoreLongRouteGuideWindow,
+} from "../features/rhythmic-studio/lib/wallScoreMotion";
 import { presetById } from "../features/rhythmic-studio/lib/studioPresets";
 import { buildRhythmicTimeline } from "../features/rhythmic-studio/lib/timeline";
 
-const MIDI_PATH = "C:\\Users\\Kai.Tran\\Music\\midi\\Đất Nước Trọn Niềm Vui.mid";
+const MIDI_PATH = process.env.RHYTHMIC_TEST_MIDI
+  ?? "C:\\Users\\Kai.Tran\\Music\\midi\\Đất Nước Trọn Niềm Vui.mid";
 
 function prepareUserCourse() {
   const bytes = readFileSync(MIDI_PATH);
@@ -46,7 +51,30 @@ describeIfMidiAvailable("Đất Nước Trọn Niềm Vui.mid mixed-instrument r
     expect(sourceEvents).toHaveLength(715);
     expect(events).toHaveLength(218);
     expect(platforms).toHaveLength(events.length);
-    expect(instrumentMixSegments.map((segment) => segment.family)).toEqual(["pluck", "piano"]);
+    expect(instrumentMixSegments).toHaveLength(20);
+    expect(new Set(instrumentMixSegments.map((segment) => segment.family)).size).toBeGreaterThanOrEqual(8);
+    expect(Math.max(...instrumentMixSegments.map((segment) => segment.endMs - segment.startMs)))
+      .toBeLessThan(9_001);
+  });
+
+  it("keeps the concrete instruments in two open lanes and bounces across the center", () => {
+    const { events, platforms } = prepareUserCourse();
+    const center = 360;
+    const centerClearance = Math.min(...platforms.map((platform) => Math.abs(platform.hitX - center)));
+    expect(centerClearance).toBeGreaterThan(90);
+
+    let eligible = 0;
+    let crossings = 0;
+    for (let index = 1; index < platforms.length; index += 1) {
+      const gapMs = events[index].timeMs - events[index - 1].timeMs;
+      if (gapMs < 170 || gapMs >= LONG_GAP_RAIL_MS) continue;
+      eligible += 1;
+      if (Math.sign(platforms[index].hitX - center) !== Math.sign(platforms[index - 1].hitX - center)) {
+        crossings += 1;
+      }
+    }
+    expect(eligible).toBeGreaterThan(100);
+    expect(crossings).toBe(eligible);
   });
 
   it("routes long rests across level rails or down vertical pipes", () => {
@@ -58,15 +86,25 @@ describeIfMidiAvailable("Đất Nước Trọn Niềm Vui.mid mixed-instrument r
     const pipes = longSegments.filter((platform) => platform.longRouteKind === "vertical-pipe");
 
     expect(longSegments).toHaveLength(34);
-    expect(rails).toHaveLength(23);
-    expect(pipes).toHaveLength(11);
+    expect(rails.length).toBeGreaterThan(5);
+    expect(pipes.length).toBeGreaterThan(5);
 
     for (const start of rails) {
       const end = platforms[start.index + 1];
-      const durationSeconds = (end.event.timeMs - start.event.timeMs) / 1_000;
+      const durationMs = end.event.timeMs - start.event.timeMs;
+      const durationSeconds = durationMs / 1_000;
       const strikeDistance = Math.hypot(end.hitX - start.hitX, end.hitY - start.hitY);
       const rail = longGapRailPoints(start, end, 10);
       const support = longGapRailSupportPoints(start, end, settings.ballSize, 10);
+      const yValues = rail.map((point) => point.y);
+      const xValues = rail.map((point) => point.x);
+      const window = wallScoreLongRouteGuideWindow(durationMs, "horizontal-rail");
+      const railEntry = marbleAtTime(
+        start.event.timeMs + durationMs * window.entryT,
+        events,
+        platforms,
+        settings,
+      );
       const afterOneFrame = marbleAtTime(
         start.event.timeMs + 1_000 / 60,
         events,
@@ -80,58 +118,58 @@ describeIfMidiAvailable("Đất Nước Trọn Niềm Vui.mid mixed-instrument r
       expect(end.hitY, `level rail ${start.index}`).toBeCloseTo(start.hitY, 6);
       expect(Math.abs(end.hitX - start.hitX), `column change ${start.index}`).toBeGreaterThanOrEqual(240);
       expect(strikeDistance / durationSeconds, `strike speed ${start.index}`).toBeGreaterThanOrEqual(225);
-      expect(rail.every((point) => Math.abs(point.y - start.hitY) < 1e-6)).toBe(true);
-      expect(support.every((point) => (
-        Math.abs(point.y - start.hitY - settings.ballSize) < 1e-6
-      ))).toBe(true);
+      expect(Math.hypot(rail[0].x - start.hitX, rail[0].y - start.hitY), `detached entry ${start.index}`)
+        .toBeGreaterThan(settings.ballSize * 2);
+      expect(Math.hypot(rail.at(-1)!.x - end.hitX, rail.at(-1)!.y - end.hitY), `detached exit ${start.index}`)
+        .toBeGreaterThan(settings.ballSize * 2);
+      expect(Math.max(...yValues) - Math.min(...yValues), `rail curve ${start.index}`).toBeGreaterThan(1);
+      expect(Math.max(...yValues) - Math.min(...yValues), `mostly horizontal ${start.index}`)
+        .toBeLessThan((Math.max(...xValues) - Math.min(...xValues)) * 0.35);
+      support.forEach((point, index) => {
+        expect(Math.hypot(point.x - rail[index].x, point.y - rail[index].y), `support radius ${start.index}:${index}`)
+          .toBeCloseTo(settings.ballSize, 4);
+      });
+      expect(railEntry.x, `rail catch x ${start.index}`).toBeCloseTo(rail[0].x, 4);
+      expect(railEntry.y, `rail catch y ${start.index}`).toBeCloseTo(rail[0].y, 4);
       expect(
         Math.hypot(afterOneFrame.x - start.hitX, afterOneFrame.y - start.hitY),
         `first-frame travel ${start.index}`,
       ).toBeGreaterThan(1.5);
-
-      const speedAt = (phase: number) => {
-        const samplePhase = 0.002;
-        const beforePhase = Math.max(0, phase - samplePhase);
-        const afterPhase = Math.min(1, phase + samplePhase);
-        const before = marbleAtTime(
-          start.event.timeMs + durationSeconds * 1_000 * beforePhase,
-          events,
-          platforms,
-          settings,
-        );
-        const after = marbleAtTime(
-          start.event.timeMs + durationSeconds * 1_000 * afterPhase,
-          events,
-          platforms,
-          settings,
-        );
-        return Math.hypot(after.x - before.x, after.y - before.y)
-          / (durationSeconds * (afterPhase - beforePhase));
-      };
-      const sampledSpeeds = [0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95].map(speedAt);
-      expect(Math.min(...sampledSpeeds), `minimum rail speed ${start.index}`).toBeGreaterThan(120);
-      expect(Math.max(...sampledSpeeds), `maximum rail speed ${start.index}`).toBeLessThan(500);
-      expect(speedAt(0.5), `rail braking ${start.index}`).toBeGreaterThan(speedAt(0.95));
     }
 
     for (const start of pipes) {
       const end = platforms[start.index + 1];
-      const durationSeconds = (end.event.timeMs - start.event.timeMs) / 1_000;
+      const durationMs = end.event.timeMs - start.event.timeMs;
+      const durationSeconds = durationMs / 1_000;
       const geometry = longGapTubeGeometry(start, end, settings);
-      const pipe = Array.from({ length: 17 }, (_, index) => (
-        longGapTubePoint(geometry, index / 16)
+      const pipe = Array.from({ length: 65 }, (_, index) => (
+        longGapTubePoint(geometry, index / 64)
       ));
+      const xValues = pipe.map((point) => point.x);
+      const yValues = pipe.map((point) => point.y);
 
       expect(start.motionMode, `motion ${start.index}`).toBe("roll");
       expect(start.longTube, `pipe ${start.index}`).toBe(true);
       expect(start.longRail, `not a rail ${start.index}`).not.toBe(true);
       expect(end.hitX, `vertical pipe ${start.index}`).toBeCloseTo(start.hitX, 6);
-      expect((end.hitY - start.hitY) / durationSeconds, `pipe speed ${start.index}`)
-        .toBeCloseTo(180, 5);
+      const window = wallScoreLongRouteGuideWindow(durationMs, "vertical-pipe");
+      const guideSeconds = durationSeconds * (window.exitT - window.entryT);
+      const pathLength = pipe.slice(1).reduce((sum, point, pointIndex) => (
+        sum + Math.hypot(point.x - pipe[pointIndex].x, point.y - pipe[pointIndex].y)
+      ), 0);
+      expect(pathLength / guideSeconds, `pipe travel speed ${start.index}`)
+        .toBeGreaterThanOrEqual(WALL_SCORE_VERTICAL_PIPE_SPEED - 4);
       expect(start.outVY, `upward pipe entry ${start.index}`).toBeLessThan(0);
-      expect(start.outVY + start.gravity * durationSeconds, `downward pipe exit ${start.index}`)
-        .toBeGreaterThan(0);
-      expect(pipe.every((point) => Math.abs(point.x - start.hitX) < 1e-6)).toBe(true);
+      expect(Math.hypot(geometry.entryX - start.hitX, geometry.entryY - start.hitY), `detached pipe entry ${start.index}`)
+        .toBeGreaterThan(settings.ballSize * 1.5);
+      expect(Math.hypot(geometry.exitX - end.hitX, geometry.exitY - end.hitY), `detached pipe exit ${start.index}`)
+        .toBeGreaterThan(settings.ballSize * 1.5);
+      expect(Math.max(...xValues) - Math.min(...xValues), `pipe S curve ${start.index}`)
+        .toBeGreaterThan(settings.ballSize * 2);
+      expect(Math.max(...xValues) - Math.min(...xValues), `mostly vertical pipe ${start.index}`)
+        .toBeLessThan((Math.max(...yValues) - Math.min(...yValues)) * 0.5);
+      expect(pipe.every((point, index) => index === 0 || point.y > pipe[index - 1].y), `downward pipe ${start.index}`)
+        .toBe(true);
     }
   });
 

@@ -344,7 +344,7 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
             <Badge variant="outline">{renderEngine === "remotion" ? "Remotion" : "FFmpeg"}</Badge>
             <Badge variant="outline">{totalDuration.toFixed(1)}s</Badge>
           </div>
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-start">
             <VideoEditorPreview
               asset={currentAsset}
               clip={preview?.clip}
@@ -365,15 +365,20 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
               onSeek={handleSeek}
               onSeekEnd={handleSeekEnd}
             />
-            <MediaBin assets={assets} onFiles={addFiles} />
+            <div className="min-w-0 xl:max-h-[70vh] xl:overflow-y-auto xl:pr-1">
+              <VideoEditorLyricsPanel lyrics={lyrics} assets={assets} clips={clips} onChange={setLyrics} />
+            </div>
           </div>
         </div>
 
-        <VideoEditorLyricsPanel lyrics={lyrics} assets={assets} clips={clips} onChange={setLyrics} />
-
-        <div className="space-y-2 rounded-lg border bg-muted/10 p-3">
-          <TimelineTrack title="Track 1: Hình ảnh / video" icon={<Film className="h-4 w-4" />} clips={visualClips} assets={assets} track="visual" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
-          <TimelineTrack title="Track 2: Voice / nhạc" icon={<Music2 className="h-4 w-4" />} clips={audioClips} assets={assets} track="audio" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
+        <div className="grid gap-4 xl:grid-cols-[380px_minmax(0,1fr)] xl:items-start">
+          <div className="min-w-0 xl:sticky xl:top-4">
+            <MediaBin assets={assets} onFiles={addFiles} />
+          </div>
+          <div className="min-w-0 space-y-2 rounded-lg border bg-muted/10 p-3">
+            <TimelineTrack title="Track 1: Hình ảnh / video" icon={<Film className="h-4 w-4" />} clips={visualClips} assets={assets} track="visual" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
+            <TimelineTrack title="Track 2: Voice / nhạc" icon={<Music2 className="h-4 w-4" />} clips={audioClips} assets={assets} track="audio" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
+          </div>
         </div>
         <audio ref={audioRef} />
         {lastVideo ? (

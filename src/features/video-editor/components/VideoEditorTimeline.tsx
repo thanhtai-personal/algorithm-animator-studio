@@ -78,8 +78,8 @@ function MediaGroup(props: { title: string; empty: string; assets: VideoEditorAs
         <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{props.title}</h4>
         <span className="text-xs text-muted-foreground">{Math.min(visibleCount, props.assets.length)} / {props.assets.length}</span>
       </div>
-      <div className="max-h-[34vh] min-h-28 overflow-y-auto pr-1" onScroll={handleScroll}>
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+      <div className="max-h-[34vh] min-h-28 overflow-y-auto overflow-x-hidden pr-1" onScroll={handleScroll}>
+        <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
           {props.assets.length ? visibleAssets.map((asset) => <MediaAsset key={asset.id} asset={asset} />) : <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground sm:col-span-2 lg:col-span-4">{props.empty}</div>}
         </div>
         {hasMore ? <div className="py-3 text-center text-xs text-muted-foreground">Kéo xuống để load thêm 12 media</div> : null}
@@ -168,13 +168,13 @@ function MediaAsset({ asset }: { asset: VideoEditorAsset }) {
 
   if (asset.type === "audio") {
     return (
-      <article draggable onDragStart={(event) => event.dataTransfer.setData("asset-id", asset.id)} className="flex items-center gap-2 rounded-md border bg-card p-2">
+      <article draggable onDragStart={(event) => event.dataTransfer.setData("asset-id", asset.id)} className="flex min-w-0 items-center gap-2 overflow-hidden rounded-md border bg-card p-2">
         <Button size="icon" variant="outline" className="h-8 w-8 shrink-0" onClick={togglePreview} disabled={asset.source === "silent"}>
           {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
         </Button>
         <Music2 className="h-4 w-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-xs"><Badge variant="outline">{getAssetBadge(asset)}</Badge><span className="truncate">{asset.name}</span></div>
+          <div className="flex min-w-0 items-center gap-2 text-xs"><Badge variant="outline" className="shrink-0">{getAssetBadge(asset)}</Badge><span className="min-w-0 flex-1 truncate" title={asset.name}>{asset.name}</span></div>
         </div>
         <audio ref={mediaRef} src={asset.url} onEnded={() => setPlaying(false)} />
       </article>
@@ -182,8 +182,8 @@ function MediaAsset({ asset }: { asset: VideoEditorAsset }) {
   }
 
   return (
-    <article draggable onDragStart={(event) => event.dataTransfer.setData("asset-id", asset.id)} className="grid gap-2 rounded-md border bg-card p-2">
-      <div className="relative grid aspect-video place-items-center overflow-hidden rounded bg-slate-950 text-muted-foreground">
+    <article draggable onDragStart={(event) => event.dataTransfer.setData("asset-id", asset.id)} className="grid min-w-0 gap-2 overflow-hidden rounded-md border bg-card p-2">
+      <div className="relative grid aspect-[16/10] place-items-center overflow-hidden rounded-md bg-slate-950 text-muted-foreground">
         {asset.type === "image" ? <img src={asset.url} className="h-full w-full object-cover" alt="" /> : <video ref={mediaRef} src={asset.url} className="h-full w-full object-cover" onEnded={() => setPlaying(false)} />}
         {asset.type === "video" ? (
           <Button size="icon" variant="outline" className="absolute right-2 top-2 h-8 w-8 bg-background/80 backdrop-blur" onClick={togglePreview}>
@@ -191,7 +191,7 @@ function MediaAsset({ asset }: { asset: VideoEditorAsset }) {
           </Button>
         ) : null}
       </div>
-      <div className="flex items-center gap-2 text-xs"><Badge variant="outline">{getAssetBadge(asset)}</Badge><span className="truncate">{asset.name}</span></div>
+      <div className="flex min-w-0 items-center gap-2 text-xs"><Badge variant="outline" className="shrink-0">{getAssetBadge(asset)}</Badge><span className="min-w-0 flex-1 truncate" title={asset.name}>{asset.name}</span></div>
     </article>
   );
 }

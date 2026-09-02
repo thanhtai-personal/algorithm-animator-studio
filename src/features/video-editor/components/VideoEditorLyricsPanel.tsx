@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { SystemLoader } from "@/components/ui/system-loader";
 import { transcribeVideoEditorLyrics } from "../lib/videoEditorApi";
+import { shiftLyricCues } from "../lib/videoEditorLyrics";
 import type { VideoEditorAsset, VideoEditorClip, VideoEditorLyricCue, VideoEditorLyrics } from "../lib/videoEditorTypes";
 
 type Props = {
@@ -19,6 +20,7 @@ type Props = {
 
 export function VideoEditorLyricsPanel({ lyrics, assets, clips, onChange }: Props) {
   const [transcribing, setTranscribing] = useState(false);
+  const [timingShift, setTimingShift] = useState("0");
   const sourceAssets = useMemo(() => assets.filter((asset) => asset.source !== "silent" && (asset.type === "audio" || asset.type === "video")), [assets]);
   const selectedAsset = sourceAssets.find((asset) => asset.id === lyrics.sourceAssetId) || sourceAssets[0];
 
@@ -56,6 +58,21 @@ export function VideoEditorLyricsPanel({ lyrics, assets, clips, onChange }: Prop
     patch({ cues: lyrics.cues.map((cue) => cue.id === id ? { ...cue, ...patchValue } : cue) });
   }
 
+  function handleApplyTimingShift() {
+    const offsetSeconds = parseDecimalInput(timingShift);
+    if (offsetSeconds == null) {
+      toast.error("Độ trễ phải là một số, ví dụ -1, 0.85 hoặc 1.2.");
+      return;
+    }
+    if (!lyrics.cues.length) {
+      toast.error("Chưa có lyric để dịch thời gian.");
+      return;
+    }
+    patch({ cues: shiftLyricCues(lyrics.cues, offsetSeconds) });
+    const sign = offsetSeconds > 0 ? "+" : "";
+    toast.success(`Đã dịch toàn bộ lyric ${sign}${offsetSeconds}s.`);
+  }
+
   return (
     <section className="space-y-3 rounded-lg border border-cyan-500/20 bg-cyan-500/[0.04] p-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -90,6 +107,20 @@ export function VideoEditorLyricsPanel({ lyrics, assets, clips, onChange }: Prop
         <Button onClick={() => void handleAutoLyrics()} disabled={transcribing || !selectedAsset}>
           {transcribing ? <SystemLoader className="mr-2 h-4 w-4" /> : <WandSparkles className="mr-2 h-4 w-4" />}Tự tạo lyric
         </Button>
+      </div>
+
+      <div className="grid gap-3 rounded-md border border-dashed border-cyan-500/25 bg-background/30 p-3 md:grid-cols-[minmax(220px,360px)_auto_minmax(0,1fr)] md:items-end">
+        <Field label="Dịch thời gian lyric (giây)">
+          <Input
+            value={timingShift}
+            inputMode="decimal"
+            placeholder="VD: -1.0 hoặc 0.85"
+            onChange={(event) => setTimingShift(event.target.value)}
+            onKeyDown={(event) => { if (event.key === "Enter") handleApplyTimingShift(); }}
+          />
+        </Field>
+        <Button type="button" variant="secondary" onClick={handleApplyTimingShift} disabled={!lyrics.cues.length}>Apply</Button>
+        <p className="text-xs text-muted-foreground md:pb-2">Số dương = hiện trễ hơn, số âm = hiện sớm hơn. Apply cộng cùng giá trị vào start/end của mọi dòng và timestamp từng từ.</p>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -129,8 +160,8 @@ export function VideoEditorLyricsPanel({ lyrics, assets, clips, onChange }: Prop
             {lyrics.cues.map((cue, index) => (
               <div key={cue.id} className="grid gap-2 rounded-md border bg-background/50 p-2 md:grid-cols-[42px_86px_86px_minmax(0,1fr)] md:items-center">
                 <span className="text-center text-xs font-bold text-cyan-300">#{index + 1}</span>
-                <Input aria-label={`Lyric ${index + 1} start`} type="number" step="0.05" min="0" value={cue.start} onChange={(event) => updateCue(cue.id, { start: Math.max(0, Number(event.target.value) || 0), words: [] })} />
-                <Input aria-label={`Lyric ${index + 1} end`} type="number" step="0.05" min="0" value={cue.end} onChange={(event) => updateCue(cue.id, { end: Math.max(cue.start + 0.05, Number(event.target.value) || cue.end), words: [] })} />
+                <Input aria-label={`Lyric ${index + 1} start`} type="number" step="0.05" value={cue.start} onChange={(event) => updateCue(cue.id, { start: parseFiniteNumber(event.target.value, cue.start), words: [] })} />
+                <Input aria-label={`Lyric ${index + 1} end`} type="number" step="0.05" value={cue.end} onChange={(event) => updateCue(cue.id, { end: Math.max(cue.start + 0.05, parseFiniteNumber(event.target.value, cue.end)), words: [] })} />
                 <Input aria-label={`Lyric ${index + 1} text`} value={cue.text} onChange={(event) => updateCue(cue.id, { text: event.target.value, words: [] })} />
               </div>
             ))}
@@ -159,4 +190,16 @@ function getSourceTimelineOffset(clips: VideoEditorClip[], assetId: string, asse
     offset += clip.durationSeconds;
   }
   return 0;
+}
+
+function parseDecimalInput(value: string) {
+  const normalized = value.trim().replace(",", ".");
+  if (!normalized) return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseFiniteNumber(value: string, fallback: number) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }

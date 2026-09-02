@@ -58,8 +58,8 @@ function normalizeTimelineLyrics(raw: TimelineVideoRenderProject["lyrics"]): Nor
 }
 
 function normalizeCue(cue: TimelineLyricCue, index: number): NormalizedTimelineLyricCue | null {
-  const start = clampNumber(cue?.start, 0, 8 * 60 * 60, 0);
-  const end = Math.max(start + 0.05, clampNumber(cue?.end, 0, 8 * 60 * 60, start + 1));
+  const start = clampNumber(cue?.start, -8 * 60 * 60, 8 * 60 * 60, 0);
+  const end = Math.max(start + 0.05, clampNumber(cue?.end, -8 * 60 * 60, 8 * 60 * 60, start + 1));
   const text = sanitizeText(cue?.text, "", 240);
   if (!text) return null;
   const words = Array.isArray(cue?.words)

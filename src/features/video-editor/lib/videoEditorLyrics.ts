@@ -37,14 +37,28 @@ export function getActiveLyricCue(cues: VideoEditorLyricCue[], timeSeconds: numb
   return cues.find((cue) => timeSeconds >= cue.start && timeSeconds < cue.end) || null;
 }
 
+export function shiftLyricCues(cues: VideoEditorLyricCue[], offsetSeconds: number): VideoEditorLyricCue[] {
+  if (!Number.isFinite(offsetSeconds) || offsetSeconds === 0) return cues;
+  return cues.map((cue) => ({
+    ...cue,
+    start: roundLyricTime(cue.start + offsetSeconds),
+    end: roundLyricTime(cue.end + offsetSeconds),
+    words: cue.words.map((word) => ({
+      ...word,
+      start: roundLyricTime(word.start + offsetSeconds),
+      end: roundLyricTime(word.end + offsetSeconds),
+    })),
+  }));
+}
+
 export function normalizeLyricCues(value: unknown): VideoEditorLyricCue[] {
   if (!Array.isArray(value)) return [];
   return value
     .slice(0, 5000)
     .map((cue, index) => {
       const raw = cue && typeof cue === "object" ? cue as Partial<VideoEditorLyricCue> : {};
-      const start = clampNumber(raw.start, 0, 8 * 60 * 60, 0);
-      const end = Math.max(start + 0.05, clampNumber(raw.end, 0, 8 * 60 * 60, start + 1));
+      const start = clampNumber(raw.start, -8 * 60 * 60, 8 * 60 * 60, 0);
+      const end = Math.max(start + 0.05, clampNumber(raw.end, -8 * 60 * 60, 8 * 60 * 60, start + 1));
       const text = typeof raw.text === "string" ? raw.text.trim().slice(0, 240) : "";
       const words = Array.isArray(raw.words) ? raw.words.slice(0, 80).map((word) => ({
         text: typeof word?.text === "string" ? word.text.slice(0, 80) : "",
@@ -55,6 +69,10 @@ export function normalizeLyricCues(value: unknown): VideoEditorLyricCue[] {
     })
     .filter((cue) => cue.text && cue.end > cue.start)
     .sort((a, b) => a.start - b.start);
+}
+
+function roundLyricTime(value: number) {
+  return Math.round(value * 1000) / 1000;
 }
 
 function isLyricAnimation(value: unknown): value is VideoEditorLyrics["animation"] {

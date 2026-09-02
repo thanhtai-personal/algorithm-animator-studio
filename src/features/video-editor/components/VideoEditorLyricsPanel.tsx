@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Captions, Sparkles, Trash2, WandSparkles } from "lucide-react";
+import { Captions, RotateCcw, Sparkles, Trash2, WandSparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,7 +44,7 @@ export function VideoEditorLyricsPanel({ lyrics, assets, clips, onChange }: Prop
         end: cue.end + offset,
         words: cue.words.map((word) => ({ ...word, start: word.start + offset, end: word.end + offset })),
       })) : result.cues;
-      patch({ sourceAssetId: selectedAsset.id, enabled: true, cues });
+      patch({ sourceAssetId: selectedAsset.id, enabled: true, cues: cloneLyricCues(cues), generatedCues: cloneLyricCues(cues) });
       if (result.warning) toast.warning(result.warning);
       toast.success(`Đã tạo ${cues.length} dòng lyric.`, { id: toastId });
     } catch (error) {
@@ -56,6 +56,17 @@ export function VideoEditorLyricsPanel({ lyrics, assets, clips, onChange }: Prop
 
   function updateCue(id: string, patchValue: Partial<VideoEditorLyricCue>) {
     patch({ cues: lyrics.cues.map((cue) => cue.id === id ? { ...cue, ...patchValue } : cue) });
+  }
+
+  function handleResetGeneratedLyrics() {
+    const generatedCues = lyrics.generatedCues || [];
+    if (!generatedCues.length) {
+      toast.error("Chưa có kết quả Auto Generate để reset.");
+      return;
+    }
+    patch({ cues: cloneLyricCues(generatedCues), enabled: true });
+    setTimingShift("0");
+    toast.success("Đã reset lyric về kết quả Auto Generate gần nhất.");
   }
 
   function handleApplyTimingShift() {
@@ -85,7 +96,7 @@ export function VideoEditorLyricsPanel({ lyrics, assets, clips, onChange }: Prop
 
       <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_120px_120px_auto] lg:items-end">
         <Field label="Nguồn giọng hát">
-          <Select value={selectedAsset?.id || "none"} onValueChange={(sourceAssetId) => patch({ sourceAssetId })}>
+          <Select value={selectedAsset?.id || "none"} onValueChange={(sourceAssetId) => patch({ sourceAssetId, generatedCues: [] })}>
             <SelectTrigger><SelectValue placeholder="Chọn audio/video" /></SelectTrigger>
             <SelectContent>
               {sourceAssets.length ? sourceAssets.map((asset) => <SelectItem key={asset.id} value={asset.id}>{asset.name}</SelectItem>) : <SelectItem value="none" disabled>Chưa có audio/video</SelectItem>}
@@ -152,13 +163,16 @@ export function VideoEditorLyricsPanel({ lyrics, assets, clips, onChange }: Prop
 
       {lyrics.cues.length ? (
         <div className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{lyrics.cues.length} dòng lyric — có thể sửa text/timing</p>
-            <Button size="sm" variant="ghost" onClick={() => patch({ cues: [], enabled: false })}><Trash2 className="mr-1 h-3.5 w-3.5" />Xóa lyric</Button>
+            <div className="flex flex-wrap items-center gap-1">
+              <Button type="button" size="sm" variant="outline" onClick={handleResetGeneratedLyrics} disabled={!lyrics.generatedCues?.length}><RotateCcw className="mr-1 h-3.5 w-3.5" />Reset Auto Gen</Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => patch({ cues: [], enabled: false })}><Trash2 className="mr-1 h-3.5 w-3.5" />Xóa lyric</Button>
+            </div>
           </div>
-          <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+          <div className="max-h-[46vh] space-y-2 overflow-y-auto pr-1">
             {lyrics.cues.map((cue, index) => (
-              <div key={cue.id} className="grid gap-2 rounded-md border bg-background/50 p-2 md:grid-cols-[42px_86px_86px_minmax(0,1fr)] md:items-center">
+              <div key={cue.id} className="grid gap-2 rounded-md border bg-background/50 p-2 md:grid-cols-[46px_110px_110px_minmax(0,1fr)] md:items-center">
                 <span className="text-center text-xs font-bold text-cyan-300">#{index + 1}</span>
                 <CueTimeInput
                   ariaLabel={`Lyric ${index + 1} start`}
@@ -178,7 +192,10 @@ export function VideoEditorLyricsPanel({ lyrics, assets, clips, onChange }: Prop
           </div>
         </div>
       ) : (
-        <div className="flex items-center gap-2 rounded-md border border-dashed p-3 text-xs text-muted-foreground"><Sparkles className="h-4 w-4" />Chọn audio/video rồi bấm “Tự tạo lyric”. Với nhạc có vocal lớn, model small/medium thường chính xác hơn base.</div>
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-2"><Sparkles className="h-4 w-4" />Chọn audio/video rồi bấm “Tự tạo lyric”. Với nhạc có vocal lớn, model small/medium thường chính xác hơn base.</span>
+          {lyrics.generatedCues?.length ? <Button type="button" size="sm" variant="outline" onClick={handleResetGeneratedLyrics}><RotateCcw className="mr-1 h-3.5 w-3.5" />Khôi phục Auto Gen</Button> : null}
+        </div>
       )}
     </section>
   );
@@ -190,6 +207,10 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return <label className="space-y-1 text-[11px] text-muted-foreground"><span>{label}</span><Input type="color" value={value} onChange={(event) => onChange(event.target.value)} className="h-9 cursor-pointer p-1" /></label>;
+}
+
+function cloneLyricCues(cues: VideoEditorLyricCue[]) {
+  return cues.map((cue) => ({ ...cue, words: cue.words.map((word) => ({ ...word })) }));
 }
 
 function getSourceTimelineOffset(clips: VideoEditorClip[], assetId: string, assetType: VideoEditorAsset["type"]) {

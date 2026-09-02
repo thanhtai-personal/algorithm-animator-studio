@@ -12,6 +12,7 @@ export const DEFAULT_VIDEO_EDITOR_LYRICS: VideoEditorLyrics = {
   highlightColor: "#22d3ee",
   outlineColor: "#020617",
   cues: [],
+  generatedCues: [],
 };
 
 export function normalizeEditorLyrics(value?: Partial<VideoEditorLyrics> | null): VideoEditorLyrics {
@@ -30,6 +31,7 @@ export function normalizeEditorLyrics(value?: Partial<VideoEditorLyrics> | null)
     highlightColor: normalizeColor(raw.highlightColor, "#22d3ee"),
     outlineColor: normalizeColor(raw.outlineColor, "#020617"),
     cues: normalizeLyricCues(raw.cues),
+    generatedCues: normalizeLyricCues(raw.generatedCues),
   };
 }
 

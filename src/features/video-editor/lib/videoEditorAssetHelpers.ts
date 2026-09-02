@@ -38,22 +38,29 @@ export function createClipFromAsset(asset: VideoEditorAsset): VideoEditorClip {
   return { id: makeId(), assetId: asset.id, type: asset.type, label: asset.name, durationSeconds: getDefaultClipDuration(asset), fitMode: "contain", transition: asset.type === "audio" ? "none" : "blurry", transitionSeconds: 1.5, keepOriginalAudio: false, volume: 1 };
 }
 
-export function readMediaDurationSeconds(url: string) {
+export function readMediaDurationSeconds(url: string, mediaType: "audio" | "video" = "video") {
   return new Promise<number>((resolve, reject) => {
-    const video = document.createElement("video");
-    video.preload = "metadata";
-    video.onloadedmetadata = () => resolve(Number.isFinite(video.duration) ? video.duration : 0);
-    video.onerror = () => reject(new Error("Không đọc được duration của media."));
-    video.src = url;
+    const media = document.createElement(mediaType);
+    media.preload = "metadata";
+    media.onloadedmetadata = () => resolve(Number.isFinite(media.duration) ? media.duration : 0);
+    media.onerror = () => reject(new Error("Không đọc được duration của media."));
+    media.src = url;
   });
 }
 
-export const readVideoDurationSeconds = readMediaDurationSeconds;
+export const readVideoDurationSeconds = (url: string) => readMediaDurationSeconds(url, "video");
 
-function getDefaultClipDuration(asset: VideoEditorAsset) {
+export function getDefaultClipDuration(asset: VideoEditorAsset) {
   if (asset.type === "image") return 4;
-  if (asset.type === "video") return Math.max(1, Math.min(7200, asset.durationSeconds || 6));
-  return 12;
+  if (asset.source === "silent") return 12;
+  const fallback = asset.type === "video" ? 6 : 12;
+  const duration = Number(asset.durationSeconds);
+  if (!Number.isFinite(duration) || duration <= 0) return fallback;
+  return roundDuration(Math.min(7200, Math.max(1, duration)));
+}
+
+function roundDuration(value: number) {
+  return Math.round(value * 1000) / 1000;
 }
 
 function createSilentWavBlob() {

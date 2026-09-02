@@ -43,6 +43,7 @@ export type VideoEditorLyrics = {
   highlightColor: string;
   outlineColor: string;
   cues: VideoEditorLyricCue[];
+  generatedCues?: VideoEditorLyricCue[];
 };
 
 export type VideoEditorAsset = {

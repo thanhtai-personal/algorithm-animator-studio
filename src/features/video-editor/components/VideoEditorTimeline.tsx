@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent, type ReactNode, type UIEvent } from "react";
-import { Music2, Pause, Play, Trash2, Upload } from "lucide-react";
+import { Music2, Pause, Play, RotateCcw, Trash2, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { getDefaultClipDuration } from "../lib/videoEditorAssetHelpers";
 import { VIDEO_EDITOR_TRANSITIONS } from "../lib/videoEditorConstants";
 import type { VideoEditorAsset, VideoEditorClip, VideoEditorFitMode, VideoEditorTransition } from "../lib/videoEditorTypes";
 
@@ -25,12 +26,12 @@ type TimelineTrackProps = {
 
 export function TimelineTrack(props: TimelineTrackProps) {
   return (
-    <section className="grid gap-2 md:grid-cols-[160px_minmax(0,1fr)]">
-      <div className="flex items-center gap-2 text-sm font-semibold text-cyan-100">{props.icon}{props.title}</div>
-      <div className="flex min-h-28 gap-2 overflow-x-auto rounded-md border border-dashed border-border/80 bg-background/50 p-2" onDragOver={(event) => event.preventDefault()} onDrop={(event) => props.onDrop(event, props.track)}>
+    <section className="min-w-0 space-y-2">
+      <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-cyan-100">{props.icon}<span className="min-w-0 truncate">{props.title}</span></div>
+      <div className="flex min-h-28 min-w-0 gap-2 overflow-x-auto rounded-md border border-dashed border-border/80 bg-background/50 p-2" onDragOver={(event) => event.preventDefault()} onDrop={(event) => props.onDrop(event, props.track)}>
         {props.clips.length ? props.clips.map((clip) => (
           <TimelineClip key={clip.id} clip={clip} asset={props.assets.find((asset) => asset.id === clip.assetId)} track={props.track} onDrop={props.onDrop} onRemove={props.onRemove} onUpdate={props.onUpdate} />
-        )) : <div className="grid min-w-full place-items-center text-sm text-muted-foreground">Drop media here</div>}
+        )) : <div className="grid min-w-full place-items-center px-4 text-sm text-muted-foreground">Drop media here</div>}
       </div>
     </section>
   );
@@ -98,17 +99,17 @@ function TimelineClip(props: {
 }) {
   const { clip } = props;
   return (
-    <article draggable onDragStart={(event) => event.dataTransfer.setData("clip-id", clip.id)} onDragOver={(event) => event.preventDefault()} onDrop={(event) => props.onDrop(event, props.track, clip.id)} className="grid w-72 shrink-0 gap-2 rounded-md border bg-card p-2">
-      <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-sm font-medium">{props.asset?.name || clip.label}</span>
-        <Button size="icon" variant="ghost" onClick={() => props.onRemove(clip.id)}><Trash2 className="h-4 w-4" /></Button>
+    <article draggable onDragStart={(event) => event.dataTransfer.setData("clip-id", clip.id)} onDragOver={(event) => event.preventDefault()} onDrop={(event) => props.onDrop(event, props.track, clip.id)} className="grid w-80 max-w-full shrink-0 gap-2 overflow-hidden rounded-md border bg-card p-2">
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <span className="min-w-0 flex-1 truncate text-sm font-medium" title={props.asset?.name || clip.label}>{props.asset?.name || clip.label}</span>
+        <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={() => props.onRemove(clip.id)}><Trash2 className="h-4 w-4" /></Button>
       </div>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <Field label="Duration"><Input type="number" min={1} max={7200} value={clip.durationSeconds} onChange={(event) => props.onUpdate(clip.id, { durationSeconds: Number(event.target.value) })} /></Field>
+      <div className="grid min-w-0 gap-2">
+        <DurationField clip={clip} asset={props.asset} onUpdate={props.onUpdate} />
         {clip.type !== "audio" ? <Field label="Fit"><Select value={clip.fitMode} onValueChange={(value) => props.onUpdate(clip.id, { fitMode: value as VideoEditorFitMode })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="cover">cover</SelectItem><SelectItem value="contain">contain</SelectItem></SelectContent></Select></Field> : null}
       </div>
       {clip.type !== "audio" ? (
-        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_92px]">
+        <div className="grid min-w-0 gap-2">
           <Field label="Animation chuyển slide">
             <Select value={clip.transition} onValueChange={(value) => props.onUpdate(clip.id, { transition: value as VideoEditorTransition })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -132,6 +133,49 @@ function TimelineClip(props: {
       ) : null}
     </article>
   );
+}
+
+function DurationField(props: { clip: VideoEditorClip; asset?: VideoEditorAsset; onUpdate: TimelineTrackProps["onUpdate"] }) {
+  const defaultDuration = props.asset ? getDefaultClipDuration(props.asset) : getFallbackDuration(props.clip.type);
+  const canReset = Math.abs(defaultDuration - props.clip.durationSeconds) > 0.0005;
+  return (
+    <div className="min-w-0 space-y-2">
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <Label className="min-w-0 truncate">Duration</Label>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="h-7 shrink-0 px-2 text-xs"
+          disabled={!canReset}
+          title={`Reset về ${formatDuration(defaultDuration)}s`}
+          onClick={() => props.onUpdate(props.clip.id, { durationSeconds: defaultDuration })}
+        >
+          <RotateCcw className="mr-1 h-3.5 w-3.5" />Reset
+        </Button>
+      </div>
+      <Input
+        className="min-w-0"
+        type="number"
+        min={1}
+        max={7200}
+        step={0.001}
+        value={props.clip.durationSeconds}
+        onChange={(event) => props.onUpdate(props.clip.id, { durationSeconds: Number(event.target.value) })}
+      />
+      {props.asset?.type !== "image" && props.asset?.source !== "silent" ? <p className="truncate text-[11px] text-muted-foreground">Độ dài gốc: {props.asset?.durationSeconds ? `${formatDuration(defaultDuration)}s` : "đang đọc metadata..."}</p> : null}
+    </div>
+  );
+}
+
+function formatDuration(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+}
+
+function getFallbackDuration(type: VideoEditorClip["type"]) {
+  if (type === "audio") return 12;
+  if (type === "video") return 6;
+  return 4;
 }
 
 function VolumeField(props: { clip: VideoEditorClip; label: string; onUpdate: TimelineTrackProps["onUpdate"] }) {
@@ -203,5 +247,5 @@ function getAssetBadge(asset: VideoEditorAsset) {
 }
 
 function Field(props: { label: string; children: ReactNode }) {
-  return <div className="space-y-2"><Label>{props.label}</Label>{props.children}</div>;
+  return <div className="min-w-0 space-y-2"><Label>{props.label}</Label>{props.children}</div>;
 }

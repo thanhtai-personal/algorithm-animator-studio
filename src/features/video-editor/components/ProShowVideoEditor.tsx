@@ -14,7 +14,7 @@ import { getMusicLibraryTracks } from "@/lib/musicLibrary";
 import { VideoEditorPreview } from "./VideoEditorPreview";
 import { VideoEditorLyricsPanel } from "./VideoEditorLyricsPanel";
 import { MediaBin, TimelineTrack, type TrackKind } from "./VideoEditorTimeline";
-import { createAsset, createAssetFromLibraryTrack, createClipFromAsset, mergeLibraryAssets, readMediaDurationSeconds } from "../lib/videoEditorAssetHelpers";
+import { createAsset, createAssetFromLibraryTrack, createClipFromAsset, getDefaultClipDuration, mergeLibraryAssets, readMediaDurationSeconds } from "../lib/videoEditorAssetHelpers";
 import { fromDraftAsset, loadVideoEditorDraft, saveVideoEditorDraft, toDraftAsset } from "../lib/videoEditorDraftStore";
 import { renderTimelineVideo } from "../lib/videoEditorApi";
 import { DEFAULT_VIDEO_EDITOR_LYRICS, normalizeEditorLyrics } from "../lib/videoEditorLyrics";
@@ -88,16 +88,29 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
     const pending = assets.filter((asset) => asset.source !== "silent" && (asset.type === "video" || asset.type === "audio") && !asset.durationSeconds);
     if (!pending.length) return;
     let cancelled = false;
-    Promise.all(pending.map(async (asset) => ({ id: asset.id, duration: await readMediaDurationSeconds(asset.url).catch(() => 0) }))).then((items) => {
+    Promise.all(pending.map(async (asset) => ({ id: asset.id, duration: await readMediaDurationSeconds(asset.url, asset.type).catch(() => 0) }))).then((items) => {
       if (cancelled) return;
       const durations = new Map(items.filter((item) => item.duration > 0).map((item) => [item.id, item.duration]));
       setAssets((current) => current.map((asset) => durations.has(asset.id) ? { ...asset, durationSeconds: durations.get(asset.id) } : asset));
-      setClips((current) => current.map((clip) => {
-        const isDefaultDuration = (clip.type === "video" && clip.durationSeconds === 6) || (clip.type === "audio" && clip.durationSeconds === 12);
-        return isDefaultDuration && durations.has(clip.assetId) ? { ...clip, durationSeconds: Math.min(7200, Math.max(1, durations.get(clip.assetId)!)) } : clip;
-      }));
     });
     return () => { cancelled = true; };
+  }, [assets]);
+  useEffect(() => {
+    const assetById = new Map(assets.map((asset) => [asset.id, asset]));
+    setClips((current) => {
+      let changed = false;
+      const next = current.map((clip) => {
+        const asset = assetById.get(clip.assetId);
+        if (!asset?.durationSeconds || (clip.type !== "audio" && clip.type !== "video")) return clip;
+        const legacyFallback = clip.type === "audio" ? 12 : 6;
+        if (Math.abs(clip.durationSeconds - legacyFallback) > 0.0005) return clip;
+        const durationSeconds = getDefaultClipDuration(asset);
+        if (Math.abs(durationSeconds - clip.durationSeconds) <= 0.0005) return clip;
+        changed = true;
+        return { ...clip, durationSeconds };
+      });
+      return changed ? next : current;
+    });
   }, [assets]);
   useEffect(() => {
     if (!draftLoaded) return;
@@ -344,7 +357,7 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
             <Badge variant="outline">{renderEngine === "remotion" ? "Remotion" : "FFmpeg"}</Badge>
             <Badge variant="outline">{totalDuration.toFixed(1)}s</Badge>
           </div>
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-start">
+          <div className="rounded-lg border bg-background/20 p-3">
             <VideoEditorPreview
               asset={currentAsset}
               clip={preview?.clip}
@@ -365,21 +378,34 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
               onSeek={handleSeek}
               onSeekEnd={handleSeekEnd}
             />
-            <div className="min-w-0 xl:max-h-[70vh] xl:overflow-y-auto xl:pr-1">
-              <VideoEditorLyricsPanel lyrics={lyrics} assets={assets} clips={clips} onChange={setLyrics} />
-            </div>
           </div>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[380px_minmax(0,1fr)] xl:items-start">
-          <div className="min-w-0 xl:sticky xl:top-4">
-            <MediaBin assets={assets} onFiles={addFiles} />
+        <section className="space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+            <div>
+              <h3 className="text-sm font-semibold text-cyan-100">Media & Timeline</h3>
+              <p className="text-xs text-muted-foreground">Kéo media từ kho bên trái sang Track 1 hoặc Track 2 ngay bên cạnh.</p>
+            </div>
           </div>
-          <div className="min-w-0 space-y-2 rounded-lg border bg-muted/10 p-3">
-            <TimelineTrack title="Track 1: Hình ảnh / video" icon={<Film className="h-4 w-4" />} clips={visualClips} assets={assets} track="visual" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
-            <TimelineTrack title="Track 2: Voice / nhạc" icon={<Music2 className="h-4 w-4" />} clips={audioClips} assets={assets} track="audio" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
+          <div className="grid gap-4 xl:grid-cols-[380px_minmax(0,1fr)] xl:items-start">
+            <div className="min-w-0 xl:sticky xl:top-4">
+              <MediaBin assets={assets} onFiles={addFiles} />
+            </div>
+            <div className="min-w-0 space-y-3 rounded-lg border bg-muted/10 p-3">
+              <TimelineTrack title="Track 1: Hình ảnh / video" icon={<Film className="h-4 w-4" />} clips={visualClips} assets={assets} track="visual" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
+              <TimelineTrack title="Track 2: Voice / nhạc" icon={<Music2 className="h-4 w-4" />} clips={audioClips} assets={assets} track="audio" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
+            </div>
           </div>
-        </div>
+        </section>
+
+        <section className="min-w-0 space-y-2">
+          <div className="px-1">
+            <h3 className="text-sm font-semibold text-cyan-100">Lyrics</h3>
+            <p className="text-xs text-muted-foreground">Tạo, đọc và chỉnh toàn bộ lyric sau khi đã sắp xếp media/timeline.</p>
+          </div>
+          <VideoEditorLyricsPanel lyrics={lyrics} assets={assets} clips={clips} onChange={setLyrics} />
+        </section>
         <audio ref={audioRef} />
         {lastVideo ? (
           <div className="space-y-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">

@@ -1,4 +1,5 @@
-import { AbsoluteFill, Audio, Img, interpolate, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { AbsoluteFill, Img, interpolate, Sequence, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { Audio, Video } from "@remotion/media";
 import { getTimelineDurationSeconds, normalizeRemotionTimelineInput, type RemotionTimelineClip, type RemotionTimelineInputProps } from "../lib/remotionTimelineTypes";
 import { TimelineLyricsOverlay } from "./TimelineLyricsOverlay";
 
@@ -55,7 +56,23 @@ function TimelineVisual({ clip, src, index, total, clipDurationInFrames }: { cli
   return (
     <AbsoluteFill style={{ opacity: motion.opacity, overflow: "hidden", backgroundColor: "black", filter: motion.filter, transform: motion.containerTransform }}>
       {clip.type === "video" ? (
-        <OffthreadVideo src={src} muted={!clip.keepOriginalAudio} volume={clip.volume ?? 1} style={{ width: "100%", height: "100%", objectFit, transform: motion.mediaTransform }} />
+        <>
+          <Video
+            src={src}
+            muted={!clip.keepOriginalAudio}
+            volume={clip.volume ?? 1}
+            objectFit={objectFit}
+            style={{ width: "100%", height: "100%", transform: motion.mediaTransform }}
+            onError={(error) => {
+              console.error("Timeline video decode failed", error);
+              return "fallback";
+            }}
+            fallbackOffthreadVideoProps={{
+              delayRenderTimeoutInMilliseconds: 120_000,
+              delayRenderRetries: 1,
+            }}
+          />
+        </>
       ) : (
         <Img src={src} style={{ width: "100%", height: "100%", objectFit, transform: motion.mediaTransform }} />
       )}

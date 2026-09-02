@@ -40,6 +40,7 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
   const [playing, setPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [rendering, setRendering] = useState(false);
+  const [renderProgress, setRenderProgress] = useState(0);
   const [lastVideo, setLastVideo] = useState<TimelineRenderResponse | null>(null);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -225,13 +226,22 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
       return;
     }
     setRendering(true);
+    setRenderProgress(0);
     const toastId = toast.loading(renderEngine === "remotion"
       ? t(lang, "uiRenderingProshowTimelineWithRemotion")
       : t(lang, "uiExportingMp4Timeline")
     );
     try {
-      const result = await renderTimelineVideo({ title, aspectRatio, fps, renderEngine, showWatermark, watermarkText, watermarkLogoAssetId, lyrics, clips: clips.map(toRenderClip) }, assets);
+      const result = await renderTimelineVideo(
+        { title, aspectRatio, fps, renderEngine, showWatermark, watermarkText, watermarkLogoAssetId, lyrics, clips: clips.map(toRenderClip) },
+        assets,
+        renderEngine === "remotion" ? (event) => {
+          setRenderProgress(event.progress);
+          toast.loading(`${Math.round(event.progress * 100)}% · ${event.message}`, { id: toastId });
+        } : undefined,
+      );
       setLastVideo(result);
+      if (result.warning) toast.warning(result.warning);
       downloadVideo(result.videoUrl, result.fileName);
       const renderedAsset = await createRenderedVideoAsset(result);
       setAssets((current) => [...current, renderedAsset]);
@@ -241,6 +251,7 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
       toast.error(error instanceof Error ? error.message : t(lang, "uiCouldNotExportVideo"), { id: toastId });
     } finally {
       setRendering(false);
+      setRenderProgress(0);
     }
   }
 
@@ -264,7 +275,9 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
             <Field label="FPS"><Select value={String(fps)} onValueChange={(value) => setFps(Number(value))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="24">24</SelectItem><SelectItem value="30">30</SelectItem><SelectItem value="60">60</SelectItem></SelectContent></Select></Field>
             <Button className="xl:min-w-64" onClick={() => void handleRender()} disabled={rendering || !visualClips.length}>
               {rendering ? <SystemLoader className="mr-2 h-4 w-4" /> : <Film className="mr-2 h-4 w-4" />}
-              {renderEngine === "remotion" ? t(lang, "uiRenderMp4WithRemotion") : t(lang, "uiExportMp4WithFfmpeg")}
+              {rendering && renderEngine === "remotion"
+                ? `Remotion ${Math.round(renderProgress * 100)}%`
+                : renderEngine === "remotion" ? t(lang, "uiRenderMp4WithRemotion") : t(lang, "uiExportMp4WithFfmpeg")}
             </Button>
           </div>
           <div className="grid gap-3 rounded-lg border bg-background/40 p-3 lg:grid-cols-[auto_minmax(180px,280px)_minmax(180px,280px)_auto] lg:items-end">

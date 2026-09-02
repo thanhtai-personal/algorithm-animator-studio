@@ -67,59 +67,82 @@ export function buildLyricsAss(lyrics: NormalizedTimelineLyrics, width: number, 
   ];
 
   const events = lyrics.cues.flatMap((cue) => {
+    if (cue.end <= 0) return [];
     if (lyrics.animation === "typewriter") return buildTypewriterEvents(cue.start, cue.end, cue.text);
-    const karaoke = lyrics.animation === "karaoke" && cue.words.length > 0;
-    const text = karaoke
-      ? buildKaraokeText(cue.words, cue.start, cue.end)
-      : `${buildAnimationTag(lyrics.animation, lyrics.position, width, height)}${escapeAssText(cue.text)}`;
-    return [`Dialogue: 0,${toAssTime(cue.start)},${toAssTime(cue.end)},${karaoke ? "Karaoke" : "Lyrics"},,0,0,0,,${text}`];
+    const eventStart = Math.max(0, cue.start);
+    if (lyrics.animation === "karaoke" && cue.words.length > 0) {
+      return buildKaraokeEvents(cue.words, eventStart, cue.end, lyrics.textColor, lyrics.highlightColor);
+    }
+    const text = `${buildAnimationTag(lyrics.animation, lyrics.position, width, height, cue.start < 0)}${escapeAssText(cue.text)}`;
+    return [`Dialogue: 0,${toAssTime(eventStart)},${toAssTime(cue.end)},Lyrics,,0,0,0,,${text}`];
   });
   return [...header, ...events, ""].join("\n");
 }
 
-function buildKaraokeText(words: NormalizedTimelineLyrics["cues"][number]["words"], cueStart: number, cueEnd: number) {
-  if (!words.length) return "";
-  let cursor = cueStart;
-  const chunks: string[] = [];
-  for (const word of words) {
-    const wordStart = Math.max(cueStart, Math.min(cueEnd, word.start));
-    const wordEnd = Math.max(wordStart + 0.01, Math.min(cueEnd, word.end));
-    const gap = wordStart - cursor;
-    if (gap > 0.02) chunks.push(`{\\k${Math.max(1, Math.round(gap * 100))}}​`);
-    chunks.push(`{\\kf${Math.max(1, Math.round((wordEnd - wordStart) * 100))}}${escapeAssText(word.text)}`);
-    cursor = Math.max(cursor, wordEnd);
-  }
-  return chunks.join("");
+function buildKaraokeEvents(
+  words: NormalizedTimelineLyrics["cues"][number]["words"],
+  eventStart: number,
+  eventEnd: number,
+  textColor: string,
+  highlightColor: string,
+) {
+  const visibleWords = words.filter((word) => word.end > eventStart - 0.001 && word.start < eventEnd);
+  if (!visibleWords.length) return [];
+  const breakpoints = Array.from(new Set([
+    eventStart,
+    ...visibleWords.map((word) => Math.max(eventStart, Math.min(eventEnd, word.start))),
+    eventEnd,
+  ])).sort((a, b) => a - b);
+
+  return breakpoints.slice(0, -1).flatMap((segmentStart, index) => {
+    const segmentEnd = breakpoints[index + 1];
+    if (segmentEnd - segmentStart <= 0.004) return [];
+    const text = visibleWords.map((word) => {
+      const color = segmentStart + 0.001 >= word.start ? highlightColor : textColor;
+      return `{\\1c${toAssOverrideColor(color)}}${escapeAssText(word.text)}`;
+    }).join("");
+    return [`Dialogue: 0,${toAssTime(segmentStart)},${toAssTime(segmentEnd)},Lyrics,,0,0,0,,${text}`];
+  });
 }
 
 function buildTypewriterEvents(start: number, end: number, text: string) {
   const characters = Array.from(text);
-  if (!characters.length) return [];
-  const steps = Math.min(36, characters.length);
+  if (!characters.length || end <= 0) return [];
+  const eventStart = Math.max(0, start);
   const duration = Math.max(0.08, end - start);
+  const visibleDuration = Math.max(0.01, end - eventStart);
+  const steps = Math.max(1, Math.min(36, characters.length));
   return Array.from({ length: steps }, (_, index) => {
-    const count = Math.max(1, Math.ceil(characters.length * ((index + 1) / steps)));
-    const eventStart = start + duration * (index / steps);
-    const eventEnd = index === steps - 1 ? end : start + duration * ((index + 1) / steps);
-    return `Dialogue: 0,${toAssTime(eventStart)},${toAssTime(eventEnd)},Lyrics,,0,0,0,,${escapeAssText(characters.slice(0, count).join(""))}`;
+    const segmentStart = eventStart + visibleDuration * (index / steps);
+    const segmentEnd = index === steps - 1 ? end : eventStart + visibleDuration * ((index + 1) / steps);
+    const progress = Math.min(1, Math.max(0, (segmentStart - start) / duration));
+    const count = Math.max(1, Math.ceil(characters.length * progress));
+    return `Dialogue: 0,${toAssTime(segmentStart)},${toAssTime(segmentEnd)},Lyrics,,0,0,0,,${escapeAssText(characters.slice(0, count).join(""))}`;
   });
 }
 
-function buildAnimationTag(animation: NormalizedTimelineLyrics["animation"], position: NormalizedTimelineLyrics["position"], width: number, height: number) {
-  if (animation === "fade") return "{\\fad(180,180)}";
-  if (animation === "pop") return "{\\fscx78\\fscy78\\t(0,180,\\fscx100\\fscy100)\\fad(80,140)}";
+function buildAnimationTag(animation: NormalizedTimelineLyrics["animation"], position: NormalizedTimelineLyrics["position"], width: number, height: number, skipEnter: boolean) {
+  if (animation === "fade") return skipEnter ? "{\\fad(0,180)}" : "{\\fad(180,180)}";
+  if (animation === "pop") return skipEnter ? "{\\fad(0,140)}" : "{\\fscx78\\fscy78\\t(0,180,\\fscx100\\fscy100)\\fad(80,140)}";
   if (animation === "slide-up") {
     const x = Math.round(width / 2);
     const y = position === "top" ? Math.round(height * 0.18) : position === "center" ? Math.round(height * 0.5) : Math.round(height * 0.84);
-    return `{\\an5\\move(${x},${y + 70},${x},${y},0,240)\\fad(80,140)}`;
+    return skipEnter ? `{\\an5\\pos(${x},${y})\\fad(0,140)}` : `{\\an5\\move(${x},${y + 70},${x},${y},0,240)\\fad(80,140)}`;
   }
   return "";
 }
+
 
 function toAssColor(hex: string) {
   const value = hex.replace("#", "").padEnd(6, "0").slice(0, 6);
   const [r, g, b] = [value.slice(0, 2), value.slice(2, 4), value.slice(4, 6)];
   return `&H00${b}${g}${r}`.toUpperCase();
+}
+
+function toAssOverrideColor(hex: string) {
+  const value = hex.replace("#", "").padEnd(6, "0").slice(0, 6);
+  const [r, g, b] = [value.slice(0, 2), value.slice(2, 4), value.slice(4, 6)];
+  return `&H${b}${g}${r}&`.toUpperCase();
 }
 
 function toAssTime(seconds: number) {

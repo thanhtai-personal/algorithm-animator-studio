@@ -128,6 +128,7 @@ export function createVideoRouter() {
 
   router.post("/video/render-timeline", upload.any(), async (req, res) => {
     const files = Array.isArray(req.files) ? req.files as Express.Multer.File[] : [];
+    let streamingRemotion = false;
     try {
       const rawProject = typeof req.body?.project === "string" ? JSON.parse(req.body.project) as TimelineVideoRenderProject : {};
       const assetFiles = Object.fromEntries(
@@ -136,11 +137,47 @@ export function createVideoRouter() {
           .map((file) => [file.fieldname.slice("asset:".length), file])
       );
       const envOverrides = readRuntimeEnvFromRequest(req);
-      const video = rawProject.renderEngine === "remotion"
-        ? await renderRemotionTimelineVideo({ project: rawProject, assetFiles, envOverrides })
-        : await renderTimelineVideo({ project: rawProject, assetFiles, envOverrides });
+
+      if (rawProject.renderEngine === "remotion") {
+        streamingRemotion = true;
+        res.status(200);
+        res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+        res.setHeader("Cache-Control", "no-cache, no-transform");
+        res.setHeader("X-Accel-Buffering", "no");
+        res.flushHeaders();
+
+        const writeEvent = (payload: unknown) => {
+          if (!res.writableEnded && !res.destroyed) res.write(`${JSON.stringify(payload)}\n`);
+        };
+
+        try {
+          const video = await renderRemotionTimelineVideo({
+            project: rawProject,
+            assetFiles,
+            envOverrides,
+            onProgress: (event) => writeEvent({ type: "progress", ...event }),
+          });
+          writeEvent({ type: "result", result: video });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error || "Remotion render thất bại.");
+          writeEvent({ type: "error", error: message });
+        } finally {
+          if (!res.writableEnded) res.end();
+        }
+        return;
+      }
+
+      const video = await renderTimelineVideo({ project: rawProject, assetFiles, envOverrides });
       return res.json(video);
     } catch (error) {
+      if (streamingRemotion) {
+        if (!res.writableEnded) {
+          const message = error instanceof Error ? error.message : String(error || "Remotion render thất bại.");
+          res.write(`${JSON.stringify({ type: "error", error: message })}\n`);
+          res.end();
+        }
+        return;
+      }
       return sendError(res, error);
     } finally {
       for (const file of files) {

@@ -13,6 +13,7 @@ import type { RuntimeEnvValues } from "./EnvFileService";
 import { createVideoOutput } from "../utils/videoOutput";
 import { runFfmpeg } from "../utils/ffmpeg";
 import { burnTimelineLyrics } from "./TimelineLyricsAss";
+import { muxTimelineAudio } from "./TimelineAudioMix";
 import { normalizeTimelineProject } from "./TimelineProjectNormalizer";
 
 const DIMENSIONS: Record<TimelineVideoAspectRatio, { width: number; height: number }> = {
@@ -63,17 +64,14 @@ export async function renderTimelineVideo(params: {
     }
 
     const totalDuration = visualClips.reduce((sum, clip) => sum + clip.durationSeconds, 0);
-    const firstAudioClip = audioClips.find((clip) => {
-      const file = assets[clip.assetId];
-      return file?.path && fs.existsSync(file.path);
+    const audioResult = await muxTimelineAudio({
+      videoPath: visualTimelinePath,
+      outputPath: output.outputPath,
+      project,
+      assetFiles: assets,
+      durationSeconds: totalDuration,
+      envOverrides: params.envOverrides,
     });
-    const firstAudio = firstAudioClip ? assets[firstAudioClip.assetId] : undefined;
-
-    if (firstAudio?.path) {
-      await addAudioTrack({ videoPath: visualTimelinePath, audioPath: firstAudio.path, outputPath: output.outputPath, durationSeconds: totalDuration, volume: firstAudioClip?.volume ?? 1, envOverrides: params.envOverrides });
-    } else {
-      fs.copyFileSync(visualTimelinePath, output.outputPath);
-    }
 
     if (!fs.existsSync(output.outputPath)) throw new Error("FFmpeg chạy xong nhưng không tạo tệp MP4.");
 
@@ -84,7 +82,7 @@ export async function renderTimelineVideo(params: {
       relativePath: output.relativePath,
       videoUrl: output.videoUrl,
       durationSeconds: totalDuration,
-      warning: buildFallbackWarning(project.clips, audioClips.length),
+      warning: buildFallbackWarning(audioClips.length, audioResult.warning),
     };
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
@@ -132,36 +130,6 @@ async function concatenateSegments(segments: string[], outputPath: string, tempD
   await runFfmpeg(["-y", "-f", "concat", "-safe", "0", "-i", listPath, "-c", "copy", outputPath], envOverrides);
 }
 
-function addAudioTrack(params: { videoPath: string; audioPath: string; outputPath: string; durationSeconds: number; volume: number; envOverrides?: RuntimeEnvValues }) {
-  return runFfmpeg([
-    "-y",
-    "-stream_loop",
-    "-1",
-    "-i",
-    params.audioPath,
-    "-i",
-    params.videoPath,
-    "-filter:a:0",
-    `volume=${params.volume.toFixed(3)}`,
-    "-t",
-    params.durationSeconds.toFixed(3),
-    "-map",
-    "1:v:0",
-    "-map",
-    "0:a:0",
-    "-c:v",
-    "copy",
-    "-c:a",
-    "aac",
-    "-b:a",
-    "192k",
-    "-shortest",
-    "-movflags",
-    "+faststart",
-    params.outputPath,
-  ], params.envOverrides);
-}
-
 function buildSegmentFilter(params: { width: number; height: number; fitMode: TimelineVideoFitMode; durationSeconds: number; transition: TimelineVideoTransition; transitionSeconds: number; fps: number }) {
   const filters = [buildScaleFilter(params.width, params.height, params.fitMode), `fps=${params.fps}`, "format=yuv420p"];
   if (params.transition !== "none") {
@@ -184,12 +152,10 @@ function buildScaleFilter(width: number, height: number, fitMode: TimelineVideoF
   return [`scale=${width}:${height}:force_original_aspect_ratio=increase`, `crop=${width}:${height}`, "setsar=1"].join(",");
 }
 
-function buildFallbackWarning(clips: NormalizedTimelineVideoClip[], audioClipCount: number) {
+function buildFallbackWarning(audioClipCount: number, audioWarning?: string) {
   const warnings: string[] = [];
-  if (audioClipCount > 1) warnings.push("FFmpeg fallback hiện dùng audio đầu tiên làm nhạc/voice nền.");
-  if (clips.some((clip) => clip.type === "video" && clip.keepOriginalAudio)) {
-    warnings.push("Âm thanh gốc video được hỗ trợ đầy đủ khi render bằng Remotion; FFmpeg fallback vẫn tắt âm thanh gốc để tránh lẫn tiếng.");
-  }
+  if (audioClipCount > 1) warnings.push("FFmpeg đã mix tuần tự toàn bộ audio clip theo Track 2.");
+  if (audioWarning) warnings.push(audioWarning);
   return warnings.length ? warnings.join(" ") : undefined;
 }
 

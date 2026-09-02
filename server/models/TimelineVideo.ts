@@ -14,6 +14,36 @@ export type TimelineVideoTransition =
   | "none";
 export type TimelineVideoAssetType = "image" | "audio" | "video";
 export type TimelineVideoRenderEngine = "ffmpeg" | "remotion";
+export type TimelineLyricAnimation = "karaoke" | "fade" | "pop" | "slide-up" | "typewriter";
+export type TimelineLyricPosition = "top" | "center" | "bottom";
+
+export type TimelineLyricWord = {
+  text?: string;
+  start?: number;
+  end?: number;
+};
+
+export type TimelineLyricCue = {
+  id?: string;
+  start?: number;
+  end?: number;
+  text?: string;
+  words?: TimelineLyricWord[];
+};
+
+export type TimelineLyrics = {
+  enabled?: boolean;
+  sourceAssetId?: string;
+  language?: string;
+  model?: string;
+  animation?: TimelineLyricAnimation;
+  position?: TimelineLyricPosition;
+  fontSize?: number;
+  textColor?: string;
+  highlightColor?: string;
+  outlineColor?: string;
+  cues?: TimelineLyricCue[];
+};
 
 export type TimelineVideoClip = {
   id?: string;
@@ -36,9 +66,25 @@ export type TimelineVideoRenderProject = {
   showWatermark?: boolean;
   watermarkText?: string;
   watermarkLogoAssetId?: string;
+  lyrics?: TimelineLyrics;
 };
 
 export type NormalizedTimelineVideoClip = Required<TimelineVideoClip>;
+export type NormalizedTimelineLyricWord = { text: string; start: number; end: number };
+export type NormalizedTimelineLyricCue = { id: string; start: number; end: number; text: string; words: NormalizedTimelineLyricWord[] };
+export type NormalizedTimelineLyrics = {
+  enabled: boolean;
+  sourceAssetId: string;
+  language: string;
+  model: string;
+  animation: TimelineLyricAnimation;
+  position: TimelineLyricPosition;
+  fontSize: number;
+  textColor: string;
+  highlightColor: string;
+  outlineColor: string;
+  cues: NormalizedTimelineLyricCue[];
+};
 
 export type NormalizedTimelineVideoProject = {
   title: string;
@@ -49,4 +95,5 @@ export type NormalizedTimelineVideoProject = {
   showWatermark: boolean;
   watermarkText: string;
   watermarkLogoAssetId: string;
+  lyrics: NormalizedTimelineLyrics;
 };

@@ -38,15 +38,17 @@ export function createClipFromAsset(asset: VideoEditorAsset): VideoEditorClip {
   return { id: makeId(), assetId: asset.id, type: asset.type, label: asset.name, durationSeconds: getDefaultClipDuration(asset), fitMode: "contain", transition: asset.type === "audio" ? "none" : "blurry", transitionSeconds: 1.5, keepOriginalAudio: false, volume: 1 };
 }
 
-export function readVideoDurationSeconds(url: string) {
+export function readMediaDurationSeconds(url: string) {
   return new Promise<number>((resolve, reject) => {
     const video = document.createElement("video");
     video.preload = "metadata";
     video.onloadedmetadata = () => resolve(Number.isFinite(video.duration) ? video.duration : 0);
-    video.onerror = () => reject(new Error("Không đọc được duration của video."));
+    video.onerror = () => reject(new Error("Không đọc được duration của media."));
     video.src = url;
   });
 }
+
+export const readVideoDurationSeconds = readMediaDurationSeconds;
 
 function getDefaultClipDuration(asset: VideoEditorAsset) {
   if (asset.type === "image") return 4;

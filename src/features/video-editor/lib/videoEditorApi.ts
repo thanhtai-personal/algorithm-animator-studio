@@ -1,6 +1,6 @@
 import { buildApiUrl, parseApiResponse } from "@/lib/runtimeApi";
 import { buildRuntimeSettingsHeaders } from "@/lib/runtimeSettings";
-import type { TimelineRenderProject, TimelineRenderResponse, VideoEditorAsset } from "./videoEditorTypes";
+import type { AutoLyricsResponse, TimelineRenderProject, TimelineRenderResponse, VideoEditorAsset } from "./videoEditorTypes";
 
 export async function renderTimelineVideo(project: TimelineRenderProject, assets: VideoEditorAsset[]) {
   const formData = new FormData();
@@ -13,6 +13,19 @@ export async function renderTimelineVideo(project: TimelineRenderProject, assets
   }
 
   return parseApiResponse<TimelineRenderResponse>(await fetch(buildApiUrl("/api/video/render-timeline"), {
+    method: "POST",
+    headers: buildRuntimeSettingsHeaders(),
+    body: formData,
+  }));
+}
+
+export async function transcribeVideoEditorLyrics(asset: VideoEditorAsset, options: { model: string; language: string }) {
+  const formData = new FormData();
+  formData.append("media", asset.file, asset.name);
+  formData.append("model", options.model);
+  formData.append("language", options.language);
+
+  return parseApiResponse<AutoLyricsResponse>(await fetch(buildApiUrl("/api/video/auto-lyrics"), {
     method: "POST",
     headers: buildRuntimeSettingsHeaders(),
     body: formData,

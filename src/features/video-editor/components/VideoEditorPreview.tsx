@@ -2,7 +2,8 @@ import { useEffect, useRef } from "react";
 import { Maximize2, Music2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import type { VideoEditorAspectRatio, VideoEditorAsset, VideoEditorClip } from "../lib/videoEditorTypes";
+import type { VideoEditorAspectRatio, VideoEditorAsset, VideoEditorClip, VideoEditorLyrics } from "../lib/videoEditorTypes";
+import { VideoEditorLyricOverlay } from "./VideoEditorLyricOverlay";
 
 type Props = {
   asset?: VideoEditorAsset;
@@ -17,6 +18,7 @@ type Props = {
   showWatermark: boolean;
   watermarkText: string;
   watermarkLogoAsset?: VideoEditorAsset;
+  lyrics: VideoEditorLyrics;
   onReset: () => void;
   onPlay: () => void;
   onSeek: (elapsed: number) => void;
@@ -34,6 +36,7 @@ export function VideoEditorPreview(props: Props) {
     <div className="mx-auto w-full max-w-6xl space-y-3">
       <div ref={previewRef} className="relative mx-auto w-full overflow-hidden rounded-lg border bg-black shadow-2xl shadow-black/30" style={previewStyle}>
         {props.asset ? <PreviewAsset asset={props.asset} clip={props.clip} playing={props.playing} localTime={props.localTime || 0} /> : <div className="grid h-full place-items-center text-sm text-muted-foreground">Preview timeline</div>}
+        <VideoEditorLyricOverlay lyrics={props.lyrics} elapsed={props.elapsed} />
         <PreviewChrome title={props.title} showWatermark={props.showWatermark} watermarkText={props.watermarkText} watermarkLogo={props.watermarkLogoAsset} elapsed={props.elapsed} totalDuration={props.totalDuration} />
         <Button className="absolute right-3 top-3 bg-background/80 backdrop-blur" size="icon" variant="outline" onClick={() => void previewRef.current?.requestFullscreen?.()}>
           <Maximize2 className="h-4 w-4" />

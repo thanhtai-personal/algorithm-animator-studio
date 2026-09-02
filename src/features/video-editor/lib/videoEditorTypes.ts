@@ -14,6 +14,36 @@ export type VideoEditorTransition =
   | "push-right"
   | "none";
 export type VideoEditorRenderEngine = "ffmpeg" | "remotion";
+export type VideoEditorLyricAnimation = "karaoke" | "fade" | "pop" | "slide-up" | "typewriter";
+export type VideoEditorLyricPosition = "top" | "center" | "bottom";
+
+export type VideoEditorLyricWord = {
+  text: string;
+  start: number;
+  end: number;
+};
+
+export type VideoEditorLyricCue = {
+  id: string;
+  start: number;
+  end: number;
+  text: string;
+  words: VideoEditorLyricWord[];
+};
+
+export type VideoEditorLyrics = {
+  enabled: boolean;
+  sourceAssetId: string;
+  language: string;
+  model: string;
+  animation: VideoEditorLyricAnimation;
+  position: VideoEditorLyricPosition;
+  fontSize: number;
+  textColor: string;
+  highlightColor: string;
+  outlineColor: string;
+  cues: VideoEditorLyricCue[];
+};
 
 export type VideoEditorAsset = {
   id: string;
@@ -58,6 +88,7 @@ export type TimelineRenderProject = {
   showWatermark?: boolean;
   watermarkText?: string;
   watermarkLogoAssetId?: string;
+  lyrics?: VideoEditorLyrics;
 };
 
 export type TimelineRenderResponse = {
@@ -67,5 +98,13 @@ export type TimelineRenderResponse = {
   relativePath: string;
   videoUrl: string;
   durationSeconds: number;
+  warning?: string;
+};
+
+export type AutoLyricsResponse = {
+  ok: boolean;
+  sourceLabel: string;
+  detectedLanguage?: string;
+  cues: VideoEditorLyricCue[];
   warning?: string;
 };

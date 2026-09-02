@@ -1,9 +1,10 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { NormalizedTimelineVideoClip, NormalizedTimelineVideoProject, TimelineVideoRenderProject } from "../models/TimelineVideo";
+import type { NormalizedTimelineVideoClip, TimelineVideoRenderProject } from "../models/TimelineVideo";
 import type { RuntimeEnvValues } from "./EnvFileService";
 import { createVideoOutput } from "../utils/videoOutput";
+import { normalizeTimelineProject } from "./TimelineProjectNormalizer";
 
 const ENTRY_POINT = path.resolve(process.cwd(), "src/features/remotion-video/remotion/index.ts");
 const COMPOSITION_ID = "TimelineVideo";
@@ -13,7 +14,7 @@ export async function renderRemotionTimelineVideo(params: {
   assetFiles: Record<string, Express.Multer.File>;
   envOverrides?: RuntimeEnvValues;
 }) {
-  const project = normalizeTimelineProject(params.project);
+  const project = normalizeTimelineProject(params.project, "remotion");
   const visualClips = project.clips.filter((clip) => clip.type !== "audio");
   if (!visualClips.length) throw new Error("Timeline cần ít nhất 1 ảnh hoặc video.");
   if (!fs.existsSync(ENTRY_POINT)) throw new Error(`Không tìm thấy Remotion entry point: ${ENTRY_POINT}`);
@@ -35,6 +36,7 @@ export async function renderRemotionTimelineVideo(params: {
       watermark: project.watermarkText,
       showWatermark: project.showWatermark,
       watermarkLogoAssetId: project.watermarkLogoAssetId,
+      lyrics: project.lyrics,
     };
 
     const { bundle } = await import("@remotion/bundler");
@@ -90,63 +92,6 @@ function copyAssetsToPublicDir(clips: NormalizedTimelineVideoClip[], files: Reco
       name: file.originalname || fileName,
     };
   });
-}
-
-function normalizeTimelineProject(raw: TimelineVideoRenderProject): NormalizedTimelineVideoProject {
-  const clips = Array.isArray(raw.clips) ? raw.clips : [];
-  const normalizedClips = clips
-    .map((clip, index) => ({
-      id: sanitizeText(clip.id, `clip-${index}`, 80),
-      assetId: sanitizeText(clip.assetId, "", 120),
-      type: clip.type === "audio" || clip.type === "video" ? clip.type : "image",
-      durationSeconds: clampNumber(clip.durationSeconds, 1, 7200, 4),
-      fitMode: clip.fitMode === "contain" ? "contain" : "cover",
-      transition: normalizeTransition(clip.transition),
-      transitionSeconds: clampNumber(clip.transitionSeconds, 0.2, 8, 1.5),
-      keepOriginalAudio: clip.keepOriginalAudio === true,
-      volume: clampNumber(clip.volume, 0, 2, 1),
-    }))
-    .filter((clip): clip is NormalizedTimelineVideoClip => Boolean(clip.assetId));
-
-  return {
-    title: sanitizeText(raw.title, "remotion-timeline-video", 96),
-    aspectRatio: raw.aspectRatio === "9:16" ? "9:16" : "16:9",
-    fps: clampNumber(raw.fps, 24, 60, 30),
-    renderEngine: "remotion",
-    clips: normalizedClips,
-    showWatermark: raw.showWatermark !== false,
-    watermarkText: sanitizeText(raw.watermarkText, "KAI STUDIO", 40),
-    watermarkLogoAssetId: sanitizeText(raw.watermarkLogoAssetId, "", 120),
-  };
-}
-
-function sanitizeText(value: unknown, fallback: string, maxLength: number) {
-  if (typeof value !== "string") return fallback;
-  const trimmed = value.trim();
-  return trimmed ? trimmed.slice(0, maxLength) : fallback;
-}
-
-function clampNumber(value: unknown, min: number, max: number, fallback: number) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.min(max, Math.max(min, parsed));
-}
-
-function normalizeTransition(value: unknown) {
-  if (
-    value === "blurry" ||
-    value === "fade" ||
-    value === "zoom-in" ||
-    value === "zoom-out" ||
-    value === "slide-left" ||
-    value === "slide-right" ||
-    value === "slide-up" ||
-    value === "slide-down" ||
-    value === "push-left" ||
-    value === "push-right" ||
-    value === "none"
-  ) return value;
-  return "blurry";
 }
 
 function safeFileStem(value: string) {

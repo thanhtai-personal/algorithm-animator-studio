@@ -1,5 +1,6 @@
 import { AbsoluteFill, Audio, Img, interpolate, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { getTimelineDurationSeconds, normalizeRemotionTimelineInput, type RemotionTimelineClip, type RemotionTimelineInputProps } from "../lib/remotionTimelineTypes";
+import { TimelineLyricsOverlay } from "./TimelineLyricsOverlay";
 
 export function TimelineComposition(rawProps: Partial<RemotionTimelineInputProps>) {
   const props = normalizeRemotionTimelineInput(rawProps);
@@ -32,6 +33,7 @@ export function TimelineComposition(rawProps: Partial<RemotionTimelineInputProps
           </Sequence>
         ) : null;
       })}
+      <TimelineLyricsOverlay lyrics={props.lyrics} />
       <TimelineChrome
         title={props.title}
         watermark={props.watermark}

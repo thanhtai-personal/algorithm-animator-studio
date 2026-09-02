@@ -27,6 +27,34 @@ function distance(a: { x: number; y: number }, b: { x: number; y: number }) {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
+function longestNearVerticalInstrumentRun(
+  platforms: Array<{
+    denseRunId?: number;
+    motionMode?: string;
+    visualHidden?: boolean;
+    hitX: number;
+  }>,
+  minimumLateralStep: number,
+) {
+  let longest = 1;
+  let current = 1;
+  for (let index = 1; index < platforms.length; index += 1) {
+    const previous = platforms[index - 1];
+    const platform = platforms[index];
+    const standaloneBallisticPair = !previous.visualHidden
+      && !platform.visualHidden
+      && previous.motionMode === "ballistic"
+      && platform.motionMode === "ballistic"
+      && previous.denseRunId === undefined
+      && platform.denseRunId === undefined;
+    current = standaloneBallisticPair && Math.abs(platform.hitX - previous.hitX) < minimumLateralStep
+      ? current + 1
+      : 1;
+    longest = Math.max(longest, current);
+  }
+  return longest;
+}
+
 describe("exact Pinkfong Baby Shark chase regression", () => {
   it("keeps the existing single-mode course and launches away from the final instrument", () => {
     const settings = { ...baseSettings, marbleMode: "single" as const };
@@ -68,7 +96,35 @@ describe("exact Pinkfong Baby Shark chase regression", () => {
     expect(plan.ownership.strikes.every((strike) => (
       new Set(plan.ownership.ownerByEventIndex.slice(strike.startIndex, strike.endIndex + 1)).size === 1
     ))).toBe(true);
-    expect(plan.platforms.filter((platform) => !platform.visualHidden).every((platform) => platform.normalY < -0.2)).toBe(true);
+    plan.platforms.filter((platform) => !platform.visualHidden).forEach((platform) => {
+      const context = JSON.stringify({
+        id: platform.event.id,
+        denseRunId: platform.denseRunId,
+        longRail: platform.longRail,
+        motionMode: platform.motionMode,
+        normalX: platform.normalX,
+        normalY: platform.normalY,
+        visualStyle: platform.visualStyle,
+      });
+      expect(platform.normalY, context).toBeLessThan(-0.2);
+    });
+  }, 30_000);
+
+  it("staggering keeps standalone instruments out of long vertical columns", () => {
+    const settings = { ...baseSettings, marbleMode: "chase" as const };
+    const plan = prepareMarbleCourse({
+      events,
+      settings,
+      width: 720,
+      presetMixEnabled: false,
+      presetMixSeed: 1,
+    }).chasePlan;
+    expect(plan).not.toBeNull();
+    if (!plan) return;
+
+    const minimumLateralStep = settings.ballSize * 0.8;
+    expect(longestNearVerticalInstrumentRun(plan.tracks.A.platforms, minimumLateralStep)).toBeLessThanOrEqual(3);
+    expect(longestNearVerticalInstrumentRun(plan.tracks.B.platforms, minimumLateralStep)).toBeLessThanOrEqual(3);
   }, 30_000);
 
   it("has exact contacts, immediate release, bounded travel and Canvas/WebGL parity", () => {

@@ -12,6 +12,8 @@ import type {
 import type { RuntimeEnvValues } from "./EnvFileService";
 import { createVideoOutput } from "../utils/videoOutput";
 import { runFfmpeg } from "../utils/ffmpeg";
+import { burnTimelineLyrics } from "./TimelineLyricsAss";
+import { normalizeTimelineProject } from "./TimelineProjectNormalizer";
 
 const DIMENSIONS: Record<TimelineVideoAspectRatio, { width: number; height: number }> = {
   "16:9": { width: 1920, height: 1080 },
@@ -46,6 +48,20 @@ export async function renderTimelineVideo(params: {
     const silentVideoPath = path.join(tempDir, "visual-timeline.mp4");
     await concatenateSegments(segments, silentVideoPath, tempDir, params.envOverrides);
 
+    let visualTimelinePath = silentVideoPath;
+    if (project.lyrics.enabled) {
+      const lyricVideoPath = path.join(tempDir, "visual-timeline-lyrics.mp4");
+      await burnTimelineLyrics({
+        inputPath: silentVideoPath,
+        outputPath: lyricVideoPath,
+        assPath: path.join(tempDir, "timeline-lyrics.ass"),
+        aspectRatio: project.aspectRatio,
+        lyrics: project.lyrics,
+        envOverrides: params.envOverrides,
+      });
+      visualTimelinePath = lyricVideoPath;
+    }
+
     const totalDuration = visualClips.reduce((sum, clip) => sum + clip.durationSeconds, 0);
     const firstAudioClip = audioClips.find((clip) => {
       const file = assets[clip.assetId];
@@ -54,9 +70,9 @@ export async function renderTimelineVideo(params: {
     const firstAudio = firstAudioClip ? assets[firstAudioClip.assetId] : undefined;
 
     if (firstAudio?.path) {
-      await addAudioTrack({ videoPath: silentVideoPath, audioPath: firstAudio.path, outputPath: output.outputPath, durationSeconds: totalDuration, volume: firstAudioClip?.volume ?? 1, envOverrides: params.envOverrides });
+      await addAudioTrack({ videoPath: visualTimelinePath, audioPath: firstAudio.path, outputPath: output.outputPath, durationSeconds: totalDuration, volume: firstAudioClip?.volume ?? 1, envOverrides: params.envOverrides });
     } else {
-      fs.copyFileSync(silentVideoPath, output.outputPath);
+      fs.copyFileSync(visualTimelinePath, output.outputPath);
     }
 
     if (!fs.existsSync(output.outputPath)) throw new Error("FFmpeg chạy xong nhưng không tạo tệp MP4.");
@@ -73,34 +89,6 @@ export async function renderTimelineVideo(params: {
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
-}
-
-function normalizeTimelineProject(raw: TimelineVideoRenderProject): NormalizedTimelineVideoProject {
-  const clips = Array.isArray(raw.clips) ? raw.clips : [];
-  const normalizedClips = clips
-    .map((clip, index) => ({
-      id: sanitizeText(clip.id, `clip-${index}`, 80),
-      assetId: sanitizeText(clip.assetId, "", 120),
-      type: clip.type === "audio" || clip.type === "video" ? clip.type : "image",
-      durationSeconds: clampNumber(clip.durationSeconds, 1, 7200, 4),
-      fitMode: clip.fitMode === "contain" ? "contain" : "cover",
-      transition: normalizeTransition(clip.transition),
-      transitionSeconds: clampNumber(clip.transitionSeconds, 0.2, 8, 1.5),
-      keepOriginalAudio: clip.keepOriginalAudio === true,
-      volume: clampNumber(clip.volume, 0, 2, 1),
-    }))
-    .filter((clip): clip is NormalizedTimelineVideoClip => Boolean(clip.assetId));
-
-  return {
-    title: sanitizeText(raw.title, "timeline-video", 96),
-    aspectRatio: raw.aspectRatio === "9:16" ? "9:16" : "16:9",
-    fps: clampNumber(raw.fps, 24, 60, 30),
-    renderEngine: raw.renderEngine === "remotion" ? "remotion" : "ffmpeg",
-    clips: normalizedClips,
-    showWatermark: raw.showWatermark !== false,
-    watermarkText: sanitizeText(raw.watermarkText, "KAI STUDIO", 40),
-    watermarkLogoAssetId: sanitizeText(raw.watermarkLogoAssetId, "", 120),
-  };
 }
 
 function renderVisualSegment(params: {
@@ -196,23 +184,6 @@ function buildScaleFilter(width: number, height: number, fitMode: TimelineVideoF
   return [`scale=${width}:${height}:force_original_aspect_ratio=increase`, `crop=${width}:${height}`, "setsar=1"].join(",");
 }
 
-function normalizeTransition(value: unknown): TimelineVideoTransition {
-  if (
-    value === "blurry" ||
-    value === "fade" ||
-    value === "zoom-in" ||
-    value === "zoom-out" ||
-    value === "slide-left" ||
-    value === "slide-right" ||
-    value === "slide-up" ||
-    value === "slide-down" ||
-    value === "push-left" ||
-    value === "push-right" ||
-    value === "none"
-  ) return value;
-  return "blurry";
-}
-
 function buildFallbackWarning(clips: NormalizedTimelineVideoClip[], audioClipCount: number) {
   const warnings: string[] = [];
   if (audioClipCount > 1) warnings.push("FFmpeg fallback hiện dùng audio đầu tiên làm nhạc/voice nền.");
@@ -220,18 +191,6 @@ function buildFallbackWarning(clips: NormalizedTimelineVideoClip[], audioClipCou
     warnings.push("Âm thanh gốc video được hỗ trợ đầy đủ khi render bằng Remotion; FFmpeg fallback vẫn tắt âm thanh gốc để tránh lẫn tiếng.");
   }
   return warnings.length ? warnings.join(" ") : undefined;
-}
-
-function sanitizeText(value: unknown, fallback: string, maxLength: number) {
-  if (typeof value !== "string") return fallback;
-  const trimmed = value.trim();
-  return trimmed ? trimmed.slice(0, maxLength) : fallback;
-}
-
-function clampNumber(value: unknown, min: number, max: number, fallback: number) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.min(max, Math.max(min, parsed));
 }
 
 function escapeFfmpegConcatPath(filePath: string) {

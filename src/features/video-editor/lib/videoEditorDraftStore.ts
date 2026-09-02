@@ -1,4 +1,4 @@
-import type { VideoEditorAspectRatio, VideoEditorAsset, VideoEditorClip } from "./videoEditorTypes";
+import type { VideoEditorAspectRatio, VideoEditorAsset, VideoEditorClip, VideoEditorLyrics } from "./videoEditorTypes";
 
 const DB_NAME = "kai-video-editor-draft";
 const STORE_NAME = "drafts";
@@ -11,6 +11,7 @@ export type VideoEditorDraft = {
   showWatermark: boolean;
   watermarkText: string;
   watermarkLogoAssetId: string;
+  lyrics?: VideoEditorLyrics;
   clips: VideoEditorClip[];
   assets: Array<{
     id: string;

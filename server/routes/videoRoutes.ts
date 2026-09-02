@@ -22,6 +22,7 @@ import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
 import { getRemotionHealth, renderRemotionVideo } from "../services/RemotionRenderService";
 import { renderTimelineVideo } from "../services/TimelineVideoService";
 import { renderRemotionTimelineVideo } from "../services/RemotionTimelineRenderService";
+import { transcribeLyricsFromMedia } from "../services/VideoLyricsService";
 import { BACKGROUND_LIMITS, generateNarrationAudio, resolveOptionalBackgroundMusic, saveUploadedAudio, sendError, validateBackgroundFile } from "./videoRouteHelpers";
 import {
   buildRhythmicCaptureProbeArgs,
@@ -104,6 +105,24 @@ export function createVideoRouter() {
       return res.json(video);
     } catch (error) {
       return sendError(res, error);
+    }
+  });
+
+  router.post("/video/auto-lyrics", upload.single("media"), async (req, res) => {
+    if (!req.file?.path) return res.status(400).json({ error: "Chưa nhận được audio/video để tạo lyric." });
+    try {
+      const result = await transcribeLyricsFromMedia({
+        inputPath: req.file.path,
+        originalName: req.file.originalname,
+        model: String(req.body?.model || "base"),
+        language: String(req.body?.language || "auto"),
+        envOverrides: readRuntimeEnvFromRequest(req),
+      });
+      return res.json(result);
+    } catch (error) {
+      return sendError(res, error);
+    } finally {
+      fs.rm(req.file.path, { force: true }, () => undefined);
     }
   });
 

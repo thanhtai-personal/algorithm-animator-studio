@@ -31,8 +31,8 @@ const VIDEO_EXTENSIONS = new Set([".mp4", ".mkv", ".webm", ".mov", ".m4v"]);
 const AUDIO_EXTENSIONS = new Set([".mp3", ".m4a", ".webm", ".opus", ".wav"]);
 const WHISPER_CLI_BRIDGE = "import sys; from whisper.transcribe import cli; sys.argv=['whisper']+sys.argv[1:]; cli()";
 
-type CommandSpec = { command: string; prefixArgs: string[]; label: string; ok: boolean; version?: string; detail?: string };
-type RunResult = { stdout: string; stderr: string; combined: string[] };
+export type CommandSpec = { command: string; prefixArgs: string[]; label: string; ok: boolean; version?: string; detail?: string };
+export type RunResult = { stdout: string; stderr: string; combined: string[] };
 export type YoutubeToolsRunHooks = { onLog?: (line: string) => void };
 
 export async function getYoutubeToolsHealth(envOverrides: RuntimeEnvValues = {}): Promise<YoutubeToolsHealth> {
@@ -200,7 +200,7 @@ async function resolveYtDlp(env: RuntimeEnvValues): Promise<CommandSpec> {
   return { command: resolveRuntimeExecutable(env.YOUTUBE_DLP_EXE || "yt-dlp"), prefixArgs: [], label: "yt-dlp", ok: binary.ok, version: binary.version, detail: binary.detail || pythonChecks.find(Boolean) };
 }
 
-async function resolveWhisper(env: RuntimeEnvValues): Promise<CommandSpec> {
+export async function resolveWhisper(env: RuntimeEnvValues): Promise<CommandSpec> {
   const pythonChecks = [];
   for (const python of getPythonCandidates(env)) {
     const pythonModule = await checkCommand(python, ["-m", "whisper", "--help"]);
@@ -239,7 +239,7 @@ async function checkCommand(command: string, args: string[]): Promise<YoutubeToo
   }
 }
 
-function runCommand(command: string, args: string[], timeoutMs: number, hooks: YoutubeToolsRunHooks = {}): Promise<RunResult> {
+export function runCommand(command: string, args: string[], timeoutMs: number, hooks: YoutubeToolsRunHooks = {}): Promise<RunResult> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { windowsHide: true, env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" } });
     const chunks: string[] = [];

@@ -20,8 +20,8 @@ export function settingsForChaseOwner(settings: StudioSettings, owner: ChaseOwne
 }
 
 export function chaseLaneFor(owner: ChaseOwner, width: number): ChaseLane {
-  const laneWidth = clamp(width * 0.3, 210, 360);
-  const centerX = width * (owner === "A" ? 0.32 : 0.68);
+  const laneWidth = clamp(width * 0.4, 240, 420);
+  const centerX = width * (owner === "A" ? 0.29 : 0.71);
   return { owner, centerX, width: laneWidth, offsetX: centerX - laneWidth / 2 };
 }
 
@@ -33,10 +33,10 @@ export function physicalSettingsForChaseLane(
   const appearanceSettings = settingsForChaseOwner(settings, owner);
   return {
     ...appearanceSettings,
-    instrumentLayout: "corridor",
-    laneSpread: Math.min(appearanceSettings.laneSpread, lane.width * 0.55),
+    instrumentLayout: "cascade",
+    laneSpread: Math.min(appearanceSettings.laneSpread, lane.width * 0.88),
     platformWidth: Math.min(appearanceSettings.platformWidth, Math.max(72, lane.width * 0.4)),
-    platformGap: Math.min(appearanceSettings.platformGap, 118),
+    platformGap: Math.min(appearanceSettings.platformGap, 138),
   };
 }
 

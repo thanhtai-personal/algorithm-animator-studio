@@ -12,11 +12,14 @@ import { Switch } from "@/components/ui/switch";
 import { t, readSystemLang, subscribeSystemLang, type Lang  } from "@/lib/i18n";
 import { getMusicLibraryTracks } from "@/lib/musicLibrary";
 import { VideoEditorPreview } from "./VideoEditorPreview";
+import { VideoEditorLyricsPanel } from "./VideoEditorLyricsPanel";
 import { MediaBin, TimelineTrack, type TrackKind } from "./VideoEditorTimeline";
-import { createAsset, createAssetFromFile, createAssetFromLibraryTrack, createClipFromAsset, mergeLibraryAssets, readVideoDurationSeconds } from "../lib/videoEditorAssetHelpers";
+import { createAsset, createAssetFromLibraryTrack, createClipFromAsset, mergeLibraryAssets, readMediaDurationSeconds } from "../lib/videoEditorAssetHelpers";
 import { fromDraftAsset, loadVideoEditorDraft, saveVideoEditorDraft, toDraftAsset } from "../lib/videoEditorDraftStore";
 import { renderTimelineVideo } from "../lib/videoEditorApi";
-import type { TimelineRenderResponse, VideoEditorAsset, VideoEditorAspectRatio, VideoEditorClip, VideoEditorRenderEngine } from "../lib/videoEditorTypes";
+import { DEFAULT_VIDEO_EDITOR_LYRICS, normalizeEditorLyrics } from "../lib/videoEditorLyrics";
+import { canClipUseTrack, canUseOnTrack, clampVolume, createRenderedVideoAsset, downloadVideo, getActiveTimelineClip, getPreviewClip, insertBefore, toRenderClip } from "../lib/videoEditorTimelineHelpers";
+import type { TimelineRenderResponse, VideoEditorAsset, VideoEditorAspectRatio, VideoEditorClip, VideoEditorLyrics, VideoEditorRenderEngine } from "../lib/videoEditorTypes";
 
 type Props = {
   renderEngine: VideoEditorRenderEngine;
@@ -33,6 +36,7 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
   const [showWatermark, setShowWatermark] = useState(true);
   const [watermarkText, setWatermarkText] = useState("KAI STUDIO");
   const [watermarkLogoAssetId, setWatermarkLogoAssetId] = useState("");
+  const [lyrics, setLyrics] = useState<VideoEditorLyrics>(DEFAULT_VIDEO_EDITOR_LYRICS);
   const [playing, setPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [rendering, setRendering] = useState(false);
@@ -52,6 +56,7 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
         setShowWatermark(draft.showWatermark !== false);
         setWatermarkText(draft.watermarkText || "KAI STUDIO");
         setWatermarkLogoAssetId(draft.watermarkLogoAssetId || "");
+        setLyrics(normalizeEditorLyrics(draft.lyrics));
         setAssets(mergeLibraryAssets(draft.assets.map(fromDraftAsset), []));
         setClips(draft.clips.map((clip) => ({ ...clip, transitionSeconds: clip.transitionSeconds || 1.5, volume: clampVolume(clip.volume) })));
       })
@@ -77,14 +82,17 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
   }, [assets]);
   useEffect(() => () => assetUrlsRef.current.forEach((url) => URL.revokeObjectURL(url)), []);
   useEffect(() => {
-    const pending = assets.filter((asset) => asset.type === "video" && !asset.durationSeconds);
+    const pending = assets.filter((asset) => asset.source !== "silent" && (asset.type === "video" || asset.type === "audio") && !asset.durationSeconds);
     if (!pending.length) return;
     let cancelled = false;
-    Promise.all(pending.map(async (asset) => ({ id: asset.id, duration: await readVideoDurationSeconds(asset.url).catch(() => 0) }))).then((items) => {
+    Promise.all(pending.map(async (asset) => ({ id: asset.id, duration: await readMediaDurationSeconds(asset.url).catch(() => 0) }))).then((items) => {
       if (cancelled) return;
       const durations = new Map(items.filter((item) => item.duration > 0).map((item) => [item.id, item.duration]));
       setAssets((current) => current.map((asset) => durations.has(asset.id) ? { ...asset, durationSeconds: durations.get(asset.id) } : asset));
-      setClips((current) => current.map((clip) => clip.type === "video" && clip.durationSeconds === 6 && durations.has(clip.assetId) ? { ...clip, durationSeconds: Math.min(7200, Math.max(1, durations.get(clip.assetId)!)) } : clip));
+      setClips((current) => current.map((clip) => {
+        const isDefaultDuration = (clip.type === "video" && clip.durationSeconds === 6) || (clip.type === "audio" && clip.durationSeconds === 12);
+        return isDefaultDuration && durations.has(clip.assetId) ? { ...clip, durationSeconds: Math.min(7200, Math.max(1, durations.get(clip.assetId)!)) } : clip;
+      }));
     });
     return () => { cancelled = true; };
   }, [assets]);
@@ -92,12 +100,12 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
     if (!draftLoaded) return;
     const timer = window.setTimeout(() => {
       void saveVideoEditorDraft({
-        title, aspectRatio, fps, showWatermark, watermarkText, watermarkLogoAssetId, clips,
+        title, aspectRatio, fps, showWatermark, watermarkText, watermarkLogoAssetId, lyrics, clips,
         assets: assets.filter((asset) => asset.source !== "system-music" && asset.source !== "silent").map(toDraftAsset),
       }).catch(() => undefined);
     }, 500);
     return () => window.clearTimeout(timer);
-  }, [assets, aspectRatio, clips, draftLoaded, fps, showWatermark, title, watermarkLogoAssetId, watermarkText]);
+  }, [assets, aspectRatio, clips, draftLoaded, fps, lyrics, showWatermark, title, watermarkLogoAssetId, watermarkText]);
 
   const visualClips = clips.filter((clip) => clip.type !== "audio");
   const audioClips = clips.filter((clip) => clip.type === "audio");
@@ -222,7 +230,7 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
       : t(lang, "uiExportingMp4Timeline")
     );
     try {
-      const result = await renderTimelineVideo({ title, aspectRatio, fps, renderEngine, showWatermark, watermarkText, watermarkLogoAssetId, clips: clips.map(toRenderClip) }, assets);
+      const result = await renderTimelineVideo({ title, aspectRatio, fps, renderEngine, showWatermark, watermarkText, watermarkLogoAssetId, lyrics, clips: clips.map(toRenderClip) }, assets);
       setLastVideo(result);
       downloadVideo(result.videoUrl, result.fileName);
       const renderedAsset = await createRenderedVideoAsset(result);
@@ -300,6 +308,7 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
               showWatermark={showWatermark}
               watermarkText={watermarkText}
               watermarkLogoAsset={assets.find((asset) => asset.id === watermarkLogoAssetId)}
+              lyrics={lyrics}
               onReset={() => setElapsed(0)}
               onPlay={() => setPlaying((value) => !value)}
               onSeek={(value) => { setPlaying(false); setElapsed(value); }}
@@ -307,6 +316,8 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
             <MediaBin assets={assets} onFiles={addFiles} />
           </div>
         </div>
+
+        <VideoEditorLyricsPanel lyrics={lyrics} assets={assets} clips={clips} onChange={setLyrics} />
 
         <div className="space-y-2 rounded-lg border bg-muted/10 p-3">
           <TimelineTrack title="Track 1: Hình ảnh / video" icon={<Film className="h-4 w-4" />} clips={visualClips} assets={assets} track="visual" onDrop={handleTrackDrop} onRemove={removeClip} onUpdate={updateClip} />
@@ -327,64 +338,4 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
 
 function Field(props: { label: string; children: ReactNode }) {
   return <div className="space-y-2"><Label>{props.label}</Label>{props.children}</div>;
-}
-
-function getPreviewClip(clips: VideoEditorClip[], elapsed: number) {
-  let cursor = 0;
-  for (const clip of clips) {
-    const end = cursor + clip.durationSeconds;
-    if (elapsed >= cursor && elapsed < end) return { clip, localTime: elapsed - cursor };
-    cursor = end;
-  }
-  return clips.length ? { clip: clips[clips.length - 1], localTime: clips[clips.length - 1].durationSeconds } : null;
-}
-
-function toRenderClip(clip: VideoEditorClip) {
-  return { id: clip.id, assetId: clip.assetId, type: clip.type, durationSeconds: clip.durationSeconds, fitMode: clip.fitMode, transition: clip.transition, transitionSeconds: clip.transitionSeconds, keepOriginalAudio: clip.keepOriginalAudio === true, volume: clampVolume(clip.volume) };
-}
-
-function getActiveTimelineClip(clips: VideoEditorClip[], elapsed: number) {
-  let cursor = 0;
-  for (const clip of clips) {
-    const end = cursor + clip.durationSeconds;
-    if (elapsed >= cursor && elapsed < end) return { clip, localTime: elapsed - cursor };
-    cursor = end;
-  }
-  return null;
-}
-
-function clampVolume(value: unknown) {
-  const parsed = Number(value ?? 1);
-  return Number.isFinite(parsed) ? Math.min(2, Math.max(0, parsed)) : 1;
-}
-
-function canUseOnTrack(asset: VideoEditorAsset, track: TrackKind) {
-  return track === "audio" ? asset.type === "audio" : asset.type === "image" || asset.type === "video";
-}
-
-function canClipUseTrack(clip: VideoEditorClip, track: TrackKind) {
-  return track === "audio" ? clip.type === "audio" : clip.type !== "audio";
-}
-
-function insertBefore(clips: VideoEditorClip[], clip: VideoEditorClip, beforeClipId: string) {
-  const index = clips.findIndex((item) => item.id === beforeClipId);
-  if (index < 0) return [...clips, clip];
-  return [...clips.slice(0, index), clip, ...clips.slice(index)];
-}
-
-function downloadVideo(url: string, fileName: string) {
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-}
-
-async function createRenderedVideoAsset(video: TimelineRenderResponse) {
-  const response = await fetch(video.videoUrl);
-  if (!response.ok) throw new Error("Đã render xong nhưng không tải lại được video vào kho media.");
-  const blob = await response.blob();
-  const file = new File([blob], video.fileName, { type: blob.type || "video/mp4" });
-  return { ...createAssetFromFile(file, video.fileName), durationSeconds: video.durationSeconds };
 }

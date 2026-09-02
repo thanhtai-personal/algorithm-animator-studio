@@ -1,6 +1,7 @@
 import type { RemotionVideoAspectRatio } from "./remotionVideoTypes";
 import { isVideoEditorTransition } from "../../video-editor/lib/videoEditorConstants";
-import type { VideoEditorAssetType, VideoEditorFitMode, VideoEditorTransition } from "../../video-editor/lib/videoEditorTypes";
+import type { VideoEditorAssetType, VideoEditorFitMode, VideoEditorLyrics, VideoEditorTransition } from "../../video-editor/lib/videoEditorTypes";
+import { DEFAULT_VIDEO_EDITOR_LYRICS, normalizeEditorLyrics } from "../../video-editor/lib/videoEditorLyrics";
 
 export type RemotionTimelineAsset = {
   id: string;
@@ -31,6 +32,7 @@ export type RemotionTimelineInputProps = {
   watermark: string;
   showWatermark: boolean;
   watermarkLogoAssetId: string;
+  lyrics: VideoEditorLyrics;
 };
 
 export const DEFAULT_REMOTION_TIMELINE: RemotionTimelineInputProps = {
@@ -43,6 +45,7 @@ export const DEFAULT_REMOTION_TIMELINE: RemotionTimelineInputProps = {
   watermark: "KAI STUDIO",
   showWatermark: true,
   watermarkLogoAssetId: "",
+  lyrics: DEFAULT_VIDEO_EDITOR_LYRICS,
 };
 
 export function getTimelineDurationSeconds(props: Pick<RemotionTimelineInputProps, "clips">) {
@@ -62,6 +65,7 @@ export function normalizeRemotionTimelineInput(raw: Partial<RemotionTimelineInpu
     aspectRatio: raw.aspectRatio === "9:16" ? "9:16" : "16:9",
     fps: clampNumber(raw.fps, 24, 60, 30),
     backgroundColor: sanitizeColor(raw.backgroundColor, DEFAULT_REMOTION_TIMELINE.backgroundColor),
+    lyrics: normalizeEditorLyrics(raw.lyrics),
     assets: assets.map((asset, index) => ({
       id: sanitizeText(asset.id, `asset-${index}`, 120),
       type: asset.type === "audio" || asset.type === "video" ? asset.type : "image",

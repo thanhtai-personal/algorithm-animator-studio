@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Captions, Sparkles, Trash2, WandSparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -160,8 +160,18 @@ export function VideoEditorLyricsPanel({ lyrics, assets, clips, onChange }: Prop
             {lyrics.cues.map((cue, index) => (
               <div key={cue.id} className="grid gap-2 rounded-md border bg-background/50 p-2 md:grid-cols-[42px_86px_86px_minmax(0,1fr)] md:items-center">
                 <span className="text-center text-xs font-bold text-cyan-300">#{index + 1}</span>
-                <Input aria-label={`Lyric ${index + 1} start`} type="number" step="0.05" value={cue.start} onChange={(event) => updateCue(cue.id, { start: parseFiniteNumber(event.target.value, cue.start), words: [] })} />
-                <Input aria-label={`Lyric ${index + 1} end`} type="number" step="0.05" value={cue.end} onChange={(event) => updateCue(cue.id, { end: Math.max(cue.start + 0.05, parseFiniteNumber(event.target.value, cue.end)), words: [] })} />
+                <CueTimeInput
+                  ariaLabel={`Lyric ${index + 1} start`}
+                  value={cue.start}
+                  validate={(value) => value <= cue.end - 0.05}
+                  onCommit={(start) => updateCue(cue.id, { start, words: [] })}
+                />
+                <CueTimeInput
+                  ariaLabel={`Lyric ${index + 1} end`}
+                  value={cue.end}
+                  validate={(value) => value >= cue.start + 0.05}
+                  onCommit={(end) => updateCue(cue.id, { end, words: [] })}
+                />
                 <Input aria-label={`Lyric ${index + 1} text`} value={cue.text} onChange={(event) => updateCue(cue.id, { text: event.target.value, words: [] })} />
               </div>
             ))}
@@ -199,7 +209,54 @@ function parseDecimalInput(value: string) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function parseFiniteNumber(value: string, fallback: number) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
+function CueTimeInput({ ariaLabel, value, validate, onCommit }: { ariaLabel: string; value: number; validate: (value: number) => boolean; onCommit: (value: number) => void }) {
+  const [draft, setDraft] = useState(() => formatCueTime(value));
+  const [invalid, setInvalid] = useState(false);
+  const lastValueRef = useRef(value);
+
+  useEffect(() => {
+    if (Object.is(lastValueRef.current, value)) return;
+    lastValueRef.current = value;
+    setDraft(formatCueTime(value));
+    setInvalid(false);
+  }, [value]);
+
+  function validateAndCommit() {
+    const parsed = parseDecimalInput(draft);
+    if (parsed == null || !validate(parsed)) {
+      setInvalid(true);
+      return false;
+    }
+    setInvalid(false);
+    lastValueRef.current = parsed;
+    onCommit(parsed);
+    return true;
+  }
+
+  return (
+    <Input
+      aria-label={ariaLabel}
+      aria-invalid={invalid || undefined}
+      type="text"
+      inputMode="decimal"
+      value={draft}
+      className={invalid ? "border-destructive focus-visible:ring-destructive" : undefined}
+      onChange={(event) => { setDraft(event.target.value); setInvalid(false); }}
+      onBlur={validateAndCommit}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          event.currentTarget.blur();
+        } else if (event.key === "Escape") {
+          setDraft(formatCueTime(value));
+          setInvalid(false);
+          event.currentTarget.blur();
+        }
+      }}
+    />
+  );
+}
+
+function formatCueTime(value: number) {
+  return Number.isFinite(value) ? String(value) : "";
 }

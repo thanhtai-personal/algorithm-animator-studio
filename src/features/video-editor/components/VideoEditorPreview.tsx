@@ -21,7 +21,9 @@ type Props = {
   lyrics: VideoEditorLyrics;
   onReset: () => void;
   onPlay: () => void;
+  onSeekStart: () => void;
   onSeek: (elapsed: number) => void;
+  onSeekEnd: (elapsed: number) => void;
 };
 
 export function VideoEditorPreview(props: Props) {
@@ -42,7 +44,18 @@ export function VideoEditorPreview(props: Props) {
           <Maximize2 className="h-4 w-4" />
         </Button>
       </div>
-      <Slider value={[props.elapsed]} min={0} max={props.totalDuration} step={0.1} onValueChange={([value]) => props.onSeek(value)} />
+      <Slider
+        value={[props.elapsed]}
+        min={0}
+        max={props.totalDuration}
+        step={0.1}
+        onPointerDown={props.onSeekStart}
+        onKeyDown={(event) => {
+          if (["ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown"].includes(event.key)) props.onSeekStart();
+        }}
+        onValueChange={([value]) => props.onSeek(value)}
+        onValueCommit={([value]) => props.onSeekEnd(value)}
+      />
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/20 p-3 text-sm">
         <span>{props.elapsed.toFixed(1)}s / {props.totalDuration.toFixed(1)}s</span>
         <div className="flex gap-2">
@@ -81,13 +94,14 @@ function PreviewAsset({ asset, clip, playing, localTime }: { asset: VideoEditorA
     const video = videoRef.current;
     if (!video) return;
     video.volume = clampVolume(clip?.volume);
-    if (playing) {
-      void video.play().catch(() => undefined);
-    } else {
-      video.pause();
-      if (Number.isFinite(localTime)) video.currentTime = Math.max(0, localTime);
+    const desiredTime = Math.max(0, Number.isFinite(localTime) ? localTime : 0);
+    const drift = Math.abs(video.currentTime - desiredTime);
+    if (!playing || drift > 0.35) {
+      try { video.currentTime = desiredTime; } catch { /* metadata may still be loading */ }
     }
-  }, [asset.id, localTime, playing]);
+    if (playing) void video.play().catch(() => undefined);
+    else video.pause();
+  }, [asset.id, localTime, playing, clip?.volume]);
 
   if (asset.type === "image") return <img src={asset.url} alt="" className={`h-full w-full ${fitClass}`} style={motion} />;
   if (asset.type === "video") return <video ref={videoRef} key={asset.id} src={asset.url} muted={clip?.keepOriginalAudio !== true} loop={playing} playsInline className={`h-full w-full ${fitClass}`} style={motion} />;

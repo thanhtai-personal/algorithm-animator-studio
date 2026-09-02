@@ -45,6 +45,8 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
   const [draftLoaded, setDraftLoaded] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const assetUrlsRef = useRef<string[]>([]);
+  const seekingRef = useRef(false);
+  const resumeAfterSeekRef = useRef(false);
 
   useEffect(() => subscribeSystemLang(setLang), []);
   useEffect(() => {
@@ -136,24 +138,59 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
     if (!audio) return;
     const audioPreview = getActiveTimelineClip(audioClips, elapsed);
     const asset = audioPreview?.clip ? assets.find((item) => item.id === audioPreview.clip.assetId) : undefined;
-    audio.volume = clampVolume(audioPreview?.clip.volume);
     if (!audioPreview || !asset || asset.source === "silent") {
       audio.pause();
       return;
     }
-    if (audio.dataset.assetId !== asset.id) {
+
+    const sourceChanged = audio.dataset.assetId !== asset.id;
+    if (sourceChanged) {
       audio.src = asset.url;
       audio.loop = false;
       audio.dataset.assetId = asset.id;
+      audio.load();
     }
-    if (playing) {
-      audio.currentTime = audioPreview.localTime;
-      void audio.play().catch(() => undefined);
-    } else {
-      audio.pause();
-      audio.currentTime = audioPreview.localTime;
+    audio.volume = clampVolume(audioPreview.clip.volume);
+
+    const desiredTime = Math.max(0, audioPreview.localTime);
+    const syncTime = () => {
+      const drift = Math.abs(audio.currentTime - desiredTime);
+      if (!playing || sourceChanged || drift > 0.35) {
+        try { audio.currentTime = desiredTime; } catch { /* metadata may still be loading */ }
+      }
+      if (playing) {
+        if (audio.paused) void audio.play().catch(() => undefined);
+      } else {
+        audio.pause();
+      }
+    };
+
+    if (audio.readyState >= 1) syncTime();
+    else {
+      audio.addEventListener("loadedmetadata", syncTime, { once: true });
+      return () => audio.removeEventListener("loadedmetadata", syncTime);
     }
   }, [assets, audioClips, elapsed, playing]);
+
+  function handleSeekStart() {
+    if (seekingRef.current) return;
+    seekingRef.current = true;
+    resumeAfterSeekRef.current = playing;
+    setPlaying(false);
+  }
+
+  function handleSeek(value: number) {
+    setElapsed(Math.min(totalDuration, Math.max(0, value)));
+  }
+
+  function handleSeekEnd(value: number) {
+    handleSeek(value);
+    if (!seekingRef.current) return;
+    const shouldResume = resumeAfterSeekRef.current;
+    seekingRef.current = false;
+    resumeAfterSeekRef.current = false;
+    setPlaying(shouldResume);
+  }
 
   const timelineStats = useMemo(() => ({
     image: clips.filter((clip) => clip.type === "image").length,
@@ -322,9 +359,11 @@ export function ProShowVideoEditor({ renderEngine, onVideoCreated }: Props) {
               watermarkText={watermarkText}
               watermarkLogoAsset={assets.find((asset) => asset.id === watermarkLogoAssetId)}
               lyrics={lyrics}
-              onReset={() => setElapsed(0)}
+              onReset={() => { handleSeekStart(); handleSeekEnd(0); }}
               onPlay={() => setPlaying((value) => !value)}
-              onSeek={(value) => { setPlaying(false); setElapsed(value); }}
+              onSeekStart={handleSeekStart}
+              onSeek={handleSeek}
+              onSeekEnd={handleSeekEnd}
             />
             <MediaBin assets={assets} onFiles={addFiles} />
           </div>

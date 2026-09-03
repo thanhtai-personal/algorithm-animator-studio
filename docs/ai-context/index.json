@@ -1,0 +1,285 @@
+{
+  "schema_version": 1,
+  "project": {
+    "name": "KAI STUDIO",
+    "summary": "React/Vite studio for algorithm, news, story, voice, video rendering, and social publishing workflows.",
+    "stack": [
+      "React 18",
+      "TypeScript",
+      "Vite",
+      "Express",
+      "Electron",
+      "Remotion",
+      "Three.js / React Three Fiber",
+      "Phaser",
+      "Vitest"
+    ],
+    "entrypoints": [
+      { "path": "src/main.tsx", "role": "Browser bootstrap" },
+      { "path": "src/App.tsx", "role": "Frontend route composition" },
+      { "path": "server/index.ts", "role": "Express composition root" },
+      { "path": "electron/main.cjs", "role": "Desktop main process" }
+    ]
+  },
+  "policy": {
+    "source_of_truth": "Source code, tests, and type definitions override this curated routing index when they disagree.",
+    "default_domain_results": 2,
+    "max_primary_files": 12,
+    "max_primary_lines": 2400,
+    "always_load": [
+      { "path": "AGENTS.md", "role": "Repository-wide rules and guardrails" }
+    ],
+    "never_load_by_default": [
+      ".env and credentials",
+      "node_modules/** and build outputs",
+      "models/** binary model data",
+      "libs/VieNeu-TTS/** vendored source unless the task targets VieNeu internals",
+      ".understand-anything/knowledge-graph.json unless exhaustive dependency evidence is required",
+      "src/components/ui/** generated primitives unless a primitive itself is being changed"
+    ]
+  },
+  "domains": [
+    {
+      "id": "ai-context-tooling",
+      "name": "AI context and repository indexing",
+      "summary": "Curated context routing, Understand Anything graph data, agent rules, validation, and context-loading documentation.",
+      "keywords": ["understand anything", "knowledge graph", "context index", "context router", "indexing", "agent context", "AGENTS", "cây dữ liệu", "nạp context", "sơ đồ source"],
+      "primary": [
+        { "path": "AGENTS.md", "role": "Repository-wide context loading rules" },
+        { "path": "docs/ai-context/README.md", "role": "Context router workflow and trust policy" },
+        { "path": "docs/ai-context/index.json", "role": "Curated domain routing data" },
+        { "path": "scripts/context_index.py", "role": "Context query and validation CLI" },
+        { "path": ".understand-anything/meta.json", "role": "Generated graph freshness metadata" }
+      ],
+      "expand": [".understand-anything/*.json", ".understand-anything/intermediate/scan-result.json", "scripts/*context*"],
+      "tests": ["scripts/test_context_index.py"],
+      "docs": ["docs/ai-context/README.md"],
+      "related": ["app-shell", "runtime-assets-jobs"]
+    },
+    {
+      "id": "app-shell",
+      "name": "Application shell and navigation",
+      "summary": "Routes, navigation groups, layout, localization, feature visibility, auth, and shared browser runtime behavior.",
+      "keywords": ["app", "route", "router", "navigation", "sidebar", "layout", "menu", "i18n", "locale", "auth", "responsive", "điều hướng", "giao diện"],
+      "primary": [
+        { "path": "src/App.tsx", "role": "Canonical frontend routes" },
+        { "path": "src/components/appNavigation.ts", "role": "Navigation taxonomy" },
+        { "path": "src/components/AppLayout.tsx", "role": "Shared page shell" },
+        { "path": "src/lib/i18n.ts", "role": "Localization runtime" },
+        { "path": "src/lib/menuFeatureSettings.ts", "role": "Feature visibility settings" }
+      ],
+      "expand": ["src/components/App*.tsx", "src/locales/**/*.json", "src/pages/Auth.tsx", "src/lib/auth.ts"],
+      "tests": ["src/test/App*.test.ts*", "src/lib/auth.test.ts"],
+      "docs": [],
+      "related": ["runtime-assets-jobs", "desktop-distribution"]
+    },
+    {
+      "id": "algorithm-studio",
+      "name": "Algorithm video studio",
+      "summary": "Manual short-form algorithm animation, sort implementations, Canvas/3D renderers, playback, and export.",
+      "keywords": ["algorithm", "sorting", "sort", "short", "canvas", "3d", "renderer", "playback", "timeline", "export", "thuật toán", "sắp xếp", "xuất video"],
+      "primary": [
+        { "path": "src/pages/AlgorithmChannelPage.tsx", "role": "Channel mode boundary" },
+        { "path": "src/pages/Index.tsx", "role": "Manual studio page" },
+        { "path": "src/lib/algorithms/index.ts", "role": "Algorithm registry" },
+        { "path": "src/pages/studio/renderStudioPreview.ts", "role": "Preview rendering dispatch" },
+        { "path": "src/pages/studio/videoExport.ts", "role": "2D export path" },
+        { "path": "src/pages/studio/videoExport3D.ts", "role": "3D export path" }
+      ],
+      "expand": ["src/pages/studio/**/*", "src/lib/algorithms/**/*", "src/lib/renderers/**/*", "src/features/algorithm-video-3d/**/*"],
+      "tests": ["src/test/Algorithm*.test.ts*"],
+      "docs": ["docs/short-studio-algorithms.md", "docs/tasks/sorting-algorithm-tasks.md"],
+      "related": ["ai-video-agent", "video-rendering-editor", "maze-racing"]
+    },
+    {
+      "id": "rhythmic-studio",
+      "name": "Rhythmic Studio",
+      "summary": "Layered MobX/TanStack Query studio for MIDI/audio-driven marble courses, instruments, 3D scenes, playback, and export.",
+      "keywords": ["rhythmic", "rhythm", "midi", "marble music", "instrument", "course", "mobx", "audio sync", "chase", "nhịp điệu", "nhạc cụ", "đường chạy"],
+      "primary": [
+        { "path": "src/features/rhythmic-studio/ARCHITECTURE.md", "role": "Required feature boundary rules" },
+        { "path": "src/pages/RhythmicStudio.tsx", "role": "Route adapter" },
+        { "path": "src/features/rhythmic-studio/index.ts", "role": "Public feature exports" },
+        { "path": "src/features/rhythmic-studio/hooks/useRhythmicStudioController.ts", "role": "Business orchestration" },
+        { "path": "src/features/rhythmic-studio/types.ts", "role": "Core domain types" }
+      ],
+      "expand": ["src/features/rhythmic-studio/{api,queries,store,hooks,presentation}/**/*", "src/features/rhythmic-studio/{engine,lib,components,workers}/**/*"],
+      "tests": ["src/test/Rhythmic*.test.ts*"],
+      "docs": ["docs/rhythmic-studio.md", "docs/rhythmic-studio-quality-upgrade-spec.md", "docs/rhythmic-landscape-export-spec.md"],
+      "related": ["marble-tower", "video-rendering-editor"]
+    },
+    {
+      "id": "marble-tower",
+      "name": "Marble Tower race",
+      "summary": "Three.js/Cannon marble race with course planning, physics, cameras, race state, audio, obstacles, and transport controls.",
+      "keywords": ["marble tower", "race", "cannon", "physics", "camera", "track", "obstacle", "olympic road", "đua bi", "tháp", "vật lý"],
+      "primary": [
+        { "path": "src/pages/MarbleTowerVideo.tsx", "role": "Route adapter and provider boundary" },
+        { "path": "src/features/marble-tower-video/MarbleTowerVideoWorkspace.tsx", "role": "Feature entrypoint" },
+        { "path": "src/features/marble-tower-video/store/RaceSessionStore.ts", "role": "Race session state" },
+        { "path": "src/features/marble-tower-video/track/raceCourse.ts", "role": "Course composition" },
+        { "path": "src/features/marble-tower-video/physics/RacePhysics.ts", "role": "Physics runtime" }
+      ],
+      "expand": ["src/features/marble-tower-video/**/*"],
+      "tests": ["src/test/MarbleTower*.test.ts*"],
+      "docs": [],
+      "related": ["rhythmic-studio"]
+    },
+    {
+      "id": "maze-racing",
+      "name": "Maze pathfinding and racing",
+      "summary": "Manual and agentic maze/pathfinding experience with algorithm runners, tournament state, Canvas renderers, and Phaser preview.",
+      "keywords": ["maze", "pathfinding", "graph", "bfs", "dfs", "dijkstra", "astar", "phaser", "tournament", "vehicle", "mê cung", "tìm đường"],
+      "primary": [
+        { "path": "src/pages/MazePathfindingPage.tsx", "role": "Channel mode boundary" },
+        { "path": "src/pages/AlgorithmWorld.tsx", "role": "Manual maze studio" },
+        { "path": "src/lib/algorithmWorld.ts", "role": "Maze domain model" },
+        { "path": "src/lib/algorithmWorldRunner.ts", "role": "Pathfinding execution" },
+        { "path": "src/pages/algorithm-world/PhaserMazePreview.tsx", "role": "Phaser preview entrypoint" }
+      ],
+      "expand": ["src/pages/algorithm-world/**/*", "src/lib/algorithmWorld*.ts", "src/lib/renderers/algorithmWorld*.ts"],
+      "tests": [],
+      "docs": ["docs/free-maze-racing-assets.md"],
+      "related": ["algorithm-studio", "ai-video-agent"]
+    },
+    {
+      "id": "ai-video-agent",
+      "name": "AI video agent",
+      "summary": "Agentic planning, persisted jobs, background execution, realtime flow visualization, Remotion handoff, and channel presets.",
+      "keywords": ["ai agent", "agentic", "job", "background", "websocket", "flow graph", "plan", "preset", "automation", "tự động", "lập kế hoạch"],
+      "primary": [
+        { "path": "src/pages/AiVideoAgent.tsx", "role": "Agent workspace composition" },
+        { "path": "src/lib/aiVideoAgentApi.ts", "role": "Frontend API contract" },
+        { "path": "src/features/ai-video-agent/lib/agentFormDefaults.ts", "role": "Channel defaults and presets" },
+        { "path": "server/routes/aiVideoAgentRoutes.ts", "role": "HTTP endpoints" },
+        { "path": "server/services/AiVideoAgentBackgroundService.ts", "role": "Background execution boundary" }
+      ],
+      "expand": ["src/features/ai-video-agent/**/*", "server/services/AiVideoAgent*.ts", "server/models/AiVideoAgent.ts"],
+      "tests": ["src/test/AiVideoAgent*.test.ts*"],
+      "docs": ["docs/ai-video-agent-local-flow.md", "docs/ai-agent-react-flow-visualizer.md"],
+      "related": ["algorithm-studio", "video-rendering-editor", "runtime-assets-jobs", "channels-publishing"]
+    },
+    {
+      "id": "video-rendering-editor",
+      "name": "Video editor and rendering",
+      "summary": "Timeline editing, lyric overlays, audio mixing, Remotion compositions, media export, and FFmpeg-backed server rendering.",
+      "keywords": ["video", "editor", "timeline", "remotion", "render", "ffmpeg", "lyrics", "subtitle", "audio mix", "proshow", "xuất", "dựng phim"],
+      "primary": [
+        { "path": "src/pages/VideoCreate.tsx", "role": "Manual video workspace" },
+        { "path": "src/features/video-editor/components/ProShowVideoEditor.tsx", "role": "Editor composition" },
+        { "path": "src/features/video-editor/lib/videoEditorApi.ts", "role": "Render API contract" },
+        { "path": "src/features/remotion-video/lib/remotionTimelineTypes.ts", "role": "Shared Remotion timeline contract" },
+        { "path": "server/routes/videoRoutes.ts", "role": "Video and render endpoints" }
+      ],
+      "expand": ["src/features/video-editor/**/*", "src/features/remotion-video/**/*", "server/services/{Video,Timeline,Remotion}*.ts", "server/utils/{ffmpeg,audioOutput,videoOutput}.ts"],
+      "tests": ["src/test/VideoEditor*.test.ts*", "src/test/*Remotion*.test.ts*"],
+      "docs": ["docs/video-create-proshow-editor.md", "docs/remotion-video-engine.md"],
+      "related": ["ai-video-agent", "voice-providers", "runtime-assets-jobs"]
+    },
+    {
+      "id": "voice-providers",
+      "name": "Voice and local TTS providers",
+      "summary": "Piper, ElevenLabs, Supertonic, VieNeu, GPT-SoVITS, and RVC/Applio setup, health checks, generation, and runtime configuration.",
+      "keywords": ["voice", "tts", "piper", "elevenlabs", "supertonic", "vieneu", "gpt-sovits", "rvc", "applio", "model", "giọng nói", "đọc"],
+      "primary": [
+        { "path": "src/pages/TextToSpeech.tsx", "role": "Voice generation UI" },
+        { "path": "src/lib/voiceApi.ts", "role": "Unified frontend voice contracts" },
+        { "path": "server/routes/generateRoutes.ts", "role": "Unified generation route" },
+        { "path": "server/services/TtsGenerationService.ts", "role": "Provider dispatch" },
+        { "path": "server/config/runtimeDefaults.ts", "role": "Local runtime defaults" }
+      ],
+      "expand": ["server/{routes,services,config}/*{Piper,piper,Supertonic,supertonic,Vieneu,vieneu,GptSoVits,gptSoVits,RvcApplio,rvcApplio,ElevenLabs,elevenLabs}*.ts", "src/pages/settings/**/*", "scripts/*{vieneu,supertonic,applio,gpt-sovits}*"],
+      "tests": [],
+      "docs": ["docs/local-voice-services.md", "docs/vieneu-local-tts-provider.md", "docs/gpt-sovits-local-provider.md", "docs/rvc-applio-local-voice-provider.md"],
+      "related": ["video-rendering-editor", "runtime-assets-jobs", "desktop-distribution"]
+    },
+    {
+      "id": "news-channels",
+      "name": "News and trend channels",
+      "summary": "GitHub Trending and football news ingestion, validation, script generation, voice, preview, and video production.",
+      "keywords": ["news", "github trending", "football", "mu news", "scrape", "source", "validation", "tin tức", "bóng đá", "xu hướng"],
+      "primary": [
+        { "path": "src/pages/NewsChannelPage.tsx", "role": "News channel boundary" },
+        { "path": "src/pages/GithubTrendingVideo.tsx", "role": "GitHub Trending workspace" },
+        { "path": "src/pages/MuNewsStudio.tsx", "role": "Football news workspace" },
+        { "path": "src/features/mu-news/muNewsApi.ts", "role": "Frontend news API contract" },
+        { "path": "server/routes/muNewsRoutes.ts", "role": "News endpoints" }
+      ],
+      "expand": ["src/features/{github-trending,mu-news}/**/*", "server/services/MuNews*.ts", "server/config/muNewsSources.ts"],
+      "tests": ["src/test/MuNews*.test.ts*"],
+      "docs": ["docs/mu-news-studio.md"],
+      "related": ["ai-video-agent", "video-rendering-editor", "voice-providers"]
+    },
+    {
+      "id": "story-production",
+      "name": "Story production",
+      "summary": "Story authoring, source extraction, presets, voice/video assembly, review scripts, scenes, and merged review videos.",
+      "keywords": ["story", "author", "chapter", "review", "scene", "extract", "narration", "truyện", "chương", "kể chuyện"],
+      "primary": [
+        { "path": "src/pages/StoryChannelPage.tsx", "role": "Story video channel boundary" },
+        { "path": "src/pages/StoryVideoStudio.tsx", "role": "Story video workspace" },
+        { "path": "src/features/story-video/storyVideoApi.ts", "role": "Extraction and video API contract" },
+        { "path": "src/pages/StoryAuthorStudio.tsx", "role": "Authoring workspace" },
+        { "path": "src/pages/StoryReviewStudio.tsx", "role": "Review workspace" },
+        { "path": "server/routes/storyReviewRoutes.ts", "role": "Review rendering endpoints" }
+      ],
+      "expand": ["src/features/{story-author,story-video,story-review}/**/*", "server/services/StoryReview*.ts"],
+      "tests": [],
+      "docs": [],
+      "related": ["ai-video-agent", "video-rendering-editor", "voice-providers"]
+    },
+    {
+      "id": "channels-publishing",
+      "name": "Channel management and publishing",
+      "summary": "YouTube and social OAuth, multi-channel state, uploads, schedules, durable publish queue, history, and worker execution.",
+      "keywords": ["youtube", "tiktok", "facebook", "instagram", "channel", "oauth", "upload", "publish", "queue", "schedule", "đăng video", "kênh", "lịch đăng"],
+      "primary": [
+        { "path": "src/pages/YoutubePublishing.tsx", "role": "Unified channel workspace" },
+        { "path": "src/features/channel-manager/SharedChannelSidebar.tsx", "role": "Shared channel selection" },
+        { "path": "src/features/youtube-channel/useYoutubeChannelManager.ts", "role": "YouTube orchestration" },
+        { "path": "src/features/social-channel/hooks/useSocialChannelWorkspace.ts", "role": "Social provider orchestration" },
+        { "path": "src/lib/publishQueueApi.ts", "role": "Publish queue client contract" },
+        { "path": "server/routes/publishQueueRoutes.ts", "role": "Publish queue endpoints" }
+      ],
+      "expand": ["src/features/{channel-manager,youtube-channel,social-channel,publishing-ops}/**/*", "src/lib/{youtubeApi,channelProviderApi,socialPublishing,publishQueueApi}.ts", "server/{routes,services}/*{Youtube,ChannelProvider,SocialProvider,Publish}*.ts"],
+      "tests": [],
+      "docs": ["docs/local-publish-queue-agent-workflow.md", "docs/social-provider-integration.md", "docs/youtube-tools.md"],
+      "related": ["ai-video-agent", "runtime-assets-jobs"]
+    },
+    {
+      "id": "runtime-assets-jobs",
+      "name": "Runtime, assets, setup, and jobs",
+      "summary": "Express composition, runtime settings headers, setup wizard, generated assets, background job status, storage paths, and health management.",
+      "keywords": ["server", "api", "express", "runtime", "setup", "health", "asset", "resource", "job manager", "storage", "backend", "cấu hình", "tài nguyên"],
+      "primary": [
+        { "path": "server/index.ts", "role": "Backend composition root" },
+        { "path": "src/lib/runtimeApi.ts", "role": "Frontend API URL and error boundary" },
+        { "path": "src/pages/RuntimeSetup.tsx", "role": "Runtime setup UI" },
+        { "path": "src/pages/GeneratedAssets.tsx", "role": "Generated resource management" },
+        { "path": "src/pages/JobManagement.tsx", "role": "Background job workspace" },
+        { "path": "server/config/paths.ts", "role": "Filesystem path authority" }
+      ],
+      "expand": ["server/{routes,services,models,config,utils}/**/*", "src/lib/{runtimeApi,runtimeSettings,setupWizardApi,generatedAssetsApi,backgroundJobsRealtime}.ts"],
+      "tests": ["scripts/start-production-local.test.mjs"],
+      "docs": ["docs/tasks/desktop-public-web-runtime.md"],
+      "related": ["app-shell", "voice-providers", "channels-publishing", "desktop-distribution"]
+    },
+    {
+      "id": "desktop-distribution",
+      "name": "Electron desktop and distribution",
+      "summary": "Electron lifecycle, backend bootstrap, runtime preparation, packaged resources, Windows verification, and public-web/desktop differences.",
+      "keywords": ["electron", "desktop", "windows", "exe", "nsis", "packaging", "build", "bootstrap", "distribution", "đóng gói", "cài đặt"],
+      "primary": [
+        { "path": "package.json", "role": "Build and packaging commands" },
+        { "path": "electron/main.cjs", "role": "Electron main process" },
+        { "path": "electron/runtime-bootstrap.cjs", "role": "Packaged backend/provider bootstrap" },
+        { "path": "scripts/prepare-desktop-env.mjs", "role": "Desktop environment preparation" },
+        { "path": "scripts/verify-electron-build.mjs", "role": "Packaged build verification" }
+      ],
+      "expand": ["electron/**/*", "scripts/{ensure-electron-binary,start-production-local,prepare-desktop-env,verify-electron-build}.mjs", "vite.config.ts", "vercel.json"],
+      "tests": ["scripts/start-production-local.test.mjs"],
+      "docs": ["docs/electron-windows-build.md", "docs/tasks/desktop-public-web-runtime.md"],
+      "related": ["runtime-assets-jobs", "voice-providers", "app-shell"]
+    }
+  ]
+}

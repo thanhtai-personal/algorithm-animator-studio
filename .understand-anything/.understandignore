@@ -12,3 +12,22 @@
 # *.test.*
 # *.spec.*
 # *.snap
+
+# Generated graph data must never index itself.
+.understand-anything/
+
+# Binary/runtime assets add file nodes without useful source context.
+models/
+*.onnx
+*.wav
+*.mid
+*.mp3
+*.mp4
+*.zip
+*.ipynb
+*.lockb
+*.bak-internal-registry
+
+# Vendored provider implementation. KAI STUDIO's VieNeu integration remains
+# indexed through server/, scripts/, docs/, and the package manifest.
+libs/VieNeu-TTS/

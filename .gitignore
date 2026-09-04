@@ -7,6 +7,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Python bytecode
+__pycache__/
+*.py[cod]
+
 node_modules
 dist
 dist-ssr
@@ -44,3 +48,9 @@ models/**/*.tmp
 src/assets/audios/bg-audio/
 server/.env.temp
 NUL
+
+# Understand Anything keeps only its reusable scan inventory. Other
+# intermediate inputs and structural extraction outputs are reproducible.
+.understand-anything/tmp/
+.understand-anything/intermediate/*
+!.understand-anything/intermediate/scan-result.json

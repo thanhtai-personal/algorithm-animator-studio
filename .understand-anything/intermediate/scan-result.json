@@ -62,7 +62,7 @@
     {
       "path": "AGENTS.md",
       "language": "markdown",
-      "sizeLines": 23,
+      "sizeLines": 24,
       "fileCategory": "docs"
     },
     {
@@ -86,13 +86,13 @@
     {
       "path": "docs/ai-context/index.json",
       "language": "json",
-      "sizeLines": 268,
+      "sizeLines": 286,
       "fileCategory": "config"
     },
     {
       "path": "docs/ai-context/README.md",
       "language": "markdown",
-      "sizeLines": 86,
+      "sizeLines": 94,
       "fileCategory": "docs"
     },
     {
@@ -378,9 +378,15 @@
       "fileCategory": "code"
     },
     {
+      "path": "scripts/build_understand_graph.py",
+      "language": "python",
+      "sizeLines": 336,
+      "fileCategory": "code"
+    },
+    {
       "path": "scripts/context_index.py",
       "language": "python",
-      "sizeLines": 345,
+      "sizeLines": 346,
       "fileCategory": "code"
     },
     {
@@ -453,6 +459,18 @@
       "path": "scripts/start-vieneu.mjs",
       "language": "javascript",
       "sizeLines": 185,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/test_build_understand_graph.py",
+      "language": "python",
+      "sizeLines": 85,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/test_context_index.py",
+      "language": "python",
+      "sizeLines": 63,
       "fileCategory": "code"
     },
     {
@@ -5882,6 +5900,7 @@
       "src/features/rhythmic-studio/lib/timeline.ts"
     ],
     "scripts/audit-i18n-hardcoded.mjs": [],
+    "scripts/build_understand_graph.py": [],
     "scripts/context_index.py": [],
     "scripts/convert-rhythmic-webm-to-mp4.bat": [],
     "scripts/ensure-electron-binary.mjs": [],
@@ -5897,6 +5916,8 @@
     ],
     "scripts/start-supertonic.mjs": [],
     "scripts/start-vieneu.mjs": [],
+    "scripts/test_build_understand_graph.py": [],
+    "scripts/test_context_index.py": [],
     "scripts/verify-electron-build.mjs": [],
     "scripts/verify-rhythmic-runtime.mjs": [],
     "scripts/verify-super-mario-3d-runtime.mjs": [],
@@ -10704,16 +10725,16 @@
     "vitest.config.ts": []
   },
   "complexity": "very-large",
-  "filteredByIgnore": 130,
+  "filteredByIgnore": 134,
   "scanner": {
     "name": "Understand Anything scan-project.mjs",
     "version": "2.7.5",
     "stats": {
-      "filesScanned": 964,
+      "filesScanned": 967,
       "byCategory": {
         "config": 29,
         "docs": 54,
-        "code": 864,
+        "code": 867,
         "markup": 14,
         "script": 3
       },
@@ -10728,12 +10749,12 @@
         "batch": 3,
         "txt": 2,
         "typescript": 839,
-        "python": 4,
+        "python": 7,
         "css": 11
       }
     },
     "importStats": {
-      "filesScanned": 964,
+      "filesScanned": 967,
       "filesWithImports": 743,
       "totalEdges": 3180
     }

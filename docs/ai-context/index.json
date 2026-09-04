@@ -49,10 +49,11 @@
         { "path": "docs/ai-context/README.md", "role": "Context router workflow and trust policy" },
         { "path": "docs/ai-context/index.json", "role": "Curated domain routing data" },
         { "path": "scripts/context_index.py", "role": "Context query and validation CLI" },
+        { "path": "scripts/build_understand_graph.py", "role": "Deterministic graph assembler" },
         { "path": ".understand-anything/meta.json", "role": "Generated graph freshness metadata" }
       ],
-      "expand": [".understand-anything/*.json", ".understand-anything/intermediate/scan-result.json", "scripts/*context*"],
-      "tests": ["scripts/test_context_index.py"],
+      "expand": [".understand-anything/*.json", ".understand-anything/intermediate/scan-result.json", "scripts/*context*", "scripts/*understand*"],
+      "tests": ["scripts/test_context_index.py", "scripts/test_build_understand_graph.py"],
       "docs": ["docs/ai-context/README.md"],
       "related": ["app-shell", "runtime-assets-jobs"]
     },

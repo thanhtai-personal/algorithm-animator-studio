@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Frame } from "@/lib/algorithms";
 import { THEMES } from "@/lib/renderer";
 import { arrayLayout, craneSwapPose3D, getBarMotion, getSwapPair } from "@/features/algorithm-video-3d/algorithm3dMath";
-import { getAlgorithm3DFrameSeconds, selectionReveal3D } from "@/features/algorithm-video-3d/algorithm3dTiming";
+import { ALGORITHM_3D_OPERATION_SECONDS, CRANE_SWAP_SECONDS, PRE_SWAP_COMPARE_SECONDS, getAlgorithm3DFrameSeconds, selectionReveal3D } from "@/features/algorithm-video-3d/algorithm3dTiming";
 
 function frame(arr: number[], overrides: Partial<Frame> = {}): Frame {
   return {
@@ -61,10 +61,26 @@ describe("algorithm video 3D math", () => {
     expect(finished.building.position[0]).toBeCloseTo(4);
   });
 
-  it("gives 3D selection enough dwell time and a soft reveal", () => {
-    expect(getAlgorithm3DFrameSeconds(frame([3, 2, 1], { event: "compare" }))).toBeGreaterThanOrEqual(0.18);
+  it("matches the short-video compare/swap rhythm while keeping no-swap compares readable", () => {
+    const compare = frame([8, 3, 6], { event: "compare", highlight: [0, 1] });
+    const swap = frame([3, 8, 6], { event: "swap", swap: [0, 1] });
+
+    expect(CRANE_SWAP_SECONDS).toBeCloseTo(8 / 30, 6);
+    expect(PRE_SWAP_COMPARE_SECONDS).toBeCloseTo(4 / 30, 6);
+    expect(getAlgorithm3DFrameSeconds(compare, swap)).toBeCloseTo(PRE_SWAP_COMPARE_SECONDS, 6);
+    expect(getAlgorithm3DFrameSeconds(compare)).toBeCloseTo(ALGORITHM_3D_OPERATION_SECONDS, 6);
+    expect(getAlgorithm3DFrameSeconds(compare, swap) + CRANE_SWAP_SECONDS).toBeCloseTo(ALGORITHM_3D_OPERATION_SECONDS, 6);
     expect(selectionReveal3D(0.05)).toBeLessThan(selectionReveal3D(0.25));
     expect(selectionReveal3D(1)).toBe(1);
+  });
+
+  it("spends most of the fast swap carrying the buildings instead of parking the cranes", () => {
+    const transporting = craneSwapPose3D(-4, 4, 0.5);
+    const lowering = craneSwapPose3D(-4, 4, 0.875);
+    expect(transporting.phase).toBe("transport");
+    expect(transporting.building.position[0]).toBeGreaterThan(-4);
+    expect(transporting.building.position[0]).toBeLessThan(4);
+    expect(lowering.phase).toBe("lower");
   });
 
 });

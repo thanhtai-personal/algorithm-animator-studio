@@ -4,7 +4,7 @@ import type { Frame } from "@/lib/algorithms";
 import { audioEngine, type SfxKind } from "@/lib/audio";
 import { isAlgorithm3DHyperMode, isAlgorithm3DRenderMode, isAlgorithm3DStoryMode, type AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
 import type { ShortVideoType } from "@/lib/shortVideoTypes";
-import { CRANE_AUDIO_CUES, getAlgorithm3DFrameSeconds, getAlgorithm3DStoryFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dTiming";
+import { RHYTHMIC_SWAP_CUE_PROGRESS, getAlgorithm3DFrameSeconds, getAlgorithm3DStoryFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dTiming";
 import { getAlgorithm3DHyperFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dHyper";
 
 const SWAP_TRANSITION_MULTIPLIER = 1.8;
@@ -63,7 +63,8 @@ export function useAlgorithmStudioPlayback(params: PlaybackParams) {
         return;
       }
       if (event === "found") audioEngine.playSfx("swap-spark", easedPitch);
-      else if (event === "compare" || event === "visit") audioEngine.playSfx("data-step", easedPitch);
+      else if (event === "compare") audioEngine.playSfx("swap-tick", easedPitch);
+      else if (event === "visit") audioEngine.playSfx("data-step", easedPitch);
       if (isAlgorithm3DStoryMode(videoRenderMode)) {
         const sortedCount = frame.sorted.length;
         if (sortedCount < lastStorySortedRef.current) lastStorySortedRef.current = sortedCount;
@@ -91,29 +92,9 @@ export function useAlgorithmStudioPlayback(params: PlaybackParams) {
       if (progress >= 0.82 && !state.lower) { state.lower = true; audioEngine.playSfx("crane-set", 0.54); }
       return;
     }
-    if (progress >= CRANE_AUDIO_CUES.approach && !state.approach) {
-      state.approach = true;
-      audioEngine.playSfx("crane-drive", 0.34);
-    }
-    if (progress >= CRANE_AUDIO_CUES.hook && !state.hook) {
-      state.hook = true;
-      audioEngine.playSfx("crane-hook", 0.48);
-    }
-    if (progress >= CRANE_AUDIO_CUES.lift && !state.lift) {
-      state.lift = true;
-      audioEngine.playSfx("crane-lift", 0.50);
-    }
-    if (progress >= CRANE_AUDIO_CUES.transport && !state.transport) {
+    if (progress >= RHYTHMIC_SWAP_CUE_PROGRESS && !state.transport) {
       state.transport = true;
-      audioEngine.playSfx("crane-drive", 0.60);
-    }
-    if (progress >= CRANE_AUDIO_CUES.lower && !state.lower) {
-      state.lower = true;
-      audioEngine.playSfx("crane-set", 0.46);
-    }
-    if (progress >= CRANE_AUDIO_CUES.return && !state.return) {
-      state.return = true;
-      audioEngine.playSfx("crane-drive", 0.28);
+      audioEngine.playSfx("swap-snap", 0.68);
     }
   }, [videoRenderMode]);
 
@@ -131,7 +112,7 @@ export function useAlgorithmStudioPlayback(params: PlaybackParams) {
         ? getAlgorithm3DHyperFrameSeconds(currentFrame)
         : isAlgorithm3DStoryMode(videoRenderMode)
           ? getAlgorithm3DStoryFrameSeconds(currentFrame)
-          : getAlgorithm3DFrameSeconds(currentFrame);
+          : getAlgorithm3DFrameSeconds(currentFrame, frames[frameIdx + 1]);
       const natural3DInterval = natural3DSeconds * 1000 / Math.max(0.1, speed);
       const interval = animatedSwap
         ? isAlgorithm3DRenderMode(videoRenderMode)

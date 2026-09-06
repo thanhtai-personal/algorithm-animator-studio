@@ -114,53 +114,53 @@ export function craneSwapPose3D(fromX: number, targetX: number, progress: number
   let rigDeploy = 0;
   let truckYaw = travelYaw;
 
-  if (t < 0.18) {
+  if (t < 0.16) {
     phase = "approach";
-    phaseProgress = smootherStep(t / 0.18);
+    phaseProgress = smootherStep(t / 0.16);
     truckX = THREE.MathUtils.lerp(parkX, fromX, phaseProgress);
-  } else if (t < 0.24) {
+  } else if (t < 0.20) {
     phase = "align";
-    phaseProgress = smooth01((t - 0.18) / 0.06);
+    phaseProgress = smooth01((t - 0.16) / 0.04);
     truckX = fromX;
     rigDeploy = phaseProgress;
-  } else if (t < 0.31) {
+  } else if (t < 0.25) {
     phase = "hook";
-    phaseProgress = smooth01((t - 0.24) / 0.07);
+    phaseProgress = smooth01((t - 0.20) / 0.05);
     truckX = fromX;
     rigDeploy = 1;
-  } else if (t < 0.43) {
+  } else if (t < 0.36) {
     phase = "lift";
-    phaseProgress = smooth01((t - 0.31) / 0.12);
+    phaseProgress = smooth01((t - 0.25) / 0.11);
     truckX = fromX;
     rigDeploy = 1;
     y = THREE.MathUtils.lerp(0, liftHeight, phaseProgress);
     z = THREE.MathUtils.lerp(0, transportZ, phaseProgress * 0.92);
-  } else if (t < 0.68) {
+  } else if (t < 0.78) {
     phase = "transport";
-    phaseProgress = smootherStep((t - 0.43) / 0.25);
+    phaseProgress = smootherStep((t - 0.36) / 0.42);
     x = THREE.MathUtils.lerp(fromX, targetX, phaseProgress);
     truckX = x;
     rigDeploy = 1;
     y = liftHeight + Math.sin(phaseProgress * Math.PI) * 0.035;
     z = transportZ;
-  } else if (t < 0.80) {
+  } else if (t < 0.90) {
     phase = "lower";
-    phaseProgress = smooth01((t - 0.68) / 0.12);
+    phaseProgress = smooth01((t - 0.78) / 0.12);
     x = targetX;
     truckX = targetX;
     rigDeploy = 1;
     y = THREE.MathUtils.lerp(liftHeight, 0, phaseProgress);
     z = THREE.MathUtils.lerp(transportZ, 0, phaseProgress);
-  } else if (t < 0.85) {
+  } else if (t < 0.94) {
     phase = "release";
-    phaseProgress = smooth01((t - 0.80) / 0.05);
+    phaseProgress = smooth01((t - 0.90) / 0.04);
     x = targetX;
     truckX = targetX;
     rigDeploy = 1;
     y = Math.sin(phaseProgress * Math.PI) * 0.022;
   } else {
     phase = "return";
-    phaseProgress = smootherStep((t - 0.85) / 0.15);
+    phaseProgress = smootherStep((t - 0.94) / 0.06);
     x = targetX;
     truckX = THREE.MathUtils.lerp(targetX, parkX, phaseProgress);
     rigDeploy = 1 - phaseProgress;

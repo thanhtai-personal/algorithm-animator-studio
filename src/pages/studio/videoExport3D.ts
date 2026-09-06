@@ -1,12 +1,11 @@
-import { audioEngine, type SfxKind } from "@/lib/audio";
+import { audioEngine } from "@/lib/audio";
 import { isProceduralMusicPreset, type BackgroundMusicId } from "@/lib/backgroundMusic";
 import { buildVideoExportFileName } from "@/lib/exportFileName";
-import { getAssetSfxOption } from "@/lib/selectSounds";
 import type { Frame } from "@/lib/algorithms";
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
 import { createAlgorithm3DExportSurface } from "@/features/algorithm-video-3d/algorithm3dExportSurface";
 import { drawAlgorithm3DOverlay } from "@/features/algorithm-video-3d/drawAlgorithm3DOverlay";
-import { CRANE_AUDIO_CUES, CRANE_SWAP_SECONDS, getAlgorithm3DFrameSeconds, getAlgorithm3DStoryFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dTiming";
+import { ALGORITHM_3D_FINAL_HOLD_SECONDS, CRANE_SWAP_SECONDS, RHYTHMIC_SWAP_CUE_PROGRESS, getAlgorithm3DFrameSeconds, getAlgorithm3DStoryFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dTiming";
 import { isAlgorithm3DHyperMode, isAlgorithm3DStoryMode } from "@/lib/algorithmVideoRenderMode";
 import { getAlgorithm3DHyperFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dHyper";
 import { getExportFormat } from "./exportFormats";
@@ -24,8 +23,6 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
     params.onUnsupportedFormat(format.label);
     return false;
   }
-  await Promise.all([preload3DExportSfx(params.sfxCompare), preload3DExportSfx(params.sfxSwap)]);
-
   const outputCanvas = document.createElement("canvas");
   outputCanvas.width = params.width;
   outputCanvas.height = params.height;
@@ -116,7 +113,7 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
       if (musicPreset !== activeMusicPreset) await applyMusic(musicPreset);
       params.playEvent(params.frames[frameIndex]);
       const previousFrame = frameIndex > 0 ? params.frames[frameIndex - 1] : null;
-      const transitionFrames = getTransitionFrameCount(params, params.frames[frameIndex], previousFrame);
+      const transitionFrames = getTransitionFrameCount(params, frameIndex, previousFrame);
 
       const cueState = { approach: false, hook: false, lift: false, transport: false, lower: false, return: false };
       const craneSwap = shouldAnimateSwap(params.frames[frameIndex], previousFrame);
@@ -134,7 +131,7 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
     }
 
     await renderFrame(params.frames.length - 1, null, 1);
-    const finalHoldSeconds = hyperMode ? 0.8 : 3;
+    const finalHoldSeconds = hyperMode ? 0.8 : ALGORITHM_3D_FINAL_HOLD_SECONDS;
     for (let hold = 0; hold < params.fps * finalHoldSeconds; hold += 1) {
       track.requestFrame();
       await waitFrame(params.fps);
@@ -168,15 +165,17 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
   return true;
 }
 
-function getTransitionFrameCount(params: ExportVideoParams, frame: Frame, previousFrame: Frame | null) {
+function getTransitionFrameCount(params: ExportVideoParams, frameIndex: number, previousFrame: Frame | null) {
+  const frame = params.frames[frameIndex];
+  const nextFrame = params.frames[frameIndex + 1] ?? null;
   if (isAlgorithm3DHyperMode(params.videoRenderMode)) {
     return Math.max(3, Math.round(params.fps * getAlgorithm3DHyperFrameSeconds(frame)));
   }
-  if (shouldAnimateSwap(frame, previousFrame)) return Math.max(8, Math.round(params.fps * CRANE_SWAP_SECONDS));
+  if (shouldAnimateSwap(frame, previousFrame)) return Math.max(4, Math.round(params.fps * CRANE_SWAP_SECONDS));
   if (frame.event === "compare" || frame.event === "visit" || frame.event === "found") {
     const seconds = isAlgorithm3DStoryMode(params.videoRenderMode)
       ? getAlgorithm3DStoryFrameSeconds(frame)
-      : getAlgorithm3DFrameSeconds(frame);
+      : getAlgorithm3DFrameSeconds(frame, nextFrame);
     return Math.max(3, Math.round(params.fps * seconds));
   }
   if (params.algorithmId === "tree_sort") return Math.max(2, Math.round(params.fps * TREE_SORT_EXPORT_SECONDS));
@@ -195,12 +194,10 @@ function playHyperCraneExportCue(progress: number, state: CraneCueState) {
 }
 
 function playCraneExportCue(progress: number, state: CraneCueState) {
-  if (progress >= CRANE_AUDIO_CUES.approach && !state.approach) { state.approach = true; audioEngine.playSfx("crane-drive", 0.34); }
-  if (progress >= CRANE_AUDIO_CUES.hook && !state.hook) { state.hook = true; audioEngine.playSfx("crane-hook", 0.48); }
-  if (progress >= CRANE_AUDIO_CUES.lift && !state.lift) { state.lift = true; audioEngine.playSfx("crane-lift", 0.50); }
-  if (progress >= CRANE_AUDIO_CUES.transport && !state.transport) { state.transport = true; audioEngine.playSfx("crane-drive", 0.60); }
-  if (progress >= CRANE_AUDIO_CUES.lower && !state.lower) { state.lower = true; audioEngine.playSfx("crane-set", 0.46); }
-  if (progress >= CRANE_AUDIO_CUES.return && !state.return) { state.return = true; audioEngine.playSfx("crane-drive", 0.28); }
+  if (progress >= RHYTHMIC_SWAP_CUE_PROGRESS && !state.transport) {
+    state.transport = true;
+    audioEngine.playSfx("swap-snap", 0.68);
+  }
 }
 
 function shouldAnimateSwap(frame: Frame, previousFrame: Frame | null) {
@@ -217,13 +214,3 @@ function waitFrame(fps: number) {
   return new Promise((resolve) => window.setTimeout(resolve, 1000 / fps));
 }
 
-async function preload3DExportSfx(kind: SfxKind) {
-  const option = getAssetSfxOption(kind);
-  if (!option) return;
-  try {
-    const url = await option.loadUrl();
-    await audioEngine.loadAssetSfx(option.id, url);
-  } catch {
-    // Keep the 3D export running when an optional SFX asset is unavailable.
-  }
-}

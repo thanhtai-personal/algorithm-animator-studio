@@ -5,7 +5,18 @@ import type { Frame } from "@/lib/algorithms";
 import { setLastExportedVideo } from "@/lib/studioMediaRegistry";
 import { createAlgorithm3DExportSurface } from "@/features/algorithm-video-3d/algorithm3dExportSurface";
 import { drawAlgorithm3DOverlay } from "@/features/algorithm-video-3d/drawAlgorithm3DOverlay";
-import { ALGORITHM_3D_FINAL_HOLD_SECONDS, CRANE_SWAP_SECONDS, RHYTHMIC_SWAP_CUE_PROGRESS, getAlgorithm3DFrameSeconds, getAlgorithm3DStoryFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dTiming";
+import {
+  ALGORITHM_3D_FINAL_HOLD_SECONDS,
+  CRANE_SWAP_SECONDS,
+  RHYTHMIC_SWAP_CUE_PROGRESS,
+  getAlgorithm3DFrameSeconds,
+  getAlgorithm3DStoryFrameSeconds,
+  isAlgorithm3DSortComplete,
+} from "@/features/algorithm-video-3d/algorithm3dTiming";
+import {
+  ALGORITHM_3D_COMPLETION_JINGLE_SECONDS,
+  playAlgorithm3DCompletionJingle,
+} from "@/features/algorithm-video-3d/algorithm3dCompletionAudio";
 import { isAlgorithm3DHyperMode, isAlgorithm3DStoryMode } from "@/lib/algorithmVideoRenderMode";
 import { getAlgorithm3DHyperFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dHyper";
 import { getExportFormat } from "./exportFormats";
@@ -130,8 +141,14 @@ export async function exportAlgorithmVideo3D(params: ExportVideoParams) {
       params.onProgress(Math.round(((frameIndex + 1) / params.frames.length) * 100));
     }
 
+    const finalFrame = params.frames[params.frames.length - 1];
+    const sortComplete = isAlgorithm3DSortComplete(finalFrame);
     await renderFrame(params.frames.length - 1, null, 1);
-    const finalHoldSeconds = hyperMode ? 0.8 : ALGORITHM_3D_FINAL_HOLD_SECONDS;
+    if (sortComplete) playAlgorithm3DCompletionJingle();
+    const baseFinalHoldSeconds = hyperMode ? 0.8 : ALGORITHM_3D_FINAL_HOLD_SECONDS;
+    const finalHoldSeconds = sortComplete
+      ? Math.max(baseFinalHoldSeconds, ALGORITHM_3D_COMPLETION_JINGLE_SECONDS + 0.08)
+      : baseFinalHoldSeconds;
     for (let hold = 0; hold < params.fps * finalHoldSeconds; hold += 1) {
       track.requestFrame();
       await waitFrame(params.fps);

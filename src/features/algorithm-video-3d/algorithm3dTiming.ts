@@ -11,6 +11,10 @@ export const PRE_SWAP_COMPARE_SECONDS = ALGORITHM_3D_OPERATION_SECONDS - CRANE_S
 export const RHYTHMIC_SWAP_CUE_PROGRESS = 0.55;
 export const ALGORITHM_3D_FINAL_HOLD_SECONDS = 1.1;
 
+export function isAlgorithm3DSortComplete(frame: Frame | null | undefined) {
+  return Boolean(frame && frame.arr.length > 0 && frame.sorted.length >= frame.arr.length);
+}
+
 export function getAlgorithm3DFrameSeconds(
   frame: Frame | null | undefined,
   nextFrame?: Frame | null,

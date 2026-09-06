@@ -4,7 +4,13 @@ import type { Frame } from "@/lib/algorithms";
 import { audioEngine, type SfxKind } from "@/lib/audio";
 import { isAlgorithm3DHyperMode, isAlgorithm3DRenderMode, isAlgorithm3DStoryMode, type AlgorithmVideoRenderMode } from "@/lib/algorithmVideoRenderMode";
 import type { ShortVideoType } from "@/lib/shortVideoTypes";
-import { RHYTHMIC_SWAP_CUE_PROGRESS, getAlgorithm3DFrameSeconds, getAlgorithm3DStoryFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dTiming";
+import {
+  RHYTHMIC_SWAP_CUE_PROGRESS,
+  getAlgorithm3DFrameSeconds,
+  getAlgorithm3DStoryFrameSeconds,
+  isAlgorithm3DSortComplete,
+} from "@/features/algorithm-video-3d/algorithm3dTiming";
+import { playAlgorithm3DCompletionJingle } from "@/features/algorithm-video-3d/algorithm3dCompletionAudio";
 import { getAlgorithm3DHyperFrameSeconds } from "@/features/algorithm-video-3d/algorithm3dHyper";
 
 const SWAP_TRANSITION_MULTIPLIER = 1.8;
@@ -39,6 +45,7 @@ export function useAlgorithmStudioPlayback(params: PlaybackParams) {
   const craneAudioRef = useRef({ frameIdx: -1, approach: false, hook: false, lift: false, transport: false, lower: false, return: false });
   const last3DPitchRef = useRef(0.5);
   const lastStorySortedRef = useRef(0);
+  const completionPlayedRef = useRef(false);
 
   const playEvent = useCallback((frame: Frame | null | undefined) => {
     if (!frame) return;
@@ -100,6 +107,7 @@ export function useAlgorithmStudioPlayback(params: PlaybackParams) {
 
   useEffect(() => {
     if (!playing) return;
+    if (frameIdx < frames.length - 1) completionPlayedRef.current = false;
     audioEngine.resume();
     lastRef.current = performance.now();
     const tick = (time: number) => {
@@ -131,6 +139,15 @@ export function useAlgorithmStudioPlayback(params: PlaybackParams) {
         setFrameIdx((index) => {
           const next = index + 1;
           if (next >= frames.length) {
+            const finalFrame = frames[index];
+            if (
+              isAlgorithm3DRenderMode(videoRenderMode)
+              && isAlgorithm3DSortComplete(finalFrame)
+              && !completionPlayedRef.current
+            ) {
+              completionPlayedRef.current = true;
+              playAlgorithm3DCompletionJingle();
+            }
             setPlaying(false);
             return index;
           }

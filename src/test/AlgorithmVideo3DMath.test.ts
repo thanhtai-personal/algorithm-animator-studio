@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 import type { Frame } from "@/lib/algorithms";
 import { THEMES } from "@/lib/renderer";
 import { arrayLayout, craneSwapPose3D, getBarMotion, getSwapPair } from "@/features/algorithm-video-3d/algorithm3dMath";
-import { ALGORITHM_3D_OPERATION_SECONDS, CRANE_SWAP_SECONDS, PRE_SWAP_COMPARE_SECONDS, getAlgorithm3DFrameSeconds, selectionReveal3D } from "@/features/algorithm-video-3d/algorithm3dTiming";
+import {
+  ALGORITHM_3D_OPERATION_SECONDS,
+  CRANE_SWAP_SECONDS,
+  PRE_SWAP_COMPARE_SECONDS,
+  getAlgorithm3DFrameSeconds,
+  isAlgorithm3DSortComplete,
+  selectionReveal3D,
+} from "@/features/algorithm-video-3d/algorithm3dTiming";
 
 function frame(arr: number[], overrides: Partial<Frame> = {}): Frame {
   return {
@@ -72,6 +79,12 @@ describe("algorithm video 3D math", () => {
     expect(getAlgorithm3DFrameSeconds(compare, swap) + CRANE_SWAP_SECONDS).toBeCloseTo(ALGORITHM_3D_OPERATION_SECONDS, 6);
     expect(selectionReveal3D(0.05)).toBeLessThan(selectionReveal3D(0.25));
     expect(selectionReveal3D(1)).toBe(1);
+  });
+
+  it("recognizes only a fully sorted frame as a 3D completion", () => {
+    expect(isAlgorithm3DSortComplete(frame([2, 4, 8], { sorted: [0, 1, 2] }))).toBe(true);
+    expect(isAlgorithm3DSortComplete(frame([2, 4, 8], { sorted: [0, 1] }))).toBe(false);
+    expect(isAlgorithm3DSortComplete(frame([], { sorted: [] }))).toBe(false);
   });
 
   it("spends most of the fast swap carrying the buildings instead of parking the cranes", () => {

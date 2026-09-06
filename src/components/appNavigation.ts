@@ -3,6 +3,7 @@ import {
   Download,
   Files,
   Film,
+  LibraryBig,
   Github,
   Home,
   ListChecks,
@@ -148,6 +149,14 @@ export const APP_NAVIGATION_GROUPS: AppNavigationGroup[] = [
         icon: Film,
         label: { en: "Create Video", vi: "Tạo video" },
         matchPaths: ["/videos", "/videos/agentic", "/videos/manual", "/ai-video-agent", "/video-create"],
+      },
+      {
+        id: "preset-videos",
+        featureId: "preset-videos",
+        to: "/videos/presets",
+        icon: LibraryBig,
+        label: { en: "Preset Videos", vi: "Kho video preset" },
+        matchPaths: ["/videos/presets"],
       },
       {
         id: "text-to-speech",

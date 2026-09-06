@@ -3,9 +3,13 @@ import { AlgorithmExplainerComposition } from "./AlgorithmExplainerComposition";
 import { TimelineComposition } from "./TimelineComposition";
 import { DEFAULT_REMOTION_VIDEO, getRemotionDimensions, normalizeRemotionVideoInput, type RemotionVideoInputProps } from "../lib/remotionVideoTypes";
 import { DEFAULT_REMOTION_TIMELINE, getTimelineDurationSeconds, normalizeRemotionTimelineInput, type RemotionTimelineInputProps } from "../lib/remotionTimelineTypes";
+import { PresetVideoComposition, DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS } from "../../preset-video/PresetVideoComposition";
+import { getPresetVideoDefaultDimensions } from "../../preset-video/outputPresets";
+import type { PresetVideoCompositionProps } from "../../preset-video/types";
 
 export const REMOTION_ALGORITHM_COMPOSITION_ID = "AlgorithmExplainer";
 export const REMOTION_TIMELINE_COMPOSITION_ID = "TimelineVideo";
+export const REMOTION_PRESET_VIDEO_COMPOSITION_ID = "PresetVideo";
 
 export function RemotionRoot() {
   const defaults = normalizeRemotionVideoInput(DEFAULT_REMOTION_VIDEO);
@@ -47,6 +51,25 @@ export function RemotionRoot() {
         const size = getRemotionDimensions(input.aspectRatio);
         return {
           durationInFrames: Math.round(getTimelineDurationSeconds(input) * input.fps),
+          fps: input.fps,
+          width: size.width,
+          height: size.height,
+        };
+      }}
+    />
+    <Composition<Partial<PresetVideoCompositionProps>>
+      id={REMOTION_PRESET_VIDEO_COMPOSITION_ID}
+      component={PresetVideoComposition}
+      durationInFrames={Math.round(DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS.durationSeconds * DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS.fps)}
+      fps={DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS.fps}
+      width={getPresetVideoDefaultDimensions(DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS.aspectRatio).width}
+      height={getPresetVideoDefaultDimensions(DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS.aspectRatio).height}
+      defaultProps={DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS}
+      calculateMetadata={({ props }) => {
+        const input = { ...DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS, ...props };
+        const size = getPresetVideoDefaultDimensions(input.aspectRatio);
+        return {
+          durationInFrames: Math.max(1, Math.round(input.durationSeconds * input.fps)),
           fps: input.fps,
           width: size.width,
           height: size.height,

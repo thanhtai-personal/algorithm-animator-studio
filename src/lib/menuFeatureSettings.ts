@@ -9,6 +9,7 @@ export type MenuFeatureId =
   | "story-author"
   | "story-review"
   | "common-video"
+  | "preset-videos"
   | "text-to-speech"
   | "youtube-tools"
   | "jobs"
@@ -31,6 +32,7 @@ export const DEFAULT_MENU_FEATURE_SETTINGS: MenuFeatureSettings = {
   "story-author": false,
   "story-review": false,
   "common-video": true,
+  "preset-videos": true,
   "text-to-speech": true,
   "youtube-tools": true,
   jobs: true,
@@ -78,6 +80,10 @@ export const MENU_FEATURE_LABELS: Record<MenuFeatureId, { en: string; vi: string
   "common-video": {
     en: "Create Video",
     vi: "Tạo video",
+  },
+  "preset-videos": {
+    en: "Preset Videos",
+    vi: "Kho video preset",
   },
   "text-to-speech": {
     en: "Text to Speech",

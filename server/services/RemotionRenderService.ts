@@ -9,7 +9,8 @@ import { createVideoOutput } from "../utils/videoOutput";
 
 const require = createRequire(import.meta.url);
 const COMPOSITION_ID = "AlgorithmExplainer";
-const ENTRY_POINT = path.resolve(process.cwd(), "src/features/remotion-video/remotion/index.ts");
+export const REMOTION_ENTRY_POINT = path.resolve(process.cwd(), "src/features/remotion-video/remotion/index.ts");
+const PRESET_VIDEO_SOURCE_ROOT = path.resolve(process.cwd(), "src/features/preset-video");
 const DEFAULT_INPUT: NormalizedRemotionVideoInput = {
   title: "Bubble Sort Explained Visually",
   subtitle: "A clean React-powered video template rendered with Remotion.",
@@ -38,7 +39,7 @@ export async function renderRemotionVideo(params: {
   const inputProps = normalizeRemotionVideoInput(params.input);
   const { bundle } = await import("@remotion/bundler");
   const { renderMedia, selectComposition } = await import("@remotion/renderer");
-  const serveUrl = await getBundleUrl(bundle);
+  const serveUrl = await getRemotionBundleUrl(bundle);
   const composition = await selectComposition({
     serveUrl,
     id: COMPOSITION_ID,
@@ -75,7 +76,7 @@ export function getRemotionHealth(envOverrides: RuntimeEnvValues = {}) {
   const rendererPackageOk = canResolve("@remotion/renderer");
   const bundlerPackageOk = canResolve("@remotion/bundler");
   const playerPackageOk = canResolve("@remotion/player");
-  const entryPointExists = fs.existsSync(ENTRY_POINT);
+  const entryPointExists = fs.existsSync(REMOTION_ENTRY_POINT);
   const outputDirExists = fs.existsSync(outputDir);
   const available = packageOk && rendererPackageOk && bundlerPackageOk && playerPackageOk && entryPointExists && outputDirExists;
 
@@ -86,7 +87,7 @@ export function getRemotionHealth(envOverrides: RuntimeEnvValues = {}) {
     rendererPackageOk,
     bundlerPackageOk,
     playerPackageOk,
-    entryPoint: ENTRY_POINT,
+    entryPoint: REMOTION_ENTRY_POINT,
     entryPointExists,
     outputDir,
     outputDirExists,
@@ -103,13 +104,17 @@ function canResolve(packageName: string) {
   }
 }
 
-async function getBundleUrl(bundle: (options: { entryPoint: string; onProgress?: (progress: number) => void }) => Promise<string>) {
-  if (!fs.existsSync(ENTRY_POINT)) throw new Error(`Không tìm thấy Remotion entry point: ${ENTRY_POINT}`);
-  const entryMtimeMs = getDirectoryMtimeMs(path.dirname(ENTRY_POINT));
+export async function getRemotionBundleUrl(bundleOverride?: (options: { entryPoint: string; onProgress?: (progress: number) => void }) => Promise<string>) {
+  if (!fs.existsSync(REMOTION_ENTRY_POINT)) throw new Error(`Không tìm thấy Remotion entry point: ${REMOTION_ENTRY_POINT}`);
+  const entryMtimeMs = Math.max(
+    getDirectoryMtimeMs(path.dirname(REMOTION_ENTRY_POINT)),
+    fs.existsSync(PRESET_VIDEO_SOURCE_ROOT) ? getDirectoryMtimeMs(PRESET_VIDEO_SOURCE_ROOT) : 0,
+  );
   if (cachedBundle && cachedBundle.entryMtimeMs === entryMtimeMs) return cachedBundle.serveUrl;
 
+  const bundle = bundleOverride ?? (await import("@remotion/bundler")).bundle;
   const serveUrl = await bundle({
-    entryPoint: ENTRY_POINT,
+    entryPoint: REMOTION_ENTRY_POINT,
     onProgress: (progress) => console.log(`Remotion bundle ${Math.round(progress * 100)}%`),
   });
   cachedBundle = { entryMtimeMs, serveUrl };

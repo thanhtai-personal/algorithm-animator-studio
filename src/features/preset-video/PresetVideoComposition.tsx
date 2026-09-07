@@ -13,6 +13,8 @@ export const DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS: PresetVideoCompositionProps
   backgroundMusicUrl: "",
   backgroundMusicVolume: 0.22,
   originalAudioVolume: 1,
+  lyricTimings: {},
+  videoSourceUrls: {},
 };
 
 export function PresetVideoComposition(rawProps: Partial<PresetVideoCompositionProps>) {

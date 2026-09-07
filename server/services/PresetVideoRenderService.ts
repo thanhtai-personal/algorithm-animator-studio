@@ -8,6 +8,7 @@ import type {
 import { SERVER_ORIGIN } from "../config/paths";
 import { createVideoOutput } from "../utils/videoOutput";
 import type { RuntimeEnvValues } from "./EnvFileService";
+import { preparePresetVideoMedia, normalizePresetVideoSources } from "./PresetVideoMediaService";
 import { getRemotionBundleUrl } from "./RemotionRenderService";
 
 const COMPOSITION_ID = "PresetVideo";
@@ -19,12 +20,39 @@ const OUTPUT_SIZES: Record<PresetVideoOutputPreset, { width: number; height: num
   "square-1080p": { width: 1080, height: 1080, aspectRatio: "1:1" },
 };
 
+export type PresetVideoRenderProgress = {
+  progress: number;
+  stage: "preparing" | "metadata" | "rendering" | "muxing" | "verifying";
+  message: string;
+};
+
 export async function renderPresetVideo(params: {
   input: PresetVideoRenderBody;
   envOverrides?: RuntimeEnvValues;
+  onProgress?: (event: PresetVideoRenderProgress) => void;
 }) {
   const input = normalizePresetVideoRenderInput(params.input);
+  let lastProgress = -1;
+  const report = (event: PresetVideoRenderProgress) => {
+    const progress = Math.max(lastProgress, Math.max(0, Math.min(1, event.progress)));
+    lastProgress = progress;
+    params.onProgress?.({ ...event, progress });
+  };
+
+  report({ progress: 0.01, stage: "preparing", message: "Đang chuẩn bị clip video nền..." });
+  const media = await preparePresetVideoMedia({
+    presetId: input.presetId,
+    videoSources: input.videoSources,
+    envOverrides: params.envOverrides,
+    onProgress: (event) => report({
+      progress: 0.01 + event.progress * 0.11,
+      stage: "preparing",
+      message: event.message,
+    }),
+  });
+
   const { renderMedia, selectComposition } = await import("@remotion/renderer");
+  report({ progress: 0.13, stage: "metadata", message: "Đang đọc composition preset..." });
   const serveUrl = await getRemotionBundleUrl();
   const inputProps = {
     presetId: input.presetId,
@@ -34,6 +62,8 @@ export async function renderPresetVideo(params: {
     backgroundMusicUrl: input.backgroundMusicUrl,
     backgroundMusicVolume: input.backgroundMusicVolume,
     originalAudioVolume: input.originalAudioVolume,
+    lyricTimings: input.lyricTimings,
+    videoSourceUrls: media.videoSourceUrls,
   };
   const selectedComposition = await selectComposition({
     serveUrl,
@@ -52,6 +82,7 @@ export async function renderPresetVideo(params: {
   );
   const output = createVideoOutput(input.fileName || input.presetId, params.envOverrides);
 
+  report({ progress: 0.15, stage: "rendering", message: "Bắt đầu render MP4..." });
   await renderMedia({
     codec: "h264",
     composition,
@@ -59,12 +90,25 @@ export async function renderPresetVideo(params: {
     inputProps,
     outputLocation: output.outputPath,
     frameRange: [startFrame, endFrame],
+    onProgress: ({ progress, stitchStage, renderedFrames, encodedFrames }) => {
+      const normalized = Math.max(0, Math.min(1, progress));
+      const stage = stitchStage === "muxing" ? "muxing" : "rendering";
+      report({
+        progress: 0.15 + normalized * 0.8,
+        stage,
+        message: stage === "muxing"
+          ? `Đang ghép MP4 ${Math.round(normalized * 100)}%...`
+          : `Đang render ${Math.round(normalized * 100)}% · ${renderedFrames} frame render / ${encodedFrames} frame encode`,
+      });
+    },
   });
 
+  report({ progress: 0.97, stage: "verifying", message: "Đang kiểm tra file MP4..." });
   if (!fs.existsSync(output.outputPath)) {
     throw new Error("Remotion render preset xong nhưng không tạo tệp MP4.");
   }
 
+  params.onProgress?.({ progress: 1, stage: "verifying", message: "Render preset hoàn tất." });
   return {
     ok: true,
     engine: "remotion" as const,
@@ -103,7 +147,24 @@ export function normalizePresetVideoRenderInput(raw: PresetVideoRenderBody): Nor
     backgroundMusicUrl: sanitizeBackgroundMusicUrl(raw.backgroundMusicUrl),
     backgroundMusicVolume: clampNumber(raw.backgroundMusicVolume, 0, 1, 0.22),
     originalAudioVolume: clampNumber(raw.originalAudioVolume, 0, 1, 1),
+    lyricTimings: normalizeLyricTimings(raw.lyricTimings, durationSeconds),
+    videoSources: normalizePresetVideoSources(raw.videoSources),
   };
+}
+
+function normalizeLyricTimings(value: unknown, durationSeconds: number) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, { start?: unknown; end?: unknown }>)
+      .slice(0, 500)
+      .filter(([id]) => /^[a-z0-9][a-z0-9-]{0,79}$/i.test(id))
+      .map(([id, timing]) => {
+        const start = clampNumber(timing?.start, 0, Math.max(0, durationSeconds - 0.05), 0);
+        const end = clampNumber(timing?.end, start + 0.05, durationSeconds, start + 0.05);
+        return [id, { start, end }];
+      }),
+  );
 }
 
 function normalizeOutputPreset(value: unknown): PresetVideoOutputPreset {

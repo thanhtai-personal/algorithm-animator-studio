@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import {
   AbsoluteFill,
   Easing,
+  Freeze,
   continueRender,
   delayRender,
 } from "remotion";
+import { Video } from "@remotion/media";
 import {
   getNumberEightSource,
   type NumberEightSection,
@@ -22,6 +24,8 @@ export function NumberEightVisualLayer(props: {
   section: NumberEightSection;
   time: number;
   beatPulse: number;
+  portrait: boolean;
+  videoSourceUrls: Record<string, string>;
 }) {
   const slot = getVisualSlot(props.section, props.time);
   const current = getNumberEightSource(slot.currentSourceId);
@@ -32,12 +36,14 @@ export function NumberEightVisualLayer(props: {
     slot.progress,
     slot.index,
     props.beatPulse,
+    props.portrait,
   );
   const previousTransform = mediaTransform(
     props.section.visualMode,
     clamp01(slot.progress + 0.08),
     Math.max(0, slot.index - 1),
     props.beatPulse,
+    props.portrait,
   );
 
   const isSameSource = previous.id === current.id;
@@ -45,18 +51,24 @@ export function NumberEightVisualLayer(props: {
   return (
     <AbsoluteFill style={{ overflow: "hidden", background: "linear-gradient(135deg, #050505, #260805 60%, #050505)" }}>
       {!isSameSource ? (
-        <SourceImage
+        <SourceMedia
           key={`previous-${previous.id}`}
-          src={previous.thumbnailUrl}
+          imageSrc={previous.thumbnailUrl}
+          videoSrc={props.videoSourceUrls[previous.id]}
           opacity={1 - transition}
           transform={previousTransform}
+          portrait={props.portrait}
+          frozen={props.section.visualMode === "freeze"}
         />
       ) : null}
-      <SourceImage
+      <SourceMedia
         key={`current-${current.id}`}
-        src={current.thumbnailUrl}
+        imageSrc={current.thumbnailUrl}
+        videoSrc={props.videoSourceUrls[current.id]}
         opacity={isSameSource ? 1 : transition}
         transform={currentTransform}
+        portrait={props.portrait}
+        frozen={props.section.visualMode === "freeze"}
       />
       <AbsoluteFill
         style={{
@@ -93,7 +105,49 @@ export function NumberEightVisualLayer(props: {
   );
 }
 
-function SourceImage(props: { src: string; opacity: number; transform: string }) {
+function SourceMedia(props: {
+  imageSrc: string;
+  videoSrc?: string;
+  opacity: number;
+  transform: string;
+  portrait: boolean;
+  frozen: boolean;
+}) {
+  const mediaStyle = {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover" as const,
+    objectPosition: props.portrait ? "50% 38%" : "50% 50%",
+    transform: props.transform,
+    filter: "saturate(0.88) contrast(1.12) brightness(0.8)",
+  };
+  const video = props.videoSrc ? (
+    <Video
+      src={props.videoSrc}
+      muted
+      loop
+      playbackRate={props.frozen ? 1 : 0.82}
+      style={mediaStyle}
+      onError={(error) => {
+        console.error("Number Eight background clip decode failed", error);
+        return "fallback";
+      }}
+      fallbackOffthreadVideoProps={{
+        delayRenderTimeoutInMilliseconds: 120_000,
+        delayRenderRetries: 1,
+      }}
+    />
+  ) : null;
+
+  return (
+    <AbsoluteFill style={{ opacity: props.opacity, overflow: "hidden" }}>
+      <SourceImage src={props.imageSrc} transform={props.transform} portrait={props.portrait} />
+      {video ? (props.frozen ? <Freeze frame={18}>{video}</Freeze> : video) : null}
+    </AbsoluteFill>
+  );
+}
+
+function SourceImage(props: { src: string; transform: string; portrait: boolean }) {
   const cachedStatus = remoteImageStatus.get(props.src);
   const [isLoaded, setIsLoaded] = useState(cachedStatus === "loaded");
   const [renderHandle] = useState(() => (
@@ -124,7 +178,7 @@ function SourceImage(props: { src: string; opacity: number; transform: string })
   }, [cachedStatus, props.src, renderHandle]);
 
   return (
-    <AbsoluteFill style={{ opacity: props.opacity, overflow: "hidden" }}>
+    <AbsoluteFill style={{ overflow: "hidden" }}>
       {isLoaded ? (
         <img
           src={props.src}
@@ -134,6 +188,7 @@ function SourceImage(props: { src: string; opacity: number; transform: string })
             width: "100%",
             height: "100%",
             objectFit: "cover",
+            objectPosition: props.portrait ? "50% 38%" : "50% 50%",
             transform: props.transform,
             filter: "saturate(0.82) contrast(1.12) brightness(0.78)",
           }}
@@ -262,14 +317,16 @@ function mediaTransform(
   progress: number,
   index: number,
   beatPulse: number,
+  portrait: boolean,
 ) {
-  if (mode === "freeze") return `scale(${1.035 + beatPulse * 0.004}) translate3d(0, 0, 0)`;
-  if (mode === "slow") return `scale(${1.02 + progress * 0.07}) translate3d(${(progress - 0.5) * 1.8}%, 0, 0)`;
+  const portraitCrop = portrait ? 0.12 : 0;
+  if (mode === "freeze") return `scale(${1.035 + portraitCrop + beatPulse * 0.004}) translate3d(0, 0, 0)`;
+  if (mode === "slow") return `scale(${1.02 + portraitCrop + progress * 0.07}) translate3d(${(progress - 0.5) * 1.8}%, 0, 0)`;
   if (mode === "drive") {
     const direction = index % 2 === 0 ? 1 : -1;
-    return `scale(${1.08 + progress * 0.08}) translate3d(${direction * (progress - 0.5) * 3.5}%, ${Math.sin(progress * Math.PI) * -1.5}%, 0)`;
+    return `scale(${1.08 + portraitCrop + progress * 0.08}) translate3d(${direction * (progress - 0.5) * 3.5}%, ${Math.sin(progress * Math.PI) * -1.5}%, 0)`;
   }
-  return `scale(${1.055 + progress * 0.07 + beatPulse * 0.009}) translate3d(${(index % 2 ? -1 : 1) * (progress - 0.5) * 2.4}%, 0, 0)`;
+  return `scale(${1.055 + portraitCrop + progress * 0.07 + beatPulse * 0.009}) translate3d(${(index % 2 ? -1 : 1) * (progress - 0.5) * 2.4}%, 0, 0)`;
 }
 
 function smoothStep(value: number) {

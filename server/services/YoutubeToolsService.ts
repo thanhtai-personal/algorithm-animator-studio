@@ -22,6 +22,7 @@ import type {
 } from "../models/YoutubeTools";
 import { ensureDirectoryExists, getLocalDateFolderName, sanitizeFileBaseName } from "../utils/audioOutput";
 import { normalizeYoutubeUrl } from "../utils/youtubeUrl";
+import { buildYoutubeDownloadSectionArgs } from "../utils/youtubeDownloadSection";
 import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
 import { resolveRuntimeExecutable } from "./RuntimeEnvService";
 import {
@@ -93,7 +94,7 @@ export async function downloadYoutubeVideo(
 
   const baseName = sanitizeFileBaseName(request.fileName || "youtube-video");
   const outputTemplate = path.join(outputDir, `${baseName}-${Date.now()}-%(id)s.%(ext)s`);
-  const args = buildYtDlpDownloadArgs({ mode, maxHeight: request.maxHeight, outputTemplate, env, url });
+  const args = buildYtDlpDownloadArgs({ mode, maxHeight: request.maxHeight, outputTemplate, env, url, sectionStartSeconds: request.sectionStartSeconds, sectionEndSeconds: request.sectionEndSeconds });
   const result = await runYtDlpCommand(ytDlp.command, [...ytDlp.prefixArgs, ...args], 60 * 60 * 1000, hooks);
   const downloaded = findNewestChangedFile(outputDir, before, mode === "audio" ? AUDIO_EXTENSIONS : VIDEO_EXTENSIONS);
   if (!downloaded) throw new Error("Không tìm thấy file sau khi tải. Hãy kiểm tra log yt-dlp.");
@@ -184,8 +185,11 @@ function buildYtDlpDownloadArgs(params: {
   outputTemplate: string;
   env: RuntimeEnvValues;
   url: string;
+  sectionStartSeconds?: number;
+  sectionEndSeconds?: number;
 }) {
   const args = ["--no-playlist", "--newline", "-o", params.outputTemplate, ...buildYtDlpRuntimeArgs(params.env), ...ffmpegArgs(params.env)];
+  args.push(...buildYoutubeDownloadSectionArgs(params.mode, params.sectionStartSeconds, params.sectionEndSeconds));
   if (params.mode === "audio") {
     args.push("-x", "--audio-format", "mp3", "--audio-quality", "0");
   } else {

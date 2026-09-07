@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { algorithmExplainerPreset } from "@/features/preset-video/presets/algorithmExplainerPreset";
+import { numberEightInRedPreset } from "@/features/preset-video/presets/number-eight-in-red/numberEightInRedPreset";
 import {
   clearPresetVideoSettings,
   createDefaultPresetVideoSettings,
@@ -44,4 +45,23 @@ describe("preset video settings", () => {
     expect(getPresetVideoOutputSize("portrait-720p")).toMatchObject({ width: 720, height: 1280, aspectRatio: "9:16" });
     expect(getPresetVideoOutputSize("square-1080p")).toMatchObject({ width: 1080, height: 1080, aspectRatio: "1:1" });
   });
+
+  it("persists per-cue lyric timing overrides", () => {
+    const defaults = createDefaultPresetVideoSettings(numberEightInRedPreset);
+    expect(defaults.lyricTimings["opening-1"]).toEqual({ start: 1.486, end: 5.015 });
+
+    savePresetVideoSettings(numberEightInRedPreset.id, {
+      ...defaults,
+      lyricTimings: {
+        ...defaults.lyricTimings,
+        "opening-1": { start: 1.6, end: 4.9 },
+      },
+    });
+
+    expect(loadPresetVideoSettings(numberEightInRedPreset).lyricTimings["opening-1"]).toEqual({
+      start: 1.6,
+      end: 4.9,
+    });
+  });
+
 });

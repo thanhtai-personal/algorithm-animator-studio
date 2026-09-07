@@ -7,6 +7,18 @@ export type PresetVideoOutputPreset =
 
 export type PresetVideoAspectRatio = "16:9" | "9:16" | "1:1";
 
+export type PresetVideoLyricTiming = {
+  start?: number;
+  end?: number;
+};
+
+export type PresetVideoSourceClipRequest = {
+  id?: string;
+  watchUrl?: string;
+  clipStartSeconds?: number;
+  clipEndSeconds?: number;
+};
+
 export type PresetVideoRenderBody = {
   presetId?: string;
   fileName?: string;
@@ -18,6 +30,20 @@ export type PresetVideoRenderBody = {
   backgroundMusicUrl?: string;
   backgroundMusicVolume?: number;
   originalAudioVolume?: number;
+  lyricTimings?: Record<string, PresetVideoLyricTiming>;
+  videoSources?: PresetVideoSourceClipRequest[];
+};
+
+export type PresetVideoMediaPrepareBody = {
+  presetId?: string;
+  videoSources?: PresetVideoSourceClipRequest[];
+};
+
+export type NormalizedPresetVideoSourceClip = {
+  id: string;
+  watchUrl: string;
+  clipStartSeconds: number;
+  clipEndSeconds: number;
 };
 
 export type NormalizedPresetVideoRenderInput = {
@@ -34,4 +60,6 @@ export type NormalizedPresetVideoRenderInput = {
   backgroundMusicUrl: string;
   backgroundMusicVolume: number;
   originalAudioVolume: number;
+  lyricTimings: Record<string, { start: number; end: number }>;
+  videoSources: NormalizedPresetVideoSourceClip[];
 };

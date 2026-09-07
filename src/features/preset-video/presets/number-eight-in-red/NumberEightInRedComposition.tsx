@@ -31,7 +31,7 @@ export function NumberEightInRedComposition(props: PresetVideoCompositionProps) 
   const { fps, width, height } = useVideoConfig();
   const time = Math.min(NUMBER_EIGHT_DURATION_SECONDS, frame / fps);
   const section = getNumberEightSection(time);
-  const cue = getNumberEightLyricCue(time);
+  const cue = getNumberEightLyricCue(time, props.lyricTimings);
   const portrait = props.aspectRatio === "9:16";
   const square = props.aspectRatio === "1:1";
   const shortestSide = Math.min(width, height);
@@ -41,7 +41,7 @@ export function NumberEightInRedComposition(props: PresetVideoCompositionProps) 
 
   return (
     <AbsoluteFill style={{ backgroundColor: NUMBER_EIGHT_INK, color: "white", fontFamily: "Arial, Helvetica, sans-serif" }}>
-      <NumberEightVisualLayer section={section} time={time} beatPulse={beatPulse} />
+      <NumberEightVisualLayer section={section} time={time} beatPulse={beatPulse} portrait={portrait} videoSourceUrls={props.videoSourceUrls} />
       <NumberEightTacticalOverlay
         width={width}
         height={height}
@@ -73,7 +73,7 @@ export function NumberEightInRedComposition(props: PresetVideoCompositionProps) 
           <span>{section.label}</span>
         </div>
         <span style={{ color: "rgba(255,255,255,0.65)", fontSize: portrait ? 16 : 15 }}>
-          @manutd source still
+          @manutd source clip
         </span>
       </header>
 

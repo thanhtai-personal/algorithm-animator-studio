@@ -9,6 +9,25 @@ export type PresetVideoOutputPreset =
   | "portrait-720p"
   | "square-1080p";
 
+export type PresetVideoLyricTiming = {
+  start: number;
+  end: number;
+};
+
+export type PresetVideoEditableLyricCue = PresetVideoLyricTiming & {
+  id: string;
+  lines: readonly string[];
+};
+
+export type PresetVideoSourceClip = {
+  id: string;
+  title: string;
+  watchUrl: string;
+  thumbnailUrl: string;
+  clipStartSeconds: number;
+  clipEndSeconds: number;
+};
+
 export type PresetVideoCompositionProps = {
   presetId: string;
   aspectRatio: PresetVideoAspectRatio;
@@ -17,6 +36,8 @@ export type PresetVideoCompositionProps = {
   backgroundMusicUrl: string;
   backgroundMusicVolume: number;
   originalAudioVolume: number;
+  lyricTimings: Record<string, PresetVideoLyricTiming>;
+  videoSourceUrls: Record<string, string>;
 };
 
 export type PresetVideoDefinition = {
@@ -29,6 +50,8 @@ export type PresetVideoDefinition = {
   defaultFps: number;
   defaultOutputPreset: PresetVideoOutputPreset;
   hasOriginalAudio: boolean;
+  editableLyrics?: readonly PresetVideoEditableLyricCue[];
+  videoSources?: readonly PresetVideoSourceClip[];
   component: ComponentType<PresetVideoCompositionProps>;
 };
 
@@ -39,6 +62,7 @@ export type PresetVideoExportSettings = {
   backgroundMusicId: string;
   backgroundMusicVolume: number;
   originalAudioVolume: number;
+  lyricTimings: Record<string, PresetVideoLyricTiming>;
 };
 
 export type PresetVideoRenderResponse = {
@@ -51,4 +75,15 @@ export type PresetVideoRenderResponse = {
   durationSeconds: number;
   width: number;
   height: number;
+};
+
+export type PresetVideoRenderProgress = {
+  progress: number;
+  stage: "preparing" | "metadata" | "rendering" | "muxing" | "verifying";
+  message: string;
+};
+
+export type PresetVideoMediaResponse = {
+  presetId: string;
+  videoSourceUrls: Record<string, string>;
 };

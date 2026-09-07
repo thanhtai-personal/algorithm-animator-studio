@@ -6,6 +6,7 @@ import {
   isYtDlpBrowserCookieAccessError,
   stripYtDlpBrowserCookieArgs,
 } from "../../server/services/YoutubeToolsRuntimeOptions";
+import { buildYoutubeDownloadSectionArgs } from "../../server/utils/youtubeDownloadSection";
 import { normalizeYoutubeUrl } from "../../server/utils/youtubeUrl";
 
 describe("YouTube tools download safeguards", () => {
@@ -43,4 +44,15 @@ describe("YouTube tools download safeguards", () => {
     })).toThrow("Chỉ hỗ trợ link YouTube/youtu.be.");
     expect(listYoutubeToolsJobs()).toHaveLength(jobCountBefore);
   });
+
+  it("limits preset background downloads to the requested short video section", () => {
+    expect(buildYoutubeDownloadSectionArgs("video", 20, 32)).toEqual([
+      "--download-sections",
+      "*20-32",
+      "--force-keyframes-at-cuts",
+    ]);
+    expect(buildYoutubeDownloadSectionArgs("audio", 20, 32)).toEqual([]);
+    expect(() => buildYoutubeDownloadSectionArgs("video", 0, 21)).toThrow("0.5 đến 20 giây");
+  });
+
 });

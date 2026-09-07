@@ -1,4 +1,9 @@
-import type { PresetVideoDefinition, PresetVideoExportSettings, PresetVideoOutputPreset } from "../types";
+import type {
+  PresetVideoDefinition,
+  PresetVideoExportSettings,
+  PresetVideoLyricTiming,
+  PresetVideoOutputPreset,
+} from "../types";
 import { PRESET_VIDEO_OUTPUT_SIZES } from "../outputPresets";
 
 const STORAGE_PREFIX = "kai-studio.preset-video.";
@@ -11,6 +16,7 @@ export function createDefaultPresetVideoSettings(preset: PresetVideoDefinition):
     backgroundMusicId: "",
     backgroundMusicVolume: 0.22,
     originalAudioVolume: 1,
+    lyricTimings: createDefaultLyricTimings(preset),
   };
 }
 
@@ -33,6 +39,7 @@ export function loadPresetVideoSettings(preset: PresetVideoDefinition): PresetVi
       backgroundMusicId: typeof raw.backgroundMusicId === "string" ? raw.backgroundMusicId : "",
       backgroundMusicVolume: clampNumber(raw.backgroundMusicVolume, 0, 1, defaults.backgroundMusicVolume),
       originalAudioVolume: clampNumber(raw.originalAudioVolume, 0, 1, defaults.originalAudioVolume),
+      lyricTimings: normalizeStoredLyricTimings(preset, raw.lyricTimings),
     };
   } catch {
     return defaults;
@@ -47,6 +54,30 @@ export function savePresetVideoSettings(presetId: string, settings: PresetVideoE
 export function clearPresetVideoSettings(presetId: string) {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(storageKey(presetId));
+}
+
+function createDefaultLyricTimings(preset: PresetVideoDefinition) {
+  return Object.fromEntries(
+    (preset.editableLyrics || []).map((cue) => [cue.id, { start: cue.start, end: cue.end }]),
+  ) as Record<string, PresetVideoLyricTiming>;
+}
+
+function normalizeStoredLyricTimings(
+  preset: PresetVideoDefinition,
+  value: unknown,
+): Record<string, PresetVideoLyricTiming> {
+  const defaults = createDefaultLyricTimings(preset);
+  if (!value || typeof value !== "object" || Array.isArray(value)) return defaults;
+
+  const raw = value as Record<string, Partial<PresetVideoLyricTiming>>;
+  return Object.fromEntries(
+    Object.entries(defaults).map(([id, fallback]) => {
+      const candidate = raw[id];
+      const start = clampNumber(candidate?.start, 0, preset.defaultDurationSeconds, fallback.start);
+      const end = clampNumber(candidate?.end, start + 0.05, preset.defaultDurationSeconds, fallback.end);
+      return [id, { start, end }];
+    }),
+  );
 }
 
 function storageKey(presetId: string) {

@@ -5,7 +5,7 @@ import path from "node:path";
 import { Router, type Request, type Response } from "express";
 import type { GenerateVideoFromAudioBody, GenerateVideoFromTextBody } from "../models/Video";
 import type { RemotionVideoRenderBody } from "../models/RemotionVideo";
-import type { PresetVideoRenderBody } from "../models/PresetVideo";
+import type { PresetVideoMediaPrepareBody, PresetVideoRenderBody } from "../models/PresetVideo";
 import type { TimelineVideoRenderProject } from "../models/TimelineVideo";
 import multer from "multer";
 import { GENERATED_PUBLIC_PATH, SERVER_ORIGIN, buildGeneratedFileUrl } from "../config/paths";
@@ -22,6 +22,7 @@ import { resolveGeneratedResource } from "../services/ResourceService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
 import { getRemotionHealth, renderRemotionVideo } from "../services/RemotionRenderService";
 import { renderPresetVideo } from "../services/PresetVideoRenderService";
+import { preparePresetVideoMedia } from "../services/PresetVideoMediaService";
 import { renderTimelineVideo } from "../services/TimelineVideoService";
 import { renderRemotionTimelineVideo } from "../services/RemotionTimelineRenderService";
 import { transcribeLyricsFromMedia } from "../services/VideoLyricsService";
@@ -110,15 +111,42 @@ export function createVideoRouter() {
     }
   });
 
+  router.post("/video/preset-media/prepare", async (req: Request<unknown, unknown, PresetVideoMediaPrepareBody>, res: Response) => {
+    try {
+      const result = await preparePresetVideoMedia({
+        presetId: String(req.body?.presetId || ""),
+        videoSources: req.body?.videoSources || [],
+        envOverrides: readRuntimeEnvFromRequest(req),
+      });
+      return res.json(result);
+    } catch (error) {
+      return sendError(res, error);
+    }
+  });
+
   router.post("/video/render-preset", async (req: Request<unknown, unknown, PresetVideoRenderBody>, res: Response) => {
+    res.status(200);
+    res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders();
+
+    const writeEvent = (payload: unknown) => {
+      if (!res.writableEnded && !res.destroyed) res.write(`${JSON.stringify(payload)}\n`);
+    };
+
     try {
       const video = await renderPresetVideo({
         input: req.body || {},
         envOverrides: readRuntimeEnvFromRequest(req),
+        onProgress: (event) => writeEvent({ type: "progress", ...event }),
       });
-      return res.json(video);
+      writeEvent({ type: "result", result: video });
     } catch (error) {
-      return sendError(res, error);
+      const message = error instanceof Error ? error.message : String(error || "Render preset video thất bại.");
+      writeEvent({ type: "error", error: message });
+    } finally {
+      if (!res.writableEnded) res.end();
     }
   });
 

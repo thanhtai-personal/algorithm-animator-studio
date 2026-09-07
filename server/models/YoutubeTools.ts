@@ -27,6 +27,8 @@ export type YoutubeDownloadRequest = {
   mode?: YoutubeDownloadMode;
   maxHeight?: number;
   fileName?: string;
+  sectionStartSeconds?: number;
+  sectionEndSeconds?: number;
 };
 
 export type YoutubeDownloadResult = {

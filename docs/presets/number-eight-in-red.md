@@ -2,44 +2,63 @@
 
 ## Mục tiêu
 
-Preset lyric-video toàn bài `Number Eight In Red` (03:48.4), ưu tiên giữ nguyên chất lượng bài hát và dùng hình ảnh bóng đá như lớp hỗ trợ thay vì dựng lại highlight dài.
+Preset lyric-video toàn bài `Number Eight In Red` (03:48.4), lấy bài hát làm nội dung chính. Hình bóng đá chỉ là lớp hỗ trợ, dùng các trích đoạn ngắn từ video chính thức của Manchester United và luôn loại bỏ audio nguồn.
 
 ## Kịch bản hình
 
 | Thời gian | Phần | Hướng dựng |
 | --- | --- | --- |
-| 00:00–00:15.6 | Opening hook | Giữ một still lâu, zoom rất chậm, title `NUMBER EIGHT IN RED`. |
-| 00:15.6–00:43.8 | Verse 1 | Hình assist/player-cam, đường chuyền chiến thuật và bóng chạy theo quỹ đạo. |
-| 00:43.8–00:58.0 | Pre-chorus | Freeze frame, giảm chuyển động để lời hát nổi bật. |
-| 00:58.0–01:40.3 | Chorus 1 | Đổi still theo chu kỳ bốn ô nhịp, beat pulse nhẹ và caption karaoke. |
-| 01:40.3–02:08.5 | Verse 2 | Hình goal/shot, crop–pan theo hướng dứt điểm. |
+| 00:00–00:15.6 | Opening hook | Clip goal chạy chậm, zoom nhẹ, title `NUMBER EIGHT IN RED`. |
+| 00:15.6–00:43.8 | Verse 1 | Assist/player-cam, crop–pan và đường chuyền tactical theo nhịp. |
+| 00:43.8–00:58.0 | Pre-chorus | Freeze frame để giảm chuyển động và đưa lyric lên trước. |
+| 00:58.0–01:40.3 | Chorus 1 | Luân phiên goals/assists, beat pulse nhẹ và caption karaoke. |
+| 01:40.3–02:08.5 | Verse 2 | Goal/shot clips, crop theo hướng dứt điểm. |
 | 02:08.5–02:22.7 | Pre-chorus | Freeze frame lần hai, giữ vùng caption sạch. |
-| 02:22.7–03:05.0 | Chorus 2 | Montage goals/assists nhưng vẫn giữ mỗi still khoảng 7 giây. |
-| 03:05.0–03:19.1 | Bridge | Đứng hình player-cam cho phần call-and-response. |
+| 02:22.7–03:05.0 | Chorus 2 | Montage goals/assists, source audio vẫn muted. |
+| 03:05.0–03:19.1 | Bridge | Freeze player-cam cho phần call-and-response. |
 | 03:19.1–03:44.2 | Final chorus | Nhịp chuyển nhanh hơn, số 8 và tactical overlay tăng pulse. |
-| 03:44.2–03:48.4 | Outro | Hold, fade và credit nguồn. |
+| 03:44.2–03:48.4 | Outro | Hold/fade và credit nguồn. |
 
-Timing được neo theo BPM xấp xỉ 136 và các mốc cấu trúc 8/16/24 bars. Caption là line-level timing với word-progress highlight; cần nghe kiểm tra thủ công trước khi phát hành nếu yêu cầu lip-sync tuyệt đối.
+## Lyric timing
 
-## Nguồn hình được chọn
+Audio được đo ở khoảng **136 BPM**, beat đầu khoảng **1.486s**. Timing mặc định được sửa từ cách chia đều theo số caption sang các mốc bar/beat của từng section; opening bắt đầu ở beat đầu thay vì hiện lyric ngay từ 0s.
 
-Chỉ tham chiếu thumbnail/still từ video chính thức của Manchester United trên YouTube:
+Mỗi cue có `id`, `start`, `end`. Màn hình Preset Video có editor để chỉnh riêng thời điểm xuất hiện/kết thúc; thay đổi được lưu cùng draft và dùng cho cả preview lẫn MP4 export. Nút play ở từng cue seek preview đúng về mốc start.
+
+Đây là beat-alignment dựa trên tín hiệu audio, không phải forced alignment từ Whisper. Nếu cần khớp âm tiết tuyệt đối cho bản phát hành cuối, dùng editor để tinh chỉnh sau khi nghe lại.
+
+## Nguồn video
+
+Preset khai báo bốn nguồn YouTube chính thức của Manchester United:
 
 - `Bruno Fernandes: 100 Goals!`
 - `100 Bruno Fernandes United Assists`
 - `Bruno Fernandes: Top 20 Goals!`
 - `Player Cam | Bruno Fernandes`
 
-URL nguồn và thumbnail nằm trong `numberEightInRedContent.ts`.
+Mỗi nguồn chỉ yêu cầu một đoạn **12 giây**. Backend dùng `yt-dlp --download-sections`, sau đó FFmpeg chuyển đoạn đã lấy sang H.264 MP4, bỏ audio (`-an`) và cache dưới generated video storage. Preview và render dùng lại clip đã cache; thumbnail chỉ còn là fallback nếu clip chưa sẵn sàng/không decode được.
 
-## Cách giảm rủi ro bản quyền
+## Output dọc/ngang
 
-- Không tải hoặc chèn nguyên highlight video.
-- Không dùng audio từ video nguồn.
-- Still được crop, color-grade, zoom/pan, phủ tactical animation và caption.
-- Credit `@manutd source still` luôn hiển thị; outro ghi rõ loại nguồn.
-- Bài hát do người dùng cung cấp là nội dung âm thanh chính.
-- Đây là thiết kế theo hướng giảm mức độ sao chép, không phải kết luận pháp lý rằng mọi cách phát hành đều là fair use.
+- `Shorts · Portrait`: 1080×1920 hoặc 720×1280. Composition chuyển sang crop 9:16, title/header/caption dùng safe spacing theo portrait.
+- `Long-form · Landscape`: 1920×1080 hoặc 1280×720. Composition dùng bố cục 16:9 rộng.
+- Square vẫn được giữ để không phá output cũ.
+
+Preview portrait bị giới hạn theo chiều cao viewport nên không còn kéo Player vượt khỏi một screen view. Duration export vẫn theo vùng trim mà người dùng chọn; đổi orientation không tự ý cắt bài hát.
+
+## Render progress
+
+`/api/video/render-preset` trả NDJSON progress theo các stage `preparing → metadata → rendering/muxing → verifying`. UI hiển thị progress bar và phần trăm thực từ Remotion, không dùng fake timer.
+
+## Cách giảm mức độ tái sử dụng nội dung nguồn
+
+- Chỉ lấy trích đoạn ngắn đã cấu hình, không nhúng nguyên highlight.
+- Loại bỏ hoàn toàn audio của video nguồn.
+- Clip được crop, slow/freeze, color-grade, tactical overlay và lyric overlay.
+- Credit `@manutd source clip` luôn hiển thị.
+- Bài hát do người dùng cung cấp là audio chính.
+
+Các biện pháp này giảm mức độ re-upload nguyên bản nhưng không tự động bảo đảm một trường hợp cụ thể được xem là fair use.
 
 ## Asset âm thanh
 

@@ -172,9 +172,9 @@ export function NumberEightOutroCard(props: {
             lineHeight: 1.5,
           }}
         >
-          Source imagery: Manchester United official YouTube thumbnails
+          Source clips: Manchester United official YouTube videos
           <br />
-          Transformed stills only · no source-video audio used
+          Short transformed excerpts · source audio muted
         </div>
       </div>
     </div>

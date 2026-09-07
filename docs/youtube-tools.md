@@ -27,6 +27,9 @@ YOUTUBE_DLP_EXE=yt-dlp
 WHISPER_EXE=whisper
 YOUTUBE_TRANSCRIPT_MODEL=base
 YOUTUBE_TRANSCRIPT_LANGUAGE=auto
+YOUTUBE_COOKIES_FROM_BROWSER=
+# Khi YouTube thực sự yêu cầu xác thực, ưu tiên cookies.txt:
+# YOUTUBE_COOKIES_FILE=C:/path/to/youtube-cookies.txt
 ```
 
 Gợi ý Windows nếu dùng venv:
@@ -79,5 +82,6 @@ Payload transcript từ file đã tải:
 ## Ghi chú
 
 - Backend chỉ nhận domain YouTube/youtu.be và luôn dùng `--no-playlist` để tránh tải cả playlist ngoài ý muốn.
+- Browser cookies là tùy chọn. Downloader thử video public trước; chỉ dùng `YOUTUBE_COOKIES_FROM_BROWSER` khi YouTube yêu cầu xác thực. Nếu Chrome/Edge khóa cookie database, ưu tiên `YOUTUBE_COOKIES_FILE` hoặc đóng hẳn browser.
 - Lệnh nền chạy bằng `spawn/execFile`, không chạy shell string.
 - Video dài sẽ mất thời gian ở bước Whisper, nhất là model `medium/large`.

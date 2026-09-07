@@ -357,7 +357,7 @@ function youtubeToolsInstruction(lang: Lang, health: YoutubeToolsHealthResponse 
       "YOUTUBE_TOOLS_PYTHON=python",
       "YOUTUBE_DLP_EXE=yt-dlp",
       "WHISPER_EXE=whisper",
-      "YOUTUBE_COOKIES_FROM_BROWSER=chrome",
+      "YOUTUBE_COOKIES_FROM_BROWSER=",
       "YOUTUBE_COOKIES_FILE=C:/path/to/youtube-cookies.txt",
       "YOUTUBE_JS_RUNTIME=node",
       "YOUTUBE_REMOTE_COMPONENTS=ejs:github",

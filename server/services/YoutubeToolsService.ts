@@ -21,12 +21,19 @@ import type {
   YoutubeTranscriptResult,
 } from "../models/YoutubeTools";
 import { ensureDirectoryExists, getLocalDateFolderName, sanitizeFileBaseName } from "../utils/audioOutput";
+import { normalizeYoutubeUrl } from "../utils/youtubeUrl";
 import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
 import { resolveRuntimeExecutable } from "./RuntimeEnvService";
-import { buildYtDlpRuntimeArgs, getYtDlpRuntimeStatus } from "./YoutubeToolsRuntimeOptions";
+import {
+  buildYtDlpRuntimeArgs,
+  getYtDlpRuntimeStatus,
+  isYtDlpAuthenticationRequiredError,
+  isYtDlpBrowserCookieAccessError,
+  stripYtDlpBrowserCookieArgs,
+  toYtDlpUserMessage,
+} from "./YoutubeToolsRuntimeOptions";
 
 const execFileAsync = promisify(execFile);
-const YOUTUBE_HOSTS = new Set(["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be"]);
 const VIDEO_EXTENSIONS = new Set([".mp4", ".mkv", ".webm", ".mov", ".m4v"]);
 const AUDIO_EXTENSIONS = new Set([".mp3", ".m4a", ".webm", ".opus", ".wav"]);
 const WHISPER_CLI_BRIDGE = "import sys; from whisper.transcribe import cli; sys.argv=['whisper']+sys.argv[1:]; cli()";
@@ -277,35 +284,32 @@ export function runCommand(command: string, args: string[], timeoutMs: number, h
 }
 
 async function runYtDlpCommand(command: string, args: string[], timeoutMs: number, hooks: YoutubeToolsRunHooks = {}) {
+  const publicArgs = stripYtDlpBrowserCookieArgs(args);
+  if (publicArgs.length === args.length) {
+    try {
+      return await runCommand(command, args, timeoutMs, hooks);
+    } catch (error) {
+      throw new Error(toYtDlpUserMessage(toErrorMessage(error)));
+    }
+  }
+
+  try {
+    return await runCommand(command, publicArgs, timeoutMs, hooks);
+  } catch (publicError) {
+    const message = toErrorMessage(publicError);
+    if (!isYtDlpAuthenticationRequiredError(message)) throw new Error(toYtDlpUserMessage(message));
+    hooks.onLog?.("warning: YouTube yêu cầu xác thực; thử lại bằng browser cookies.");
+  }
+
   try {
     return await runCommand(command, args, timeoutMs, hooks);
-  } catch (error) {
-    throw new Error(toYtDlpUserMessage(toErrorMessage(error)));
+  } catch (browserError) {
+    const message = toErrorMessage(browserError);
+    if (isYtDlpBrowserCookieAccessError(message)) {
+      throw new Error("YouTube cần cookie nhưng browser đang khóa cookie database. Đóng hẳn Chrome/Edge rồi thử lại, hoặc ưu tiên YOUTUBE_COOKIES_FILE trong Settings > Data.");
+    }
+    throw new Error(toYtDlpUserMessage(message));
   }
-}
-
-function toYtDlpUserMessage(message: string) {
-  const normalized = message.toLowerCase();
-  if (normalized.includes("sign in to confirm") || normalized.includes("not a bot") || normalized.includes("http error 429")) {
-    return [
-      "YouTube đang chặn tải tự động hoặc yêu cầu xác thực.",
-      "Vào Settings > Data, cấu hình YOUTUBE_COOKIES_FROM_BROWSER=chrome hoặc edge/firefox, hoặc chọn file cookies.txt cho YOUTUBE_COOKIES_FILE rồi thử lại.",
-      "Nếu vẫn bị cảnh báo JavaScript runtime, giữ YOUTUBE_JS_RUNTIME=node và cài Node/Deno trong môi trường backend.",
-    ].join(" ");
-  }
-  if (normalized.includes("no supported javascript runtime")) {
-    return "yt-dlp cần JavaScript runtime để đọc YouTube. Vào Settings > Data và đặt YOUTUBE_JS_RUNTIME=node hoặc deno, sau đó thử lại.";
-  }
-  return message;
-}
-
-function normalizeYoutubeUrl(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) throw new Error("Chưa nhập link YouTube.");
-  const parsed = new URL(trimmed);
-  const hostname = parsed.hostname.toLowerCase();
-  if (!YOUTUBE_HOSTS.has(hostname)) throw new Error("Chỉ hỗ trợ link YouTube/youtu.be.");
-  return parsed.toString();
 }
 
 function resolveGeneratedVideoPath(relativePath: string, env: RuntimeEnvValues) {

@@ -5,6 +5,7 @@ import type {
   YoutubeToolsJobKind,
   YoutubeTranscriptRequest,
 } from "../models/YoutubeTools";
+import { normalizeYoutubeUrl } from "../utils/youtubeUrl";
 import type { RuntimeEnvValues } from "./EnvFileService";
 import { notifyBackgroundJobsChanged } from "./BackgroundJobsRealtimeService";
 import { downloadYoutubeVideo, transcribeYoutubeVideo } from "./YoutubeToolsService";
@@ -24,11 +25,14 @@ export function getYoutubeToolsJob(id: string) {
 }
 
 export function startYoutubeDownloadJob(request: YoutubeDownloadRequest, envOverrides: RuntimeEnvValues = {}) {
-  return startYoutubeToolsJob("download", request, envOverrides);
+  return startYoutubeToolsJob("download", { ...request, url: normalizeYoutubeUrl(request.url) }, envOverrides);
 }
 
 export function startYoutubeTranscriptJob(request: YoutubeTranscriptRequest, envOverrides: RuntimeEnvValues = {}) {
-  return startYoutubeToolsJob("transcript", request, envOverrides);
+  const normalizedRequest = request.sourceRelativePath
+    ? request
+    : { ...request, url: normalizeYoutubeUrl(request.url || "") };
+  return startYoutubeToolsJob("transcript", normalizedRequest, envOverrides);
 }
 
 function startYoutubeToolsJob(kind: YoutubeToolsJobKind, request: JobRequest, envOverrides: RuntimeEnvValues) {

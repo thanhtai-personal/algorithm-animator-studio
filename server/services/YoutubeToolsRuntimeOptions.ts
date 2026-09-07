@@ -16,6 +16,47 @@ export function buildYtDlpRuntimeArgs(env: RuntimeEnvValues) {
   return args;
 }
 
+export function stripYtDlpBrowserCookieArgs(args: readonly string[]) {
+  const stripped: string[] = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--cookies-from-browser") {
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith("--cookies-from-browser=")) continue;
+    stripped.push(arg);
+  }
+  return stripped;
+}
+
+export function isYtDlpBrowserCookieAccessError(message: string) {
+  const normalized = message.toLowerCase();
+  return normalized.includes("could not copy") && normalized.includes("cookie database");
+}
+
+export function isYtDlpAuthenticationRequiredError(message: string) {
+  const normalized = message.toLowerCase();
+  return normalized.includes("sign in to confirm")
+    || normalized.includes("not a bot")
+    || normalized.includes("http error 429");
+}
+
+export function toYtDlpUserMessage(message: string) {
+  const normalized = message.toLowerCase();
+  if (isYtDlpAuthenticationRequiredError(message)) {
+    return [
+      "YouTube đang chặn tải tự động hoặc yêu cầu xác thực.",
+      "Vào Settings > Data và ưu tiên YOUTUBE_COOKIES_FILE. Nếu dùng YOUTUBE_COOKIES_FROM_BROWSER, hãy đóng hẳn Chrome/Edge hoặc dùng Firefox rồi thử lại.",
+      "Nếu vẫn bị cảnh báo JavaScript runtime, giữ YOUTUBE_JS_RUNTIME=node và cài Node/Deno trong môi trường backend.",
+    ].join(" ");
+  }
+  if (normalized.includes("no supported javascript runtime")) {
+    return "yt-dlp cần JavaScript runtime để đọc YouTube. Vào Settings > Data và đặt YOUTUBE_JS_RUNTIME=node hoặc deno, sau đó thử lại.";
+  }
+  return message;
+}
+
 export function getYtDlpRuntimeStatus(env: RuntimeEnvValues): Pick<YoutubeToolsHealth, "cookieMode" | "cookieStatus" | "jsRuntime" | "remoteComponents"> {
   const jsRuntime = sanitizeYtDlpOption(env.YOUTUBE_JS_RUNTIME || "node");
   const remoteComponents = sanitizeYtDlpOption(env.YOUTUBE_REMOTE_COMPONENTS || "ejs:github");

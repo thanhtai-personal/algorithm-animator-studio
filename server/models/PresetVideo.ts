@@ -6,6 +6,7 @@ export type PresetVideoOutputPreset =
   | "square-1080p";
 
 export type PresetVideoAspectRatio = "16:9" | "9:16" | "1:1";
+export type PresetVideoSourceStrategy = "remote" | "local";
 
 export type PresetVideoLyricTiming = {
   start?: number;
@@ -32,11 +33,13 @@ export type PresetVideoRenderBody = {
   originalAudioVolume?: number;
   lyricTimings?: Record<string, PresetVideoLyricTiming>;
   videoSources?: PresetVideoSourceClipRequest[];
+  videoSourceStrategy?: PresetVideoSourceStrategy;
 };
 
 export type PresetVideoMediaPrepareBody = {
   presetId?: string;
   videoSources?: PresetVideoSourceClipRequest[];
+  videoSourceStrategy?: PresetVideoSourceStrategy;
 };
 
 export type NormalizedPresetVideoSourceClip = {
@@ -62,4 +65,5 @@ export type NormalizedPresetVideoRenderInput = {
   originalAudioVolume: number;
   lyricTimings: Record<string, { start: number; end: number }>;
   videoSources: NormalizedPresetVideoSourceClip[];
+  videoSourceStrategy: PresetVideoSourceStrategy;
 };

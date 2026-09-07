@@ -9,9 +9,10 @@ import {
 import type {
   NormalizedPresetVideoSourceClip,
   PresetVideoSourceClipRequest,
+  PresetVideoSourceStrategy,
 } from "../models/PresetVideo";
 import { ensureDirectoryExists } from "../utils/audioOutput";
-import { runFfmpeg } from "../utils/ffmpeg";
+import { runFfmpeg, runFfprobe } from "../utils/ffmpeg";
 import type { RuntimeEnvValues } from "./EnvFileService";
 import { readEnvValues } from "./EnvFileService";
 import { downloadYoutubeVideo } from "./YoutubeToolsService";
@@ -27,72 +28,101 @@ export type PresetMediaProgress = {
 export async function preparePresetVideoMedia(params: {
   presetId: string;
   videoSources: PresetVideoSourceClipRequest[] | NormalizedPresetVideoSourceClip[];
+  videoSourceStrategy?: PresetVideoSourceStrategy;
   envOverrides?: RuntimeEnvValues;
   onProgress?: (event: PresetMediaProgress) => void;
 }) {
   const presetId = normalizePresetId(params.presetId);
   const sources = normalizePresetVideoSources(params.videoSources);
-  if (!sources.length) return { presetId, videoSourceUrls: {} as Record<string, string> };
+  if (!sources.length) {
+    return { presetId, videoSourceUrls: {} as Record<string, string>, missingSourceIds: [] as string[] };
+  }
 
-  const env = readEnvValues(params.envOverrides);
-  const outputRoot = getGeneratedVideoDir(env.SERVER_DATA_DIR);
-  const relativeDir = path.posix.join("preset-clips", presetId);
-  const outputDir = path.join(outputRoot, ...relativeDir.split("/"));
-  ensureDirectoryExists(outputDir);
-
+  const strategy = normalizePresetVideoSourceStrategy(params.videoSourceStrategy);
+  const cache = resolvePresetCache(presetId, params.envOverrides);
   const videoSourceUrls: Record<string, string> = {};
+  const missingSourceIds: string[] = [];
+
   for (let index = 0; index < sources.length; index += 1) {
     const source = sources[index];
-    const cacheName = buildCacheName(source);
-    const outputPath = path.join(outputDir, `${cacheName}.mp4`);
+    const cached = resolveCachedSource(cache, source);
+    const hasCachedClip = fs.existsSync(cached.outputPath);
+
     params.onProgress?.({
       progress: index / sources.length,
-      message: fs.existsSync(outputPath)
+      message: hasCachedClip
         ? `Đang dùng clip nền đã cache (${index + 1}/${sources.length})...`
-        : `Đang tải trích đoạn video nền (${index + 1}/${sources.length})...`,
+        : strategy === "local"
+          ? `Đang kiểm tra video local (${index + 1}/${sources.length})...`
+          : `Đang tải trích đoạn video nền (${index + 1}/${sources.length})...`,
     });
 
-    if (!fs.existsSync(outputPath)) {
-      const downloaded = await downloadYoutubeVideo({
-        url: source.watchUrl,
-        mode: "video",
-        maxHeight: 720,
-        fileName: `preset-${presetId}-${source.id}`,
-        sectionStartSeconds: source.clipStartSeconds,
-        sectionEndSeconds: source.clipEndSeconds,
-      }, params.envOverrides);
-
-      try {
-        await runFfmpeg([
-          "-y",
-          "-i", downloaded.savedTo,
-          "-map", "0:v:0",
-          "-an",
-          "-c:v", "libx264",
-          "-preset", "veryfast",
-          "-crf", "20",
-          "-pix_fmt", "yuv420p",
-          "-movflags", "+faststart",
-          outputPath,
-        ], params.envOverrides);
-      } finally {
-        fs.rmSync(downloaded.savedTo, { force: true });
-      }
+    if (!hasCachedClip && strategy === "remote") {
+      await downloadRemoteSourceClip({
+        presetId,
+        source,
+        outputPath: cached.outputPath,
+        envOverrides: params.envOverrides,
+      });
     }
 
-    const relativePath = path.posix.join(relativeDir, `${cacheName}.mp4`);
-    videoSourceUrls[source.id] = buildGeneratedFileUrl(
-      GENERATED_VIDEO_PUBLIC_PATH,
-      relativePath,
-      env.SERVER_ORIGIN || SERVER_ORIGIN,
-    );
+    if (fs.existsSync(cached.outputPath)) {
+      videoSourceUrls[source.id] = cached.videoUrl;
+    } else {
+      missingSourceIds.push(source.id);
+    }
+
     params.onProgress?.({
       progress: (index + 1) / sources.length,
-      message: `Đã chuẩn bị ${index + 1}/${sources.length} clip nền.`,
+      message: missingSourceIds.includes(source.id)
+        ? `Thiếu clip local ${index + 1}/${sources.length}.`
+        : `Đã chuẩn bị ${index + 1}/${sources.length} clip nền.`,
     });
   }
 
-  return { presetId, videoSourceUrls };
+  return { presetId, videoSourceUrls, missingSourceIds };
+}
+
+export async function importPresetVideoSource(params: {
+  presetId: string;
+  source: PresetVideoSourceClipRequest;
+  inputPath: string;
+  envOverrides?: RuntimeEnvValues;
+}) {
+  const presetId = normalizePresetId(params.presetId);
+  const [source] = normalizePresetVideoSources([params.source]);
+  if (!source) throw new Error("Thông tin clip preset không hợp lệ.");
+
+  const inputDuration = await getMediaDurationSeconds(params.inputPath, params.envOverrides);
+  if (inputDuration + 0.05 < source.clipEndSeconds) {
+    throw new Error(
+      `Video "${source.id}" chỉ dài ${formatSeconds(inputDuration)}, cần ít nhất ${formatSeconds(source.clipEndSeconds)} để cắt đoạn ${formatSeconds(source.clipStartSeconds)}–${formatSeconds(source.clipEndSeconds)}.`,
+    );
+  }
+
+  const cache = resolvePresetCache(presetId, params.envOverrides);
+  const cached = resolveCachedSource(cache, source);
+  const tempOutputPath = `${cached.outputPath}.${process.pid}-${Date.now()}.tmp.mp4`;
+
+  try {
+    await transcodeSourceClip({
+      inputPath: params.inputPath,
+      outputPath: tempOutputPath,
+      startSeconds: source.clipStartSeconds,
+      durationSeconds: source.clipEndSeconds - source.clipStartSeconds,
+      envOverrides: params.envOverrides,
+    });
+    fs.rmSync(cached.outputPath, { force: true });
+    fs.renameSync(tempOutputPath, cached.outputPath);
+  } finally {
+    fs.rmSync(tempOutputPath, { force: true });
+  }
+
+  return {
+    presetId,
+    sourceId: source.id,
+    videoUrl: cached.videoUrl,
+  };
 }
 
 export function normalizePresetVideoSources(value: unknown): NormalizedPresetVideoSourceClip[] {
@@ -116,6 +146,100 @@ export function normalizePresetVideoSources(value: unknown): NormalizedPresetVid
   });
 }
 
+export function normalizePresetVideoSourceStrategy(value: unknown): PresetVideoSourceStrategy {
+  return value === "local" ? "local" : "remote";
+}
+
+async function downloadRemoteSourceClip(params: {
+  presetId: string;
+  source: NormalizedPresetVideoSourceClip;
+  outputPath: string;
+  envOverrides?: RuntimeEnvValues;
+}) {
+  const downloaded = await downloadYoutubeVideo({
+    url: params.source.watchUrl,
+    mode: "video",
+    maxHeight: 720,
+    fileName: `preset-${params.presetId}-${params.source.id}`,
+    sectionStartSeconds: params.source.clipStartSeconds,
+    sectionEndSeconds: params.source.clipEndSeconds,
+  }, params.envOverrides);
+
+  try {
+    await transcodeSourceClip({
+      inputPath: downloaded.savedTo,
+      outputPath: params.outputPath,
+      startSeconds: 0,
+      durationSeconds: params.source.clipEndSeconds - params.source.clipStartSeconds,
+      envOverrides: params.envOverrides,
+    });
+  } finally {
+    fs.rmSync(downloaded.savedTo, { force: true });
+  }
+}
+
+async function transcodeSourceClip(params: {
+  inputPath: string;
+  outputPath: string;
+  startSeconds: number;
+  durationSeconds: number;
+  envOverrides?: RuntimeEnvValues;
+}) {
+  await runFfmpeg([
+    "-y",
+    "-ss", params.startSeconds.toFixed(3),
+    "-i", params.inputPath,
+    "-t", params.durationSeconds.toFixed(3),
+    "-map", "0:v:0",
+    "-an",
+    "-c:v", "libx264",
+    "-preset", "veryfast",
+    "-crf", "20",
+    "-pix_fmt", "yuv420p",
+    "-movflags", "+faststart",
+    params.outputPath,
+  ], params.envOverrides);
+}
+
+async function getMediaDurationSeconds(inputPath: string, envOverrides?: RuntimeEnvValues) {
+  const result = await runFfprobe([
+    "-v", "error",
+    "-show_entries", "format=duration",
+    "-of", "default=noprint_wrappers=1:nokey=1",
+    inputPath,
+  ], envOverrides);
+  const duration = Number.parseFloat(result.stdout.trim());
+  if (!Number.isFinite(duration) || duration <= 0) {
+    throw new Error("Không đọc được thời lượng video local bằng FFprobe.");
+  }
+  return duration;
+}
+
+function resolvePresetCache(presetId: string, envOverrides?: RuntimeEnvValues) {
+  const env = readEnvValues(envOverrides);
+  const outputRoot = getGeneratedVideoDir(env.SERVER_DATA_DIR);
+  const relativeDir = path.posix.join("preset-clips", presetId);
+  const outputDir = path.join(outputRoot, ...relativeDir.split("/"));
+  ensureDirectoryExists(outputDir);
+  return {
+    outputDir,
+    relativeDir,
+    origin: env.SERVER_ORIGIN || SERVER_ORIGIN,
+  };
+}
+
+function resolveCachedSource(
+  cache: ReturnType<typeof resolvePresetCache>,
+  source: NormalizedPresetVideoSourceClip,
+) {
+  const cacheName = buildCacheName(source);
+  const relativePath = path.posix.join(cache.relativeDir, `${cacheName}.mp4`);
+  return {
+    outputPath: path.join(cache.outputDir, `${cacheName}.mp4`),
+    videoUrl: buildGeneratedFileUrl(GENERATED_VIDEO_PUBLIC_PATH, relativePath, cache.origin),
+  };
+}
+
 function buildCacheName(source: NormalizedPresetVideoSourceClip) {
   return `${source.id}-${Math.round(source.clipStartSeconds * 1000)}-${Math.round(source.clipEndSeconds * 1000)}`;
 }
@@ -129,4 +253,10 @@ function normalizePresetId(value: string) {
 function clampNumber(value: unknown, min: number, max: number, fallback: number) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+}
+
+function formatSeconds(value: number) {
+  const minutes = Math.floor(value / 60);
+  const seconds = value - minutes * 60;
+  return `${minutes}:${seconds.toFixed(1).padStart(4, "0")}`;
 }

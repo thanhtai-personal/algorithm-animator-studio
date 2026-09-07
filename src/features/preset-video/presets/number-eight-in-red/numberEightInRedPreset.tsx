@@ -22,5 +22,6 @@ export const numberEightInRedPreset: PresetVideoDefinition = {
   hasOriginalAudio: true,
   editableLyrics: NUMBER_EIGHT_LYRIC_CUES,
   videoSources: NUMBER_EIGHT_VISUAL_SOURCES,
+  videoSourceStrategy: "local",
   component: NumberEightInRedPresetComposition,
 };

@@ -2,6 +2,8 @@ import type { ComponentType } from "react";
 
 export type PresetVideoAspectRatio = "16:9" | "9:16" | "1:1";
 
+export type PresetVideoSourceStrategy = "remote" | "local";
+
 export type PresetVideoOutputPreset =
   | "landscape-1080p"
   | "landscape-720p"
@@ -52,6 +54,7 @@ export type PresetVideoDefinition = {
   hasOriginalAudio: boolean;
   editableLyrics?: readonly PresetVideoEditableLyricCue[];
   videoSources?: readonly PresetVideoSourceClip[];
+  videoSourceStrategy?: PresetVideoSourceStrategy;
   component: ComponentType<PresetVideoCompositionProps>;
 };
 
@@ -86,4 +89,5 @@ export type PresetVideoRenderProgress = {
 export type PresetVideoMediaResponse = {
   presetId: string;
   videoSourceUrls: Record<string, string>;
+  missingSourceIds: string[];
 };

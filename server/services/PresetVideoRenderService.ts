@@ -8,7 +8,11 @@ import type {
 import { SERVER_ORIGIN } from "../config/paths";
 import { createVideoOutput } from "../utils/videoOutput";
 import type { RuntimeEnvValues } from "./EnvFileService";
-import { preparePresetVideoMedia, normalizePresetVideoSources } from "./PresetVideoMediaService";
+import {
+  normalizePresetVideoSources,
+  normalizePresetVideoSourceStrategy,
+  preparePresetVideoMedia,
+} from "./PresetVideoMediaService";
 import { getRemotionBundleUrl } from "./RemotionRenderService";
 
 const COMPOSITION_ID = "PresetVideo";
@@ -43,6 +47,7 @@ export async function renderPresetVideo(params: {
   const media = await preparePresetVideoMedia({
     presetId: input.presetId,
     videoSources: input.videoSources,
+    videoSourceStrategy: input.videoSourceStrategy,
     envOverrides: params.envOverrides,
     onProgress: (event) => report({
       progress: 0.01 + event.progress * 0.11,
@@ -50,6 +55,12 @@ export async function renderPresetVideo(params: {
       message: event.message,
     }),
   });
+
+  if (input.videoSourceStrategy === "local" && media.missingSourceIds.length) {
+    throw new Error(
+      `Còn thiếu ${media.missingSourceIds.length} video local: ${media.missingSourceIds.join(", ")}. Hãy chọn đủ video nguồn trước khi export.`,
+    );
+  }
 
   const { renderMedia, selectComposition } = await import("@remotion/renderer");
   report({ progress: 0.13, stage: "metadata", message: "Đang đọc composition preset..." });
@@ -149,6 +160,7 @@ export function normalizePresetVideoRenderInput(raw: PresetVideoRenderBody): Nor
     originalAudioVolume: clampNumber(raw.originalAudioVolume, 0, 1, 1),
     lyricTimings: normalizeLyricTimings(raw.lyricTimings, durationSeconds),
     videoSources: normalizePresetVideoSources(raw.videoSources),
+    videoSourceStrategy: normalizePresetVideoSourceStrategy(raw.videoSourceStrategy),
   };
 }
 

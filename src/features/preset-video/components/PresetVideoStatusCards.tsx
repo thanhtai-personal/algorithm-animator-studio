@@ -7,6 +7,8 @@ export function PresetVideoMediaStatusCard(props: {
   preparing: boolean;
   error: string;
   sourceCount: number;
+  requiredSourceCount?: number;
+  localMode?: boolean;
 }) {
   return (
     <Card>
@@ -20,10 +22,14 @@ export function PresetVideoMediaStatusCard(props: {
               ? "Đang chuẩn bị video background"
               : props.error
                 ? "Video background chưa sẵn sàng"
-                : `${props.sourceCount} clip video background`}
+                : props.localMode
+                  ? `${props.sourceCount}/${props.requiredSourceCount || 0} clip local sẵn sàng`
+                  : `${props.sourceCount} clip video background`}
           </p>
           <p className={`mt-1 break-words text-xs ${props.error ? "text-destructive" : "text-muted-foreground"}`}>
-            {props.error || "Clip nguồn được tải theo đoạn ngắn, bỏ audio nguồn và cache để preview/render dùng lại."}
+            {props.error || (props.localMode
+              ? "Clip local được tự cắt theo mốc preset, bỏ audio nguồn và cache để preview/render dùng lại."
+              : "Clip nguồn được tải theo đoạn ngắn, bỏ audio nguồn và cache để preview/render dùng lại.")}
           </p>
         </div>
       </CardContent>

@@ -1,4 +1,4 @@
-import { Component, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Player, type PlayerRef } from "@remotion/player";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Download, Film, Music2, RotateCcw, Scissors } from "lucide-react";
@@ -8,14 +8,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { SystemLoader } from "@/components/ui/system-loader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { getMusicLibraryTracks, type MusicLibraryTrack } from "@/lib/musicLibrary";
 import { createDefaultPresetVideoSettings, loadPresetVideoSettings, savePresetVideoSettings } from "../lib/presetVideoDraft";
 import { PresetLyricTimingEditor } from "./PresetLyricTimingEditor";
+import {
+  formatPresetSeconds,
+  MusicPreview,
+  PresetPreviewErrorBoundary,
+  TrimSlider,
+  VolumeSlider,
+} from "./PresetVideoControls";
+import { PresetVideoSourcePickerCard } from "./PresetVideoSourcePickerCard";
 import { PresetVideoMediaStatusCard, PresetVideoRenderProgressCard } from "./PresetVideoStatusCards";
-import { preparePresetVideoMedia, renderPresetVideo } from "../lib/presetVideoApi";
+import {
+  importPresetVideoSource,
+  preparePresetVideoMedia,
+  renderPresetVideo,
+} from "../lib/presetVideoApi";
 import { getPresetVideoOutputSize, PRESET_VIDEO_OUTPUT_SIZES } from "../outputPresets";
-import type { PresetVideoDefinition, PresetVideoExportSettings, PresetVideoRenderResponse } from "../types";
+import type {
+  PresetVideoDefinition,
+  PresetVideoExportSettings,
+  PresetVideoRenderResponse,
+  PresetVideoSourceClip,
+} from "../types";
 import { PresetVideoComposition } from "../PresetVideoComposition";
 
 type Props = {
@@ -35,6 +51,7 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
   const [videoSourceUrls, setVideoSourceUrls] = useState<Record<string, string>>({});
   const [mediaPreparing, setMediaPreparing] = useState(false);
   const [mediaError, setMediaError] = useState("");
+  const [uploadingSourceId, setUploadingSourceId] = useState("");
   const [result, setResult] = useState<PresetVideoRenderResponse | null>(null);
   const playerRef = useRef<PlayerRef>(null);
 
@@ -43,6 +60,7 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
     setResult(null);
     setVideoSourceUrls({});
     setMediaError("");
+    setUploadingSourceId("");
   }, [preset]);
 
   useEffect(() => {
@@ -93,6 +111,10 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
   }, []);
 
   const output = getPresetVideoOutputSize(settings.outputPreset);
+  const usesLocalVideoSources = preset.videoSourceStrategy === "local";
+  const missingLocalVideoSources = usesLocalVideoSources
+    ? (preset.videoSources || []).filter((source) => !videoSourceUrls[source.id])
+    : [];
   const selectedTrack = useMemo(
     () => tracks.find((track) => track.id === settings.backgroundMusicId),
     [settings.backgroundMusicId, tracks],
@@ -151,7 +173,28 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
     playerRef.current?.seekTo(0);
   }
 
+  async function selectLocalVideoSource(source: PresetVideoSourceClip, file: File) {
+    setUploadingSourceId(source.id);
+    setMediaError("");
+    try {
+      const imported = await importPresetVideoSource(preset, source, file);
+      const cacheBustedUrl = appendCacheBust(imported.videoUrl);
+      setVideoSourceUrls((current) => ({ ...current, [source.id]: cacheBustedUrl }));
+      toast.success(`Đã cắt và cache clip ${source.title}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : `Không xử lý được video ${source.title}.`;
+      setMediaError(message);
+      toast.error(message);
+    } finally {
+      setUploadingSourceId("");
+    }
+  }
+
   async function exportVideo() {
+    if (missingLocalVideoSources.length) {
+      toast.error(`Còn thiếu ${missingLocalVideoSources.length} video local trước khi export.`);
+      return;
+    }
     setRendering(true);
     setRenderProgress(0);
     setRenderMessage("Đang khởi tạo render...");
@@ -189,7 +232,13 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" disabled={rendering} onClick={reset}><RotateCcw className="mr-2 h-4 w-4" />Reset</Button>
-          <Button disabled={rendering} onClick={() => void exportVideo()}><Film className="mr-2 h-4 w-4" />{rendering ? `Đang render ${Math.round(renderProgress * 100)}%` : "Export MP4"}</Button>
+          <Button
+            disabled={rendering || Boolean(uploadingSourceId) || missingLocalVideoSources.length > 0}
+            onClick={() => void exportVideo()}
+          >
+            <Film className="mr-2 h-4 w-4" />
+            {rendering ? `Đang render ${Math.round(renderProgress * 100)}%` : "Export MP4"}
+          </Button>
         </div>
       </header>
 
@@ -245,8 +294,8 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
                 onChange={setTrimEnd}
               />
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/30 px-3 py-2 text-sm">
-                <span>{formatSeconds(settings.trimStartSeconds)} → {formatSeconds(settings.trimEndSeconds)}</span>
-                <span className="font-semibold">{formatSeconds(settings.trimEndSeconds - settings.trimStartSeconds)}</span>
+                <span>{formatPresetSeconds(settings.trimStartSeconds)} → {formatPresetSeconds(settings.trimEndSeconds)}</span>
+                <span className="font-semibold">{formatPresetSeconds(settings.trimEndSeconds - settings.trimStartSeconds)}</span>
               </div>
               <Button variant="outline" onClick={previewTrim}>Preview đoạn đã chọn</Button>
             </CardContent>
@@ -302,11 +351,23 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
             </CardContent>
           </Card>
 
+          {usesLocalVideoSources && preset.videoSources?.length ? (
+            <PresetVideoSourcePickerCard
+              sources={preset.videoSources}
+              videoSourceUrls={videoSourceUrls}
+              uploadingSourceId={uploadingSourceId}
+              disabled={rendering}
+              onSelect={(source, file) => void selectLocalVideoSource(source, file)}
+            />
+          ) : null}
+
           {preset.videoSources?.length ? (
             <PresetVideoMediaStatusCard
               preparing={mediaPreparing}
               error={mediaError}
               sourceCount={Object.keys(videoSourceUrls).length}
+              requiredSourceCount={preset.videoSources.length}
+              localMode={usesLocalVideoSources}
             />
           ) : null}
 
@@ -319,7 +380,7 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
                 <video controls src={result.videoUrl} className="w-full rounded-lg bg-black" />
                 <div className="text-xs text-muted-foreground">
                   <p>{result.fileName}</p>
-                  <p>{result.width}×{result.height} · {formatSeconds(result.durationSeconds)}</p>
+                  <p>{result.width}×{result.height} · {formatPresetSeconds(result.durationSeconds)}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <Button variant="outline" asChild><a href={result.videoUrl} target="_blank" rel="noreferrer"><Download className="mr-2 h-4 w-4" />Mở file</a></Button>
@@ -334,65 +395,8 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
   );
 }
 
-function TrimSlider(props: { label: string; value: number; min?: number; max: number; duration: number; onChange: (value: number) => void }) {
-  const min = props.min ?? 0;
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-3 text-sm">
-        <Label>{props.label}</Label>
-        <span className="font-mono text-xs text-muted-foreground">{formatSeconds(props.value)}</span>
-      </div>
-      <Slider
-        value={[Math.min(props.max, Math.max(min, props.value))]}
-        min={min}
-        max={Math.max(min, props.max)}
-        step={0.1}
-        onValueChange={([value]) => props.onChange(value)}
-      />
-      <div className="flex justify-between text-[11px] text-muted-foreground"><span>00:00.0</span><span>{formatSeconds(props.duration)}</span></div>
-    </div>
-  );
-}
-
-function VolumeSlider(props: { label: string; value: number; onChange: (value: number) => void }) {
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-sm"><Label>{props.label}</Label><span>{Math.round(props.value * 100)}%</span></div>
-      <Slider value={[props.value]} min={0} max={1} step={0.01} onValueChange={([value]) => props.onChange(value)} />
-    </div>
-  );
-}
-
-function MusicPreview({ src, volume }: { src: string; volume: number }) {
-  const ref = useRef<HTMLAudioElement | null>(null);
-  useEffect(() => {
-    if (ref.current) ref.current.volume = volume;
-  }, [volume]);
-  return <audio ref={ref} controls preload="metadata" src={src} className="h-9 w-full" />;
-}
-
-function formatSeconds(value: number) {
-  const safe = Math.max(0, Number.isFinite(value) ? value : 0);
-  const minutes = Math.floor(safe / 60);
-  const seconds = safe - minutes * 60;
-  return `${String(minutes).padStart(2, "0")}:${seconds.toFixed(1).padStart(4, "0")}`;
-}
-
-class PresetPreviewErrorBoundary extends Component<{ children: ReactNode }, { error: string }> {
-  state = { error: "" };
-
-  static getDerivedStateFromError(error: Error) {
-    return { error: error.message || "Preset preview bị lỗi." };
-  }
-
-  componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("Preset video preview failed", error, info);
-  }
-
-  render() {
-    if (this.state.error) {
-      return <div className="grid min-h-72 place-items-center p-8 text-center text-sm text-red-300">{this.state.error}</div>;
-    }
-    return this.props.children;
-  }
+function appendCacheBust(url: string) {
+  if (!url) return url;
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}v=${Date.now()}`;
 }

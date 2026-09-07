@@ -35,6 +35,7 @@ export async function renderPresetVideo(
       originalAudioVolume: params.settings.originalAudioVolume,
       lyricTimings: params.settings.lyricTimings,
       videoSources: params.preset.videoSources || [],
+      videoSourceStrategy: params.preset.videoSourceStrategy || "remote",
     }),
   });
 
@@ -47,7 +48,7 @@ export async function renderPresetVideo(
 
 export async function preparePresetVideoMedia(preset: PresetVideoDefinition) {
   if (!preset.videoSources?.length) {
-    return { presetId: preset.id, videoSourceUrls: {} } satisfies PresetVideoMediaResponse;
+    return { presetId: preset.id, videoSourceUrls: {}, missingSourceIds: [] } satisfies PresetVideoMediaResponse;
   }
 
   return parseApiResponse<PresetVideoMediaResponse>(await fetch(buildApiUrl("/api/video/preset-media/prepare"), {
@@ -59,8 +60,31 @@ export async function preparePresetVideoMedia(preset: PresetVideoDefinition) {
     body: JSON.stringify({
       presetId: preset.id,
       videoSources: preset.videoSources,
+      videoSourceStrategy: preset.videoSourceStrategy || "remote",
     }),
   }));
+}
+
+export async function importPresetVideoSource(
+  preset: PresetVideoDefinition,
+  source: NonNullable<PresetVideoDefinition["videoSources"]>[number],
+  file: File,
+) {
+  const formData = new FormData();
+  formData.append("video", file, file.name);
+  formData.append("presetId", preset.id);
+  formData.append("sourceId", source.id);
+  formData.append("watchUrl", source.watchUrl);
+  formData.append("clipStartSeconds", String(source.clipStartSeconds));
+  formData.append("clipEndSeconds", String(source.clipEndSeconds));
+
+  return parseApiResponse<{ presetId: string; sourceId: string; videoUrl: string }>(
+    await fetch(buildApiUrl("/api/video/preset-media/import"), {
+      method: "POST",
+      headers: buildRuntimeSettingsHeaders(),
+      body: formData,
+    }),
+  );
 }
 
 async function parsePresetRenderStream(

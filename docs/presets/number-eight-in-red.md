@@ -36,7 +36,9 @@ Preset khai báo bốn nguồn YouTube chính thức của Manchester United:
 - `Bruno Fernandes: Top 20 Goals!`
 - `Player Cam | Bruno Fernandes`
 
-Mỗi nguồn chỉ yêu cầu một đoạn **12 giây**. Backend dùng `yt-dlp --download-sections`, sau đó FFmpeg chuyển đoạn đã lấy sang H.264 MP4, bỏ audio (`-an`) và cache dưới generated video storage. Preview và render dùng lại clip đã cache; thumbnail chỉ còn là fallback nếu clip chưa sẵn sàng/không decode được.
+Mỗi nguồn chỉ yêu cầu một đoạn **12 giây**. Preset này dùng `videoSourceStrategy: "local"` để tránh phụ thuộc `yt-dlp`: tại màn hình Preset Video, chọn file video đầy đủ tương ứng cho từng nguồn. Backend dùng FFprobe kiểm tra thời lượng, FFmpeg tự seek/cắt đúng mốc cấu hình, chuyển H.264 MP4, bỏ audio (`-an`) và cache dưới `generated-videos/preset-clips/number-eight-in-red/`.
+
+Khi mở lại preset, backend chỉ đọc các clip đã cache và **không gọi YouTube**. Nếu clip còn thiếu, UI hiển thị từng nguồn cần chọn và khóa Export MP4 cho đến khi đủ 4 clip. Chọn lại một file sẽ thay clip cache của nguồn đó. Thumbnail chỉ còn là fallback trong preview khi clip chưa sẵn sàng.
 
 ## Output dọc/ngang
 

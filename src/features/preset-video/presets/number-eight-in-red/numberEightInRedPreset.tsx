@@ -20,6 +20,7 @@ export const numberEightInRedPreset: PresetVideoDefinition = {
   defaultFps: 30,
   defaultOutputPreset: "landscape-1080p",
   hasOriginalAudio: true,
+  lyricTimingRevision: 2,
   editableLyrics: NUMBER_EIGHT_LYRIC_CUES,
   videoSources: NUMBER_EIGHT_VISUAL_SOURCES,
   videoSourceStrategy: "local",

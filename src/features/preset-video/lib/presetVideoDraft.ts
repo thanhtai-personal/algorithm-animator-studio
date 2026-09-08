@@ -11,6 +11,7 @@ const STORAGE_PREFIX = "kai-studio.preset-video.";
 
 export function createDefaultPresetVideoSettings(preset: PresetVideoDefinition): PresetVideoExportSettings {
   return {
+    lyricTimingRevision: preset.lyricTimingRevision ?? 0,
     outputPreset: preset.defaultOutputPreset,
     trimStartSeconds: 0,
     trimEndSeconds: preset.defaultDurationSeconds,
@@ -34,14 +35,19 @@ export function loadPresetVideoSettings(preset: PresetVideoDefinition): PresetVi
     const trimStartSeconds = clampNumber(raw.trimStartSeconds, 0, preset.defaultDurationSeconds, defaults.trimStartSeconds);
     const trimEndSeconds = clampNumber(raw.trimEndSeconds, trimStartSeconds + 0.1, preset.defaultDurationSeconds, defaults.trimEndSeconds);
 
+    const lyricTimingRevision = preset.lyricTimingRevision ?? 0;
+    const canReuseStoredLyricTimings = preset.lyricTimingRevision === undefined
+      || raw.lyricTimingRevision === lyricTimingRevision;
+
     return {
+      lyricTimingRevision,
       outputPreset,
       trimStartSeconds,
       trimEndSeconds,
       backgroundMusicId: typeof raw.backgroundMusicId === "string" ? raw.backgroundMusicId : "",
       backgroundMusicVolume: clampNumber(raw.backgroundMusicVolume, 0, 1, defaults.backgroundMusicVolume),
       originalAudioVolume: clampNumber(raw.originalAudioVolume, 0, 1, defaults.originalAudioVolume),
-      lyricTimings: normalizeStoredLyricTimings(preset, raw.lyricTimings),
+      lyricTimings: canReuseStoredLyricTimings ? normalizeStoredLyricTimings(preset, raw.lyricTimings) : defaults.lyricTimings,
       timelineVideoClips: normalizeStoredTimelineClips(preset, raw.timelineVideoClips),
     };
   } catch {

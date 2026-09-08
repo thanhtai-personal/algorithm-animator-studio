@@ -5,6 +5,8 @@ import {
   NUMBER_EIGHT_RED,
 } from "./numberEightInRedTheme";
 
+const LYRIC_FADE_SECONDS = 0.1;
+
 export function NumberEightLyricsCaption(props: {
   cue: NumberEightLyricCue;
   time: number;
@@ -15,8 +17,8 @@ export function NumberEightLyricsCaption(props: {
   const tokenCount = props.cue.lines.reduce((sum, line) => sum + line.split(/\s+/).length, 0);
   const activeToken = Math.min(tokenCount - 1, Math.floor(progress * tokenCount));
   let tokenCursor = 0;
-  const enter = smoothStep(interpolate(progress, [0, 0.14], [0, 1], { extrapolateRight: "clamp" }));
-  const exit = smoothStep(interpolate(progress, [0.86, 1], [1, 0], { extrapolateLeft: "clamp" }));
+  const enter = smoothStep(clamp01((props.time - props.cue.start) / LYRIC_FADE_SECONDS));
+  const exit = smoothStep(clamp01((props.cue.end - props.time) / LYRIC_FADE_SECONDS));
   const fontSize = props.shortestSide * (props.portrait ? 0.06 : 0.055);
 
   return (

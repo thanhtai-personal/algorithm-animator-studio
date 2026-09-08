@@ -27,6 +27,7 @@ export type NumberEightSection = {
 export const NUMBER_EIGHT_DURATION_SECONDS = 228.4;
 export const NUMBER_EIGHT_BPM = 136;
 export const NUMBER_EIGHT_FIRST_BEAT_SECONDS = 1.486;
+export const NUMBER_EIGHT_LYRIC_SYNC_OFFSET_SECONDS = 0.066;
 
 export const NUMBER_EIGHT_VISUAL_SOURCES: readonly NumberEightVisualSource[] = [
   {
@@ -345,11 +346,15 @@ function createBarAlignedCues(
     cursor = index === groups.length - 1 ? end : Math.min(end, cursor + bars[index] * BAR_SECONDS);
     return {
       id: `${sectionId}-${index + 1}`,
-      start: roundTime(cueStart),
-      end: roundTime(cursor),
+      start: syncLyricTime(cueStart),
+      end: syncLyricTime(cursor),
       lines,
     };
   });
+}
+
+function syncLyricTime(value: number) {
+  return roundTime(Math.min(NUMBER_EIGHT_DURATION_SECONDS, value + NUMBER_EIGHT_LYRIC_SYNC_OFFSET_SECONDS));
 }
 
 function roundTime(value: number) {

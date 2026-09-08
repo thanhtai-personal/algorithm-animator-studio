@@ -62,6 +62,7 @@ export type PresetVideoDefinition = {
   defaultFps: number;
   defaultOutputPreset: PresetVideoOutputPreset;
   hasOriginalAudio: boolean;
+  lyricTimingRevision?: number;
   editableLyrics?: readonly PresetVideoEditableLyricCue[];
   videoSources?: readonly PresetVideoSourceClip[];
   videoSourceStrategy?: PresetVideoSourceStrategy;
@@ -69,6 +70,7 @@ export type PresetVideoDefinition = {
 };
 
 export type PresetVideoExportSettings = {
+  lyricTimingRevision: number;
   outputPreset: PresetVideoOutputPreset;
   trimStartSeconds: number;
   trimEndSeconds: number;

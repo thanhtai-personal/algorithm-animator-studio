@@ -44,9 +44,18 @@ export async function renderPresetVideo(params: {
   };
 
   report({ progress: 0.01, stage: "preparing", message: "Đang chuẩn bị clip video nền..." });
+  const mediaSources = [
+    ...input.videoSources,
+    ...input.timelineVideoClips.map((clip) => ({
+      id: clip.id,
+      watchUrl: clip.watchUrl,
+      clipStartSeconds: clip.clipStartSeconds,
+      clipEndSeconds: clip.clipEndSeconds,
+    })),
+  ];
   const media = await preparePresetVideoMedia({
     presetId: input.presetId,
-    videoSources: input.videoSources,
+    videoSources: mediaSources,
     videoSourceStrategy: input.videoSourceStrategy,
     envOverrides: params.envOverrides,
     onProgress: (event) => report({
@@ -75,6 +84,7 @@ export async function renderPresetVideo(params: {
     originalAudioVolume: input.originalAudioVolume,
     lyricTimings: input.lyricTimings,
     videoSourceUrls: media.videoSourceUrls,
+    timelineVideoClips: input.timelineVideoClips,
   };
   const selectedComposition = await selectComposition({
     serveUrl,
@@ -145,6 +155,9 @@ export function normalizePresetVideoRenderInput(raw: PresetVideoRenderBody): Nor
   const fps = clampNumber(raw.fps, 24, 60, 30);
   const trimStartSeconds = clampNumber(raw.trimStartSeconds, 0, Math.max(0, durationSeconds - 0.1), 0);
   const trimEndSeconds = clampNumber(raw.trimEndSeconds, trimStartSeconds + 0.1, durationSeconds, durationSeconds);
+  const videoSources = normalizePresetVideoSources(raw.videoSources);
+  const timelineVideoClips = normalizeTimelineVideoClips(raw.timelineVideoClips, durationSeconds);
+  assertUniqueMediaSourceIds(videoSources, timelineVideoClips);
 
   return {
     presetId,
@@ -159,9 +172,72 @@ export function normalizePresetVideoRenderInput(raw: PresetVideoRenderBody): Nor
     backgroundMusicVolume: clampNumber(raw.backgroundMusicVolume, 0, 1, 0.22),
     originalAudioVolume: clampNumber(raw.originalAudioVolume, 0, 1, 1),
     lyricTimings: normalizeLyricTimings(raw.lyricTimings, durationSeconds),
-    videoSources: normalizePresetVideoSources(raw.videoSources),
+    videoSources,
+    timelineVideoClips,
     videoSourceStrategy: normalizePresetVideoSourceStrategy(raw.videoSourceStrategy),
   };
+}
+
+function assertUniqueMediaSourceIds(
+  videoSources: readonly { id: string }[],
+  timelineVideoClips: readonly { id: string }[],
+) {
+  const ids = new Set<string>();
+  for (const source of [...videoSources, ...timelineVideoClips]) {
+    if (ids.has(source.id)) throw new Error(`Video source id "${source.id}" bị trùng.`);
+    ids.add(source.id);
+  }
+}
+
+function normalizeTimelineVideoClips(value: unknown, durationSeconds: number) {
+  if (!Array.isArray(value)) return [];
+
+  const normalized = value.slice(0, 20).map((raw, index) => {
+    if (!raw || typeof raw !== "object") {
+      throw new Error(`Timeline video #${index + 1} không hợp lệ.`);
+    }
+
+    const candidate = raw as {
+      id?: unknown;
+      title?: unknown;
+      watchUrl?: unknown;
+      clipStartSeconds?: unknown;
+      clipEndSeconds?: unknown;
+      timelineStartSeconds?: unknown;
+      timelineEndSeconds?: unknown;
+    };
+    const [source] = normalizePresetVideoSources([candidate]);
+    const sourceDuration = source.clipEndSeconds - source.clipStartSeconds;
+    const timelineStartSeconds = clampNumber(
+      candidate.timelineStartSeconds,
+      0,
+      Math.max(0, durationSeconds - 0.1),
+      0,
+    );
+    const maxTimelineEnd = Math.min(durationSeconds, timelineStartSeconds + sourceDuration);
+    const timelineEndSeconds = clampNumber(
+      candidate.timelineEndSeconds,
+      timelineStartSeconds + 0.1,
+      maxTimelineEnd,
+      maxTimelineEnd,
+    );
+
+    return {
+      ...source,
+      title: typeof candidate.title === "string" && candidate.title.trim()
+        ? candidate.title.trim().slice(0, 120)
+        : `Video ${index + 1}`,
+      timelineStartSeconds,
+      timelineEndSeconds,
+    };
+  });
+
+  const ids = new Set<string>();
+  for (const clip of normalized) {
+    if (ids.has(clip.id)) throw new Error(`Timeline video id "${clip.id}" bị trùng.`);
+    ids.add(clip.id);
+  }
+  return normalized;
 }
 
 function normalizeLyricTimings(value: unknown, durationSeconds: number) {

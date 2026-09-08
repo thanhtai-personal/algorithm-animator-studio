@@ -6,6 +6,7 @@ import type {
   PresetVideoMediaResponse,
   PresetVideoRenderProgress,
   PresetVideoRenderResponse,
+  PresetVideoTimelineClip,
 } from "../types";
 
 export async function renderPresetVideo(
@@ -35,6 +36,7 @@ export async function renderPresetVideo(
       originalAudioVolume: params.settings.originalAudioVolume,
       lyricTimings: params.settings.lyricTimings,
       videoSources: params.preset.videoSources || [],
+      timelineVideoClips: params.settings.timelineVideoClips,
       videoSourceStrategy: params.preset.videoSourceStrategy || "remote",
     }),
   });
@@ -46,8 +48,20 @@ export async function renderPresetVideo(
   return parseApiResponse<PresetVideoRenderResponse>(response);
 }
 
-export async function preparePresetVideoMedia(preset: PresetVideoDefinition) {
-  if (!preset.videoSources?.length) {
+export async function preparePresetVideoMedia(
+  preset: PresetVideoDefinition,
+  timelineVideoClips: readonly PresetVideoTimelineClip[] = [],
+) {
+  const videoSources = [
+    ...(preset.videoSources || []),
+    ...timelineVideoClips.map((clip) => ({
+      id: clip.id,
+      watchUrl: "",
+      clipStartSeconds: clip.clipStartSeconds,
+      clipEndSeconds: clip.clipEndSeconds,
+    })),
+  ];
+  if (!videoSources.length) {
     return { presetId: preset.id, videoSourceUrls: {}, missingSourceIds: [] } satisfies PresetVideoMediaResponse;
   }
 
@@ -59,22 +73,29 @@ export async function preparePresetVideoMedia(preset: PresetVideoDefinition) {
     },
     body: JSON.stringify({
       presetId: preset.id,
-      videoSources: preset.videoSources,
+      videoSources,
       videoSourceStrategy: preset.videoSourceStrategy || "remote",
     }),
   }));
 }
 
+export type PresetVideoImportSource = {
+  id: string;
+  watchUrl?: string;
+  clipStartSeconds: number;
+  clipEndSeconds: number;
+};
+
 export async function importPresetVideoSource(
-  preset: PresetVideoDefinition,
-  source: NonNullable<PresetVideoDefinition["videoSources"]>[number],
+  presetId: string,
+  source: PresetVideoImportSource,
   file: File,
 ) {
   const formData = new FormData();
   formData.append("video", file, file.name);
-  formData.append("presetId", preset.id);
+  formData.append("presetId", presetId);
   formData.append("sourceId", source.id);
-  formData.append("watchUrl", source.watchUrl);
+  formData.append("watchUrl", source.watchUrl || "");
   formData.append("clipStartSeconds", String(source.clipStartSeconds));
   formData.append("clipEndSeconds", String(source.clipEndSeconds));
 

@@ -30,6 +30,15 @@ export type PresetVideoSourceClip = {
   clipEndSeconds: number;
 };
 
+export type PresetVideoTimelineClip = {
+  id: string;
+  title: string;
+  clipStartSeconds: number;
+  clipEndSeconds: number;
+  timelineStartSeconds: number;
+  timelineEndSeconds: number;
+};
+
 export type PresetVideoCompositionProps = {
   presetId: string;
   aspectRatio: PresetVideoAspectRatio;
@@ -40,6 +49,7 @@ export type PresetVideoCompositionProps = {
   originalAudioVolume: number;
   lyricTimings: Record<string, PresetVideoLyricTiming>;
   videoSourceUrls: Record<string, string>;
+  timelineVideoClips: readonly PresetVideoTimelineClip[];
 };
 
 export type PresetVideoDefinition = {
@@ -66,6 +76,7 @@ export type PresetVideoExportSettings = {
   backgroundMusicVolume: number;
   originalAudioVolume: number;
   lyricTimings: Record<string, PresetVideoLyricTiming>;
+  timelineVideoClips: PresetVideoTimelineClip[];
 };
 
 export type PresetVideoRenderResponse = {

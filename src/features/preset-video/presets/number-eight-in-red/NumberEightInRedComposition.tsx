@@ -41,7 +41,14 @@ export function NumberEightInRedComposition(props: PresetVideoCompositionProps) 
 
   return (
     <AbsoluteFill style={{ backgroundColor: NUMBER_EIGHT_INK, color: "white", fontFamily: "Arial, Helvetica, sans-serif" }}>
-      <NumberEightVisualLayer section={section} time={time} beatPulse={beatPulse} portrait={portrait} videoSourceUrls={props.videoSourceUrls} />
+      <NumberEightVisualLayer
+        section={section}
+        time={time}
+        beatPulse={beatPulse}
+        portrait={portrait}
+        videoSourceUrls={props.videoSourceUrls}
+        timelineVideoClips={props.timelineVideoClips}
+      />
       <NumberEightTacticalOverlay
         width={width}
         height={height}

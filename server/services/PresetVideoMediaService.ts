@@ -17,7 +17,7 @@ import type { RuntimeEnvValues } from "./EnvFileService";
 import { readEnvValues } from "./EnvFileService";
 import { downloadYoutubeVideo } from "./YoutubeToolsService";
 
-const MAX_PRESET_VIDEO_SOURCES = 12;
+const MAX_PRESET_VIDEO_SOURCES = 32;
 const MAX_CLIP_SECONDS = 20;
 
 export type PresetMediaProgress = {
@@ -192,10 +192,14 @@ async function transcodeSourceClip(params: {
     "-t", params.durationSeconds.toFixed(3),
     "-map", "0:v:0",
     "-an",
+    "-vf", "fps=30,scale=w='min(1920,iw)':h='min(1920,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2",
     "-c:v", "libx264",
     "-preset", "veryfast",
     "-crf", "20",
     "-pix_fmt", "yuv420p",
+    "-g", "30",
+    "-keyint_min", "30",
+    "-sc_threshold", "0",
     "-movflags", "+faststart",
     params.outputPath,
   ], params.envOverrides);

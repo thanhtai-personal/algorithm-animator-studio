@@ -45,7 +45,7 @@ export function PresetLyricTimingEditor({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="max-h-[42vh] space-y-2 overflow-y-auto pr-1">
+        <div className="max-h-[50dvh] space-y-2 overflow-y-auto pr-1">
           {cues.map((cue, index) => {
             const timing = timings[cue.id] || cue;
             return (

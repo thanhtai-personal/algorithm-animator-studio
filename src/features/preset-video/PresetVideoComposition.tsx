@@ -15,6 +15,7 @@ export const DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS: PresetVideoCompositionProps
   originalAudioVolume: 1,
   lyricTimings: {},
   videoSourceUrls: {},
+  timelineVideoClips: [],
 };
 
 export function PresetVideoComposition(rawProps: Partial<PresetVideoCompositionProps>) {

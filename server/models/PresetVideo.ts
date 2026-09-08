@@ -20,6 +20,12 @@ export type PresetVideoSourceClipRequest = {
   clipEndSeconds?: number;
 };
 
+export type PresetVideoTimelineClipRequest = PresetVideoSourceClipRequest & {
+  title?: string;
+  timelineStartSeconds?: number;
+  timelineEndSeconds?: number;
+};
+
 export type PresetVideoRenderBody = {
   presetId?: string;
   fileName?: string;
@@ -33,6 +39,7 @@ export type PresetVideoRenderBody = {
   originalAudioVolume?: number;
   lyricTimings?: Record<string, PresetVideoLyricTiming>;
   videoSources?: PresetVideoSourceClipRequest[];
+  timelineVideoClips?: PresetVideoTimelineClipRequest[];
   videoSourceStrategy?: PresetVideoSourceStrategy;
 };
 
@@ -47,6 +54,12 @@ export type NormalizedPresetVideoSourceClip = {
   watchUrl: string;
   clipStartSeconds: number;
   clipEndSeconds: number;
+};
+
+export type NormalizedPresetVideoTimelineClip = NormalizedPresetVideoSourceClip & {
+  title: string;
+  timelineStartSeconds: number;
+  timelineEndSeconds: number;
 };
 
 export type NormalizedPresetVideoRenderInput = {
@@ -65,5 +78,6 @@ export type NormalizedPresetVideoRenderInput = {
   originalAudioVolume: number;
   lyricTimings: Record<string, { start: number; end: number }>;
   videoSources: NormalizedPresetVideoSourceClip[];
+  timelineVideoClips: NormalizedPresetVideoTimelineClip[];
   videoSourceStrategy: PresetVideoSourceStrategy;
 };

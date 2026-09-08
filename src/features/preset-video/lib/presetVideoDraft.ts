@@ -3,6 +3,7 @@ import type {
   PresetVideoExportSettings,
   PresetVideoLyricTiming,
   PresetVideoOutputPreset,
+  PresetVideoTimelineClip,
 } from "../types";
 import { PRESET_VIDEO_OUTPUT_SIZES } from "../outputPresets";
 
@@ -17,6 +18,7 @@ export function createDefaultPresetVideoSettings(preset: PresetVideoDefinition):
     backgroundMusicVolume: 0.22,
     originalAudioVolume: 1,
     lyricTimings: createDefaultLyricTimings(preset),
+    timelineVideoClips: [],
   };
 }
 
@@ -40,6 +42,7 @@ export function loadPresetVideoSettings(preset: PresetVideoDefinition): PresetVi
       backgroundMusicVolume: clampNumber(raw.backgroundMusicVolume, 0, 1, defaults.backgroundMusicVolume),
       originalAudioVolume: clampNumber(raw.originalAudioVolume, 0, 1, defaults.originalAudioVolume),
       lyricTimings: normalizeStoredLyricTimings(preset, raw.lyricTimings),
+      timelineVideoClips: normalizeStoredTimelineClips(preset, raw.timelineVideoClips),
     };
   } catch {
     return defaults;
@@ -78,6 +81,42 @@ function normalizeStoredLyricTimings(
       return [id, { start, end }];
     }),
   );
+}
+
+function normalizeStoredTimelineClips(
+  preset: PresetVideoDefinition,
+  value: unknown,
+): PresetVideoTimelineClip[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.slice(0, 20).flatMap((raw, index) => {
+    if (!raw || typeof raw !== "object") return [];
+    const candidate = raw as Partial<PresetVideoTimelineClip>;
+    const id = typeof candidate.id === "string" && /^[a-z0-9][a-z0-9-]{0,79}$/i.test(candidate.id)
+      ? candidate.id
+      : `custom-${index + 1}`;
+    const clipStartSeconds = clampNumber(candidate.clipStartSeconds, 0, 4 * 60 * 60, 0);
+    const clipEndSeconds = clampNumber(candidate.clipEndSeconds, clipStartSeconds + 0.5, 4 * 60 * 60, clipStartSeconds + 8);
+    const sourceDuration = Math.min(20, clipEndSeconds - clipStartSeconds);
+    const timelineStartSeconds = clampNumber(candidate.timelineStartSeconds, 0, Math.max(0, preset.defaultDurationSeconds - 0.1), 0);
+    const timelineEndSeconds = clampNumber(
+      candidate.timelineEndSeconds,
+      timelineStartSeconds + 0.1,
+      Math.min(preset.defaultDurationSeconds, timelineStartSeconds + sourceDuration),
+      Math.min(preset.defaultDurationSeconds, timelineStartSeconds + sourceDuration),
+    );
+
+    return [{
+      id,
+      title: typeof candidate.title === "string" && candidate.title.trim()
+        ? candidate.title.trim().slice(0, 120)
+        : `Video ${index + 1}`,
+      clipStartSeconds,
+      clipEndSeconds: Math.min(clipEndSeconds, clipStartSeconds + 20),
+      timelineStartSeconds,
+      timelineEndSeconds,
+    }];
+  });
 }
 
 function storageKey(presetId: string) {

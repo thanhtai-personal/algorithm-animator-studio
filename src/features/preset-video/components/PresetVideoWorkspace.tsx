@@ -1,43 +1,37 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Player, type PlayerRef } from "@remotion/player";
+import type { PlayerRef } from "@remotion/player";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Download, Film, Music2, RotateCcw, Scissors } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { SystemLoader } from "@/components/ui/system-loader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getMusicLibraryTracks, type MusicLibraryTrack } from "@/lib/musicLibrary";
+import { usePresetVideoMedia } from "../hooks/usePresetVideoMedia";
 import { createDefaultPresetVideoSettings, loadPresetVideoSettings, savePresetVideoSettings } from "../lib/presetVideoDraft";
-import { PresetLyricTimingEditor } from "./PresetLyricTimingEditor";
-import {
-  formatPresetSeconds,
-  MusicPreview,
-  PresetPreviewErrorBoundary,
-  TrimSlider,
-  VolumeSlider,
-} from "./PresetVideoControls";
-import { PresetVideoSourcePickerCard } from "./PresetVideoSourcePickerCard";
-import { PresetVideoMediaStatusCard, PresetVideoRenderProgressCard } from "./PresetVideoStatusCards";
-import {
-  importPresetVideoSource,
-  preparePresetVideoMedia,
-  renderPresetVideo,
-} from "../lib/presetVideoApi";
+import { renderPresetVideo } from "../lib/presetVideoApi";
 import { getPresetVideoOutputSize, PRESET_VIDEO_OUTPUT_SIZES } from "../outputPresets";
 import type {
   PresetVideoDefinition,
   PresetVideoExportSettings,
   PresetVideoRenderResponse,
   PresetVideoSourceClip,
+  PresetVideoTimelineClip,
 } from "../types";
-import { PresetVideoComposition } from "../PresetVideoComposition";
+import { PresetLyricTimingEditor } from "./PresetLyricTimingEditor";
+import {
+  formatPresetSeconds,
+  MusicPreview,
+  TrimSlider,
+  VolumeSlider,
+} from "./PresetVideoControls";
+import { PresetVideoCustomClipsCard } from "./PresetVideoCustomClipsCard";
+import { PresetVideoPreviewStage } from "./PresetVideoPreviewStage";
+import { PresetVideoSourcePickerCard } from "./PresetVideoSourcePickerCard";
+import { PresetVideoMediaStatusCard, PresetVideoRenderProgressCard } from "./PresetVideoStatusCards";
 
-type Props = {
-  preset: PresetVideoDefinition;
-  onBack: () => void;
-};
+type Props = { preset: PresetVideoDefinition; onBack: () => void };
 
 const MIN_TRIM_SECONDS = 0.1;
 
@@ -48,52 +42,18 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
   const [rendering, setRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
   const [renderMessage, setRenderMessage] = useState("");
-  const [videoSourceUrls, setVideoSourceUrls] = useState<Record<string, string>>({});
-  const [mediaPreparing, setMediaPreparing] = useState(false);
-  const [mediaError, setMediaError] = useState("");
-  const [uploadingSourceId, setUploadingSourceId] = useState("");
   const [result, setResult] = useState<PresetVideoRenderResponse | null>(null);
   const playerRef = useRef<PlayerRef>(null);
+  const media = usePresetVideoMedia(preset, settings.timelineVideoClips);
 
   useEffect(() => {
     setSettings(loadPresetVideoSettings(preset));
     setResult(null);
-    setVideoSourceUrls({});
-    setMediaError("");
-    setUploadingSourceId("");
   }, [preset]);
 
   useEffect(() => {
     savePresetVideoSettings(preset.id, settings);
   }, [preset.id, settings]);
-
-  useEffect(() => {
-    if (!preset.videoSources?.length) {
-      setVideoSourceUrls({});
-      setMediaPreparing(false);
-      setMediaError("");
-      return;
-    }
-
-    let alive = true;
-    setMediaPreparing(true);
-    setMediaError("");
-    preparePresetVideoMedia(preset)
-      .then((media) => {
-        if (alive) setVideoSourceUrls(media.videoSourceUrls);
-      })
-      .catch((error) => {
-        if (!alive) return;
-        const message = error instanceof Error ? error.message : "Không chuẩn bị được clip video nền.";
-        setMediaError(message);
-        toast.error(message);
-      })
-      .finally(() => {
-        if (alive) setMediaPreparing(false);
-      });
-
-    return () => { alive = false; };
-  }, [preset]);
 
   useEffect(() => {
     let alive = true;
@@ -112,8 +72,15 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
 
   const output = getPresetVideoOutputSize(settings.outputPreset);
   const usesLocalVideoSources = preset.videoSourceStrategy === "local";
+  const requiredSourceIds = useMemo(
+    () => [
+      ...(preset.videoSources || []).map((source) => source.id),
+      ...settings.timelineVideoClips.map((clip) => clip.id),
+    ],
+    [preset.videoSources, settings.timelineVideoClips],
+  );
   const missingLocalVideoSources = usesLocalVideoSources
-    ? (preset.videoSources || []).filter((source) => !videoSourceUrls[source.id])
+    ? requiredSourceIds.filter((id) => !media.videoSourceUrls[id])
     : [];
   const selectedTrack = useMemo(
     () => tracks.find((track) => track.id === settings.backgroundMusicId),
@@ -128,9 +95,18 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
     backgroundMusicVolume: settings.backgroundMusicVolume,
     originalAudioVolume: settings.originalAudioVolume,
     lyricTimings: settings.lyricTimings,
-    videoSourceUrls,
-  }), [output.aspectRatio, preset, selectedTrack?.audioUrl, settings.backgroundMusicVolume, settings.originalAudioVolume, settings.lyricTimings, videoSourceUrls]);
-
+    videoSourceUrls: media.previewVideoSourceUrls,
+    timelineVideoClips: settings.timelineVideoClips,
+  }), [
+    media.previewVideoSourceUrls,
+    output.aspectRatio,
+    preset,
+    selectedTrack?.audioUrl,
+    settings.backgroundMusicVolume,
+    settings.lyricTimings,
+    settings.originalAudioVolume,
+    settings.timelineVideoClips,
+  ]);
   const inFrame = Math.max(0, Math.floor(settings.trimStartSeconds * preset.defaultFps));
   const outFrame = Math.max(inFrame, Math.ceil(settings.trimEndSeconds * preset.defaultFps) - 1);
   const durationInFrames = Math.max(1, Math.round(preset.defaultDurationSeconds * preset.defaultFps));
@@ -139,20 +115,8 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
     setSettings((current) => ({ ...current, ...patch }));
   }
 
-  function setTrimStart(value: number) {
-    patchSettings({ trimStartSeconds: Math.min(value, settings.trimEndSeconds - MIN_TRIM_SECONDS) });
-  }
-
-  function setTrimEnd(value: number) {
-    patchSettings({ trimEndSeconds: Math.max(value, settings.trimStartSeconds + MIN_TRIM_SECONDS) });
-  }
-
   function updateLyricTiming(cueId: string, timing: { start: number; end: number }) {
     patchSettings({ lyricTimings: { ...settings.lyricTimings, [cueId]: timing } });
-  }
-
-  function resetLyricTiming() {
-    patchSettings({ lyricTimings: createDefaultPresetVideoSettings(preset).lyricTimings });
   }
 
   function previewAt(timeSeconds: number) {
@@ -160,9 +124,61 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
     playerRef.current?.play();
   }
 
-  function previewTrim() {
-    playerRef.current?.seekTo(inFrame);
-    playerRef.current?.play();
+  async function selectLocalVideoSource(source: PresetVideoSourceClip, file: File) {
+    try {
+      await media.importSource(source, file);
+      toast.success(`Đã cắt và cache clip ${source.title}`);
+    } catch {
+      // usePresetVideoMedia already reports the actionable error.
+    }
+  }
+
+  function addTimelineClip() {
+    const timelineStartSeconds = Math.min(
+      Math.max(0, settings.trimStartSeconds),
+      Math.max(0, preset.defaultDurationSeconds - MIN_TRIM_SECONDS),
+    );
+    const timelineEndSeconds = Math.min(preset.defaultDurationSeconds, timelineStartSeconds + 8);
+    const clip: PresetVideoTimelineClip = {
+      id: createTimelineClipId(),
+      title: `Video custom ${settings.timelineVideoClips.length + 1}`,
+      clipStartSeconds: 0,
+      clipEndSeconds: 8,
+      timelineStartSeconds,
+      timelineEndSeconds,
+    };
+    patchSettings({ timelineVideoClips: [...settings.timelineVideoClips, clip] });
+  }
+
+  function updateTimelineClip(clipId: string, patch: Partial<PresetVideoTimelineClip>) {
+    const current = settings.timelineVideoClips.find((clip) => clip.id === clipId);
+    if (!current) return;
+    if (
+      (patch.clipStartSeconds !== undefined && patch.clipStartSeconds !== current.clipStartSeconds)
+      || (patch.clipEndSeconds !== undefined && patch.clipEndSeconds !== current.clipEndSeconds)
+    ) {
+      media.invalidateSource(clipId);
+    }
+    patchSettings({
+      timelineVideoClips: settings.timelineVideoClips.map((clip) => (
+        clip.id === clipId ? { ...clip, ...patch } : clip
+      )),
+    });
+  }
+
+  function removeTimelineClip(clipId: string) {
+    media.invalidateSource(clipId);
+    patchSettings({ timelineVideoClips: settings.timelineVideoClips.filter((clip) => clip.id !== clipId) });
+  }
+
+  async function selectTimelineClip(clip: PresetVideoTimelineClip, file: File) {
+    try {
+      await media.importSource(clip, file);
+      updateTimelineClip(clip.id, { title: file.name.slice(0, 120) });
+      toast.success(`Đã cắt và cache ${file.name}`);
+    } catch {
+      // usePresetVideoMedia already reports the actionable error.
+    }
   }
 
   function reset() {
@@ -171,23 +187,6 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
     setRenderProgress(0);
     setRenderMessage("");
     playerRef.current?.seekTo(0);
-  }
-
-  async function selectLocalVideoSource(source: PresetVideoSourceClip, file: File) {
-    setUploadingSourceId(source.id);
-    setMediaError("");
-    try {
-      const imported = await importPresetVideoSource(preset, source, file);
-      const cacheBustedUrl = appendCacheBust(imported.videoUrl);
-      setVideoSourceUrls((current) => ({ ...current, [source.id]: cacheBustedUrl }));
-      toast.success(`Đã cắt và cache clip ${source.title}`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : `Không xử lý được video ${source.title}.`;
-      setMediaError(message);
-      toast.error(message);
-    } finally {
-      setUploadingSourceId("");
-    }
   }
 
   async function exportVideo() {
@@ -231,9 +230,9 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" disabled={rendering} onClick={reset}><RotateCcw className="mr-2 h-4 w-4" />Reset</Button>
+          <Button variant="outline" disabled={rendering || Boolean(media.uploadingSourceId)} onClick={reset}><RotateCcw className="mr-2 h-4 w-4" />Reset</Button>
           <Button
-            disabled={rendering || Boolean(uploadingSourceId) || missingLocalVideoSources.length > 0}
+            disabled={rendering || Boolean(media.uploadingSourceId) || missingLocalVideoSources.length > 0}
             onClick={() => void exportVideo()}
           >
             <Film className="mr-2 h-4 w-4" />
@@ -242,37 +241,36 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
         </div>
       </header>
 
+      <div className={`grid items-start gap-4 ${preset.editableLyrics?.length ? "xl:grid-cols-[minmax(0,1.15fr)_minmax(420px,0.85fr)]" : ""}`}>
+        <PresetVideoPreviewStage
+          playerRef={playerRef}
+          inputProps={inputProps}
+          durationInFrames={durationInFrames}
+          compositionWidth={output.width}
+          compositionHeight={output.height}
+          fps={preset.defaultFps}
+          inFrame={inFrame}
+          outFrame={outFrame}
+          aspectRatio={output.aspectRatio}
+          presetId={preset.id}
+          preloadingCount={media.preloadingCount}
+        />
+        {preset.editableLyrics?.length ? (
+          <div className="xl:sticky xl:top-4">
+            <PresetLyricTimingEditor
+              cues={preset.editableLyrics}
+              timings={settings.lyricTimings}
+              durationSeconds={preset.defaultDurationSeconds}
+              onChange={updateLyricTiming}
+              onReset={() => patchSettings({ lyricTimings: createDefaultPresetVideoSettings(preset).lyricTimings })}
+              onPreview={previewAt}
+            />
+          </div>
+        ) : null}
+      </div>
+
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <section className="min-w-0 space-y-4">
-          <Card className="overflow-hidden bg-black">
-            <CardContent className="flex justify-center p-0">
-              <div
-                className="w-full"
-                style={{
-                  maxWidth: output.aspectRatio === "9:16" ? "32dvh" : output.aspectRatio === "1:1" ? "58dvh" : undefined,
-                  maxHeight: "58dvh",
-                  aspectRatio: `${output.width} / ${output.height}`,
-                }}
-              >
-                <PresetPreviewErrorBoundary key={`${preset.id}-${output.aspectRatio}`}>
-                  <Player
-                    ref={playerRef}
-                    component={PresetVideoComposition}
-                    inputProps={inputProps}
-                    durationInFrames={durationInFrames}
-                    compositionWidth={output.width}
-                    compositionHeight={output.height}
-                    fps={preset.defaultFps}
-                    inFrame={inFrame}
-                    outFrame={outFrame}
-                    controls
-                    style={{ width: "100%", height: "100%", background: "#000" }}
-                  />
-                </PresetPreviewErrorBoundary>
-              </div>
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base"><Scissors className="h-4 w-4" />Đoạn export</CardTitle>
@@ -283,7 +281,7 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
                 value={settings.trimStartSeconds}
                 max={Math.max(0, settings.trimEndSeconds - MIN_TRIM_SECONDS)}
                 duration={preset.defaultDurationSeconds}
-                onChange={setTrimStart}
+                onChange={(value) => patchSettings({ trimStartSeconds: Math.min(value, settings.trimEndSeconds - MIN_TRIM_SECONDS) })}
               />
               <TrimSlider
                 label="Kết thúc"
@@ -291,23 +289,27 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
                 min={Math.min(preset.defaultDurationSeconds, settings.trimStartSeconds + MIN_TRIM_SECONDS)}
                 max={preset.defaultDurationSeconds}
                 duration={preset.defaultDurationSeconds}
-                onChange={setTrimEnd}
+                onChange={(value) => patchSettings({ trimEndSeconds: Math.max(value, settings.trimStartSeconds + MIN_TRIM_SECONDS) })}
               />
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/30 px-3 py-2 text-sm">
                 <span>{formatPresetSeconds(settings.trimStartSeconds)} → {formatPresetSeconds(settings.trimEndSeconds)}</span>
                 <span className="font-semibold">{formatPresetSeconds(settings.trimEndSeconds - settings.trimStartSeconds)}</span>
               </div>
-              <Button variant="outline" onClick={previewTrim}>Preview đoạn đã chọn</Button>
+              <Button variant="outline" onClick={() => previewAt(settings.trimStartSeconds)}>Preview đoạn đã chọn</Button>
             </CardContent>
           </Card>
 
-          {preset.editableLyrics?.length ? (
-            <PresetLyricTimingEditor
-              cues={preset.editableLyrics}
-              timings={settings.lyricTimings}
+          {usesLocalVideoSources ? (
+            <PresetVideoCustomClipsCard
+              clips={settings.timelineVideoClips}
+              videoSourceUrls={media.videoSourceUrls}
+              uploadingSourceId={media.uploadingSourceId}
               durationSeconds={preset.defaultDurationSeconds}
-              onChange={updateLyricTiming}
-              onReset={resetLyricTiming}
+              disabled={rendering}
+              onAdd={addTimelineClip}
+              onRemove={removeTimelineClip}
+              onChange={updateTimelineClip}
+              onSelect={(clip, file) => void selectTimelineClip(clip, file)}
               onPreview={previewAt}
             />
           ) : null}
@@ -327,7 +329,6 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
                 </Select>
                 <p className="text-xs text-muted-foreground">{output.aspectRatio} · {output.width}×{output.height} · {preset.defaultFps} FPS</p>
               </div>
-
               <div className="space-y-2">
                 <Label className="flex items-center gap-2"><Music2 className="h-4 w-4" />Nhạc nền</Label>
                 <Select
@@ -343,7 +344,6 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
                 </Select>
                 {selectedTrack ? <MusicPreview src={selectedTrack.audioUrl} volume={settings.backgroundMusicVolume} /> : null}
               </div>
-
               <VolumeSlider label="Music volume" value={settings.backgroundMusicVolume} onChange={(value) => patchSettings({ backgroundMusicVolume: value })} />
               {preset.hasOriginalAudio
                 ? <VolumeSlider label="Original audio" value={settings.originalAudioVolume} onChange={(value) => patchSettings({ originalAudioVolume: value })} />
@@ -354,19 +354,19 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
           {usesLocalVideoSources && preset.videoSources?.length ? (
             <PresetVideoSourcePickerCard
               sources={preset.videoSources}
-              videoSourceUrls={videoSourceUrls}
-              uploadingSourceId={uploadingSourceId}
+              videoSourceUrls={media.videoSourceUrls}
+              uploadingSourceId={media.uploadingSourceId}
               disabled={rendering}
               onSelect={(source, file) => void selectLocalVideoSource(source, file)}
             />
           ) : null}
 
-          {preset.videoSources?.length ? (
+          {requiredSourceIds.length ? (
             <PresetVideoMediaStatusCard
-              preparing={mediaPreparing}
-              error={mediaError}
-              sourceCount={Object.keys(videoSourceUrls).length}
-              requiredSourceCount={preset.videoSources.length}
+              preparing={media.mediaPreparing || media.preloadingCount > 0}
+              error={media.mediaError}
+              sourceCount={requiredSourceIds.filter((id) => Boolean(media.videoSourceUrls[id])).length}
+              requiredSourceCount={requiredSourceIds.length}
               localMode={usesLocalVideoSources}
             />
           ) : null}
@@ -395,8 +395,6 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
   );
 }
 
-function appendCacheBust(url: string) {
-  if (!url) return url;
-  const separator = url.includes("?") ? "&" : "?";
-  return `${url}${separator}v=${Date.now()}`;
+function createTimelineClipId() {
+  return `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }

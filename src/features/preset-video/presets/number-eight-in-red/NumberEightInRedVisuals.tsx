@@ -7,7 +7,10 @@ import {
   delayRender,
 } from "remotion";
 import { Video } from "@remotion/media";
+import type { PresetVideoTimelineClip } from "../../types";
+import { NumberEightTimelineClips } from "./NumberEightTimelineClips";
 import {
+  NUMBER_EIGHT_VISUAL_SOURCES,
   getNumberEightSource,
   type NumberEightSection,
 } from "./numberEightInRedContent";
@@ -26,10 +29,12 @@ export function NumberEightVisualLayer(props: {
   beatPulse: number;
   portrait: boolean;
   videoSourceUrls: Record<string, string>;
+  timelineVideoClips: readonly PresetVideoTimelineClip[];
 }) {
   const slot = getVisualSlot(props.section, props.time);
   const current = getNumberEightSource(slot.currentSourceId);
   const previous = getNumberEightSource(slot.previousSourceId);
+  const next = getNumberEightSource(slot.nextSourceId);
   const transition = smoothStep(clamp01(slot.localTime / 0.65));
   const currentTransform = mediaTransform(
     props.section.visualMode,
@@ -45,31 +50,38 @@ export function NumberEightVisualLayer(props: {
     props.beatPulse,
     props.portrait,
   );
-
   const isSameSource = previous.id === current.id;
+  const activeTimelineClip = [...props.timelineVideoClips]
+    .reverse()
+    .find((clip) => props.time >= clip.timelineStartSeconds && props.time < clip.timelineEndSeconds);
 
   return (
     <AbsoluteFill style={{ overflow: "hidden", background: "linear-gradient(135deg, #050505, #260805 60%, #050505)" }}>
-      {!isSameSource ? (
-        <SourceMedia
-          key={`previous-${previous.id}`}
-          imageSrc={previous.thumbnailUrl}
-          videoSrc={props.videoSourceUrls[previous.id]}
-          opacity={1 - transition}
-          transform={previousTransform}
-          portrait={props.portrait}
-          frozen={props.section.visualMode === "freeze"}
-        />
-      ) : null}
-      <SourceMedia
-        key={`current-${current.id}`}
-        imageSrc={current.thumbnailUrl}
-        videoSrc={props.videoSourceUrls[current.id]}
-        opacity={isSameSource ? 1 : transition}
-        transform={currentTransform}
+      {NUMBER_EIGHT_VISUAL_SOURCES.filter((source) => (
+        source.id === current.id || source.id === previous.id || source.id === next.id
+      )).map((source) => {
+        const isCurrent = source.id === current.id;
+        const isPrevious = !isSameSource && source.id === previous.id;
+        const opacity = isCurrent ? (isSameSource ? 1 : transition) : isPrevious ? 1 - transition : 0;
+        return (
+          <SourceMedia
+            key={source.id}
+            imageSrc={source.thumbnailUrl}
+            videoSrc={props.videoSourceUrls[source.id]}
+            opacity={opacity}
+            transform={isPrevious ? previousTransform : currentTransform}
+            portrait={props.portrait}
+            frozen={props.section.visualMode === "freeze" && isCurrent}
+          />
+        );
+      })}
+
+      <NumberEightTimelineClips
+        clips={props.timelineVideoClips}
+        videoSourceUrls={props.videoSourceUrls}
         portrait={props.portrait}
-        frozen={props.section.visualMode === "freeze"}
       />
+
       <AbsoluteFill
         style={{
           background: [
@@ -99,7 +111,7 @@ export function NumberEightVisualLayer(props: {
           textShadow: "0 3px 14px rgba(0,0,0,0.9)",
         }}
       >
-        {current.title}
+        {activeTimelineClip?.title || current.title}
       </div>
     </AbsoluteFill>
   );
@@ -140,9 +152,15 @@ function SourceMedia(props: {
   ) : null;
 
   return (
-    <AbsoluteFill style={{ opacity: props.opacity, overflow: "hidden" }}>
+    <AbsoluteFill
+      style={{
+        opacity: props.opacity,
+        overflow: "hidden",
+        pointerEvents: "none",
+      }}
+    >
       <SourceImage src={props.imageSrc} transform={props.transform} portrait={props.portrait} />
-      {video ? (props.frozen ? <Freeze frame={18}>{video}</Freeze> : video) : null}
+      {video ? <Freeze frame={18} active={props.frozen}>{video}</Freeze> : null}
     </AbsoluteFill>
   );
 }
@@ -309,7 +327,8 @@ function getVisualSlot(section: NumberEightSection, time: number) {
   const progress = clamp01(localTime / section.holdSeconds);
   const currentSourceId = section.sourceIds[index % section.sourceIds.length];
   const previousSourceId = section.sourceIds[(index - 1 + section.sourceIds.length) % section.sourceIds.length];
-  return { index, localTime, progress, currentSourceId, previousSourceId };
+  const nextSourceId = section.sourceIds[(index + 1) % section.sourceIds.length];
+  return { index, localTime, progress, currentSourceId, previousSourceId, nextSourceId };
 }
 
 function mediaTransform(

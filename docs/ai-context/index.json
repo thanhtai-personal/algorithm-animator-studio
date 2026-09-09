@@ -266,6 +266,24 @@
       "related": ["app-shell", "voice-providers", "channels-publishing", "desktop-distribution"]
     },
     {
+      "id": "remote-control",
+      "name": "Telegram remote control and Ollama intent routing",
+      "summary": "Local-only Telegram bot configuration, allowlisted desktop actions, Ollama intent classification, audit logging, and Settings UI.",
+      "keywords": ["telegram", "remote control", "remote", "ollama", "bot", "allowlist", "shutdown", "restart", "lock workstation", "điều khiển từ xa", "telegram bot", "khóa máy"],
+      "primary": [
+        { "path": "server/services/TelegramRemoteControlService.ts", "role": "Telegram polling and allowlisted command orchestration" },
+        { "path": "server/services/RemoteControlActionService.ts", "role": "Fixed desktop action executor" },
+        { "path": "server/services/RemoteControlConfigService.ts", "role": "Local config, secret token, and audit storage" },
+        { "path": "server/routes/remoteControlRoutes.ts", "role": "Local-only settings API" },
+        { "path": "src/pages/settings/SettingsRemoteControlTab.tsx", "role": "Remote Control settings UI" },
+        { "path": "src/lib/remoteControlApi.ts", "role": "Frontend settings API contract" }
+      ],
+      "expand": ["server/{models,routes,services}/*RemoteControl*.ts", "server/services/TelegramBotClient.ts", "src/pages/settings/*RemoteControl*.tsx", "src/lib/*remoteControl*.ts"],
+      "tests": ["src/test/RemoteControl*.test.ts"],
+      "docs": ["docs/telegram-remote-control.md"],
+      "related": ["runtime-assets-jobs", "app-shell", "desktop-distribution"]
+    },
+    {
       "id": "desktop-distribution",
       "name": "Electron desktop and distribution",
       "summary": "Electron lifecycle, backend bootstrap, runtime preparation, packaged resources, Windows verification, and public-web/desktop differences.",

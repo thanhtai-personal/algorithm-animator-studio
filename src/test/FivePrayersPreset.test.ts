@@ -8,18 +8,47 @@ import {
 import {
   FIVE_PRAYERS_DURATION_SECONDS,
   FIVE_PRAYERS_LYRIC_CUES,
+  FIVE_PRAYERS_PRAYER_SECTIONS,
+  FIVE_PRAYERS_TRACKS,
   getFivePrayersLyricCue,
+  getFivePrayersPrayerSection,
 } from "@/features/preset-video/presets/five-prayers/fivePrayersContent";
 
 describe("Five Prayers preset", () => {
   it("uses speech-aligned lyric anchors from the bundled recording", () => {
     expect(fivePrayersPreset.editableLyrics).toBe(FIVE_PRAYERS_LYRIC_CUES);
+    expect(fivePrayersPreset.lyricTimingRevision).toBe(2);
     expect(FIVE_PRAYERS_LYRIC_CUES.find((cue) => cue.id === "prayer-1-001")).toMatchObject({ start: 0, end: 6.08 });
     expect(FIVE_PRAYERS_LYRIC_CUES.find((cue) => cue.id === "prayer-2-001")?.start).toBe(245.7);
     expect(FIVE_PRAYERS_LYRIC_CUES.find((cue) => cue.id === "prayer-3-001")?.start).toBe(526.14);
     expect(FIVE_PRAYERS_LYRIC_CUES.find((cue) => cue.id === "prayer-4-001")?.start).toBe(734.8);
     expect(FIVE_PRAYERS_LYRIC_CUES.find((cue) => cue.id === "prayer-5-001")?.start).toBe(959.86);
     expect(FIVE_PRAYERS_LYRIC_CUES.at(-1)?.end).toBe(1217.68);
+  });
+
+  it("keeps the active prayer name visible across lyric gaps", () => {
+    expect(getFivePrayersPrayerSection(0).title).toBe("Dấu Thánh Giá");
+    expect(getFivePrayersPrayerSection(18.3).title).toBe("Kinh Đức Chúa Thánh Thần");
+    expect(getFivePrayersPrayerSection(150).title).toBe("Kinh Lạy Cha");
+    expect(getFivePrayersPrayerSection(190).title).toBe("Kinh Kính Mừng");
+    expect(getFivePrayersPrayerSection(230).title).toBe("Kinh Sáng Danh");
+    expect(getFivePrayersPrayerSection(240).title).toBe("Kinh Tin");
+    expect(getFivePrayersPrayerSection(510).title).toBe("Kinh Tin Kính");
+    expect(getFivePrayersPrayerSection(520).title).toBe("Kinh Cáo Mình");
+    expect(getFivePrayersPrayerSection(950).title).toBe("Kinh Trông Cậy");
+    expect(getFivePrayersPrayerSection(1220).title).toBe("Năm Sự Mừng");
+
+    for (const section of FIVE_PRAYERS_PRAYER_SECTIONS) {
+      expect(section.end).toBeGreaterThan(section.start);
+    }
+  });
+
+  it("uses automatic Catholic artwork sources for every prayer track", () => {
+    expect(FIVE_PRAYERS_TRACKS).toHaveLength(5);
+    for (const track of FIVE_PRAYERS_TRACKS) {
+      expect(track.artwork.imageUrl).toMatch(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\//);
+      expect(track.artwork.sourceUrl).toMatch(/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
+    }
   });
 
   it("keeps every cue ordered, non-overlapping, and inside the audio duration", () => {

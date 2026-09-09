@@ -1,4 +1,4 @@
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, Img } from "remotion";
 import type { FivePrayersTrack } from "./fivePrayersContent";
 
 const THEMES = {
@@ -30,6 +30,19 @@ export function FivePrayersVisuals(props: {
         ].join(","),
       }}
     >
+      <PrayerArtwork
+        track={props.track}
+        portrait={props.portrait}
+        time={localTime}
+      />
+      <AbsoluteFill
+        style={{
+          background: [
+            `linear-gradient(145deg, ${theme.a}b8 0%, ${theme.b}82 52%, #07080bd9 100%)`,
+            `radial-gradient(circle at 50% 30%, transparent 0%, ${theme.a}66 52%, #050609d9 100%)`,
+          ].join(","),
+        }}
+      />
       <LightRays glow={theme.glow} time={localTime} />
       <Stars accent={theme.accent} time={localTime} />
       <div
@@ -56,6 +69,43 @@ export function FivePrayersVisuals(props: {
             "linear-gradient(180deg, rgba(3,5,9,0.2) 0%, transparent 35%, rgba(3,5,9,0.8) 100%)",
             "radial-gradient(circle at center, transparent 38%, rgba(0,0,0,0.48) 100%)",
           ].join(","),
+        }}
+      />
+    </AbsoluteFill>
+  );
+}
+
+function PrayerArtwork(props: {
+  track: FivePrayersTrack;
+  portrait: boolean;
+  time: number;
+}) {
+  const slowZoom = 1.055 + Math.min(0.075, props.time * 0.00022);
+  const driftX = Math.sin(props.time * 0.035) * (props.portrait ? 1.4 : 0.8);
+  const driftY = Math.sin(props.time * 0.027 + 0.8) * 1.2;
+
+  return (
+    <AbsoluteFill style={{ overflow: "hidden", background: "#07080b" }}>
+      <Img
+        src={props.track.artwork.imageUrl}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          objectPosition: props.track.artwork.objectPosition,
+          opacity: 0.8,
+          filter: props.track.theme === "beatitudes"
+            ? "sepia(0.34) saturate(0.75) contrast(1.08) brightness(0.72)"
+            : "saturate(0.86) contrast(1.06) brightness(0.7)",
+          transform: `translate(${driftX}%, ${driftY}%) scale(${slowZoom})`,
+          transformOrigin: "50% 46%",
+        }}
+      />
+      <AbsoluteFill
+        style={{
+          background: props.portrait
+            ? "linear-gradient(180deg, rgba(3,4,8,0.18) 0%, rgba(3,4,8,0.02) 34%, rgba(3,4,8,0.68) 76%, rgba(3,4,8,0.9) 100%)"
+            : "linear-gradient(90deg, rgba(3,4,8,0.42) 0%, rgba(3,4,8,0.04) 48%, rgba(3,4,8,0.46) 100%)",
         }}
       />
     </AbsoluteFill>

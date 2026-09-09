@@ -5,9 +5,14 @@ import {
   FIVE_PRAYERS_AUDIO_ASSET,
   FIVE_PRAYERS_DURATION_SECONDS,
   getFivePrayersLyricCue,
+  getFivePrayersPrayerSection,
   getFivePrayersTrack,
 } from "./fivePrayersContent";
-import { FivePrayersCaption, FivePrayersTrackTitle } from "./FivePrayersTypography";
+import {
+  FivePrayersCaption,
+  FivePrayersPrayerTitle,
+  FivePrayersTrackTitle,
+} from "./FivePrayersTypography";
 import { FivePrayersVisuals } from "./FivePrayersVisuals";
 
 export function FivePrayersComposition(props: PresetVideoCompositionProps) {
@@ -15,6 +20,7 @@ export function FivePrayersComposition(props: PresetVideoCompositionProps) {
   const { fps, width, height } = useVideoConfig();
   const time = Math.min(FIVE_PRAYERS_DURATION_SECONDS, frame / fps);
   const track = getFivePrayersTrack(time);
+  const prayerSection = getFivePrayersPrayerSection(time);
   const cue = getFivePrayersLyricCue(time, props.lyricTimings);
   const portrait = props.aspectRatio === "9:16";
   const shortestSide = Math.min(width, height);
@@ -56,6 +62,13 @@ export function FivePrayersComposition(props: PresetVideoCompositionProps) {
         <span>5 BÀI KINH · CẦU NGUYỆN</span>
         <span>{String(track.number).padStart(2, "0")} / 05</span>
       </header>
+
+      <FivePrayersPrayerTitle
+        section={prayerSection}
+        time={time}
+        portrait={portrait}
+        shortestSide={shortestSide}
+      />
 
       <FivePrayersTrackTitle
         track={track}

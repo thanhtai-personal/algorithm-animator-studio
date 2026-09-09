@@ -13,7 +13,7 @@ function FivePrayersPresetComposition(props: PresetVideoCompositionProps) {
 export const fivePrayersPreset: PresetVideoDefinition = {
   id: "five-prayers",
   name: "5 Bài Kinh · Cầu Nguyện",
-  description: "Tổng hợp 5 bài theo thứ tự 01 → 05, visual Remotion tạo sinh theo chủ đề Công giáo và caption lời kinh có thể chỉnh timing.",
+  description: "Tổng hợp 5 bài theo thứ tự 01 → 05, dùng artwork Công giáo phù hợp từng phần, tên kinh hiển thị xuyên suốt và lyric animation giữ nguyên timing gốc.",
   tags: ["prayer", "catholic", "lyrics", "meditation", "remotion"],
   accentColor: "#f6d58a",
   defaultDurationSeconds: FIVE_PRAYERS_DURATION_SECONDS,

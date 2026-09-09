@@ -19,7 +19,6 @@ import type {
   PresetVideoSourceClip,
   PresetVideoTimelineClip,
 } from "../types";
-import { PresetLyricTimingEditor } from "./PresetLyricTimingEditor";
 import {
   formatPresetSeconds,
   MusicPreview,
@@ -27,8 +26,8 @@ import {
   VolumeSlider,
 } from "./PresetVideoControls";
 import { PresetVideoCustomClipsCard } from "./PresetVideoCustomClipsCard";
-import { PresetVideoPreviewStage } from "./PresetVideoPreviewStage";
 import { PresetVideoSourcePickerCard } from "./PresetVideoSourcePickerCard";
+import { PresetVideoPreviewEditor } from "./PresetVideoPreviewEditor";
 import { PresetVideoMediaStatusCard, PresetVideoRenderProgressCard } from "./PresetVideoStatusCards";
 
 type Props = { preset: PresetVideoDefinition; onBack: () => void };
@@ -107,16 +106,9 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
     settings.originalAudioVolume,
     settings.timelineVideoClips,
   ]);
-  const inFrame = Math.max(0, Math.floor(settings.trimStartSeconds * preset.defaultFps));
-  const outFrame = Math.max(inFrame, Math.ceil(settings.trimEndSeconds * preset.defaultFps) - 1);
-  const durationInFrames = Math.max(1, Math.round(preset.defaultDurationSeconds * preset.defaultFps));
 
   function patchSettings(patch: Partial<PresetVideoExportSettings>) {
     setSettings((current) => ({ ...current, ...patch }));
-  }
-
-  function updateLyricTiming(cueId: string, timing: { start: number; end: number }) {
-    patchSettings({ lyricTimings: { ...settings.lyricTimings, [cueId]: timing } });
   }
 
   function previewAt(timeSeconds: number) {
@@ -241,33 +233,18 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
         </div>
       </header>
 
-      <div className={`grid items-start gap-4 ${preset.editableLyrics?.length ? "xl:grid-cols-[minmax(0,1.15fr)_minmax(420px,0.85fr)]" : ""}`}>
-        <PresetVideoPreviewStage
-          playerRef={playerRef}
-          inputProps={inputProps}
-          durationInFrames={durationInFrames}
-          compositionWidth={output.width}
-          compositionHeight={output.height}
-          fps={preset.defaultFps}
-          inFrame={inFrame}
-          outFrame={outFrame}
-          aspectRatio={output.aspectRatio}
-          presetId={preset.id}
-          preloadingCount={media.preloadingCount}
-        />
-        {preset.editableLyrics?.length ? (
-          <div className="xl:sticky xl:top-4">
-            <PresetLyricTimingEditor
-              cues={preset.editableLyrics}
-              timings={settings.lyricTimings}
-              durationSeconds={preset.defaultDurationSeconds}
-              onChange={updateLyricTiming}
-              onReset={() => patchSettings({ lyricTimings: createDefaultPresetVideoSettings(preset).lyricTimings })}
-              onPreview={previewAt}
-            />
-          </div>
-        ) : null}
-      </div>
+      <PresetVideoPreviewEditor
+        preset={preset}
+        settings={settings}
+        inputProps={inputProps}
+        playerRef={playerRef}
+        compositionWidth={output.width}
+        compositionHeight={output.height}
+        aspectRatio={output.aspectRatio}
+        preloadingCount={media.preloadingCount}
+        disabled={rendering}
+        onSettingsChange={patchSettings}
+      />
 
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <section className="min-w-0 space-y-4">

@@ -91,6 +91,14 @@ export const FIVE_PRAYERS_TRACKS: readonly FivePrayersTrack[] = [
   },
 ] as const;
 
+export const FIVE_PRAYERS_PREVIEW_SECTIONS = FIVE_PRAYERS_TRACKS.map((track) => ({
+  id: track.id,
+  label: `Video ${String(track.number).padStart(2, "0")}`,
+  title: `${track.title} · ${track.subtitle}`,
+  startSeconds: track.start,
+  endSeconds: track.end,
+}));
+
 export const FIVE_PRAYERS_LYRIC_CUES: readonly FivePrayersLyricCue[] =
   FIVE_PRAYERS_TRACKS.flatMap(createTrackCues);
 

@@ -30,6 +30,14 @@ export type PresetVideoSourceClip = {
   clipEndSeconds: number;
 };
 
+export type PresetVideoPreviewSection = {
+  id: string;
+  label: string;
+  title: string;
+  startSeconds: number;
+  endSeconds: number;
+};
+
 export type PresetVideoTimelineClip = {
   id: string;
   title: string;
@@ -63,6 +71,7 @@ export type PresetVideoDefinition = {
   defaultOutputPreset: PresetVideoOutputPreset;
   hasOriginalAudio: boolean;
   lyricTimingRevision?: number;
+  previewSections?: readonly PresetVideoPreviewSection[];
   editableLyrics?: readonly PresetVideoEditableLyricCue[];
   videoSources?: readonly PresetVideoSourceClip[];
   videoSourceStrategy?: PresetVideoSourceStrategy;

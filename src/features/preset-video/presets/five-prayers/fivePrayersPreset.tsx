@@ -3,6 +3,7 @@ import { FivePrayersComposition } from "./FivePrayersComposition";
 import {
   FIVE_PRAYERS_DURATION_SECONDS,
   FIVE_PRAYERS_LYRIC_CUES,
+  FIVE_PRAYERS_PREVIEW_SECTIONS,
 } from "./fivePrayersContent";
 
 function FivePrayersPresetComposition(props: PresetVideoCompositionProps) {
@@ -20,6 +21,7 @@ export const fivePrayersPreset: PresetVideoDefinition = {
   defaultOutputPreset: "landscape-1080p",
   hasOriginalAudio: true,
   lyricTimingRevision: 1,
+  previewSections: FIVE_PRAYERS_PREVIEW_SECTIONS,
   editableLyrics: FIVE_PRAYERS_LYRIC_CUES,
   component: FivePrayersPresetComposition,
 };

@@ -3,6 +3,7 @@ import { FIVE_PRAYERS_TRACK_2_LYRICS } from "./fivePrayersTrack2";
 import { FIVE_PRAYERS_TRACK_3_LYRICS } from "./fivePrayersTrack3";
 import { FIVE_PRAYERS_TRACK_4_LYRICS } from "./fivePrayersTrack4";
 import { FIVE_PRAYERS_TRACK_5_LYRICS } from "./fivePrayersTrack5";
+import { FIVE_PRAYERS_CUE_TIMINGS_BY_TRACK } from "./fivePrayersTimings";
 
 export type FivePrayersTrack = {
   id: string;
@@ -11,8 +12,6 @@ export type FivePrayersTrack = {
   subtitle: string;
   start: number;
   end: number;
-  lyricStartOffset: number;
-  lyricEndPadding: number;
   theme: "spirit" | "faith" | "commandments" | "beatitudes" | "rosary";
   lyrics: string;
 };
@@ -36,8 +35,6 @@ export const FIVE_PRAYERS_TRACKS: readonly FivePrayersTrack[] = [
     subtitle: "Kinh Lạy Cha · Kinh Kính Mừng · Kinh Sáng Danh",
     start: 0,
     end: 234.08,
-    lyricStartOffset: 1.8,
-    lyricEndPadding: 1,
     theme: "spirit",
     lyrics: FIVE_PRAYERS_TRACK_1_LYRICS,
   },
@@ -48,8 +45,6 @@ export const FIVE_PRAYERS_TRACKS: readonly FivePrayersTrack[] = [
     subtitle: "Kinh Ăn Năn Tội · Kinh Tin Kính",
     start: 234.08,
     end: 514,
-    lyricStartOffset: 0.8,
-    lyricEndPadding: 0.8,
     theme: "faith",
     lyrics: FIVE_PRAYERS_TRACK_2_LYRICS,
   },
@@ -60,8 +55,6 @@ export const FIVE_PRAYERS_TRACKS: readonly FivePrayersTrack[] = [
     subtitle: "Sáu Điều Răn Hội Thánh · Cải Tội Bảy Mối",
     start: 514,
     end: 713.32,
-    lyricStartOffset: 1.4,
-    lyricEndPadding: 0.8,
     theme: "commandments",
     lyrics: FIVE_PRAYERS_TRACK_3_LYRICS,
   },
@@ -72,8 +65,6 @@ export const FIVE_PRAYERS_TRACKS: readonly FivePrayersTrack[] = [
     subtitle: "Kinh Cám Ơn",
     start: 713.32,
     end: 947.52,
-    lyricStartOffset: 0.6,
-    lyricEndPadding: 0.8,
     theme: "beatitudes",
     lyrics: FIVE_PRAYERS_TRACK_4_LYRICS,
   },
@@ -84,8 +75,6 @@ export const FIVE_PRAYERS_TRACKS: readonly FivePrayersTrack[] = [
     subtitle: "Năm Sự Vui · Năm Sự Thương · Năm Sự Mừng",
     start: 947.52,
     end: FIVE_PRAYERS_DURATION_SECONDS,
-    lyricStartOffset: 1.1,
-    lyricEndPadding: 1.4,
     theme: "rosary",
     lyrics: FIVE_PRAYERS_TRACK_5_LYRICS,
   },
@@ -119,24 +108,18 @@ export function getFivePrayersLyricCue(
 
 function createTrackCues(track: FivePrayersTrack): FivePrayersLyricCue[] {
   const groups = splitCaptionGroups(track.lyrics);
-  const weights = groups.map(getCueWeight);
-  const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
-  const cueStart = track.start + track.lyricStartOffset;
-  const cueEnd = track.end - track.lyricEndPadding;
-  const available = Math.max(0.1, cueEnd - cueStart);
-  let cursor = cueStart;
+  const timings = FIVE_PRAYERS_CUE_TIMINGS_BY_TRACK[track.number - 1];
+  if (groups.length !== timings.length) {
+    throw new Error(`Five Prayers track ${track.number} has ${groups.length} captions but ${timings.length} timings.`);
+  }
 
   return groups.map((lines, index) => {
-    const start = cursor;
-    const duration = index === groups.length - 1
-      ? cueEnd - start
-      : available * (weights[index] / weightTotal);
-    cursor = Math.min(cueEnd, start + duration);
+    const [start, end] = timings[index];
     return {
       id: `prayer-${track.number}-${String(index + 1).padStart(3, "0")}`,
       trackId: track.id,
-      start: roundTime(start),
-      end: roundTime(index === groups.length - 1 ? cueEnd : cursor),
+      start,
+      end,
       lines,
     };
   });
@@ -156,13 +139,3 @@ function splitCaptionGroups(text: string) {
     });
 }
 
-function getCueWeight(lines: readonly string[]) {
-  const text = lines.join(" ");
-  const words = text.split(/\s+/).filter(Boolean).length;
-  const punctuationPauses = (text.match(/[,:;.!?]/g) || []).length;
-  return Math.max(2.4, words * 0.9 + punctuationPauses * 0.45);
-}
-
-function roundTime(value: number) {
-  return Math.round(value * 1000) / 1000;
-}

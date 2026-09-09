@@ -20,7 +20,7 @@ export const fivePrayersPreset: PresetVideoDefinition = {
   defaultFps: 30,
   defaultOutputPreset: "landscape-1080p",
   hasOriginalAudio: true,
-  lyricTimingRevision: 1,
+  lyricTimingRevision: 2,
   previewSections: FIVE_PRAYERS_PREVIEW_SECTIONS,
   editableLyrics: FIVE_PRAYERS_LYRIC_CUES,
   component: FivePrayersPresetComposition,

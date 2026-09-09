@@ -12,7 +12,6 @@ Chúng con xin Đức Chúa Thánh Thần
 xuống đầy lòng chúng con,
 là kẻ tin cậy Đức Chúa Trời,
 và đốt lửa kính mến Đức Chúa Trời
-trong lòng chúng con.
 
 Chúng con xin Đức Chúa Trời
 cho Đức Chúa Thánh Thần xuống.

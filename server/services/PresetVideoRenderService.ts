@@ -16,6 +16,7 @@ import {
 import { getRemotionBundleUrl } from "./RemotionRenderService";
 
 const COMPOSITION_ID = "PresetVideo";
+const MAX_PRESET_DURATION_SECONDS = 30 * 60;
 const OUTPUT_SIZES: Record<PresetVideoOutputPreset, { width: number; height: number; aspectRatio: PresetVideoAspectRatio }> = {
   "landscape-1080p": { width: 1920, height: 1080, aspectRatio: "16:9" },
   "landscape-720p": { width: 1280, height: 720, aspectRatio: "16:9" },
@@ -151,7 +152,7 @@ export function normalizePresetVideoRenderInput(raw: PresetVideoRenderBody): Nor
 
   const outputPreset = normalizeOutputPreset(raw.outputPreset);
   const output = OUTPUT_SIZES[outputPreset];
-  const durationSeconds = clampNumber(raw.durationSeconds, 1, 600, 10);
+  const durationSeconds = clampNumber(raw.durationSeconds, 1, MAX_PRESET_DURATION_SECONDS, 10);
   const fps = clampNumber(raw.fps, 24, 60, 30);
   const trimStartSeconds = clampNumber(raw.trimStartSeconds, 0, Math.max(0, durationSeconds - 0.1), 0);
   const trimEndSeconds = clampNumber(raw.trimEndSeconds, trimStartSeconds + 0.1, durationSeconds, durationSeconds);

@@ -1,5 +1,6 @@
 import { algorithmExplainerPreset } from "./presets/algorithmExplainerPreset";
 import { numberEightInRedPreset } from "./presets/number-eight-in-red/numberEightInRedPreset";
+import { fivePrayersPreset } from "./presets/five-prayers/fivePrayersPreset";
 import type { PresetVideoDefinition } from "./types";
 
 /**
@@ -11,6 +12,7 @@ import type { PresetVideoDefinition } from "./types";
 export const PRESET_VIDEO_REGISTRY: readonly PresetVideoDefinition[] = [
   algorithmExplainerPreset,
   numberEightInRedPreset,
+  fivePrayersPreset,
 ];
 
 export function getPresetVideoDefinition(presetId: string) {

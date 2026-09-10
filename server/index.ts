@@ -43,18 +43,15 @@ import { createYoutubeRouter } from "./routes/youtubeRoutes";
 import { createYoutubeToolRouter } from "./routes/youtubeToolRoutes";
 import { createAiVideoAgentRouter } from "./routes/aiVideoAgentRoutes";
 import { createPublishQueueRouter } from "./routes/publishQueueRoutes";
-import { createRemoteControlRouter } from "./routes/remoteControlRoutes";
 import { startLocalPublishWorker } from "./services/PublishWorkerService";
 import { readRuntimeEnvFromRequest } from "./services/RuntimeEnvService";
 import { readEnvValues } from "./services/EnvFileService";
 import { attachBackgroundJobsWebSocket } from "./services/BackgroundJobsRealtimeService";
 import { listYoutubeToolsJobs } from "./services/YoutubeToolsJobService";
 import { listAgentVideoJobs } from "./services/AiVideoAgentService";
-import { TelegramRemoteControlService } from "./services/TelegramRemoteControlService";
 
 const app = express();
 const httpServer = createServer(app);
-const telegramRemoteControl = new TelegramRemoteControlService();
 
 app.use(cors());
 app.use(express.json({ limit: "20mb" }));
@@ -67,7 +64,7 @@ app.use(`/${GENERATED_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedD
 app.use(`/${GENERATED_PREVIEW_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedPreviewDir));
 app.use(`/${GENERATED_VIDEO_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedVideoDir));
 app.use(`/${GENERATED_BACKGROUND_MUSIC_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedBackgroundMusicDir));
-app.use("/api", createHealthRouter(), createModelRouter(), createMusicLibraryRouter(), createMuNewsRouter(), createPiperRuntimeRouter(), createSystemRouter(), createRemoteControlRouter(telegramRemoteControl), createSetupWizardRouter(), createProviderStartupRouter(), createResourceRouter(), createStoryReviewRouter(), createWebExtractRouter(), createGenerateRouter(), createAiVideoAgentRouter(), createChannelProviderRouter(), createElevenLabsRouter(), createSupertonicRouter(), createGptSoVitsRouter(), createRvcApplioRouter(), createVieneuRouter(), createVideoRouter(), createYoutubeRouter(), createYoutubeToolRouter(), createPublishQueueRouter());
+app.use("/api", createHealthRouter(), createModelRouter(), createMusicLibraryRouter(), createMuNewsRouter(), createPiperRuntimeRouter(), createSystemRouter(), createSetupWizardRouter(), createProviderStartupRouter(), createResourceRouter(), createStoryReviewRouter(), createWebExtractRouter(), createGenerateRouter(), createAiVideoAgentRouter(), createChannelProviderRouter(), createElevenLabsRouter(), createSupertonicRouter(), createGptSoVitsRouter(), createRvcApplioRouter(), createVieneuRouter(), createVideoRouter(), createYoutubeRouter(), createYoutubeToolRouter(), createPublishQueueRouter());
 
 startLocalPublishWorker();
 attachBackgroundJobsWebSocket(httpServer, () => ({
@@ -81,9 +78,6 @@ httpServer.listen(PORT, () => {
   console.log(`Piper exe: ${PIPER_EXE}`);
   console.log(`Model dir: ${MODEL_DIR}`);
   console.log(`Generated dir: ${GENERATED_DIR}`);
-  void telegramRemoteControl.start().catch((error) => {
-    console.warn("[remote-control] Telegram bot did not start:", error instanceof Error ? error.message : error);
-  });
 });
 
 function createDynamicStaticMiddleware(resolveDirectory: (serverDataDir?: string) => string) {

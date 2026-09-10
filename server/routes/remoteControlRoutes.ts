@@ -6,9 +6,14 @@ import {
   readRemoteControlConfig,
   saveRemoteControlConfig,
 } from "../services/RemoteControlConfigService";
-import type { TelegramRemoteControlService } from "../services/TelegramRemoteControlService";
+import type { RemoteControlRuntimeStatus } from "../models/RemoteControl";
 
-export function createRemoteControlRouter(service: TelegramRemoteControlService) {
+export type RemoteControlRuntimeController = {
+  getStatus: () => RemoteControlRuntimeStatus;
+  restart: () => Promise<void>;
+};
+
+export function createRemoteControlRouter(service: RemoteControlRuntimeController) {
   const router = Router();
 
   router.use("/remote-control", localSettingsGuard);

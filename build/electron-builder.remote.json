@@ -1,0 +1,45 @@
+{
+  "appId": "vn.kaistudio.remote",
+  "productName": "KAI Remote",
+  "artifactName": "KAI-Remote-${version}-${arch}.${ext}",
+  "directories": {
+    "output": "release/remote-win"
+  },
+  "extraMetadata": {
+    "main": "electron/remote-main.cjs"
+  },
+  "files": [
+    "dist-electron/remote-server/**/*",
+    "electron/remote-main.cjs",
+    "electron/remote-preload.cjs",
+    "package.json",
+    "public/favicon.ico"
+  ],
+  "asar": true,
+  "asarUnpack": [
+    "dist-electron/remote-server/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "dist-remote",
+      "to": "remote-client",
+      "filter": ["**/*"]
+    }
+  ],
+  "win": {
+    "icon": "public/favicon.ico",
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ]
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "KAI Remote"
+  }
+}

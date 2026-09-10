@@ -20,11 +20,10 @@ import { SettingsChillTab } from "./settings/SettingsChillTab";
 import { SettingsDataTab } from "./settings/SettingsDataTab";
 import { SettingsHealthTab } from "./settings/SettingsHealthTab";
 import { SettingsModulesTab } from "./settings/SettingsModulesTab";
-import { SettingsRemoteControlTab } from "./settings/SettingsRemoteControlTab";
 import { EMPTY_FORM, type ElevenLabsConfigResponse, type HealthResponse, type PiperModel, type RvcApplioConfigResponse, type RvcApplioTemplateFileResponse, type SelectPathResponse, type SettingsForm, type SettingsFormKey, type SupertonicConfigResponse, type VieneuConfigResponse, type YoutubeToolsHealthResponse } from "./settings/SettingsTypes";
 import { SettingsVoiceTab } from "./settings/SettingsVoiceTab";
 import { readSystemLang, subscribeSystemLang, t, type Lang  } from "@/lib/i18n";
-import { buildApiUrl, IS_PUBLIC_WEB, parseApiResponse } from "@/lib/runtimeApi";
+import { buildApiUrl, parseApiResponse } from "@/lib/runtimeApi";
 import {
   buildRuntimeSettingsHeaders,
   getRuntimeSettings,
@@ -236,13 +235,12 @@ export default function Settings() {
         </div>
 
         <Tabs defaultValue={getDefaultSettingsTab()} className="space-y-4">
-          <TabsList className={`grid h-auto w-full grid-cols-2 gap-2 bg-muted/40 p-1 ${IS_PUBLIC_WEB ? "md:grid-cols-6" : "md:grid-cols-7"}`}>
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-muted/40 p-1 md:grid-cols-6">
             <TabsTrigger value="voice">{t(lang, "settingsVoiceTab")}</TabsTrigger>
             <TabsTrigger value="data">{t(lang, "settingsDataTab")}</TabsTrigger>
             <TabsTrigger value="tools">{t(lang, "uiModules")}</TabsTrigger>
             {fantasticMode && <TabsTrigger value="chill">Chill</TabsTrigger>}
             <TabsTrigger value="api-key">{t(lang, "settingsApiKeyTab")}</TabsTrigger>
-            {!IS_PUBLIC_WEB && <TabsTrigger value="remote">{t(lang, "settingsRemoteTab")}</TabsTrigger>}
             <TabsTrigger value="health">{t(lang, "settingsHealthCheckTab")}</TabsTrigger>
           </TabsList>
 
@@ -279,10 +277,6 @@ export default function Settings() {
             <SettingsApiKeyTab form={form} lang={lang} onUpdateField={updateField} />
           </TabsContent>
 
-          {!IS_PUBLIC_WEB && <TabsContent value="remote" className="mt-0">
-            <SettingsRemoteControlTab lang={lang} />
-          </TabsContent>}
-
           <TabsContent value="health" className="mt-0">
             <SettingsHealthTab
               availableModels={availableModels}
@@ -309,9 +303,7 @@ function getDefaultSettingsTab() {
   if (typeof window === "undefined") return "voice";
   const tab = new URLSearchParams(window.location.search).get("tab") || "voice";
   if (tab === "modules" || tab === "providers") return "tools";
-  const tabs = IS_PUBLIC_WEB
-    ? ["voice", "data", "tools", "chill", "api-key", "health"]
-    : ["voice", "data", "tools", "chill", "api-key", "remote", "health"];
+  const tabs = ["voice", "data", "tools", "chill", "api-key", "health"];
   return tabs.includes(tab) ? tab : "voice";
 }
 

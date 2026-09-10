@@ -6,7 +6,7 @@ KAI STUDIO can run a small Telegram bot from its local Express backend so the ow
 
 Remote Control is intentionally **not** a remote shell.
 
-- Telegram messages are accepted only from numeric user IDs configured in **Settings → Remote**.
+- Telegram messages are accepted only from numeric user IDs configured in the **KAI Remote** app.
 - Only private Telegram chats are processed.
 - Supported desktop actions are fixed in source: status, lock, open a configured app alias, shutdown, and restart.
 - `/open` can launch only aliases explicitly configured in Settings. It does not accept arbitrary command arguments.
@@ -32,7 +32,7 @@ Do not commit these files.
 
 1. Create a Telegram bot with BotFather and copy its token.
 2. Get your own numeric Telegram user ID.
-3. Start KAI STUDIO local/desktop and open **Settings → Remote**.
+3. Install and open the standalone **KAI Remote** app.
 4. Paste the bot token and add your Telegram user ID to the allowlist.
 5. Optionally add application aliases, one per line:
 
@@ -68,7 +68,7 @@ If Ollama is enabled, messages such as `mở chrome` or `máy đang dùng bao nh
 
 ### Bot token is valid but status is stopped
 
-Check internet access to `api.telegram.org` and inspect the error shown in Settings → Remote. Saving settings restarts the polling service.
+Check internet access to `api.telegram.org` and inspect the error shown in KAI Remote. Saving settings restarts the polling service.
 
 ### Ollama natural-language command fails
 

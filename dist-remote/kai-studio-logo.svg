@@ -1,0 +1,31 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">KAI STUDIO Logo</title>
+  <desc id="desc">A dark rounded-square logo with neon cyan, emerald and gold KAI letters and a play triangle.</desc>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <path d="M112 358V154h56v80l69-80h68l-83 94 88 110h-70l-72-92v92h-56Z" fill="url(#letter)"/>
+  <path d="M297 358 373 154h54l76 204h-60l-12-36h-65l-12 36h-57Zm83-82h37l-18-56-19 56Z" fill="url(#letter2)"/>
+  <path d="M120 392h272" stroke="url(#line)" stroke-width="18" stroke-linecap="round"/>
+  <path d="M322 214 390 256 322 298V214Z" fill="#F43F5E" opacity="0.92"/>
+  <circle cx="390" cy="122" r="22" fill="#FDE68A"/>
+  <circle cx="422" cy="122" r="7" fill="#0F172A" opacity="0.6"/>
+  <defs>
+    <linearGradient id="bg" x1="58" y1="36" x2="462" y2="470" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#020617"/>
+      <stop offset="0.45" stop-color="#0F172A"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="letter" x1="109" y1="155" x2="305" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#67E8F9"/>
+      <stop offset="1" stop-color="#34D399"/>
+    </linearGradient>
+    <linearGradient id="letter2" x1="298" y1="154" x2="507" y2="358" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FDE68A"/>
+      <stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+    <linearGradient id="line" x1="120" y1="392" x2="392" y2="392" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22D3EE"/>
+      <stop offset="0.5" stop-color="#34D399"/>
+      <stop offset="1" stop-color="#F43F5E"/>
+    </linearGradient>
+  </defs>
+</svg>

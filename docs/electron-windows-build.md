@@ -2,7 +2,7 @@
 
 Tài liệu này dùng cho bản desktop KAI STUDIO chạy local backend + Vite static client trong Electron.
 
-Telegram Remote Control đã được tách thành app độc lập. Xem [KAI Remote cho Windows](./kai-remote-windows.md) để build installer, dùng system tray và khởi động cùng Windows.
+Telegram Remote Control đã được tách thành app độc lập. Xem [KAI Remote cho Windows](../remote-control-app/README.md) để build installer, dùng system tray và khởi động cùng Windows.
 
 ## 1. Chuẩn bị
 

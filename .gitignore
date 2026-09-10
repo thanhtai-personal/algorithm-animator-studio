@@ -35,6 +35,10 @@ dist-ssr
 release/
 dist-electron/
 runtime/
+remote-control-app/dist/
+remote-control-app/dist-server/
+remote-control-app/dist-package/
+remote-control-app/release/
 
 # Generated verification screenshots, videos, reports, and browser profiles
 /artifacts/

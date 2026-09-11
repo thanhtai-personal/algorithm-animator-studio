@@ -1,9 +1,10 @@
 import { AbsoluteFill } from "remotion";
-import { DESIGNER_AI_DURATION_SECONDS, DESIGNER_AI_SEGMENTS } from "./designerAiContent";
+import type { DesignerAiPhase } from "./designerAiContent";
+import { DESIGNER_AI_DURATION_SECONDS } from "./designerAiContent";
 
 export function DesignerAiHud(props: {
   time: number;
-  segmentIndex: number;
+  phase: DesignerAiPhase;
   accent: string;
   portrait: boolean;
   shortestSide: number;
@@ -14,34 +15,34 @@ export function DesignerAiHud(props: {
       <div
         style={{
           position: "absolute",
-          left: props.portrait ? "7%" : "5.5%",
-          right: props.portrait ? "7%" : "4.5%",
-          top: props.portrait ? "5%" : "4.8%",
+          left: props.portrait ? "6%" : "4.5%",
+          right: props.portrait ? "6%" : "4.5%",
+          top: props.portrait ? "4%" : "3.5%",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: 24,
-          fontSize: props.shortestSide * (props.portrait ? 0.021 : 0.014),
+          fontSize: props.shortestSide * (props.portrait ? 0.018 : 0.012),
           fontWeight: 900,
-          letterSpacing: "0.16em",
+          letterSpacing: "0.18em",
+          textShadow: "0 3px 16px rgba(0,0,0,0.7)",
         }}
       >
-        <span>DESIGNER × AI · 2026</span>
-        <span style={{ color: "rgba(255,255,255,0.46)" }}>
-          {String(props.segmentIndex + 1).padStart(2, "0")} / {String(DESIGNER_AI_SEGMENTS.length).padStart(2, "0")}
-        </span>
+        <span>DESIGNER × AI</span>
+        <span style={{ color: props.accent }}>{phaseLabel(props.phase)}</span>
       </div>
 
       <div
         style={{
           position: "absolute",
-          left: props.portrait ? "7%" : "5.5%",
-          right: props.portrait ? "7%" : "4.5%",
-          bottom: props.portrait ? "4.5%" : "4%",
-          height: props.portrait ? 8 : 6,
+          left: props.portrait ? "6%" : "4.5%",
+          right: props.portrait ? "6%" : "4.5%",
+          bottom: props.portrait ? "3.5%" : "3.2%",
+          height: props.portrait ? 5 : 4,
           borderRadius: 99,
           overflow: "hidden",
-          background: "rgba(255,255,255,0.12)",
+          background: "rgba(255,255,255,0.16)",
+          boxShadow: "0 2px 18px rgba(0,0,0,0.4)",
         }}
       >
         <div
@@ -49,8 +50,8 @@ export function DesignerAiHud(props: {
             width: `${progress * 100}%`,
             height: "100%",
             borderRadius: 99,
-            background: `linear-gradient(90deg, ${props.accent}, #f8fafc)`,
-            boxShadow: `0 0 24px ${props.accent}`,
+            background: props.accent,
+            boxShadow: `0 0 22px ${props.accent}`,
           }}
         />
       </div>
@@ -68,15 +69,15 @@ export function DesignerAiAtmosphere(props: {
       <AbsoluteFill
         style={{
           background: [
-            `radial-gradient(circle at ${18 + props.progress * 24}% 18%, ${props.accent}2d, transparent 31%)`,
-            `radial-gradient(circle at 86% ${70 - props.progress * 18}%, ${props.accent}24, transparent 34%)`,
+            `radial-gradient(circle at ${18 + props.progress * 24}% 18%, ${props.accent}28, transparent 31%)`,
+            `radial-gradient(circle at 86% ${70 - props.progress * 18}%, ${props.accent}20, transparent 34%)`,
             "linear-gradient(135deg, #05060a 0%, #0a0d16 48%, #05060a 100%)",
           ].join(","),
         }}
       />
       <AbsoluteFill
         style={{
-          opacity: 0.11,
+          opacity: 0.055,
           backgroundImage: [
             "linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px)",
             "linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px)",
@@ -87,14 +88,40 @@ export function DesignerAiAtmosphere(props: {
       />
       <AbsoluteFill
         style={{
-          opacity: 0.08 + props.punch * 0.045,
-          backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.24) 4px)",
+          opacity: 0.035 + props.punch * 0.025,
+          backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.22) 4px)",
           mixBlendMode: "overlay",
         }}
       />
-      <AbsoluteFill style={{ boxShadow: `inset 0 0 ${120 + props.punch * 60}px rgba(0,0,0,0.72)` }} />
+      <AbsoluteFill style={{ boxShadow: `inset 0 0 ${80 + props.punch * 36}px rgba(0,0,0,0.48)` }} />
     </>
   );
+}
+
+export function DesignerAiTransitionFlash(props: {
+  accent: string;
+  progress: number;
+}) {
+  const opacity = props.progress < 0.055
+    ? (1 - props.progress / 0.055) * 0.28
+    : 0;
+
+  return (
+    <AbsoluteFill
+      style={{
+        pointerEvents: "none",
+        opacity,
+        background: `linear-gradient(115deg, #ffffff 0%, ${props.accent} 38%, transparent 78%)`,
+        mixBlendMode: "screen",
+      }}
+    />
+  );
+}
+
+function phaseLabel(phase: DesignerAiPhase) {
+  if (phase === "code") return "CODEX";
+  if (phase === "handoff") return "STITCH → CODEX";
+  return "STITCH";
 }
 
 function clamp01(value: number) {

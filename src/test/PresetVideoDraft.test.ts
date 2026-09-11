@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { algorithmExplainerPreset } from "@/features/preset-video/presets/algorithmExplainerPreset";
 import { numberEightInRedPreset } from "@/features/preset-video/presets/number-eight-in-red/numberEightInRedPreset";
+import { designerAiWorkflowPreset } from "@/features/preset-video/presets/designer-ai-workflow/designerAiPreset";
 import {
   clearPresetVideoSettings,
   createDefaultPresetVideoSettings,
@@ -38,6 +39,27 @@ describe("preset video settings", () => {
 
     clearPresetVideoSettings(algorithmExplainerPreset.id);
     expect(loadPresetVideoSettings(algorithmExplainerPreset)).toEqual(defaults);
+  });
+
+  it("resets timeline bounds when a preset content revision changes", () => {
+    const defaults = createDefaultPresetVideoSettings(designerAiWorkflowPreset);
+
+    savePresetVideoSettings(designerAiWorkflowPreset.id, {
+      ...defaults,
+      settingsRevision: 0,
+      outputPreset: "portrait-720p",
+      trimStartSeconds: 3,
+      trimEndSeconds: 54,
+      backgroundMusicVolume: 0.31,
+    });
+
+    expect(loadPresetVideoSettings(designerAiWorkflowPreset)).toMatchObject({
+      settingsRevision: 1,
+      outputPreset: "portrait-720p",
+      trimStartSeconds: 0,
+      trimEndSeconds: 78,
+      backgroundMusicVolume: 0.31,
+    });
   });
 
   it("maps every supported output preset to explicit dimensions", () => {

@@ -11,6 +11,7 @@ const STORAGE_PREFIX = "kai-studio.preset-video.";
 
 export function createDefaultPresetVideoSettings(preset: PresetVideoDefinition): PresetVideoExportSettings {
   return {
+    settingsRevision: preset.settingsRevision ?? 0,
     lyricTimingRevision: preset.lyricTimingRevision ?? 0,
     outputPreset: preset.defaultOutputPreset,
     trimStartSeconds: 0,
@@ -32,14 +33,22 @@ export function loadPresetVideoSettings(preset: PresetVideoDefinition): PresetVi
     if (!raw) return defaults;
 
     const outputPreset = isOutputPreset(raw.outputPreset) ? raw.outputPreset : defaults.outputPreset;
-    const trimStartSeconds = clampNumber(raw.trimStartSeconds, 0, preset.defaultDurationSeconds, defaults.trimStartSeconds);
-    const trimEndSeconds = clampNumber(raw.trimEndSeconds, trimStartSeconds + 0.1, preset.defaultDurationSeconds, defaults.trimEndSeconds);
+    const settingsRevision = preset.settingsRevision ?? 0;
+    const canReuseTimelineSettings = preset.settingsRevision === undefined
+      || raw.settingsRevision === settingsRevision;
+    const trimStartSeconds = canReuseTimelineSettings
+      ? clampNumber(raw.trimStartSeconds, 0, preset.defaultDurationSeconds, defaults.trimStartSeconds)
+      : defaults.trimStartSeconds;
+    const trimEndSeconds = canReuseTimelineSettings
+      ? clampNumber(raw.trimEndSeconds, trimStartSeconds + 0.1, preset.defaultDurationSeconds, defaults.trimEndSeconds)
+      : defaults.trimEndSeconds;
 
     const lyricTimingRevision = preset.lyricTimingRevision ?? 0;
     const canReuseStoredLyricTimings = preset.lyricTimingRevision === undefined
       || raw.lyricTimingRevision === lyricTimingRevision;
 
     return {
+      settingsRevision,
       lyricTimingRevision,
       outputPreset,
       trimStartSeconds,
@@ -48,7 +57,9 @@ export function loadPresetVideoSettings(preset: PresetVideoDefinition): PresetVi
       backgroundMusicVolume: clampNumber(raw.backgroundMusicVolume, 0, 1, defaults.backgroundMusicVolume),
       originalAudioVolume: clampNumber(raw.originalAudioVolume, 0, 1, defaults.originalAudioVolume),
       lyricTimings: canReuseStoredLyricTimings ? normalizeStoredLyricTimings(preset, raw.lyricTimings) : defaults.lyricTimings,
-      timelineVideoClips: normalizeStoredTimelineClips(preset, raw.timelineVideoClips),
+      timelineVideoClips: canReuseTimelineSettings
+        ? normalizeStoredTimelineClips(preset, raw.timelineVideoClips)
+        : defaults.timelineVideoClips,
     };
   } catch {
     return defaults;

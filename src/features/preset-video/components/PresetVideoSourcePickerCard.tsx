@@ -70,11 +70,13 @@ function SourceGroup(props: {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">
-            {isGrouped ? `${sources.length} trích đoạn · 1 video nguồn` : firstSource.title}
+            {isGrouped
+              ? firstSource.sourceGroupLabel || `${sources.length} trích đoạn · 1 video nguồn`
+              : firstSource.title}
           </p>
           <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
             {isGrouped
-              ? "Chọn video gốc một lần, KAI Studio tự cắt toàn bộ đoạn bên dưới."
+              ? `${sources.length} trích đoạn · chọn video gốc một lần, KAI Studio tự cắt toàn bộ đoạn bên dưới.`
               : `${formatSeconds(firstSource.clipStartSeconds)} → ${formatSeconds(firstSource.clipEndSeconds)}`}
           </p>
         </div>

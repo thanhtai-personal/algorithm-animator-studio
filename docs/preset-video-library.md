@@ -56,10 +56,13 @@ Không cần sửa page Library, route hoặc backend render cho từng preset m
 `PresetVideoDefinition` có thể khai báo thêm:
 
 - `videoSources[].sourceGroupId`: nhiều trích đoạn dùng chung một video local. Workspace upload file một lần rồi backend cắt/cache toàn bộ đoạn trong nhóm.
+- `videoSources[].sourceGroupLabel`: nhãn thân thiện cho source group khi một preset cần nhiều recording, giúp tránh chọn nhầm file.
 - `musicRecommendation`: mood + keyword để tự chọn track phù hợp từ `MUSIC_LIBRARY_DIR` khi tên track/folder khớp; user vẫn có thể đổi hoặc tắt nhạc.
 - `socialMetadata`: bộ title/description/hashtag/keyword/pinned comment riêng cho video dài và Short/Reel, hiển thị kèm nút copy trong workspace.
 
 Clip local vẫn bị giới hạn tối đa 20 giây mỗi source. Batch import không thay đổi giới hạn này; nó chỉ tránh upload lại cùng một file lớn nhiều lần.
+
+Một preset có thể dùng nhiều `sourceGroupId` khi câu chuyện nối qua nhiều recording (ví dụ phase design và phase implementation). Workspace sẽ yêu cầu chọn một file local cho từng nhóm rồi batch-cut độc lập.
 
 ## Export settings hiện hỗ trợ
 

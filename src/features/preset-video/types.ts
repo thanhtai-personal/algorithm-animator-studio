@@ -29,6 +29,7 @@ export type PresetVideoSourceClip = {
   clipStartSeconds: number;
   clipEndSeconds: number;
   sourceGroupId?: string;
+  sourceGroupLabel?: string;
 };
 
 export type PresetVideoPreviewSection = {
@@ -93,6 +94,7 @@ export type PresetVideoDefinition = {
   defaultFps: number;
   defaultOutputPreset: PresetVideoOutputPreset;
   hasOriginalAudio: boolean;
+  settingsRevision?: number;
   lyricTimingRevision?: number;
   previewSections?: readonly PresetVideoPreviewSection[];
   editableLyrics?: readonly PresetVideoEditableLyricCue[];
@@ -104,6 +106,7 @@ export type PresetVideoDefinition = {
 };
 
 export type PresetVideoExportSettings = {
+  settingsRevision: number;
   lyricTimingRevision: number;
   outputPreset: PresetVideoOutputPreset;
   trimStartSeconds: number;

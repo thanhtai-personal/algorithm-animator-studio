@@ -13,7 +13,7 @@ function DesignerAiPresetComposition(props: PresetVideoCompositionProps) {
 export const designerAiWorkflowPreset: PresetVideoDefinition = {
   id: "designer-ai-workflow",
   name: "Designer × AI — From Stitch to Code",
-  description: "Visual-first reel 78 giây nối workflow designer × AI từ Stitch sang Codex: screen recording là nhân vật chính, text chỉ làm impact cue, dựng bằng punch-in, pan, crop, flash và motion theo nhịp.",
+  description: "Visual-first reel 78 giây nối workflow designer × AI từ Stitch sang Codex: screen recording là nhân vật chính, text chỉ làm impact cue, chuyển động theo kiểu editorial camera glide; zoom/crop được tăng có chủ đích khi export Short/Reel 9:16.",
   tags: ["design", "ai", "workflow", "product-design", "ui-ux", "stitch", "codex", "design-to-code", "shorts", "reels"],
   accentColor: "#8b5cf6",
   defaultDurationSeconds: DESIGNER_AI_DURATION_SECONDS,
@@ -25,10 +25,10 @@ export const designerAiWorkflowPreset: PresetVideoDefinition = {
   videoSources: DESIGNER_AI_VIDEO_SOURCES,
   videoSourceStrategy: "local",
   musicRecommendation: {
-    mood: "Kinetic tech / glitch electronic",
-    keywords: ["glitch", "future", "tech", "electronic", "pulse", "digital", "synth", "cyber", "ambient"],
-    rationale: "beat rõ và ít vocal để punch-in/flash/cut có điểm rơi, nhưng vẫn nhường sân cho hình ảnh UI",
-    defaultVolume: 0.22,
+    mood: "Minimal future groove / design-tech electronica",
+    keywords: ["minimal", "future", "groove", "electronic", "downtempo", "deep", "tech", "synth", "ambient", "pulse"],
+    rationale: "nhịp đều, hiện đại và ít vocal; đủ giữ flow cho screen recording nhưng không có glitch/drop gắt cạnh tranh với UI",
+    defaultVolume: 0.18,
   },
   socialMetadata: {
     longForm: {

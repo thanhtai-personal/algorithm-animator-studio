@@ -1,7 +1,6 @@
 import {
   AbsoluteFill,
   Easing,
-  interpolate,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -11,7 +10,6 @@ import { DesignerAiMediaStage } from "./DesignerAiMediaStage";
 import {
   DesignerAiAtmosphere,
   DesignerAiHud,
-  DesignerAiTransitionFlash,
 } from "./DesignerAiOverlays";
 
 const INK = "#06070b";
@@ -25,10 +23,7 @@ export function DesignerAiComposition(props: PresetVideoCompositionProps) {
   const square = props.aspectRatio === "1:1";
   const shortestSide = Math.min(width, height);
   const segment = getSegment(time);
-  const segmentIndex = Math.max(0, DESIGNER_AI_SEGMENTS.indexOf(segment));
   const segmentProgress = clamp01((time - segment.start) / Math.max(0.01, segment.end - segment.start));
-  const pulseRate = segment.phase === "code" ? 2.7 : 2.15;
-  const punch = Math.pow(1 - ((time * pulseRate) % 1), 8);
 
   return (
     <AbsoluteFill
@@ -39,7 +34,7 @@ export function DesignerAiComposition(props: PresetVideoCompositionProps) {
         fontFamily: "Inter, Arial, Helvetica, sans-serif",
       }}
     >
-      <DesignerAiAtmosphere accent={segment.accent} progress={segmentProgress} punch={punch} />
+      <DesignerAiAtmosphere accent={segment.accent} time={time} />
       <DesignerAiMediaStage compositionProps={props} portrait={portrait} square={square} />
       <ImpactWord
         segment={segment}
@@ -55,7 +50,6 @@ export function DesignerAiComposition(props: PresetVideoCompositionProps) {
         portrait={portrait}
         shortestSide={shortestSide}
       />
-      <DesignerAiTransitionFlash accent={segment.accent} progress={segmentProgress} />
     </AbsoluteFill>
   );
 }
@@ -67,13 +61,12 @@ function ImpactWord(props: {
   square: boolean;
   shortestSide: number;
 }) {
-  const reveal = ease(clamp01(props.segmentProgress / 0.09));
-  const holdEnd = props.portrait ? 0.34 : 0.28;
-  const disappear = 1 - ease(clamp01((props.segmentProgress - holdEnd) / 0.13));
+  const reveal = ease(clamp01(props.segmentProgress / 0.12));
+  const holdEnd = props.portrait ? 0.34 : 0.25;
+  const disappear = 1 - ease(clamp01((props.segmentProgress - holdEnd) / 0.16));
   const opacity = Math.min(reveal, disappear);
-  const direction = props.segment.visualMode === "code" ? -1 : 1;
   const fontSize = props.shortestSide * (
-    props.portrait ? 0.115 : props.square ? 0.105 : 0.09
+    props.portrait ? 0.105 : props.square ? 0.095 : 0.075
   );
 
   return (
@@ -84,11 +77,7 @@ function ImpactWord(props: {
         right: props.portrait ? "4%" : "4.5%",
         bottom: props.portrait ? "8.5%" : props.square ? "7%" : "8%",
         opacity,
-        transform: [
-          `translateX(${direction * (1 - reveal) * 80}px)`,
-          `translateY(${(1 - reveal) * 20}px)`,
-          `scale(${0.96 + reveal * 0.04})`,
-        ].join(" "),
+        transform: `translateY(${(1 - reveal) * 22}px) scale(${0.985 + reveal * 0.015})`,
         transformOrigin: "left bottom",
         pointerEvents: "none",
         textShadow: "0 8px 36px rgba(0,0,0,0.76)",
@@ -98,21 +87,20 @@ function ImpactWord(props: {
         style={{
           display: "inline-block",
           marginBottom: props.portrait ? 10 : 8,
-          width: props.portrait ? 54 : 68,
-          height: props.portrait ? 5 : 6,
+          width: props.portrait ? 48 : 58,
+          height: props.portrait ? 4 : 5,
           borderRadius: 99,
           background: props.segment.accent,
-          boxShadow: `0 0 26px ${props.segment.accent}`,
+          boxShadow: `0 0 18px ${props.segment.accent}88`,
         }}
       />
       <div
         style={{
           fontSize,
-          lineHeight: 0.84,
-          fontWeight: 1000,
-          letterSpacing: "-0.07em",
+          lineHeight: 0.88,
+          fontWeight: 950,
+          letterSpacing: "-0.055em",
           textTransform: "uppercase",
-          WebkitTextStroke: props.portrait ? "0.2px rgba(255,255,255,0.24)" : undefined,
         }}
       >
         {props.segment.impact}

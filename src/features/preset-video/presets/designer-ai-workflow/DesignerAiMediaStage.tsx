@@ -5,7 +5,6 @@ import {
   Easing,
   Sequence,
   interpolate,
-  spring,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -52,37 +51,34 @@ function SourceStage(props: {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const progress = clamp01(frame / Math.max(1, props.durationInFrames - 1));
-  const enter = spring({ frame, fps, config: { damping: 18, stiffness: 155, mass: 0.72 } });
-  const exit = interpolate(
+  const cameraProgress = Easing.inOut(Easing.cubic)(progress);
+  const entrance = interpolate(
     frame,
-    [Math.max(0, props.durationInFrames - Math.round(fps * 0.2)), props.durationInFrames - 1],
-    [1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.in(Easing.cubic) },
+    [0, Math.round(fps * 0.42)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) },
   );
-  const localSeconds = frame / fps;
-  const beatRate = props.segment.phase === "code" ? 2.7 : 2.15;
-  const beat = Math.pow(1 - ((localSeconds * beatRate) % 1), 9);
   const direction = props.index % 2 === 0 ? 1 : -1;
-  const sharpScale = getSharpScale(props.segment, progress, beat, props.portrait);
-  const sharpTranslateX = direction * (progress - 0.5) * getPanDistance(props.segment);
+  const cameraScale = getCameraScale(props.segment, cameraProgress, props.portrait, props.square);
+  const cameraPan = getCameraPan(props.segment, cameraProgress, direction, props.portrait, props.square);
   const objectPosition = `${props.segment.focusX}% ${props.segment.focusY}%`;
-  const stageStyle = getStageStyle(props.segment, props.portrait, props.square, enter, direction);
+  const stageStyle = getStageStyle(props.segment, props.portrait, props.square, entrance);
 
   return (
-    <AbsoluteFill style={{ opacity: enter * exit, overflow: "hidden" }}>
+    <AbsoluteFill style={{ overflow: "hidden" }}>
       {(props.portrait || props.square) && props.src ? (
         <Video
           src={props.src}
           muted
           style={{
             position: "absolute",
-            inset: "-7%",
-            width: "114%",
-            height: "114%",
+            inset: "-5%",
+            width: "110%",
+            height: "110%",
             objectFit: "cover",
             objectPosition,
-            transform: `scale(${1.12 + progress * 0.05})`,
-            filter: "blur(24px) saturate(1.18) contrast(1.08) brightness(0.44)",
+            transform: `scale(${1.035 + cameraProgress * 0.012})`,
+            filter: "blur(26px) saturate(1.08) contrast(1.04) brightness(0.4)",
           }}
           fallbackOffthreadVideoProps={{
             delayRenderTimeoutInMilliseconds: 120_000,
@@ -101,8 +97,9 @@ function SourceStage(props: {
               height: "100%",
               objectFit: getObjectFit(props.segment, props.portrait),
               objectPosition,
-              transform: `scale(${sharpScale}) translateX(${sharpTranslateX}%)`,
-              filter: "saturate(1.06) contrast(1.08) brightness(0.96)",
+              transform: `scale(${cameraScale}) translate(${cameraPan.x}%, ${cameraPan.y}%)`,
+              transformOrigin: `${props.segment.focusX}% ${props.segment.focusY}%`,
+              filter: "saturate(1.035) contrast(1.045) brightness(0.985)",
             }}
             fallbackOffthreadVideoProps={{
               delayRenderTimeoutInMilliseconds: 120_000,
@@ -119,19 +116,12 @@ function SourceStage(props: {
             inset: 0,
             pointerEvents: "none",
             background: [
-              "linear-gradient(180deg, transparent 58%, rgba(3,4,8,0.5) 100%)",
-              `linear-gradient(105deg, ${props.segment.accent}18, transparent 35%)`,
+              "linear-gradient(180deg, transparent 64%, rgba(3,4,8,0.44) 100%)",
+              `linear-gradient(110deg, ${props.segment.accent}0f, transparent 40%)`,
             ].join(","),
           }}
         />
       </div>
-
-      <CutWipe
-        accent={props.segment.accent}
-        progress={progress}
-        direction={direction}
-        portrait={props.portrait}
-      />
     </AbsoluteFill>
   );
 }
@@ -140,15 +130,16 @@ function getStageStyle(
   segment: DesignerAiSegment,
   portrait: boolean,
   square: boolean,
-  enter: number,
-  direction: number,
+  entrance: number,
 ): CSSProperties {
+  const settleY = (1 - entrance) * (portrait ? 14 : 7);
+
   if (!portrait && !square) {
     return {
       position: "absolute",
       inset: 0,
       overflow: "hidden",
-      transform: `scale(${0.985 + enter * 0.015})`,
+      transform: `translateY(${settleY}px) scale(${0.995 + entrance * 0.005})`,
       background: "#07090f",
     };
   }
@@ -158,30 +149,30 @@ function getStageStyle(
       position: "absolute",
       left: "4%",
       right: "4%",
-      top: "24%",
-      height: "43%",
+      top: "23%",
+      height: "44%",
       overflow: "hidden",
       borderRadius: 28,
       background: "#07090f",
-      border: `1px solid ${segment.accent}88`,
-      boxShadow: `0 28px 90px rgba(0,0,0,0.58), 0 0 64px ${segment.accent}28`,
-      transform: `translateY(${(1 - enter) * 32}px) rotate(${direction * (1 - enter) * 1.4}deg)`,
+      border: `1px solid ${segment.accent}66`,
+      boxShadow: `0 28px 90px rgba(0,0,0,0.58), 0 0 54px ${segment.accent}1f`,
+      transform: `translateY(${settleY}px)`,
     };
   }
 
   if (portrait) {
     return {
       position: "absolute",
-      left: "5%",
-      right: "5%",
-      top: segment.visualMode === "handoff" ? "10%" : "8%",
-      height: segment.visualMode === "handoff" ? "78%" : "80%",
+      left: "4%",
+      right: "4%",
+      top: segment.visualMode === "handoff" ? "9%" : "7%",
+      height: segment.visualMode === "handoff" ? "80%" : "82%",
       overflow: "hidden",
       borderRadius: 30,
       background: "#07090f",
-      border: `1px solid ${segment.accent}88`,
-      boxShadow: `0 34px 120px rgba(0,0,0,0.62), 0 0 72px ${segment.accent}22`,
-      transform: `translateY(${(1 - enter) * 34}px) rotate(${direction * (1 - enter) * 0.8}deg)`,
+      border: `1px solid ${segment.accent}66`,
+      boxShadow: `0 34px 120px rgba(0,0,0,0.62), 0 0 58px ${segment.accent}1a`,
+      transform: `translateY(${settleY}px)`,
     };
   }
 
@@ -194,9 +185,9 @@ function getStageStyle(
     overflow: "hidden",
     borderRadius: 28,
     background: "#07090f",
-    border: `1px solid ${segment.accent}66`,
-    boxShadow: `0 30px 100px rgba(0,0,0,0.6), 0 0 64px ${segment.accent}20`,
-    transform: `scale(${0.975 + enter * 0.025})`,
+    border: `1px solid ${segment.accent}55`,
+    boxShadow: `0 30px 100px rgba(0,0,0,0.6), 0 0 48px ${segment.accent}18`,
+    transform: `translateY(${settleY}px) scale(${0.995 + entrance * 0.005})`,
   };
 }
 
@@ -205,46 +196,59 @@ function getObjectFit(segment: DesignerAiSegment, portrait: boolean) {
   return segment.visualMode === "overview" ? "contain" : "cover";
 }
 
-function getSharpScale(segment: DesignerAiSegment, progress: number, beat: number, portrait: boolean) {
-  if (portrait && segment.visualMode === "overview") return 1 + progress * 0.035 + beat * 0.006;
-  if (segment.visualMode === "handoff") return 1.06 + progress * 0.1 + beat * 0.015;
-  if (segment.visualMode === "code") return 1.12 + progress * 0.13 + beat * 0.02;
-  if (segment.visualMode === "detail") return 1.08 + progress * 0.12 + beat * 0.018;
-  return 1.015 + progress * 0.055 + beat * 0.008;
+function getCameraScale(
+  segment: DesignerAiSegment,
+  progress: number,
+  portrait: boolean,
+  square: boolean,
+) {
+  if (portrait) {
+    if (segment.visualMode === "overview") return 1 + progress * 0.018;
+    if (segment.visualMode === "handoff") return 1.02 + progress * 0.045;
+    if (segment.visualMode === "code") return 1.035 + progress * 0.065;
+    return 1.025 + progress * 0.07;
+  }
+
+  if (square) {
+    if (segment.visualMode === "detail" || segment.visualMode === "code") {
+      return 1.008 + progress * 0.026;
+    }
+    return 1 + progress * 0.016;
+  }
+
+  if (segment.visualMode === "detail" || segment.visualMode === "code") {
+    return 1 + progress * 0.014;
+  }
+
+  return 1 + progress * 0.008;
 }
 
-function getPanDistance(segment: DesignerAiSegment) {
-  if (segment.visualMode === "code") return 3.4;
-  if (segment.visualMode === "detail") return 3;
-  if (segment.visualMode === "handoff") return 2.4;
-  return 1.5;
-}
+function getCameraPan(
+  segment: DesignerAiSegment,
+  progress: number,
+  direction: number,
+  portrait: boolean,
+  square: boolean,
+) {
+  const centeredProgress = progress - 0.5;
 
-function CutWipe(props: {
-  accent: string;
-  progress: number;
-  direction: number;
-  portrait: boolean;
-}) {
-  if (props.progress > 0.13) return null;
-  const wipeProgress = clamp01(props.progress / 0.13);
-  const position = props.direction > 0 ? wipeProgress * 112 - 6 : 106 - wipeProgress * 112;
+  if (portrait) {
+    const xDistance = segment.visualMode === "overview"
+      ? 0.8
+      : segment.visualMode === "handoff"
+        ? 1.4
+        : 2;
+    return {
+      x: direction * centeredProgress * xDistance,
+      y: centeredProgress * (segment.visualMode === "overview" ? 0.25 : 0.55),
+    };
+  }
 
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: 0,
-        bottom: 0,
-        left: `${position}%`,
-        width: props.portrait ? 5 : 7,
-        background: props.accent,
-        boxShadow: `0 0 34px 10px ${props.accent}88`,
-        opacity: 1 - wipeProgress,
-        transform: `skewX(${props.direction * -8}deg)`,
-      }}
-    />
-  );
+  if (square) {
+    return { x: direction * centeredProgress * 0.7, y: centeredProgress * 0.2 };
+  }
+
+  return { x: direction * centeredProgress * 0.3, y: 0 };
 }
 
 function MissingSource({ accent }: { accent: string }) {

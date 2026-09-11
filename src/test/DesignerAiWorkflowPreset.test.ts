@@ -61,10 +61,10 @@ describe("Designer AI workflow preset", () => {
     expect(metadata?.shortForm.description).toContain("Codex");
   });
 
-  it("recommends a matching future/ambient track when the library contains one", () => {
+  it("recommends a smooth minimal future-groove track when the library contains one", () => {
     const tracks: MusicLibraryTrack[] = [
       track("library:one", "Acoustic Morning", "acoustic-morning.mp3"),
-      track("library:two", "Digital Future Glitch Pulse", "digital-future-glitch-pulse.mp3"),
+      track("library:two", "Minimal Future Groove", "minimal-future-groove.mp3"),
     ];
 
     expect(findRecommendedPresetMusic(tracks, designerAiWorkflowPreset.musicRecommendation)?.id)

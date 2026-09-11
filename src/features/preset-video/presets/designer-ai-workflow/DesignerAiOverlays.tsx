@@ -23,8 +23,8 @@ export function DesignerAiHud(props: {
           justifyContent: "space-between",
           gap: 24,
           fontSize: props.shortestSide * (props.portrait ? 0.018 : 0.012),
-          fontWeight: 900,
-          letterSpacing: "0.18em",
+          fontWeight: 850,
+          letterSpacing: "0.16em",
           textShadow: "0 3px 16px rgba(0,0,0,0.7)",
         }}
       >
@@ -38,11 +38,11 @@ export function DesignerAiHud(props: {
           left: props.portrait ? "6%" : "4.5%",
           right: props.portrait ? "6%" : "4.5%",
           bottom: props.portrait ? "3.5%" : "3.2%",
-          height: props.portrait ? 5 : 4,
+          height: props.portrait ? 4 : 3,
           borderRadius: 99,
           overflow: "hidden",
-          background: "rgba(255,255,255,0.16)",
-          boxShadow: "0 2px 18px rgba(0,0,0,0.4)",
+          background: "rgba(255,255,255,0.14)",
+          boxShadow: "0 2px 18px rgba(0,0,0,0.34)",
         }}
       >
         <div
@@ -51,7 +51,6 @@ export function DesignerAiHud(props: {
             height: "100%",
             borderRadius: 99,
             background: props.accent,
-            boxShadow: `0 0 22px ${props.accent}`,
           }}
         />
       </div>
@@ -61,60 +60,35 @@ export function DesignerAiHud(props: {
 
 export function DesignerAiAtmosphere(props: {
   accent: string;
-  progress: number;
-  punch: number;
+  time: number;
 }) {
+  const driftX = 24 + Math.sin(props.time * 0.18) * 5;
+  const driftY = 68 + Math.cos(props.time * 0.14) * 6;
+
   return (
     <>
       <AbsoluteFill
         style={{
           background: [
-            `radial-gradient(circle at ${18 + props.progress * 24}% 18%, ${props.accent}28, transparent 31%)`,
-            `radial-gradient(circle at 86% ${70 - props.progress * 18}%, ${props.accent}20, transparent 34%)`,
+            `radial-gradient(circle at ${driftX}% 20%, ${props.accent}1f, transparent 34%)`,
+            `radial-gradient(circle at 84% ${driftY}%, ${props.accent}18, transparent 38%)`,
             "linear-gradient(135deg, #05060a 0%, #0a0d16 48%, #05060a 100%)",
           ].join(","),
         }}
       />
       <AbsoluteFill
         style={{
-          opacity: 0.055,
+          opacity: 0.035,
           backgroundImage: [
-            "linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px)",
-            "linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px)",
+            "linear-gradient(rgba(255,255,255,0.10) 1px, transparent 1px)",
+            "linear-gradient(90deg, rgba(255,255,255,0.10) 1px, transparent 1px)",
           ].join(","),
-          backgroundSize: "52px 52px",
-          transform: `translateY(${props.progress * 12}px)`,
+          backgroundSize: "56px 56px",
+          transform: `translate3d(${Math.sin(props.time * 0.1) * 5}px, ${Math.cos(props.time * 0.08) * 5}px, 0)`,
         }}
       />
-      <AbsoluteFill
-        style={{
-          opacity: 0.035 + props.punch * 0.025,
-          backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.22) 4px)",
-          mixBlendMode: "overlay",
-        }}
-      />
-      <AbsoluteFill style={{ boxShadow: `inset 0 0 ${80 + props.punch * 36}px rgba(0,0,0,0.48)` }} />
+      <AbsoluteFill style={{ boxShadow: "inset 0 0 92px rgba(0,0,0,0.5)" }} />
     </>
-  );
-}
-
-export function DesignerAiTransitionFlash(props: {
-  accent: string;
-  progress: number;
-}) {
-  const opacity = props.progress < 0.055
-    ? (1 - props.progress / 0.055) * 0.28
-    : 0;
-
-  return (
-    <AbsoluteFill
-      style={{
-        pointerEvents: "none",
-        opacity,
-        background: `linear-gradient(115deg, #ffffff 0%, ${props.accent} 38%, transparent 78%)`,
-        mixBlendMode: "screen",
-      }}
-    />
   );
 }
 

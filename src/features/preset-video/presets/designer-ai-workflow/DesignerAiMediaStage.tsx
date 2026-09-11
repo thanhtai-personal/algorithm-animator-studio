@@ -60,13 +60,20 @@ function SourceStage(props: {
   );
   const direction = props.index % 2 === 0 ? 1 : -1;
   const cameraScale = getCameraScale(props.segment, cameraProgress, props.portrait, props.square);
-  const cameraPan = getCameraPan(props.segment, cameraProgress, direction, props.portrait, props.square);
-  const objectPosition = `${props.segment.focusX}% ${props.segment.focusY}%`;
+  const cameraPan = getCameraPan(cameraProgress, direction, props.portrait, props.square);
+  const portraitFocus = getPortraitFocus(
+    props.segment,
+    cameraProgress,
+    direction,
+  );
+  const objectPosition = props.portrait
+    ? `${portraitFocus.x}% ${portraitFocus.y}%`
+    : `${props.segment.focusX}% ${props.segment.focusY}%`;
   const stageStyle = getStageStyle(props.segment, props.portrait, props.square, entrance);
 
   return (
     <AbsoluteFill style={{ overflow: "hidden" }}>
-      {(props.portrait || props.square) && props.src ? (
+      {props.square && props.src ? (
         <Video
           src={props.src}
           muted
@@ -95,10 +102,12 @@ function SourceStage(props: {
             style={{
               width: "100%",
               height: "100%",
-              objectFit: getObjectFit(props.segment, props.portrait),
+              objectFit: "cover",
               objectPosition,
               transform: `scale(${cameraScale}) translate(${cameraPan.x}%, ${cameraPan.y}%)`,
-              transformOrigin: `${props.segment.focusX}% ${props.segment.focusY}%`,
+              transformOrigin: props.portrait
+                ? `${portraitFocus.x}% ${portraitFocus.y}%`
+                : `${props.segment.focusX}% ${props.segment.focusY}%`,
               filter: "saturate(1.035) contrast(1.045) brightness(0.985)",
             }}
             fallbackOffthreadVideoProps={{
@@ -144,35 +153,12 @@ function getStageStyle(
     };
   }
 
-  if (portrait && segment.visualMode === "overview") {
-    return {
-      position: "absolute",
-      left: "4%",
-      right: "4%",
-      top: "23%",
-      height: "44%",
-      overflow: "hidden",
-      borderRadius: 28,
-      background: "#07090f",
-      border: `1px solid ${segment.accent}66`,
-      boxShadow: `0 28px 90px rgba(0,0,0,0.58), 0 0 54px ${segment.accent}1f`,
-      transform: `translateY(${settleY}px)`,
-    };
-  }
-
   if (portrait) {
     return {
       position: "absolute",
-      left: "4%",
-      right: "4%",
-      top: segment.visualMode === "handoff" ? "9%" : "7%",
-      height: segment.visualMode === "handoff" ? "80%" : "82%",
+      inset: 0,
       overflow: "hidden",
-      borderRadius: 30,
       background: "#07090f",
-      border: `1px solid ${segment.accent}66`,
-      boxShadow: `0 34px 120px rgba(0,0,0,0.62), 0 0 58px ${segment.accent}1a`,
-      transform: `translateY(${settleY}px)`,
     };
   }
 
@@ -191,11 +177,6 @@ function getStageStyle(
   };
 }
 
-function getObjectFit(segment: DesignerAiSegment, portrait: boolean) {
-  if (!portrait) return "cover";
-  return segment.visualMode === "overview" ? "contain" : "cover";
-}
-
 function getCameraScale(
   segment: DesignerAiSegment,
   progress: number,
@@ -203,10 +184,10 @@ function getCameraScale(
   square: boolean,
 ) {
   if (portrait) {
-    if (segment.visualMode === "overview") return 1 + progress * 0.018;
-    if (segment.visualMode === "handoff") return 1.02 + progress * 0.045;
-    if (segment.visualMode === "code") return 1.035 + progress * 0.065;
-    return 1.025 + progress * 0.07;
+    if (segment.visualMode === "overview") return 1.01 + progress * 0.012;
+    if (segment.visualMode === "handoff") return 1.015 + progress * 0.016;
+    if (segment.visualMode === "code") return 1.018 + progress * 0.018;
+    return 1.015 + progress * 0.02;
   }
 
   if (square) {
@@ -224,7 +205,6 @@ function getCameraScale(
 }
 
 function getCameraPan(
-  segment: DesignerAiSegment,
   progress: number,
   direction: number,
   portrait: boolean,
@@ -233,14 +213,9 @@ function getCameraPan(
   const centeredProgress = progress - 0.5;
 
   if (portrait) {
-    const xDistance = segment.visualMode === "overview"
-      ? 0.8
-      : segment.visualMode === "handoff"
-        ? 1.4
-        : 2;
     return {
-      x: direction * centeredProgress * xDistance,
-      y: centeredProgress * (segment.visualMode === "overview" ? 0.25 : 0.55),
+      x: 0,
+      y: centeredProgress * 0.18,
     };
   }
 
@@ -249,6 +224,27 @@ function getCameraPan(
   }
 
   return { x: direction * centeredProgress * 0.3, y: 0 };
+}
+
+
+function getPortraitFocus(
+  segment: DesignerAiSegment,
+  progress: number,
+  direction: number,
+) {
+  const sweepDistance = segment.visualMode === "overview"
+    ? 24
+    : segment.visualMode === "detail"
+      ? 13
+      : segment.visualMode === "handoff"
+        ? 9
+        : 7;
+  const offset = (progress * 2 - 1) * sweepDistance * direction;
+
+  return {
+    x: clamp(segment.focusX + offset, 8, 92),
+    y: clamp(segment.focusY, 18, 82),
+  };
 }
 
 function MissingSource({ accent }: { accent: string }) {
@@ -268,6 +264,10 @@ function MissingSource({ accent }: { accent: string }) {
   );
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
 function clamp01(value: number) {
-  return Math.max(0, Math.min(1, value));
+  return clamp(value, 0, 1);
 }

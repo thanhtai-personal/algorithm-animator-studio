@@ -2,11 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   importPresetVideoSource,
+  importPresetVideoSources,
   preparePresetVideoMedia,
   type PresetVideoImportSource,
 } from "../lib/presetVideoApi";
 import type {
   PresetVideoDefinition,
+  PresetVideoSourceClip,
   PresetVideoTimelineClip,
 } from "../types";
 
@@ -205,6 +207,28 @@ export function usePresetVideoMedia(
     }
   }
 
+  async function importSources(sources: readonly PresetVideoSourceClip[], file: File) {
+    if (!sources.length) return {};
+    setUploadingSourceId(sources[0].id);
+    setMediaError("");
+    try {
+      const imported = await importPresetVideoSources(preset.id, sources, file);
+      const urls = Object.fromEntries(
+        imported.sources.map((source) => [source.sourceId, appendCacheBust(source.videoUrl)]),
+      );
+      setVideoSourceUrls((current) => ({ ...current, ...urls }));
+      setMissingSourceIds((current) => current.filter((id) => !(id in urls)));
+      return urls;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Không xử lý được nhóm video nguồn.";
+      setMediaError(message);
+      toast.error(message);
+      throw error;
+    } finally {
+      setUploadingSourceId("");
+    }
+  }
+
   return {
     videoSourceUrls,
     previewVideoSourceUrls,
@@ -214,6 +238,7 @@ export function usePresetVideoMedia(
     uploadingSourceId,
     preloadingCount,
     importSource,
+    importSources,
     invalidateSource,
   };
 }

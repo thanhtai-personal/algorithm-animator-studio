@@ -28,6 +28,7 @@ export type PresetVideoSourceClip = {
   thumbnailUrl: string;
   clipStartSeconds: number;
   clipEndSeconds: number;
+  sourceGroupId?: string;
 };
 
 export type PresetVideoPreviewSection = {
@@ -45,6 +46,28 @@ export type PresetVideoTimelineClip = {
   clipEndSeconds: number;
   timelineStartSeconds: number;
   timelineEndSeconds: number;
+};
+
+
+
+export type PresetVideoMusicRecommendation = {
+  mood: string;
+  keywords: readonly string[];
+  rationale: string;
+  defaultVolume?: number;
+};
+
+export type PresetVideoSocialCopy = {
+  title: string;
+  description: string;
+  hashtags: readonly string[];
+  keywords: readonly string[];
+  pinnedComment?: string;
+};
+
+export type PresetVideoSocialMetadata = {
+  longForm: PresetVideoSocialCopy;
+  shortForm: PresetVideoSocialCopy;
 };
 
 export type PresetVideoCompositionProps = {
@@ -75,6 +98,8 @@ export type PresetVideoDefinition = {
   editableLyrics?: readonly PresetVideoEditableLyricCue[];
   videoSources?: readonly PresetVideoSourceClip[];
   videoSourceStrategy?: PresetVideoSourceStrategy;
+  musicRecommendation?: PresetVideoMusicRecommendation;
+  socialMetadata?: PresetVideoSocialMetadata;
   component: ComponentType<PresetVideoCompositionProps>;
 };
 

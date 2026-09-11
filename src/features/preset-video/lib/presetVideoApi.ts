@@ -108,6 +108,30 @@ export async function importPresetVideoSource(
   );
 }
 
+
+
+export async function importPresetVideoSources(
+  presetId: string,
+  sources: readonly PresetVideoImportSource[],
+  file: File,
+) {
+  const formData = new FormData();
+  formData.append("video", file, file.name);
+  formData.append("presetId", presetId);
+  formData.append("sources", JSON.stringify(sources));
+
+  return parseApiResponse<{
+    presetId: string;
+    sources: Array<{ sourceId: string; videoUrl: string }>;
+  }>(
+    await fetch(buildApiUrl("/api/video/preset-media/import-batch"), {
+      method: "POST",
+      headers: buildRuntimeSettingsHeaders(),
+      body: formData,
+    }),
+  );
+}
+
 async function parsePresetRenderStream(
   response: Response,
   onProgress?: (event: PresetVideoRenderProgress) => void,

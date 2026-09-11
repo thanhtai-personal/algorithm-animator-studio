@@ -5,7 +5,7 @@ import path from "node:path";
 import { Router, type Request, type Response } from "express";
 import type { GenerateVideoFromAudioBody, GenerateVideoFromTextBody } from "../models/Video";
 import type { RemotionVideoRenderBody } from "../models/RemotionVideo";
-import type { PresetVideoMediaPrepareBody, PresetVideoRenderBody } from "../models/PresetVideo";
+import type { PresetVideoRenderBody } from "../models/PresetVideo";
 import type { TimelineVideoRenderProject } from "../models/TimelineVideo";
 import multer from "multer";
 import { GENERATED_PUBLIC_PATH, SERVER_ORIGIN, buildGeneratedFileUrl } from "../config/paths";
@@ -22,7 +22,7 @@ import { resolveGeneratedResource } from "../services/ResourceService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
 import { getRemotionHealth, renderRemotionVideo } from "../services/RemotionRenderService";
 import { renderPresetVideo } from "../services/PresetVideoRenderService";
-import { importPresetVideoSource, preparePresetVideoMedia } from "../services/PresetVideoMediaService";
+import { createPresetVideoMediaRouter } from "./presetVideoMediaRoutes";
 import { renderTimelineVideo } from "../services/TimelineVideoService";
 import { renderRemotionTimelineVideo } from "../services/RemotionTimelineRenderService";
 import { transcribeLyricsFromMedia } from "../services/VideoLyricsService";
@@ -40,13 +40,6 @@ const upload = multer({
   dest: uploadDirectory,
   limits: {
     fileSize: BACKGROUND_LIMITS.video,
-  },
-});
-const PRESET_SOURCE_VIDEO_MAX_BYTES = 2 * 1024 * 1024 * 1024;
-const presetSourceUpload = multer({
-  dest: uploadDirectory,
-  limits: {
-    fileSize: PRESET_SOURCE_VIDEO_MAX_BYTES,
   },
 });
 const mixedUpload = upload.fields([
@@ -118,47 +111,7 @@ export function createVideoRouter() {
     }
   });
 
-  router.post("/video/preset-media/prepare", async (req: Request<unknown, unknown, PresetVideoMediaPrepareBody>, res: Response) => {
-    try {
-      const result = await preparePresetVideoMedia({
-        presetId: String(req.body?.presetId || ""),
-        videoSources: req.body?.videoSources || [],
-        videoSourceStrategy: req.body?.videoSourceStrategy,
-        envOverrides: readRuntimeEnvFromRequest(req),
-      });
-      return res.json(result);
-    } catch (error) {
-      return sendError(res, error);
-    }
-  });
-
-  router.post("/video/preset-media/import", presetSourceUpload.single("video"), async (req, res) => {
-    if (!req.file?.path) return res.status(400).json({ error: "Chưa chọn video local." });
-
-    try {
-      const extension = path.extname(req.file.originalname).toLowerCase();
-      if (![".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"].includes(extension)) {
-        return res.status(400).json({ error: "Chỉ hỗ trợ video MP4, MOV, MKV, WEBM, AVI hoặc M4V." });
-      }
-
-      const result = await importPresetVideoSource({
-        presetId: String(req.body?.presetId || ""),
-        source: {
-          id: String(req.body?.sourceId || ""),
-          watchUrl: String(req.body?.watchUrl || ""),
-          clipStartSeconds: Number(req.body?.clipStartSeconds),
-          clipEndSeconds: Number(req.body?.clipEndSeconds),
-        },
-        inputPath: req.file.path,
-        envOverrides: readRuntimeEnvFromRequest(req),
-      });
-      return res.json(result);
-    } catch (error) {
-      return sendError(res, error);
-    } finally {
-      fs.rm(req.file.path, { force: true }, () => undefined);
-    }
-  });
+  router.use(createPresetVideoMediaRouter());
 
   router.post("/video/render-preset", async (req: Request<unknown, unknown, PresetVideoRenderBody>, res: Response) => {
     res.status(200);

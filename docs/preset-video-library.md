@@ -50,6 +50,17 @@ Background music được composition wrapper dùng chung của Kai Studio chèn
 
 Không cần sửa page Library, route hoặc backend render cho từng preset mới.
 
+
+## Preset nâng cao
+
+`PresetVideoDefinition` có thể khai báo thêm:
+
+- `videoSources[].sourceGroupId`: nhiều trích đoạn dùng chung một video local. Workspace upload file một lần rồi backend cắt/cache toàn bộ đoạn trong nhóm.
+- `musicRecommendation`: mood + keyword để tự chọn track phù hợp từ `MUSIC_LIBRARY_DIR` khi tên track/folder khớp; user vẫn có thể đổi hoặc tắt nhạc.
+- `socialMetadata`: bộ title/description/hashtag/keyword/pinned comment riêng cho video dài và Short/Reel, hiển thị kèm nút copy trong workspace.
+
+Clip local vẫn bị giới hạn tối đa 20 giây mỗi source. Batch import không thay đổi giới hạn này; nó chỉ tránh upload lại cùng một file lớn nhiều lần.
+
 ## Export settings hiện hỗ trợ
 
 - Landscape 1920x1080 và 1280x720.

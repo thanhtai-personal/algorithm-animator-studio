@@ -16,7 +16,7 @@ export function createDefaultPresetVideoSettings(preset: PresetVideoDefinition):
     trimStartSeconds: 0,
     trimEndSeconds: preset.defaultDurationSeconds,
     backgroundMusicId: "",
-    backgroundMusicVolume: 0.22,
+    backgroundMusicVolume: preset.musicRecommendation?.defaultVolume ?? 0.22,
     originalAudioVolume: 1,
     lyricTimings: createDefaultLyricTimings(preset),
     timelineVideoClips: [],

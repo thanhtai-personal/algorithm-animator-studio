@@ -89,40 +89,58 @@ export async function importPresetVideoSource(params: {
   inputPath: string;
   envOverrides?: RuntimeEnvValues;
 }) {
-  const presetId = normalizePresetId(params.presetId);
-  const [source] = normalizePresetVideoSources([params.source]);
+  const result = await importPresetVideoSources({
+    presetId: params.presetId,
+    sources: [params.source],
+    inputPath: params.inputPath,
+    envOverrides: params.envOverrides,
+  });
+  const source = result.sources[0];
   if (!source) throw new Error("Thông tin clip preset không hợp lệ.");
+  return { presetId: result.presetId, sourceId: source.sourceId, videoUrl: source.videoUrl };
+}
+
+export async function importPresetVideoSources(params: {
+  presetId: string;
+  sources: PresetVideoSourceClipRequest[];
+  inputPath: string;
+  envOverrides?: RuntimeEnvValues;
+}) {
+  const presetId = normalizePresetId(params.presetId);
+  const sources = normalizePresetVideoSources(params.sources);
+  if (!sources.length) throw new Error("Chưa có trích đoạn preset để xử lý.");
 
   const inputDuration = await getMediaDurationSeconds(params.inputPath, params.envOverrides);
-  if (inputDuration + 0.05 < source.clipEndSeconds) {
-    throw new Error(
-      `Video "${source.id}" chỉ dài ${formatSeconds(inputDuration)}, cần ít nhất ${formatSeconds(source.clipEndSeconds)} để cắt đoạn ${formatSeconds(source.clipStartSeconds)}–${formatSeconds(source.clipEndSeconds)}.`,
-    );
-  }
-
   const cache = resolvePresetCache(presetId, params.envOverrides);
-  const cached = resolveCachedSource(cache, source);
-  const tempOutputPath = `${cached.outputPath}.${process.pid}-${Date.now()}.tmp.mp4`;
+  const imported: Array<{ sourceId: string; videoUrl: string }> = [];
 
-  try {
-    await transcodeSourceClip({
-      inputPath: params.inputPath,
-      outputPath: tempOutputPath,
-      startSeconds: source.clipStartSeconds,
-      durationSeconds: source.clipEndSeconds - source.clipStartSeconds,
-      envOverrides: params.envOverrides,
-    });
-    fs.rmSync(cached.outputPath, { force: true });
-    fs.renameSync(tempOutputPath, cached.outputPath);
-  } finally {
-    fs.rmSync(tempOutputPath, { force: true });
+  for (const source of sources) {
+    if (inputDuration + 0.05 < source.clipEndSeconds) {
+      throw new Error(
+        `Video "${source.id}" chỉ dài ${formatSeconds(inputDuration)}, cần ít nhất ${formatSeconds(source.clipEndSeconds)} để cắt đoạn ${formatSeconds(source.clipStartSeconds)}–${formatSeconds(source.clipEndSeconds)}.`,
+      );
+    }
+
+    const cached = resolveCachedSource(cache, source);
+    const tempOutputPath = `${cached.outputPath}.${process.pid}-${Date.now()}.tmp.mp4`;
+
+    try {
+      await transcodeSourceClip({
+        inputPath: params.inputPath,
+        outputPath: tempOutputPath,
+        startSeconds: source.clipStartSeconds,
+        durationSeconds: source.clipEndSeconds - source.clipStartSeconds,
+        envOverrides: params.envOverrides,
+      });
+      fs.rmSync(cached.outputPath, { force: true });
+      fs.renameSync(tempOutputPath, cached.outputPath);
+      imported.push({ sourceId: source.id, videoUrl: cached.videoUrl });
+    } finally {
+      fs.rmSync(tempOutputPath, { force: true });
+    }
   }
 
-  return {
-    presetId,
-    sourceId: source.id,
-    videoUrl: cached.videoUrl,
-  };
+  return { presetId, sources: imported };
 }
 
 export function normalizePresetVideoSources(value: unknown): NormalizedPresetVideoSourceClip[] {
@@ -206,17 +224,35 @@ async function transcodeSourceClip(params: {
 }
 
 async function getMediaDurationSeconds(inputPath: string, envOverrides?: RuntimeEnvValues) {
-  const result = await runFfprobe([
+  const formatProbe = await runFfprobe([
     "-v", "error",
     "-show_entries", "format=duration",
     "-of", "default=noprint_wrappers=1:nokey=1",
     inputPath,
   ], envOverrides);
-  const duration = Number.parseFloat(result.stdout.trim());
-  if (!Number.isFinite(duration) || duration <= 0) {
-    throw new Error("Không đọc được thời lượng video local bằng FFprobe.");
-  }
-  return duration;
+  const formatDuration = Number.parseFloat(formatProbe.stdout.trim());
+  if (Number.isFinite(formatDuration) && formatDuration > 0) return formatDuration;
+
+  const packetProbe = await runFfprobe([
+    "-v", "error",
+    "-select_streams", "v:0",
+    "-show_entries", "packet=pts_time,duration_time",
+    "-of", "csv=p=0",
+    inputPath,
+  ], envOverrides);
+  const packetDuration = packetProbe.stdout
+    .trim()
+    .split(/\r?\n/)
+    .reduce((max, line) => {
+      const [ptsRaw, durationRaw] = line.split(",");
+      const pts = Number.parseFloat(ptsRaw);
+      const packetLength = Number.parseFloat(durationRaw);
+      if (!Number.isFinite(pts)) return max;
+      return Math.max(max, pts + (Number.isFinite(packetLength) ? packetLength : 0));
+    }, 0);
+
+  if (packetDuration > 0) return packetDuration;
+  throw new Error("Không đọc được thời lượng video local bằng FFprobe.");
 }
 
 function resolvePresetCache(presetId: string, envOverrides?: RuntimeEnvValues) {

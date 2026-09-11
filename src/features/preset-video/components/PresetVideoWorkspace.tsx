@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PlayerRef } from "@remotion/player";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Download, Film, Music2, RotateCcw, Scissors } from "lucide-react";
+import { ArrowLeft, Download, Film, RotateCcw, Scissors } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { getMusicLibraryTracks, type MusicLibraryTrack } from "@/lib/musicLibrar
 import { usePresetVideoMedia } from "../hooks/usePresetVideoMedia";
 import { createDefaultPresetVideoSettings, loadPresetVideoSettings, savePresetVideoSettings } from "../lib/presetVideoDraft";
 import { renderPresetVideo } from "../lib/presetVideoApi";
+import { findRecommendedPresetMusic } from "../lib/presetVideoMusic";
 import { getPresetVideoOutputSize, PRESET_VIDEO_OUTPUT_SIZES } from "../outputPresets";
 import type {
   PresetVideoDefinition,
@@ -21,13 +22,13 @@ import type {
 } from "../types";
 import {
   formatPresetSeconds,
-  MusicPreview,
   TrimSlider,
-  VolumeSlider,
 } from "./PresetVideoControls";
 import { PresetVideoCustomClipsCard } from "./PresetVideoCustomClipsCard";
 import { PresetVideoSourcePickerCard } from "./PresetVideoSourcePickerCard";
+import { PresetVideoSocialMetadataCard } from "./PresetVideoSocialMetadataCard";
 import { PresetVideoPreviewEditor } from "./PresetVideoPreviewEditor";
+import { PresetVideoMusicSettings } from "./PresetVideoMusicSettings";
 import { PresetVideoMediaStatusCard, PresetVideoRenderProgressCard } from "./PresetVideoStatusCards";
 
 type Props = { preset: PresetVideoDefinition; onBack: () => void };
@@ -68,6 +69,21 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
       .finally(() => { if (alive) setMusicLoading(false); });
     return () => { alive = false; };
   }, []);
+
+  useEffect(() => {
+    const recommended = findRecommendedPresetMusic(tracks, preset.musicRecommendation);
+    if (!recommended) return;
+
+    setSettings((current) => {
+      const currentTrackExists = tracks.some((track) => track.id === current.backgroundMusicId);
+      if (current.backgroundMusicId && currentTrackExists) return current;
+      return {
+        ...current,
+        backgroundMusicId: recommended.id,
+        backgroundMusicVolume: preset.musicRecommendation?.defaultVolume ?? current.backgroundMusicVolume,
+      };
+    });
+  }, [preset.id, preset.musicRecommendation, tracks]);
 
   const output = getPresetVideoOutputSize(settings.outputPreset);
   const usesLocalVideoSources = preset.videoSourceStrategy === "local";
@@ -125,6 +141,15 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
     }
   }
 
+  async function selectLocalVideoSources(sources: readonly PresetVideoSourceClip[], file: File) {
+    try {
+      await media.importSources(sources, file);
+      toast.success(`Đã cắt và cache ${sources.length} trích đoạn từ ${file.name}`);
+    } catch {
+      // usePresetVideoMedia already reports the actionable error.
+    }
+  }
+
   function addTimelineClip() {
     const timelineStartSeconds = Math.min(
       Math.max(0, settings.trimStartSeconds),
@@ -174,7 +199,12 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
   }
 
   function reset() {
-    setSettings(createDefaultPresetVideoSettings(preset));
+    const defaults = createDefaultPresetVideoSettings(preset);
+    const recommended = findRecommendedPresetMusic(tracks, preset.musicRecommendation);
+    setSettings({
+      ...defaults,
+      backgroundMusicId: recommended?.id || "",
+    });
     setResult(null);
     setRenderProgress(0);
     setRenderMessage("");
@@ -306,25 +336,14 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
                 </Select>
                 <p className="text-xs text-muted-foreground">{output.aspectRatio} · {output.width}×{output.height} · {preset.defaultFps} FPS</p>
               </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2"><Music2 className="h-4 w-4" />Nhạc nền</Label>
-                <Select
-                  value={settings.backgroundMusicId || "none"}
-                  disabled={musicLoading}
-                  onValueChange={(value) => patchSettings({ backgroundMusicId: value === "none" ? "" : value })}
-                >
-                  <SelectTrigger><SelectValue placeholder={musicLoading ? "Đang tải..." : "Không dùng nhạc"} /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Không dùng nhạc</SelectItem>
-                    {tracks.map((track) => <SelectItem key={track.id} value={track.id}>{track.title}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                {selectedTrack ? <MusicPreview src={selectedTrack.audioUrl} volume={settings.backgroundMusicVolume} /> : null}
-              </div>
-              <VolumeSlider label="Music volume" value={settings.backgroundMusicVolume} onChange={(value) => patchSettings({ backgroundMusicVolume: value })} />
-              {preset.hasOriginalAudio
-                ? <VolumeSlider label="Original audio" value={settings.originalAudioVolume} onChange={(value) => patchSettings({ originalAudioVolume: value })} />
-                : <p className="text-xs text-muted-foreground">Preset này không khai báo original audio.</p>}
+              <PresetVideoMusicSettings
+                preset={preset}
+                settings={settings}
+                tracks={tracks}
+                selectedTrack={selectedTrack}
+                musicLoading={musicLoading}
+                onChange={patchSettings}
+              />
             </CardContent>
           </Card>
 
@@ -335,8 +354,11 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
               uploadingSourceId={media.uploadingSourceId}
               disabled={rendering}
               onSelect={(source, file) => void selectLocalVideoSource(source, file)}
+              onSelectMany={(sources, file) => void selectLocalVideoSources(sources, file)}
             />
           ) : null}
+
+          {preset.socialMetadata ? <PresetVideoSocialMetadataCard metadata={preset.socialMetadata} musicCredit={selectedTrack?.licenseText} /> : null}
 
           {requiredSourceIds.length ? (
             <PresetVideoMediaStatusCard

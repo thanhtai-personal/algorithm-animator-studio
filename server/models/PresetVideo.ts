@@ -37,6 +37,8 @@ export type PresetVideoRenderBody = {
   backgroundMusicUrl?: string;
   backgroundMusicVolume?: number;
   originalAudioVolume?: number;
+  voiceoverAudioRelativePath?: string;
+  voiceoverVolume?: number;
   lyricTimings?: Record<string, PresetVideoLyricTiming>;
   videoSources?: PresetVideoSourceClipRequest[];
   timelineVideoClips?: PresetVideoTimelineClipRequest[];
@@ -76,6 +78,8 @@ export type NormalizedPresetVideoRenderInput = {
   backgroundMusicUrl: string;
   backgroundMusicVolume: number;
   originalAudioVolume: number;
+  voiceoverAudioRelativePath: string;
+  voiceoverVolume: number;
   lyricTimings: Record<string, { start: number; end: number }>;
   videoSources: NormalizedPresetVideoSourceClip[];
   timelineVideoClips: NormalizedPresetVideoTimelineClip[];

@@ -58,3 +58,5 @@ NUL
 .understand-anything/tmp/
 .understand-anything/intermediate/*
 !.understand-anything/intermediate/scan-result.json
+
+.codex

@@ -17,8 +17,7 @@ type Provider = "piper" | "supertonic" | "vieneu" | "gpt-sovits" | "elevenlabs" 
 type Props = { preset: PresetVideoDefinition; settings: PresetVideoExportSettings; disabled?: boolean; onChange: (patch: Partial<PresetVideoExportSettings>) => void };
 
 export function PresetVideoVoiceoverSettings({ preset, settings, disabled = false, onChange }: Props) {
-  const segments = useMemo(() => (preset.editableLyrics || []).map((cue) => cue.lines.join(" " ).trim()).filter(Boolean), [preset]);
-  const defaultText = useMemo(() => segments.join("\n"), [segments]);
+  const defaultText = useMemo(() => (preset.editableLyrics || []).map((cue) => cue.lines.join(" " ).trim()).filter(Boolean).join("\n"), [preset]);
   const [text, setText] = useState(defaultText);
   const [provider, setProvider] = useState<Provider>("piper");
   const [generating, setGenerating] = useState(false);
@@ -62,6 +61,7 @@ export function PresetVideoVoiceoverSettings({ preset, settings, disabled = fals
 
   async function runGenerate(normalizedText: string): Promise<VoiceGenerateResult> {
     const fileName = `${preset.id}-voiceover`;
+    const segments = normalizedText.split("\n").map((item) => item.trim()).filter(Boolean);
     if (provider === "piper") return generatePiperVoice({ text: normalizedText, segments, modelKey, sentenceSilence: 0.15, speechRate: 1, fileName });
     if (provider === "supertonic") return generateSupertonicVoice({ text: normalizedText, segments, voice: supertonic?.defaultVoice || "", lang: readSystemLang("vi"), speed: 1, totalSteps: supertonic?.defaultTotalSteps || 8, fileName });
     if (provider === "vieneu") return generateVieneuVoice({ text: normalizedText, segments, fileName, mode: vieneu?.mode, emotion: vieneu?.emotion, voiceId: vieneu?.defaultVoiceId });
@@ -84,5 +84,4 @@ export function PresetVideoVoiceoverSettings({ preset, settings, disabled = fals
 }
 
 function SelectField(props: { label: string; value: string; options: Array<{ value: string; label: string }>; onChange: (value: string) => void }) { return <div className="space-y-2"><Label>{props.label}</Label><Select value={props.value} onValueChange={props.onChange}><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{props.options.length ? props.options.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>) : <SelectItem value="__empty" disabled>No options</SelectItem>}</SelectContent></Select></div>; }
-
 const GPT_SOVITS_LANGS = [{ value: "vi", label: "Vietnamese" }, { value: "en", label: "English" }, { value: "zh", label: "Chinese" }, { value: "ja", label: "Japanese" }, { value: "ko", label: "Korean" }, { value: "yue", label: "Cantonese" }, { value: "auto", label: "Auto" }];

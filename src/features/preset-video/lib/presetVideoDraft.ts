@@ -19,6 +19,9 @@ export function createDefaultPresetVideoSettings(preset: PresetVideoDefinition):
     backgroundMusicId: "",
     backgroundMusicVolume: preset.musicRecommendation?.defaultVolume ?? 0.22,
     originalAudioVolume: 1,
+    voiceoverAudioRelativePath: "",
+    voiceoverAudioUrl: "",
+    voiceoverVolume: 1,
     lyricTimings: createDefaultLyricTimings(preset),
     timelineVideoClips: [],
   };
@@ -56,6 +59,9 @@ export function loadPresetVideoSettings(preset: PresetVideoDefinition): PresetVi
       backgroundMusicId: typeof raw.backgroundMusicId === "string" ? raw.backgroundMusicId : "",
       backgroundMusicVolume: clampNumber(raw.backgroundMusicVolume, 0, 1, defaults.backgroundMusicVolume),
       originalAudioVolume: clampNumber(raw.originalAudioVolume, 0, 1, defaults.originalAudioVolume),
+      voiceoverAudioRelativePath: normalizeStoredString(raw.voiceoverAudioRelativePath, 512),
+      voiceoverAudioUrl: normalizeStoredString(raw.voiceoverAudioUrl, 2048),
+      voiceoverVolume: clampNumber(raw.voiceoverVolume, 0, 1, defaults.voiceoverVolume),
       lyricTimings: canReuseStoredLyricTimings ? normalizeStoredLyricTimings(preset, raw.lyricTimings) : defaults.lyricTimings,
       timelineVideoClips: canReuseTimelineSettings
         ? normalizeStoredTimelineClips(preset, raw.timelineVideoClips)
@@ -142,6 +148,10 @@ function storageKey(presetId: string) {
 
 function isOutputPreset(value: unknown): value is PresetVideoOutputPreset {
   return PRESET_VIDEO_OUTPUT_SIZES.some((item) => item.id === value);
+}
+
+function normalizeStoredString(value: unknown, maxLength: number) {
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
 
 function clampNumber(value: unknown, min: number, max: number, fallback: number) {

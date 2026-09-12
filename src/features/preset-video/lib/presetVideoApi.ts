@@ -34,6 +34,8 @@ export async function renderPresetVideo(
       backgroundMusicUrl: params.backgroundMusicUrl || "",
       backgroundMusicVolume: params.settings.backgroundMusicVolume,
       originalAudioVolume: params.settings.originalAudioVolume,
+      voiceoverAudioRelativePath: params.settings.voiceoverAudioRelativePath,
+      voiceoverVolume: params.settings.voiceoverVolume,
       lyricTimings: params.settings.lyricTimings,
       videoSources: params.preset.videoSources || [],
       timelineVideoClips: params.settings.timelineVideoClips,
@@ -107,8 +109,6 @@ export async function importPresetVideoSource(
     }),
   );
 }
-
-
 
 export async function importPresetVideoSources(
   presetId: string,

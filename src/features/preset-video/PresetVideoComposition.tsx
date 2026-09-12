@@ -13,6 +13,8 @@ export const DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS: PresetVideoCompositionProps
   backgroundMusicUrl: "",
   backgroundMusicVolume: 0.22,
   originalAudioVolume: 1,
+  voiceoverAudioUrl: "",
+  voiceoverVolume: 1,
   lyricTimings: {},
   videoSourceUrls: {},
   timelineVideoClips: [],
@@ -21,14 +23,13 @@ export const DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS: PresetVideoCompositionProps
 export function PresetVideoComposition(rawProps: Partial<PresetVideoCompositionProps>) {
   const props = { ...DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS, ...rawProps };
   const preset = getPresetVideoDefinition(props.presetId);
-  if (!preset) {
-    throw new Error(`Preset video "${props.presetId}" chưa được đăng ký.`);
-  }
+  if (!preset) throw new Error(`Preset video "${props.presetId}" chưa được đăng ký.`);
 
   const Visual = preset.component;
   return (
     <AbsoluteFill style={{ background: "#000" }}>
       <Visual {...props} />
+      {props.voiceoverAudioUrl ? <Audio src={props.voiceoverAudioUrl} volume={props.voiceoverVolume} /> : null}
       {props.backgroundMusicUrl ? <Audio src={props.backgroundMusicUrl} volume={props.backgroundMusicVolume} /> : null}
     </AbsoluteFill>
   );

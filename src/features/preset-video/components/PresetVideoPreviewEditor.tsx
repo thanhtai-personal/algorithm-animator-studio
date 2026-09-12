@@ -1,15 +1,9 @@
-import { useEffect, useMemo, useState, type RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import type { PlayerRef } from "@remotion/player";
-import { createDefaultPresetVideoSettings } from "../lib/presetVideoDraft";
-import type {
-  PresetVideoCompositionProps,
-  PresetVideoDefinition,
-  PresetVideoExportSettings,
-  PresetVideoLyricTiming,
-} from "../types";
-import { PresetLyricTimingEditor } from "./PresetLyricTimingEditor";
+import type { PresetVideoCompositionProps, PresetVideoDefinition, PresetVideoExportSettings } from "../types";
 import { PresetVideoPreviewStage } from "./PresetVideoPreviewStage";
 import { PresetVideoSectionSelector } from "./PresetVideoSectionSelector";
+import { PresetVideoVoiceRecorder } from "./PresetVideoVoiceRecorder";
 
 type Props = {
   preset: PresetVideoDefinition;
@@ -32,53 +26,17 @@ export function PresetVideoPreviewEditor(props: Props) {
     setSelectedSectionId(firstSectionId);
   }, [firstSectionId, props.preset.id]);
 
-  const selectedSection = props.preset.previewSections?.find(
-    (section) => section.id === selectedSectionId,
-  );
-  const visibleLyrics = useMemo(
-    () => selectedSection
-      ? (props.preset.editableLyrics || []).filter((cue) => (
-        cue.end > selectedSection.startSeconds && cue.start < selectedSection.endSeconds
-      ))
-      : props.preset.editableLyrics || [],
-    [props.preset.editableLyrics, selectedSection],
-  );
-
-  const durationInFrames = Math.max(
-    1,
-    Math.round(props.preset.defaultDurationSeconds * props.preset.defaultFps),
-  );
+  const durationInFrames = Math.max(1, Math.round(props.preset.defaultDurationSeconds * props.preset.defaultFps));
   const lastFrame = durationInFrames - 1;
-  const inFrame = Math.min(
-    lastFrame,
-    Math.max(0, Math.floor(props.settings.trimStartSeconds * props.preset.defaultFps)),
-  );
-  const outFrame = Math.min(
-    lastFrame,
-    Math.max(inFrame, Math.ceil(props.settings.trimEndSeconds * props.preset.defaultFps) - 1),
-  );
-
-  function previewAt(timeSeconds: number) {
-    props.playerRef.current?.seekTo(
-      Math.min(lastFrame, Math.max(0, Math.floor(timeSeconds * props.preset.defaultFps))),
-    );
-    props.playerRef.current?.play();
-  }
+  const inFrame = Math.min(lastFrame, Math.max(0, Math.floor(props.settings.trimStartSeconds * props.preset.defaultFps)));
+  const outFrame = Math.min(lastFrame, Math.max(inFrame, Math.ceil(props.settings.trimEndSeconds * props.preset.defaultFps) - 1));
 
   function selectSection(sectionId: string) {
     setSelectedSectionId(sectionId);
     const section = props.preset.previewSections?.find((item) => item.id === sectionId);
     if (section) {
-      props.playerRef.current?.seekTo(
-        Math.min(lastFrame, Math.max(0, Math.floor(section.startSeconds * props.preset.defaultFps))),
-      );
+      props.playerRef.current?.seekTo(Math.min(lastFrame, Math.max(0, Math.floor(section.startSeconds * props.preset.defaultFps))));
     }
-  }
-
-  function updateLyricTiming(cueId: string, timing: PresetVideoLyricTiming) {
-    props.onSettingsChange({
-      lyricTimings: { ...props.settings.lyricTimings, [cueId]: timing },
-    });
   }
 
   return (
@@ -108,15 +66,12 @@ export function PresetVideoPreviewEditor(props: Props) {
         />
         {props.preset.editableLyrics?.length ? (
           <div className="xl:sticky xl:top-4">
-            <PresetLyricTimingEditor
-              cues={visibleLyrics}
-              timings={props.settings.lyricTimings}
-              durationSeconds={props.preset.defaultDurationSeconds}
-              onChange={updateLyricTiming}
-              onReset={() => props.onSettingsChange({
-                lyricTimings: createDefaultPresetVideoSettings(props.preset).lyricTimings,
-              })}
-              onPreview={previewAt}
+            <PresetVideoVoiceRecorder
+              preset={props.preset}
+              settings={props.settings}
+              playerRef={props.playerRef}
+              disabled={props.disabled}
+              onSettingsChange={props.onSettingsChange}
             />
           </div>
         ) : null}

@@ -1,10 +1,5 @@
 import fs from "node:fs";
-import type {
-  NormalizedPresetVideoRenderInput,
-  PresetVideoAspectRatio,
-  PresetVideoOutputPreset,
-  PresetVideoRenderBody,
-} from "../models/PresetVideo";
+import type { NormalizedPresetVideoRenderInput, PresetVideoAspectRatio, PresetVideoLanguage, PresetVideoOutputPreset, PresetVideoRenderBody } from "../models/PresetVideo";
 import { GENERATED_PUBLIC_PATH, SERVER_ORIGIN, buildGeneratedFileUrl } from "../config/paths";
 import { createVideoOutput } from "../utils/videoOutput";
 import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
@@ -35,24 +30,15 @@ export async function renderPresetVideo(params: { input: PresetVideoRenderBody; 
 
   report({ progress: 0.01, stage: "preparing", message: "Đang chuẩn bị clip video nền..." });
   const mediaSources = [...input.videoSources, ...input.timelineVideoClips.map((clip) => ({ id: clip.id, watchUrl: clip.watchUrl, clipStartSeconds: clip.clipStartSeconds, clipEndSeconds: clip.clipEndSeconds }))];
-  const media = await preparePresetVideoMedia({
-    presetId: input.presetId,
-    videoSources: mediaSources,
-    videoSourceStrategy: input.videoSourceStrategy,
-    envOverrides: params.envOverrides,
-    onProgress: (event) => report({ progress: 0.01 + event.progress * 0.11, stage: "preparing", message: event.message }),
-  });
-
-  if (input.videoSourceStrategy === "local" && media.missingSourceIds.length) {
-    throw new Error(`Còn thiếu ${media.missingSourceIds.length} video local: ${media.missingSourceIds.join(", ")}. Hãy chọn đủ video nguồn trước khi export.`);
-  }
+  const media = await preparePresetVideoMedia({ presetId: input.presetId, videoSources: mediaSources, videoSourceStrategy: input.videoSourceStrategy, envOverrides: params.envOverrides, onProgress: (event) => report({ progress: 0.01 + event.progress * 0.11, stage: "preparing", message: event.message }) });
+  if (input.videoSourceStrategy === "local" && media.missingSourceIds.length) throw new Error(`Còn thiếu ${media.missingSourceIds.length} video local: ${media.missingSourceIds.join(", ")}. Hãy chọn đủ video nguồn trước khi export.`);
 
   const voiceoverAudioUrl = resolveVoiceoverAudioUrl(input.voiceoverAudioRelativePath, params.envOverrides);
   const { renderMedia, selectComposition } = await import("@remotion/renderer");
   report({ progress: 0.13, stage: "metadata", message: "Đang đọc composition preset..." });
   const serveUrl = await getRemotionBundleUrl();
   const inputProps = {
-    presetId: input.presetId, aspectRatio: input.aspectRatio, durationSeconds: input.durationSeconds, fps: input.fps,
+    presetId: input.presetId, language: input.language, aspectRatio: input.aspectRatio, durationSeconds: input.durationSeconds, fps: input.fps,
     backgroundMusicUrl: input.backgroundMusicUrl, backgroundMusicVolume: input.backgroundMusicVolume, originalAudioVolume: input.originalAudioVolume,
     voiceoverAudioUrl, voiceoverVolume: input.voiceoverVolume, lyricTimings: input.lyricTimings, videoSourceUrls: media.videoSourceUrls, timelineVideoClips: input.timelineVideoClips,
   };
@@ -63,14 +49,11 @@ export async function renderPresetVideo(params: { input: PresetVideoRenderBody; 
   const output = createVideoOutput(input.fileName || input.presetId, params.envOverrides);
 
   report({ progress: 0.15, stage: "rendering", message: "Bắt đầu render MP4..." });
-  await renderMedia({
-    codec: "h264", composition, serveUrl, inputProps, outputLocation: output.outputPath, frameRange: [startFrame, endFrame],
-    onProgress: ({ progress, stitchStage, renderedFrames, encodedFrames }) => {
-      const normalized = Math.max(0, Math.min(1, progress));
-      const stage = stitchStage === "muxing" ? "muxing" : "rendering";
-      report({ progress: 0.15 + normalized * 0.8, stage, message: stage === "muxing" ? `Đang ghép MP4 ${Math.round(normalized * 100)}%...` : `Đang render ${Math.round(normalized * 100)}% · ${renderedFrames} frame render / ${encodedFrames} frame encode` });
-    },
-  });
+  await renderMedia({ codec: "h264", composition, serveUrl, inputProps, outputLocation: output.outputPath, frameRange: [startFrame, endFrame], onProgress: ({ progress, stitchStage, renderedFrames, encodedFrames }) => {
+    const normalized = Math.max(0, Math.min(1, progress));
+    const stage = stitchStage === "muxing" ? "muxing" : "rendering";
+    report({ progress: 0.15 + normalized * 0.8, stage, message: stage === "muxing" ? `Đang ghép MP4 ${Math.round(normalized * 100)}%...` : `Đang render ${Math.round(normalized * 100)}% · ${renderedFrames} frame render / ${encodedFrames} frame encode` });
+  } });
 
   report({ progress: 0.97, stage: "verifying", message: "Đang kiểm tra file MP4..." });
   if (!fs.existsSync(output.outputPath)) throw new Error("Remotion render preset xong nhưng không tạo tệp MP4.");
@@ -91,53 +74,20 @@ export function normalizePresetVideoRenderInput(raw: PresetVideoRenderBody): Nor
   const timelineVideoClips = normalizeTimelineVideoClips(raw.timelineVideoClips, durationSeconds);
   assertUniqueMediaSourceIds(videoSources, timelineVideoClips);
   return {
-    presetId, fileName: sanitizeFileName(raw.fileName, presetId), outputPreset, ...output, durationSeconds, fps, trimStartSeconds, trimEndSeconds,
+    presetId, language: normalizeLanguage(raw.language), fileName: sanitizeFileName(raw.fileName, presetId), outputPreset, ...output, durationSeconds, fps, trimStartSeconds, trimEndSeconds,
     backgroundMusicUrl: sanitizeBackgroundMusicUrl(raw.backgroundMusicUrl), backgroundMusicVolume: clampNumber(raw.backgroundMusicVolume, 0, 1, 0.22), originalAudioVolume: clampNumber(raw.originalAudioVolume, 0, 1, 1),
     voiceoverAudioRelativePath: sanitizeGeneratedAudioRelativePath(raw.voiceoverAudioRelativePath), voiceoverVolume: clampNumber(raw.voiceoverVolume, 0, 1, 1),
     lyricTimings: normalizeLyricTimings(raw.lyricTimings, durationSeconds), videoSources, timelineVideoClips, videoSourceStrategy: normalizePresetVideoSourceStrategy(raw.videoSourceStrategy),
   };
 }
 
-function resolveVoiceoverAudioUrl(relativePath: string, envOverrides: RuntimeEnvValues = {}) {
-  if (!relativePath) return "";
-  const resolved = resolveGeneratedResource({ kind: "audio", relativePath }, envOverrides);
-  if (!fs.existsSync(resolved.absolutePath)) throw new Error("Không tìm thấy file voice-over đã tạo. Hãy generate TTS lại trước khi export.");
-  const env = readEnvValues(envOverrides);
-  return buildGeneratedFileUrl(GENERATED_PUBLIC_PATH, resolved.relativePath, env.SERVER_ORIGIN || SERVER_ORIGIN);
-}
-
-function assertUniqueMediaSourceIds(videoSources: readonly { id: string }[], timelineVideoClips: readonly { id: string }[]) {
-  const ids = new Set<string>();
-  for (const source of [...videoSources, ...timelineVideoClips]) { if (ids.has(source.id)) throw new Error(`Video source id "${source.id}" bị trùng.`); ids.add(source.id); }
-}
-
-function normalizeTimelineVideoClips(value: unknown, durationSeconds: number) {
-  if (!Array.isArray(value)) return [];
-  const normalized = value.slice(0, 20).map((raw, index) => {
-    if (!raw || typeof raw !== "object") throw new Error(`Timeline video #${index + 1} không hợp lệ.`);
-    const candidate = raw as { id?: unknown; title?: unknown; watchUrl?: unknown; clipStartSeconds?: unknown; clipEndSeconds?: unknown; timelineStartSeconds?: unknown; timelineEndSeconds?: unknown };
-    const [source] = normalizePresetVideoSources([candidate]);
-    const sourceDuration = source.clipEndSeconds - source.clipStartSeconds;
-    const timelineStartSeconds = clampNumber(candidate.timelineStartSeconds, 0, Math.max(0, durationSeconds - 0.1), 0);
-    const maxTimelineEnd = Math.min(durationSeconds, timelineStartSeconds + sourceDuration);
-    const timelineEndSeconds = clampNumber(candidate.timelineEndSeconds, timelineStartSeconds + 0.1, maxTimelineEnd, maxTimelineEnd);
-    return { ...source, title: typeof candidate.title === "string" && candidate.title.trim() ? candidate.title.trim().slice(0, 120) : `Video ${index + 1}`, timelineStartSeconds, timelineEndSeconds };
-  });
-  const ids = new Set<string>();
-  for (const clip of normalized) { if (ids.has(clip.id)) throw new Error(`Timeline video id "${clip.id}" bị trùng.`); ids.add(clip.id); }
-  return normalized;
-}
-
-function normalizeLyricTimings(value: unknown, durationSeconds: number) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  return Object.fromEntries(Object.entries(value as Record<string, { start?: unknown; end?: unknown }>).slice(0, 500).filter(([id]) => /^[a-z0-9][a-z0-9-]{0,79}$/i.test(id)).map(([id, timing]) => { const start = clampNumber(timing?.start, 0, Math.max(0, durationSeconds - 0.05), 0); const end = clampNumber(timing?.end, start + 0.05, durationSeconds, start + 0.05); return [id, { start, end }]; }));
-}
-
+function normalizeLanguage(value: unknown): PresetVideoLanguage { return value === "vi" ? "vi" : "en"; }
+function resolveVoiceoverAudioUrl(relativePath: string, envOverrides: RuntimeEnvValues = {}) { if (!relativePath) return ""; const resolved = resolveGeneratedResource({ kind: "audio", relativePath }, envOverrides); if (!fs.existsSync(resolved.absolutePath)) throw new Error("Không tìm thấy file voice-over đã tạo. Hãy generate TTS lại trước khi export."); const env = readEnvValues(envOverrides); return buildGeneratedFileUrl(GENERATED_PUBLIC_PATH, resolved.relativePath, env.SERVER_ORIGIN || SERVER_ORIGIN); }
+function assertUniqueMediaSourceIds(videoSources: readonly { id: string }[], timelineVideoClips: readonly { id: string }[]) { const ids = new Set<string>(); for (const source of [...videoSources, ...timelineVideoClips]) { if (ids.has(source.id)) throw new Error(`Video source id "${source.id}" bị trùng.`); ids.add(source.id); } }
+function normalizeTimelineVideoClips(value: unknown, durationSeconds: number) { if (!Array.isArray(value)) return []; const normalized = value.slice(0, 20).map((raw, index) => { if (!raw || typeof raw !== "object") throw new Error(`Timeline video #${index + 1} không hợp lệ.`); const candidate = raw as { id?: unknown; title?: unknown; watchUrl?: unknown; clipStartSeconds?: unknown; clipEndSeconds?: unknown; timelineStartSeconds?: unknown; timelineEndSeconds?: unknown }; const [source] = normalizePresetVideoSources([candidate]); const sourceDuration = source.clipEndSeconds - source.clipStartSeconds; const timelineStartSeconds = clampNumber(candidate.timelineStartSeconds, 0, Math.max(0, durationSeconds - 0.1), 0); const maxTimelineEnd = Math.min(durationSeconds, timelineStartSeconds + sourceDuration); const timelineEndSeconds = clampNumber(candidate.timelineEndSeconds, timelineStartSeconds + 0.1, maxTimelineEnd, maxTimelineEnd); return { ...source, title: typeof candidate.title === "string" && candidate.title.trim() ? candidate.title.trim().slice(0, 120) : `Video ${index + 1}`, timelineStartSeconds, timelineEndSeconds }; }); const ids = new Set<string>(); for (const clip of normalized) { if (ids.has(clip.id)) throw new Error(`Timeline video id "${clip.id}" bị trùng.`); ids.add(clip.id); } return normalized; }
+function normalizeLyricTimings(value: unknown, durationSeconds: number) { if (!value || typeof value !== "object" || Array.isArray(value)) return {}; return Object.fromEntries(Object.entries(value as Record<string, { start?: unknown; end?: unknown }>).slice(0, 500).filter(([id]) => /^[a-z0-9][a-z0-9-]{0,79}$/i.test(id)).map(([id, timing]) => { const start = clampNumber(timing?.start, 0, Math.max(0, durationSeconds - 0.05), 0); const end = clampNumber(timing?.end, start + 0.05, durationSeconds, start + 0.05); return [id, { start, end }]; })); }
 function normalizeOutputPreset(value: unknown): PresetVideoOutputPreset { return typeof value === "string" && value in OUTPUT_SIZES ? value as PresetVideoOutputPreset : "landscape-1080p"; }
 function sanitizeFileName(value: unknown, fallback: string) { if (typeof value !== "string") return fallback; const trimmed = value.trim(); return trimmed ? trimmed.slice(0, 96) : fallback; }
 function sanitizeGeneratedAudioRelativePath(value: unknown) { return typeof value === "string" ? value.trim().slice(0, 512) : ""; }
-function sanitizeBackgroundMusicUrl(value: unknown) {
-  if (typeof value !== "string") return ""; const trimmed = value.trim(); if (!trimmed) return "";
-  try { const allowedOrigin = new URL(SERVER_ORIGIN).origin; const resolved = new URL(trimmed, SERVER_ORIGIN); const isMusicLibraryAudio = /^\/api\/music-library\/[^/]+\/audio$/.test(resolved.pathname); if (resolved.origin !== allowedOrigin || !isMusicLibraryAudio) throw new Error("Nhạc nền phải đến từ Music Library của Kai Studio."); return resolved.toString(); } catch (error) { if (error instanceof Error && error.message.includes("Music Library")) throw error; throw new Error("URL nhạc nền không hợp lệ."); }
-}
+function sanitizeBackgroundMusicUrl(value: unknown) { if (typeof value !== "string") return ""; const trimmed = value.trim(); if (!trimmed) return ""; try { const allowedOrigin = new URL(SERVER_ORIGIN).origin; const resolved = new URL(trimmed, SERVER_ORIGIN); const isMusicLibraryAudio = /^\/api\/music-library\/[^/]+\/audio$/.test(resolved.pathname); if (resolved.origin !== allowedOrigin || !isMusicLibraryAudio) throw new Error("Nhạc nền phải đến từ Music Library của Kai Studio."); return resolved.toString(); } catch (error) { if (error instanceof Error && error.message.includes("Music Library")) throw error; throw new Error("URL nhạc nền không hợp lệ."); } }
 function clampNumber(value: unknown, min: number, max: number, fallback: number) { const parsed = Number(value); if (!Number.isFinite(parsed)) return fallback; return Math.min(max, Math.max(min, parsed)); }

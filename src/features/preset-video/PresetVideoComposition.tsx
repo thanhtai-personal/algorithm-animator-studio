@@ -7,6 +7,7 @@ const fallbackPreset = PRESET_VIDEO_REGISTRY[0];
 
 export const DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS: PresetVideoCompositionProps = {
   presetId: fallbackPreset?.id ?? "missing-preset",
+  language: "en",
   aspectRatio: fallbackPreset ? getPresetVideoOutputSize(fallbackPreset.defaultOutputPreset).aspectRatio : "16:9",
   durationSeconds: fallbackPreset?.defaultDurationSeconds ?? 10,
   fps: fallbackPreset?.defaultFps ?? 30,

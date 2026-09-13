@@ -7,13 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { readSystemLang, subscribeSystemLang } from "@/lib/i18n";
 import { getMusicLibraryTracks, type MusicLibraryTrack } from "@/lib/musicLibrary";
 import { usePresetVideoMedia } from "../hooks/usePresetVideoMedia";
 import { createDefaultPresetVideoSettings, loadPresetVideoSettings, savePresetVideoSettings } from "../lib/presetVideoDraft";
 import { renderPresetVideo } from "../lib/presetVideoApi";
+import { resolvePresetVideoDefinition } from "../lib/presetVideoLocalization";
 import { findRecommendedPresetMusic } from "../lib/presetVideoMusic";
 import { getPresetVideoOutputSize, PRESET_VIDEO_OUTPUT_SIZES } from "../outputPresets";
-import type { PresetVideoDefinition, PresetVideoExportSettings, PresetVideoRenderResponse, PresetVideoSourceClip, PresetVideoTimelineClip } from "../types";
+import type { PresetVideoDefinition, PresetVideoExportSettings, PresetVideoLanguage, PresetVideoRenderResponse, PresetVideoSourceClip, PresetVideoTimelineClip } from "../types";
 import { formatPresetSeconds, TrimSlider } from "./PresetVideoControls";
 import { PresetVideoCustomClipsCard } from "./PresetVideoCustomClipsCard";
 import { PresetVideoSourcePickerCard } from "./PresetVideoSourcePickerCard";
@@ -26,8 +28,10 @@ import { PresetVideoMediaStatusCard, PresetVideoRenderProgressCard } from "./Pre
 type Props = { preset: PresetVideoDefinition; onBack: () => void };
 const MIN_TRIM_SECONDS = 0.1;
 
-export function PresetVideoWorkspace({ preset, onBack }: Props) {
-  const [settings, setSettings] = useState<PresetVideoExportSettings>(() => loadPresetVideoSettings(preset));
+export function PresetVideoWorkspace({ preset: sourcePreset, onBack }: Props) {
+  const [language, setLanguage] = useState<PresetVideoLanguage>(() => readSystemLang("en"));
+  const preset = useMemo(() => resolvePresetVideoDefinition(sourcePreset, language), [sourcePreset, language]);
+  const [settings, setSettings] = useState<PresetVideoExportSettings>(() => loadPresetVideoSettings(resolvePresetVideoDefinition(sourcePreset, readSystemLang("en"))));
   const [tracks, setTracks] = useState<MusicLibraryTrack[]>([]);
   const [musicLoading, setMusicLoading] = useState(true);
   const [rendering, setRendering] = useState(false);
@@ -37,8 +41,9 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
   const playerRef = useRef<PlayerRef>(null);
   const media = usePresetVideoMedia(preset, settings.timelineVideoClips);
 
-  useEffect(() => { setSettings(loadPresetVideoSettings(preset)); setResult(null); }, [preset]);
-  useEffect(() => { savePresetVideoSettings(preset.id, settings); }, [preset.id, settings]);
+  useEffect(() => subscribeSystemLang((next) => setLanguage(next)), []);
+  useEffect(() => { setSettings(loadPresetVideoSettings(preset)); setResult(null); }, [sourcePreset.id]);
+  useEffect(() => { savePresetVideoSettings(sourcePreset.id, settings); }, [sourcePreset.id, settings]);
   useEffect(() => {
     let alive = true; setMusicLoading(true);
     getMusicLibraryTracks().then((items) => { if (alive) setTracks(items); }).catch((error) => { if (alive) { setTracks([]); toast.error(error instanceof Error ? error.message : "Không tải được thư viện nhạc."); } }).finally(() => { if (alive) setMusicLoading(false); });
@@ -55,10 +60,10 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
   const missingLocalVideoSources = usesLocalVideoSources ? requiredSourceIds.filter((id) => !media.videoSourceUrls[id]) : [];
   const selectedTrack = useMemo(() => tracks.find((track) => track.id === settings.backgroundMusicId), [settings.backgroundMusicId, tracks]);
   const inputProps = useMemo(() => ({
-    presetId: preset.id, aspectRatio: output.aspectRatio, durationSeconds: preset.defaultDurationSeconds, fps: preset.defaultFps,
+    presetId: preset.id, language, aspectRatio: output.aspectRatio, durationSeconds: preset.defaultDurationSeconds, fps: preset.defaultFps,
     backgroundMusicUrl: selectedTrack?.audioUrl || "", backgroundMusicVolume: settings.backgroundMusicVolume, originalAudioVolume: settings.originalAudioVolume,
     voiceoverAudioUrl: settings.voiceoverAudioUrl, voiceoverVolume: settings.voiceoverVolume, lyricTimings: settings.lyricTimings, videoSourceUrls: media.previewVideoSourceUrls, timelineVideoClips: settings.timelineVideoClips,
-  }), [media.previewVideoSourceUrls, output.aspectRatio, preset, selectedTrack?.audioUrl, settings.backgroundMusicVolume, settings.lyricTimings, settings.originalAudioVolume, settings.timelineVideoClips, settings.voiceoverAudioUrl, settings.voiceoverVolume]);
+  }), [language, media.previewVideoSourceUrls, output.aspectRatio, preset, selectedTrack?.audioUrl, settings.backgroundMusicVolume, settings.lyricTimings, settings.originalAudioVolume, settings.timelineVideoClips, settings.voiceoverAudioUrl, settings.voiceoverVolume]);
 
   function patchSettings(patch: Partial<PresetVideoExportSettings>) { setSettings((current) => ({ ...current, ...patch })); }
   function previewAt(timeSeconds: number) { playerRef.current?.seekTo(Math.max(0, Math.floor(timeSeconds * preset.defaultFps))); playerRef.current?.play(); }
@@ -87,13 +92,13 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
     if (missingLocalVideoSources.length) { toast.error(`Còn thiếu ${missingLocalVideoSources.length} video local trước khi export.`); return; }
     setRendering(true); setRenderProgress(0); setRenderMessage("Đang khởi tạo render..."); setResult(null);
     try {
-      const rendered = await renderPresetVideo({ preset, settings, backgroundMusicUrl: selectedTrack?.audioUrl }, (event) => { setRenderProgress(event.progress); setRenderMessage(event.message); });
+      const rendered = await renderPresetVideo({ preset, settings, language, backgroundMusicUrl: selectedTrack?.audioUrl }, (event) => { setRenderProgress(event.progress); setRenderMessage(event.message); });
       setResult(rendered); toast.success(`Đã export ${rendered.fileName}`);
     } catch (error) { toast.error(error instanceof Error ? error.message : "Export preset video thất bại."); } finally { setRendering(false); }
   }
 
   return <div className="space-y-4">
-    <header className="flex flex-col gap-3 rounded-xl border bg-card/70 p-4 md:flex-row md:items-center md:justify-between"><div className="flex items-start gap-3"><Button variant="ghost" size="icon" onClick={onBack} aria-label="Quay lại kho preset"><ArrowLeft className="h-4 w-4" /></Button><div><p className="text-xs font-bold uppercase tracking-[0.24em] text-primary">Preset Video</p><h1 className="mt-1 text-xl font-bold">{preset.name}</h1><p className="mt-1 max-w-3xl text-sm text-muted-foreground">{preset.description}</p></div></div><div className="flex gap-2"><Button variant="outline" disabled={rendering || Boolean(media.uploadingSourceId)} onClick={reset}><RotateCcw className="mr-2 h-4 w-4" />Reset</Button><Button disabled={rendering || Boolean(media.uploadingSourceId) || missingLocalVideoSources.length > 0} onClick={() => void exportVideo()}><Film className="mr-2 h-4 w-4" />{rendering ? `Đang render ${Math.round(renderProgress * 100)}%` : "Export MP4"}</Button></div></header>
+    <header className="flex flex-col gap-3 rounded-xl border bg-card/70 p-4 md:flex-row md:items-center md:justify-between"><div className="flex items-start gap-3"><Button variant="ghost" size="icon" onClick={onBack} aria-label="Quay lại kho preset"><ArrowLeft className="h-4 w-4" /></Button><div><p className="text-xs font-bold uppercase tracking-[0.24em] text-primary">Preset Video · {language.toUpperCase()}</p><h1 className="mt-1 text-xl font-bold">{preset.name}</h1><p className="mt-1 max-w-3xl text-sm text-muted-foreground">{preset.description}</p></div></div><div className="flex gap-2"><Button variant="outline" disabled={rendering || Boolean(media.uploadingSourceId)} onClick={reset}><RotateCcw className="mr-2 h-4 w-4" />Reset</Button><Button disabled={rendering || Boolean(media.uploadingSourceId) || missingLocalVideoSources.length > 0} onClick={() => void exportVideo()}><Film className="mr-2 h-4 w-4" />{rendering ? `Đang render ${Math.round(renderProgress * 100)}%` : "Export MP4"}</Button></div></header>
 
     <PresetVideoPreviewEditor preset={preset} settings={settings} inputProps={inputProps} playerRef={playerRef} compositionWidth={output.width} compositionHeight={output.height} aspectRatio={output.aspectRatio} preloadingCount={media.preloadingCount} disabled={rendering} onSettingsChange={patchSettings} />
 
@@ -110,7 +115,7 @@ export function PresetVideoWorkspace({ preset, onBack }: Props) {
       <div className="space-y-2"><Label>Kích thước</Label><Select value={settings.outputPreset} onValueChange={(value) => patchSettings({ outputPreset: value as PresetVideoExportSettings["outputPreset"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{PRESET_VIDEO_OUTPUT_SIZES.map((item) => <SelectItem key={item.id} value={item.id}>{item.label}</SelectItem>)}</SelectContent></Select><p className="text-xs text-muted-foreground">{output.aspectRatio} · {output.width}×{output.height} · {preset.defaultFps} FPS</p></div>
       <PresetVideoMusicSettings preset={preset} settings={settings} tracks={tracks} selectedTrack={selectedTrack} musicLoading={musicLoading} onChange={patchSettings} />
     </CardContent></Card>
-    <PresetVideoVoiceoverSettings preset={preset} settings={settings} disabled={rendering} onChange={patchSettings} />
+    <PresetVideoVoiceoverSettings preset={preset} language={language} settings={settings} disabled={rendering} onChange={patchSettings} />
     {usesLocalVideoSources && preset.videoSources?.length ? <PresetVideoSourcePickerCard sources={preset.videoSources} videoSourceUrls={media.videoSourceUrls} uploadingSourceId={media.uploadingSourceId} disabled={rendering} onSelect={(source, file) => void selectLocalVideoSource(source, file)} onSelectMany={(sources, file) => void selectLocalVideoSources(sources, file)} /> : null}
     {preset.socialMetadata ? <PresetVideoSocialMetadataCard metadata={preset.socialMetadata} musicCredit={selectedTrack?.licenseText} /> : null}
     {requiredSourceIds.length ? <PresetVideoMediaStatusCard preparing={media.mediaPreparing || media.preloadingCount > 0} error={media.mediaError} sourceCount={requiredSourceIds.filter((id) => Boolean(media.videoSourceUrls[id])).length} requiredSourceCount={requiredSourceIds.length} localMode={usesLocalVideoSources} /> : null}

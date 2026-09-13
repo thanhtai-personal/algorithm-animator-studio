@@ -1,4 +1,4 @@
-import type { PresetVideoCompositionProps, PresetVideoDefinition, PresetVideoEditableLyricCue } from "../../types";
+import type { PresetVideoCompositionProps, PresetVideoDefinition, PresetVideoEditableLyricCue, PresetVideoSocialMetadata } from "../../types";
 import { buildPreviewSections } from "./gptsMcpPromoContent";
 import { GatewayControlPlaneComposition, GATEWAY_CONTROL_PLANE_BEATS, GATEWAY_CONTROL_PLANE_DURATION } from "./GatewayControlPlaneComposition";
 
@@ -22,6 +22,36 @@ const EN_LYRICS: readonly PresetVideoEditableLyricCue[] = [
   cue("control-6", 45.2, 52.8, "GPTs MCP Gateway. A leaner control plane for connecting Custom GPT to MCP."),
 ];
 
+const VI_SOCIAL: PresetVideoSocialMetadata = {
+  longForm: {
+    title: "Custom GPT → GPTs MCP Gateway → MCP Provider",
+    description: "Một control plane tách xác thực, phân quyền, thông tin đăng nhập provider và khám phá tool runtime khỏi context của GPT.",
+    hashtags: ["#MCP", "#CustomGPT", "#AIAutomation", "#DeveloperTools"],
+    keywords: ["GPTs MCP Gateway", "Custom GPT với MCP", "MCP control plane", "khám phá tool runtime"],
+  },
+  shortForm: {
+    title: "Đừng hardcode danh sách tool vào GPT",
+    description: "GPT giữ intent. Gateway xử lý xác thực, khám phá tool và boundary thực thi trước khi gọi MCP provider.",
+    hashtags: ["#MCP", "#CustomGPT", "#AI", "#DevTools"],
+    keywords: ["MCP Gateway", "Open ID", "khám phá tool runtime", "Custom GPT MCP"],
+  },
+};
+
+const EN_SOCIAL: PresetVideoSocialMetadata = {
+  longForm: {
+    title: "Custom GPT → GPTs MCP Gateway → MCP Provider",
+    description: "A control plane that keeps authentication, authorization, provider credentials and runtime tool discovery outside the GPT context.",
+    hashtags: ["#MCP", "#CustomGPT", "#AIAutomation", "#DeveloperTools"],
+    keywords: ["GPTs MCP Gateway", "Custom GPT MCP", "MCP control plane", "runtime tool discovery"],
+  },
+  shortForm: {
+    title: "Do not hardcode the tool catalog into your GPT",
+    description: "Keep intent in the GPT. Let the Gateway handle auth, tool discovery and the execution boundary before calling the MCP provider.",
+    hashtags: ["#MCP", "#CustomGPT", "#AI", "#DevTools"],
+    keywords: ["MCP Gateway", "Open ID", "runtime discovery", "Custom GPT MCP"],
+  },
+};
+
 function Composition(props: PresetVideoCompositionProps) {
   return <GatewayControlPlaneComposition {...props} />;
 }
@@ -39,32 +69,26 @@ export const gptsMcpControlPlanePreset: PresetVideoDefinition = {
   lyricTimingRevision: 1,
   previewSections: buildPreviewSections(GATEWAY_CONTROL_PLANE_BEATS.vi),
   editableLyrics: VI_LYRICS,
-  localizations: {
-    en: {
-      name: "GPTs MCP — Control plane",
-      description: "53-second vertical promo inspired by CodeLocal's visual pacing while staying faithful to the current Gateway architecture: ChatGPT → Gateway → MCP provider, separated authorization, runtime discovery and Integration Kit.",
-      previewSections: buildPreviewSections(GATEWAY_CONTROL_PLANE_BEATS.en),
-      editableLyrics: EN_LYRICS,
-    },
-  },
   musicRecommendation: {
     mood: "minimal dark tech pulse",
     keywords: ["minimal", "dark tech", "pulse", "clean", "futuristic"],
     rationale: "Giữ nhịp chắc và sạch như video tham chiếu, không lấn typography và protocol diagrams.",
     defaultVolume: 0.16,
   },
-  socialMetadata: {
-    longForm: {
-      title: "Custom GPT → GPTs MCP Gateway → MCP Provider",
-      description: "Một control plane tách auth, credential và runtime tool discovery khỏi GPT context.",
-      hashtags: ["#MCP", "#CustomGPT", "#AIAutomation", "#DeveloperTools"],
-      keywords: ["GPTs MCP Gateway", "Custom GPT MCP", "MCP control plane", "runtime tool discovery"],
-    },
-    shortForm: {
-      title: "Đừng hardcode tool catalog vào GPT",
-      description: "Intent ở GPT. Auth + discovery + execution boundary ở Gateway.",
-      hashtags: ["#MCP", "#CustomGPT", "#AI", "#DevTools"],
-      keywords: ["MCP Gateway", "Open ID", "runtime discovery"],
+  socialMetadata: VI_SOCIAL,
+  localizations: {
+    en: {
+      name: "GPTs MCP — Control plane",
+      description: "53-second vertical promo inspired by CodeLocal's visual pacing while staying faithful to the current Gateway architecture: ChatGPT → Gateway → MCP provider, separated authorization, runtime discovery and Integration Kit.",
+      previewSections: buildPreviewSections(GATEWAY_CONTROL_PLANE_BEATS.en),
+      editableLyrics: EN_LYRICS,
+      musicRecommendation: {
+        mood: "minimal dark tech pulse",
+        keywords: ["minimal", "dark tech", "pulse", "clean", "futuristic"],
+        rationale: "Keeps the reference video's firm, clean pacing without competing with typography and protocol diagrams.",
+        defaultVolume: 0.16,
+      },
+      socialMetadata: EN_SOCIAL,
     },
   },
   component: Composition,

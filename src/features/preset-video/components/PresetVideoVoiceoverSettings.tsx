@@ -11,15 +11,17 @@ import { SystemLoader } from "@/components/ui/system-loader";
 import { generateElevenLabsVoice, generateGptSoVitsVoice, generatePiperVoice, generateRvcApplioVoice, generateSupertonicVoice, generateVieneuVoice, getElevenLabsConfig, getGptSoVitsConfig, getPiperModels, getRvcApplioConfig, getSupertonicConfig, getVieneuConfig, type ElevenLabsConfig, type GptSoVitsConfig, type PiperModel, type RvcApplioConfig, type SupertonicConfig, type VieneuConfig, type VoiceGenerateResult } from "@/lib/voiceApi";
 import type { PresetVideoDefinition, PresetVideoExportSettings, PresetVideoLanguage } from "../types";
 import { VolumeSlider } from "./PresetVideoControls";
+import { PresetVideoVoiceoverLibrary } from "./PresetVideoVoiceoverLibrary";
 
 type Provider = "piper" | "supertonic" | "vieneu" | "gpt-sovits" | "elevenlabs" | "applio-tts";
 type Props = { preset: PresetVideoDefinition; language: PresetVideoLanguage; settings: PresetVideoExportSettings; disabled?: boolean; onChange: (patch: Partial<PresetVideoExportSettings>) => void };
 
 export function PresetVideoVoiceoverSettings({ preset, language, settings, disabled = false, onChange }: Props) {
-  const defaultText = useMemo(() => (preset.editableLyrics || []).map((cue) => cue.lines.join(" " ).trim()).filter(Boolean).join("\n"), [preset]);
+  const defaultText = useMemo(() => (preset.localizations?.[language]?.editableLyrics || preset.editableLyrics || []).map((cue) => cue.lines.join(" ").trim()).filter(Boolean).join("\n"), [preset, language]);
   const [text, setText] = useState(defaultText);
   const [provider, setProvider] = useState<Provider>("piper");
   const [generating, setGenerating] = useState(false);
+  const [libraryRefreshKey, setLibraryRefreshKey] = useState(0);
   const [models, setModels] = useState<PiperModel[]>([]);
   const [modelKey, setModelKey] = useState("");
   const [supertonic, setSupertonic] = useState<SupertonicConfig | null>(null);
@@ -52,7 +54,7 @@ export function PresetVideoVoiceoverSettings({ preset, language, settings, disab
       setApplioTemplateId(nextApplio?.ttsTemplates[0]?.id || ""); setGptReferenceAudioPath(nextGpt?.referenceAudioPath || "");
     });
     return () => { active = false; };
-  }, []);
+  }, [language]);
 
   const availableModels = models.filter((item) => item.available);
   const ready = provider === "piper" ? Boolean(modelKey) : provider === "supertonic" ? Boolean(supertonic?.enabled && supertonic.defaultVoice) : provider === "vieneu" ? Boolean(language === "vi" && vieneu?.enabled) : provider === "elevenlabs" ? Boolean(elevenLabs?.hasApiKey && elevenVoiceId && elevenModelId) : provider === "gpt-sovits" ? Boolean(gptSoVits?.enabled) : Boolean(applio?.enabled && applioTemplateId);
@@ -60,7 +62,7 @@ export function PresetVideoVoiceoverSettings({ preset, language, settings, disab
   async function handleGenerate() {
     const normalizedText = text.trim(); if (!normalizedText) return toast.error(language === "vi" ? "Hãy nhập lời voice-over trước." : "Enter the voice-over script first.");
     setGenerating(true);
-    try { const output = await runGenerate(normalizedText); onChange({ voiceoverAudioRelativePath: output.relativePath, voiceoverAudioUrl: output.audioUrl }); if (output.warning) toast.warning(output.warning); toast.success(language === "vi" ? "Đã tạo voice-over và gắn vào preset." : "Voice-over generated and attached to the preset."); } catch (error) { toast.error(error instanceof Error ? error.message : "Unable to generate voice-over."); } finally { setGenerating(false); }
+    try { const output = await runGenerate(normalizedText); onChange({ voiceoverAudioRelativePath: output.relativePath, voiceoverAudioUrl: output.audioUrl }); setLibraryRefreshKey((value) => value + 1); if (output.warning) toast.warning(output.warning); toast.success(language === "vi" ? "Đã tạo voice-over và gắn vào preset." : "Voice-over generated and attached to the preset."); } catch (error) { toast.error(error instanceof Error ? error.message : "Unable to generate voice-over."); } finally { setGenerating(false); }
   }
 
   async function runGenerate(normalizedText: string): Promise<VoiceGenerateResult> {
@@ -82,6 +84,7 @@ export function PresetVideoVoiceoverSettings({ preset, language, settings, disab
     {provider === "gpt-sovits" ? <div className="space-y-3 rounded-lg border p-3"><p className="text-xs text-muted-foreground">Language locked to system: {language.toUpperCase()}</p><div className="space-y-2"><Label>Reference audio path</Label><Input value={gptReferenceAudioPath} onChange={(event) => setGptReferenceAudioPath(event.target.value)} /></div><div className="space-y-2"><Label>Prompt text</Label><Textarea value={gptPromptText} onChange={(event) => setGptPromptText(event.target.value)} rows={3} /></div></div> : null}
     {provider === "applio-tts" ? <SelectField label="Applio TTS template" value={applioTemplateId} onChange={setApplioTemplateId} options={(applio?.ttsTemplates || []).map((item) => ({ value: item.id, label: item.label }))} /> : null}
     <Button className="w-full" disabled={disabled || generating || !ready || !text.trim()} onClick={() => void handleGenerate()}>{generating ? <SystemLoader className="mr-2 h-4 w-4" /> : <WandSparkles className="mr-2 h-4 w-4" />}{generating ? (language === "vi" ? "Đang tạo..." : "Generating...") : (language === "vi" ? "Tạo voice-over" : "Generate voice-over")}</Button>
+    <PresetVideoVoiceoverLibrary presetId={preset.id} language={language} selectedPath={settings.voiceoverAudioRelativePath} disabled={disabled || generating} refreshKey={libraryRefreshKey} onSelect={onChange} />
     {settings.voiceoverAudioUrl ? <div className="space-y-2 rounded-lg border bg-muted/20 p-3"><audio controls preload="metadata" src={settings.voiceoverAudioUrl} className="h-9 w-full" /><p className="break-all text-[11px] text-muted-foreground">{settings.voiceoverAudioRelativePath}</p><Button variant="outline" size="sm" disabled={disabled || generating} onClick={() => onChange({ voiceoverAudioRelativePath: "", voiceoverAudioUrl: "" })}><Trash2 className="mr-2 h-4 w-4" />{language === "vi" ? "Bỏ voice-over" : "Remove voice-over"}</Button></div> : null}
     <VolumeSlider label="Voice-over volume" value={settings.voiceoverVolume} onChange={(value) => onChange({ voiceoverVolume: value })} />
   </CardContent></Card>;

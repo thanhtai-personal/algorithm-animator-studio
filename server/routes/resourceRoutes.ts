@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { Router } from "express";
 import multer from "multer";
-import { deleteGeneratedResource, deleteGeneratedResourcesByKind, getResourceOverview, saveUploadedGeneratedVideo } from "../services/ResourceService";
+import { deleteGeneratedResource, deleteGeneratedResourcesByKind, getResourceOverview, listGeneratedAudioResources, saveUploadedGeneratedVideo } from "../services/ResourceService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
 import type { GeneratedResourceKind } from "../models/Resource";
 
@@ -21,6 +21,14 @@ export function createResourceRouter() {
       res.json(getResourceOverview(readRuntimeEnvFromRequest(req)));
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : "Không đọc được tài nguyên." });
+    }
+  });
+
+  router.get("/resources/audio", (req, res) => {
+    try {
+      res.json({ audio: listGeneratedAudioResources(readRuntimeEnvFromRequest(req)) });
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Không đọc được danh sách voice." });
     }
   });
 

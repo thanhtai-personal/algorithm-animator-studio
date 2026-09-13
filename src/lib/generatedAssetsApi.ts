@@ -21,6 +21,13 @@ export async function getGeneratedAssets() {
   );
 }
 
+export async function getGeneratedAudioAssets() {
+  const data = await parseApiResponse<{ audio: GeneratedAsset[] }>(
+    await fetch(buildApiUrl("/api/resources/audio"), { headers: buildRuntimeSettingsHeaders() }),
+  );
+  return data.audio;
+}
+
 export async function uploadGeneratedVideo(file: File) {
   const data = new FormData();
   data.append("video", file);

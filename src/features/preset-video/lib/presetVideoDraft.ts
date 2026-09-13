@@ -59,8 +59,8 @@ export function loadPresetVideoSettings(preset: PresetVideoDefinition): PresetVi
       backgroundMusicId: typeof raw.backgroundMusicId === "string" ? raw.backgroundMusicId : "",
       backgroundMusicVolume: clampNumber(raw.backgroundMusicVolume, 0, 1, defaults.backgroundMusicVolume),
       originalAudioVolume: clampNumber(raw.originalAudioVolume, 0, 1, defaults.originalAudioVolume),
-      voiceoverAudioRelativePath: normalizeStoredString(raw.voiceoverAudioRelativePath, 512),
-      voiceoverAudioUrl: normalizeStoredString(raw.voiceoverAudioUrl, 2048),
+      voiceoverAudioRelativePath: canReuseStoredLyricTimings ? normalizeStoredString(raw.voiceoverAudioRelativePath, 512) : "",
+      voiceoverAudioUrl: canReuseStoredLyricTimings ? normalizeStoredString(raw.voiceoverAudioUrl, 2048) : "",
       voiceoverVolume: clampNumber(raw.voiceoverVolume, 0, 1, defaults.voiceoverVolume),
       lyricTimings: canReuseStoredLyricTimings ? normalizeStoredLyricTimings(preset, raw.lyricTimings) : defaults.lyricTimings,
       timelineVideoClips: canReuseTimelineSettings

@@ -14,6 +14,7 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -39,25 +40,42 @@ def main() -> int:
 
     payload = json.loads(Path(args.payload).read_text(encoding="utf-8"))
     output_path = Path(payload["outputPath"])
-    payload["gradioOutputPath"] = make_temp_audio_path(output_path)
-    payload["gradioTtsOutputPath"] = make_temp_audio_path(output_path.with_name(f"{output_path.stem}.tts{output_path.suffix}"))
     client = Client(payload["baseUrl"])
-    api_name = payload.get("apiName") or "/enforce_terms"
-    rendered_args = [render_template_arg(item, payload) for item in payload["argTemplate"]]
-    result = client.predict(*rendered_args, api_name=api_name)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    audio_path = find_best_audio_path(
-        result,
-        [payload["outputPath"], payload["gradioOutputPath"], payload["gradioTtsOutputPath"]],
-    )
-    if not audio_path:
-        print(json.dumps({"result": make_json_safe(result)}, ensure_ascii=True, indent=2), file=sys.stderr)
-        raise RuntimeError("Applio/RVC result did not contain a non-empty downloadable audio file path.")
-
+    audio_path = predict_converted_audio(client, payload, output_path)
     copy_result_audio(audio_path, output_path)
     print(json.dumps({"ok": True, "outputPath": str(output_path)}, ensure_ascii=True))
     return 0
+
+
+def predict_converted_audio(client: Any, payload: dict[str, Any], output_path: Path) -> str:
+    result: Any = None
+    for attempt in range(2):
+        payload["gradioOutputPath"] = make_temp_audio_path(output_path)
+        payload["gradioTtsOutputPath"] = make_temp_audio_path(
+            output_path.with_name(f"{output_path.stem}.tts{output_path.suffix}")
+        )
+        rendered_args = [render_template_arg(item, payload) for item in payload["argTemplate"]]
+        result = client.predict(*rendered_args, api_name=payload.get("apiName") or "/enforce_terms")
+        audio_path = find_best_audio_path(
+            result,
+            [payload["outputPath"], payload["gradioOutputPath"]],
+            excluded_paths=[payload["gradioTtsOutputPath"]],
+        )
+        if audio_path:
+            return audio_path
+        if attempt == 0:
+            time.sleep(1)
+
+    tts_bytes = audio_file_size(payload["gradioTtsOutputPath"])
+    rvc_bytes = audio_file_size(payload["gradioOutputPath"])
+    stage = "RVC conversion" if tts_bytes > MIN_AUDIO_BYTES else "Edge TTS"
+    status = result[0] if isinstance(result, (list, tuple)) and result and isinstance(result[0], str) else ""
+    raise RuntimeError(
+        f"Applio reported completion but produced no usable converted audio after 2 attempts. "
+        f"Likely failed stage: {stage}. TTS bytes: {tts_bytes}; RVC bytes: {rvc_bytes}. "
+        f"Check the Applio server log and retry after restarting Applio. Status: {status[-160:]}"
+    )
 
 
 def render_template_arg(value: Any, payload: dict[str, Any]) -> Any:
@@ -106,14 +124,20 @@ def make_temp_audio_path(output_path: Path) -> str:
     return handle.name
 
 
-def find_best_audio_path(value: Any, preferred_paths: list[str]) -> str | None:
+def find_best_audio_path(value: Any, preferred_paths: list[str], excluded_paths: list[str] | None = None) -> str | None:
+    excluded = {str(Path(item).resolve()) for item in excluded_paths or []}
     for path in preferred_paths:
-        if is_non_empty_audio_path(path):
+        if str(Path(path).resolve()) not in excluded and is_non_empty_audio_path(path):
             return path
 
-    candidates = list_audio_paths(value)
+    candidates = [path for path in list_audio_paths(value) if str(Path(path).resolve()) not in excluded]
     candidates.sort(key=lambda item: Path(item).stat().st_size if Path(item).exists() else 0, reverse=True)
     return candidates[0] if candidates else None
+
+
+def audio_file_size(value: str) -> int:
+    path = Path(value)
+    return path.stat().st_size if path.is_file() else 0
 
 
 def list_audio_paths(value: Any) -> list[str]:
@@ -160,18 +184,6 @@ def copy_result_audio(source: str, output_path: Path) -> None:
     if source_path.resolve() == output_path.resolve():
         return
     shutil.copyfile(source_path, output_path)
-
-
-def make_json_safe(value: Any) -> Any:
-    try:
-        json.dumps(value)
-        return value
-    except TypeError:
-        if isinstance(value, (list, tuple)):
-            return [make_json_safe(item) for item in value]
-        if isinstance(value, dict):
-            return {str(key): make_json_safe(item) for key, item in value.items()}
-        return repr(value)
 
 
 if __name__ == "__main__":

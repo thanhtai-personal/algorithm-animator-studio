@@ -27,13 +27,7 @@ export function getResourceOverview(envOverrides: RuntimeEnvValues = {}) {
   const serverOrigin = env.SERVER_ORIGIN || SERVER_ORIGIN;
 
   return {
-    audio: listGeneratedResources({
-      directory: getGeneratedDir(env.SERVER_DATA_DIR),
-      extensions: AUDIO_EXTENSIONS,
-      kind: "audio",
-      publicBasePath: GENERATED_PUBLIC_PATH,
-      serverOrigin,
-    }),
+    audio: listGeneratedAudioResources(envOverrides),
     video: listGeneratedResources({
       directory: getGeneratedVideoDir(env.SERVER_DATA_DIR),
       extensions: VIDEO_EXTENSIONS,
@@ -49,6 +43,17 @@ export function getResourceOverview(envOverrides: RuntimeEnvValues = {}) {
       serverOrigin,
     }),
   };
+}
+
+export function listGeneratedAudioResources(envOverrides: RuntimeEnvValues = {}) {
+  const env = readEnvValues(envOverrides);
+  return listGeneratedResources({
+    directory: getGeneratedDir(env.SERVER_DATA_DIR),
+    extensions: AUDIO_EXTENSIONS,
+    kind: "audio",
+    publicBasePath: GENERATED_PUBLIC_PATH,
+    serverOrigin: env.SERVER_ORIGIN || SERVER_ORIGIN,
+  });
 }
 
 export function resolveGeneratedResource(

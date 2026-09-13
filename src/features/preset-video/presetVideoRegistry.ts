@@ -1,6 +1,7 @@
 import { algorithmExplainerPreset } from "./presets/algorithmExplainerPreset";
 import { designerAiWorkflowPreset } from "./presets/designer-ai-workflow/designerAiPreset";
 import { fivePrayersPreset } from "./presets/five-prayers/fivePrayersPreset";
+import { gptsMcpControlPlanePreset } from "./presets/gpts-mcp-promo/gatewayControlPlanePreset";
 import { gptsMcpMobileWorkflowPreset } from "./presets/gpts-mcp-promo/mobileWorkflowPreset";
 import { gptsMcpSecureGatewayPreset } from "./presets/gpts-mcp-promo/secureGatewayPreset";
 import { gptsMcpTokenFallbackPreset } from "./presets/gpts-mcp-promo/tokenFallbackPreset";
@@ -18,6 +19,7 @@ export const PRESET_VIDEO_REGISTRY: readonly PresetVideoDefinition[] = [
   numberEightInRedPreset,
   fivePrayersPreset,
   designerAiWorkflowPreset,
+  gptsMcpControlPlanePreset,
   gptsMcpTokenFallbackPreset,
   gptsMcpMobileWorkflowPreset,
   gptsMcpSecureGatewayPreset,

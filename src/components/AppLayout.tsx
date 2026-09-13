@@ -4,8 +4,6 @@ import { AppHeader } from "@/components/AppHeader";
 import { AppSidebar, type SidebarMode } from "@/components/AppSidebar";
 import { BackgroundJobsNotifier } from "@/components/BackgroundJobsNotifier";
 import { ChillMusicNotifier } from "@/components/ChillMusicNotifier";
-import { FantasticModeBackdrop } from "@/components/FantasticModeBackdrop";
-import { useFantasticFrameMotion } from "@/hooks/use-fantastic-frame-motion";
 import { useFantasticMode } from "@/hooks/use-fantastic-mode";
 import { readChillModeEnabled, subscribeChillMode } from "@/lib/chillMusicSettings";
 import { readSystemLang, subscribeSystemLang, type Lang } from "@/lib/i18n";
@@ -30,9 +28,7 @@ export function AppLayout({ children }: PropsWithChildren) {
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>(readResponsiveSidebarMode);
   const [fantasticMode] = useFantasticMode();
   const [chillModeEnabled, setChillModeEnabled] = useState(() => readChillModeEnabled());
-  const algorithmStudioActive = location.pathname === "/algorithms" || location.pathname.startsWith("/algorithms/");
   const rhythmicStudioActive = location.pathname.startsWith("/algorithms/rhythmic") || location.pathname.startsWith("/algorithms/marble-tower");
-  const fantasticVisualsEnabled = fantasticMode && !algorithmStudioActive;
 
   useEffect(() => subscribeSystemLang(setLang), []);
   useEffect(() => subscribeChillMode(setChillModeEnabled), []);
@@ -44,10 +40,6 @@ export function AppLayout({ children }: PropsWithChildren) {
     query.addEventListener("change", syncSidebarToViewport);
     return () => query.removeEventListener("change", syncSidebarToViewport);
   }, []);
-  // Algorithm studios own large Canvas/WebGL previews. Keep the decorative
-  // fullscreen canvas and entrance filters off these routes to avoid stacking
-  // GPU/compositor work while the editor is mounting.
-  useFantasticFrameMotion(fantasticVisualsEnabled, location.pathname);
 
   useEffect(() => {
     if (window.innerWidth >= DESKTOP_SIDEBAR_BREAKPOINT) {
@@ -67,7 +59,6 @@ export function AppLayout({ children }: PropsWithChildren) {
 
   return (
     <div className="min-h-screen kai-grid-bg" style={{ "--app-sidebar-width": sidebarWidth } as CSSProperties}>
-      <FantasticModeBackdrop enabled={fantasticVisualsEnabled} />
       <AppHeader sidebarMode={sidebarMode} onToggleSidebar={toggleSidebar} />
       <AppSidebar lang={lang} mode={sidebarMode} onClose={() => setSidebarMode("hidden")} onCollapse={() => setSidebarMode("collapsed")} onExpand={() => setSidebarMode("expanded")} />
       <div className="relative z-10 transition-[padding] duration-300 lg:pl-[var(--app-sidebar-width)]">

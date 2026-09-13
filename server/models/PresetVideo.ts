@@ -5,29 +5,17 @@ export type PresetVideoOutputPreset =
   | "portrait-720p"
   | "square-1080p";
 
+export type PresetVideoLanguage = "en" | "vi";
 export type PresetVideoAspectRatio = "16:9" | "9:16" | "1:1";
 export type PresetVideoSourceStrategy = "remote" | "local";
 
-export type PresetVideoLyricTiming = {
-  start?: number;
-  end?: number;
-};
-
-export type PresetVideoSourceClipRequest = {
-  id?: string;
-  watchUrl?: string;
-  clipStartSeconds?: number;
-  clipEndSeconds?: number;
-};
-
-export type PresetVideoTimelineClipRequest = PresetVideoSourceClipRequest & {
-  title?: string;
-  timelineStartSeconds?: number;
-  timelineEndSeconds?: number;
-};
+export type PresetVideoLyricTiming = { start?: number; end?: number };
+export type PresetVideoSourceClipRequest = { id?: string; watchUrl?: string; clipStartSeconds?: number; clipEndSeconds?: number };
+export type PresetVideoTimelineClipRequest = PresetVideoSourceClipRequest & { title?: string; timelineStartSeconds?: number; timelineEndSeconds?: number };
 
 export type PresetVideoRenderBody = {
   presetId?: string;
+  language?: PresetVideoLanguage;
   fileName?: string;
   outputPreset?: PresetVideoOutputPreset;
   durationSeconds?: number;
@@ -45,27 +33,12 @@ export type PresetVideoRenderBody = {
   videoSourceStrategy?: PresetVideoSourceStrategy;
 };
 
-export type PresetVideoMediaPrepareBody = {
-  presetId?: string;
-  videoSources?: PresetVideoSourceClipRequest[];
-  videoSourceStrategy?: PresetVideoSourceStrategy;
-};
-
-export type NormalizedPresetVideoSourceClip = {
-  id: string;
-  watchUrl: string;
-  clipStartSeconds: number;
-  clipEndSeconds: number;
-};
-
-export type NormalizedPresetVideoTimelineClip = NormalizedPresetVideoSourceClip & {
-  title: string;
-  timelineStartSeconds: number;
-  timelineEndSeconds: number;
-};
-
+export type PresetVideoMediaPrepareBody = { presetId?: string; videoSources?: PresetVideoSourceClipRequest[]; videoSourceStrategy?: PresetVideoSourceStrategy };
+export type NormalizedPresetVideoSourceClip = { id: string; watchUrl: string; clipStartSeconds: number; clipEndSeconds: number };
+export type NormalizedPresetVideoTimelineClip = NormalizedPresetVideoSourceClip & { title: string; timelineStartSeconds: number; timelineEndSeconds: number };
 export type NormalizedPresetVideoRenderInput = {
   presetId: string;
+  language: PresetVideoLanguage;
   fileName: string;
   outputPreset: PresetVideoOutputPreset;
   aspectRatio: PresetVideoAspectRatio;

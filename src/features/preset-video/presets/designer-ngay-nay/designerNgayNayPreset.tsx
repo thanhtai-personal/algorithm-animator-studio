@@ -1,6 +1,11 @@
 import type { PresetVideoCompositionProps, PresetVideoDefinition } from "../../types";
 import { DesignerNgayNayComposition } from "./DesignerNgayNayComposition";
-import { DESIGNER_NGAY_NAY_DURATION_SECONDS, DESIGNER_NGAY_NAY_PREVIEW_SECTIONS, DESIGNER_NGAY_NAY_VIDEO_SOURCES } from "./designerNgayNayContent";
+import {
+  DESIGNER_NGAY_NAY_DURATION_SECONDS,
+  DESIGNER_NGAY_NAY_PREVIEW_SECTIONS,
+  DESIGNER_NGAY_NAY_VIDEO_SOURCES,
+  DESIGNER_NGAY_NAY_VOICE_CUES,
+} from "./designerNgayNayContent";
 
 function DesignerNgayNayPresetComposition(props: PresetVideoCompositionProps) {
   return <DesignerNgayNayComposition {...props} />;
@@ -17,7 +22,9 @@ export const designerNgayNayPreset: PresetVideoDefinition = {
   defaultOutputPreset: "portrait-1080p",
   hasOriginalAudio: false,
   settingsRevision: 1,
+  lyricTimingRevision: 1,
   previewSections: DESIGNER_NGAY_NAY_PREVIEW_SECTIONS,
+  editableLyrics: DESIGNER_NGAY_NAY_VOICE_CUES,
   videoSources: DESIGNER_NGAY_NAY_VIDEO_SOURCES,
   videoSourceStrategy: "local",
   musicRecommendation: {

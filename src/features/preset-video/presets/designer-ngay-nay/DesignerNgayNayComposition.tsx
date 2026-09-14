@@ -5,12 +5,13 @@ import { DESIGNER_NGAY_NAY_BEATS, type DesignerNgayNayBeat } from "./designerNga
 
 const INK = "#05060a";
 const PAPER = "#f8fafc";
+const VIETNAMESE_SANS = "'Segoe UI', 'Noto Sans', Arial, 'Liberation Sans', sans-serif";
 
 export function DesignerNgayNayComposition(props: PresetVideoCompositionProps) {
   const { fps } = useVideoConfig();
 
   return (
-    <AbsoluteFill style={{ background: INK, color: PAPER, fontFamily: "Inter, Arial, sans-serif", overflow: "hidden" }}>
+    <AbsoluteFill style={{ background: INK, color: PAPER, fontFamily: VIETNAMESE_SANS, overflow: "hidden" }}>
       {DESIGNER_NGAY_NAY_BEATS.map((beat, index) => {
         const from = Math.round(beat.start * fps);
         const durationInFrames = Math.max(1, Math.round((beat.end - beat.start) * fps));
@@ -61,16 +62,16 @@ function BeatScene(props: { beat: DesignerNgayNayBeat; src?: string; index: numb
 
       <AbsoluteFill style={{ background: `linear-gradient(180deg, rgba(5,6,10,.08) 24%, rgba(5,6,10,.2) 52%, rgba(5,6,10,.88) 100%), linear-gradient(105deg, ${props.beat.accent}18, transparent 42%)` }} />
 
-      <div style={{ position: "absolute", left: props.portrait ? "7%" : "5%", right: props.portrait ? "7%" : "5%", top: props.portrait ? "8%" : "7%", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: props.portrait ? 22 : 18, fontWeight: 900, letterSpacing: "0.13em", textTransform: "uppercase", opacity: 0.86 }}>
+      <div style={{ position: "absolute", left: props.portrait ? "7%" : "5%", right: props.portrait ? "7%" : "5%", top: props.portrait ? "8%" : "7%", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: props.portrait ? 22 : 18, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", opacity: 0.86 }}>
         <span>Designer ngày nay</span><span>{String(props.index + 1).padStart(2, "0")} / {String(DESIGNER_NGAY_NAY_BEATS.length).padStart(2, "0")}</span>
       </div>
 
       <div style={{ position: "absolute", left: props.portrait ? "7%" : "5%", right: props.portrait ? "7%" : "22%", bottom: props.portrait ? "13%" : "9%", transform: `translateY(${(1 - enter) * 24}px)`, textShadow: "0 10px 36px rgba(0,0,0,.78)" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 12, fontSize: props.portrait ? 25 : 20, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: props.beat.accent }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 12, fontSize: props.portrait ? 25 : 20, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: props.beat.accent }}>
           <span style={{ width: props.portrait ? 36 : 44, height: 4, borderRadius: 99, background: props.beat.accent, boxShadow: `0 0 20px ${props.beat.accent}88` }} />{props.beat.eyebrow}
         </div>
-        <div style={{ marginTop: props.portrait ? 18 : 12, maxWidth: props.portrait ? "96%" : "82%", fontSize: shortest * (isHook ? 0.092 : isCta ? 0.078 : 0.074), lineHeight: 0.94, fontWeight: 950, letterSpacing: "-0.055em", textTransform: "uppercase" }}>{props.beat.headline}</div>
-        <div style={{ marginTop: props.portrait ? 18 : 12, maxWidth: props.portrait ? "88%" : "66%", fontSize: shortest * (props.portrait ? 0.036 : 0.026), lineHeight: 1.18, fontWeight: 700, color: "rgba(248,250,252,.82)" }}>{props.beat.subline}</div>
+        <div style={{ marginTop: props.portrait ? 18 : 12, maxWidth: props.portrait ? "96%" : "82%", fontSize: shortest * (isHook ? 0.092 : isCta ? 0.078 : 0.074), lineHeight: 1.08, fontWeight: 800, letterSpacing: "-0.035em", textTransform: "uppercase", textWrap: "balance" }}>{props.beat.headline}</div>
+        <div style={{ marginTop: props.portrait ? 18 : 12, maxWidth: props.portrait ? "88%" : "66%", fontSize: shortest * (props.portrait ? 0.036 : 0.026), lineHeight: 1.32, fontWeight: 650, letterSpacing: "-0.01em", color: "rgba(248,250,252,.84)" }}>{props.beat.subline}</div>
       </div>
 
       <div style={{ position: "absolute", left: 0, bottom: 0, width: `${progress * 100}%`, height: props.portrait ? 7 : 5, background: props.beat.accent, boxShadow: `0 0 18px ${props.beat.accent}88` }} />

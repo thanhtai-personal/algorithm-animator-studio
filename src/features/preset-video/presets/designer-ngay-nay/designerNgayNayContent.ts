@@ -1,4 +1,4 @@
-import type { PresetVideoPreviewSection, PresetVideoSourceClip } from "../../types";
+import type { PresetVideoEditableLyricCue, PresetVideoPreviewSection, PresetVideoSourceClip } from "../../types";
 
 export const DESIGNER_NGAY_NAY_DURATION_SECONDS = 42;
 export const DESIGNER_NGAY_NAY_SOURCE_GROUP_ID = "designer-ngay-nay-stitch-recording";
@@ -28,6 +28,18 @@ export const DESIGNER_NGAY_NAY_BEATS: readonly DesignerNgayNayBeat[] = [
   beat("designer-cta", 37.4, 42, "DESIGNER NGÀY NAY", "PROMPT · CURATE · SYSTEMIZE · SHIP", "Bạn đang kẹt ở bước nào?", "#2dd4bf", 52, 52),
 ];
 
+export const DESIGNER_NGAY_NAY_VOICE_CUES: readonly PresetVideoEditableLyricCue[] = [
+  voiceCue("voice-hook", 0.12, 2.25, "Designer 2026: không chỉ kéo pixel."),
+  voiceCue("voice-intent", 2.55, 6.0, "Bắt đầu bằng ý đồ rõ, rồi mới viết prompt."),
+  voiceCue("voice-diverge", 6.35, 10.35, "AI mở mười hướng rất nhanh. Đừng yêu phương án đầu tiên."),
+  voiceCue("voice-curate", 10.75, 15.0, "Lợi thế thật nằm ở taste: chọn, bỏ, remix, rồi đẩy concept xa hơn."),
+  voiceCue("voice-system", 15.35, 20.35, "Đừng chỉ design một màn hình. Hãy dựng cả ngôn ngữ: type, màu, spacing và states."),
+  voiceCue("voice-flow", 20.75, 26.15, "Prototype sớm để thấy chỗ nào trông đẹp nhưng dùng không ổn."),
+  voiceCue("voice-ship", 26.55, 32.1, "Code giờ cũng là material. Canvas và implementation đang tiến sát nhau."),
+  voiceCue("voice-judgement", 32.55, 37.15, "AI tăng tốc output. Nhưng thứ đáng ship vẫn cần judgement của bạn."),
+  voiceCue("voice-cta", 37.55, 41.75, "Bạn đang kẹt ở prompt, curate, system hay ship?"),
+];
+
 export const DESIGNER_NGAY_NAY_VIDEO_SOURCES: readonly PresetVideoSourceClip[] = [
   source("designer-payoff", "Payoff · finished editorial portfolio", 145, 147.4),
   source("designer-intent", "Intent · briefing Stitch", 3, 6.8),
@@ -49,6 +61,10 @@ export const DESIGNER_NGAY_NAY_PREVIEW_SECTIONS: readonly PresetVideoPreviewSect
 
 function beat(sourceId: string, start: number, end: number, eyebrow: string, headline: string, subline: string, accent: string, focusX: number, focusY: number): DesignerNgayNayBeat {
   return { sourceId, start, end, eyebrow, headline, subline, accent, focusX, focusY };
+}
+
+function voiceCue(id: string, start: number, end: number, text: string): PresetVideoEditableLyricCue {
+  return { id, start, end, lines: [text] };
 }
 
 function source(id: string, title: string, clipStartSeconds: number, clipEndSeconds: number): PresetVideoSourceClip {

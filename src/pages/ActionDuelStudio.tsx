@@ -21,6 +21,7 @@ export default function ActionDuelStudio() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioRef = useRef<DuelAudioEngine | null>(null);
   const playbackStartFrame = useRef(0);
+  const playbackStartAt = useRef(0);
   const exportAnimationRef = useRef<number | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -42,7 +43,7 @@ export default function ActionDuelStudio() {
 
   useEffect(() => {
     if (!playing || exporting) return;
-    const start = performance.now();
+    const start = playbackStartAt.current;
     const initialFrame = playbackStartFrame.current;
     let animation = 0;
     const tick = (now: number) => {
@@ -80,12 +81,14 @@ export default function ActionDuelStudio() {
       try {
         if (!audioRef.current) audioRef.current = new DuelAudioEngine();
         await audioRef.current.prepare();
+        playbackStartAt.current = performance.now();
         audioRef.current.start(startFrame / DUEL_FPS, speed);
       } catch {
         toast.error("Không thể phát âm thanh. Hãy cho phép âm thanh hoặc đổi trình duyệt.");
         return;
       }
     }
+    if (!soundEnabled) playbackStartAt.current = performance.now();
     setFrame(startFrame);
     setPlaying(true);
   }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { DuelAudioEngine } from "@/features/action-duel/audio";
 import { Download, Pause, Play, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,9 @@ const videoTypes = [
 
 export default function ActionDuelStudio() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const audioRef = useRef<DuelAudioEngine | null>(null);
   const playbackStartFrame = useRef(0);
+  const playbackStartAt = useRef(0);
   const exportAnimationRef = useRef<number | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -29,6 +32,7 @@ export default function ActionDuelStudio() {
   const [glow, setGlow] = useState(1);
   const [speed, setSpeed] = useState(1);
   const [showHud, setShowHud] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [message, setMessage] = useState("");
   const settings = { seed, glow, showHud };
 
@@ -39,13 +43,14 @@ export default function ActionDuelStudio() {
 
   useEffect(() => {
     if (!playing || exporting) return;
-    const start = performance.now();
+    const start = playbackStartAt.current;
     const initialFrame = playbackStartFrame.current;
     let animation = 0;
     const tick = (now: number) => {
       const next = Math.min(DUEL_FRAMES - 1, initialFrame + Math.floor((now - start) * DUEL_FPS * speed / 1000));
       setFrame(next);
       if (next >= DUEL_FRAMES - 1) {
+        audioRef.current?.stop();
         setPlaying(false);
       } else {
         animation = requestAnimationFrame(tick);
@@ -60,30 +65,75 @@ export default function ActionDuelStudio() {
     if (exportAnimationRef.current !== null) cancelAnimationFrame(exportAnimationRef.current);
     if (recorderRef.current?.state === "recording") recorderRef.current.stop();
     streamRef.current?.getTracks().forEach((track) => track.stop());
+    void audioRef.current?.dispose();
   }, []);
+
+  async function togglePlayback() {
+    if (exporting) return;
+    if (playing) {
+      audioRef.current?.stop();
+      setPlaying(false);
+      return;
+    }
+    const startFrame = frame >= DUEL_FRAMES - 1 ? 0 : frame;
+    playbackStartFrame.current = startFrame;
+    if (soundEnabled) {
+      try {
+        if (!audioRef.current) audioRef.current = new DuelAudioEngine();
+        await audioRef.current.prepare();
+        playbackStartAt.current = performance.now();
+        audioRef.current.start(startFrame / DUEL_FPS, speed);
+      } catch {
+        toast.error("Không thể phát âm thanh. Hãy cho phép âm thanh hoặc đổi trình duyệt.");
+        return;
+      }
+    }
+    if (!soundEnabled) playbackStartAt.current = performance.now();
+    setFrame(startFrame);
+    setPlaying(true);
+  }
 
   function reset() {
     if (exporting) return;
+    audioRef.current?.stop();
     setPlaying(false);
     setFrame(0);
   }
 
-  function exportMovie() {
+  async function exportMovie() {
     const canvas = canvasRef.current;
     if (!canvas || exporting) return;
     if (typeof MediaRecorder === "undefined" || !canvas.captureStream) {
       toast.error("Trình duyệt không hỗ trợ xuất video Canvas.");
       return;
     }
-    const type = videoTypes.find((candidate) => MediaRecorder.isTypeSupported(candidate));
+    const withAudio = soundEnabled;
+    const candidates = withAudio ? [
+      'video/mp4;codecs="avc1.42E01E,mp4a.40.2"',
+      'video/webm;codecs="vp9,opus"',
+      'video/webm;codecs="vp8,opus"',
+      "video/webm",
+    ] : videoTypes;
+    const type = candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate));
     if (!type) {
       toast.error("Trình duyệt không hỗ trợ ghi WebM hoặc MP4.");
       return;
     }
 
+    audioRef.current?.stop();
     setPlaying(false);
     setExporting(true);
     setFrame(0);
+    if (withAudio) {
+      try {
+        if (!audioRef.current) audioRef.current = new DuelAudioEngine();
+        await audioRef.current.prepare();
+      } catch {
+        setExporting(false);
+        toast.error("Không khởi tạo được âm thanh để xuất video.");
+        return;
+      }
+    }
     setMessage("Đang ghi video. Giữ tab đang mở trong quá trình xuất.");
     const ctx = canvas.getContext("2d");
     if (!ctx) {
@@ -96,11 +146,15 @@ export default function ActionDuelStudio() {
     let recorder: MediaRecorder;
     try {
       drawDuelScene(ctx, 0, exportSettings);
-      stream = canvas.captureStream(DUEL_FPS);
+      const videoStream = canvas.captureStream(DUEL_FPS);
+      const audioTrack = withAudio ? audioRef.current?.start(0, 1, true) : null;
+      if (withAudio && !audioTrack) throw new Error("Audio track missing");
+      stream = new MediaStream([...videoStream.getVideoTracks(), ...(audioTrack ? [audioTrack] : [])]);
       recorder = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 4_000_000 });
     } catch {
+      audioRef.current?.stop();
       setExporting(false);
-      toast.error("Không khởi tạo được trình ghi video.");
+      toast.error("Không khởi tạo được trình ghi video kèm âm thanh.");
       return;
     }
     streamRef.current = stream;
@@ -116,6 +170,7 @@ export default function ActionDuelStudio() {
     };
     recorder.onstop = () => {
       stream.getTracks().forEach((track) => track.stop());
+      audioRef.current?.stop();
       streamRef.current = null;
       recorderRef.current = null;
       exportAnimationRef.current = null;
@@ -134,10 +189,18 @@ export default function ActionDuelStudio() {
       anchor.click();
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-      setMessage("Đã tạo bản ghi " + extension.toUpperCase() + " (không có âm thanh).");
+      setMessage("Đã tạo video " + extension.toUpperCase() + (withAudio ? " có nhạc, tiếng chém và va chạm." : " không âm thanh."));
       toast.success("Đã xuất video!");
     };
-    recorder.start(200);
+    try {
+      recorder.start(200);
+    } catch {
+      audioRef.current?.stop();
+      stream.getTracks().forEach((track) => track.stop());
+      setExporting(false);
+      toast.error("Trình duyệt không thể bắt đầu ghi video.");
+      return;
+    }
     const startTime = performance.now();
     const tick = (now: number) => {
       const elapsed = Math.min(DUEL_DURATION, (now - startTime) / 1000);
@@ -179,7 +242,7 @@ export default function ActionDuelStudio() {
           </Card>
           <Card className="space-y-4 p-4">
             <div className="flex flex-wrap gap-2">
-              <Button disabled={exporting} onClick={() => { playbackStartFrame.current = frame === DUEL_FRAMES - 1 ? 0 : frame; if (frame === DUEL_FRAMES - 1) setFrame(0); setPlaying(!playing); }}>
+              <Button disabled={exporting} onClick={() => { void togglePlayback(); }}>
                 {playing ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
                 {playing ? "Tạm dừng" : "Phát"}
               </Button>
@@ -201,7 +264,7 @@ export default function ActionDuelStudio() {
               max={DUEL_FRAMES - 1}
               value={frame}
               disabled={exporting}
-              onChange={(event) => { setPlaying(false); setFrame(Number(event.target.value)); }}
+              onChange={(event) => { audioRef.current?.stop(); setPlaying(false); setFrame(Number(event.target.value)); }}
               className="w-full accent-cyan-400"
             />
             {message ? <p aria-live="polite" className="text-xs text-muted-foreground">{message}</p> : null}
@@ -224,7 +287,7 @@ export default function ActionDuelStudio() {
           <label className="block space-y-2 text-sm" htmlFor="duel-speed">
             <span>Tốc độ xem trước · {speed.toFixed(1)}×</span>
             <input id="duel-speed" type="range" min=".5" max="2" step=".25"
-              value={speed} disabled={exporting} onChange={(event) => { setPlaying(false); setSpeed(Number(event.target.value)); }}
+              value={speed} disabled={exporting} onChange={(event) => { audioRef.current?.stop(); setPlaying(false); setSpeed(Number(event.target.value)); }}
               className="w-full accent-cyan-400" />
           </label>
           <label className="flex items-center gap-3 text-sm">
@@ -233,10 +296,20 @@ export default function ActionDuelStudio() {
               className="h-4 w-4 accent-cyan-400" />
             Hiển thị minimap, HP, combo và kỹ năng
           </label>
+          <label className="flex items-center gap-3 text-sm">
+            <input type="checkbox" checked={soundEnabled} disabled={exporting}
+              onChange={(event) => {
+                audioRef.current?.stop();
+                setPlaying(false);
+                setSoundEnabled(event.target.checked);
+              }}
+              className="h-4 w-4 accent-cyan-400" />
+            Bật âm thanh: nhạc nền, tiếng chém, va chạm
+          </label>
           <div className="space-y-2 border-t border-border pt-4 text-xs leading-5 text-muted-foreground">
             <p>Độ phân giải: {DUEL_WIDTH}×{DUEL_HEIGHT} · {DUEL_FPS} FPS · 16 giây.</p>
             <p>Xuất MP4 nếu trình duyệt hỗ trợ, nếu không sẽ dùng WebM.</p>
-            <p>Đây là demo đồ họa không có nhạc/âm thanh. Xuất ghi theo thời gian thực; nên giữ tab ở phía trước.</p>
+            <p>Âm thanh tổng hợp được đồng bộ với timeline và ghi chung vào video. Xuất theo thời gian thực; nên giữ tab ở phía trước.</p>
           </div>
         </Card>
       </div>

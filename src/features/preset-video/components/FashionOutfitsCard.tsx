@@ -27,8 +27,9 @@ export function FashionOutfitsCard(props: Props) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm leading-relaxed text-muted-foreground">
-          Chọn từ 2 đến 20 ảnh JPG, PNG hoặc WebP, tốt nhất là ảnh toàn thân của cùng một người mẫu với góc chụp tương tự.
-          Thứ tự trong danh sách chính là thứ tự thay trang phục. Có thể tải nhiều ảnh cùng lúc.
+          Chọn 2–20 ảnh người mẫu đã mặc các bộ trang phục khác nhau. Khuyên dùng PNG đã tách nền,
+          người mẫu nằm hoặc chụp từ trên xuống để đặt đúng trên thảm; JPG/WebP vẫn nhận nhưng nền ảnh có thể che sofa.
+          Thứ tự ảnh là thứ tự đổi đồ. Có thể chọn nhiều ảnh cùng lúc.
         </p>
         <input
           ref={addInput}
@@ -63,7 +64,7 @@ export function FashionOutfitsCard(props: Props) {
               return (
                 <div key={clip.id} className="min-w-0 overflow-hidden rounded-lg border bg-muted/20">
                   <div className="relative aspect-[9/10] bg-slate-800">
-                    {url ? <video src={`${url}#t=0.1`} preload="metadata" muted playsInline className="h-full w-full object-cover" /> : (
+                    {url ? <img src={url} alt={`Trang phục ${index + 1}: ${clip.title}`} className="h-full w-full object-contain" /> : (
                       <div className="grid h-full place-items-center text-xs text-slate-200">
                         {props.uploadingSourceId === clip.id ? "Đang xử lý ảnh..." : "Chưa có ảnh"}
                       </div>
@@ -105,7 +106,7 @@ export function FashionOutfitsCard(props: Props) {
           </div>
         )}
         <p className="text-xs text-muted-foreground">
-          Ảnh chỉ chuyển thành các khung hình tĩnh có chuyển động máy quay nhẹ; hệ thống không tự mặc một chiếc váy lên người mẫu.
+          Ảnh PNG giữ được vùng trong suốt để người mẫu nằm trên thảm cạnh sofa. Hiệu ứng lăn xuống và quạt trần tạo bằng Remotion; hệ thống chưa tự ghép ảnh áo rời lên người mẫu.
         </p>
       </CardContent>
     </Card>

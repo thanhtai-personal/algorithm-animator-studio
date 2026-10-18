@@ -3,9 +3,9 @@ import { FashionClawComposition } from "./FashionClawComposition";
 
 export const fashionClawPreset: PresetVideoDefinition = {
   id: "fashion-claw",
-  name: "Fashion Claw — Thay trang phục",
-  description: "Video dọc 10 giây với kẹp kim loại chuyển động và những cú đổi trang phục liên tục. Tải ảnh người mẫu mặc từng bộ đồ, sắp xếp tùy ý rồi xuất MP4.",
-  tags: ["fashion", "outfit", "claw", "lookbook", "reels", "shorts", "ảnh trang phục"],
+  name: "Fashion Fan — Sofa Outfit Spin",
+  description: "Góc quay từ trên xuống: quạt trần 3 cánh, sofa hồng, thảm xanh và người mẫu lăn vào cảnh rồi thay trang phục theo nhịp cánh quạt. Chọn ảnh tùy ý để dựng video.",
+  tags: ["fashion", "outfit", "ceiling-fan", "sofa", "lookbook", "reels", "shorts", "ảnh trang phục"],
   accentColor: "#c99a71",
   defaultDurationSeconds: 10,
   defaultFps: 30,

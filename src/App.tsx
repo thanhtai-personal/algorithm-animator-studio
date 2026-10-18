@@ -17,6 +17,7 @@ const AlgorithmLongVideoPage = lazy(() => import("./pages/AlgorithmLongVideoPage
 const MazePathfindingPage = lazy(() => import("./pages/MazePathfindingPage.tsx"));
 const RhythmicStudio = lazy(() => import("./pages/RhythmicStudio.tsx"));
 const MarbleTowerVideo = lazy(() => import("./pages/MarbleTowerVideo.tsx"));
+const ActionDuelStudio = lazy(() => import("./pages/ActionDuelStudio.tsx"));
 const Auth = lazy(() => import("./pages/Auth.tsx"));
 const GeneratedAssets = lazy(() => import("./pages/GeneratedAssets.tsx"));
 const PresetVideos = lazy(() => import("./pages/PresetVideos.tsx"));
@@ -86,6 +87,7 @@ const App = () => (
                 <Route path="/algorithms/short" element={<AlgorithmChannelPage initialMode="manual" />} />
                 <Route path="/algorithms/rhythmic" element={<RhythmicStudio />} />
                 <Route path="/algorithms/marble-tower" element={<MarbleTowerVideo />} />
+                <Route path="/algorithms/action-duel" element={<ActionDuelStudio />} />
                 <Route path="/algorithms/maze" element={<MazePathfindingPage />} />
                 <Route path="/algorithms/maze/agentic" element={<MazePathfindingPage initialMode="agentic" />} />
                 <Route path="/algorithms/maze/manual" element={<MazePathfindingPage initialMode="manual" />} />

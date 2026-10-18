@@ -45,7 +45,7 @@ export async function preparePresetVideoMedia(params: {
 
   for (let index = 0; index < sources.length; index += 1) {
     const source = sources[index];
-    const cached = resolveCachedSource(cache, source);
+    const cached = resolveCachedSource(cache, source, presetId === "fashion-claw");
     const hasCachedClip = fs.existsSync(cached.outputPath);
 
     params.onProgress?.({
@@ -110,6 +110,7 @@ export async function importPresetVideoSources(params: {
   envOverrides?: RuntimeEnvValues;
 }) {
   const presetId = normalizePresetId(params.presetId);
+  if (Boolean(params.stillImage) !== (presetId === "fashion-claw")) throw new Error("Fashion Claw chỉ nhận ảnh tĩnh; các preset khác chỉ nhận video.");
   const sources = normalizePresetVideoSources(params.sources);
   if (!sources.length) throw new Error("Chưa có trích đoạn preset để xử lý.");
 
@@ -125,18 +126,21 @@ export async function importPresetVideoSources(params: {
       );
     }
 
-    const cached = resolveCachedSource(cache, source);
-    const tempOutputPath = `${cached.outputPath}.${process.pid}-${Date.now()}.tmp.mp4`;
+    const cached = resolveCachedSource(cache, source, Boolean(params.stillImage));
+    const tempOutputPath = `${cached.outputPath}.${process.pid}-${Date.now()}.tmp${params.stillImage ? ".png" : ".mp4"}`;
 
     try {
-      await transcodeSourceClip({
-        inputPath: params.inputPath,
-        outputPath: tempOutputPath,
-        startSeconds: source.clipStartSeconds,
-        durationSeconds: source.clipEndSeconds - source.clipStartSeconds,
-        stillImage: params.stillImage,
-        envOverrides: params.envOverrides,
-      });
+      if (params.stillImage) {
+        await transcodeImageSource(params.inputPath, tempOutputPath, params.envOverrides);
+      } else {
+        await transcodeSourceClip({
+          inputPath: params.inputPath,
+          outputPath: tempOutputPath,
+          startSeconds: source.clipStartSeconds,
+          durationSeconds: source.clipEndSeconds - source.clipStartSeconds,
+          envOverrides: params.envOverrides,
+        });
+      }
       fs.rmSync(cached.outputPath, { force: true });
       fs.renameSync(tempOutputPath, cached.outputPath);
       imported.push({ sourceId: source.id, videoUrl: cached.videoUrl });
@@ -206,14 +210,12 @@ async function transcodeSourceClip(params: {
   outputPath: string;
   startSeconds: number;
   durationSeconds: number;
-  stillImage?: boolean;
   envOverrides?: RuntimeEnvValues;
 }) {
   await runFfmpeg([
     "-y",
-    ...(params.stillImage
-      ? ["-loop", "1", "-framerate", "30", "-i", params.inputPath]
-      : ["-ss", params.startSeconds.toFixed(3), "-i", params.inputPath]),
+    "-ss", params.startSeconds.toFixed(3),
+    "-i", params.inputPath,
     "-t", params.durationSeconds.toFixed(3),
     "-map", "0:v:0",
     "-an",
@@ -228,6 +230,16 @@ async function transcodeSourceClip(params: {
     "-movflags", "+faststart",
     params.outputPath,
   ], params.envOverrides);
+}
+
+async function transcodeImageSource(inputPath: string, outputPath: string, envOverrides?: RuntimeEnvValues) {
+  // Keep transparent pixels intact: these cut-out models sit above the carpet.
+  // Decode and normalize untrusted JPG / PNG / WebP through FFmpeg.
+  await runFfmpeg([
+    "-y", "-i", inputPath, "-frames:v", "1",
+    "-vf", "scale=w='min(1080,iw)':h='min(1920,ih)':force_original_aspect_ratio=decrease,format=rgba",
+    "-update", "1", "-f", "image2", outputPath,
+  ], envOverrides);
 }
 
 async function getMediaDurationSeconds(inputPath: string, envOverrides?: RuntimeEnvValues) {
@@ -278,11 +290,13 @@ function resolvePresetCache(presetId: string, envOverrides?: RuntimeEnvValues) {
 function resolveCachedSource(
   cache: ReturnType<typeof resolvePresetCache>,
   source: NormalizedPresetVideoSourceClip,
+  stillImage = false,
 ) {
   const cacheName = buildCacheName(source);
-  const relativePath = path.posix.join(cache.relativeDir, `${cacheName}.mp4`);
+  const extension = stillImage ? ".png" : ".mp4";
+  const relativePath = path.posix.join(cache.relativeDir, `${cacheName}${extension}`);
   return {
-    outputPath: path.join(cache.outputDir, `${cacheName}.mp4`),
+    outputPath: path.join(cache.outputDir, `${cacheName}${extension}`),
     videoUrl: buildGeneratedFileUrl(GENERATED_VIDEO_PUBLIC_PATH, relativePath, cache.origin),
   };
 }

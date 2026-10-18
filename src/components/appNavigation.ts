@@ -14,6 +14,7 @@ import {
   Newspaper,
   PenLine,
   Settings,
+  Swords,
   Sparkles,
   Video,
   Youtube,
@@ -67,6 +68,13 @@ export const APP_NAVIGATION_GROUPS: AppNavigationGroup[] = [
         icon: Trophy,
         label: { en: "Marble Tower Video", vi: "Video đua bi tháp" },
         matchPaths: ["/algorithms/marble-tower"],
+      },
+      {
+        id: "action-duel",
+        to: "/algorithms/action-duel",
+        icon: Swords,
+        label: { en: "Action Duel Demo", vi: "Đấu boss 2D (Demo)" },
+        matchPaths: ["/algorithms/action-duel"],
       },
       {
         id: "maze-pathfinding",

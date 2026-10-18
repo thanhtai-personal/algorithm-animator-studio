@@ -106,44 +106,50 @@ function background(ctx: CanvasRenderingContext2D, time: number, seed: number) {
   }
 }
 
+/** Compact biped from the reference: separate elbows, palms, knees and both feet. */
 function robot(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, palm = 0, tilt = 0) {
   ctx.save();
-  ctx.translate(x, y + wave(time * 7) * (1.3 + palm));
+  ctx.translate(x, y + wave(time * 4.8) * .5);
   ctx.rotate(tilt);
-  circle(ctx, 0, -1, 11 + palm * 2, "rgba(0,182,225,.1)");
-  line(ctx, -6, -10, -9, -1, "#fa70a7", 4);
-  line(ctx, 6, -10, 9, -1, "#fa70a7", 4);
-  line(ctx, -9, -1, -13 - palm * 3, -palm * 5, "#ec84bf", 3);
-  line(ctx, 9, -1, 11 + palm * 4, -palm * 4, "#ec84bf", 3);
-  rounded(ctx, -9, -25, 18, 17, 3, "#6b94a9");
-  rounded(ctx, -13, -38, 26, 18, 3, "#86aab9");
+  const braced = Math.max(0, palm);
+  // Two separated articulated legs, boots planted on the floor.
+  line(ctx, -5, -14, -9 - braced * 2, -7, "#86a8be", 3.7);
+  line(ctx, -9 - braced * 2, -7, -12 - braced * 2, -1, "#bdd9ea", 3.3);
+  line(ctx, -15 - braced * 2, -.5, -8 - braced * 2, -.5, "#e39fcb", 2.6);
+  line(ctx, 5, -14, 10 + braced * 2, -7, "#88b0cb", 3.7);
+  line(ctx, 10 + braced * 2, -7, 12 + braced * 2, -1, "#c2e5f3", 3.3);
+  line(ctx, 8 + braced * 2, -.5, 16 + braced * 2, -.5, "#ed9ecb", 2.6);
 
-  // Palm strike: draw both articulated arms ahead of the body, not a sword.
-  const palmX = 25 + palm * 9;
-  const palmY = -34;
-  line(ctx, 8, -27, 17, -21 + palm * 3, "#6c95ad", 6);
-  line(ctx, 17, -21 + palm * 3, palmX, palmY, "#a4cce1", 5);
-  line(ctx, -8, -26, 11 + palm * 2, -18 - palm * 5, "#5989a3", 5);
-  line(ctx, 11 + palm * 2, -18 - palm * 5, palmX - 3, palmY + 5, "#a7e2ed", 4);
-  circle(ctx, palmX + 1, palmY, 4.2, "#b8f8ec");
+  rounded(ctx, -9, -27, 18, 15, 2, "#80a8bd");
+  rounded(ctx, -7, -25, 14, 9, 2, "#123959");
+  circle(ctx, 0, -21, 2.4, "#5ae8ff");
+  line(ctx, 0, -27, 0, -29, "#9ec8db", 2.4);
+  rounded(ctx, -11, -43, 22, 14, 2, "#a3c7d5");
+  rounded(ctx, -9, -41, 18, 10, 2, "#16486a");
+  circle(ctx, -3.5, -36, 1.5, "#3bdeff");
+  circle(ctx, 3.5, -36, 1.5, "#3bdeff");
+
+  const palmX = 26 + braced * 7;
+  const palmY = -25 - braced * 2;
+  // Support arm and distinct supporting hand.
+  line(ctx, -8, -24, -14, -18 + braced * 3, "#648eaa", 4);
+  line(ctx, -14, -18 + braced * 3, 7 + braced * 6, -17, "#9abed8", 3.7);
+  line(ctx, 7 + braced * 6, -17, palmX - 7, palmY + 4, "#c1ebf5", 3.2);
+  circle(ctx, palmX - 7, palmY + 4, 2.6, "#b2f3ff");
+  // Striking arm extends, fingers open to release dragon-shaped qi.
+  line(ctx, 9, -24, 14 + braced * 4, -29 - braced * 2, "#7c9bb2", 4.2);
+  line(ctx, 14 + braced * 4, -29 - braced * 2, palmX, palmY, "#b5e5f5", 3.6);
+  circle(ctx, palmX, palmY, 3.2, "#e0fff6");
   for (let i = 0; i < 3; i++) {
-    line(ctx, palmX + 2, palmY - 3 + i * 2.3,
-      palmX + 6 + palm * 2, palmY - 4 + i * 2.5, "#edfff3", 1.4);
+    line(ctx, palmX + 1, palmY - 2 + i * 1.9, palmX + 5, palmY - 2 + i * 2, "#e9fffb", 1);
   }
-
-  rounded(ctx, -10, -35, 20, 12, 2, "#103b59");
-  circle(ctx, -4, -29, 2, "#40d5ff");
-  circle(ctx, 4, -29, 2, "#40d5ff");
-  line(ctx, -11, -37, 11, -37, "#b4eaff", 1.2);
-  line(ctx, -10, -18, 10, -18, "#a4f5ff", 1.5);
-  circle(ctx, 0, -12, 3, "#29e7ff");
   ctx.restore();
 }
 
-function skeleton(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, stagger: number, hp: number) {
+function skeleton(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, stagger: number, hp: number, tilt = 0) {
   ctx.save();
   ctx.translate(x, y - stagger * 12 + wave(time * 4) * 1.5);
-  ctx.rotate(stagger * 0.1);
+  ctx.rotate(tilt);
   ctx.lineCap = "round";
   const bone = "#a9b5d2";
   line(ctx, -1, -39, -5, -19, bone, 4);
@@ -219,7 +225,7 @@ export function drawDuelScene(ctx: CanvasRenderingContext2D, time: number, optio
   // Charge, extend both hands and project the dragon at the skeleton.
   robot(ctx, pose.heroX, pose.heroY, t, pose.heroAttack, pose.heroTilt);
   drawPalmCharge(ctx, pose, t, options.glow);
-  skeleton(ctx, pose.enemyX, pose.enemyY, t, pose.enemyStagger, enemyHp);
+  skeleton(ctx, pose.enemyX, pose.enemyY, t, pose.enemyStagger, enemyHp, pose.enemyTilt);
   drawFlyingDragon(ctx, pose, t, options.glow, seed);
 
   if (pose.impact > .05) {
@@ -251,6 +257,6 @@ export function drawDuelScene(ctx: CanvasRenderingContext2D, time: number, optio
     ctx.font = "small-caps 19px Georgia";
     ctx.textAlign = "center";
     ctx.fillStyle = "rgba(191,221,249," + String(smooth((t - 15.4) / .4)) + ")";
-    ctx.fillText("DRAGON STRIKE", 320, 174);
+    ctx.fillText("KHANG LONG PALM", 320, 174);
   }
 }

@@ -24,37 +24,76 @@ export function drawFlyingDragon(
   ctx.lineJoin = "round";
 
   const points: Point[] = [];
-  const segments = 22;
+  const segments = 20;
   for (let i = 0; i <= segments; i++) {
-    const tailFraction = i / segments;
-    points.push({
-      x: pose.dragonX - tailFraction * pose.dragonLength,
-      y: pose.dragonY + Math.sin(i * .59 - time * 19) * (2 + 14 * tailFraction)
-        + 5 * Math.sin(i * .19 + time * 6) * tailFraction,
-    });
+    const fraction = i / segments;
+    if (pose.dragonStage === "coil") {
+      const a = pose.dragonAngle - i * .48;
+      const radius = 6 + i * .62;
+      points.push({
+        x: pose.heroX + 12 + Math.cos(a) * (radius + 8),
+        y: pose.heroY - 20 + Math.sin(a) * (radius + 9) * .73,
+      });
+    } else if (pose.dragonStage === "wrap" || pose.dragonStage === "fade") {
+      // Tail follows an orbit around the skeleton instead of remaining a straight beam.
+      const a = pose.dragonAngle - i * .25;
+      points.push({
+        x: pose.enemyX + Math.cos(a) * (30 + i * .58),
+        y: pose.enemyY - 33 + Math.sin(a) * (22 + i * .40),
+      });
+    } else {
+      // Straight long-kình: the tail grows out of the robot's palm.
+      const available = Math.max(9, pose.dragonX - (pose.heroX + 32));
+      const bodyLength = Math.min(pose.dragonLength, available);
+      points.push({
+        x: pose.dragonX - fraction * bodyLength,
+        y: pose.dragonY + Math.sin(i * .61 - time * 22) * (1.5 + 5 * fraction)
+          + 2.5 * Math.sin(i * .27 + time * 9) * fraction,
+      });
+    }
   }
 
-  // Three-pass tapered body produces a visible dragon, not a generic light trail.
   const passes = [
-    { width: 29, color: "rgba(4,92,185,.32)", shadow: 22 },
-    { width: 20, color: "#057ca9", shadow: 8 },
-    { width: 12, color: "#32d8ed", shadow: 5 },
-    { width: 4, color: "#dcfdc9", shadow: 0 },
+    { width: 23, color: "rgba(23,107,230,.12)", shadow: 19 },
+    { width: 7.5, color: "rgba(59,222,245,.51)", shadow: 8 },
+    { width: 2.3, color: "#ffedc0", shadow: 1 },
   ];
   for (const pass of passes) {
-    ctx.shadowColor = "#35d9ff";
-    ctx.shadowBlur = pass.shadow * glow;
     ctx.strokeStyle = pass.color;
+    ctx.shadowColor = "#48deff";
+    ctx.shadowBlur = pass.shadow * glow;
     for (let i = segments; i >= 1; i--) {
-      const from = points[i];
-      const to = points[i - 1];
-      const taper = Math.max(.14, 1 - i / (segments + 1));
-      ctx.lineWidth = pass.width * (.20 + taper * .80);
+      const a = points[i];
+      const b = points[i - 1];
+      const taper = 0.22 + (1 - i / segments) * .78;
+      ctx.lineWidth = pass.width * taper;
       ctx.beginPath();
-      ctx.moveTo(from.x, from.y);
-      ctx.lineTo(to.x, to.y);
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
       ctx.stroke();
     }
+  }
+  ctx.shadowBlur = 0;
+
+  // Gold/cyan qi filaments wind around the body; avoid a thick laser-beam look.
+  for (let ribbon = 0; ribbon < 7; ribbon++) {
+    ctx.beginPath();
+    for (let i = 0; i <= segments; i++) {
+      const p = points[i];
+      const fraction = i / segments;
+      const amplitude = (3 + ribbon * .9) * Math.sin(Math.PI * fraction);
+      const offset = Math.sin(i * .58 - time * (17 + ribbon * .4) + ribbon * 1.07) * amplitude;
+      const x = p.x + (pose.dragonStage === "wrap" ? offset * .50 : 0);
+      const y = p.y + (pose.dragonStage === "wrap" ? offset * .45 : offset);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = ribbon % 3 === 0 ? "rgba(255,245,197,.96)"
+      : ribbon % 2 === 0 ? "rgba(255,202,139,.75)" : "rgba(105,236,255,.85)";
+    ctx.lineWidth = ribbon % 3 === 0 ? 1.25 : .70;
+    ctx.shadowColor = ribbon % 2 ? "#27dcf7" : "#ffdab1";
+    ctx.shadowBlur = 5 * glow;
+    ctx.stroke();
   }
   ctx.shadowBlur = 0;
 
@@ -105,7 +144,11 @@ export function drawFlyingDragon(
   // Dragon head, always facing its travel direction (+X).
   ctx.save();
   ctx.translate(pose.dragonX, pose.dragonY);
-  ctx.rotate(Math.sin(time * 17) * .075);
+  ctx.rotate(pose.dragonStage === "wrap" || pose.dragonStage === "fade"
+    ? pose.dragonAngle + Math.PI / 2
+    : pose.dragonStage === "coil" ? pose.dragonAngle + Math.PI / 2 : .03);
+  const scale = pose.dragonStage === "coil" ? .52 : .77;
+  ctx.scale(scale, scale);
   ctx.shadowColor = "#3cebfb";
   ctx.shadowBlur = 16 * glow;
   ctx.fillStyle = "#0c96ad";
@@ -196,8 +239,8 @@ export function drawFlyingDragon(
 export function drawPalmCharge(ctx: CanvasRenderingContext2D, pose: DuelPose, time: number, glow: number): void {
   const charge = pose.chargePower;
   if (charge <= .01) return;
-  const x = pose.heroX + 28 + pose.palmExtension * 7;
-  const y = pose.heroY - 34;
+  const x = pose.heroX + 30 + pose.palmExtension * 6;
+  const y = pose.heroY - 24 - pose.palmExtension * 2;
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
   const radius = 12 + charge * 18;

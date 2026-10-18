@@ -62,7 +62,11 @@ export function usePresetVideoMedia(
     preparePresetVideoMedia(preset, timelineVideoClips)
       .then((media) => {
         if (!alive) return;
-        setVideoSourceUrls(media.videoSourceUrls);
+        // Still-image source paths are stable across replacement uploads.
+        // Bust browser caches when reordering or restoring a Fashion Claw draft.
+        setVideoSourceUrls(preset.id === "fashion-claw"
+          ? Object.fromEntries(Object.entries(media.videoSourceUrls).map(([id, url]) => [id, appendCacheBust(url)]))
+          : media.videoSourceUrls);
         setMissingSourceIds(media.missingSourceIds);
       })
       .catch((error) => {

@@ -18,6 +18,7 @@ import { getPresetVideoOutputSize, PRESET_VIDEO_OUTPUT_SIZES } from "../outputPr
 import type { PresetVideoDefinition, PresetVideoExportSettings, PresetVideoLanguage, PresetVideoRenderResponse, PresetVideoSourceClip, PresetVideoTimelineClip } from "../types";
 import { formatPresetSeconds, TrimSlider } from "./PresetVideoControls";
 import { PresetVideoCustomClipsCard } from "./PresetVideoCustomClipsCard";
+import { FashionOutfitsCard } from "./FashionOutfitsCard";
 import { PresetVideoSourcePickerCard } from "./PresetVideoSourcePickerCard";
 import { PresetVideoSocialMetadataCard } from "./PresetVideoSocialMetadataCard";
 import { PresetVideoPreviewEditor } from "./PresetVideoPreviewEditor";
@@ -56,6 +57,7 @@ export function PresetVideoWorkspace({ preset: sourcePreset, onBack }: Props) {
 
   const output = getPresetVideoOutputSize(settings.outputPreset);
   const usesLocalVideoSources = preset.videoSourceStrategy === "local";
+  const isFashionClaw = preset.id === "fashion-claw";
   const requiredSourceIds = useMemo(() => [...(preset.videoSources || []).map((source) => source.id), ...settings.timelineVideoClips.map((clip) => clip.id)], [preset.videoSources, settings.timelineVideoClips]);
   const missingLocalVideoSources = usesLocalVideoSources ? requiredSourceIds.filter((id) => !media.videoSourceUrls[id]) : [];
   const selectedTrack = useMemo(() => tracks.find((track) => track.id === settings.backgroundMusicId), [settings.backgroundMusicId, tracks]);
@@ -84,11 +86,50 @@ export function PresetVideoWorkspace({ preset: sourcePreset, onBack }: Props) {
   function removeTimelineClip(clipId: string) { media.invalidateSource(clipId); patchSettings({ timelineVideoClips: settings.timelineVideoClips.filter((clip) => clip.id !== clipId) }); }
   async function selectTimelineClip(clip: PresetVideoTimelineClip, file: File) { try { await media.importSource(clip, file); updateTimelineClip(clip.id, { title: file.name.slice(0, 120) }); toast.success(`Đã cắt và cache ${file.name}`); } catch { } }
 
+  async function addFashionOutfits(files: File[]) {
+    const available = Math.max(0, 20 - settings.timelineVideoClips.length);
+    if (files.length > available) toast.error("Tối đa 20 ảnh trang phục.");
+    for (const file of files.slice(0, available)) {
+      if (!isFashionImage(file)) { toast.error(`Ảnh không hợp lệ: ${file.name}. Chỉ nhận JPG, PNG, WebP.`); continue; }
+      const clip: PresetVideoTimelineClip = {
+        id: createTimelineClipId(), title: file.name.slice(0, 120),
+        clipStartSeconds: 0, clipEndSeconds: preset.defaultDurationSeconds,
+        timelineStartSeconds: 0, timelineEndSeconds: preset.defaultDurationSeconds,
+      };
+      setSettings((current) => ({ ...current, timelineVideoClips: [...current.timelineVideoClips, clip] }));
+      try {
+        await media.importSource(clip, file);
+      } catch {
+        setSettings((current) => ({ ...current, timelineVideoClips: current.timelineVideoClips.filter((item) => item.id !== clip.id) }));
+      }
+    }
+  }
+
+  async function replaceFashionOutfit(clip: PresetVideoTimelineClip, file: File) {
+    if (!isFashionImage(file)) { toast.error("Chỉ nhận ảnh JPG, PNG hoặc WebP."); return; }
+    try {
+      await media.importSource(clip, file);
+      setSettings((current) => ({ ...current, timelineVideoClips: current.timelineVideoClips.map((item) => item.id === clip.id ? { ...item, title: file.name.slice(0, 120) } : item) }));
+    } catch { /* The media hook already shows an error. */ }
+  }
+
+  function moveFashionOutfit(id: string, direction: -1 | 1) {
+    setSettings((current) => {
+      const items = [...current.timelineVideoClips];
+      const index = items.findIndex((item) => item.id === id);
+      const other = index + direction;
+      if (index < 0 || other < 0 || other >= items.length) return current;
+      [items[index], items[other]] = [items[other], items[index]];
+      return { ...current, timelineVideoClips: items };
+    });
+  }
+
   function reset() {
     const defaults = createDefaultPresetVideoSettings(preset); const recommended = findRecommendedPresetMusic(tracks, preset.musicRecommendation);
     setSettings({ ...defaults, backgroundMusicId: recommended?.id || "" }); setResult(null); setRenderProgress(0); setRenderMessage(""); playerRef.current?.seekTo(0);
   }
   async function exportVideo() {
+    if (isFashionClaw && settings.timelineVideoClips.length < 2) { toast.error("Hãy thêm ít nhất 2 ảnh trang phục."); return; }
     if (missingLocalVideoSources.length) { toast.error(`Còn thiếu ${missingLocalVideoSources.length} video local trước khi export.`); return; }
     setRendering(true); setRenderProgress(0); setRenderMessage("Đang khởi tạo render..."); setResult(null);
     try {
@@ -98,7 +139,7 @@ export function PresetVideoWorkspace({ preset: sourcePreset, onBack }: Props) {
   }
 
   return <div className="space-y-4">
-    <header className="flex flex-col gap-3 rounded-xl border bg-card/70 p-4 md:flex-row md:items-center md:justify-between"><div className="flex items-start gap-3"><Button variant="ghost" size="icon" onClick={onBack} aria-label="Quay lại kho preset"><ArrowLeft className="h-4 w-4" /></Button><div><p className="text-xs font-bold uppercase tracking-[0.24em] text-primary">Preset Video · {language.toUpperCase()}</p><h1 className="mt-1 text-xl font-bold">{preset.name}</h1><p className="mt-1 max-w-3xl text-sm text-muted-foreground">{preset.description}</p></div></div><div className="flex gap-2"><Button variant="outline" disabled={rendering || Boolean(media.uploadingSourceId)} onClick={reset}><RotateCcw className="mr-2 h-4 w-4" />Reset</Button><Button disabled={rendering || Boolean(media.uploadingSourceId) || missingLocalVideoSources.length > 0} onClick={() => void exportVideo()}><Film className="mr-2 h-4 w-4" />{rendering ? `Đang render ${Math.round(renderProgress * 100)}%` : "Export MP4"}</Button></div></header>
+    <header className="flex flex-col gap-3 rounded-xl border bg-card/70 p-4 md:flex-row md:items-center md:justify-between"><div className="flex items-start gap-3"><Button variant="ghost" size="icon" onClick={onBack} aria-label="Quay lại kho preset"><ArrowLeft className="h-4 w-4" /></Button><div><p className="text-xs font-bold uppercase tracking-[0.24em] text-primary">Preset Video · {language.toUpperCase()}</p><h1 className="mt-1 text-xl font-bold">{preset.name}</h1><p className="mt-1 max-w-3xl text-sm text-muted-foreground">{preset.description}</p></div></div><div className="flex gap-2"><Button variant="outline" disabled={rendering || Boolean(media.uploadingSourceId)} onClick={reset}><RotateCcw className="mr-2 h-4 w-4" />Reset</Button><Button disabled={rendering || Boolean(media.uploadingSourceId) || missingLocalVideoSources.length > 0 || (isFashionClaw && settings.timelineVideoClips.length < 2)} onClick={() => void exportVideo()}><Film className="mr-2 h-4 w-4" />{rendering ? `Đang render ${Math.round(renderProgress * 100)}%` : "Export MP4"}</Button></div></header>
 
     <PresetVideoPreviewEditor preset={preset} settings={settings} inputProps={inputProps} playerRef={playerRef} compositionWidth={output.width} compositionHeight={output.height} aspectRatio={output.aspectRatio} preloadingCount={media.preloadingCount} disabled={rendering} onSettingsChange={patchSettings} />
 
@@ -108,7 +149,8 @@ export function PresetVideoWorkspace({ preset: sourcePreset, onBack }: Props) {
         <TrimSlider label="Kết thúc" value={settings.trimEndSeconds} min={Math.min(preset.defaultDurationSeconds, settings.trimStartSeconds + MIN_TRIM_SECONDS)} max={preset.defaultDurationSeconds} duration={preset.defaultDurationSeconds} onChange={(value) => patchSettings({ trimEndSeconds: Math.max(value, settings.trimStartSeconds + MIN_TRIM_SECONDS) })} />
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/30 px-3 py-2 text-sm"><span>{formatPresetSeconds(settings.trimStartSeconds)} → {formatPresetSeconds(settings.trimEndSeconds)}</span><span className="font-semibold">{formatPresetSeconds(settings.trimEndSeconds - settings.trimStartSeconds)}</span></div><Button variant="outline" onClick={() => previewAt(settings.trimStartSeconds)}>Preview đoạn đã chọn</Button>
       </CardContent></Card>
-      {usesLocalVideoSources ? <PresetVideoCustomClipsCard clips={settings.timelineVideoClips} videoSourceUrls={media.videoSourceUrls} uploadingSourceId={media.uploadingSourceId} durationSeconds={preset.defaultDurationSeconds} disabled={rendering} onAdd={addTimelineClip} onRemove={removeTimelineClip} onChange={updateTimelineClip} onSelect={(clip, file) => void selectTimelineClip(clip, file)} onPreview={previewAt} /> : null}
+      {isFashionClaw ? <FashionOutfitsCard clips={settings.timelineVideoClips} videoSourceUrls={media.videoSourceUrls} uploadingSourceId={media.uploadingSourceId} disabled={rendering} onAdd={(files) => void addFashionOutfits(files)} onReplace={(clip, file) => void replaceFashionOutfit(clip, file)} onRemove={removeTimelineClip} onMove={moveFashionOutfit} /> : null}
+      {usesLocalVideoSources && !isFashionClaw ? <PresetVideoCustomClipsCard clips={settings.timelineVideoClips} videoSourceUrls={media.videoSourceUrls} uploadingSourceId={media.uploadingSourceId} durationSeconds={preset.defaultDurationSeconds} disabled={rendering} onAdd={addTimelineClip} onRemove={removeTimelineClip} onChange={updateTimelineClip} onSelect={(clip, file) => void selectTimelineClip(clip, file)} onPreview={previewAt} /> : null}
     </section>
 
     <aside className="space-y-4"><Card><CardHeader><CardTitle className="text-base">Export settings</CardTitle></CardHeader><CardContent className="space-y-5">
@@ -126,3 +168,5 @@ export function PresetVideoWorkspace({ preset: sourcePreset, onBack }: Props) {
 }
 
 function createTimelineClipId() { return `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`; }
+
+function isFashionImage(file: File) { return /\.(jpe?g|png|webp)$/i.test(file.name) && file.size <= 20 * 1024 * 1024; }

@@ -15,6 +15,8 @@ const PRESET_SOURCE_VIDEO_MAX_BYTES = 2 * 1024 * 1024 * 1024;
 const presetSourceUpload = multer({ dest: uploadDirectory, limits: { fileSize: PRESET_SOURCE_VIDEO_MAX_BYTES } });
 const presetVoiceUpload = multer({ dest: uploadDirectory, limits: { fileSize: 300 * 1024 * 1024 } });
 const SUPPORTED_VIDEO_EXTENSIONS = new Set([".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"]);
+const SUPPORTED_FASHION_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+const MAX_FASHION_IMAGE_BYTES = 20 * 1024 * 1024;
 
 export function createPresetVideoMediaRouter() {
   const router = Router();
@@ -51,10 +53,15 @@ export function createPresetVideoMediaRouter() {
   });
 
   router.post("/video/preset-media/import", presetSourceUpload.single("video"), async (req, res) => {
-    if (!req.file?.path) return res.status(400).json({ error: "Chưa chọn video local." });
+    if (!req.file?.path) return res.status(400).json({ error: "Chưa chọn ảnh hoặc video nguồn." });
     try {
-      if (!isSupportedVideo(req.file.originalname)) return res.status(400).json({ error: "Chỉ hỗ trợ video MP4, MOV, MKV, WEBM, AVI hoặc M4V." });
+      const presetId = String(req.body?.presetId || "");
+      const extension = path.extname(req.file.originalname).toLowerCase();
+      const stillImage = presetId === "fashion-claw" && SUPPORTED_FASHION_IMAGE_EXTENSIONS.has(extension);
+      if (!stillImage && !isSupportedVideo(req.file.originalname)) return res.status(400).json({ error: "Định dạng file không hỗ trợ." });
+      if (stillImage && req.file.size > MAX_FASHION_IMAGE_BYTES) return res.status(413).json({ error: "Ảnh trang phục vượt quá 20 MB." });
       const result = await importPresetVideoSource({
+        stillImage,
         presetId: String(req.body?.presetId || ""),
         source: { id: String(req.body?.sourceId || ""), watchUrl: String(req.body?.watchUrl || ""), clipStartSeconds: Number(req.body?.clipStartSeconds), clipEndSeconds: Number(req.body?.clipEndSeconds) },
         inputPath: req.file.path,

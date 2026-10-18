@@ -1,7 +1,8 @@
 import { DUEL_ATTACKS, sampleDuelPose } from "./choreography";
+import { drawFlyingDragon, drawPalmCharge } from "./dragon";
 
 /** Deterministic 640x360 battle scene, inspired by a user-supplied gameplay reference.
- * All characters, HUD and effects are drawn procedurally; no third-party sprites.
+ * Characters and dragon effects are procedural; no third-party sprites.
  */
 export const DUEL_WIDTH = 640;
 export const DUEL_HEIGHT = 360;
@@ -105,21 +106,31 @@ function background(ctx: CanvasRenderingContext2D, time: number, seed: number) {
   }
 }
 
-function robot(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, attack = 0, tilt = 0) {
+function robot(ctx: CanvasRenderingContext2D, x: number, y: number, time: number, palm = 0, tilt = 0) {
   ctx.save();
-  ctx.translate(x, y + wave(time * 7) * (1.3 + attack));
+  ctx.translate(x, y + wave(time * 7) * (1.3 + palm));
   ctx.rotate(tilt);
-  circle(ctx, 0, -1, 11 + attack * 2, "rgba(0,182,225,.1)");
+  circle(ctx, 0, -1, 11 + palm * 2, "rgba(0,182,225,.1)");
   line(ctx, -6, -10, -9, -1, "#fa70a7", 4);
   line(ctx, 6, -10, 9, -1, "#fa70a7", 4);
-  line(ctx, -9, -1, -13 - attack * 5, -attack * 6, "#ec84bf", 3);
-  line(ctx, 9, -1, 13 + attack * 8, -attack * 5, "#ec84bf", 3);
+  line(ctx, -9, -1, -13 - palm * 3, -palm * 5, "#ec84bf", 3);
+  line(ctx, 9, -1, 11 + palm * 4, -palm * 4, "#ec84bf", 3);
   rounded(ctx, -9, -25, 18, 17, 3, "#6b94a9");
   rounded(ctx, -13, -38, 26, 18, 3, "#86aab9");
-  if (attack > .2) {
-    line(ctx, 10, -23, 20 + attack * 11, -36 - attack * 13, "#88f6ff", 3);
-    circle(ctx, 20 + attack * 11, -36 - attack * 13, 2.8, "#fff2b8");
+
+  // Palm strike: draw both articulated arms ahead of the body, not a sword.
+  const palmX = 25 + palm * 9;
+  const palmY = -34;
+  line(ctx, 8, -27, 17, -21 + palm * 3, "#6c95ad", 6);
+  line(ctx, 17, -21 + palm * 3, palmX, palmY, "#a4cce1", 5);
+  line(ctx, -8, -26, 11 + palm * 2, -18 - palm * 5, "#5989a3", 5);
+  line(ctx, 11 + palm * 2, -18 - palm * 5, palmX - 3, palmY + 5, "#a7e2ed", 4);
+  circle(ctx, palmX + 1, palmY, 4.2, "#b8f8ec");
+  for (let i = 0; i < 3; i++) {
+    line(ctx, palmX + 2, palmY - 3 + i * 2.3,
+      palmX + 6 + palm * 2, palmY - 4 + i * 2.5, "#edfff3", 1.4);
   }
+
   rounded(ctx, -10, -35, 20, 12, 2, "#103b59");
   circle(ctx, -4, -29, 2, "#40d5ff");
   circle(ctx, 4, -29, 2, "#40d5ff");
@@ -159,91 +170,25 @@ function skeleton(ctx: CanvasRenderingContext2D, x: number, y: number, time: num
   ctx.fillRect(x - 18, y - 71 - stagger * 12, 36, 1);
 }
 
-function slash(ctx: CanvasRenderingContext2D, time: number, phase: number, power: number, seed: number, centerX: number, centerY: number) {
-  if (power <= 0) return;
-  ctx.save();
-  ctx.globalCompositeOperation = "lighter";
-  const colors = ["#fff7c5", "#68f7ff", "#ffe19a", "#ffffff"];
-  for (let band = 0; band < 9; band++) {
-    const start = phase * 14 + band * 0.56;
-    const radius = 25 + band * 3;
-    ctx.beginPath();
-    for (let j = 0; j < 34; j++) {
-      const a = start + (j / 33) * (1.25 * Math.PI);
-      const r = radius + 8 * wave(a * 3 + band);
-      const x = centerX + Math.cos(a) * r * 1.8;
-      const y = centerY + Math.sin(a) * r * 0.72;
-      if (j === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    }
-    ctx.strokeStyle = colors[band % colors.length];
-    ctx.globalAlpha = power * (band % 3 === 0 ? .92 : .56);
-    ctx.lineWidth = band % 3 === 0 ? 1.8 : .8;
-    ctx.shadowColor = band % 2 === 0 ? "#ffd46b" : "#0fcaff";
-    ctx.shadowBlur = 13;
-    ctx.stroke();
-  }
-  ctx.shadowBlur = 0;
-  for (let i = 0; i < 75; i++) {
-    const angle = random(seed + i * 17) * TAU;
-    const distance = random(seed + i * 37) * 105 * (0.3 + phase / 2);
-    const x = centerX + Math.cos(angle) * distance * 1.5;
-    const y = centerY + Math.sin(angle) * distance * 0.6;
-    const a = clamp(power * (0.25 + random(seed + i * 9) * 0.6));
-    ctx.globalAlpha = a;
-    line(ctx, x, y, x + Math.cos(angle) * 9, y + Math.sin(angle) * 5, i % 3 ? "#6cebf8" : "#ffe6a1", i % 5 === 0 ? 1.6 : .75);
-  }
-  ctx.restore();
-}
-
-function interfaceHud(ctx: CanvasRenderingContext2D, time: number, hits: number, seed: number) {
+/** Only the compact bottom-left status and top-right hit count remain.
+ * The minimap and bottom-right hotkey/timer frame are intentionally removed.
+ */
+function interfaceHud(ctx: CanvasRenderingContext2D, hits: number) {
   ctx.save();
   ctx.textBaseline = "middle";
-  ctx.fillStyle = "#1c2553";
-  ctx.fillRect(0, 0, 134, 91);
-  ctx.strokeStyle = "#8ca3e3";
-  ctx.strokeRect(.5, .5, 133, 90);
-  circle(ctx, 49 + wave(time * 0.45 + seed) * 8, 49, 2.3, "#e92d65");
-  rounded(ctx, 0, 294, 175, 66, 0, "rgba(1,3,16,.87)");
-  for (let i = 0; i < 3; i++) {
-    ctx.strokeStyle = i === 2 ? "#b93b50" : "#5696f3";
-    ctx.lineWidth = 1.6;
-    ctx.beginPath();
-    ctx.arc(20 + i * 29, 314, 10, 0, TAU);
-    ctx.stroke();
-  }
+  rounded(ctx, 0, 301, 169, 59, 0, "rgba(1,3,16,.78)");
   ctx.fillStyle = "#d5e7ff";
   ctx.font = "8px monospace";
-  ctx.fillText("Power1", 5, 337);
-  ctx.fillText("Power2", 33, 337);
-  ctx.fillText("Lv.1", 89, 315);
-  ctx.fillStyle = "#dc2b41";
-  ctx.fillRect(8, 344, 117, 6);
-  ctx.fillStyle = "#fff";
-  ctx.font = "bold 10px monospace";
-  ctx.fillText("500/500", 99, 340);
-
-  rounded(ctx, 434, 291, 205, 69, 2, "rgba(1,8,22,.88)");
-  for (let i = 0; i < 21; i++) {
-    ctx.fillStyle = i < 14 ? "rgba(20,194,244,.65)" : "rgba(88,109,152,.65)";
-    ctx.fillRect(440 + i * 9, 296, 2, 7);
-  }
-  const labels = ["Shift", "Q", "E", "R", "X"];
-  for (let i = 0; i < 5; i++) {
-    const x = 467 + 37 * i;
-    ctx.beginPath();
-    ctx.strokeStyle = "#6689d2";
-    ctx.lineWidth = 1;
-    ctx.arc(x, 331, 12.5, 0, TAU);
-    ctx.stroke();
-    ctx.font = "7px monospace";
-    ctx.fillStyle = "#cadbfa";
-    ctx.textAlign = "center";
-    ctx.fillText(labels[i], x, 350);
-  }
-  ctx.textAlign = "left";
-  ctx.font = "9px monospace";
-  ctx.fillStyle = "#b7e9ff";
-  ctx.fillText("00:" + String(Math.floor(time)).padStart(2, "0"), 433, 312);
+  ctx.fillText("ROBOT  /  POWER", 9, 313);
+  ctx.fillStyle = "#20364b";
+  ctx.fillRect(8, 329, 141, 8);
+  const bar = ctx.createLinearGradient(8, 0, 150, 0);
+  bar.addColorStop(0, "#36d5eb");
+  bar.addColorStop(1, "#c7fff0");
+  ctx.fillStyle = bar;
+  ctx.fillRect(8, 329, 126, 8);
+  ctx.fillStyle = "#dafaff";
+  ctx.fillText("500/500", 105, 347);
   if (hits > 0) {
     ctx.textAlign = "right";
     ctx.fillStyle = "#f4c17e";
@@ -259,52 +204,7 @@ function interfaceHud(ctx: CanvasRenderingContext2D, time: number, hits: number,
   ctx.restore();
 }
 
-function energyTrail(
-  ctx: CanvasRenderingContext2D,
-  time: number,
-  fromX: number,
-  fromY: number,
-  toX: number,
-  toY: number,
-  power: number,
-  seed: number,
-) {
-  if (power < .02) return;
-  ctx.save();
-  ctx.globalCompositeOperation = "lighter";
-  const delta = toX - fromX;
-  ctx.lineCap = "round";
-  for (let layer = 0; layer < 4; layer++) {
-    ctx.beginPath();
-    for (let step = 0; step <= 28; step++) {
-      const p = step / 28;
-      const x = fromX + delta * p;
-      const y = fromY + (toY - fromY) * p
-        + Math.sin(p * 19 - time * 26 + layer) * 7 * Math.sin(Math.PI * p);
-      if (step === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.lineWidth = layer === 0 ? 6 : layer === 1 ? 2.6 : .9;
-    ctx.strokeStyle = layer === 0 ? "rgba(36,193,255,.17)" :
-      layer === 1 ? "rgba(82,230,255,.7)" :
-      layer === 2 ? "#f8f3dd" : "#f8ad64";
-    ctx.shadowColor = "#48cfff";
-    ctx.shadowBlur = 15;
-    ctx.globalAlpha = power * (layer === 0 ? .7 : 1);
-    ctx.stroke();
-  }
-  ctx.shadowBlur = 0;
-  for (let i = 0; i < 22; i++) {
-    const p = random(seed + i * 33) * .95;
-    const x = fromX + delta * p;
-    const y = fromY + (toY - fromY) * p + Math.sin(p * 37 + time * 19) * 12;
-    ctx.globalAlpha = power * (.3 + random(seed + i * 61) * .6);
-    circle(ctx, x, y, i % 5 === 0 ? 2.3 : 1, i % 2 ? "#ffdba0" : "#65efff");
-  }
-  ctx.restore();
-}
-
-/** Render a frame entirely from (time, settings), so preview and export match. */
+/** Deterministic frame renderer shared by preview and exported MediaRecorder frames. */
 export function drawDuelScene(ctx: CanvasRenderingContext2D, time: number, options: DuelOptions): void {
   const t = clamp(time, 0, DUEL_DURATION);
   const seed = Number.isFinite(options.seed) ? options.seed : 42;
@@ -316,23 +216,12 @@ export function drawDuelScene(ctx: CanvasRenderingContext2D, time: number, optio
   ctx.translate(wave(t * 81) * shake, wave(t * 57) * shake * .66);
   background(ctx, t, seed);
 
-  // A continuous, physical-looking charge, leap, recoil and return.
-  if (pose.trail > .07) {
-    for (let i = 4; i >= 1; i--) {
-      ctx.globalAlpha = pose.trail * .09 * (5 - i);
-      robot(ctx, pose.heroX - i * 12, pose.heroY + i * 2.2, t - i * .04, pose.heroAttack, pose.heroTilt);
-    }
-  }
-  ctx.globalAlpha = 1;
+  // Charge, extend both hands and project the dragon at the skeleton.
   robot(ctx, pose.heroX, pose.heroY, t, pose.heroAttack, pose.heroTilt);
+  drawPalmCharge(ctx, pose, t, options.glow);
   skeleton(ctx, pose.enemyX, pose.enemyY, t, pose.enemyStagger, enemyHp);
+  drawFlyingDragon(ctx, pose, t, options.glow, seed);
 
-  if (pose.slashPower > .005) {
-    energyTrail(ctx, t, pose.heroX + 10, pose.heroY - 26,
-      pose.slashX, pose.slashY, pose.slashPower * (.65 + options.glow * .3), seed);
-    slash(ctx, t, pose.slashPhase, pose.slashPower * (.5 + options.glow * .5),
-      seed, pose.slashX, pose.slashY);
-  }
   if (pose.impact > .05) {
     const x = pose.enemyX;
     const y = pose.enemyY - 41;
@@ -352,15 +241,16 @@ export function drawDuelScene(ctx: CanvasRenderingContext2D, time: number, optio
         sy + Math.sin(angle) * 8, i % 3 ? "#bdfaff" : "#ffe3b9", 1);
     }
   }
-
   ctx.restore();
-  if (options.showHud) interfaceHud(ctx, t, pose.hits, seed);
+
+  // Both rejected UI frames are absent regardless of the HUD toggle.
+  if (options.showHud) interfaceHud(ctx, pose.hits);
   if (t > 15.25) {
     ctx.fillStyle = "rgba(0,0,6," + String(smooth((t - 15.25) / .75) * .93) + ")";
-    ctx.fillRect(0, 0, 640, 360);
+    ctx.fillRect(0, 0, DUEL_WIDTH, DUEL_HEIGHT);
     ctx.font = "small-caps 19px Georgia";
     ctx.textAlign = "center";
     ctx.fillStyle = "rgba(191,221,249," + String(smooth((t - 15.4) / .4)) + ")";
-    ctx.fillText("Block Buffered", 320, 174);
+    ctx.fillText("DRAGON STRIKE", 320, 174);
   }
 }

@@ -1,9 +1,9 @@
-import { DUEL_ATTACKS } from "./choreography";
+import { DRAGON_HIT, DRAGON_RELEASE, DUEL_ATTACKS } from "./choreography";
 import { DUEL_DURATION } from "./scene";
 
 /**
- * Original synthesized soundtrack: ambient pulse, percussion, sword whooshes
- * and frame-accurate impacts. No copyrighted or remotely fetched audio assets.
+ * Original synthesized soundtrack: dark electronic pulse, palm charge,
+ * flying dragon roar and frame-accurate impacts. No copyrighted or remotely fetched audio assets.
  */
 export function makeDuelAudioBuffer(ctx: AudioContext): AudioBuffer {
   const sampleRate = 24_000;
@@ -35,34 +35,47 @@ export function makeDuelAudioBuffer(ctx: AudioContext): AudioBuffer {
     const hi = .022 * Math.exp(-((t + .25) % .25) * 95) * noise;
 
     let strike = 0;
-    let whoosh = 0;
+    let chargeHum = 0;
+    let dragonRoar = 0;
     let pan = 0;
     for (const attack of DUEL_ATTACKS) {
       const dt = t - attack.at;
-      if (dt < -.1 || dt > attack.duration + .26) continue;
-      // Rising wind as the character dashes, then a heavy impact.
-      const sweep = Math.max(0, Math.min(1, dt / (attack.duration * .5)));
-      if (dt >= 0 && dt < attack.duration * .65) {
-        const envelope = Math.sin(Math.PI * Math.min(1, dt / (attack.duration * .65)));
-        whoosh += envelope * attack.power *
-          (.13 * noise + .06 * Math.sin(tau * (210 + 1100 * sweep) * dt));
-        pan = .27;
+      if (dt < 0 || dt > attack.duration + .39) continue;
+      const p = dt / attack.duration;
+      if (p >= 0 && p < DRAGON_RELEASE) {
+        const envelope = Math.sin(Math.PI * p / DRAGON_RELEASE);
+        chargeHum += attack.power * envelope *
+          (.060 * Math.sin(tau * (140 + 250 * p) * dt)
+            + .038 * Math.sin(tau * 330 * dt) + .02 * noise);
+        pan = -.32;
       }
-      const hit = dt - attack.duration * .53;
+      if (p >= DRAGON_RELEASE && p < DRAGON_HIT) {
+        const flight = (p - DRAGON_RELEASE) / (DRAGON_HIT - DRAGON_RELEASE);
+        const envelope = Math.sin(Math.PI * flight) * attack.power;
+        // FM-modulated growl and rushing air are the dragon's flight SFX.
+        const growlPhase = tau * (88 * dt + 38 * dt * dt);
+        const growl = Math.sin(growlPhase + 2.5 * Math.sin(tau * 29 * dt));
+        dragonRoar += envelope * (.17 * growl
+          + .08 * Math.sin(tau * (305 + 260 * flight) * dt)
+          + .11 * noise);
+        pan = -.5 + flight;
+      }
+      const hit = dt - attack.duration * DRAGON_HIT;
       if (hit >= 0 && hit < .39) {
-        const drop = Math.exp(-hit * 17);
-        strike += attack.power * drop *
-          (.22 * Math.sin(tau * (96 - 48 * hit) * hit)
-          + .09 * noise
-          + .08 * Math.sin(tau * 500 * hit));
-        pan = -.25;
+        const decay = Math.exp(-hit * 16);
+        strike += attack.power * decay *
+          (.27 * Math.sin(tau * (71 - 30 * hit) * hit)
+            + .115 * noise
+            + .07 * Math.sin(tau * 440 * hit));
+        pan = .33;
       }
     }
 
     const fade = Math.min(1, t * 5, Math.max(0, (DUEL_DURATION - t) * 2.5));
     const music = bass + pad + lead + kick + hi;
-    const l = (music + whoosh * (1 - pan) + strike * (1 + pan)) * fade;
-    const r = (music + whoosh * (1 + pan) + strike * (1 - pan)) * fade;
+    const sfx = chargeHum + dragonRoar + strike;
+    const l = (music + sfx * (1 - pan)) * fade;
+    const r = (music + sfx * (1 + pan)) * fade;
     left[i] = Math.tanh(l * 1.35) * .78;
     right[i] = Math.tanh(r * 1.35) * .78;
   }

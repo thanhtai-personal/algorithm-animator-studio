@@ -189,7 +189,7 @@ export default function ActionDuelStudio() {
       anchor.click();
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-      setMessage("Đã tạo video " + extension.toUpperCase() + (withAudio ? " có nhạc, tiếng chém và va chạm." : " không âm thanh."));
+      setMessage("Đã tạo video " + extension.toUpperCase() + (withAudio ? " có nhạc, tiếng rồng bay và va chạm." : " không âm thanh."));
       toast.success("Đã xuất video!");
     };
     try {
@@ -224,8 +224,8 @@ export default function ActionDuelStudio() {
         </div>
         <h1 className="text-2xl font-bold md:text-3xl">Action Duel Studio</h1>
         <p className="text-sm text-muted-foreground">
-          Bản dựng thử cảnh đấu boss 2D sci-fi: nhân vật, nền mạch điện, slash trails,
-          tia lửa, combo và HUD được vẽ bằng Canvas, không dùng sprite từ game gốc.
+          Bản dựng cảnh đấu boss 2D sci-fi: người máy tụ lực, tung chưởng hóa rồng năng lượng
+          bay vào bộ xương. Khung minimap và cụm nút kỹ năng đã được loại khỏi video.
         </p>
       </header>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_285px]">
@@ -294,7 +294,7 @@ export default function ActionDuelStudio() {
             <input type="checkbox" checked={showHud} disabled={exporting}
               onChange={(event) => setShowHud(event.target.checked)}
               className="h-4 w-4 accent-cyan-400" />
-            Hiển thị minimap, HP, combo và kỹ năng
+            Hiển thị thanh HP và combo (không có minimap, phím kỹ năng)
           </label>
           <label className="flex items-center gap-3 text-sm">
             <input type="checkbox" checked={soundEnabled} disabled={exporting}
@@ -304,7 +304,7 @@ export default function ActionDuelStudio() {
                 setSoundEnabled(event.target.checked);
               }}
               className="h-4 w-4 accent-cyan-400" />
-            Bật âm thanh: nhạc nền, tiếng chém, va chạm
+            Bật âm thanh: nhạc nền, tiếng rồng bay và va chạm
           </label>
           <div className="space-y-2 border-t border-border pt-4 text-xs leading-5 text-muted-foreground">
             <p>Độ phân giải: {DUEL_WIDTH}×{DUEL_HEIGHT} · {DUEL_FPS} FPS · 16 giây.</p>

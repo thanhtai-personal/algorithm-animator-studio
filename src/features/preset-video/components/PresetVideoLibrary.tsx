@@ -67,8 +67,8 @@ export function PresetVideoLibrary({ presets, quickExportingId, onOpen, onQuickE
               <Button variant="outline" onClick={() => onOpen(preset)}>
                 <Play className="mr-2 h-4 w-4" /> Mở / chỉnh
               </Button>
-              <Button disabled={quickExportingId === preset.id} onClick={() => onQuickExport(preset)}>
-                <Film className="mr-2 h-4 w-4" /> {quickExportingId === preset.id ? "Đang export..." : "Export ngay"}
+              <Button disabled={preset.id === "fashion-claw" || quickExportingId === preset.id} onClick={() => onQuickExport(preset)}>
+                <Film className="mr-2 h-4 w-4" /> {quickExportingId === preset.id ? "Đang export..." : preset.id === "fashion-claw" ? "Chọn ảnh trước" : "Export ngay"}
               </Button>
             </CardFooter>
           </Card>

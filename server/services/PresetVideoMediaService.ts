@@ -87,12 +87,14 @@ export async function importPresetVideoSource(params: {
   presetId: string;
   source: PresetVideoSourceClipRequest;
   inputPath: string;
+  stillImage?: boolean;
   envOverrides?: RuntimeEnvValues;
 }) {
   const result = await importPresetVideoSources({
     presetId: params.presetId,
     sources: [params.source],
     inputPath: params.inputPath,
+    stillImage: params.stillImage,
     envOverrides: params.envOverrides,
   });
   const source = result.sources[0];
@@ -104,17 +106,19 @@ export async function importPresetVideoSources(params: {
   presetId: string;
   sources: PresetVideoSourceClipRequest[];
   inputPath: string;
+  stillImage?: boolean;
   envOverrides?: RuntimeEnvValues;
 }) {
   const presetId = normalizePresetId(params.presetId);
   const sources = normalizePresetVideoSources(params.sources);
   if (!sources.length) throw new Error("Chưa có trích đoạn preset để xử lý.");
 
-  const inputDuration = await getMediaDurationSeconds(params.inputPath, params.envOverrides);
+  const inputDuration = params.stillImage ? Number.POSITIVE_INFINITY : await getMediaDurationSeconds(params.inputPath, params.envOverrides);
   const cache = resolvePresetCache(presetId, params.envOverrides);
   const imported: Array<{ sourceId: string; videoUrl: string }> = [];
 
   for (const source of sources) {
+    if (params.stillImage && source.clipStartSeconds !== 0) throw new Error("Ảnh tĩnh phải bắt đầu từ giây 0.");
     if (inputDuration + 0.05 < source.clipEndSeconds) {
       throw new Error(
         `Video "${source.id}" chỉ dài ${formatSeconds(inputDuration)}, cần ít nhất ${formatSeconds(source.clipEndSeconds)} để cắt đoạn ${formatSeconds(source.clipStartSeconds)}–${formatSeconds(source.clipEndSeconds)}.`,
@@ -130,6 +134,7 @@ export async function importPresetVideoSources(params: {
         outputPath: tempOutputPath,
         startSeconds: source.clipStartSeconds,
         durationSeconds: source.clipEndSeconds - source.clipStartSeconds,
+        stillImage: params.stillImage,
         envOverrides: params.envOverrides,
       });
       fs.rmSync(cached.outputPath, { force: true });
@@ -201,12 +206,14 @@ async function transcodeSourceClip(params: {
   outputPath: string;
   startSeconds: number;
   durationSeconds: number;
+  stillImage?: boolean;
   envOverrides?: RuntimeEnvValues;
 }) {
   await runFfmpeg([
     "-y",
-    "-ss", params.startSeconds.toFixed(3),
-    "-i", params.inputPath,
+    ...(params.stillImage
+      ? ["-loop", "1", "-framerate", "30", "-i", params.inputPath]
+      : ["-ss", params.startSeconds.toFixed(3), "-i", params.inputPath]),
     "-t", params.durationSeconds.toFixed(3),
     "-map", "0:v:0",
     "-an",

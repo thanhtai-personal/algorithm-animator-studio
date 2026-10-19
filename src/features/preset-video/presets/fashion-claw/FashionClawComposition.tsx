@@ -1,11 +1,11 @@
-import { AbsoluteFill, Easing, Img, useCurrentFrame, useVideoConfig } from "remotion";
+import { AbsoluteFill, Img, useCurrentFrame, useVideoConfig } from "remotion";
 import type { PresetVideoCompositionProps } from "../../types";
 import { FashionCeilingFan, FashionLivingRoom } from "./FashionStage";
 import { FashionDemoModel } from "./FashionDemoModel";
 import { getFashionCameraScale } from "./fashionSetTiming";
+import { getFashionModelMotion, getFashionModelPose } from "./fashionModelMotion";
 
 const OUTFIT_SWITCH_SECONDS = .96;
-const clamp = (value: number) => Math.max(0, Math.min(1, value));
 
 /**
  * Overhead view: a model rolls onto a blue rug beside a pink sofa.
@@ -20,58 +20,40 @@ export function FashionClawComposition(props: PresetVideoCompositionProps) {
   const userOutfits = props.timelineVideoClips
     .map((clip) => props.videoSourceUrls[clip.id])
     .filter((src): src is string => Boolean(src));
-  const defaultOutfits = ["fashion-default-1", "fashion-default-2", "fashion-default-3"]
-    .map((id) => props.videoSourceUrls[id])
-    .filter((src): src is string => Boolean(src));
-  const outfits = userOutfits.length ? userOutfits : defaultOutfits;
+  // T04: render the animated mannequin by default; static stock photos cannot
+  // bend arms and legs. Keep user-uploaded photos supported for the later custom stage.
+  const outfits = userOutfits;
   const beatIndex = Math.floor((seconds + OUTFIT_SWITCH_SECONDS / 2) / OUTFIT_SWITCH_SECONDS);
   const activeIndex = outfits.length ? beatIndex % outfits.length : 0;
   const active = outfits[activeIndex];
 
-  // Roll down from the top, settle flat onto the rug before the first blade pass.
-  const rolling = Easing.out(Easing.cubic)(clamp(seconds / .44));
-  const firstEntrance = 1 - rolling;
-  const insideBeat = (seconds + OUTFIT_SWITCH_SECONDS / 2) % OUTFIT_SWITCH_SECONDS;
-  const changeEase = Easing.out(Easing.quad)(clamp(insideBeat / .17));
-  const outfitArrival = activeIndex && !firstEntrance ? 1 - changeEase : 0;
-  const drift = Math.sin(seconds * 3) * 2;
-  const translateY = -height * .68 * firstEntrance - 20 * outfitArrival + drift;
-  const rotateDeg = -310 * firstEntrance + 9 * outfitArrival + Math.sin(seconds * 2.4) * 1.2;
-  const translateX = -width * .17 * firstEntrance + 8 * outfitArrival;
+  const model = getFashionModelMotion(seconds);
+  const vectorPose = getFashionModelPose(seconds);
+  // The animation lives in 360×640 reference pixels, scaled to the selected output size.
+  const modelTransform = `translate(${(model.x * width) / 360}px, ${(model.y * height) / 640}px) rotate(${model.rotationDeg}deg) scale(${model.breathScale})`;
 
   return (
     <AbsoluteFill style={{ background: "#5e798a", overflow: "hidden" }}>
       <AbsoluteFill style={{ transform: `scale(${cameraScale})`, transformOrigin: "50% 62%" }}>
         <FashionLivingRoom seconds={seconds} />
       {active ? (
-        <AbsoluteFill style={{ transform: "translate(" + translateX + "px, " + translateY + "px) rotate(" + rotateDeg + "deg)" }}>
+        <AbsoluteFill style={{ transform: modelTransform, transformOrigin: "50% 51%" }}>
           <Img
             src={active}
             style={{
-              position: "absolute", left: "20%", top: "22%", width: "76%", height: "72%",
+              position: "absolute", left: "12%", top: "17%", width: "76%", height: "75%",
               objectFit: "contain", objectPosition: "50% 50%",
               filter: "drop-shadow(0 11px 8px rgba(11,33,45,.25))",
             }}
           />
         </AbsoluteFill>
       ) : (
-        <AbsoluteFill style={{ transform: "translate(" + translateX + "px, " + translateY + "px) rotate(" + rotateDeg + "deg)" }}>
-          <FashionDemoModel variation={beatIndex} />
+        <AbsoluteFill style={{ transform: modelTransform, transformOrigin: "50% 51%" }}>
+          <FashionDemoModel variation={beatIndex} pose={vectorPose} />
         </AbsoluteFill>
       )}
       <FashionCeilingFan seconds={seconds} imageSrc={props.videoSourceUrls["fashion-default-fan"]} />
       </AbsoluteFill>
-      {!active ? (
-        <div style={{
-          position: "absolute", bottom: "7%", left: "15%", right: "15%",
-          borderRadius: 12, padding: "12px 15px", textAlign: "center",
-          background: "rgba(16, 31, 43, .76)", color: "#f9ede2",
-          fontFamily: "Arial, sans-serif", fontSize: Math.min(width, height) * .034,
-          lineHeight: 1.35, fontWeight: 700,
-        }}>
-          Không tải được ảnh mẫu. Thêm ảnh riêng hoặc kiểm tra kết nối mạng.
-        </div>
-      ) : null}
     </AbsoluteFill>
   );
 }

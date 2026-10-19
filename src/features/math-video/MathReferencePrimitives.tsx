@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { clamp01, fmt, project, radians, sinePath } from "./mathGeometry";
 
 export const REF_WHITE = "#d9dde3";
@@ -6,7 +7,7 @@ export const REF_ORANGE = "#dca46a";
 export const REF_DIM = "#65717e";
 
 export function Annotation({ x, y, children, color = REF_WHITE, size = 19, anchor = "start", weight = 500 }: {
-  x: number; y: number; children: React.ReactNode; color?: string; size?: number;
+  x: number; y: number; children: ReactNode; color?: string; size?: number;
   anchor?: "start" | "middle" | "end"; weight?: number;
 }) {
   return <text x={x} y={y} fill={color} fontSize={size} fontWeight={weight}

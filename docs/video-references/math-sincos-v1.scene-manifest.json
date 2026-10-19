@@ -1,0 +1,222 @@
+{
+  "schemaVersion": 1,
+  "name": "Math Video Sin & Cos v1 reconstruction (draft)",
+  "status": "implementation-draft-not-reference-accurate",
+  "source": {
+    "fileName": "FDown.vn_Tai_video_Facebook_720p (HD)_0dc1.mp4",
+    "sha256": "d6e5123f38293abd35b34c48b9b3d61127e5f99f9a01622ebae176e00ef0f1a5",
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "width": 1280,
+    "height": 720,
+    "fps": 25,
+    "totalFrames": 15217,
+    "durationSeconds": 608.68
+  },
+  "timelineConvention": "startFrame inclusive, endFrame exclusive",
+  "verification": {
+    "sourceMetadataVerified": true,
+    "sourceShotBoundariesVerified": false,
+    "codeCoverageEndFrame": 15217,
+    "visualFidelityVerified": false,
+    "audioRecreated": false,
+    "notes": "12 chapters use approximate boundaries. Intro beat observations have 2-second interval sampling; NOT an exact edit decision list."
+  },
+  "sceneChapters": [
+    {
+      "id": "intro",
+      "title": "Tam giác vuông và sin/cos",
+      "startFrame": 0,
+      "endFrame": 1000,
+      "mode": "intro",
+      "timingConfidence": "approximate",
+      "basedOn": "sampled 10-second contact sheet; NOT verified shot boundary"
+    },
+    {
+      "id": "circle",
+      "title": "Đường tròn lượng giác",
+      "startFrame": 1000,
+      "endFrame": 2750,
+      "mode": "circle",
+      "timingConfidence": "approximate",
+      "basedOn": "sampled 10-second contact sheet; NOT verified shot boundary"
+    },
+    {
+      "id": "identity",
+      "title": "sin² α + cos² α = 1",
+      "startFrame": 2750,
+      "endFrame": 4250,
+      "mode": "identity",
+      "timingConfidence": "approximate",
+      "basedOn": "sampled 10-second contact sheet; NOT verified shot boundary"
+    },
+    {
+      "id": "wave",
+      "title": "Từ đường tròn tới sóng",
+      "startFrame": 4250,
+      "endFrame": 5500,
+      "mode": "wave",
+      "timingConfidence": "approximate",
+      "basedOn": "sampled 10-second contact sheet; NOT verified shot boundary"
+    },
+    {
+      "id": "complement",
+      "title": "Các góc phụ nhau",
+      "startFrame": 5500,
+      "endFrame": 6000,
+      "mode": "complement",
+      "timingConfidence": "approximate",
+      "basedOn": "sampled 10-second contact sheet; NOT verified shot boundary"
+    },
+    {
+      "id": "tangent",
+      "title": "Tangent: tan = sin / cos",
+      "startFrame": 6000,
+      "endFrame": 7375,
+      "mode": "tangent",
+      "timingConfidence": "approximate",
+      "basedOn": "sampled 10-second contact sheet; NOT verified shot boundary"
+    },
+    {
+      "id": "history",
+      "title": "Cung, dây cung và lịch sử sin",
+      "startFrame": 7375,
+      "endFrame": 8750,
+      "mode": "history",
+      "timingConfidence": "approximate",
+      "basedOn": "sampled 10-second contact sheet; NOT verified shot boundary"
+    },
+    {
+      "id": "sound",
+      "title": "Sóng và âm thanh",
+      "startFrame": 8750,
+      "endFrame": 9375,
+      "mode": "sound",
+      "timingConfidence": "approximate",
+      "basedOn": "sampled 10-second contact sheet; NOT verified shot boundary"
+    },
+    {
+      "id": "astronomy",
+      "title": "Thiên văn và phép đo",
+      "startFrame": 9375,
+      "endFrame": 10625,
+      "mode": "astronomy",
+      "timingConfidence": "approximate",
+      "basedOn": "sampled 10-second contact sheet; NOT verified shot boundary"
+    },
+    {
+      "id": "height",
+      "title": "Tính chiều cao bằng lượng giác",
+      "startFrame": 10625,
+      "endFrame": 12625,
+      "mode": "height",
+      "timingConfidence": "approximate",
+      "basedOn": "sampled 10-second contact sheet; NOT verified shot boundary"
+    },
+    {
+      "id": "electric",
+      "title": "Sóng điện xoay chiều",
+      "startFrame": 12625,
+      "endFrame": 14000,
+      "mode": "electric",
+      "timingConfidence": "approximate",
+      "basedOn": "sampled 10-second contact sheet; NOT verified shot boundary"
+    },
+    {
+      "id": "final",
+      "title": "Trở lại câu hỏi sin 120°",
+      "startFrame": 14000,
+      "endFrame": 15217,
+      "mode": "final",
+      "timingConfidence": "approximate",
+      "basedOn": "sampled 10-second contact sheet; NOT verified shot boundary"
+    }
+  ],
+  "introVisualCheckpoints": [
+    {
+      "frame": 0,
+      "seconds": 0,
+      "confidence": "sampled-reference"
+    },
+    {
+      "frame": 50,
+      "seconds": 2,
+      "confidence": "sampled-reference"
+    },
+    {
+      "frame": 100,
+      "seconds": 4,
+      "confidence": "sampled-reference"
+    },
+    {
+      "frame": 150,
+      "seconds": 6,
+      "confidence": "sampled-reference"
+    },
+    {
+      "frame": 200,
+      "seconds": 8,
+      "confidence": "sampled-reference"
+    },
+    {
+      "frame": 250,
+      "seconds": 10,
+      "confidence": "sampled-reference"
+    },
+    {
+      "frame": 350,
+      "seconds": 14,
+      "confidence": "sampled-reference"
+    },
+    {
+      "frame": 400,
+      "seconds": 16,
+      "confidence": "sampled-reference"
+    },
+    {
+      "frame": 450,
+      "seconds": 18,
+      "confidence": "sampled-reference"
+    },
+    {
+      "frame": 500,
+      "seconds": 20,
+      "confidence": "sampled-reference"
+    },
+    {
+      "frame": 600,
+      "seconds": 24,
+      "confidence": "sampled-reference"
+    },
+    {
+      "frame": 650,
+      "seconds": 26,
+      "confidence": "sampled-reference"
+    },
+    {
+      "frame": 750,
+      "seconds": 30,
+      "confidence": "sampled-reference"
+    },
+    {
+      "frame": 800,
+      "seconds": 32,
+      "confidence": "sampled-reference"
+    },
+    {
+      "frame": 850,
+      "seconds": 34,
+      "confidence": "sampled-reference"
+    },
+    {
+      "frame": 900,
+      "seconds": 36,
+      "confidence": "sampled-reference"
+    },
+    {
+      "frame": 999,
+      "seconds": 39.96,
+      "confidence": "sampled-reference"
+    }
+  ]
+}

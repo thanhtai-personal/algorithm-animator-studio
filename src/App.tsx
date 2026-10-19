@@ -21,6 +21,7 @@ const ActionDuelStudio = lazy(() => import("./pages/ActionDuelStudio.tsx"));
 const Auth = lazy(() => import("./pages/Auth.tsx"));
 const GeneratedAssets = lazy(() => import("./pages/GeneratedAssets.tsx"));
 const PresetVideos = lazy(() => import("./pages/PresetVideos.tsx"));
+const MathVideoStudio = lazy(() => import("./pages/MathVideoStudio.tsx"));
 const CommonVideoPage = lazy(() => import("./pages/CommonVideoPage.tsx"));
 const JobManagement = lazy(() => import("./pages/JobManagement.tsx"));
 const LegalPage = lazy(() => import("./pages/LegalPage.tsx"));
@@ -116,6 +117,7 @@ const App = () => (
                 <Route path="/videos/agentic" element={<CommonVideoPage initialMode="agentic" />} />
                 <Route path="/videos/manual" element={<CommonVideoPage initialMode="manual" />} />
                 <Route path="/videos/presets" element={<PresetVideos />} />
+                <Route path="/videos/math" element={<MathVideoStudio />} />
                 <Route path="/jobs" element={<JobManagement />} />
                 <Route path="/maze-pathfinding" element={<Navigate replace to="/algorithms/maze" />} />
                 <Route path="/maze-pathfinding/agentic" element={<Navigate replace to="/algorithms/maze/agentic" />} />

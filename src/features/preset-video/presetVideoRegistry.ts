@@ -9,6 +9,7 @@ import { gptsMcpSecureGatewayPreset } from "./presets/gpts-mcp-promo/secureGatew
 import { gptsMcpTokenFallbackPreset } from "./presets/gpts-mcp-promo/tokenFallbackPreset";
 import { numberEightInRedPreset } from "./presets/number-eight-in-red/numberEightInRedPreset";
 import type { PresetVideoDefinition } from "./types";
+import { mathVideoPreset } from "../math-video/mathVideoPreset";
 
 /**
  * Source-controlled registry for code-generated video presets.
@@ -18,6 +19,7 @@ import type { PresetVideoDefinition } from "./types";
  */
 export const PRESET_VIDEO_REGISTRY: readonly PresetVideoDefinition[] = [
   algorithmExplainerPreset,
+  mathVideoPreset,
   fashionClawPreset,
   numberEightInRedPreset,
   fivePrayersPreset,

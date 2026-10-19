@@ -83,7 +83,7 @@ function SunShadow({t}:BeatProps){
 }
 
 function EarthSeasons({frame,t}:BeatProps){
-  const x=642,y=393,r=148,tilt=24*Math.PI/180;
+  const x=642,y=393,r=148;
   const shift=Math.sin((frame-9445)/93)*14;
   return <g>
     <g transform={`rotate(-24 ${x} ${y})`}>
@@ -224,7 +224,7 @@ function FinalReview({frame,cue,t}:BeatProps){
       <SourceFigure x={420} ground={553}/>
       <CircleAxes x={x} y={y} r={radius} subtle/>
       <path d={`M ${x} ${y} V ${y-radius} H ${x+radius} Z`}
-        fill={REF_CYAN} fillOpacity={beat===34?.24:.1} stroke={REF_CYAN}/>
+        fill={REF_CYAN} fillOpacity={beat === 34 ? 0.24 : 0.1} stroke={REF_CYAN}/>
       <Annotation x={x+30} y={y-radius+44} size={19}>Một phần tư</Annotation>
       {beat===33&&<SmallNoteBox x={489} y={451} w={160} h={104} title="Ghi nhớ" detail="sin · cos"/>}
     </g>;

@@ -10,6 +10,8 @@ on:
       - "server/routes/videoRoutes.ts"
       - "scripts/math-narration-audio-smoke.ts"
       - "scripts/math-video-v1-release-qa.mjs"
+      - "scripts/math-video-v1-release-qa.test.mjs"
+      - "docs/video-references/math-sincos-v1.scene-manifest.json"
       - "scripts/math-video-v1-visual-stills.mjs"
       - "src/pages/MathVideoStudio.tsx"
       - "src/App.tsx"
@@ -25,6 +27,8 @@ on:
       - "server/routes/videoRoutes.ts"
       - "scripts/math-narration-audio-smoke.ts"
       - "scripts/math-video-v1-release-qa.mjs"
+      - "scripts/math-video-v1-release-qa.test.mjs"
+      - "docs/video-references/math-sincos-v1.scene-manifest.json"
       - "scripts/math-video-v1-visual-stills.mjs"
       - "src/pages/MathVideoStudio.tsx"
       - "src/App.tsx"
@@ -49,6 +53,8 @@ jobs:
         run: npm ci
       - name: Task 07 manifest and frame-coverage QA
         run: node scripts/math-video-v1-release-qa.mjs --manifest-only
+      - name: Task 07 release must refuse missing evidence
+        run: node --test scripts/math-video-v1-release-qa.test.mjs
       - name: Math geometry/timeline tests
         run: npx vitest run src/features/math-video/__tests__
       - name: App build

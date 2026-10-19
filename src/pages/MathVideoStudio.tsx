@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { readSystemLang, subscribeSystemLang } from "@/lib/i18n";
 import { mathVideoPreset } from "@/features/math-video/mathVideoPreset";
+import { MathNarrationPanel, type MixedNarration } from "@/features/math-video/MathNarrationPanel";
 import { MATH_CHAPTERS, MATH_FPS, MATH_FRAMES, MATH_HEIGHT, MATH_SECONDS, MATH_WIDTH, formatMathTime } from "@/features/math-video/mathTimeline";
 import { PresetVideoComposition, DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS } from "@/features/preset-video/PresetVideoComposition";
 import { createDefaultPresetVideoSettings } from "@/features/preset-video/lib/presetVideoDraft";
 import { renderPresetVideo } from "@/features/preset-video/lib/presetVideoApi";
 import type { PresetVideoRenderResponse } from "@/features/preset-video/types";
 
-const playerProps = {
+const BASE_PLAYER_PROPS = {
   ...DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS,
   presetId: mathVideoPreset.id,
   durationSeconds: MATH_SECONDS,
@@ -30,6 +31,13 @@ export default function MathVideoStudio() {
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState("");
   const [result, setResult] = useState<PresetVideoRenderResponse | null>(null);
+  const [mixedNarration, setMixedNarration] = useState<MixedNarration|null>(null);
+  const [voiceVolume, setVoiceVolume] = useState(0.95);
+  const playerProps = {
+    ...BASE_PLAYER_PROPS,
+    voiceoverAudioUrl: mixedNarration?.audioUrl || "",
+    voiceoverVolume: voiceVolume,
+  };
   const isVi = lang === "vi";
   useEffect(() => subscribeSystemLang(setLang), []);
 
@@ -42,6 +50,8 @@ export default function MathVideoStudio() {
     try {
       const settings = createDefaultPresetVideoSettings(mathVideoPreset);
       settings.trimEndSeconds = range === "intro" ? 40 : MATH_SECONDS;
+      settings.voiceoverAudioRelativePath = mixedNarration?.relativePath || "";
+      settings.voiceoverVolume = voiceVolume;
       const rendered = await renderPresetVideo({
         preset: mathVideoPreset,
         settings,
@@ -94,7 +104,7 @@ export default function MathVideoStudio() {
                 compositionHeight={MATH_HEIGHT}
                 controls
                 autoPlay={false}
-                initiallyMuted
+                initiallyMuted={false}
                 style={{ width: "100%", aspectRatio: "16 / 9" }}
               />
             </div>
@@ -118,6 +128,7 @@ export default function MathVideoStudio() {
             </div>
           </section>
 
+          <div className="space-y-4">
           <aside className="space-y-4 rounded-2xl border bg-card/70 p-5">
             <h2 className="flex items-center gap-2 text-lg font-semibold"><Download className="h-5 w-5 text-cyan-500"/> {isVi ? "Xuất video MP4" : "Export MP4"}</h2>
             <p className="text-sm text-muted-foreground">
@@ -146,9 +157,12 @@ export default function MathVideoStudio() {
               {isVi ? "Xem video đã xuất" : "Open rendered video"} <ArrowUpRight className="h-4 w-4"/>
             </a>}
             <p className="text-xs text-muted-foreground">{isVi
-              ? "Bản này chưa có lồng tiếng và chưa ghép audio từ video gốc. Hãy kiểm thử 40 giây trước khi render toàn bộ."
-              : "Voice-over/reference audio is not included. Test the 40-second clip first."}</p>
+              ? "Âm thanh do bạn tự tạo qua Supertonic. Bản dựng không dùng âm thanh gốc; hãy kiểm thử 40 giây trước khi render toàn bộ."
+              : "User-generated voice-over is supported; source audio is not bundled. Test the 40-second clip first."}</p>
           </aside>
+          <MathNarrationPanel onMix={setMixedNarration} onInvalidate={() => setMixedNarration(null)}
+            volume={voiceVolume} onVolumeChange={setVoiceVolume} isVi={isVi}/>
+          </div>
         </div>
       </div>
     </main>

@@ -25,10 +25,12 @@ jobs:
         run: npm ci
       - name: Build Vite
         run: npm run build
-      - name: Run full Vitest suite
-        run: npm test
+      - name: Test Fashion Fan modules
+        run: npm test -- src/features/preset-video/presets/fashion-claw
       - name: Verify 296-frame Remotion MP4
         run: node scripts/verify-fashion-fan-render.mjs
+      - name: Run full Vitest suite (including unrelated repository tests)
+        run: npm test
       - name: Save MP4 and ffprobe report for visual review
         if: always()
         uses: actions/upload-artifact@v4

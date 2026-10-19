@@ -35,7 +35,7 @@ describe("Task 05 — beat-specific source reconstruction", () => {
     expect(markup(62*25)).toContain("Ngang cos");
     expect(markup(90*25)).toContain("sin = đối / huyền");
     expect(markup(150*25)).toContain("sin² + cos² = 1");
-    expect(markup(185*25)).toContain("Radian");
+    expect(markup(195*25)).toContain("Radian");
     expect(markup(245*25)).toContain("tang = sin / cos");
     expect(markup(310*25)).toContain("Jiba");
     expect(markup(355*25)).toContain("Âm thoa");

@@ -1,5 +1,7 @@
 # Math Video v1.0 — Task 02: SVG Geometry & Animation Primitives
 
+**TRẠNG THÁI CẬP NHẬT (19/10/2026): ĐÃ TRIỂN KHAI CODE.** Geometry, deterministic SVG primitives, timeline và tests nằm ở `src/features/math-video/`; GitHub Actions đã chạy Vitest, Vite build và render Remotion thành công. Các dòng `BLOCKED` bên dưới là mô tả quy trình **trước khi triển khai** và không còn là cổng chờ. QA độ trung thực video vẫn tiếp tục.
+
 **Trạng thái:** PLANNED — **BLOCKED BY Task 01 / Issue #24**  
 **Nhánh làm việc:** `feature/math-video-studio-v1`  
 **Kế hoạch tổng thể:** [2026-10-19-math-video-studio-v1.md](../plans/2026-10-19-math-video-studio-v1.md)  

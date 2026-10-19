@@ -30,6 +30,12 @@ describe("reference-aligned sin/cos intro", () => {
     expect(markup).toContain('M 667 487 L 720 487');
     expect(markup).toContain('M 346 487 L 321 438');
   });
+  it("retains the orange adjacent side during calculator beat at 26 seconds", () => {
+    const markup = render(650);
+    expect(markup).toContain('M 346 487 H 667');
+    expect(markup).toContain('stroke="#efa959"');
+    expect(markup).toContain('M 346 487 L 667.00 302.00 L 667 487 Z');
+  });
   it("switches to reference angle axis at 34 seconds", () => {
     const markup = render(850);
     expect(markup).toContain('M 145 534 H 1134');

@@ -50,6 +50,21 @@ jobs:
           npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-f850.png --frame=850
           npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-f950.png --frame=950
           npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-f3500.png --frame=3500
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-090s.png --frame=2250
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-150s.png --frame=3750
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-195s.png --frame=4875
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-250s.png --frame=6250
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-310s.png --frame=7750
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-355s.png --frame=8875
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-375s.png --frame=9375
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-405s.png --frame=10125
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-425s.png --frame=10625
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-445s.png --frame=11125
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-488s.png --frame=12200
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-532s.png --frame=13300
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-552s.png --frame=13800
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-595s.png --frame=14875
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-605s.png --frame=15125
       - name: Render 40s MP4 preview
         run: npx remotion render src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-video-first40.mp4 --frames=0-999 --codec=h264 --concurrency=2
       - name: Publish generated preview
@@ -64,5 +79,20 @@ jobs:
             /tmp/math-f850.png
             /tmp/math-f950.png
             /tmp/math-f3500.png
+            /tmp/math-ref-090s.png
+            /tmp/math-ref-150s.png
+            /tmp/math-ref-195s.png
+            /tmp/math-ref-250s.png
+            /tmp/math-ref-310s.png
+            /tmp/math-ref-355s.png
+            /tmp/math-ref-375s.png
+            /tmp/math-ref-405s.png
+            /tmp/math-ref-425s.png
+            /tmp/math-ref-445s.png
+            /tmp/math-ref-488s.png
+            /tmp/math-ref-532s.png
+            /tmp/math-ref-552s.png
+            /tmp/math-ref-595s.png
+            /tmp/math-ref-605s.png
             /tmp/math-video-first40.mp4
           retention-days: 5

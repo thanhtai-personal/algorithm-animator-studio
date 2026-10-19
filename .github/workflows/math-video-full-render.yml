@@ -1,0 +1,100 @@
+name: Math Video Full 10m Render
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/math-video-studio-v1
+    paths:
+      - ".github/workflows/math-video-full-render.yml"
+      - "scripts/verify-math-video-render.mjs"
+
+permissions:
+  contents: read
+
+jobs:
+  render-parts:
+    name: Render part ${{ matrix.part }} / 6
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        include:
+          - { part: 1, start: 0, end: 2535 }
+          - { part: 2, start: 2536, end: 5071 }
+          - { part: 3, start: 5072, end: 7607 }
+          - { part: 4, start: 7608, end: 10143 }
+          - { part: 5, start: 10144, end: 12679 }
+          - { part: 6, start: 12680, end: 15216 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Render actual source-frame range
+        env:
+          START_FRAME: ${{ matrix.start }}
+          END_FRAME: ${{ matrix.end }}
+          PART: ${{ matrix.part }}
+        run: |
+          mkdir -p render-parts
+          npx remotion render src/features/remotion-video/remotion/index.ts MathSinCosV1 "render-parts/part-${PART}.mp4" \
+            --frames="${START_FRAME}-${END_FRAME}" --codec=h264 --concurrency=2
+      - name: Inspect chunk frame count
+        env:
+          PART: ${{ matrix.part }}
+          START_FRAME: ${{ matrix.start }}
+          END_FRAME: ${{ matrix.end }}
+        run: node scripts/verify-math-video-render.mjs "render-parts/part-${PART}.mp4" "$((END_FRAME - START_FRAME + 1))"
+      - name: Upload intermediate chunk
+        uses: actions/upload-artifact@v4
+        with:
+          name: math-sincos-part-${{ matrix.part }}
+          path: render-parts/part-${{ matrix.part }}.mp4
+          retention-days: 2
+          if-no-files-found: error
+
+  assemble:
+    name: Assemble and verify complete 10:09 video
+    runs-on: ubuntu-latest
+    needs: render-parts
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install ffprobe verifier
+        run: npm ci --ignore-scripts
+      - name: Download all six chunks
+        uses: actions/download-artifact@v4
+        with:
+          pattern: math-sincos-part-*
+          path: render-parts
+          merge-multiple: true
+      - name: Check chunk continuity, concatenate without re-encoding
+        run: |
+          set -euo pipefail
+          for i in 1 2 3 4 5 6; do test -s "render-parts/part-${i}.mp4"; done
+          mkdir -p generated-videos
+          for i in 1 2 3 4 5 6; do
+            echo "file 'part-${i}.mp4'"
+          done > render-parts/concat.txt
+          ffmpeg -hide_banner -loglevel error -f concat -safe 0 -i render-parts/concat.txt \
+            -c copy -movflags +faststart generated-videos/math-sincos-v1-full-720p.mp4
+          node scripts/verify-math-video-render.mjs generated-videos/math-sincos-v1-full-720p.mp4 15217 | tee generated-videos/render-verification.json
+      - name: Upload full-length video and verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: math-video-v1-full-10m-09s
+          path: |
+            generated-videos/math-sincos-v1-full-720p.mp4
+            generated-videos/render-verification.json
+          retention-days: 7
+          if-no-files-found: error

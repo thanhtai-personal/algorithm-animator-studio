@@ -9,6 +9,7 @@ import {
   ListChecks,
   Map,
   Music2,
+  Sigma,
   Trophy,
   MicVocal,
   Newspaper,
@@ -157,6 +158,14 @@ export const APP_NAVIGATION_GROUPS: AppNavigationGroup[] = [
         icon: Film,
         label: { en: "Create Video", vi: "Tạo video" },
         matchPaths: ["/videos", "/videos/agentic", "/videos/manual", "/ai-video-agent", "/video-create"],
+      },
+      {
+        id: "math-video",
+        featureId: "math-video",
+        to: "/videos/math",
+        icon: Sigma,
+        label: { en: "Math Video Studio", vi: "Video toán học" },
+        matchPaths: ["/videos/math"],
       },
       {
         id: "preset-videos",

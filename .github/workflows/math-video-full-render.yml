@@ -86,7 +86,8 @@ jobs:
           for i in 1 2 3 4 5 6; do
             echo "file 'part-${i}.mp4'"
           done > render-parts/concat.txt
-          ffmpeg -hide_banner -loglevel error -f concat -safe 0 -i render-parts/concat.txt \
+          FFMPEG_BIN="$(node -p 'require("@ffmpeg-installer/ffmpeg").path')"
+          "$FFMPEG_BIN" -hide_banner -loglevel error -f concat -safe 0 -i render-parts/concat.txt \
             -c copy -movflags +faststart generated-videos/math-sincos-v1-full-720p.mp4
           node scripts/verify-math-video-render.mjs generated-videos/math-sincos-v1-full-720p.mp4 15217 | tee generated-videos/render-verification.json
       - name: Upload full-length video and verification

@@ -22,6 +22,7 @@ import { resolveGeneratedResource } from "../services/ResourceService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
 import { getRemotionHealth, renderRemotionVideo } from "../services/RemotionRenderService";
 import { renderPresetVideo } from "../services/PresetVideoRenderService";
+import { mixMathNarration } from "../services/MathNarrationService";
 import { createPresetVideoMediaRouter } from "./presetVideoMediaRoutes";
 import { renderTimelineVideo } from "../services/TimelineVideoService";
 import { renderRemotionTimelineVideo } from "../services/RemotionTimelineRenderService";
@@ -112,6 +113,15 @@ export function createVideoRouter() {
   });
 
   router.use(createPresetVideoMediaRouter());
+
+  router.post("/video/math-narration/mix", async (req,res) => {
+    try {
+      const audio=await mixMathNarration(req.body||{},readRuntimeEnvFromRequest(req));
+      return res.json(audio);
+    } catch(error) {
+      return res.status(400).json({error:error instanceof Error?error.message:"Không ghép được giọng đọc toán học."});
+    }
+  });
 
   router.post("/video/render-preset", async (req: Request<unknown, unknown, PresetVideoRenderBody>, res: Response) => {
     res.status(200);

@@ -1,0 +1,120 @@
+name: Math Video Studio CI
+
+on:
+  push:
+    branches:
+      - feature/math-video-studio-v1
+    paths:
+      - "src/features/math-video/**"
+      - "server/services/MathNarrationService.ts"
+      - "server/routes/videoRoutes.ts"
+      - "scripts/math-narration-audio-smoke.ts"
+      - "scripts/math-video-v1-release-qa.mjs"
+      - "scripts/math-video-v1-release-qa.test.mjs"
+      - "docs/video-references/math-sincos-v1.scene-manifest.json"
+      - "scripts/math-video-v1-visual-stills.mjs"
+      - "src/pages/MathVideoStudio.tsx"
+      - "src/App.tsx"
+      - "src/components/appNavigation.ts"
+      - "src/lib/menuFeatureSettings.ts"
+      - "src/features/preset-video/presetVideoRegistry.ts"
+      - "src/features/remotion-video/remotion/Root.tsx"
+      - ".github/workflows/math-video-ci.yml"
+  pull_request:
+    paths:
+      - "src/features/math-video/**"
+      - "server/services/MathNarrationService.ts"
+      - "server/routes/videoRoutes.ts"
+      - "scripts/math-narration-audio-smoke.ts"
+      - "scripts/math-video-v1-release-qa.mjs"
+      - "scripts/math-video-v1-release-qa.test.mjs"
+      - "docs/video-references/math-sincos-v1.scene-manifest.json"
+      - "scripts/math-video-v1-visual-stills.mjs"
+      - "src/pages/MathVideoStudio.tsx"
+      - "src/App.tsx"
+      - "src/components/appNavigation.ts"
+      - "src/lib/menuFeatureSettings.ts"
+      - "src/features/preset-video/presetVideoRegistry.ts"
+      - "src/features/remotion-video/remotion/Root.tsx"
+      - ".github/workflows/math-video-ci.yml"
+
+jobs:
+  verify:
+    name: Math Studio tests and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - name: Install project dependencies
+        run: npm ci
+      - name: Task 07 manifest and frame-coverage QA
+        run: node scripts/math-video-v1-release-qa.mjs --manifest-only
+      - name: Task 07 release must refuse missing evidence
+        run: node --test scripts/math-video-v1-release-qa.test.mjs
+      - name: Math geometry/timeline tests
+        run: npx vitest run src/features/math-video/__tests__
+      - name: App build
+        run: npm run build
+      - name: Server bundle builds
+        run: npm run build:server
+      - name: Narration FFmpeg audio smoke
+        run: npx tsx scripts/math-narration-audio-smoke.ts
+      - name: Render representative math frames
+        run: |
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-f000.png --frame=0
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-f250.png --frame=250
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-f450.png --frame=450
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-f550.png --frame=550
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-f850.png --frame=850
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-f950.png --frame=950
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-f3500.png --frame=3500
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-090s.png --frame=2250
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-150s.png --frame=3750
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-195s.png --frame=4875
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-250s.png --frame=6250
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-310s.png --frame=7750
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-355s.png --frame=8875
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-375s.png --frame=9375
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-405s.png --frame=10125
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-425s.png --frame=10625
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-445s.png --frame=11125
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-488s.png --frame=12200
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-532s.png --frame=13300
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-552s.png --frame=13800
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-595s.png --frame=14875
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-ref-605s.png --frame=15125
+      - name: Render 40s MP4 preview
+        run: npx remotion render src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-video-first40.mp4 --frames=0-999 --codec=h264 --concurrency=2
+      - name: Publish generated preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: math-video-v1-preview-40s
+          path: |
+            /tmp/math-f000.png
+            /tmp/math-f250.png
+            /tmp/math-f450.png
+            /tmp/math-f550.png
+            /tmp/math-f850.png
+            /tmp/math-f950.png
+            /tmp/math-f3500.png
+            /tmp/math-ref-090s.png
+            /tmp/math-ref-150s.png
+            /tmp/math-ref-195s.png
+            /tmp/math-ref-250s.png
+            /tmp/math-ref-310s.png
+            /tmp/math-ref-355s.png
+            /tmp/math-ref-375s.png
+            /tmp/math-ref-405s.png
+            /tmp/math-ref-425s.png
+            /tmp/math-ref-445s.png
+            /tmp/math-ref-488s.png
+            /tmp/math-ref-532s.png
+            /tmp/math-ref-552s.png
+            /tmp/math-ref-595s.png
+            /tmp/math-ref-605s.png
+            /tmp/math-video-first40.mp4
+          retention-days: 5

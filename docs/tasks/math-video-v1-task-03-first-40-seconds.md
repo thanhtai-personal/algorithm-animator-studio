@@ -1,5 +1,7 @@
 # Math Video v1.0 — Task 03: Tái dựng 40 giây đầu theo video mẫu
 
+**TRẠNG THÁI CẬP NHẬT (19/10/2026): ĐÃ CÓ MP4 PREVIEW 40 GIÂY.** Remotion đã render 1280×720, 25fps, 1.000 frame và GitHub Actions thành công: [run #39250458457](https://github.com/thanhtai-personal/algorithm-animator-studio/actions/runs/39250458457). Các dòng `BLOCKED` bên dưới đã cũ, **không còn ngăn tiến độ**. Bản dựng chưa giống hệt video tham chiếu; tiếp tục đối chiếu frame, audio và chuyển động.
+
 **Trạng thái:** PLANNED — **BLOCKED BY Task 01 (#24) và Task 02 (#25)**  
 **Nhánh:** `feature/math-video-studio-v1`  
 **Kế hoạch tổng thể:** [Math Video v1.0](../plans/2026-10-19-math-video-studio-v1.md)  

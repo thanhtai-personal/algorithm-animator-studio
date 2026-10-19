@@ -10,6 +10,7 @@ export type MenuFeatureId =
   | "story-review"
   | "common-video"
   | "preset-videos"
+  | "math-video"
   | "text-to-speech"
   | "youtube-tools"
   | "jobs"
@@ -33,6 +34,7 @@ export const DEFAULT_MENU_FEATURE_SETTINGS: MenuFeatureSettings = {
   "story-review": false,
   "common-video": true,
   "preset-videos": true,
+  "math-video": true,
   "text-to-speech": true,
   "youtube-tools": true,
   jobs: true,
@@ -84,6 +86,10 @@ export const MENU_FEATURE_LABELS: Record<MenuFeatureId, { en: string; vi: string
   "preset-videos": {
     en: "Preset Videos",
     vi: "Kho video preset",
+  },
+  "math-video": {
+    en: "Math Video Studio",
+    vi: "Video toán học",
   },
   "text-to-speech": {
     en: "Text to Speech",

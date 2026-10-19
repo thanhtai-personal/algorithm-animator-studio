@@ -89,6 +89,7 @@ try{
     }
   }
   if(has("--release")){
+    check("release-requires-voice-track",has("--require-audio"));
     const accepted=value("--acceptance");
     check("acceptance-evidence-provided",Boolean(accepted&&fs.existsSync(accepted)));
     if(accepted&&fs.existsSync(accepted)){
@@ -96,6 +97,10 @@ try{
       check("source-visuals-reviewed",evidence.visualReviewed===true);
       check("source-audio-rights-reviewed",evidence.audioRightsReviewed===true);
       check("narration-reviewed",evidence.narrationReviewed===true);
+      check("explicit-source-fidelity-accepted",evidence.overallFidelityAccepted===true);
+      check("source-checksum-accepted",evidence.referenceSourceSha256===manifest.source.sha256);
+      check("reviewer-identified",typeof evidence.reviewedBy==="string"&&evidence.reviewedBy.trim().length>=2);
+      check("review-date-present",typeof evidence.reviewedAt==="string"&&/^20\\d\\d-\\d{2}-\\d{2}/.test(evidence.reviewedAt));
       check("all-scenes-reviewed",Array.isArray(evidence.reviewedBeatIds)
         && beats.every(beat=>evidence.reviewedBeatIds.includes(beat.id)));
     }

@@ -6,6 +6,8 @@ import { DEFAULT_REMOTION_TIMELINE, getTimelineDurationSeconds, normalizeRemotio
 import { PresetVideoComposition, DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS } from "../../preset-video/PresetVideoComposition";
 import { getPresetVideoDefaultDimensions } from "../../preset-video/outputPresets";
 import type { PresetVideoCompositionProps } from "../../preset-video/types";
+import { MathVideoVisual } from "../../math-video/MathVideoVisual";
+import { MATH_FRAMES, MATH_FPS, MATH_WIDTH, MATH_HEIGHT, MATH_SECONDS } from "../../math-video/mathTimeline";
 
 export const REMOTION_ALGORITHM_COMPOSITION_ID = "AlgorithmExplainer";
 export const REMOTION_TIMELINE_COMPOSITION_ID = "TimelineVideo";
@@ -76,6 +78,22 @@ export function RemotionRoot() {
         };
       }}
     />
+      <Composition<PresetVideoCompositionProps>
+        id="MathSinCosV1"
+        component={MathVideoVisual}
+        durationInFrames={MATH_FRAMES}
+        fps={MATH_FPS}
+        width={MATH_WIDTH}
+        height={MATH_HEIGHT}
+        defaultProps={{
+          ...DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS,
+          presetId: "math-sincos-v1",
+          durationSeconds: MATH_SECONDS,
+          fps: MATH_FPS,
+          aspectRatio: "16:9",
+          language: "vi",
+        }}
+      />
     </>
   );
 }

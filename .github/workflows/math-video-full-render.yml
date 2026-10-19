@@ -83,12 +83,18 @@ jobs:
           set -euo pipefail
           for i in 1 2 3 4 5 6; do test -s "render-parts/part-${i}.mp4"; done
           mkdir -p generated-videos
-          for i in 1 2 3 4 5 6; do
-            echo "file 'part-${i}.mp4'"
-          done > render-parts/concat.txt
+          # Each Remotion chunk includes a ~42ms trailing AAC segment, longer than the
+          # video duration. Concat demuxer otherwise uses that audio duration to
+          # offset the next segment, resulting in avg_frame_rate != 25/1.
+          # Strip unintended audio before concatenation (stream copy, no video re-encode).
           FFMPEG_BIN="$(node -p 'require("@ffmpeg-installer/ffmpeg").path')"
+          for i in 1 2 3 4 5 6; do
+            "$FFMPEG_BIN" -hide_banner -loglevel error -i "render-parts/part-${i}.mp4" \
+              -map 0:v:0 -c:v copy -an "render-parts/part-${i}.video.mp4"
+            echo "file 'part-${i}.video.mp4'"
+          done > render-parts/concat.txt
           "$FFMPEG_BIN" -hide_banner -loglevel error -f concat -safe 0 -i render-parts/concat.txt \
-            -c copy -movflags +faststart generated-videos/math-sincos-v1-full-720p.mp4
+            -map 0:v:0 -c:v copy -an -movflags +faststart generated-videos/math-sincos-v1-full-720p.mp4
           node scripts/verify-math-video-render.mjs generated-videos/math-sincos-v1-full-720p.mp4 15217 | tee generated-videos/render-verification.json
       - name: Upload full-length video and verification
         uses: actions/upload-artifact@v4

@@ -11,6 +11,7 @@ on:
       - "src/components/appNavigation.ts"
       - "src/lib/menuFeatureSettings.ts"
       - "src/features/preset-video/presetVideoRegistry.ts"
+      - "src/features/remotion-video/remotion/Root.tsx"
       - ".github/workflows/math-video-ci.yml"
   pull_request:
     paths:
@@ -20,6 +21,7 @@ on:
       - "src/components/appNavigation.ts"
       - "src/lib/menuFeatureSettings.ts"
       - "src/features/preset-video/presetVideoRegistry.ts"
+      - "src/features/remotion-video/remotion/Root.tsx"
       - ".github/workflows/math-video-ci.yml"
 
 jobs:
@@ -39,3 +41,22 @@ jobs:
         run: npx vitest run src/features/math-video/__tests__/mathGeometry.test.ts
       - name: App build
         run: npm run build
+      - name: Render representative math frames
+        run: |
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-f000.png --frame=0
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-f250.png --frame=250
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-f850.png --frame=850
+          npx remotion still src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-f3500.png --frame=3500
+      - name: Render 40s MP4 preview
+        run: npx remotion render src/features/remotion-video/remotion/index.ts MathSinCosV1 /tmp/math-video-first40.mp4 --frames=0-999 --codec=h264 --concurrency=2
+      - name: Publish generated preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: math-video-v1-preview-40s
+          path: |
+            /tmp/math-f000.png
+            /tmp/math-f250.png
+            /tmp/math-f850.png
+            /tmp/math-f3500.png
+            /tmp/math-video-first40.mp4
+          retention-days: 5

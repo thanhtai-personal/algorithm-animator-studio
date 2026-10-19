@@ -6,6 +6,7 @@ export const REFERENCE_BEATS: readonly MathReferenceBeat[] = manifest.referenceB
 
 /** Frame-based cues always come from the reference manifest, not a second timeline. */
 export function referenceBeatAt(frame: number): MathReferenceBeat {
+  if (frame < REFERENCE_BEATS[0].startFrame) return REFERENCE_BEATS[0];
   return REFERENCE_BEATS.find((cue) => frame >= cue.startFrame && frame < cue.endFrame)
     ?? REFERENCE_BEATS[REFERENCE_BEATS.length - 1];
 }

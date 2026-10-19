@@ -2,6 +2,7 @@ import { AbsoluteFill, Easing, Img, useCurrentFrame, useVideoConfig } from "remo
 import type { PresetVideoCompositionProps } from "../../types";
 import { FashionCeilingFan, FashionLivingRoom } from "./FashionStage";
 import { FashionDemoModel } from "./FashionDemoModel";
+import { getFashionCameraScale } from "./fashionSetTiming";
 
 const OUTFIT_SWITCH_SECONDS = .96;
 const clamp = (value: number) => Math.max(0, Math.min(1, value));
@@ -15,6 +16,7 @@ export function FashionClawComposition(props: PresetVideoCompositionProps) {
   const frame = useCurrentFrame();
   const { fps, height, width } = useVideoConfig();
   const seconds = frame / fps;
+  const cameraScale = getFashionCameraScale(seconds);
   const userOutfits = props.timelineVideoClips
     .map((clip) => props.videoSourceUrls[clip.id])
     .filter((src): src is string => Boolean(src));
@@ -39,7 +41,8 @@ export function FashionClawComposition(props: PresetVideoCompositionProps) {
 
   return (
     <AbsoluteFill style={{ background: "#5e798a", overflow: "hidden" }}>
-      <FashionLivingRoom />
+      <AbsoluteFill style={{ transform: `scale(${cameraScale})`, transformOrigin: "50% 62%" }}>
+        <FashionLivingRoom seconds={seconds} />
       {active ? (
         <AbsoluteFill style={{ transform: "translate(" + translateX + "px, " + translateY + "px) rotate(" + rotateDeg + "deg)" }}>
           <Img
@@ -57,6 +60,7 @@ export function FashionClawComposition(props: PresetVideoCompositionProps) {
         </AbsoluteFill>
       )}
       <FashionCeilingFan seconds={seconds} imageSrc={props.videoSourceUrls["fashion-default-fan"]} />
+      </AbsoluteFill>
       {!active ? (
         <div style={{
           position: "absolute", bottom: "7%", left: "15%", right: "15%",

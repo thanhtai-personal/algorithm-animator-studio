@@ -1,50 +1,7 @@
 import { AbsoluteFill, Img } from "remotion";
+export { FashionLivingRoom } from "./FashionLivingRoom";
 
 type Props = { seconds: number };
-
-/** Overhead set: blue rug, pink sofa to camera-left and a small remote. */
-export function FashionLivingRoom() {
-  return (
-    <AbsoluteFill style={{ overflow: "hidden", background: "#5e798a" }}>
-      <svg width="100%" height="100%" viewBox="0 0 360 640" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <defs>
-          <radialGradient id="fashion-rug"><stop offset="0" stopColor="#849ca8" /><stop offset="0.67" stopColor="#668493" /><stop offset="1" stopColor="#425869" /></radialGradient>
-          <filter id="fashion-fabric-grain" x="0" y="0" width="100%" height="100%">
-            <feTurbulence type="fractalNoise" baseFrequency=".14" numOctaves="3" seed="8" stitchTiles="stitch" />
-            <feColorMatrix type="saturate" values="0" />
-            <feComponentTransfer><feFuncA type="linear" slope=".19" /></feComponentTransfer>
-          </filter>
-          <linearGradient id="fashion-sofa" x1="0%" x2="100%" y1="0%" y2="15%">
-            <stop offset="0%" stopColor="#c07c74" /><stop offset="30%" stopColor="#f1bcb0" /><stop offset="69%" stopColor="#dfa397" /><stop offset="100%" stopColor="#986765" />
-          </linearGradient>
-          <linearGradient id="fashion-cushion" x1="0%" x2="100%">
-            <stop offset="0%" stopColor="#b77f77" /><stop offset="45%" stopColor="#ecc0b2" /><stop offset="85%" stopColor="#e4ab9e" /><stop offset="100%" stopColor="#bd8077" />
-          </linearGradient>
-          <filter id="fashion-sofa-shadow" x="-40%" y="-10%" width="180%" height="135%">
-            <feDropShadow dx="9" dy="6" stdDeviation="9" floodColor="#112b36" floodOpacity=".42" />
-          </filter>
-        </defs>
-        <rect width="360" height="640" fill="url(#fashion-rug)" />
-        <rect width="360" height="640" filter="url(#fashion-fabric-grain)" opacity=".6" />
-        <ellipse cx="172" cy="362" rx="178" ry="269" fill="#18394b" opacity=".08" />
-        <g filter="url(#fashion-sofa-shadow)">
-          <path d="M-48 142 C-23 113 40 116 66 151 C92 192 78 254 69 294 C57 341 67 400 82 465 C98 517 72 568 13 598 L-49 605 Z" fill="#97615e" stroke="#895d57" strokeWidth="5" />
-          <path d="M-39 147 C-3 121 36 127 55 155 C77 191 67 256 59 298 C46 354 58 405 72 470 C86 521 52 558 7 583 L-35 584 Z" fill="url(#fashion-sofa)" stroke="#e5ada2" strokeWidth="4" />
-          <path d="M-28 157 C7 145 31 149 44 178 C59 210 48 257 46 296 C43 347 55 403 61 452 C66 500 44 540 4 564" fill="none" stroke="#f8d5c5" strokeOpacity=".65" strokeWidth="3" />
-          <path d="M-40 510 C-5 492 45 514 59 546 C65 567 33 602 -2 612 L-47 604 Z" fill="url(#fashion-cushion)" stroke="#b07b74" strokeWidth="3" />
-          <path d="M-26 526 C-8 522 17 527 30 539" stroke="#ffded0" strokeOpacity=".66" strokeWidth="3" fill="none" />
-          <path d="M-36 601 C-9 579 28 574 54 571" stroke="#a76f69" strokeWidth="3" opacity=".55" fill="none" />
-        </g>
-        <g transform="rotate(-19 319 318)" opacity=".94">
-          <rect x="310" y="303" width="15" height="34" rx="3" fill="#203849" opacity=".35" transform="translate(2 3)" />
-          <rect x="308" y="300" width="15" height="34" rx="2.5" fill="#e7e9e6" stroke="#8e9da0" strokeWidth="1.2" />
-          <circle cx="315.5" cy="306" r="2.2" fill="#566a74" />
-          {[0,1,2,3].map((row) => [0,1].map((col) => <rect key={row + "-" + col} x={311 + col * 5} y={314 + row * 4} width="3.2" height="2.3" rx=".8" fill="#879ca2" />))}
-        </g>
-      </svg>
-    </AbsoluteFill>
-  );
-}
 
 /** Three bronze ceiling-fan blades orbit together around one shared shaft. */
 export function FashionCeilingFan({ seconds, imageSrc }: Props & { imageSrc?: string }) {

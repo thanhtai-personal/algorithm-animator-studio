@@ -71,7 +71,7 @@ jobs:
           node-version: "22"
           cache: npm
       - name: Install ffprobe verifier
-        run: npm ci --ignore-scripts
+        run: npm ci
       - name: Download all six chunks
         uses: actions/download-artifact@v4
         with:

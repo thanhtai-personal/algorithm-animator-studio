@@ -34,7 +34,7 @@ describe("reference-aligned sin/cos intro", () => {
     const markup = render(850);
     expect(markup).toContain('M 145 534 H 1134');
     expect(markup).toContain('180°');
-    expect(markup).toMatch(/translate\\(50[0-9]/);
+    expect(markup).toContain("translate(501");
     expect(markup).not.toContain('sin 120° = ?');
   });
 });

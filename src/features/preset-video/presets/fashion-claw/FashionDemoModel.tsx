@@ -1,11 +1,14 @@
 import type { FashionModelPose } from "./fashionModelMotion";
 import { FASHION_LOOKS } from "./fashionOutfitTimeline";
+import { FashionGarment } from "./FashionGarment";
+import { getFashionVisualState } from "./fashionVisualStyle";
 
 /** Transparent articulated vector placeholder; independent of customer photos. */
-export function FashionDemoModel({ variation, pose }: { variation: number; pose?: FashionModelPose }) {
+export function FashionDemoModel({ variation, pose, seconds = 0 }: { variation: number; pose?: FashionModelPose; seconds?: number }) {
   const palette = FASHION_LOOKS[((variation % FASHION_LOOKS.length) + FASHION_LOOKS.length) % FASHION_LOOKS.length];
   const sleeve = palette.id === "black-white" ? "#f8ede6" : palette.dressColor;
   const bagFill = palette.handbag === "blush" ? "#dcaaa5" : palette.handbag === "blue-grey" ? "#98b8c3" : "#e79fb1";
+  const hairSway = getFashionVisualState(seconds).hairSway;
   const p = pose ?? { leftArmDeg: 0, rightArmDeg: 0, leftLegDeg: 0, rightLegDeg: 0, headDeg: 0, skirtScale: 1 };
   return (
     <svg width="100%" height="100%" viewBox="0 0 360 640" preserveAspectRatio="xMidYMid meet" aria-label="Người mẫu minh họa có cử động tay chân khi nằm trên thảm">
@@ -30,27 +33,15 @@ export function FashionDemoModel({ variation, pose }: { variation: number; pose?
           <path d="M211 180 L221 208 L256 235 L270 253 Q279 268 266 279 Q252 281 245 267 L217 243 L201 283 Z" fill="#efd0b9" />
           <path d="M220 208 L255 233 L245 252 L213 234 Z" fill={sleeve} opacity=".9" />
         </g>
-        <g transform={`translate(190 313) scale(${p.skirtScale} 1) translate(-190 -313)`}>
-          <path d="M158 219 Q183 202 218 219 L230 287 Q240 305 271 363 Q215 407 123 367 Q139 319 150 285 Z" fill={palette.dressColor} stroke="#664f52" strokeWidth="2" />
-          <path d="M151 285 Q184 294 226 285" fill="none" stroke={palette.laceColor} strokeWidth="6" opacity=".75" />
-          <path d="M123 365 Q186 392 271 363" fill="none" stroke={palette.laceColor} strokeWidth="9" />
-          <path d="M161 219 L173 261 Q182 279 192 258 L202 221" fill={palette.laceColor} />
-          {palette.id === "champagne" ? Array.from({length: 17}, (_, i) => (
-            <circle key={i} cx={153 + (i % 5) * 14} cy={279 + Math.floor(i / 5) * 20}
-              r="2.3" fill="#f9e9ca" opacity=".85" />
-          )) : null}
-          {palette.id === "silver-blue" ? (
-            <g opacity=".76" stroke={palette.laceColor} strokeWidth="3" fill="none">
-              <path d="M139 337 Q191 359 254 338 M134 352 Q195 374 259 353" />
-            </g>
-          ) : null}
-          {palette.id === "pink" ? (
-            <path d="M137 323 Q191 341 250 320 M125 349 Q184 379 267 350"
-              fill="none" stroke="#fae3eb" strokeWidth="6" opacity=".72" />
-          ) : null}
-        </g>
-        <g transform={`rotate(${p.headDeg} 188 175)`}>
-          <path d="M146 195 Q124 133 161 122 Q199 109 221 140 Q253 180 266 201 Q244 212 225 185 L170 194 Q144 214 116 205 Z" fill="#292029" />
+        <FashionGarment variation={variation} skirtScale={p.skirtScale} seconds={seconds} />
+        <g transform={`rotate(${p.headDeg + hairSway * 0.65} 188 175)`}>
+          <path d="M146 195 Q124 133 161 122 Q199 109 221 140 Q253 180 266 201 Q244 212 225 185 L170 194 Q144 214 116 205 Z" fill="#26232b" />
+          <path d="M144 172 Q136 195 123 221 Q132 230 141 226 Q156 208 168 190" fill="#25212b" />
+          <path d="M215 150 Q239 184 254 220 Q264 225 269 213 Q242 165 215 150" fill="#242029" />
+          <path d="M151 147 Q168 126 193 129 M208 146 Q228 172 236 194"
+            fill="none" stroke="#9c8585" strokeWidth="2.7" opacity=".55" />
+          <path d="M141 191 Q134 214 128 221 M247 199 Q253 212 258 219"
+            fill="none" stroke="#7b5f62" strokeWidth="2" opacity=".6" />
           <path d="M164 178 Q148 150 165 136 Q185 123 205 138 Q222 164 211 190 Q201 216 184 207 Q170 198 164 178 Z" fill="url(#fashion-person-skin)" />
           <path d="M159 170 Q148 137 170 126 Q195 114 212 140 Q207 149 197 145 Q183 152 163 147 Z" fill="#211922" />
           <path d="M176 170 L182 169 M196 169 L202 169" stroke="#402829" strokeWidth="2.5" strokeLinecap="round" />

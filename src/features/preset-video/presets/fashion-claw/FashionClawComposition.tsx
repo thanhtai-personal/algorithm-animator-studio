@@ -2,6 +2,7 @@ import { AbsoluteFill, Img, useCurrentFrame, useVideoConfig } from "remotion";
 import type { PresetVideoCompositionProps } from "../../types";
 import { FashionCeilingFan, FashionLivingRoom } from "./FashionStage";
 import { FashionDemoModel } from "./FashionDemoModel";
+import { FashionContactShadow, FashionFilmFinish } from "./FashionFilmFinish";
 import { getFashionCameraScale } from "./fashionSetTiming";
 import { getFashionModelMotion, getFashionModelPose } from "./fashionModelMotion";
 import { getFashionLookAtSeconds, resolveFashionOutfitSource } from "./fashionOutfitTimeline";
@@ -36,6 +37,7 @@ export function FashionClawComposition(props: PresetVideoCompositionProps) {
     <AbsoluteFill style={{ background: "#5e798a", overflow: "hidden" }}>
       <AbsoluteFill style={{ transform: `scale(${cameraScale})`, transformOrigin: "50% 62%" }}>
         <FashionLivingRoom seconds={seconds} />
+        <FashionContactShadow seconds={seconds} modelTransform={modelTransform} />
       {active ? (
         <AbsoluteFill style={{ transform: modelTransform, transformOrigin: "50% 51%" }}>
           <Img
@@ -50,11 +52,12 @@ export function FashionClawComposition(props: PresetVideoCompositionProps) {
         </AbsoluteFill>
       ) : (
         <AbsoluteFill style={{ transform: modelTransform, transformOrigin: "50% 51%" }}>
-          <FashionDemoModel variation={look.index} pose={vectorPose} />
+          <FashionDemoModel variation={look.index} pose={vectorPose} seconds={seconds} />
         </AbsoluteFill>
       )}
       <FashionCeilingFan seconds={seconds} imageSrc={props.videoSourceUrls["fashion-default-fan"]} />
       </AbsoluteFill>
+      <FashionFilmFinish seconds={seconds} />
     </AbsoluteFill>
   );
 }

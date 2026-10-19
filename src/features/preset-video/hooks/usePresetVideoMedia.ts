@@ -47,7 +47,7 @@ export function usePresetVideoMedia(
   }, [preset.id]);
 
   useEffect(() => {
-    const hasSources = Boolean(preset.videoSources?.length || timelineVideoClips.length);
+    const hasSources = preset.id === "fashion-claw" || Boolean(preset.videoSources?.length || timelineVideoClips.length);
     if (!hasSources) {
       setVideoSourceUrls({});
       setMissingSourceIds([]);
@@ -89,7 +89,8 @@ export function usePresetVideoMedia(
     const customIds = [...timelineVideoClips]
       .sort((a, b) => a.timelineStartSeconds - b.timelineStartSeconds)
       .map((clip) => clip.id);
-    return [...fixedIds, ...customIds].slice(0, MAX_EAGER_PRELOAD_SOURCES);
+    const demoIds = preset.id === "fashion-claw" ? ["fashion-default-1", "fashion-default-2", "fashion-default-3", "fashion-default-fan"] : [];
+    return [...customIds, ...demoIds, ...fixedIds].slice(0, MAX_EAGER_PRELOAD_SOURCES);
   }, [preset.videoSources, timelineVideoClips]);
 
   useEffect(() => {

@@ -16,6 +16,7 @@ import { runFfmpeg, runFfprobe } from "../utils/ffmpeg";
 import type { RuntimeEnvValues } from "./EnvFileService";
 import { readEnvValues } from "./EnvFileService";
 import { downloadYoutubeVideo } from "./YoutubeToolsService";
+import { prepareFashionDefaultAssets } from "./FashionDefaultAssetsService";
 
 const MAX_PRESET_VIDEO_SOURCES = 32;
 const MAX_CLIP_SECONDS = 20;
@@ -34,13 +35,16 @@ export async function preparePresetVideoMedia(params: {
 }) {
   const presetId = normalizePresetId(params.presetId);
   const sources = normalizePresetVideoSources(params.videoSources);
+  const defaults = presetId === "fashion-claw"
+    ? await prepareFashionDefaultAssets(params.envOverrides, sources.length < 2)
+    : {};
   if (!sources.length) {
-    return { presetId, videoSourceUrls: {} as Record<string, string>, missingSourceIds: [] as string[] };
+    return { presetId, videoSourceUrls: defaults as Record<string, string>, missingSourceIds: [] as string[] };
   }
 
   const strategy = normalizePresetVideoSourceStrategy(params.videoSourceStrategy);
   const cache = resolvePresetCache(presetId, params.envOverrides);
-  const videoSourceUrls: Record<string, string> = {};
+  const videoSourceUrls: Record<string, string> = { ...defaults };
   const missingSourceIds: string[] = [];
 
   for (let index = 0; index < sources.length; index += 1) {

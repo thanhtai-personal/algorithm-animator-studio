@@ -15,7 +15,13 @@ export function FashionClawComposition(props: PresetVideoCompositionProps) {
   const frame = useCurrentFrame();
   const { fps, height, width } = useVideoConfig();
   const seconds = frame / fps;
-  const outfits = props.timelineVideoClips.filter((clip) => Boolean(props.videoSourceUrls[clip.id]));
+  const userOutfits = props.timelineVideoClips
+    .map((clip) => props.videoSourceUrls[clip.id])
+    .filter((src): src is string => Boolean(src));
+  const defaultOutfits = ["fashion-default-1", "fashion-default-2", "fashion-default-3"]
+    .map((id) => props.videoSourceUrls[id])
+    .filter((src): src is string => Boolean(src));
+  const outfits = userOutfits.length ? userOutfits : defaultOutfits;
   const beatIndex = Math.floor((seconds + OUTFIT_SWITCH_SECONDS / 2) / OUTFIT_SWITCH_SECONDS);
   const activeIndex = outfits.length ? beatIndex % outfits.length : 0;
   const active = outfits[activeIndex];
@@ -37,8 +43,7 @@ export function FashionClawComposition(props: PresetVideoCompositionProps) {
       {active ? (
         <AbsoluteFill style={{ transform: "translate(" + translateX + "px, " + translateY + "px) rotate(" + rotateDeg + "deg)" }}>
           <Img
-            key={active.id}
-            src={props.videoSourceUrls[active.id]}
+            src={active}
             style={{
               position: "absolute", left: "20%", top: "22%", width: "76%", height: "72%",
               objectFit: "contain", objectPosition: "50% 50%",
@@ -51,7 +56,7 @@ export function FashionClawComposition(props: PresetVideoCompositionProps) {
           <FashionDemoModel variation={beatIndex} />
         </AbsoluteFill>
       )}
-      <FashionCeilingFan seconds={seconds} />
+      <FashionCeilingFan seconds={seconds} imageSrc={props.videoSourceUrls["fashion-default-fan"]} />
       {!active ? (
         <div style={{
           position: "absolute", bottom: "7%", left: "15%", right: "15%",
@@ -60,7 +65,7 @@ export function FashionClawComposition(props: PresetVideoCompositionProps) {
           fontFamily: "Arial, sans-serif", fontSize: Math.min(width, height) * .034,
           lineHeight: 1.35, fontWeight: 700,
         }}>
-          Hình người mẫu minh họa. Chọn ít nhất 2 ảnh trang phục để thay thế.
+          Không tải được ảnh mẫu. Thêm ảnh riêng hoặc kiểm tra kết nối mạng.
         </div>
       ) : null}
     </AbsoluteFill>

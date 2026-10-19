@@ -1,5 +1,5 @@
 import { AngleArc, CYAN, ORANGE, ProjectionBars, RightTriangle, SinePlot, StickPerson, TangentPlot, TextLines, UnitCircle, WHITE } from "./MathPrimitives";
-import { ease, frameWindow, project, sinePath } from "./mathGeometry";
+import { ease, frameWindow, project } from "./mathGeometry";
 import type { MathChapter } from "./mathTimeline";
 
 export function MathChapterVisual({ chapter, frame }: { chapter: MathChapter; frame: number }) {

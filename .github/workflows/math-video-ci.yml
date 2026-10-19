@@ -1,0 +1,41 @@
+name: Math Video Studio CI
+
+on:
+  push:
+    branches:
+      - feature/math-video-studio-v1
+    paths:
+      - "src/features/math-video/**"
+      - "src/pages/MathVideoStudio.tsx"
+      - "src/App.tsx"
+      - "src/components/appNavigation.ts"
+      - "src/lib/menuFeatureSettings.ts"
+      - "src/features/preset-video/presetVideoRegistry.ts"
+      - ".github/workflows/math-video-ci.yml"
+  pull_request:
+    paths:
+      - "src/features/math-video/**"
+      - "src/pages/MathVideoStudio.tsx"
+      - "src/App.tsx"
+      - "src/components/appNavigation.ts"
+      - "src/lib/menuFeatureSettings.ts"
+      - "src/features/preset-video/presetVideoRegistry.ts"
+      - ".github/workflows/math-video-ci.yml"
+
+jobs:
+  verify:
+    name: Math Studio tests and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - name: Install project dependencies
+        run: npm ci
+      - name: Math geometry/timeline tests
+        run: npx vitest run src/features/math-video/__tests__/mathGeometry.test.ts
+      - name: App build
+        run: npm run build

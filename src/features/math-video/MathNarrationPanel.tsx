@@ -42,6 +42,7 @@ export function MathNarrationPanel({
   const [busy,setBusy]=useState(false);
   const [status,setStatus]=useState("");
   const [warnings,setWarnings]=useState<string[]>([]);
+  const [existingPath,setExistingPath]=useState("");
   const chapterCues=useMemo(()=>MATH_NARRATION_CUES.filter(c=>c.chapterId===chapterId),[chapterId]);
   const cue=MATH_NARRATION_CUES.find(c=>c.id===selectedCueId)??MATH_NARRATION_CUES[0];
   const readyClips=MATH_NARRATION_CUES.filter(c=>{
@@ -106,10 +107,35 @@ export function MathNarrationPanel({
     }catch(error){toast.error(error instanceof Error?error.message:"Voice mixing failed");}
     finally{setBusy(false);setStatus("");}
   }
+  async function generateAll(){
+    if(busy||!ready)return;
+    setBusy(true);setWarnings([]);
+    try {
+      const missing=MATH_NARRATION_CUES.filter(c=>(drafts.texts[c.id]||"").trim()&&!drafts.clips[c.id]);
+      for(const [index,target] of missing.entries()){
+        setStatus(`Tạo giọng ${index+1}/${missing.length}: ${target.id}`);
+        await generateCue(target);
+      }
+      toast.success(`Đã xử lý ${missing.length} đoạn giọng đọc.`);
+    }catch(error){toast.error(error instanceof Error?error.message:"TTS failed");}
+    finally{setBusy(false);setStatus("");}
+  }
+  function attachExisting(){
+    const relativePath=existingPath.trim();
+    if(!relativePath||relativePath.length>512){toast.error("Hãy nhập đường dẫn file đã tạo hợp lệ.");return;}
+    const text=(drafts.texts[cue.id]||"").trim();
+    setDrafts(current=>{
+      const next={texts:current.texts,clips:{...current.clips,[cue.id]:{
+        relativePath,audioUrl:"",textSnapshot:text,
+      }}};
+      persist(next);return next;
+    });
+    onInvalidate();toast.info("Đã gắn file; hệ thống sẽ xác minh khi ghép âm thanh.");
+  }
   function selectChapter(id:string) {
     setChapterId(id);
     const first=MATH_NARRATION_CUES.find(c=>c.chapterId===id);
-    if(first)setSelectedCueId(first.id);
+    if(first){setSelectedCueId(first.id);setExistingPath(drafts.clips[first.id]?.relativePath||"");}
   }
 
   return <section className="space-y-3 rounded-xl border bg-card/60 p-4">
@@ -126,7 +152,7 @@ export function MathNarrationPanel({
       </select>
       <label className="text-xs font-medium" htmlFor="math-narration-cue">{isVi?"Phân cảnh":"Scene"}</label>
       <select id="math-narration-cue" className="w-full rounded-md border bg-background p-2 text-sm" value={selectedCueId}
-        onChange={e=>setSelectedCueId(e.target.value)} disabled={busy}>
+        onChange={e=>{setSelectedCueId(e.target.value);setExistingPath(drafts.clips[e.target.value]?.relativePath||"");}} disabled={busy}>
         {chapterCues.map(c=><option key={c.id} value={c.id}>{formatMathTime(c.startFrame)} · {c.title.slice(0,65)}</option>)}
       </select>
       <p className="text-xs text-muted-foreground">{cue.id} · {voiceDurationSeconds(cue).toFixed(2)}s · {cue.startFrame}–{cue.endFrame-1} frames
@@ -149,6 +175,15 @@ export function MathNarrationPanel({
       <Button variant="secondary" onClick={()=>void generateChapter()} disabled={!ready||busy} className="w-full">
         <AudioLines className="mr-2 h-4 w-4"/>{isVi?"Tạo giọng cho các đoạn thiếu của chương":"Generate missing chapter cues"}
       </Button>
+      <Button variant="outline" onClick={()=>void generateAll()} disabled={!ready||busy} className="w-full">
+        {isVi?"Tạo giọng cho toàn bộ 37 đoạn":"Generate all 37 voice clips"}
+      </Button>
+      <label className="text-xs" htmlFor="math-existing-audio">{isVi?"Gắn audio có sẵn từ TTS Studio (đường dẫn trong Generated Audio)":"Use existing Generated Audio relative path"}</label>
+      <div className="flex gap-2">
+        <input id="math-existing-audio" value={existingPath} onChange={e=>setExistingPath(e.target.value)} disabled={busy}
+          placeholder="supertonic/2026-10-19/my-voice.wav" className="min-w-0 flex-1 rounded-md border bg-background px-2 text-xs"/>
+        <Button variant="outline" size="sm" disabled={busy||!existingPath.trim()} onClick={attachExisting}>{isVi?"Gắn":"Attach"}</Button>
+      </div>
       {drafts.clips[cue.id]?.audioUrl&&<audio controls src={drafts.clips[cue.id].audioUrl} className="w-full"/>}
       <label className="flex items-center justify-between gap-2 text-xs">
         <span>{isVi?"Âm lượng giọng":"Voice volume"}: {Math.round(volume*100)}%</span>

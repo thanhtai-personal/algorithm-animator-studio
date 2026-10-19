@@ -20,6 +20,7 @@ const MAX_OUTFITS = 20;
 export function FashionOutfitsCard(props: Props) {
   const addInput = useRef<HTMLInputElement>(null);
   const locked = props.disabled || Boolean(props.uploadingSourceId);
+  const demoIds = ["fashion-default-1", "fashion-default-2", "fashion-default-3"];
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -53,8 +54,20 @@ export function FashionOutfitsCard(props: Props) {
           <ImagePlus className="mr-2 h-4 w-4" />Thêm ảnh trang phục
         </Button>
         {props.clips.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-            Chưa có ảnh. Thêm ít nhất 2 ảnh để tạo video thay trang phục.
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">Chưa thêm ảnh riêng. Video tự dùng bộ ảnh người mẫu mẫu được tải và lưu vào máy lần đầu (nếu có Internet).</p>
+            <div className="grid grid-cols-3 gap-2">
+              {demoIds.map((id, index) => (
+                <div key={id} className="overflow-hidden rounded-md border bg-muted/40">
+                  {props.videoSourceUrls[id] ? (
+                    <img src={props.videoSourceUrls[id]} alt={`Người mẫu mặc đồ mẫu ${index + 1}`} className="aspect-[3/4] w-full object-contain" />
+                  ) : (
+                    <div className="grid aspect-[3/4] place-items-center p-2 text-center text-xs text-muted-foreground">Hình mẫu {index + 1}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">Nguồn: Wikimedia Commons (CC0). <a className="underline" href="https://commons.wikimedia.org/wiki/File:Female_Model_Posing.jpg" target="_blank" rel="noreferrer">Thông tin giấy phép</a>. Nếu không tải được, sẽ dùng người mẫu minh họa.</p>
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
@@ -106,7 +119,7 @@ export function FashionOutfitsCard(props: Props) {
           </div>
         )}
         <p className="text-xs text-muted-foreground">
-          Ảnh PNG giữ được vùng trong suốt để người mẫu nằm trên thảm cạnh sofa. Hiệu ứng lăn xuống và quạt trần tạo bằng Remotion; hệ thống chưa tự ghép ảnh áo rời lên người mẫu.
+          Ảnh PNG giữ nền trong suốt để nhìn thấy thảm cạnh sofa. Thêm ảnh riêng sẽ thay bộ ảnh mẫu. Hệ thống chưa tự ghép ảnh áo rời lên người mẫu.
         </p>
       </CardContent>
     </Card>

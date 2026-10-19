@@ -129,7 +129,6 @@ export function PresetVideoWorkspace({ preset: sourcePreset, onBack }: Props) {
     setSettings({ ...defaults, backgroundMusicId: recommended?.id || "" }); setResult(null); setRenderProgress(0); setRenderMessage(""); playerRef.current?.seekTo(0);
   }
   async function exportVideo() {
-    if (isFashionClaw && settings.timelineVideoClips.length < 2) { toast.error("Hãy thêm ít nhất 2 ảnh trang phục."); return; }
     if (missingLocalVideoSources.length) { toast.error(`Còn thiếu ${missingLocalVideoSources.length} video local trước khi export.`); return; }
     setRendering(true); setRenderProgress(0); setRenderMessage("Đang khởi tạo render..."); setResult(null);
     try {
@@ -139,7 +138,7 @@ export function PresetVideoWorkspace({ preset: sourcePreset, onBack }: Props) {
   }
 
   return <div className="space-y-4">
-    <header className="flex flex-col gap-3 rounded-xl border bg-card/70 p-4 md:flex-row md:items-center md:justify-between"><div className="flex items-start gap-3"><Button variant="ghost" size="icon" onClick={onBack} aria-label="Quay lại kho preset"><ArrowLeft className="h-4 w-4" /></Button><div><p className="text-xs font-bold uppercase tracking-[0.24em] text-primary">Preset Video · {language.toUpperCase()}</p><h1 className="mt-1 text-xl font-bold">{preset.name}</h1><p className="mt-1 max-w-3xl text-sm text-muted-foreground">{preset.description}</p></div></div><div className="flex gap-2"><Button variant="outline" disabled={rendering || Boolean(media.uploadingSourceId)} onClick={reset}><RotateCcw className="mr-2 h-4 w-4" />Reset</Button><Button disabled={rendering || Boolean(media.uploadingSourceId) || missingLocalVideoSources.length > 0 || (isFashionClaw && settings.timelineVideoClips.length < 2)} onClick={() => void exportVideo()}><Film className="mr-2 h-4 w-4" />{rendering ? `Đang render ${Math.round(renderProgress * 100)}%` : "Export MP4"}</Button></div></header>
+    <header className="flex flex-col gap-3 rounded-xl border bg-card/70 p-4 md:flex-row md:items-center md:justify-between"><div className="flex items-start gap-3"><Button variant="ghost" size="icon" onClick={onBack} aria-label="Quay lại kho preset"><ArrowLeft className="h-4 w-4" /></Button><div><p className="text-xs font-bold uppercase tracking-[0.24em] text-primary">Preset Video · {language.toUpperCase()}</p><h1 className="mt-1 text-xl font-bold">{preset.name}</h1><p className="mt-1 max-w-3xl text-sm text-muted-foreground">{preset.description}</p></div></div><div className="flex gap-2"><Button variant="outline" disabled={rendering || Boolean(media.uploadingSourceId)} onClick={reset}><RotateCcw className="mr-2 h-4 w-4" />Reset</Button><Button disabled={rendering || Boolean(media.uploadingSourceId) || missingLocalVideoSources.length > 0} onClick={() => void exportVideo()}><Film className="mr-2 h-4 w-4" />{rendering ? `Đang render ${Math.round(renderProgress * 100)}%` : "Export MP4"}</Button></div></header>
 
     <PresetVideoPreviewEditor preset={preset} settings={settings} inputProps={inputProps} playerRef={playerRef} compositionWidth={output.width} compositionHeight={output.height} aspectRatio={output.aspectRatio} preloadingCount={media.preloadingCount} disabled={rendering} onSettingsChange={patchSettings} />
 

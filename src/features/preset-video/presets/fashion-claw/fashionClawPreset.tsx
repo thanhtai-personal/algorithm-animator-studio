@@ -16,7 +16,7 @@ export const fashionClawPreset: PresetVideoDefinition = {
   musicRecommendation: {
     mood: "fashion editorial / runway beat",
     keywords: ["runway", "fashion", "beat", "editorial", "pop"],
-    rationale: "Nhạc có nhịp rõ giúp chuyển trang phục đồng bộ với kẹp kim loại.",
+    rationale: "Nhạc có nhịp rõ giúp chuyển trang phục đồng bộ với quạt trần.",
     defaultVolume: 0.2,
   },
   component: FashionClawComposition,

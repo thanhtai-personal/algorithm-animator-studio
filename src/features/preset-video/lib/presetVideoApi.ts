@@ -56,7 +56,7 @@ export async function preparePresetVideoMedia(preset: PresetVideoDefinition, tim
     ...(preset.videoSources || []),
     ...timelineVideoClips.map((clip) => ({ id: clip.id, watchUrl: "", clipStartSeconds: clip.clipStartSeconds, clipEndSeconds: clip.clipEndSeconds })),
   ];
-  if (!videoSources.length) return { presetId: preset.id, videoSourceUrls: {}, missingSourceIds: [] } satisfies PresetVideoMediaResponse;
+  if (!videoSources.length && preset.id !== "fashion-claw") return { presetId: preset.id, videoSourceUrls: {}, missingSourceIds: [] } satisfies PresetVideoMediaResponse;
   return parseApiResponse<PresetVideoMediaResponse>(await fetch(buildApiUrl("/api/video/preset-media/prepare"), {
     method: "POST",
     headers: { "Content-Type": "application/json", ...buildRuntimeSettingsHeaders() },

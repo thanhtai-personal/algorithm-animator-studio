@@ -1,4 +1,4 @@
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, Img } from "remotion";
 
 type Props = { seconds: number };
 
@@ -47,9 +47,12 @@ export function FashionLivingRoom() {
 }
 
 /** Three bronze ceiling-fan blades orbit together around one shared shaft. */
-export function FashionCeilingFan({ seconds }: Props) {
+export function FashionCeilingFan({ seconds, imageSrc }: Props & { imageSrc?: string }) {
   // The downward blade crosses the model at t=0.48 + 0.96n.
   const degrees = 60 + (120 / .96) * seconds;
+  if (imageSrc) return <AbsoluteFill style={{ overflow: "hidden", pointerEvents: "none" }}>
+    <Img src={imageSrc} style={{ position: "absolute", width: "170%", height: "auto", left: "-35%", top: "-23%", transform: `rotate(${degrees}deg)`, transformOrigin: "50% 43%", filter: "drop-shadow(5px 13px 7px rgba(20,25,32,.45))" }} />
+  </AbsoluteFill>;
   return (
     <AbsoluteFill style={{ overflow: "hidden", pointerEvents: "none" }}>
       <svg width="100%" height="100%" viewBox="0 0 360 640" preserveAspectRatio="xMidYMid slice" aria-hidden="true">

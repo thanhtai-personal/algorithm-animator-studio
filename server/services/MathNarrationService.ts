@@ -8,6 +8,7 @@ import { getAudioDurationSeconds, runFfmpeg } from "../utils/ffmpeg";
 import { ensureDirectoryExists, getLocalDateFolderName } from "../utils/audioOutput";
 import { MATH_NARRATION_CUES, mathNarrationCueById } from "../../src/features/math-video/mathNarrationCues";
 import { MATH_FPS, MATH_FRAMES } from "../../src/features/math-video/mathTimeline";
+import { buildNarrationFilterGraph } from "../../src/features/math-video/mathNarrationMixPlan";
 
 export type MathNarrationMixClip = { cueId:string; audioRelativePath:string };
 export type MathNarrationMixRequest = { clips:MathNarrationMixClip[] };
@@ -54,16 +55,10 @@ export async function mixMathNarration(input:MathNarrationMixRequest, envOverrid
   const target=path.join(dir,filename);
   const relativePath=`math-narration/${folder}/${filename}`;
 
-  // 40ms per frame (25fps) ensures audio/video boundaries match exactly.
-  const parts=clips.map((c,i)=>{
-    const millis=Math.round(c.startFrame*1000/MATH_FPS);
-    return `[${i}:a:0]atrim=duration=${c.duration.toFixed(3)},asetpts=PTS-STARTPTS,aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo,adelay=${millis}:all=1[a${i}]`;
-  });
-  const sources=clips.map((_,i)=>`[a${i}]`).join("");
-  parts.push(`${sources}amix=inputs=${clips.length}:duration=longest:dropout_transition=0:normalize=0,apad,atrim=duration=${(MATH_FRAMES/MATH_FPS).toFixed(3)},asetpts=PTS-STARTPTS[out]`);
+  const filterGraph=buildNarrationFilterGraph(clips);
   const args=["-hide_banner","-loglevel","error","-y",
     ...clips.flatMap(c=>["-i",c.filePath]),
-    "-filter_complex",parts.join(";"),"-map","[out]",
+    "-filter_complex",filterGraph,"-map","[out]",
     "-c:a","aac","-b:a","160k","-ar","48000","-ac","2", "-movflags","+faststart",target];
   try {
     await runFfmpeg(args,envOverrides);

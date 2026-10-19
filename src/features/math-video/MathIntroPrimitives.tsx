@@ -20,14 +20,15 @@ export function ReferenceTriangle({ frame }: { frame: number }) {
   const tilt = frame < 400 ? 0 : frame < 448 ? ease((frame - 400) / 48) : frame < 487 ? 1 : 1 - ease((frame - 487) / 34);
   const x = lerp(667, 162, tilt);
   const y = lerp(302, 167, tilt);
-  const highlight = frame >= 125 && frame < 625;
+  const showCosSide = frame >= 175 && frame < 800;
+  const showSinSide = frame >= 125 && frame < 400;
   const showAngle = frame >= 85;
   return <g>
     <path d={`M 346 487 L ${x.toFixed(2)} ${y.toFixed(2)} L 667 487 Z`}
       fill="#262729" stroke={REF_WHITE} strokeWidth="2.2" strokeLinejoin="round"/>
     <path d="M 643 487 V 463 H 667" fill="none" stroke={REF_WHITE} strokeWidth="1.8" />
-    {highlight && <path d="M 346 487 H 667" stroke={REF_ORANGE} strokeWidth="4.2" strokeLinecap="round"/>}
-    {highlight && tilt < 0.05 && <path d="M 667 487 V 302" stroke={REF_CYAN} strokeWidth="4" strokeLinecap="round"/>}
+    {showCosSide && <path d="M 346 487 H 667" stroke={REF_ORANGE} strokeWidth="4.2" strokeLinecap="round"/>}
+    {showSinSide && tilt < 0.05 && <path d="M 667 487 V 302" stroke={REF_CYAN} strokeWidth="4" strokeLinecap="round"/>}
     {showAngle && <g>
       <path d={tilt > 0.3 ? "M 406 487 A 60 60 0 0 0 315 432" : "M 406 487 A 60 60 0 0 0 399 454"} fill="none" stroke={REF_WHITE} strokeWidth="1.9"/>
       <text x={tilt > 0.3 ? 367 : 425} y={tilt > 0.3 ? 413 : 470} fill={REF_WHITE} fontSize="21" fontWeight="600">{tilt > 0.3 ? "120°" : "α"}</text>

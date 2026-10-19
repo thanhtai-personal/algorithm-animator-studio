@@ -4,8 +4,8 @@ import { FashionCeilingFan, FashionLivingRoom } from "./FashionStage";
 import { FashionDemoModel } from "./FashionDemoModel";
 import { getFashionCameraScale } from "./fashionSetTiming";
 import { getFashionModelMotion, getFashionModelPose } from "./fashionModelMotion";
+import { getFashionLookAtSeconds, resolveFashionOutfitSource } from "./fashionOutfitTimeline";
 
-const OUTFIT_SWITCH_SECONDS = .96;
 
 /**
  * Overhead view: a model rolls onto a blue rug beside a pink sofa.
@@ -23,9 +23,9 @@ export function FashionClawComposition(props: PresetVideoCompositionProps) {
   // T04: render the animated mannequin by default; static stock photos cannot
   // bend arms and legs. Keep user-uploaded photos supported for the later custom stage.
   const outfits = userOutfits;
-  const beatIndex = Math.floor((seconds + OUTFIT_SWITCH_SECONDS / 2) / OUTFIT_SWITCH_SECONDS);
-  const activeIndex = outfits.length ? beatIndex % outfits.length : 0;
-  const active = outfits[activeIndex];
+  // Cuts are reference-frame based and coincide with the fan hiding the torso.
+  const look = getFashionLookAtSeconds(seconds);
+  const active = resolveFashionOutfitSource(outfits, look.index);
 
   const model = getFashionModelMotion(seconds);
   const vectorPose = getFashionModelPose(seconds);
@@ -39,6 +39,7 @@ export function FashionClawComposition(props: PresetVideoCompositionProps) {
       {active ? (
         <AbsoluteFill style={{ transform: modelTransform, transformOrigin: "50% 51%" }}>
           <Img
+            key={active}
             src={active}
             style={{
               position: "absolute", left: "12%", top: "17%", width: "76%", height: "75%",
@@ -49,7 +50,7 @@ export function FashionClawComposition(props: PresetVideoCompositionProps) {
         </AbsoluteFill>
       ) : (
         <AbsoluteFill style={{ transform: modelTransform, transformOrigin: "50% 51%" }}>
-          <FashionDemoModel variation={beatIndex} pose={vectorPose} />
+          <FashionDemoModel variation={look.index} pose={vectorPose} />
         </AbsoluteFill>
       )}
       <FashionCeilingFan seconds={seconds} imageSrc={props.videoSourceUrls["fashion-default-fan"]} />

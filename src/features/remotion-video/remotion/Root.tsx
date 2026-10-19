@@ -6,7 +6,7 @@ import { DEFAULT_REMOTION_TIMELINE, getTimelineDurationSeconds, normalizeRemotio
 import { PresetVideoComposition, DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS } from "../../preset-video/PresetVideoComposition";
 import { getPresetVideoDefaultDimensions } from "../../preset-video/outputPresets";
 import type { PresetVideoCompositionProps } from "../../preset-video/types";
-import { MathVideoVisual } from "../../math-video/MathVideoVisual";
+// MathSinCosV1 uses the preset composition so CLI/export both include optional narration.
 import { MATH_FRAMES, MATH_FPS, MATH_WIDTH, MATH_HEIGHT, MATH_SECONDS } from "../../math-video/mathTimeline";
 
 export const REMOTION_ALGORITHM_COMPOSITION_ID = "AlgorithmExplainer";
@@ -80,7 +80,7 @@ export function RemotionRoot() {
     />
       <Composition<PresetVideoCompositionProps>
         id="MathSinCosV1"
-        component={MathVideoVisual}
+        component={PresetVideoComposition}
         durationInFrames={MATH_FRAMES}
         fps={MATH_FPS}
         width={MATH_WIDTH}

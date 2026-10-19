@@ -5,7 +5,7 @@ import {
 } from "./MathIntroPrimitives";
 
 export function MathIntro({ frame }: { frame: number }) {
-  if (frame >= 800) return <ReferenceAngleAxis frame={frame}/>;
+  if (frame >= 800) return <g opacity={frame >= 1000 ? 1-ease((frame-1000)/42) : 1}><ReferenceAngleAxis frame={frame}/></g>;
   return <g>
     <ReferencePerson x={frame < 200 ? 148 : 137} ground={602} pointing={frame >= 223 && frame < 314}/>
     {frame >= 28 && <g opacity={ease((frame - 28) / 25)}>

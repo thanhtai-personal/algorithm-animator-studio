@@ -7,7 +7,8 @@ export const fashionClawPreset: PresetVideoDefinition = {
   description: "Góc quay từ trên xuống: quạt trần 3 cánh, sofa hồng, thảm xanh và người mẫu lăn vào cảnh rồi thay trang phục theo nhịp cánh quạt. Chọn ảnh tùy ý để dựng video.",
   tags: ["fashion", "outfit", "ceiling-fan", "sofa", "lookbook", "reels", "shorts", "ảnh trang phục"],
   accentColor: "#c99a71",
-  defaultDurationSeconds: 10,
+  // Exact source cadence: 296 frames at 30 FPS, rather than 300 frames / 10s.
+  defaultDurationSeconds: 296 / 30,
   defaultFps: 30,
   defaultOutputPreset: "portrait-1080p",
   hasOriginalAudio: false,

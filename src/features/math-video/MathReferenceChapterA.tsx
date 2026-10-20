@@ -20,6 +20,10 @@ function CircleProof({ frame, cue, t }:BeatProps) {
     : lerp(120,300,t);
   const mirror=beat>=6;
   const comp=beat>=3;
+  if (beat === 2 && t < .18) {
+    // Source 00:43: axis comes first. Circle and radius draw in after the opening beat.
+    return <g><path d="M 320 390 H 596 M 448 226 V 555" stroke={REF_DIM} strokeWidth="1.6" fill="none"/></g>;
+  }
   return <g>
     <CircleAxes x={x} y={y} r={r} subtle={beat<6}/>
     {comp && <RotatingProjection x={x} y={y} r={r} angle={angle} showLabels={beat===3||beat===4}/>}
@@ -52,20 +56,31 @@ function CircleProof({ frame, cue, t }:BeatProps) {
 }
 
 function IdentityProof({t}:BeatProps){
-  const x=400,y=408,r=148;
-  const p=project(x,y,r,60);
-  const sideX=Math.abs(p.x-x), sideY=Math.abs(p.y-y);
+  // Source 02:30–02:40: center (427,467), dashed circle r173, 120° radius.
+  const x=427,y=467,r=173,p=project(x,y,r,120),cyanSide=y-p.y;
   return <g>
-    <Annotation x={855} y={224} size={27} anchor="middle" weight={700}>sin² + cos² = 1</Annotation>
-    <Annotation x={855} y={281} size={19} anchor="middle">Ngang² + dọc² = bán kính²</Annotation>
-    <circle cx={x} cy={y} r={r} fill="none" stroke={REF_DIM} strokeDasharray="4 5"/>
-    <path d={`M ${x-r-37} ${y} H ${x+r+37}`} stroke={REF_DIM}/>
-    <path d={`M ${x} ${y} L ${p.x} ${p.y} V ${y} Z`} stroke={REF_WHITE} strokeWidth="2" fill={REF_WHITE} fillOpacity=".06"/>
-    <rect x={x-sideX/2} y={y} width={sideX} height={sideX} fill={REF_ORANGE} fillOpacity={ease(t)*.35} stroke={REF_ORANGE}/>
-    <rect x={x} y={y-sideY} width={sideY} height={sideY} fill={REF_CYAN} fillOpacity={ease(t)*.25} stroke={REF_CYAN}/>
-    <Annotation x={x+35} y={y-115} color={REF_CYAN} size={17}>sin</Annotation>
-    <Annotation x={x+15} y={y+45} color={REF_ORANGE} size={17}>cos</Annotation>
-    {t>.55 && <Annotation x={850} y={372} anchor="middle" size={20}>0,866² + 0,5² = 1</Annotation>}
+    <Annotation x={955} y={203} size={39} anchor="middle" weight={700}>sin² + cos² = 1</Annotation>
+    <Annotation x={955} y={280} size={24} anchor="middle" weight={700}>Ngang² + dọc² = bán kính²</Annotation>
+    <circle cx={x} cy={y} r={r} fill="none" stroke={REF_DIM} strokeWidth="1.7" strokeDasharray="8 8"/>
+    <path d="M 205 467 H 627" stroke={REF_DIM} strokeWidth="1.3"/>
+    <path d={`M ${x} ${y} L ${p.x} ${p.y} V ${y} Z`}
+      stroke={REF_WHITE} strokeWidth="2" fill={REF_WHITE} fillOpacity=".09"/>
+    <rect x={p.x} y={y} width={x-p.x} height={x-p.x}
+      fill={REF_ORANGE} fillOpacity=".27" stroke={REF_ORANGE} strokeWidth="2.5"/>
+    {t<.57 ?
+      <rect x={p.x-13} y={p.y} width="13" height={cyanSide}
+        fill={REF_CYAN} fillOpacity=".20" stroke={REF_CYAN} strokeWidth="3"/> :
+      <g>
+        <rect x={p.x-cyanSide} y={p.y} width={cyanSide} height={cyanSide}
+          fill={REF_CYAN} fillOpacity=".20" stroke={REF_CYAN} strokeWidth="2.5"/>
+        <Annotation x={p.x-cyanSide/2} y={p.y+82} color={REF_CYAN} size={23} anchor="middle">0,75</Annotation>
+        <Annotation x={x-(x-p.x)/2} y={y+47} color={REF_ORANGE} size={22} anchor="middle">0,25</Annotation>
+        <path d={`M ${p.x} ${p.y} L 490 230 L 576 381 L 427 467 Z`}
+          fill={REF_WHITE} fillOpacity=".12" stroke={REF_WHITE} strokeWidth="1.8"/>
+      </g>}
+    <circle cx={p.x} cy={p.y} r="8" fill={REF_WHITE}/>
+    {t<.57 && <Annotation x={p.x+57} y={p.y+67} size={20}>1</Annotation>}
+    {t>.57 && <Annotation x={957} y={454} anchor="middle" size={28} weight={700}>0,866² + 0,5² = 1</Annotation>}
   </g>;
 }
 
@@ -120,11 +135,12 @@ function ComplementProof({t}:BeatProps){
 
 function TangentProof({frame,cue,t}:BeatProps){
   const beat=beatNumber(cue),angle=beat===16?lerp(36,80,t):beat===17?lerp(70,98,t):lerp(65,18,t);
-  const x=330,y=420,r=123,p=project(x,y,r,angle);
+  const x=306,y=440,r=133,p=project(x,y,r,angle);
   return <g>
-    <Annotation x={178} y={100} size={23} weight={700}>tang = sin / cos</Annotation>
-    <Annotation x={178} y={131} color={REF_DIM} size={17}>Không xác định ở 90°</Annotation>
+    <Annotation x={53} y={89} size={30} weight={700}>tang = sin / cos</Annotation>
+    <Annotation x={53} y={139} color={REF_DIM} size={19} weight={700}>Không xác định ở 90°</Annotation>
     <CircleAxes x={x} y={y} r={r} subtle/>
+    <Annotation x={711} y={55} color={REF_DIM} size={18} anchor="middle">Độ dốc</Annotation>
     <path d={`M ${x} ${y} L ${fmt(p.x)} ${fmt(p.y)}`} stroke={REF_WHITE} strokeWidth="2"/>
     <path d={`M ${fmt(p.x)} ${fmt(p.y)} V ${y} H ${x}`} stroke={REF_CYAN} strokeWidth="3" fill="none"/>
     <line x1={x+r} y1={y-172} x2={x+r} y2={y+172} stroke={REF_DIM} strokeDasharray="5 8"/>
@@ -136,7 +152,7 @@ function TangentProof({frame,cue,t}:BeatProps){
       <Annotation x={917} y={638} size={17} color={REF_DIM}>90°</Annotation>
       {beat===17 && <Annotation x={985} y={569} size={16} color={REF_DIM}>Tiệm cận</Annotation>}
     </g>}
-    {beat===16 && <path d={`M ${x} ${y} L ${fmt(x+r+55)} ${fmt(y-190)}`} stroke={REF_WHITE} strokeWidth="2"/>}
+    {beat===16 && <path d={`M ${x} ${y} L 416 109`} stroke={REF_WHITE} strokeWidth="2"/>}
   </g>;
 }
 

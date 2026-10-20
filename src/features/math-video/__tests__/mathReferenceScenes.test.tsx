@@ -32,6 +32,12 @@ describe("Task 05 — beat-specific source reconstruction", () => {
     }
   });
   it("renders subjects at the source-observed chapter ranges", () => {
+    expect(markup(43*25)).toContain("M 320 390 H 596 M 448 226 V 555");
+    expect(markup(43*25)).not.toContain("<circle");
+    expect(markup(150*25)).toContain('cx="427" cy="467" r="173"');
+    expect(markup(160*25)).toContain("0,75");
+    expect(markup(160*25)).toContain("0,25");
+    expect(markup(392*25)).toContain("Bóng 38 cm");
     expect(markup(62*25)).toContain("Ngang cos");
     expect(markup(90*25)).toContain("sin = đối / huyền");
     expect(markup(150*25)).toContain("sin² + cos² = 1");
@@ -43,9 +49,15 @@ describe("Task 05 — beat-specific source reconstruction", () => {
     expect(markup(405*25)).toContain("Thủy triều");
     expect(markup(425*25)).toContain("Đo cây");
     expect(markup(445*25)).toContain("8,33%");
-    expect(markup(488*25)).toContain("Độ dốc %");
+    expect(markup(480*25)).toContain("Đ Ộ   D Ố C   P H Ầ N   T R Ă M");
+    expect(markup(488*25)).toContain("M 126 301 L 200 174 L 274 301 Z");
+    expect(markup(510*25)).toContain("Đ I Ệ N  B A  P H A");
+    expect(markup(510*25)).not.toContain("20 ms");
     expect(markup(532*25)).toContain("Điện ba pha");
+    expect(markup(532*25)).toContain("20 ms");
     expect(markup(552*25)).toContain("380 V");
+    expect(markup(575*25)).toContain("Một phần tư");
+    expect(markup(575*25)).toContain("Ngoại lệ");
     expect(markup(595*25)).toContain("sin 120°");
     expect(markup(605*25)).toContain("VÔ HẠN");
   });

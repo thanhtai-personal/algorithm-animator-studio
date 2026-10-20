@@ -43,9 +43,15 @@ describe("Task 05 — beat-specific source reconstruction", () => {
     expect(markup(405*25)).toContain("Thủy triều");
     expect(markup(425*25)).toContain("Đo cây");
     expect(markup(445*25)).toContain("8,33%");
-    expect(markup(488*25)).toContain("Độ dốc %");
+    expect(markup(480*25)).toContain("Đ Ộ   D Ố C   P H Ầ N   T R Ă M");
+    expect(markup(488*25)).toContain("M 126 301 L 200 174 L 274 301 Z");
+    expect(markup(510*25)).toContain("Đ I Ệ N  B A  P H A");
+    expect(markup(510*25)).not.toContain("20 ms");
     expect(markup(532*25)).toContain("Điện ba pha");
+    expect(markup(532*25)).toContain("20 ms");
     expect(markup(552*25)).toContain("380 V");
+    expect(markup(575*25)).toContain("Một phần tư");
+    expect(markup(575*25)).toContain("Ngoại lệ");
     expect(markup(595*25)).toContain("sin 120°");
     expect(markup(605*25)).toContain("VÔ HẠN");
   });

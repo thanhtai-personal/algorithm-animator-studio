@@ -32,6 +32,12 @@ describe("Task 05 — beat-specific source reconstruction", () => {
     }
   });
   it("renders subjects at the source-observed chapter ranges", () => {
+    expect(markup(43*25)).toContain("M 320 390 H 596 M 448 226 V 555");
+    expect(markup(43*25)).not.toContain("<circle");
+    expect(markup(150*25)).toContain('cx="427" cy="467" r="173"');
+    expect(markup(160*25)).toContain("0,75");
+    expect(markup(160*25)).toContain("0,25");
+    expect(markup(392*25)).toContain("Bóng 38 cm");
     expect(markup(62*25)).toContain("Ngang cos");
     expect(markup(90*25)).toContain("sin = đối / huyền");
     expect(markup(150*25)).toContain("sin² + cos² = 1");

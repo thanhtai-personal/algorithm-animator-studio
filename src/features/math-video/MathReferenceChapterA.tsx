@@ -139,7 +139,8 @@ function TangentProof({frame,cue,t}:BeatProps){
   return <g>
     <Annotation x={53} y={89} size={30} weight={700}>tang = sin / cos</Annotation>
     <Annotation x={53} y={139} color={REF_DIM} size={19} weight={700}>Không xác định ở 90°</Annotation>
-    <CircleAxes x={x} y={y} r={r} subtle/>\n    <Annotation x={711} y={55} color={REF_DIM} size={18} anchor="middle">Độ dốc</Annotation>
+    <CircleAxes x={x} y={y} r={r} subtle/>
+    <Annotation x={711} y={55} color={REF_DIM} size={18} anchor="middle">Độ dốc</Annotation>
     <path d={`M ${x} ${y} L ${fmt(p.x)} ${fmt(p.y)}`} stroke={REF_WHITE} strokeWidth="2"/>
     <path d={`M ${fmt(p.x)} ${fmt(p.y)} V ${y} H ${x}`} stroke={REF_CYAN} strokeWidth="3" fill="none"/>
     <line x1={x+r} y1={y-172} x2={x+r} y2={y+172} stroke={REF_DIM} strokeDasharray="5 8"/>
@@ -151,7 +152,7 @@ function TangentProof({frame,cue,t}:BeatProps){
       <Annotation x={917} y={638} size={17} color={REF_DIM}>90°</Annotation>
       {beat===17 && <Annotation x={985} y={569} size={16} color={REF_DIM}>Tiệm cận</Annotation>}
     </g>}
-    {beat===16 && <path d={`M ${x} ${y} L ${fmt(x+r+55)} ${fmt(y-190)}`} stroke={REF_WHITE} strokeWidth="2"/>}
+    {beat===16 && <path d={`M ${x} ${y} L 416 109`} stroke={REF_WHITE} strokeWidth="2"/>}
   </g>;
 }
 

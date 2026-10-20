@@ -20,6 +20,10 @@ function CircleProof({ frame, cue, t }:BeatProps) {
     : lerp(120,300,t);
   const mirror=beat>=6;
   const comp=beat>=3;
+  if (beat === 2 && t < .18) {
+    // Source 00:43: axis comes first. Circle and radius draw in after the opening beat.
+    return <g><path d="M 320 390 H 596 M 448 226 V 555" stroke={REF_DIM} strokeWidth="1.6" fill="none"/></g>;
+  }
   return <g>
     <CircleAxes x={x} y={y} r={r} subtle={beat<6}/>
     {comp && <RotatingProjection x={x} y={y} r={r} angle={angle} showLabels={beat===3||beat===4}/>}

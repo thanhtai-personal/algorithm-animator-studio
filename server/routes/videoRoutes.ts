@@ -44,6 +44,7 @@ const upload = multer({
     fileSize: BACKGROUND_LIMITS.video,
   },
 });
+const mathV1AudioUpload = multer({ dest: uploadDirectory, limits: { fileSize: 40 * 1024 * 1024 } });
 const mixedUpload = upload.fields([
   { name: "image", maxCount: 1 },
   { name: "audio", maxCount: 1 },
@@ -118,7 +119,7 @@ export function createVideoRouter() {
   router.get("/video/math-v1/default-audio", (req,res) => {
     return res.json(getMathV1DefaultAudio(readRuntimeEnvFromRequest(req)));
   });
-  router.post("/video/math-v1/default-audio", upload.single("audio"), async (req,res) => {
+  router.post("/video/math-v1/default-audio", mathV1AudioUpload.single("audio"), async (req,res) => {
     if(!req.file?.path)return res.status(400).json({error:"Vui lòng chọn file audio."});
     try {
       return res.json(await importMathV1DefaultAudio(req.file.path,readRuntimeEnvFromRequest(req)));

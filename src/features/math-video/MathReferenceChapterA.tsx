@@ -135,11 +135,11 @@ function ComplementProof({t}:BeatProps){
 
 function TangentProof({frame,cue,t}:BeatProps){
   const beat=beatNumber(cue),angle=beat===16?lerp(36,80,t):beat===17?lerp(70,98,t):lerp(65,18,t);
-  const x=330,y=420,r=123,p=project(x,y,r,angle);
+  const x=306,y=440,r=133,p=project(x,y,r,angle);
   return <g>
-    <Annotation x={178} y={100} size={23} weight={700}>tang = sin / cos</Annotation>
-    <Annotation x={178} y={131} color={REF_DIM} size={17}>Không xác định ở 90°</Annotation>
-    <CircleAxes x={x} y={y} r={r} subtle/>
+    <Annotation x={53} y={89} size={30} weight={700}>tang = sin / cos</Annotation>
+    <Annotation x={53} y={139} color={REF_DIM} size={19} weight={700}>Không xác định ở 90°</Annotation>
+    <CircleAxes x={x} y={y} r={r} subtle/>\n    <Annotation x={711} y={55} color={REF_DIM} size={18} anchor="middle">Độ dốc</Annotation>
     <path d={`M ${x} ${y} L ${fmt(p.x)} ${fmt(p.y)}`} stroke={REF_WHITE} strokeWidth="2"/>
     <path d={`M ${fmt(p.x)} ${fmt(p.y)} V ${y} H ${x}`} stroke={REF_CYAN} strokeWidth="3" fill="none"/>
     <line x1={x+r} y1={y-172} x2={x+r} y2={y+172} stroke={REF_DIM} strokeDasharray="5 8"/>

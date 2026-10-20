@@ -36,9 +36,9 @@ export default function MathVideoStudio() {
   const [defaultAudio,setDefaultAudio] = useState<MathV1DefaultAudio>({enabled:false});
   const [uploadingDefaultAudio,setUploadingDefaultAudio] = useState(false);
   const [defaultAudioOn,setDefaultAudioOn] = useState(true);
-  const selectedVoice=mixedNarration || (defaultAudioOn&&defaultAudio.enabled?{
+  const selectedVoice=(defaultAudioOn&&defaultAudio.enabled?{
     audioUrl:defaultAudio.audioUrl||"",relativePath:defaultAudio.relativePath||"",
-  }:null);
+  }:null) || mixedNarration;
   const [voiceVolume, setVoiceVolume] = useState(0.95);
   const playerProps = {
     ...BASE_PLAYER_PROPS,

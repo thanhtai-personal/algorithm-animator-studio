@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Player, type PlayerRef } from "@remotion/player";
 import { ArrowUpRight, BookOpen, Download, Film, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { readSystemLang, subscribeSystemLang } from "@/lib/i18n";
 import { mathVideoPreset } from "@/features/math-video/mathVideoPreset";
+import { getMathV1DefaultAudio, uploadMathV1DefaultAudio, type MathV1DefaultAudio } from "@/features/math-video/mathV1AudioApi";
 import { MathNarrationPanel, type MixedNarration } from "@/features/math-video/MathNarrationPanel";
 import { MATH_CHAPTERS, MATH_FPS, MATH_FRAMES, MATH_HEIGHT, MATH_SECONDS, MATH_WIDTH, formatMathTime } from "@/features/math-video/mathTimeline";
 import { PresetVideoComposition, DEFAULT_PRESET_VIDEO_COMPOSITION_PROPS } from "@/features/preset-video/PresetVideoComposition";
@@ -32,14 +33,32 @@ export default function MathVideoStudio() {
   const [message, setMessage] = useState("");
   const [result, setResult] = useState<PresetVideoRenderResponse | null>(null);
   const [mixedNarration, setMixedNarration] = useState<MixedNarration|null>(null);
+  const [defaultAudio,setDefaultAudio] = useState<MathV1DefaultAudio>({enabled:false});
+  const [uploadingDefaultAudio,setUploadingDefaultAudio] = useState(false);
+  const [defaultAudioOn,setDefaultAudioOn] = useState(true);
+  const selectedVoice=mixedNarration || (defaultAudioOn&&defaultAudio.enabled?{
+    audioUrl:defaultAudio.audioUrl||"",relativePath:defaultAudio.relativePath||"",
+  }:null);
   const [voiceVolume, setVoiceVolume] = useState(0.95);
   const playerProps = {
     ...BASE_PLAYER_PROPS,
-    voiceoverAudioUrl: mixedNarration?.audioUrl || "",
+    voiceoverAudioUrl: selectedVoice?.audioUrl || "",
     voiceoverVolume: voiceVolume,
   };
   const isVi = lang === "vi";
   useEffect(() => subscribeSystemLang(setLang), []);
+  useEffect(()=>{getMathV1DefaultAudio().then(setDefaultAudio).catch(()=>setDefaultAudio({enabled:false}));},[]);
+  async function importDefaultAudio(event:ChangeEvent<HTMLInputElement>){
+    const file=event.target.files?.[0];
+    if(!file)return;
+    setUploadingDefaultAudio(true);
+    try{
+      const item=await uploadMathV1DefaultAudio(file);
+      setDefaultAudio(item);setDefaultAudioOn(true);setMixedNarration(null);
+      toast.success(isVi?"Đã lưu audio tham chiếu làm mặc định cho V1.":"V1 default reference audio saved.");
+    }catch(error){toast.error(error instanceof Error?error.message:"Audio import failed");}
+    finally{setUploadingDefaultAudio(false);event.target.value="";}
+  }
 
   async function exportVideo() {
     if (exporting) return;
@@ -50,7 +69,7 @@ export default function MathVideoStudio() {
     try {
       const settings = createDefaultPresetVideoSettings(mathVideoPreset);
       settings.trimEndSeconds = range === "intro" ? 40 : MATH_SECONDS;
-      settings.voiceoverAudioRelativePath = mixedNarration?.relativePath || "";
+      settings.voiceoverAudioRelativePath = selectedVoice?.relativePath || "";
       settings.voiceoverVolume = voiceVolume;
       const rendered = await renderPresetVideo({
         preset: mathVideoPreset,
@@ -160,6 +179,22 @@ export default function MathVideoStudio() {
               ? "Âm thanh do bạn tự tạo qua Supertonic. Bản dựng không dùng âm thanh gốc; hãy kiểm thử 40 giây trước khi render toàn bộ."
               : "User-generated voice-over is supported; source audio is not bundled. Test the 40-second clip first."}</p>
           </aside>
+          <section className="space-y-3 rounded-xl border bg-card/60 p-4">
+            <h2 className="font-semibold">{isVi?"Âm thanh gốc mặc định — V1":"Default reference audio — V1"}</h2>
+            <p className="text-xs text-muted-foreground">{isVi
+              ?"Nhập một lần file âm thanh bạn đã cung cấp. Hệ thống lưu trong dữ liệu KAI STUDIO và tự dùng ở lần mở sau; không đưa file lên GitHub."
+              :"Import the supplied audio once to KAI STUDIO local storage; it persists between sessions and is never committed to GitHub."}</p>
+            <input aria-label="Chọn âm thanh gốc làm mặc định" type="file" accept="audio/*,.mp3,.mp4,.m4a,.wav"
+              className="w-full text-xs" disabled={uploadingDefaultAudio||exporting} onChange={e=>void importDefaultAudio(e)}/>
+            <p className="text-xs text-muted-foreground">{defaultAudio.enabled
+              ? `✓ ${defaultAudio.codec?.toUpperCase()} · ${defaultAudio.durationSeconds?.toFixed(3)}s`
+              : isVi?"Chưa lưu audio mặc định trên máy này.":"No default audio saved on this device yet."}</p>
+            {defaultAudio.enabled && <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={defaultAudioOn} onChange={e=>setDefaultAudioOn(e.target.checked)}/>
+              {isVi?"Tự dùng audio gốc khi preview và xuất MP4":"Use reference audio in preview and MP4 exports"}
+            </label>}
+            {defaultAudio.enabled&&defaultAudio.audioUrl&&<audio controls src={defaultAudio.audioUrl} className="w-full"/>}
+          </section>
           <MathNarrationPanel onMix={setMixedNarration} onInvalidate={() => setMixedNarration(null)}
             volume={voiceVolume} onVolumeChange={setVoiceVolume} isVi={isVi}/>
           </div>

@@ -83,7 +83,7 @@ function SunShadow({t}:BeatProps){
 }
 
 function EarthSeasons({frame,t}:BeatProps){
-  const x=642,y=393,r=148;
+  const x=644,y=359,r=184;
   const shift=Math.sin((frame-9445)/93)*14;
   return <g>
     <g transform={`rotate(-24 ${x} ${y})`}>
@@ -92,14 +92,20 @@ function EarthSeasons({frame,t}:BeatProps){
       <path d={`M ${x-r-10} ${y} H ${x+r+10}`} stroke={REF_CYAN} strokeWidth="4"/>
     </g>
     <path d={`M ${x-60+shift} ${y+r+80} L ${x+65+shift} ${y-r-78}`} stroke={REF_WHITE} strokeWidth="1.6"/>
-    <circle cx={330} cy={530} r="35" fill={REF_WHITE}/>
+    <circle cx={271} cy={554} r="50" fill={REF_WHITE}/>
     {Array.from({length:5},(_,i)=><path key={i}
       d={`M 368 ${488+i*22} l 123 -31`} stroke={REF_WHITE} strokeWidth="1.6"/>)}
-    <path d="M 1040 280 H 1165 V 410 H 1040 Z" fill="none" stroke={REF_DIM}/>
-    <path d="M 1040 410 L 1040 286 L 1137 410 Z" fill={REF_CYAN} fillOpacity=".16" stroke={REF_CYAN}/>
-    <Annotation x={1101} y={258} color={REF_DIM} size={18} anchor="middle">23°</Annotation>
-    <Annotation x={x} y={186} size={20} anchor="middle">{t<.4?"Đông chí":t<.75?"Thu phân":"Hạ chí"}</Annotation>
-    <Annotation x={1105} y={467} size={16} anchor="middle">Góc chiếu</Annotation>
+    <path d="M 893 250 H 1177" fill="none" stroke={REF_DIM} strokeWidth="2"/>
+    <path d="M 1035 250 V 114" stroke={REF_CYAN} strokeWidth="7"/>
+    <path d="M 1035 250 H 1088" stroke={REF_ORANGE} strokeWidth="8"/>
+    <Annotation x={1035} y={90} color={REF_DIM} anchor="middle" size={17}>Không theo tỉ lệ</Annotation>
+    <path d="M 1035 114 L 1088 250" fill="none" stroke={REF_WHITE} strokeWidth="2.2"/>
+    <Annotation x={413} y={365} size={23} weight={700}>Hà Nội</Annotation>
+    <Annotation x={425} y={328} size={20}>69°</Annotation>
+    <Annotation x={396} y={59} size={24} weight={700} anchor="middle">{t<.24?"Hạ chí":t<.75?"Thu phân":"Đông chí"}</Annotation>
+    <Annotation x={396} y={112} size={21} color={REF_ORANGE} anchor="middle">Bóng 38 cm</Annotation>
+    <Annotation x={889} y={283} color={REF_DIM} size={17}>Nam</Annotation>
+    <Annotation x={1176} y={283} color={REF_DIM} size={17} anchor="end">Bắc</Annotation>
   </g>;
 }
 
@@ -159,23 +165,22 @@ function WheelchairSlope({frame,t}:BeatProps){
 }
 
 function SlopePercent({frame,t}:BeatProps){
-  const height=lerp(20,315,ease(t)),base=420;
+  // The source starts this beat with a small triangle and a figure at the left.
   return <g>
-    <Annotation x={640} y={104} size={23} weight={700} anchor="middle">Độ dốc % = tang × 100</Annotation>
-    <SourceFigure x={192} ground={574} gesture={1}/>
-    <path d="M 235 568 H 1150" stroke={REF_DIM} strokeWidth="2"/>
-    <path d={`M 450 535 L ${450+base} ${535-height} L ${450+base} 535 Z`}
-      fill="#9b9ca0" fillOpacity=".15" stroke={REF_WHITE} strokeWidth="2"/>
-    <path d={`M 450 535 H ${450+base}`} stroke={REF_ORANGE} strokeWidth="3"/>
-    <path d={`M ${450+base} 535 V ${535-height}`} stroke={REF_CYAN} strokeWidth="3"/>
-    <Annotation x={660} y={567} size={17} color={REF_ORANGE} anchor="middle">100 m</Annotation>
-    <Annotation x={879} y={535-height/2} color={REF_CYAN} size={18}>{Math.round(height/10)} m</Annotation>
-    {t>.55&&<Annotation x={900} y={221} size={19}>12% = 6,8°</Annotation>}
+    <Annotation x={640} y={38} color={REF_DIM} size={13} anchor="middle">Đ Ộ   D Ố C   P H Ầ N   T R Ă M</Annotation>
+    <SourceFigure x={94} ground={550}/>
+    <path d="M 126 301 L 200 174 L 274 301 Z" fill="none" stroke={REF_WHITE} strokeWidth="3"/>
+    {t>.6 && <g opacity={ease((t-.6)/.4)}>
+      <path d="M 450 575 H 1050" stroke={REF_DIM} strokeWidth="2"/>
+      <Annotation x={720} y={505} color={REF_DIM} size={17} anchor="middle">Độ dốc % = tang × 100</Annotation>
+      <path d="M 480 574 H 880 L 880 545 Z" stroke={REF_WHITE} strokeWidth="1.5" fill="none"/>
+      <Annotation x={682} y={607} color={REF_ORANGE} size={17} anchor="middle">100 m</Annotation>
+    </g>}
   </g>;
 }
 
 function ElectricPhases({frame, cue,t}:BeatProps){
-  const beat=number(cue),x=290,y=406,r=136;
+  const beat=number(cue),x=214,y=339,r=113;
   if(beat===32) {
     const a=project(x,y,r,115),b=project(x,y,r,-50);
     return <g>
@@ -189,11 +194,12 @@ function ElectricPhases({frame, cue,t}:BeatProps){
     </g>;
   }
   const degrees=(frame-12695)/8,radiansAngle=radians(degrees);
-  const early=frame<12900;
+  const early=frame<12970;
+  const showWave=frame>=13080;
   return <g>
-    <Annotation x={635} y={121} size={22} anchor="middle" weight={700}>Điện ba pha · 50 Hz</Annotation>
+    <Annotation x={640} y={38} size={15} color={REF_DIM} anchor="middle">{showWave?"Điện ba pha - 50 Hz":"Đ I Ệ N  B A  P H A"}</Annotation>
     <CircleAxes x={x} y={y} r={r}/>
-    {Array.from({length:early?1:3},(_,i)=>{
+    {Array.from({length:early?0:3},(_,i)=>{
       const offset=i*120,p=project(x,y,r,degrees-offset);
       return <g key={i}>
         <path d={`M ${x} ${y} L ${fmt(p.x)} ${fmt(p.y)}`}
@@ -201,41 +207,49 @@ function ElectricPhases({frame, cue,t}:BeatProps){
         <circle cx={p.x} cy={p.y} r="5" fill={[REF_CYAN,REF_WHITE,REF_DIM][i]}/>
       </g>;
     })}
-    <path d="M 548 580 H 1152" stroke={REF_DIM} strokeWidth="1.5"/>
-    {Array.from({length:early?1:3},(_,i)=>{
+    {showWave && <g><path d="M 431 339 H 1177" stroke={REF_DIM} strokeWidth="1.5"/>
+    {Array.from({length:3},(_,i)=>{
       const offset=i*2*Math.PI/3;
       const points=Array.from({length:151},(_,j)=> {
-        const u=j/150,xp=548+590*u,yp=408-105*Math.sin(u*4*Math.PI-radiansAngle+offset);
+        const u=j/150,xp=431+739*u,yp=339-92*Math.sin(u*4*Math.PI-radiansAngle+offset);
         return `${j?"L":"M"}${fmt(xp)},${fmt(yp)}`;
       }).join(" ");
       return <path key={i} d={points} stroke={[REF_CYAN,REF_WHITE,REF_DIM][i]} strokeWidth="2.3" fill="none"/>;
     })}
-    <Annotation x={854} y={616} anchor="middle" color={REF_DIM} size={17}>20 ms</Annotation>
-    {t>.45&&<Annotation x={x} y={y+r+43} anchor="middle" size={17}>Tổng = 0</Annotation>}
+    <Annotation x={826} y={563} anchor="middle" color={REF_DIM} size={17}>20 ms</Annotation></g>}
+    {showWave&&<Annotation x={x} y={y+r+43} anchor="middle" size={17}>Tổng = 0</Annotation>}
   </g>;
 }
 
-function FinalReview({frame,cue,t}:BeatProps){
+function FinalReview({cue,t}:BeatProps){
   const beat=number(cue);
   if(beat===36)return <MathReferenceLogo/>;
   if(beat===33||beat===34){
-    const radius=beat===34?lerp(118,184,ease(t)):142,x=786,y=375;
+    const x=748,y=359,r=161;
     return <g>
-      <SourceFigure x={420} ground={553}/>
-      <CircleAxes x={x} y={y} r={radius} subtle/>
-      <path d={`M ${x} ${y} V ${y-radius} H ${x+radius} Z`}
-        fill={REF_CYAN} fillOpacity={beat === 34 ? 0.24 : 0.1} stroke={REF_CYAN}/>
-      <Annotation x={x+30} y={y-radius+44} size={19}>Một phần tư</Annotation>
-      {beat===33&&<SmallNoteBox x={489} y={451} w={160} h={104} title="Ghi nhớ" detail="sin · cos"/>}
+      <SourceFigure x={175} ground={590}/>
+      <circle cx={x} cy={y} r={r} stroke={REF_DIM} strokeWidth="2" strokeDasharray="9 8" fill="none"/>
+      <path d={`M ${x} ${y} V ${y-r} A ${r} ${r} 0 0 1 ${x+r} ${y} Z`}
+        stroke={REF_CYAN} strokeWidth="2" fill={REF_CYAN} fillOpacity=".19"/>
+      <path d={`M ${x} ${y} L ${x+122} ${y-101} V ${y} Z`}
+        stroke={REF_WHITE} strokeWidth="1.5" fill={REF_WHITE} fillOpacity=".12"/>
+      <Annotation x={x+40} y={y-r-26} anchor="middle" size={23} weight={700}>Một phần tư</Annotation>
+      {beat===33&&<g>
+        {["Ngoại lệ","Góc phụ","Bảng dấu"].map((label,i)=><g key={i}>
+          <rect x={295+i%2*9} y={444+i*31} width="133" height="65"
+            stroke={REF_WHITE} strokeWidth="1.5" fill="none"/>
+          <Annotation x={361} y={478+i*31} anchor="middle" size={19} weight={700}>{label}</Annotation>
+        </g>)}
+      </g>}
     </g>;
   }
   return <g>
-    <SourceFigure x={310} ground={571} gesture={1}/>
-    <CircleAxes x={545} y={386} r={146}/>
-    <RotatingProjection x={545} y={386} r={146} angle={beat===35&&t<.4?120:lerp(120,300,t)}
-      showLabels={false}/>
-    <SmallNoteBox x={849} y={238} w={294} h={228} title="Đề kiểm tra" detail={t>.70?"sin 120° = 0,866":"sin 120° = ?" } accent={t>.70?REF_CYAN:REF_WHITE}/>
-    {t>.46&&<Annotation x={440} y={322} color={REF_CYAN} size={19}>0,866</Annotation>}
+    <SourceFigure x={65} ground={570} gesture={1}/>
+    <CircleAxes x={325} y={363} r={146} subtle/>
+    <RotatingProjection x={325} y={363} r={146} angle={120} showLabels={false}/>
+    <SmallNoteBox x={845} y={267} w={260} h={194} title="Đề kiểm tra"
+      detail={t>.84?"sin 120° = 0,866":"sin 120° = ?"} accent={t>.84?REF_CYAN:REF_WHITE}/>
+    <Annotation x={247} y={326} color={REF_CYAN} size={18}>0,866</Annotation>
   </g>;
 }
 

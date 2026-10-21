@@ -1,11 +1,9 @@
 import fs from "node:fs";
-import { randomUUID } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import { Router, type Request, type Response } from "express";
 import type { GenerateVideoFromAudioBody, GenerateVideoFromTextBody } from "../models/Video";
 import type { RemotionVideoRenderBody } from "../models/RemotionVideo";
-import type { PresetVideoRenderBody } from "../models/PresetVideo";
 import type { TimelineVideoRenderProject } from "../models/TimelineVideo";
 import multer from "multer";
 import { GENERATED_PUBLIC_PATH, SERVER_ORIGIN, buildGeneratedFileUrl } from "../config/paths";
@@ -16,25 +14,14 @@ import {
   normalizeVideoFitMode,
 } from "../services/VideoService";
 import { listGeneratedVideos } from "../utils/videoOutput";
-import { runFfmpeg, runFfprobe } from "../utils/ffmpeg";
 import { readEnvValues } from "../services/EnvFileService";
 import { resolveGeneratedResource } from "../services/ResourceService";
 import { readRuntimeEnvFromRequest } from "../services/RuntimeEnvService";
 import { getRemotionHealth, renderRemotionVideo } from "../services/RemotionRenderService";
-import { renderPresetVideo } from "../services/PresetVideoRenderService";
-import { mixMathNarration } from "../services/MathNarrationService";
-import { getMathV1DefaultAudio, importMathV1DefaultAudio } from "../services/MathV1DefaultAudioService";
-import { createPresetVideoMediaRouter } from "./presetVideoMediaRoutes";
 import { renderTimelineVideo } from "../services/TimelineVideoService";
 import { renderRemotionTimelineVideo } from "../services/RemotionTimelineRenderService";
 import { transcribeLyricsFromMedia } from "../services/VideoLyricsService";
 import { BACKGROUND_LIMITS, generateNarrationAudio, resolveOptionalBackgroundMusic, saveUploadedAudio, sendError, validateBackgroundFile } from "./videoRouteHelpers";
-import {
-  buildRhythmicCaptureProbeArgs,
-  buildRhythmicMp4TranscodeArgs,
-  normalizeRhythmicTranscodeFields,
-  parseRhythmicCaptureProbe,
-} from "../utils/rhythmicTranscode";
 
 const uploadDirectory = path.join(os.tmpdir(), "piper-react-video-backgrounds");
 
@@ -44,7 +31,6 @@ const upload = multer({
     fileSize: BACKGROUND_LIMITS.video,
   },
 });
-const mathV1AudioUpload = multer({ dest: uploadDirectory, limits: { fileSize: 40 * 1024 * 1024 } });
 const mixedUpload = upload.fields([
   { name: "image", maxCount: 1 },
   { name: "audio", maxCount: 1 },
@@ -61,47 +47,6 @@ export function createVideoRouter() {
     res.json(getRemotionHealth(readRuntimeEnvFromRequest(req)));
   });
 
-  router.post("/video/transcode-mp4", upload.single("video"), async (req, res) => {
-    if (!req.file?.path) return res.status(400).json({ error: "Chưa nhận được video để chuyển sang MP4." });
-    const outputPath = path.join(uploadDirectory, `${randomUUID()}.mp4`);
-    const cleanup = () => {
-      fs.rm(req.file?.path || "", { force: true }, () => undefined);
-      fs.rm(outputPath, { force: true }, () => undefined);
-    };
-    try {
-      const envOverrides = readRuntimeEnvFromRequest(req);
-      const output = normalizeRhythmicTranscodeFields(req.body || {});
-      const probe = await runFfprobe(
-        buildRhythmicCaptureProbeArgs(req.file.path),
-        envOverrides,
-      );
-      const cadence = parseRhythmicCaptureProbe(probe.stdout, output.fps);
-      if (!cadence) {
-        cleanup();
-        return res.status(422).json({
-          code: "RHYTHMIC_CAPTURE_UNREADABLE",
-          error: "Không đo được nhịp khung hình của bản ghi WebGL. Video chưa được xuất để tránh tạo tệp bị giật.",
-        });
-      }
-      // Browser/WebGL capture can legitimately run below the requested cadence
-      // on a busy GPU. Keep cadence as diagnostics, but let FFmpeg retime the
-      // captured frames to the user's selected CFR instead of blocking export.
-      await runFfmpeg(
-        buildRhythmicMp4TranscodeArgs(req.file.path, outputPath, output, cadence),
-        envOverrides,
-      );
-      res.setHeader("X-Rhythmic-Captured-Fps", cadence.capturedFps.toFixed(2));
-      res.setHeader("X-Rhythmic-Max-Frame-Gap-Ms", cadence.maxFrameGapMs.toFixed(1));
-      res.setHeader("X-Rhythmic-Capture-Health", cadence.healthy ? "healthy" : "degraded");
-      res.once("finish", cleanup);
-      res.once("close", cleanup);
-      return res.sendFile(outputPath);
-    } catch (error) {
-      cleanup();
-      return sendError(res, error);
-    }
-  });
-
   router.post("/video/render-remotion", async (req: Request<unknown, unknown, RemotionVideoRenderBody>, res: Response) => {
     try {
       const video = await renderRemotionVideo({
@@ -111,57 +56,6 @@ export function createVideoRouter() {
       return res.json(video);
     } catch (error) {
       return sendError(res, error);
-    }
-  });
-
-  router.use(createPresetVideoMediaRouter());
-
-  router.get("/video/math-v1/default-audio", (req,res) => {
-    return res.json(getMathV1DefaultAudio(readRuntimeEnvFromRequest(req)));
-  });
-  router.post("/video/math-v1/default-audio", mathV1AudioUpload.single("audio"), async (req,res) => {
-    if(!req.file?.path)return res.status(400).json({error:"Vui lòng chọn file audio."});
-    try {
-      return res.json(await importMathV1DefaultAudio(req.file.path,readRuntimeEnvFromRequest(req)));
-    }catch(error){
-      return res.status(400).json({error:error instanceof Error?error.message:"Không cài được audio mặc định."});
-    }finally{
-      fs.rm(req.file.path,{force:true},()=>undefined);
-    }
-  });
-
-  router.post("/video/math-narration/mix", async (req,res) => {
-    try {
-      const audio=await mixMathNarration(req.body||{},readRuntimeEnvFromRequest(req));
-      return res.json(audio);
-    } catch(error) {
-      return res.status(400).json({error:error instanceof Error?error.message:"Không ghép được giọng đọc toán học."});
-    }
-  });
-
-  router.post("/video/render-preset", async (req: Request<unknown, unknown, PresetVideoRenderBody>, res: Response) => {
-    res.status(200);
-    res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
-    res.setHeader("Cache-Control", "no-cache, no-transform");
-    res.setHeader("X-Accel-Buffering", "no");
-    res.flushHeaders();
-
-    const writeEvent = (payload: unknown) => {
-      if (!res.writableEnded && !res.destroyed) res.write(`${JSON.stringify(payload)}\n`);
-    };
-
-    try {
-      const video = await renderPresetVideo({
-        input: req.body || {},
-        envOverrides: readRuntimeEnvFromRequest(req),
-        onProgress: (event) => writeEvent({ type: "progress", ...event }),
-      });
-      writeEvent({ type: "result", result: video });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error || "Render preset video thất bại.");
-      writeEvent({ type: "error", error: message });
-    } finally {
-      if (!res.writableEnded) res.end();
     }
   });
 

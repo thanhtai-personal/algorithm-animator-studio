@@ -15,6 +15,11 @@ const retiredFrontends = [
   "story-video",
   "rhythmic-studio",
   "marble-tower-video",
+  "ai-video-agent",
+  "channel-manager",
+  "publishing-ops",
+  "social-channel",
+  "youtube-channel",
 ];
 
 const retiredPages = [
@@ -23,6 +28,8 @@ const retiredPages = [
   "SocialPublishing",
   "StoryReviewStudio",
   "StoryVideoStudio",
+  "AiVideoAgent",
+  "JobManagement",
 ];
 
 test("retired domain source is absent from the OSS core", () => {
@@ -51,4 +58,14 @@ test("algorithm, maze, long video, render, and TTS remain", () => {
     "server/routes/gptSoVitsRoutes.ts",
     "server/routes/rvcApplioRoutes.ts",
   ]) assert.ok(fs.existsSync(path.join(root, target)), `protected contract missing: ${target}`);
+});
+
+test("AI and publishing background-notification UI is detached", () => {
+  const app = fs.readFileSync(path.join(root, "src/App.tsx"), "utf8");
+  const layout = fs.readFileSync(path.join(root, "src/components/AppLayout.tsx"), "utf8");
+  const nav = fs.readFileSync(path.join(root, "src/components/appNavigation.ts"), "utf8");
+  assert.doesNotMatch(app, /path="\/jobs"/);
+  assert.doesNotMatch(layout, /BackgroundJobsNotifier/);
+  assert.doesNotMatch(nav, /to: "\/jobs"/);
+  assert.equal(fs.existsSync(path.join(root, "src/components/BackgroundJobsNotifier.tsx")), false);
 });

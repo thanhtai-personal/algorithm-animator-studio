@@ -15,25 +15,13 @@ const queryClient = new QueryClient();
 const AlgorithmChannelPage = lazy(() => import("./pages/AlgorithmChannelPage.tsx"));
 const AlgorithmLongVideoPage = lazy(() => import("./pages/AlgorithmLongVideoPage.tsx"));
 const MazePathfindingPage = lazy(() => import("./pages/MazePathfindingPage.tsx"));
-const RhythmicStudio = lazy(() => import("./pages/RhythmicStudio.tsx"));
-const MarbleTowerVideo = lazy(() => import("./pages/MarbleTowerVideo.tsx"));
-const ActionDuelStudio = lazy(() => import("./pages/ActionDuelStudio.tsx"));
 const Auth = lazy(() => import("./pages/Auth.tsx"));
 const GeneratedAssets = lazy(() => import("./pages/GeneratedAssets.tsx"));
-const PresetVideos = lazy(() => import("./pages/PresetVideos.tsx"));
-const MathVideoStudio = lazy(() => import("./pages/MathVideoStudio.tsx"));
-const CommonVideoPage = lazy(() => import("./pages/CommonVideoPage.tsx"));
 const JobManagement = lazy(() => import("./pages/JobManagement.tsx"));
 const LegalPage = lazy(() => import("./pages/LegalPage.tsx"));
-const NewsChannelPage = lazy(() => import("./pages/NewsChannelPage.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const Settings = lazy(() => import("./pages/Settings.tsx"));
 const TextToSpeech = lazy(() => import("./pages/TextToSpeech.tsx"));
-const StoryChannelPage = lazy(() => import("./pages/StoryChannelPage.tsx"));
-const StoryAuthorStudio = lazy(() => import("./pages/StoryAuthorStudio.tsx"));
-const StoryReviewChannelPage = lazy(() => import("./pages/StoryReviewChannelPage.tsx"));
-const YoutubePublishing = lazy(() => import("./pages/YoutubePublishing.tsx"));
-const YoutubeTools = lazy(() => import("./pages/YoutubeTools.tsx"));
 
 function shouldUseVercelAnalytics() {
   const configured = String(import.meta.env.VITE_VERCEL_ANALYTICS || "").toLowerCase();
@@ -59,11 +47,6 @@ const RouteFallback = () => (
   </main>
 );
 
-const LegacyChannelRedirect = () => {
-  const location = useLocation();
-  return <Navigate replace to={`/channel${location.search}${location.hash}`} />;
-};
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} storageKey="kai-studio.theme">
@@ -81,69 +64,25 @@ const App = () => (
                 <Route path="/privacy" element={<LegalPage type="privacy" />} />
                 <Route path="/term" element={<LegalPage type="terms" />} />
                 <Route path="/terms" element={<LegalPage type="terms" />} />
-                <Route path="/" element={<Navigate replace to="/text-to-speech" />} />
+                <Route path="/" element={<Navigate replace to="/algorithms" />} />
                 <Route path="/algorithms" element={<AlgorithmChannelPage />} />
-                <Route path="/algorithms/agentic" element={<AlgorithmChannelPage initialMode="agentic" />} />
-                <Route path="/algorithms/manual" element={<AlgorithmChannelPage initialMode="manual" />} />
-                <Route path="/algorithms/short" element={<AlgorithmChannelPage initialMode="manual" />} />
-                <Route path="/algorithms/rhythmic" element={<RhythmicStudio />} />
-                <Route path="/algorithms/marble-tower" element={<MarbleTowerVideo />} />
-                <Route path="/algorithms/action-duel" element={<ActionDuelStudio />} />
+                <Route path="/algorithms/short" element={<AlgorithmChannelPage />} />
+                <Route path="/algorithms/manual" element={<Navigate replace to="/algorithms" />} />
+                <Route path="/algorithms/agentic" element={<Navigate replace to="/algorithms" />} />
                 <Route path="/algorithms/maze" element={<MazePathfindingPage />} />
-                <Route path="/algorithms/maze/agentic" element={<MazePathfindingPage initialMode="agentic" />} />
-                <Route path="/algorithms/maze/manual" element={<MazePathfindingPage initialMode="manual" />} />
+                <Route path="/algorithms/maze/manual" element={<Navigate replace to="/algorithms/maze" />} />
+                <Route path="/algorithms/maze/agentic" element={<Navigate replace to="/algorithms/maze" />} />
                 <Route path="/algorithms/video-long" element={<AlgorithmLongVideoPage />} />
-                <Route path="/algorithms/video-long/agentic" element={<AlgorithmLongVideoPage initialMode="agentic" />} />
-                <Route path="/algorithms/video-long/manual" element={<AlgorithmLongVideoPage initialMode="manual" />} />
-                <Route path="/news/github-trending" element={<NewsChannelPage channel="github-trending" />} />
-                <Route path="/news/github-trending/agentic" element={<NewsChannelPage channel="github-trending" initialMode="agentic" />} />
-                <Route path="/news/github-trending/manual" element={<NewsChannelPage channel="github-trending" initialMode="manual" />} />
-                <Route path="/news/football-commentary" element={<NewsChannelPage channel="football-commentary" />} />
-                <Route path="/news/football-commentary/agentic" element={<NewsChannelPage channel="football-commentary" initialMode="agentic" />} />
-                <Route path="/news/football-commentary/manual" element={<NewsChannelPage channel="football-commentary" initialMode="manual" />} />
-                <Route path="/algorithms/github-trending" element={<Navigate replace to="/news/github-trending" />} />
-                <Route path="/football/commentary/agentic" element={<Navigate replace to="/news/football-commentary/agentic" />} />
-                <Route path="/football/commentary/manual" element={<Navigate replace to="/news/football-commentary/manual" />} />
-                <Route path="/football/mu-news" element={<Navigate replace to="/news/football-commentary" />} />
-                <Route path="/stories" element={<StoryChannelPage />} />
-                <Route path="/stories/agentic" element={<StoryChannelPage initialMode="agentic" />} />
-                <Route path="/stories/manual" element={<StoryChannelPage initialMode="manual" />} />
-                <Route path="/stories/video" element={<StoryChannelPage initialMode="manual" />} />
-                <Route path="/stories/create" element={<StoryAuthorStudio />} />
-                <Route path="/stories/review" element={<StoryReviewChannelPage />} />
-                <Route path="/stories/review/agentic" element={<StoryReviewChannelPage initialMode="agentic" />} />
-                <Route path="/stories/review/manual" element={<StoryReviewChannelPage initialMode="manual" />} />
-                <Route path="/videos" element={<CommonVideoPage />} />
-                <Route path="/videos/agentic" element={<CommonVideoPage initialMode="agentic" />} />
-                <Route path="/videos/manual" element={<CommonVideoPage initialMode="manual" />} />
-                <Route path="/videos/presets" element={<PresetVideos />} />
-                <Route path="/videos/math" element={<MathVideoStudio />} />
-                <Route path="/jobs" element={<JobManagement />} />
+                <Route path="/algorithms/video-long/manual" element={<Navigate replace to="/algorithms/video-long" />} />
+                <Route path="/algorithms/video-long/agentic" element={<Navigate replace to="/algorithms/video-long" />} />
                 <Route path="/maze-pathfinding" element={<Navigate replace to="/algorithms/maze" />} />
-                <Route path="/maze-pathfinding/agentic" element={<Navigate replace to="/algorithms/maze/agentic" />} />
-                <Route path="/maze-pathfinding/manual" element={<Navigate replace to="/algorithms/maze/manual" />} />
                 <Route path="/algorithm-world" element={<Navigate replace to="/algorithms/maze" />} />
                 <Route path="/long-content" element={<Navigate replace to="/algorithms/video-long" />} />
-                <Route path="/long-content/agentic" element={<Navigate replace to="/algorithms/video-long/agentic" />} />
-                <Route path="/long-content/manual" element={<Navigate replace to="/algorithms/video-long/manual" />} />
-                <Route path="/github-trending" element={<Navigate replace to="/news/github-trending" />} />
-                <Route path="/mu-news" element={<Navigate replace to="/news/football-commentary" />} />
-                <Route path="/story-author" element={<Navigate replace to="/stories/create" />} />
-                <Route path="/story-review" element={<Navigate replace to="/stories/review" />} />
-                <Route path="/story-review/agentic" element={<Navigate replace to="/stories/review/agentic" />} />
-                <Route path="/story-review/manual" element={<Navigate replace to="/stories/review/manual" />} />
-                <Route path="/story-video" element={<Navigate replace to="/stories" />} />
-                <Route path="/assets" element={<GeneratedAssets />} />
-                <Route path="/providers" element={<Navigate replace to="/settings?tab=tools" />} />
                 <Route path="/text-to-speech" element={<TextToSpeech />} />
-                <Route path="/ai-video-agent" element={<Navigate replace to="/videos/agentic" />} />
-                <Route path="/video-create" element={<Navigate replace to="/videos/manual" />} />
-                <Route path="/youtube-tools" element={<YoutubeTools />} />
-                <Route path="/channel" element={<YoutubePublishing />} />
-                <Route path="/social-publishing" element={<LegacyChannelRedirect />} />
-                <Route path="/youtube-publishing" element={<LegacyChannelRedirect />} />
-                <Route path="/youtube" element={<LegacyChannelRedirect />} />
+                <Route path="/assets" element={<GeneratedAssets />} />
+                <Route path="/jobs" element={<JobManagement />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/providers" element={<Navigate replace to="/settings?tab=tools" />} />
                 <Route path="/setup" element={<Navigate replace to="/settings?tab=health" />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

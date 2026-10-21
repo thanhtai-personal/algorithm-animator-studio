@@ -23,10 +23,10 @@ export const MENU_FEATURE_SETTINGS_EVENT = "kai-studio:menu-feature-settings-cha
 const STORAGE_KEY = "kai-studio.menuFeatureSettings";
 
 export const DEFAULT_MENU_FEATURE_SETTINGS: MenuFeatureSettings = {
-  "algorithm-studio": false,
+  "algorithm-studio": true,
   "rhythmic-studio": true,
-  "maze-pathfinding": false,
-  "algorithm-long": false,
+  "maze-pathfinding": true,
+  "algorithm-long": true,
   "github-trending": false,
   "football-commentary": false,
   "story-studio": false,

@@ -6,6 +6,8 @@ export type HealthResponse = {
   piperExists: boolean;
   modelDir: string;
   generatedDir?: string;
+  ffmpeg?: { ok: boolean; detail: string };
+  ffprobe?: { ok: boolean; detail: string };
 };
 
 export type PiperModel = {
@@ -18,28 +20,6 @@ export type PiperModel = {
 };
 
 export type SelectPathResponse = { ok: boolean; path: string };
-
-export type YoutubeToolStatusResponse = {
-  ok: boolean;
-  command: string;
-  version?: string;
-  detail?: string;
-};
-
-export type YoutubeToolsHealthResponse = {
-  ok: boolean;
-  python: YoutubeToolStatusResponse;
-  ytDlp: YoutubeToolStatusResponse;
-  whisper: YoutubeToolStatusResponse;
-  ffmpeg: YoutubeToolStatusResponse;
-  ffprobe: YoutubeToolStatusResponse;
-  cookieMode: "file" | "browser" | "none";
-  cookieStatus: YoutubeToolStatusResponse;
-  jsRuntime: YoutubeToolStatusResponse;
-  remoteComponents: YoutubeToolStatusResponse;
-  outputDir: string;
-  installHint: string[];
-};
 
 export type EndpointCheckResponse = {
   label: string;
@@ -180,15 +160,6 @@ export type SettingsForm = Required<Pick<
   | "RVC_APPLIO_START_COMMAND"
   | "RVC_APPLIO_API_NAME"
   | "RVC_APPLIO_PYTHON"
-  | "YOUTUBE_TOOLS_PYTHON"
-  | "YOUTUBE_DLP_EXE"
-  | "WHISPER_EXE"
-  | "YOUTUBE_COOKIES_FROM_BROWSER"
-  | "YOUTUBE_COOKIES_FILE"
-  | "YOUTUBE_JS_RUNTIME"
-  | "YOUTUBE_REMOTE_COMPONENTS"
-  | "YOUTUBE_TRANSCRIPT_MODEL"
-  | "YOUTUBE_TRANSCRIPT_LANGUAGE"
 >>;
 
 export const EMPTY_FORM: SettingsForm = {
@@ -236,15 +207,6 @@ export const EMPTY_FORM: SettingsForm = {
   RVC_APPLIO_START_COMMAND: "",
   RVC_APPLIO_API_NAME: "",
   RVC_APPLIO_PYTHON: "",
-  YOUTUBE_TOOLS_PYTHON: "",
-  YOUTUBE_DLP_EXE: "",
-  WHISPER_EXE: "",
-  YOUTUBE_COOKIES_FROM_BROWSER: "",
-  YOUTUBE_COOKIES_FILE: "",
-  YOUTUBE_JS_RUNTIME: "",
-  YOUTUBE_REMOTE_COMPONENTS: "",
-  YOUTUBE_TRANSCRIPT_MODEL: "",
-  YOUTUBE_TRANSCRIPT_LANGUAGE: "",
 };
 
 export type SettingsFormKey = keyof SettingsForm;

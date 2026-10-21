@@ -283,7 +283,7 @@
     {
       "id": "video-rendering-editor",
       "name": "Video editor and rendering",
-      "summary": "Timeline editing, lyric overlays, audio mixing, Remotion compositions, media export, and FFmpeg-backed server rendering.",
+      "summary": "Algorithm Remotion composition and timeline editor/rendering; standalone Math/Preset, story and news templates retired.",
       "keywords": [
         "video",
         "editor",
@@ -328,7 +328,7 @@
       ],
       "tests": [
         "src/test/VideoEditor*.test.ts*",
-        "src/test/*Remotion*.test.ts*"
+        "scripts/tests/oss-remotion-isolation.check.mjs"
       ],
       "docs": [
         "docs/video-create-proshow-editor.md",
@@ -500,8 +500,7 @@
         "vercel.json"
       ],
       "tests": [
-        "scripts/start-production-local.test.mjs",
-        "remote-control-app/test/KaiRemote*.test.{ts,tsx}"
+        "scripts/start-production-local.test.mjs"
       ],
       "docs": [
         "docs/electron-windows-build.md",

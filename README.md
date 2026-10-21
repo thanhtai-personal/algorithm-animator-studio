@@ -2,7 +2,7 @@
 
 A visual algorithm animation and video authoring toolkit with built-in text-to-speech integrations.
 
-**Status (21 October 2026):** Open-source cleanup **in progress** on `chore/oss-algorithm-tts-cleanup-20261021`. This repository is not ready to be made Public: the full Git history, third-party model/media rights, dependency integrity and runtime tests have **not yet been cleared**. Do not distribute bundled voice weights or preset media until their terms are confirmed.
+**Status (21 October 2026):** Open-source cleanup **in progress** on `chore/oss-algorithm-tts-cleanup-20261021`. This repository is not ready to be made Public: the full Git history, third-party model/media rights, dependency integrity and runtime tests have **not yet been cleared**. Do not redistribute bundled third-party voice weights until their model licenses and provenance are confirmed. Legacy preset media has been removed from the current tree, but remains in the Git history.
 
 ## Features retained in the OSS edition
 
@@ -12,7 +12,7 @@ A visual algorithm animation and video authoring toolkit with built-in text-to-s
 - **Voice tools (all current adapters):** Piper; Supertonic; VieNeu TTS; GPT-SoVITS; ElevenLabs; RVC/Applio TTS and voice conversion.
 - Local provider settings/health, model discovery, generated audio and video files.
 
-The old story/news, generic AI video, social publishing and unrelated demo routes are being removed. Some backing source/services are still tracked while dependencies are audited.
+Removed from this OSS preparation branch: story/news/social publishing, unrelated demos, the generic Math/Preset Video library and legacy source media. Algorithm Explainer and Timeline Remotion compositions are still retained. Other shared modules await dependency auditing.
 
 ## Local development
 

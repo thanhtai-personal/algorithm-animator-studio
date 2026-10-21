@@ -16,15 +16,18 @@ Original main commit: `8009a08aeb8df6e0d1e15440f9e80c4b17d80d7a`
 9. Removed an obsolete locked registry backup, scratch transcript and 5 stale generated knowledge-graph artifacts. Updated `docs/ai-context/index.json`, agent instructions and context guide. Removed nonexistent remote-control-app scripts and index entries.
 10. Added Node structural / dangling-import checks under `scripts/tests/oss-*.check.mjs` and a CI workflow that also requests Vitest + Vite + server builds.
 11. Removed YouTube Tools download/transcript source, worker/WebSocket leftovers, cookies/UI options, a YouTube-specific test and outdated docs. `/api/health` now reports FFmpeg and FFprobe independently of YouTube status and preserves the Piper/TTS health responses.
-12. Removed **102 obsolete Vitest tests** referring to already deleted Rhythmic, Marble Tower, MuNews and AI Agent modules, plus the separate YouTube Tools test. Updated the AppLayout test to verify the surviving algorithm/maze mobile sidebar and music notifier. Algorithm 3D, video editor and remaining preset tests remain tracked.
+12. Removed **102 obsolete Vitest tests** referring to already deleted Rhythmic, Marble Tower, MuNews and AI Agent modules, plus the separate YouTube Tools test. Updated AppLayout test to cover algorithm/maze mobile sidebar; core algorithm and video-editor tests remain.
+13. **Isolated Remotion**: `Root.tsx` now registers `AlgorithmExplainer` and `TimelineVideo` only. Preset/Math registration, video API endpoints, rhythmic transcode endpoint and preset-aware bundle cache removed. Algorithm Remotion template accepts only `algorithm-explainer` while keeping bars/maze, background music and voice.
+14. Deleted standalone `src/features/{math-video,preset-video}` modules, their backend services/routes/model, and leftover exclusive scripts/tests/workflows. Removed 7 legacy preset media assets (~32.3 MB) plus unrelated Math/Fashion/Rhythmic documents (~32.5 MB combined in this step). `remotion:render:test` and `dev:remotion` scripts remain.
+15. Updated Remotion technical docs and AI context to refer to the supported renderer and tracked test paths. **These changes are not evidence that actual rendering or TTS has passed.**
 
 ## File counts — actual Git tree set comparison
 Both recursive Git tree snapshots were compared by **blob path**, rather than trusting GitHub's paginated/truncated compare file list:
 - Baseline: **1,312 tracked files**.
-- Current branch: **839 tracked files**.
-- **489 tracked files deleted**, **16 added**, **25 modified**.
-- **480 deleted files under `src/` or `server/`**.
-- Deleted source breakdown: `src/features/` 315, `src/pages/` 19, `src/lib/` 7, `src/components/` 1, `src/test/` 103, `server/` 35.
+- Current branch: **673 tracked files**.
+- **656 tracked files deleted**, **17 added**, **32 modified**.
+- **599 deleted files under `src/` or `server/`**.
+- Legacy feature and backend source, obsolete specs, tests, scripts, and preset media were removed. Counts are from a full recursive Git tree diff; do not rely on GitHub compare results truncated at 300 files.
 - No `models/*.onnx` deleted, pending independent license/model-card audit.
 
 ## Verified vs. NOT verified
@@ -36,6 +39,7 @@ Both recursive Git tree snapshots were compared by **blob path**, rather than tr
 - The Git tree no longer contains the 102 orphaned deleted-feature tests or the YouTube Tools test; the retained algorithm/video test files still exist.
 - AI context index's primary/doc paths were checked against the tracked tree and had no missing paths after updates.
 - The original `main` commit was unchanged when last checked.
+- A source/tree check confirms AlgorithmExplainer and TimelineVideo Remotion compositions remain and Math/Preset source directories are absent.
 
 **NOT verified by successful execution:**
 - `npm ci`, `npm test`, `npm run build`, `npm run build:server`, `python3 scripts/context_index.py check`.
@@ -46,11 +50,11 @@ Both recursive Git tree snapshots were compared by **blob path**, rather than tr
 
 ## Next atomic stages (keep PR Draft)
 1. **Get runnable CI / checked-out local workspace**. Run npm install/test/build and all `node --test scripts/tests/oss-*.check.mjs` checks. Fix dangling imports before any merge.
-2. **Separate legacy Math/Preset Video from the core Remotion engine and `server/routes/videoRoutes.ts`** before deleting them. Both remain coupled to current video rendering; do not blind-delete.
+2. **Implemented static source separation:** Math/Preset and old rhythmic transcode are gone; prove full `npm test`, web/server builds, algorithm Remotion CLI render and timeline MP4 export against a clean checkout before marking this complete.
 3. **Done: YouTube Tools removed from Settings and backend**; check FFmpeg/FFprobe status and all six TTS provider health flows in a running environment before publication.
 4. Isolate optional voice model dependencies. Keep all six TTS integrations while auditing four Piper ONNX weights and `libs/VieNeu-TTS` rights, attribution, download paths and opt-in installation.
 5. Audit full Git history for secrets/sensitive media and third-party asset licenses. Deletion from latest tree does not remove history; rotate any compromised credentials.
 6. Remove remaining dead dependencies/scripts/media, close stale CI workflows, write license/SECURITY/CONTRIBUTING/THIRD_PARTY_NOTICES and verify a clean user install.
-7. Only with explicit owner approval and legal/CI signoff: merge PR, address history sanitation strategy, and switch to Public.
+7. Only with explicit owner approval and legal/CI signoff: merge PR, address history sanitation strategy (legacy media remains in past commits), and switch to Public.
 
 This ledger is a status record; it is **not** evidence of a passing build or license clearance.

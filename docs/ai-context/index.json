@@ -167,7 +167,7 @@
     {
       "id": "algorithm-studio",
       "name": "Algorithm video studio",
-      "summary": "Manual short-form algorithm animation, sort implementations, Canvas/3D renderers, playback, and export.",
+      "summary": "Manual algorithms sorting, searching, graph, custom code, visualization and video export without login.",
       "keywords": [
         "algorithm",
         "sorting",
@@ -223,7 +223,6 @@
         "docs/tasks/sorting-algorithm-tasks.md"
       ],
       "related": [
-        "ai-video-agent",
         "video-rendering-editor",
         "maze-racing"
       ]
@@ -278,65 +277,7 @@
         "docs/free-maze-racing-assets.md"
       ],
       "related": [
-        "algorithm-studio",
-        "ai-video-agent"
-      ]
-    },
-    {
-      "id": "ai-video-agent",
-      "name": "AI video agent",
-      "summary": "Agentic planning, persisted jobs, background execution, realtime flow visualization, Remotion handoff, and channel presets.",
-      "keywords": [
-        "ai agent",
-        "agentic",
-        "job",
-        "background",
-        "websocket",
-        "flow graph",
-        "plan",
-        "preset",
-        "automation",
-        "tự động",
-        "lập kế hoạch"
-      ],
-      "primary": [
-        {
-          "path": "src/pages/AiVideoAgent.tsx",
-          "role": "Agent workspace composition"
-        },
-        {
-          "path": "src/lib/aiVideoAgentApi.ts",
-          "role": "Frontend API contract"
-        },
-        {
-          "path": "src/features/ai-video-agent/lib/agentFormDefaults.ts",
-          "role": "Channel defaults and presets"
-        },
-        {
-          "path": "server/routes/aiVideoAgentRoutes.ts",
-          "role": "HTTP endpoints"
-        },
-        {
-          "path": "server/services/AiVideoAgentBackgroundService.ts",
-          "role": "Background execution boundary"
-        }
-      ],
-      "expand": [
-        "src/features/ai-video-agent/**/*",
-        "server/services/AiVideoAgent*.ts",
-        "server/models/AiVideoAgent.ts"
-      ],
-      "tests": [
-        "src/test/AiVideoAgent*.test.ts*"
-      ],
-      "docs": [
-        "docs/ai-video-agent-local-flow.md",
-        "docs/ai-agent-react-flow-visualizer.md"
-      ],
-      "related": [
-        "algorithm-studio",
-        "video-rendering-editor",
-        "runtime-assets-jobs"
+        "algorithm-studio"
       ]
     },
     {
@@ -394,7 +335,6 @@
         "docs/remotion-video-engine.md"
       ],
       "related": [
-        "ai-video-agent",
         "voice-providers",
         "runtime-assets-jobs"
       ]
@@ -460,7 +400,7 @@
     {
       "id": "runtime-assets-jobs",
       "name": "Runtime, assets, setup, and jobs",
-      "summary": "Express composition, runtime settings headers, setup wizard, generated assets, background job status, storage paths, and health management.",
+      "summary": "Local runtime, resource output, generated video and audio assets; social publishing and agent queues retired.",
       "keywords": [
         "server",
         "api",
@@ -492,10 +432,6 @@
         {
           "path": "src/pages/GeneratedAssets.tsx",
           "role": "Generated resource management"
-        },
-        {
-          "path": "src/pages/JobManagement.tsx",
-          "role": "Background job workspace"
         },
         {
           "path": "server/config/paths.ts",

@@ -1,4 +1,4 @@
-import { Files, Home, ListChecks, Map, MicVocal, Settings, Video, type LucideIcon } from "lucide-react";
+import { Files, Home, Map, MicVocal, Settings, Video, type LucideIcon } from "lucide-react";
 import type { Lang } from "@/lib/i18n";
 import type { MenuFeatureId, MenuFeatureSettings } from "@/lib/menuFeatureSettings";
 
@@ -42,7 +42,6 @@ export const APP_NAVIGATION_GROUPS: AppNavigationGroup[] = [
     label: { en: "Workspace", vi: "Không gian làm việc" },
     items: [
       { id: "assets", featureId: "assets", to: "/assets", icon: Files, label: { en: "Generated Files", vi: "Tệp đã tạo" }, matchPaths: ["/assets"] },
-      { id: "jobs", featureId: "jobs", to: "/jobs", icon: ListChecks, label: { en: "Jobs", vi: "Tác vụ" }, matchPaths: ["/jobs"] },
       { id: "settings", to: "/settings", icon: Settings, label: { en: "Settings", vi: "Cài đặt" }, matchPaths: ["/settings"] },
     ],
   },

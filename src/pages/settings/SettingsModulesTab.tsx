@@ -22,7 +22,7 @@ const FEATURE_GROUPS: Array<{
   },
   {
     title: { en: "Voice and workspace", vi: "Giọng nói và công cụ" },
-    items: ["text-to-speech", "assets", "jobs"],
+    items: ["text-to-speech", "assets"],
   },
 ];
 

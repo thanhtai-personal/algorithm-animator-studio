@@ -17,7 +17,6 @@ const AlgorithmLongVideoPage = lazy(() => import("./pages/AlgorithmLongVideoPage
 const MazePathfindingPage = lazy(() => import("./pages/MazePathfindingPage.tsx"));
 const Auth = lazy(() => import("./pages/Auth.tsx"));
 const GeneratedAssets = lazy(() => import("./pages/GeneratedAssets.tsx"));
-const JobManagement = lazy(() => import("./pages/JobManagement.tsx"));
 const LegalPage = lazy(() => import("./pages/LegalPage.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const Settings = lazy(() => import("./pages/Settings.tsx"));
@@ -80,7 +79,6 @@ const App = () => (
                 <Route path="/long-content" element={<Navigate replace to="/algorithms/video-long" />} />
                 <Route path="/text-to-speech" element={<TextToSpeech />} />
                 <Route path="/assets" element={<GeneratedAssets />} />
-                <Route path="/jobs" element={<JobManagement />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/providers" element={<Navigate replace to="/settings?tab=tools" />} />
                 <Route path="/setup" element={<Navigate replace to="/settings?tab=health" />} />

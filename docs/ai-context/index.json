@@ -336,8 +336,7 @@
       "related": [
         "algorithm-studio",
         "video-rendering-editor",
-        "runtime-assets-jobs",
-        "channels-publishing"
+        "runtime-assets-jobs"
       ]
     },
     {
@@ -459,67 +458,6 @@
       ]
     },
     {
-      "id": "channels-publishing",
-      "name": "Channel management and publishing",
-      "summary": "YouTube and social OAuth, multi-channel state, uploads, schedules, durable publish queue, history, and worker execution.",
-      "keywords": [
-        "youtube",
-        "tiktok",
-        "facebook",
-        "instagram",
-        "channel",
-        "oauth",
-        "upload",
-        "publish",
-        "queue",
-        "schedule",
-        "đăng video",
-        "kênh",
-        "lịch đăng"
-      ],
-      "primary": [
-        {
-          "path": "src/pages/YoutubePublishing.tsx",
-          "role": "Unified channel workspace"
-        },
-        {
-          "path": "src/features/channel-manager/SharedChannelSidebar.tsx",
-          "role": "Shared channel selection"
-        },
-        {
-          "path": "src/features/youtube-channel/useYoutubeChannelManager.ts",
-          "role": "YouTube orchestration"
-        },
-        {
-          "path": "src/features/social-channel/hooks/useSocialChannelWorkspace.ts",
-          "role": "Social provider orchestration"
-        },
-        {
-          "path": "src/lib/publishQueueApi.ts",
-          "role": "Publish queue client contract"
-        },
-        {
-          "path": "server/routes/publishQueueRoutes.ts",
-          "role": "Publish queue endpoints"
-        }
-      ],
-      "expand": [
-        "src/features/{channel-manager,youtube-channel,social-channel,publishing-ops}/**/*",
-        "src/lib/{youtubeApi,channelProviderApi,socialPublishing,publishQueueApi}.ts",
-        "server/{routes,services}/*{Youtube,ChannelProvider,SocialProvider,Publish}*.ts"
-      ],
-      "tests": [],
-      "docs": [
-        "docs/local-publish-queue-agent-workflow.md",
-        "docs/social-provider-integration.md",
-        "docs/youtube-tools.md"
-      ],
-      "related": [
-        "ai-video-agent",
-        "runtime-assets-jobs"
-      ]
-    },
-    {
       "id": "runtime-assets-jobs",
       "name": "Runtime, assets, setup, and jobs",
       "summary": "Express composition, runtime settings headers, setup wizard, generated assets, background job status, storage paths, and health management.",
@@ -577,85 +515,6 @@
       "related": [
         "app-shell",
         "voice-providers",
-        "channels-publishing",
-        "desktop-distribution"
-      ]
-    },
-    {
-      "id": "remote-control",
-      "name": "Telegram remote control and Ollama intent routing",
-      "summary": "Standalone KAI Remote desktop app, local-only Telegram bot configuration, allowlisted desktop actions, Ollama intent classification, audit logging, tray, and Windows startup.",
-      "keywords": [
-        "telegram",
-        "remote control",
-        "remote",
-        "kai remote",
-        "system tray",
-        "startup",
-        "ollama",
-        "bot",
-        "allowlist",
-        "shutdown",
-        "restart",
-        "lock workstation",
-        "điều khiển từ xa",
-        "telegram bot",
-        "khóa máy",
-        "khởi động cùng windows"
-      ],
-      "primary": [
-        {
-          "path": "remote-control-app/electron/main.cjs",
-          "role": "KAI Remote Electron lifecycle, tray, and Windows login item"
-        },
-        {
-          "path": "remote-control-app/server/remoteIndex.ts",
-          "role": "Standalone Remote Control backend composition root"
-        },
-        {
-          "path": "remote-control-app/src/RemoteApp.tsx",
-          "role": "Standalone KAI Remote renderer shell"
-        },
-        {
-          "path": "remote-control-app/server/services/TelegramRemoteControlService.ts",
-          "role": "Telegram polling and allowlisted command orchestration"
-        },
-        {
-          "path": "remote-control-app/server/services/RemoteControlActionService.ts",
-          "role": "Fixed desktop action executor"
-        },
-        {
-          "path": "remote-control-app/server/services/RemoteControlConfigService.ts",
-          "role": "Local config, secret token, and audit storage"
-        },
-        {
-          "path": "remote-control-app/server/routes/remoteControlRoutes.ts",
-          "role": "Local-only settings API"
-        },
-        {
-          "path": "remote-control-app/src/RemoteControlSettings.tsx",
-          "role": "Remote Control settings UI"
-        },
-        {
-          "path": "remote-control-app/src/remoteControlApi.ts",
-          "role": "Frontend settings API contract"
-        }
-      ],
-      "expand": [
-        "remote-control-app/{electron,server,src,scripts}/**/*",
-        "remote-control-app/{vite.config.ts,electron-builder.json}"
-      ],
-      "tests": [
-        "remote-control-app/test/*.test.{ts,tsx}"
-      ],
-      "docs": [
-        "remote-control-app/README.md",
-        "remote-control-app/docs/telegram-remote-control.md",
-        "remote-control-app/docs/spec.md"
-      ],
-      "related": [
-        "runtime-assets-jobs",
-        "app-shell",
         "desktop-distribution"
       ]
     },
@@ -686,10 +545,6 @@
           "role": "Electron main process"
         },
         {
-          "path": "remote-control-app/electron/main.cjs",
-          "role": "Standalone KAI Remote tray application"
-        },
-        {
           "path": "electron/runtime-bootstrap.cjs",
           "role": "Packaged backend/provider bootstrap"
         },
@@ -704,8 +559,6 @@
       ],
       "expand": [
         "electron/**/*",
-        "remote-control-app/{electron,scripts}/**/*",
-        "remote-control-app/{vite.config.ts,electron-builder.json}",
         "scripts/{ensure-electron-binary,start-production-local,prepare-desktop-env,verify-electron-build}.mjs",
         "vite.config.ts",
         "vercel.json"
@@ -716,9 +569,7 @@
       ],
       "docs": [
         "docs/electron-windows-build.md",
-        "remote-control-app/README.md",
-        "docs/tasks/desktop-public-web-runtime.md",
-        "remote-control-app/docs/spec.md"
+        "docs/tasks/desktop-public-web-runtime.md"
       ],
       "related": [
         "runtime-assets-jobs",

@@ -1,6 +1,6 @@
 # AI context index
 
-Đây là lớp định tuyến context nhỏ, có chủ đích cho KAI STUDIO. Mục tiêu của nó là giúp AI tìm đúng vùng source trước khi đọc sâu, không thay thế source code hoặc tạo một bản mô tả “chắc chắn đúng” nhưng khó duy trì.
+Đây là lớp định tuyến context nhỏ, có chủ đích cho Algorithm Animator Studio. Mục tiêu của nó là giúp AI tìm đúng vùng source trước khi đọc sâu, không thay thế source code hoặc tạo một bản mô tả “chắc chắn đúng” nhưng khó duy trì.
 
 ## Bắt đầu nhanh
 
@@ -8,7 +8,7 @@ Từ root repository:
 
 ```bash
 python3 scripts/context_index.py check
-python3 scripts/context_index.py query "rhythmic export audio"
+python3 scripts/context_index.py query "algorithm maze pathfinding export"
 ```
 
 Các lệnh khác:
@@ -16,7 +16,7 @@ Các lệnh khác:
 ```bash
 python3 scripts/context_index.py list
 python3 scripts/context_index.py tree
-python3 scripts/context_index.py query "youtube oauth publish" --format json
+python3 scripts/context_index.py query "piper supertonic voice generation" --format json
 python3 scripts/context_index.py query "electron build" --domains 1 --files 8 --lines 1800
 ```
 
@@ -58,7 +58,7 @@ Thứ tự ưu tiên khi thông tin xung đột:
 3. Tài liệu kiến trúc/spec trong repo.
 4. Index này và dữ liệu sinh tự động.
 
-`.understand-anything/knowledge-graph.json` là graph chi tiết dùng cho điều tra dependency toàn repo. Luôn đọc `.understand-anything/meta.json` để biết thời điểm, commit, số file và chế độ phân tích của snapshot; đừng chép các con số đó vào prompt vì chúng sẽ cũ.
+`Không lưu snapshot graph cũ vào phiên bản OSS vì các file đã xóa sẽ khiến dependency map bị sai. Khi cần graph mới, hãy tạo lại từ commit hiện hành và chỉ sử dụng sau khi kiểm tra metadata tương ứng.
 
 Snapshot có thể được tạo theo hai chế độ và metadata phải nói rõ chế độ đã dùng:
 
@@ -78,7 +78,7 @@ Index là bản đồ được curate, không phải dependency graph tự độ
 - Không đưa mọi file mới vào index. Chỉ thêm khi nó thay đổi điểm vào hoặc ranh giới domain.
 - Giữ từ khóa cụ thể bằng cả tiếng Việt và tiếng Anh khi hữu ích.
 - `check` chỉ chứng minh schema/path/glob/quan hệ hợp lệ; nó không chứng minh nội dung mô tả đúng ngữ nghĩa.
-- Khi làm mới `.understand-anything`, scan lại sau thay đổi cuối cùng rồi sinh đồng bộ `knowledge-graph.json`, `fingerprints.json`, `meta.json` và `intermediate/scan-result.json`.
+- Nếu cần dựng `.understand-anything` ở máy cục bộ (đã được Git ignore), scan lại sau thay đổi cuối cùng rồi sinh đồng bộ `knowledge-graph.json`, `fingerprints.json`, `meta.json` và `intermediate/scan-result.json`.
 
 ## Phạm vi kiểm tra
 

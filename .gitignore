@@ -53,11 +53,8 @@ src/assets/audios/bg-audio/
 server/.env.temp
 NUL
 
-# Understand Anything keeps only its reusable scan inventory. Other
-# intermediate inputs and structural extraction outputs are reproducible.
-.understand-anything/tmp/
-.understand-anything/intermediate/*
-!.understand-anything/intermediate/scan-result.json
+# Generated architecture graphs must not be committed or presented as current.
+.understand-anything/
 
 .codex
 

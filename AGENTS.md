@@ -21,4 +21,4 @@ When working on React, TypeScript, Vite, UI components, hooks, routing, frontend
 - Load the returned primary files first; use its test, documentation, and expansion globs selectively.
 - Treat source code, tests, and types as authoritative when the curated index disagrees.
 - Run `python3 scripts/context_index.py check` after changing indexed entrypoints or domain boundaries.
-- Read `.understand-anything/meta.json` before trusting the generated graph. Refresh all graph artifacts together; never fake freshness by editing timestamps or counts.
+- Generated `.understand-anything/` snapshots are intentionally not tracked in the OSS branch. Only use a locally rebuilt graph if its `meta.json` matches the current source; refresh graph artifacts together and never fake freshness.

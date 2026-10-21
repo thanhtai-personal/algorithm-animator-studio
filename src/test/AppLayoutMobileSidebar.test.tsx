@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AppLayout } from "../components/AppLayout";
 
 vi.mock("../components/AppHeader", () => ({
@@ -9,48 +9,44 @@ vi.mock("../components/AppHeader", () => ({
   ),
 }));
 vi.mock("../components/AppSidebar", () => ({
-  AppSidebar: ({ mode }: { mode: string }) => <div>Sidebar mode: {mode}</div>,
-}));
-vi.mock("../components/BackgroundJobsNotifier", () => ({
-  BackgroundJobsNotifier: () => <div data-testid="background-jobs-notifier" />,
-}));
-vi.mock("../components/ChillMusicNotifier", () => ({ ChillMusicNotifier: () => null }));
-vi.mock("../components/FantasticModeBackdrop", () => ({
-  FantasticModeBackdrop: ({ enabled }: { enabled: boolean }) => (
-    <div data-enabled={String(enabled)} data-testid="fantastic-backdrop" />
+  AppSidebar: ({ mode, onClose }: { mode: string; onClose: () => void }) => (
+    <div>
+      <span>Sidebar mode: {mode}</span>
+      <button type="button" onClick={onClose}>Close sidebar</button>
+    </div>
   ),
 }));
-vi.mock("@/hooks/use-fantastic-frame-motion", () => ({ useFantasticFrameMotion: () => undefined }));
+vi.mock("../components/ChillMusicNotifier", () => ({
+  ChillMusicNotifier: ({ enabled }: { enabled: boolean }) => <div data-testid="chill-notifier" data-enabled={String(enabled)} />,
+}));
 vi.mock("@/hooks/use-fantastic-mode", () => ({ useFantasticMode: () => [true] }));
 vi.mock("@/lib/chillMusicSettings", () => ({ readChillModeEnabled: () => false, subscribeChillMode: () => () => undefined }));
 vi.mock("@/lib/i18n", () => ({ readSystemLang: () => "vi", subscribeSystemLang: () => () => undefined }));
 
-describe("AppLayout mobile sidebar", () => {
-  it("starts closed on mobile without overwriting the saved desktop layout", () => {
+describe("OSS AppLayout sidebar and local tools", () => {
+  beforeEach(() => {
+    window.localStorage.removeItem("kai-studio.sidebar.mode");
+  });
+
+  it("starts closed on mobile without overwriting saved desktop layout", () => {
     Object.defineProperty(window, "innerWidth", { configurable: true, value: 390 });
     window.localStorage.setItem("kai-studio.sidebar.mode", "expanded");
 
-    render(<MemoryRouter initialEntries={["/algorithms/rhythmic"]}><AppLayout><div>Rhythmic page</div></AppLayout></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/algorithms"]}><AppLayout><div>Algorithm page</div></AppLayout></MemoryRouter>);
 
     expect(screen.getByText("Sidebar mode: hidden")).toBeInTheDocument();
     expect(window.localStorage.getItem("kai-studio.sidebar.mode")).toBe("expanded");
-
     fireEvent.click(screen.getByRole("button", { name: "Header sidebar: hidden" }));
     expect(screen.getByText("Sidebar mode: expanded")).toBeInTheDocument();
     expect(window.localStorage.getItem("kai-studio.sidebar.mode")).toBe("expanded");
-    expect(screen.queryByTestId("background-jobs-notifier")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Close sidebar" }));
+    expect(screen.getByText("Sidebar mode: hidden")).toBeInTheDocument();
   });
 
-  it("keeps the background job connection available outside rendering-heavy studios", () => {
-    render(<MemoryRouter initialEntries={["/videos"]}><AppLayout><div>Videos page</div></AppLayout></MemoryRouter>);
-
-    expect(screen.getByTestId("background-jobs-notifier")).toBeInTheDocument();
-    expect(screen.getByTestId("fantastic-backdrop")).toHaveAttribute("data-enabled", "true");
-  });
-
-  it("disables the GPU-heavy Fantastic backdrop on the algorithm channel", () => {
-    render(<MemoryRouter initialEntries={["/algorithms"]}><AppLayout><div>Algorithms page</div></AppLayout></MemoryRouter>);
-
-    expect(screen.getByTestId("fantastic-backdrop")).toHaveAttribute("data-enabled", "false");
+  it("renders algorithm content and keeps optional music disabled", () => {
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 390 });
+    render(<MemoryRouter initialEntries={["/algorithms/maze"]}><AppLayout><div>Maze preview</div></AppLayout></MemoryRouter>);
+    expect(screen.getByText("Maze preview")).toBeInTheDocument();
+    expect(screen.getByTestId("chill-notifier")).toHaveAttribute("data-enabled", "false");
   });
 });

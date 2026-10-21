@@ -63,3 +63,20 @@ test("algorithm, TTS and shared render contracts stay intact", () => {
     "server/services/RemotionTimelineRenderService.ts",
   ]) assert.ok(fs.existsSync(path.join(root, file)), `kept code missing: ${file}`);
 });
+
+test("Remotion public template contract is algorithm-only and keeps maze/bars", () => {
+  for (const file of [
+    "src/features/remotion-video/lib/remotionVideoTypes.ts",
+    "src/features/remotion-video/components/RemotionVideoGenerator.tsx",
+    "src/features/remotion-video/remotion/AlgorithmExplainerComposition.tsx",
+    "server/models/RemotionVideo.ts",
+    "server/services/RemotionRenderService.ts",
+  ]) {
+    assert.doesNotMatch(read(file), /news-card|story-card/, `unrelated template still in ${file}`);
+  }
+  const algorithm = read("src/features/remotion-video/remotion/AlgorithmExplainerComposition.tsx");
+  assert.match(algorithm, /MazePathVisual/);
+  assert.match(algorithm, /AnimatedBars/);
+  const normalizer = read("src/features/remotion-video/lib/remotionVideoTypes.ts");
+  assert.match(normalizer, /"algorithm-explainer"/);
+});

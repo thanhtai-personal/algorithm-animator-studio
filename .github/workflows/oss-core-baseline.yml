@@ -1,0 +1,40 @@
+name: OSS Core + TTS baseline checks
+
+on:
+  push:
+    branches:
+      - chore/oss-algorithm-tts-cleanup-20261021
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'server/**'
+      - 'scripts/assert-oss-retained-surface.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/oss-core-baseline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    name: Retained surface, unit tests and builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Protect algorithm and every TTS provider
+        run: node scripts/assert-oss-retained-surface.mjs
+      - name: Unit tests
+        run: npm test
+      - name: Web build
+        run: npm run build
+      - name: Server bundle
+        run: npm run build:server

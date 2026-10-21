@@ -24,3 +24,26 @@ test("OSS backend keeps algorithm render, media and every TTS provider API", () 
     "createHealthRouter", "createSystemRouter", "createSetupWizardRouter",
   ]) assert.ok(server.includes(`${route}()`), `core endpoint missing: ${route}`);
 });
+
+test("retired non-core backend route/service/model files are absent", () => {
+  const removed = {
+    "server/routes/": [
+      "aiVideoAgentRoutes", "channelProviderRoutes", "muNewsRoutes", "publishQueueRoutes",
+      "storyReviewRoutes", "webExtractRoutes", "youtubeRoutes",
+    ],
+    "server/services/": [
+      "AiVideoAgentBackgroundService", "AiVideoAgentFallbackTiming", "AiVideoAgentRemotionRender",
+      "AiVideoAgentService", "JobManagementService", "MuNewsService", "MuNewsValidationService",
+      "PublishQueueService", "PublishWorkerService", "SocialProviderAccountService",
+      "StoryReviewVideoService", "WebExtractService", "YoutubeUploadService", "YoutubeUploadHistoryService",
+    ],
+    "server/models/": ["AiVideoAgent", "MuNews", "PublishQueue", "WebExtract", "YoutubeUpload"],
+    "server/config/": ["muNewsSources"],
+  };
+  for (const [prefix, names] of Object.entries(removed)) {
+    for (const name of names) {
+      const target = path.join(root, prefix, `${name}.ts`);
+      assert.equal(fs.existsSync(target), false, `retired backend source still tracked: ${target}`);
+    }
+  }
+});

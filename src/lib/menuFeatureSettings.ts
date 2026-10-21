@@ -1,143 +1,64 @@
 export type MenuFeatureId =
   | "algorithm-studio"
-  | "rhythmic-studio"
   | "maze-pathfinding"
   | "algorithm-long"
-  | "github-trending"
-  | "football-commentary"
-  | "story-studio"
-  | "story-author"
-  | "story-review"
-  | "common-video"
-  | "preset-videos"
-  | "math-video"
   | "text-to-speech"
-  | "youtube-tools"
-  | "jobs"
-  | "channel"
   | "assets";
 
 export type MenuFeatureSettings = Record<MenuFeatureId, boolean>;
 
 export const MENU_FEATURE_SETTINGS_EVENT = "kai-studio:menu-feature-settings-change";
-const STORAGE_KEY = "kai-studio.menuFeatureSettings";
+
+// Fresh OSS namespace: legacy channel flags must not hide algorithm/TTS on first run.
+const STORAGE_KEY = "algorithm-animator.oss.menuFeatures.v1";
 
 export const DEFAULT_MENU_FEATURE_SETTINGS: MenuFeatureSettings = {
   "algorithm-studio": true,
-  "rhythmic-studio": true,
   "maze-pathfinding": true,
   "algorithm-long": true,
-  "github-trending": false,
-  "football-commentary": false,
-  "story-studio": false,
-  "story-author": false,
-  "story-review": false,
-  "common-video": true,
-  "preset-videos": true,
-  "math-video": true,
   "text-to-speech": true,
-  "youtube-tools": true,
-  jobs: true,
-  channel: false,
-  assets: true,
+  "assets": true,
 };
 
 export const MENU_FEATURE_LABELS: Record<MenuFeatureId, { en: string; vi: string }> = {
-  "algorithm-studio": {
-    en: "Algorithm Video",
-    vi: "Video thuật toán",
-  },
-  "rhythmic-studio": {
-    en: "Rhythmic Studio",
-    vi: "Video nhịp điệu",
-  },
-  "maze-pathfinding": {
-    en: "Maze Pathfinding",
-    vi: "Tìm đường mê cung",
-  },
-  "algorithm-long": {
-    en: "Algorithm Long",
-    vi: "Video thuật toán dài",
-  },
-  "github-trending": {
-    en: "GitHub Trend Video",
-    vi: "Video GitHub trend",
-  },
-  "football-commentary": {
-    en: "Football Commentary",
-    vi: "Bình luận bóng đá",
-  },
-  "story-studio": {
-    en: "Story Video",
-    vi: "Video truyện",
-  },
-  "story-author": {
-    en: "Story Author",
-    vi: "Sáng tác truyện",
-  },
-  "story-review": {
-    en: "Story Review",
-    vi: "Review truyện",
-  },
-  "common-video": {
-    en: "Create Video",
-    vi: "Tạo video",
-  },
-  "preset-videos": {
-    en: "Preset Videos",
-    vi: "Kho video preset",
-  },
-  "math-video": {
-    en: "Math Video Studio",
-    vi: "Video toán học",
-  },
-  "text-to-speech": {
-    en: "Text to Speech",
-    vi: "Text to Speech",
-  },
-  "youtube-tools": {
-    en: "YouTube Tools",
-    vi: "Tải YouTube",
-  },
-  jobs: {
-    en: "Job Manager",
-    vi: "Quản lý job",
-  },
-  channel: {
-    en: "Channel Manager",
-    vi: "Quản lý kênh",
-  },
-  assets: {
-    en: "Files Management",
-    vi: "Quản lý file",
-  },
+  "algorithm-studio": { en: "Algorithm Animation", vi: "Video thuật toán" },
+  "maze-pathfinding": { en: "Maze Pathfinding", vi: "Tìm đường mê cung" },
+  "algorithm-long": { en: "Algorithm Long Video", vi: "Video thuật toán dài" },
+  "text-to-speech": { en: "Text to Speech", vi: "Chuyển văn bản thành giọng nói" },
+  "assets": { en: "Generated Files", vi: "Tệp đã tạo" },
 };
 
 export function getMenuFeatureSettings(): MenuFeatureSettings {
   if (typeof window === "undefined") return { ...DEFAULT_MENU_FEATURE_SETTINGS };
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "{}") as Record<string, unknown>;
-    return sanitizeMenuFeatureSettings(parsed);
+    const stored = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "{}") as unknown;
+    return sanitizeMenuFeatureSettings(stored);
   } catch {
     return { ...DEFAULT_MENU_FEATURE_SETTINGS };
   }
 }
 
-export function saveMenuFeatureSettings(settings: MenuFeatureSettings) {
+export function saveMenuFeatureSettings(settings: MenuFeatureSettings): MenuFeatureSettings {
   const sanitized = sanitizeMenuFeatureSettings(settings);
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
   window.dispatchEvent(new CustomEvent(MENU_FEATURE_SETTINGS_EVENT, { detail: sanitized }));
   return sanitized;
 }
 
-export function clearMenuFeatureSettings() {
+export function clearMenuFeatureSettings(): void {
   window.localStorage.removeItem(STORAGE_KEY);
-  window.dispatchEvent(new CustomEvent(MENU_FEATURE_SETTINGS_EVENT, { detail: { ...DEFAULT_MENU_FEATURE_SETTINGS } }));
+  window.dispatchEvent(new CustomEvent(MENU_FEATURE_SETTINGS_EVENT, {
+    detail: { ...DEFAULT_MENU_FEATURE_SETTINGS },
+  }));
 }
 
-export function subscribeMenuFeatureSettings(listener: (settings: MenuFeatureSettings) => void) {
+export function subscribeMenuFeatureSettings(listener: (settings: MenuFeatureSettings) => void): () => void {
   const handleChange = (event: Event) => {
-    listener(event instanceof CustomEvent && event.detail ? sanitizeMenuFeatureSettings(event.detail) : getMenuFeatureSettings());
+    listener(
+      event instanceof CustomEvent && event.detail
+        ? sanitizeMenuFeatureSettings(event.detail)
+        : getMenuFeatureSettings(),
+    );
   };
   window.addEventListener(MENU_FEATURE_SETTINGS_EVENT, handleChange);
   window.addEventListener("storage", handleChange);
@@ -147,30 +68,12 @@ export function subscribeMenuFeatureSettings(listener: (settings: MenuFeatureSet
   };
 }
 
-function sanitizeMenuFeatureSettings(values: Record<string, unknown>): MenuFeatureSettings {
-  const output = { ...DEFAULT_MENU_FEATURE_SETTINGS };
-  for (const key of Object.keys(output) as MenuFeatureId[]) {
-    if (typeof values[key] === "boolean") output[key] = values[key];
+function sanitizeMenuFeatureSettings(values: unknown): MenuFeatureSettings {
+  const defaults = { ...DEFAULT_MENU_FEATURE_SETTINGS };
+  if (!values || typeof values !== "object") return defaults;
+  const options = values as Record<string, unknown>;
+  for (const key of Object.keys(defaults) as MenuFeatureId[]) {
+    if (typeof options[key] === "boolean") defaults[key] = options[key];
   }
-  if (hasLegacyKeys(values, ["algorithm-shorts", "algorithm-agentic", "algorithm-manual"])) {
-    output["algorithm-studio"] = legacyAnyEnabled(values, ["algorithm-shorts", "algorithm-agentic", "algorithm-manual"]);
-  }
-  if (hasLegacyKeys(values, ["story-video", "story-agentic", "story-manual"])) {
-    output["story-studio"] = legacyAnyEnabled(values, ["story-video", "story-agentic", "story-manual"]);
-  }
-  if (hasLegacyKeys(values, ["common-video-agentic", "common-video-manual"])) {
-    output["common-video"] = legacyAnyEnabled(values, ["common-video-agentic", "common-video-manual"]);
-  }
-  if (hasLegacyKeys(values, ["football-agentic", "football-manual", "mu-news"])) {
-    output["football-commentary"] = legacyAnyEnabled(values, ["football-agentic", "football-manual", "mu-news"]);
-  }
-  return output;
-}
-
-function hasLegacyKeys(values: Record<string, unknown>, keys: string[]) {
-  return keys.some((key) => typeof values[key] === "boolean");
-}
-
-function legacyAnyEnabled(values: Record<string, unknown>, keys: string[]) {
-  return keys.some((key) => values[key] === true);
+  return defaults;
 }

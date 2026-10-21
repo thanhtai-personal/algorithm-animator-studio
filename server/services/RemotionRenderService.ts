@@ -130,7 +130,7 @@ function normalizeRemotionVideoInput(raw: RemotionVideoRenderBody): NormalizedRe
   return {
     ...DEFAULT_INPUT,
     ...raw,
-    template: raw.template === "news-card" || raw.template === "story-card" ? raw.template : "algorithm-explainer",
+    template: "algorithm-explainer",
     aspectRatio: raw.aspectRatio === "9:16" ? "9:16" : "16:9",
     title: sanitizeText(raw.title, DEFAULT_INPUT.title, 96),
     subtitle: sanitizeText(raw.subtitle, DEFAULT_INPUT.subtitle, 160),

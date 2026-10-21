@@ -112,7 +112,7 @@ export function RemotionVideoGenerator({ onVideoCreated, preset, fixedTemplate, 
           </div>
 
           <div className="grid gap-3 md:grid-cols-4">
-            {fixedTemplate ? <div className="space-y-2"><Label>Template</Label><div className="rounded-md border bg-muted/30 px-3 py-2 text-sm font-medium">{fixedTemplate}</div></div> : <SelectField label="Template" value={form.template} items={["algorithm-explainer", "news-card", "story-card"]} onChange={(template) => setForm((current) => ({ ...current, template: template as RemotionVideoTemplate }))} />}
+            {fixedTemplate ? <div className="space-y-2"><Label>Template</Label><div className="rounded-md border bg-muted/30 px-3 py-2 text-sm font-medium">{fixedTemplate}</div></div> : <SelectField label="Template" value={form.template} items={["algorithm-explainer"]} onChange={(template) => setForm((current) => ({ ...current, template: template as RemotionVideoTemplate }))} />}
             <SelectField label="Aspect" value={form.aspectRatio} items={["16:9", "9:16"]} onChange={(aspectRatio) => setForm((current) => ({ ...current, aspectRatio: aspectRatio as RemotionVideoAspectRatio }))} />
             <TextField label="Seconds" type="number" value={String(form.durationSeconds)} onChange={(value) => setForm((current) => ({ ...current, durationSeconds: Number(value) }))} />
             <SelectField label="FPS" value={String(form.fps)} items={["24", "30", "60"]} onChange={(fps) => setForm((current) => ({ ...current, fps: Number(fps) }))} />

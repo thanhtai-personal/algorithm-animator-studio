@@ -1,5 +1,5 @@
 export type RemotionVideoAspectRatio = "16:9" | "9:16";
-export type RemotionVideoTemplate = "algorithm-explainer" | "news-card" | "story-card";
+export type RemotionVideoTemplate = "algorithm-explainer";
 
 export type RemotionVideoInputProps = {
   title: string;
@@ -70,7 +70,7 @@ export function getRemotionDimensions(aspectRatio: RemotionVideoAspectRatio) {
 
 export function normalizeRemotionVideoInput(raw: Partial<RemotionVideoInputProps>): RemotionVideoInputProps {
   const aspectRatio = raw.aspectRatio === "9:16" ? "9:16" : "16:9";
-  const template = raw.template === "news-card" || raw.template === "story-card" ? raw.template : "algorithm-explainer";
+  const template: RemotionVideoTemplate = "algorithm-explainer";
   return {
     ...DEFAULT_REMOTION_VIDEO,
     ...raw,

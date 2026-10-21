@@ -1,31 +1,52 @@
-# OSS cleanup progress — 2026-10-21
-
+# Algorithm Animator OSS cleanup — evidence ledger
+Updated: 2026-10-21
+Source branch: `chore/oss-algorithm-tts-cleanup-20261021`
 Draft PR: https://github.com/thanhtai-personal/algorithm-animator-studio/pull/28
-Branch: `chore/oss-algorithm-tts-cleanup-20261021`
-Original main SHA: `8009a08aeb8df6e0d1e15440f9e80c4b17d80d7a`
+Original main commit: `8009a08aeb8df6e0d1e15440f9e80c4b17d80d7a`
 
-## Completed changes (branch only)
-- Wrote scope/spec and the Task 0–8 cleanup plan.
-- Removed tracked scratch transcription and obsolete internal-registry backup lockfile (NOT from Git history).
-- Added static protected-surface assertions for all six TTS provider families and algorithm files.
-- Separated manual algorithm short, maze and long UI wrappers from the `AiVideoAgent` tab.
-- Removed old route declarations for story, news, generic video/publishing and demo pages; made `/` open Algorithms.
-- Navigation now lists Algorithms, TTS, generated assets, jobs and settings. Core algorithm feature toggles now default on.
-- Local algorithm configuration / export no longer require a user login at the three manual pages.
-- Removed 12 previously routed but now unmounted page files. Backend services, TTS and shared render engines retained.
-- Added Node structural regression checks; run explicitly in the OSS CI workflow.
+## Completed on the separate branch (NOT merged into main)
+1. Wrote the target architecture, task plan, source/model inventory, new README and safe .gitignore.
+2. Detached algorithm short, maze and long-form pages from `AiVideoAgent` / auto-publishing. Removed those product routes and made algorithm studio the landing page.
+3. Enabled local algorithm configuration and video export without a login in `Index`, `AlgorithmWorld` and `LongContent`.
+4. Retained 3D, sorting/search/graph/maze engines, Canvas/FFmpeg/Remotion, generated assets and all TTS UIs/service registrations: Piper, Supertonic, VieNeu, GPT-SoVITS, ElevenLabs and RVC/Applio.
+5. Removed retired story/news/action-duel, rhythmic/marble and AI-agent/social publishing frontend modules and pages. Removed unused agent background notifier and job-management UI.
+6. Unmounted news/story/web extraction/AI agent/publish/YouTube-upload backend routes and workers; removed 27 corresponding backend route, service, model or configuration modules. **The YouTube Tools health route is still mounted for Settings compatibility.**
+7. Removed seven old social/publish/YouTube frontend API clients, **without removing algorithm-related YouTube metadata helpers**.
+8. Simplified navigation and local menu settings to five OSS modules (Algorithm Short, Maze, Long, TTS, Assets). Changed localStorage namespace so older KAI Studio visibility flags cannot hide the new defaults.
+9. Removed an obsolete locked registry backup, scratch transcript and 5 stale generated knowledge-graph artifacts. Updated `docs/ai-context/index.json`, agent instructions and context guide. Removed nonexistent remote-control-app scripts and index entries.
+10. Added Node structural / dangling-import checks under `scripts/tests/oss-*.check.mjs` and a CI workflow that also requests Vitest + Vite + server builds.
 
-## Verification actually observed
-- GitHub compare and recursive tree: 12 intended page paths no longer tracked; `Index`, `AlgorithmWorld`, `LongContent`, `TextToSpeech` remain; six voice router files remain.
-- Static source checks of route paths, no-login logic, algorithm defaults and TTS server router registration passed in connector-read text (not executable UI testing).
-- GitHub Actions on cleanup branch reports FAILURE with job steps absent. No `npm ci`, Vitest, Vite build, server build, frontend smoke, or TTS inference run can be certified from these results.
-- The connected GitHub API permits file changes but no runnable private repo checkout on the model runtime; treat buildability as an open risk.
+## File counts — actual Git tree set comparison
+Both recursive Git tree snapshots were compared by **blob path**, rather than trusting GitHub's paginated/truncated compare file list:
+- Baseline: **1,312 tracked files**.
+- Current branch: **950 tracked files**.
+- **376 tracked files deleted**, **14 added**, **18 modified**.
+- **369 deleted files under `src/` or `server/`**.
+- Deleted source breakdown: `src/features/` 315, `src/pages/` 19, `src/lib/` 7, `src/components/` 1, `server/` 27.
+- No `models/*.onnx` deleted, pending independent license/model-card audit.
 
-## Incomplete / next actions
-1. Investigate GitHub Actions unable to start steps, establish a real `npm ci` / test / build baseline.
-2. Map all imports before deleting `src/features`, `server/routes`, services or shared editor/Remotion assets.
-3. Remove unused feature implementation and third-party binaries only with a passed test/build gate.
-4. Update voice settings so unrelated YouTube checks do not make the entire health tab fail.
-5. Audit credentials across Git history; verify licensed provenance of four Piper ONNX files and VieNeu vendor/model, media and fonts.
-6. Review TTS integration behavior and optional provider startup in clean installations, including Windows desktop.
-7. Add legal docs and first audited release; separately approve Git-history sanitation and switching visibility.
+## Verified vs. NOT verified
+**Verified by GitHub tree and connector source reads:**
+- Protected Algorithm/TTS files are still tracked, including six provider route groups and algorithm definitions.
+- Backend composition root still registers voice, model, provider startup, health, resources, and video routes; targeted unrelated endpoints are no longer mounted.
+- `src/App.tsx` routes still include Algorithm, Maze, Long, TTS, Assets and Settings and omit Story/News/Jobs/Channel.
+- AI context index's primary/doc paths were checked against the tracked tree and had no missing paths after updates.
+- The original `main` commit was unchanged when last checked.
+
+**NOT verified by successful execution:**
+- `npm ci`, `npm test`, `npm run build`, `npm run build:server`, `python3 scripts/context_index.py check`.
+- End-to-end video export, browser navigation, Windows Electron, and provider TTS audio output.
+- New import-integrity script, despite being checked into Git, has **not** been executed against a full checkout in this session.
+- Latest GitHub Actions jobs are marked **failure** with no recorded steps; runner/log access still blocks a trustworthy green baseline.
+- Redistribution rights and full secret/history scan.
+
+## Next atomic stages (keep PR Draft)
+1. **Get runnable CI / checked-out local workspace**. Run npm install/test/build and all `node --test scripts/tests/oss-*.check.mjs` checks. Fix dangling imports before any merge.
+2. **Separate legacy Math/Preset Video from the core Remotion engine and `server/routes/videoRoutes.ts`** before deleting them. Both remain coupled to current video rendering; do not blind-delete.
+3. **Remove YouTube Tools health from TTS Settings first** (currently a `Promise.all` dependency); only then remove the YouTube Tools backend and remaining helpers. Keep model-provider health.
+4. Isolate optional voice model dependencies. Keep all six TTS integrations while auditing four Piper ONNX weights and `libs/VieNeu-TTS` rights, attribution, download paths and opt-in installation.
+5. Audit full Git history for secrets/sensitive media and third-party asset licenses. Deletion from latest tree does not remove history; rotate any compromised credentials.
+6. Remove remaining dead dependencies/scripts/media, close stale CI workflows, write license/SECURITY/CONTRIBUTING/THIRD_PARTY_NOTICES and verify a clean user install.
+7. Only with explicit owner approval and legal/CI signoff: merge PR, address history sanitation strategy, and switch to Public.
+
+This ledger is a status record; it is **not** evidence of a passing build or license clearance.

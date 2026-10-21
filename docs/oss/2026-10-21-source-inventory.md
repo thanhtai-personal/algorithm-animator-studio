@@ -56,3 +56,6 @@ GitHub recursive tree: 1,462 entries, including directories; `src/features/` 461
 
 ## Next deterministic action
 Inventory `rg` imports in a real checkout/worktree; install via `npm ci`; run `npm test`, `npm run build`, `npm run build:server`; record output before PRs deleting domains. The connected GitHub service here can inspect/commit files but cannot run code inside the private repository, so these validations remain unexecuted.
+
+## Update after the 2026-10-21 cleanup commits
+This document captured the ORIGINAL pre-cleanup tree. Most story/news/rhythmic/marble/agent/social source and associated backend files have since been removed on the draft PR branch; its keep/remove lists above are historical, not current live file inventories. See [cleanup progress](cleanup-progress-2026-10-21.md) for actual branch counts. Math/Preset Video and YouTube Tools are deliberately retained until shared Remotion and Settings imports are safely separated.

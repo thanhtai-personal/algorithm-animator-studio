@@ -35,7 +35,6 @@ import { createRvcApplioRouter } from "./routes/rvcApplioRoutes";
 import { createVieneuRouter } from "./routes/vieneuRoutes";
 import { createVideoRouter } from "./routes/videoRoutes";
 import { createResourceRouter } from "./routes/resourceRoutes";
-import { createYoutubeToolRouter } from "./routes/youtubeToolRoutes";
 import { readRuntimeEnvFromRequest } from "./services/RuntimeEnvService";
 import { readEnvValues } from "./services/EnvFileService";
 
@@ -69,7 +68,6 @@ app.use("/api",
   createRvcApplioRouter(),
   createVieneuRouter(),
   createVideoRouter(),
-  createYoutubeToolRouter(),
 );
 
 httpServer.listen(PORT, () => {

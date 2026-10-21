@@ -9,6 +9,7 @@ on:
       - 'src/**'
       - 'server/**'
       - 'scripts/assert-oss-retained-surface.mjs'
+      - 'scripts/tests/oss-*.check.mjs'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/oss-core-baseline.yml'
@@ -32,7 +33,9 @@ jobs:
         run: npm ci
       - name: Protect algorithm and every TTS provider
         run: node scripts/assert-oss-retained-surface.mjs
-      - name: Unit tests
+      - name: Node OSS entrypoint regression checks
+        run: node --test scripts/tests/oss-*.check.mjs
+      - name: Existing unit tests
         run: npm test
       - name: Web build
         run: npm run build

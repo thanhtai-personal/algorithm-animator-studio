@@ -1,6 +1,5 @@
 import { ChevronDown, ChevronRight, Download, Film, Languages, Pause, Play, RefreshCcw } from "lucide-react";
-import { ReactNode, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { ReactNode, useState } from "react";
 import { ALGORITHMS, ALGO_GROUPS, COMPLEXITY } from "@/lib/algorithms";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,7 +8,6 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSepa
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AuthProfile, getCurrentProfile, isSuperAdminProfile } from "@/lib/auth";
 import { LONG_VIDEO_TYPES, type LongVideoType } from "@/lib/longVideoTypes";
 import { THEMES } from "@/lib/renderer";
 import { EXPORT_FORMATS, ExportFormat } from "./studio/exportFormats";
@@ -24,31 +22,10 @@ import { RemotionVideoGenerator } from "@/features/remotion-video/components/Rem
 type RenderLibrary = "ffmpeg" | "remotion";
 
 export default function LongContent() {
-  const navigate = useNavigate();
-  const [profile, setProfile] = useState<AuthProfile | null>(null);
   const studio = useLongContentStudio();
-  const canExport = isSuperAdminProfile(profile);
   const [renderLibrary, setRenderLibrary] = useState<RenderLibrary>("ffmpeg");
 
-  useEffect(() => {
-    let cancelled = false;
-    getCurrentProfile()
-      .then((nextProfile) => {
-        if (!cancelled) setProfile(isSuperAdminProfile(nextProfile) ? nextProfile : null);
-      })
-      .catch(() => {
-        if (!cancelled) setProfile(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   function requestExport() {
-    if (!canExport) {
-      navigate("/auth", { replace: false, state: { from: "/algorithms/video-long" } });
-      return;
-    }
     void studio.exportVideo();
   }
 

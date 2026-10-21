@@ -60,3 +60,7 @@ NUL
 !.understand-anything/intermediate/scan-result.json
 
 .codex
+
+# One-off local scratch and backup lockfiles (OSS cleanup)
+.tmp-*/
+package-lock.json.bak-*

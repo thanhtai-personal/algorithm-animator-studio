@@ -138,13 +138,13 @@ Nếu OK sẽ thấy JSON tương tự:
 Nếu lỗi import `vieneu`, kiểm tra lại:
 
 ```bat
-libs\VieNeu-TTS\.venv\Scripts\activate
+..\VieNeu-TTS\.venv\Scripts\activate.bat
 python -c "import vieneu; print(getattr(vieneu, '__version__', 'dev'))"
 ```
 
 ## 6. Chạy cùng `npm run dev` và health check trong app
 
-Chạy dev như bình thường. Lệnh này hiện khởi động đồng thời `client`, `server`, `supertonic`, `applio` và `vieneu`:
+Để chạy riêng ứng dụng, mở hai terminal cho frontend/backend theo README. Lệnh `npm run dev` all-in-one có thể khởi động thêm các provider đang được bật; VieNeu chỉ khởi động khi checkout ngoài repo đã cài và `KAI_PROVIDER_VIENEU_ENABLED=true`, `VIENEU_AUTO_START=true`:
 
 ```bat
 npm run dev
@@ -258,7 +258,7 @@ Lưu ý:
 Kiểm tra `VIENEU_PYTHON` có đúng file không:
 
 ```bat
-libs\VieNeu-TTS\.venv\Scripts\python.exe --version
+..\VieNeu-TTS\.venv\Scripts\python.exe --version
 ```
 
 Nếu dùng runtime settings trong UI, đường dẫn trên UI sẽ override `.env`.
@@ -268,7 +268,7 @@ Nếu dùng runtime settings trong UI, đường dẫn trên UI sẽ override `.
 Cài lại từ source VieNeu-TTS trong đúng môi trường:
 
 ```bat
-cd /d libs\VieNeu-TTS
+cd /d ..\VieNeu-TTS
 .venv\Scripts\activate
 python -m pip install --upgrade pip setuptools wheel
 python -m pip install -e . --extra-index-url https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu/

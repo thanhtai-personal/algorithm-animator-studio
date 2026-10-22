@@ -2,14 +2,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { trackedFilesUnder } from "./helpers/oss-tracked-source.mjs";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
 test("VieNeu is an optional external checkout without vendored SDK/model/preset artifacts", () => {
-  assert.equal(fs.existsSync(path.join(root, "libs/VieNeu-TTS")), false,
-    "remove remaining VieNeu SDK metadata and sample assets from the OSS source");
+  assert.deepEqual(trackedFilesUnder(root, "libs/VieNeu-TTS"), [],
+    "upstream VieNeu SDK, model and voice presets must not be committed to Git");
+  assert.match(read(".gitignore"), /^libs\\/VieNeu-TTS\\/$/m);
   const example = read(".env.example");
   assert.match(example, /VIENEU_SOURCE_DIR=\.\.\/VieNeu-TTS/);
   assert.match(example, /KAI_PROVIDER_VIENEU_ENABLED=false/);

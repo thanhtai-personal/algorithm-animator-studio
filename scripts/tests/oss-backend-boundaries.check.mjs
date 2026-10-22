@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { trackedFilesUnder } from "./helpers/oss-tracked-source.mjs";
 import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const server = fs.readFileSync(path.join(root, "server/index.ts"), "utf8");
@@ -26,8 +27,8 @@ test("OSS backend keeps algorithm render, media and every TTS provider API", () 
 });
 
 test("VieNeu is optional and its third-party source/voice assets are not vendored", () => {
-  assert.equal(fs.existsSync(path.join(root, "libs", "VieNeu-TTS")), false,
-    "install VieNeu in a separate checkout; do not bundle upstream preset/sample assets");
+  assert.deepEqual(trackedFilesUnder(root, "libs/VieNeu-TTS"), [],
+    "VieNeu SDK/preset files must not be tracked by Git; local ignored copies are allowed");
   const envExample = fs.readFileSync(path.join(root, ".env.example"), "utf8");
   assert.match(envExample, /VIENEU_SOURCE_DIR=\.\.\/VieNeu-TTS/);
   assert.match(envExample, /KAI_PROVIDER_VIENEU_ENABLED=false/);

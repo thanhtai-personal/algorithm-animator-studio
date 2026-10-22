@@ -2,7 +2,7 @@
 
 A visual algorithm animation and video authoring toolkit with built-in text-to-speech integrations.
 
-**Status (22 October 2026):** Source and legal release preparation **in progress** on `chore/oss-algorithm-tts-cleanup-20261021`. This repository is not ready to be made Public: the full Git history, third-party model/media rights, dependency integrity and runtime tests have **not yet been cleared**. Do not redistribute bundled third-party voice weights until their model licenses and provenance are confirmed. Legacy preset media has been removed from the current tree, but remains in the Git history.
+**Status (22 October 2026):** OSS release preparation is still **in progress**. This repository is not ready to be made Public: the full Git history, third-party model/media rights, dependency integrity and runtime tests have **not yet been cleared**. TTS providers are optional adapters; install their engines, models and voice assets separately, after reviewing each upstream license. Legacy preset media has been removed from the current tree, but remains in the Git history.
 
 ## Features retained in the OSS edition
 
@@ -44,6 +44,37 @@ Every optional TTS engine is installed **outside this repository**. The app owns
 | RVC/Applio | [IAHispano/Applio](https://github.com/IAHispano/Applio) — separate checkout | Its Gradio server, optionally started by `npm run dev:applio` | `RVC_APPLIO_BASE_URL`, `RVC_APPLIO_PYTHON`, Gradio API template |
 | ElevenLabs | Proprietary hosted service, **not open source** | No local runtime | `ELEVENLABS_API_KEY` |
 
+### Quick start: download and run engines separately
+
+The Node app and its provider adapters are in this repository; third-party engines and weights are not. Start with **Piper** for the simplest local TTS, or follow the provider-specific sections below. Keep every virtual environment, upstream checkout and downloaded model outside this repo.
+
+**Piper — install a local executable, then download a voice in Settings → Voice**
+
+Windows PowerShell:
+```powershell
+py -3.11 -m venv ../.venv-piper
+../.venv-piper/Scripts/python.exe -m pip install --upgrade pip piper-tts
+```
+
+Linux/macOS:
+```bash
+python3 -m venv ../.venv-piper
+../.venv-piper/bin/python -m pip install --upgrade pip piper-tts
+```
+
+Set `PIPER_EXE` in `.env` to the executable from that environment (Windows: `../.venv-piper/Scripts/piper.exe`; Linux/macOS: `../.venv-piper/bin/piper`). Then run `npm run dev`, open **Settings → Voice**, and download a compatible model plus its `.onnx.json` configuration. Read that exact voice's model card first; model licenses differ.
+
+**Other separate engines**
+
+| Engine | Download / install | Start / verify |
+| --- | --- | --- |
+| Supertonic | Activate a dedicated Python 3.11 environment; run `npm run supertonic:install` | Set `KAI_PROVIDER_SUPERTONIC_ENABLED=true`, run `npm run supertonic:serve`, then check `http://127.0.0.1:6688/v1/health`. Upstream is archived; model weights have separate terms. |
+| VieNeu-TTS (optional Vietnamese TTS) | `git clone https://github.com/pnnbao97/VieNeu-TTS.git ../VieNeu-TTS`, then `npm run vieneu:install` and `npm run vieneu:health` | Set `KAI_PROVIDER_VIENEU_ENABLED=true` and `VIENEU_SOURCE_DIR=../VieNeu-TTS`; the app calls its separate Python bridge on demand. Do not copy its non-commercial preset/sample assets into this repo. |
+| GPT-SoVITS | `git clone https://github.com/RVC-Boss/GPT-SoVITS.git ../GPT-SoVITS`; follow that checkout's own model and environment instructions | Configure `GPT_SOVITS_START_COMMAND` and `GPT_SOVITS_BASE_URL`; set `KAI_PROVIDER_GPT_SOVITS_ENABLED=true`, then run `npm run gpt-sovits:serve`. |
+| RVC/Applio (mainly voice conversion) | `git clone https://github.com/IAHispano/Applio.git ../Applio`; install upstream requirements and a model you have rights to use | Set `RVC_APPLIO_START_COMMAND`, `RVC_APPLIO_BASE_URL`, and `KAI_PROVIDER_APPLIO_ENABLED=true`; run `npm run dev:applio`. Install `gradio_client` in the configured Python environment with `npm run applio:install`. |
+
+Keep each provider process in a separate terminal from the app. The detailed sections below explain each provider's configuration and limitations. **ElevenLabs is hosted/proprietary, not open source**, and is listed only as an optional integration.
+
 **Core app start (without any optional TTS installs)**
 
 ```bash
@@ -52,6 +83,8 @@ npm run dev
 ```
 
 Once an engine is installed, start it using the appropriate command below, preferably in a separate terminal. Keep the Node backend and browser app running. The base app can render algorithms without a VieNeu checkout, a Supertonic environment, or Applio/GPT-SoVITS running; trying to generate with an unavailable provider will show a provider-specific error.
+
+**Expected behavior with no downloaded model or external runtime:** the core app should still start. Piper's health panel reports zero available models and offers installation where supported; a generation request returns a clear missing-file error until both the `.onnx` and `.onnx.json` files exist. Supertonic, VieNeu, GPT-SoVITS and Applio report a provider-specific disabled/not-installed/not-reachable status until their separate runtime is configured. This is an unavailable optional provider, not a reason for the algorithm editor or other providers to crash.
 
 Install only the provider(s) you intend to use. The app adapters remain in this repository; model weights, vendor runtimes and their Python environments should be installed separately. This avoids a multi-gigabyte clone and keeps third-party model licenses separate from the app source.
 
@@ -180,7 +213,7 @@ ElevenLabs is an optional cloud provider, not a self-hosted open-source engine. 
 4. Start only the selected local provider using its command above. Piper is launched by the backend; Supertonic, GPT-SoVITS and Applio run as separate processes; VieNeu uses its own external Python environment.
 5. Open `http://localhost:3000/text-to-speech` and use **Settings → Voice / Health Check** to configure and verify the provider.
 
-`npm run dev` deliberately starts only the browser app and Node backend. For experienced users, `npm run dev:full` also attempts to start optional providers; do not use it until the providers you enabled are installed and configured. Keep disabled providers at `KAI_PROVIDER_*_ENABLED=false`. Models may be several GB and may need a compatible GPU, disk space and first-run downloads. Only use voice cloning/conversion with consent and rights.
+`npm run dev` deliberately starts only the browser app and Node backend. Optional provider auto-start flags default to `false` even if the external engine is missing. `npm run dev:full` can start providers you explicitly enable; leave unused providers at `KAI_PROVIDER_*_ENABLED=false`. Models may be several GB and may need a compatible GPU, disk space and first-run downloads. Only use voice cloning/conversion with consent and rights.
 
 ## Development checks
 

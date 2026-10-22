@@ -18,6 +18,7 @@ test("auto lyrics uses a standalone Whisper adapter, not deleted YouTube Tools",
   assert.match(defaults, /WHISPER_PYTHON: "python"/);
   assert.match(runtimeEnv, /"WHISPER_PYTHON"/);
   assert.match(runtimeSettings, /WHISPER_PYTHON/);
+  assert.match(standalone, /env\.YOUTUBE_TOOLS_PYTHON/);
   assert.match(standalone, /export async function resolveWhisper/);
   assert.match(standalone, /export function runCommand/);
   assert.doesNotMatch(standalone, /yt_dlp|youtubeDownload|YOUTUBE_DLP/);

@@ -15,7 +15,11 @@ export type WhisperCommand = {
 
 // Auto-lyrics is a local media tool, not a YouTube download dependency.
 export async function resolveWhisper(env: RuntimeEnvValues = {}): Promise<WhisperCommand> {
-  const configured = resolveRuntimeExecutable(env.WHISPER_PYTHON || "python");
+  // Keep the old interpreter setting as a migration fallback for existing local installs.
+  const configuredValue = env.WHISPER_PYTHON && env.WHISPER_PYTHON !== "python"
+    ? env.WHISPER_PYTHON
+    : env.YOUTUBE_TOOLS_PYTHON || env.WHISPER_PYTHON || "python";
+  const configured = resolveRuntimeExecutable(configuredValue);
   const candidates = configured === "python" ? ["python", "python3", "py"] : [configured];
   const failed: string[] = [];
 

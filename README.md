@@ -225,11 +225,19 @@ Install the Gradio client into the Python environment used by the app's Applio b
 C:/Applio/env/Scripts/python.exe -m pip install --upgrade gradio_client
 ```
 
+The app also offers two helper commands. `npm run applio:install` installs the client package into your **default** Python environment, whereas `npm run dev:applio` attempts the configured launcher when `KAI_PROVIDER_APPLIO_ENABLED=true`. Prefer the explicit Applio environment shown above when using a custom Python installation; the helper is not a replacement for the full upstream Applio setup.
+
 Use **Settings → Voice → Applio** and follow [the API/template guide](docs/applio-api-template-and-voice-text.md) to copy the correct Gradio `api_name` and parameters for your installed version. Do not assume every Applio release uses the same endpoint. Applio is often used to convert source speech, so generate source speech with a TTS provider first; use only voice models and recordings you have permission to use.
 
 ### 6. ElevenLabs — hosted, not open source
 
+**ElevenLabs is hosted/proprietary, not open source.** It is an optional online API, not a locally downloadable speech engine.
+
 ElevenLabs is a proprietary hosted service, not a local open-source engine. Add your own `ELEVENLABS_API_KEY` to `.env` and never commit it.
+
+### Expected behavior with no downloaded model or external runtime
+
+The algorithm, maze and local video-editing screens should remain usable when no optional TTS engine is installed. In Settings → Voice, unavailable engines should show a missing-runtime/model or connection state rather than crashing the app. Actual generated speech requires starting and configuring at least one compatible engine or using the hosted ElevenLabs API; the backend cannot synthesize sound merely because the adapter is present. These fallback behaviors require a real smoke test before an official release.
 
 ### Start and verify the app
 

@@ -49,8 +49,8 @@ Official project: [Supertonic](https://github.com/supertone-inc/supertonic).
 Create a dedicated Python environment, activate it, then install and run the server from the app repository:
 
 ```powershell
-py -3.11 -m venv .venv-supertonic
-.\.venv-supertonic\Scripts\Activate.ps1
+py -3.11 -m venv ..\.venv-supertonic
+..\.venv-supertonic\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 npm run supertonic:install
 ```

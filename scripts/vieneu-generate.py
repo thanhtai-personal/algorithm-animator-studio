@@ -66,7 +66,7 @@ def main() -> int:
             "Chạy: npm run vieneu:install rồi thử lại."
         ) from exc
 
-    mode = str(payload.get("mode") or "turbo").strip().lower()
+    mode = str(payload.get("mode") or "v3turbo").strip().lower()
     emotion = str(payload.get("emotion") or "natural").strip() or "natural"
     voice_id = str(payload.get("voiceId") or "").strip()
     reference_audio = str(payload.get("referenceAudioPath") or "").strip()

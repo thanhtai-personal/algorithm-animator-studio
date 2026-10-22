@@ -49,7 +49,7 @@ Khuyến nghị:
 - Python 3.10 hoặc 3.11.
 - Windows nên dùng virtualenv riêng cho VieNeu; Python global chỉ dùng để bootstrap/tạo `.venv`.
 - Có mạng trong lần chạy đầu tiên để SDK tải model/cache nếu cần.
-- CPU vẫn test được với `VIENEU_MODE=turbo`; GPU/standard cho chất lượng tốt hơn.
+- CPU vẫn test được với `VIENEU_MODE=v3turbo`; GPU/standard cho chất lượng tốt hơn.
 
 ## 3. Download and install VieNeu-TTS separately
 
@@ -69,7 +69,7 @@ VIENEU_PYTHON=../VieNeu-TTS/.venv/Scripts/python.exe
 KAI_PROVIDER_VIENEU_ENABLED=true
 VIENEU_AUTO_START=true
 VIENEU_START_MODE=bridge
-VIENEU_MODE=turbo
+VIENEU_MODE=v3turbo
 ```
 
 On Linux/macOS, use `VIENEU_PYTHON=../VieNeu-TTS/.venv/bin/python`.
@@ -95,7 +95,7 @@ VIENEU_SOURCE_DIR=../VieNeu-TTS
 VIENEU_PYTHON=../VieNeu-TTS/.venv/Scripts/python.exe
 VIENEU_START_MODE=bridge
 VIENEU_AUTO_START=true
-VIENEU_MODE=turbo
+VIENEU_MODE=v3turbo
 VIENEU_EMOTION=natural
 VIENEU_DEFAULT_VOICE_ID=
 VIENEU_REFERENCE_AUDIO=
@@ -113,7 +113,7 @@ Giải thích nhanh:
 | `VIENEU_PYTHON` | Python executable trong virtualenv của source VieNeu-TTS, mặc định `../VieNeu-TTS/.venv/Scripts/python.exe` on Windows (`../VieNeu-TTS/.venv/bin/python` on Linux/macOS). Có thể set `python` để dùng Python global nếu global đã cài SDK VieNeu. |
 | `VIENEU_START_MODE` | Chế độ process VieNeu khi `npm run vieneu:serve` hoặc `npm run dev:full`: `bridge` để health-check và chờ backend gọi on-demand, `gradio` để mở UI Gradio, `off` để tắt. |
 | `VIENEU_AUTO_START` | Đặt `false` nếu không muốn script `vieneu:serve` khởi chạy process; `npm run dev` không chạy VieNeu. |
-| `VIENEU_MODE` | `turbo`, `standard`, hoặc `remote`. CPU nên test bằng `turbo`. |
+| `VIENEU_MODE` | `v3turbo` (open-source v3 trên ONNX/CPU), `v3nano` (máy yếu), `standard`/`turbo` (legacy, cần dependency bổ sung), hoặc `remote` (API tương thích). |
 | `VIENEU_EMOTION` | Emotion truyền vào SDK, mặc định `natural`. |
 | `VIENEU_DEFAULT_VOICE_ID` | Preset voice ID nếu SDK/model có preset voice. Để trống dùng giọng mặc định. |
 | `VIENEU_REFERENCE_AUDIO` | File audio mẫu để clone giọng. Không bắt buộc. |
@@ -282,7 +282,7 @@ Xin chào, đây là bản kiểm tra giọng đọc tiếng Việt. Hôm nay ch
 
 ### Muốn chất lượng cao hơn
 
-Dùng `VIENEU_MODE=standard` và môi trường GPU nếu máy hỗ trợ. CPU `turbo` phù hợp để test nhanh và chạy nhẹ.
+Với SDK open-source v3, dùng `VIENEU_MODE=v3turbo` trên CPU/ONNX hoặc `v3nano` trên máy cấu hình thấp. Chỉ dùng mode legacy `standard`/`turbo` khi đã cài đúng dependency tương ứng.
 
 ### Muốn dùng server VieNeu remote
 

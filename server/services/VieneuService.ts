@@ -163,7 +163,7 @@ function readVieneuConfig(env: RuntimeEnvValues): VieneuRuntimeConfig {
   return {
     sourceDir,
     pythonExe: resolveVieneuPython(env.VIENEU_PYTHON || "", sourceDir),
-    mode: normalizeMode(env.VIENEU_MODE || "turbo"),
+    mode: normalizeMode(env.VIENEU_MODE || "v3turbo"),
     emotion: normalizeEmotion(env.VIENEU_EMOTION || "natural"),
     defaultVoiceId: env.VIENEU_DEFAULT_VOICE_ID || "",
     referenceAudioPath: resolveReferenceAudioPath(env.VIENEU_REFERENCE_AUDIO || ""),
@@ -183,8 +183,8 @@ function normalizeText(body: VieneuGenerateBody) {
 
 function normalizeMode(value: string) {
   const mode = value.trim().toLowerCase();
-  if (!mode) return "turbo";
-  return ["standard", "turbo", "remote"].includes(mode) ? mode : "turbo";
+  if (!mode) return "v3turbo";
+  return ["v3turbo", "v3nano", "standard", "turbo", "remote"].includes(mode) ? mode : "v3turbo";
 }
 
 function normalizeEmotion(value: string) {
@@ -317,7 +317,7 @@ ${stderr}`;
     return "VieNeu import được source nhưng thiếu dependency trong Python/.venv. Chạy npm run vieneu:install rồi thử lại.";
   }
   if (/llama_cpp|llama-cpp-python/i.test(output)) {
-    return "VieNeu Turbo/Standard cần llama-cpp-python. Chạy npm run vieneu:install để cài wheel phù hợp.";
+    return "VieNeu legacy Turbo/Standard cần llama-cpp-python. Với open-source v3 dùng VIENEU_MODE=v3turbo để chạy backend ONNX/CPU.";
   }
   return "Chạy npm run vieneu:health để xem dependency VieNeu đang thiếu.";
 }

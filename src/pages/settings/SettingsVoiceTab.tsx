@@ -217,7 +217,7 @@ export function SettingsVoiceTab(props: SettingsVoiceTabProps) {
                 label="VieNeu mode"
                 description={t(props.lang, "uiUseTurboForCpuTestsStandardForHigher")}
                 value={props.form.VIENEU_MODE}
-                placeholder="turbo"
+                placeholder="v3turbo"
                 type="text"
                 onChange={(value) => props.onUpdateField("VIENEU_MODE", value)}
               />

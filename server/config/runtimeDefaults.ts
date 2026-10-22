@@ -56,7 +56,7 @@ export const DEFAULT_RUNTIME_ENV_VALUES: Record<string, string> = {
   GPT_SOVITS_TEXT_SPLIT_METHOD: "cut5",
   GPT_SOVITS_TIMEOUT_MS: "300000",
   VIENEU_PYTHON: "",
-  VIENEU_MODE: "turbo",
+  VIENEU_MODE: "v3turbo",
   VIENEU_EMOTION: "natural",
   VIENEU_DEFAULT_VOICE_ID: "",
   VIENEU_REFERENCE_AUDIO: "",

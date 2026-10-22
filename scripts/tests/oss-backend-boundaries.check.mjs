@@ -56,3 +56,25 @@ test("retired non-core backend route/service/model files are absent", () => {
     }
   }
 });
+
+test("README documents independent TTS engine setup and current VieNeu v3 mode", () => {
+  const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
+  const envExample = fs.readFileSync(path.join(root, ".env.example"), "utf8");
+  const vieneuService = fs.readFileSync(path.join(root, "server/services/VieneuService.ts"), "utf8");
+  const vieneuHealth = fs.readFileSync(path.join(root, "scripts/vieneu-health.py"), "utf8");
+  for (const token of [
+    "piper-tts",
+    "supertonic[serve]",
+    "npm run supertonic:serve",
+    "npm run vieneu:install",
+    "VIENEU_MODE=v3turbo",
+    "python api_v2.py -a 127.0.0.1 -p 9880",
+    "run-applio.bat",
+    "docs/oss/third-party-audit.md",
+  ]) assert.ok(readme.includes(token), `README TTS setup is missing: ${token}`);
+  assert.match(envExample, /VIENEU_MODE=v3turbo/);
+  assert.match(vieneuService, /normalizeMode\(env\.VIENEU_MODE \|\| "v3turbo"\)/);
+  assert.match(vieneuService, /"v3turbo", "v3nano"/);
+  assert.match(vieneuHealth, /"v3turbo": \[/);
+  assert.match(vieneuHealth, /"v3nano": \[/);
+});

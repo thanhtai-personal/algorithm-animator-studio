@@ -33,201 +33,185 @@ Open `http://localhost:3000/algorithms` or `http://localhost:3000/text-to-speech
 
 ## Voice provider setup
 
-Every optional TTS engine is installed **outside this repository**. The app owns only its adapters, bridge scripts and provider configuration. A missing provider/model must not block starting the core algorithm application. By default, the `.env.example` provider auto-start flags are disabled; enable only the engine you installed.
+All local TTS engines are optional and run independently of the main app. This repository contains provider adapters, not third-party runtimes or downloaded model weights. Install only the engine(s) you need, keep their Python environments and models outside this repository, and enable only those providers in `.env`.
 
-| Engine | Download / project | Startup method | How the app connects |
-| --- | --- | --- | --- |
-| Piper | [OHF-Voice/piper1-gpl](https://github.com/OHF-Voice/piper1-gpl) and voice model selected in Settings | Local executable, **no HTTP process** | `PIPER_EXE` + `MODEL_DIR` |
-| Supertonic | [supertone-inc/supertonic](https://github.com/supertone-oss-archive/supertonic) / its [Python service](https://github.com/supertone-oss-archive/supertonic-py) | `npm run supertonic:serve` after installing Python package | `SUPERTONIC_BASE_URL` (default `http://127.0.0.1:6688`) |
-| VieNeu-TTS | [pnnbao97/VieNeu-TTS](https://github.com/pnnbao97/VieNeu-TTS) — **separate sibling checkout** | Python bridge on demand; optional `npm run vieneu:serve` | `VIENEU_SOURCE_DIR`, `VIENEU_PYTHON` |
-| GPT-SoVITS | [RVC-Boss/GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS) — separate checkout | Its upstream API, or `npm run gpt-sovits:serve` with a configured start command | `GPT_SOVITS_BASE_URL` (usually port 9880) |
-| RVC/Applio | [IAHispano/Applio](https://github.com/IAHispano/Applio) — separate checkout | Its Gradio server, optionally started by `npm run dev:applio` | `RVC_APPLIO_BASE_URL`, `RVC_APPLIO_PYTHON`, Gradio API template |
-| ElevenLabs | Proprietary hosted service, **not open source** | No local runtime | `ELEVENLABS_API_KEY` |
+### Quick start
 
-### Quick start: download and run engines separately
-
-The Node app and its provider adapters are in this repository; third-party engines and weights are not. Start with **Piper** for the simplest local TTS, or follow the provider-specific sections below. Keep every virtual environment, upstream checkout and downloaded model outside this repo.
-
-**Piper — install a local executable, then download a voice in Settings → Voice**
-
-Windows PowerShell:
-```powershell
-py -3.11 -m venv ../.venv-piper
-../.venv-piper/Scripts/python.exe -m pip install --upgrade pip piper-tts
-```
-
-Linux/macOS:
-```bash
-python3 -m venv ../.venv-piper
-../.venv-piper/bin/python -m pip install --upgrade pip piper-tts
-```
-
-Put the executable path and a model directory outside the repository in `.env`.
-
-Windows:
-```env
-PIPER_EXE=../.venv-piper/Scripts/piper.exe
-MODEL_DIR=../tts-models
-```
-
-Linux/macOS:
-```env
-PIPER_EXE=../.venv-piper/bin/piper
-MODEL_DIR=../tts-models
-```
-
-Then run `npm run dev`, open **Settings → Voice**, and download a compatible model plus its `.onnx.json` configuration into `MODEL_DIR`. Read that exact voice's model card first; model licenses differ. If you prefer the default ignored `models/` folder, make sure its contents stay untracked.
-
-**Other separate engines**
-
-| Engine | Download / install | Start / verify |
-| --- | --- | --- |
-| Supertonic | Activate a dedicated Python 3.11 environment; run `npm run supertonic:install` | Set `KAI_PROVIDER_SUPERTONIC_ENABLED=true`, run `npm run supertonic:serve`, then check `http://127.0.0.1:6688/v1/health`. Upstream is archived; model weights have separate terms. |
-| VieNeu-TTS (optional Vietnamese TTS) | `git clone https://github.com/pnnbao97/VieNeu-TTS.git ../VieNeu-TTS`, then `npm run vieneu:install` and `npm run vieneu:health` | Set `KAI_PROVIDER_VIENEU_ENABLED=true` and `VIENEU_SOURCE_DIR=../VieNeu-TTS`; the app calls its separate Python bridge on demand. Do not copy its non-commercial preset/sample assets into this repo. |
-| GPT-SoVITS | `git clone https://github.com/RVC-Boss/GPT-SoVITS.git ../GPT-SoVITS`; follow that checkout's own model and environment instructions | Configure `GPT_SOVITS_START_COMMAND` and `GPT_SOVITS_BASE_URL`; set `KAI_PROVIDER_GPT_SOVITS_ENABLED=true`, then run `npm run gpt-sovits:serve`. |
-| RVC/Applio (mainly voice conversion) | `git clone https://github.com/IAHispano/Applio.git ../Applio`; install upstream requirements and a model you have rights to use | Set `RVC_APPLIO_START_COMMAND`, `RVC_APPLIO_BASE_URL`, and `KAI_PROVIDER_APPLIO_ENABLED=true`; run `npm run dev:applio`. Install `gradio_client` in the configured Python environment with `npm run applio:install`. |
-
-Keep each provider process in a separate terminal from the app. The detailed sections below explain each provider's configuration and limitations. **ElevenLabs is hosted/proprietary, not open source**, and is listed only as an optional integration.
-
-**Core app start (without any optional TTS installs)**
+From the app repository root:
 
 ```bash
 npm ci
-npm run dev
 ```
 
-Once an engine is installed, start it using the appropriate command below, preferably in a separate terminal. Keep the Node backend and browser app running. The base app can render algorithms without a VieNeu checkout, a Supertonic environment, or Applio/GPT-SoVITS running; trying to generate with an unavailable provider will show a provider-specific error.
+Copy `.env.example` to `.env` (PowerShell: `Copy-Item .env.example .env`). Keep secrets and local paths in `.env`; never commit it. Start the app with `npm run dev`, then open `http://localhost:3000/text-to-speech`. You can also run `npm run dev:server` and `npm run dev:client` in separate terminals.
 
-**Expected behavior with no downloaded model or external runtime:** the core app should still start. Piper's health panel reports zero available models and offers installation where supported; a generation request returns a clear missing-file error until both the `.onnx` and `.onnx.json` files exist. Supertonic, VieNeu, GPT-SoVITS and Applio report a provider-specific disabled/not-installed/not-reachable status until their separate runtime is configured. This is an unavailable optional provider, not a reason for the algorithm editor or other providers to crash.
+| Engine | Upstream download | Runtime/model | Connection from the app |
+| --- | --- | --- | --- |
+| Piper | [OHF-Voice/piper1-gpl](https://github.com/OHF-Voice/piper1-gpl) | Local executable + separately downloaded voice | `PIPER_EXE`, `MODEL_DIR` |
+| Supertonic | [Python service](https://github.com/supertone-oss-archive/supertonic-py) · [source](https://github.com/supertone-oss-archive/supertonic) | Local HTTP server; downloads model on first run | `SUPERTONIC_BASE_URL` (default `http://127.0.0.1:6688`) |
+| VieNeu-TTS (optional/experimental) | [pnnbao97/VieNeu-TTS](https://github.com/pnnbao97/VieNeu-TTS) | External Python checkout; model downloads on first synthesis | `VIENEU_SOURCE_DIR`, `VIENEU_PYTHON` |
+| GPT-SoVITS | [RVC-Boss/GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS) | External Python runtime, API and model checkpoints | `GPT_SOVITS_BASE_URL` (default port `9880`) |
+| RVC/Applio | [IAHispano/Applio](https://github.com/IAHispano/Applio) | External Gradio app + user-authorized voice model | `RVC_APPLIO_BASE_URL`, API template |
+| ElevenLabs | [Hosted service](https://elevenlabs.io/) | Proprietary cloud service; not open source | `ELEVENLABS_API_KEY` |
 
-Install only the provider(s) you intend to use. The app adapters remain in this repository; model weights, vendor runtimes and their Python environments should be installed separately. This avoids a multi-gigabyte clone and keeps third-party model licenses separate from the app source.
+**Recommended first setup: Piper.** It is the simplest local path. Start with one engine, confirm it works, then add other providers only if needed. No TTS provider is required to use the algorithm visualizers.
 
-### 1. Piper — local TTS, simplest CPU option
+### 1. Piper — local TTS
 
-- Runtime: install the Piper executable from the [official Piper project](https://github.com/OHF-Voice/piper1-gpl) and set `PIPER_EXE` in `.env` to its full path.
-- Voice: open **Settings → Voice** and download a supported model, or configure a compatible model in `MODEL_DIR`. The app does not bundle ONNX weights.
-- No separate HTTP service is required; the backend calls the local executable.
-- Review the exact voice model card before use. Piper model licenses vary; see [the third-party audit](docs/oss/third-party-audit.md).
+Official source: [OHF-Voice/piper1-gpl](https://github.com/OHF-Voice/piper1-gpl). Install its command-line runtime in a separate virtual environment.
 
-### 2. Supertonic — local HTTP TTS service (archived upstream)
-
-The Supertonic project moved to an archived read-only repository in September 2026. Source examples and model weights have separate license conditions; consult [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES.md) before installing. The commands below remain a compatibility guide and are not a promise of upstream support.
-
-Official project: [Supertonic](https://github.com/supertone-oss-archive/supertonic).
-
-Create a dedicated Python environment, activate it, then install and run the server from the app repository:
+Windows PowerShell (run from the app repository root):
 
 ```powershell
-py -3.11 -m venv ..\.venv-supertonic
-..\.venv-supertonic\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-npm run supertonic:install
+py -3.11 -m venv ../.venv-piper
+../.venv-piper/Scripts/python.exe -m pip install --upgrade pip
+../.venv-piper/Scripts/python.exe -m pip install piper-tts
 ```
 
-Linux/macOS activation is `source ../.venv-supertonic/bin/activate` after creating the environment with `python3 -m venv ../.venv-supertonic`. Keeping this environment outside the repository avoids accidentally committing runtime files.
+Linux/macOS:
 
-Set these values in `.env` for local browser development:
+```bash
+python3 -m venv ../.venv-piper
+../.venv-piper/bin/python -m pip install --upgrade pip
+../.venv-piper/bin/python -m pip install piper-tts
+```
+
+Set `.env` to the executable created in that environment. Use the path that matches your OS:
 
 ```env
-CLIENT_ORIGIN=http://localhost:3000
+PIPER_EXE=../.venv-piper/Scripts/piper.exe
+MODEL_DIR=../tts-models/piper
+```
+
+On Linux/macOS, set `PIPER_EXE=../.venv-piper/bin/piper`. Test the executable with `--help`, then open **Settings → Voice** and download a supported model. The app does not bundle ONNX voice weights. Each voice model has its own license; check its model card before use or redistribution: [TTS model audit](docs/oss/third-party-audit.md). Piper runs locally through the backend, so it does **not** need a separate HTTP server.
+
+### 2. Supertonic — local HTTP TTS
+
+Official Python service: [supertone-oss-archive/supertonic-py](https://github.com/supertone-oss-archive/supertonic-py). The upstream project is archived and receives no further maintenance. Source code and model weights have separate licenses; the weights are not bundled here.
+
+Create a separate Python environment and install the server package:
+
+```powershell
+py -3.11 -m venv ../.venv-supertonic
+../.venv-supertonic/Scripts/python.exe -m pip install --upgrade pip
+../.venv-supertonic/Scripts/python.exe -m pip install "supertonic[serve]"
+../.venv-supertonic/Scripts/Activate.ps1
+```
+
+Linux/macOS: create `../.venv-supertonic` with `python3 -m venv`, install `"supertonic[serve]"` using that environment's Python, then activate it with `source ../.venv-supertonic/bin/activate`.
+
+Add these values to the app `.env`:
+
+```env
 SUPERTONIC_BASE_URL=http://127.0.0.1:6688
 SUPERTONIC_MODEL=supertonic-3
 SUPERTONIC_CORS=http://localhost:3000
 KAI_PROVIDER_SUPERTONIC_ENABLED=true
 ```
 
-Run the provider in its own terminal with `npm run supertonic:serve`. On first use the runtime may download model assets. Keep that terminal open. A direct equivalent is `supertonic serve --host 127.0.0.1 --port 6688 --model supertonic-3 --cors http://localhost:3000` after activating the provider environment. Check `http://127.0.0.1:6688/v1/health` before returning to the app.
+With the Supertonic environment activated, run this from the app repository root in its own terminal:
 
-### 3. VieNeu-TTS — optional Vietnamese TTS, external checkout
+```bash
+npm run supertonic:serve
+```
 
-VieNeu source and its preset/sample voice assets are **not bundled** in this repository. Download the upstream project separately; do not copy non-commercial preset/sample assets back into this repo.
+The service downloads model assets on first use. Keep its terminal open and check `http://127.0.0.1:6688/v1/health`. Leave `KAI_PROVIDER_SUPERTONIC_ENABLED=false` if it is not installed. Review the model license before commercial use or redistribution; open-source server code does not automatically make model weights OSI-approved.
 
-From the Algorithm Animator Studio repository root:
+### 3. VieNeu-TTS — optional external Vietnamese TTS
+
+VieNeu is optional and **not bundled**. The adapter targets the open-source v3 SDK; the upstream project states that v4 is proprietary. Model checkpoints, preset voices and sample recordings have separate terms. Do not copy upstream presets or samples into this repository. If you need a simpler setup, use Piper or Supertonic instead.
+
+Clone the upstream project as a sibling folder, not inside this repository:
 
 ```bash
 git clone https://github.com/pnnbao97/VieNeu-TTS.git ../VieNeu-TTS
 ```
 
-Use Python 3.10 or 3.11, then set the following in `.env` (Windows shown; use `../VieNeu-TTS/.venv/bin/python` on Linux/macOS):
+Configure `.env` (Windows shown; Linux/macOS uses `../VieNeu-TTS/.venv/bin/python`):
 
 ```env
 VIENEU_SOURCE_DIR=../VieNeu-TTS
 VIENEU_PYTHON=../VieNeu-TTS/.venv/Scripts/python.exe
-VIENEU_AUTO_START=true
-VIENEU_START_MODE=bridge
-VIENEU_MODE=turbo
+VIENEU_MODE=v3turbo
 KAI_PROVIDER_VIENEU_ENABLED=true
+VIENEU_AUTO_START=false
 ```
 
-Install into VieNeu's own virtual environment and verify the SDK:
+Install the SDK into the external checkout's own virtual environment and check its dependencies:
 
 ```bash
 npm run vieneu:install
 npm run vieneu:health
 ```
 
-The backend invokes VieNeu directly through the external Python environment **when generation is requested**; `VIENEU_AUTO_START=true` only starts a managed bridge health process and is not required for normal local requests. To run it separately for diagnostics, use `npm run vieneu:health`; to open the optional upstream Gradio UI, set `VIENEU_START_MODE=gradio` and run `npm run vieneu:serve`. The first generation may download model files. If using upstream VieNeu v3, follow its model/backend instructions; the existing app adapter may need version-specific validation. Review the upstream project's code, model and voice-asset terms before commercial use or redistribution; the repository's own audit is at [docs/oss/third-party-audit.md](docs/oss/third-party-audit.md).
+The backend invokes the Python bridge on demand when generating audio; you do not need to launch Gradio or use `npm run dev:full`. The v3 model downloads on first use and may require substantial disk space. If `npm run vieneu:health` fails or generation is incompatible with the downloaded upstream version, set `KAI_PROVIDER_VIENEU_ENABLED=false` and use another provider. This adapter has not yet passed a real-model end-to-end test in this environment. See [the dedicated VieNeu guide](docs/vieneu-local-tts-provider.md) and [license audit](docs/oss/third-party-audit.md).
 
-If you do not install VieNeu, leave `KAI_PROVIDER_VIENEU_ENABLED=false` and `VIENEU_AUTO_START=false`. The other TTS providers do not depend on VieNeu.
+### 4. GPT-SoVITS — local TTS / voice cloning
 
-**If an older local checkout already contains `libs/VieNeu-TTS/`:** do not delete your SDK, downloaded models or recordings just to satisfy OSS checks. That path is ignored by Git, and the OSS checks verify **Git-tracked files** rather than whether a locally installed folder exists. Inspect from your checkout root:
+Official source and current installation instructions: [RVC-Boss/GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS). Clone it outside the app repository:
 
 ```bash
-git ls-files --cached -- libs/VieNeu-TTS/
-git status --ignored --short -- libs/VieNeu-TTS/
+git clone https://github.com/RVC-Boss/GPT-SoVITS.git ../GPT-SoVITS
 ```
 
-The first command must print **nothing**. If it lists files, those files are staged/tracked and must be removed from Git's index before publication (preserve your working copies). An ignored local folder may still appear in the second command; that is expected. The recommended setup remains a separate `../VieNeu-TTS` checkout configured through `VIENEU_SOURCE_DIR`; keep any older local installation until you have migrated its settings and files safely.
+Install it using the script and device option documented by the version you downloaded. For example, Windows with PowerShell 7 can use `pwsh -F install.ps1 --Device CPU --Source HF`; Linux can use `bash install.sh --device CPU --source HF`. Select a supported CUDA/CPU option for your hardware and follow upstream instructions to download the required checkpoints. Models are not included here.
 
-### 4. GPT-SoVITS — experimental local voice cloning
+Start the **API server**, not just the WebUI. From the GPT-SoVITS checkout, use the Python interpreter installed by that checkout:
 
-Upstream source and install instructions: [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS). To keep it outside this repository, you can clone it from the app root with `git clone https://github.com/RVC-Boss/GPT-SoVITS.git ../GPT-SoVITS`, then follow that version's installation instructions and download its required models separately. Start its API using the launch script supplied by the version you installed; the documented default API address is `http://127.0.0.1:9880`.
+```bash
+python api_v2.py -a 127.0.0.1 -p 9880
+```
 
-Configure `.env` with your actual paths:
+The upstream `api_v2.py` exposes `/tts` and `/docs`. Keep the process running in its own terminal. In the app `.env`, set:
 
 ```env
 GPT_SOVITS_SOURCE_DIR=../GPT-SoVITS
-GPT_SOVITS_START_COMMAND=C:/AI/GPT-SoVITS/go-api.bat
 GPT_SOVITS_BASE_URL=http://127.0.0.1:9880
+GPT_SOVITS_TTS_ENDPOINT=/tts
 KAI_PROVIDER_GPT_SOVITS_ENABLED=true
 ```
 
-Then run `npm run gpt-sovits:serve` in its own terminal, or start the upstream API yourself. Verify the upstream API is responding on the configured port before selecting this provider; the exact launcher is version-dependent. The launch filename and dependency requirements vary by GPT-SoVITS version; use the script provided by your downloaded version. Configure reference audio and prompt text in **Settings → Voice → GPT-SoVITS**.
+Leave `GPT_SOVITS_START_COMMAND` empty if starting the API manually. To let the app start it, set `GPT_SOVITS_START_COMMAND` to the actual Python executable from your GPT-SoVITS installation followed by `api_v2.py -a 127.0.0.1 -p 9880`, then use `npm run gpt-sovits:serve`. Check `http://127.0.0.1:9880/docs` and configure reference audio/text and supported languages in **Settings → Voice → GPT-SoVITS**. Language support varies by model/version.
 
-### 5. RVC/Applio — optional voice conversion
+### 5. RVC/Applio — voice conversion and optional TTS
 
-Download Applio from its [official repository](https://github.com/IAHispano/Applio), or clone the source to a separate folder such as `../Applio`; follow the current upstream installation instructions, then start it separately (commonly `run-applio.bat`). Download/train the voice model outside this repository and only use models you have permission to use.
+Official source: [IAHispano/Applio](https://github.com/IAHispano/Applio). Clone it separately and follow current upstream installation instructions:
 
-Example `.env` settings; update paths and API name to match your installation:
+```bash
+git clone https://github.com/IAHispano/Applio.git ../Applio
+```
+
+On Windows, run `run-install.bat` once and then `run-applio.bat` from the Applio checkout. On Linux/macOS, follow upstream instructions for `run-install.sh` and `run-applio.sh`. Keep the Gradio server running. The local address/port may vary; use the actual URL shown by Applio.
+
+Example `.env` values for a typical Windows install (change paths and port to match your machine):
 
 ```env
 RVC_APPLIO_BASE_URL=http://127.0.0.1:6969
-RVC_APPLIO_START_COMMAND=C:/Applio/run-applio.bat
 RVC_APPLIO_PYTHON=C:/Applio/env/Scripts/python.exe
 KAI_PROVIDER_APPLIO_ENABLED=true
 ```
 
-Install `gradio_client` in the Python environment configured by `RVC_APPLIO_PYTHON`:
+Install the Gradio client into the Python environment used by the app's Applio bridge:
 
 ```bash
-npm run applio:install
+C:/Applio/env/Scripts/python.exe -m pip install --upgrade gradio_client
 ```
 
-If Applio uses a separate Python environment, run `C:/Applio/env/Scripts/python.exe -m pip install -U gradio_client` instead. Follow [the Applio API/template guide](docs/applio-api-template-and-voice-text.md) to configure the matching Gradio endpoint. RVC/Applio is primarily a **voice-conversion** step: generate source speech with a TTS provider first, then convert it.
+Use **Settings → Voice → Applio** and follow [the API/template guide](docs/applio-api-template-and-voice-text.md) to copy the correct Gradio `api_name` and parameters for your installed version. Do not assume every Applio release uses the same endpoint. Applio is often used to convert source speech, so generate source speech with a TTS provider first; use only voice models and recordings you have permission to use.
 
 ### 6. ElevenLabs — hosted, not open source
 
-ElevenLabs is an optional cloud provider, not a self-hosted open-source engine. Add your own `ELEVENLABS_API_KEY` in `.env`; never commit the key.
+ElevenLabs is a proprietary hosted service, not a local open-source engine. Add your own `ELEVENLABS_API_KEY` to `.env` and never commit it.
 
-### Start the app and selected provider(s)
+### Start and verify the app
 
-1. Install app dependencies: `npm ci`, then copy `.env.example` to `.env`.
-2. Set local origins such as `CLIENT_ORIGIN=http://localhost:3000` and `VITE_CLIENT_ORIGIN=http://localhost:3000`.
-3. Start the backend with `npm run dev:server` and the frontend in another terminal with `npm run dev:client`.
-4. Start only the selected local provider using its command above. Piper is launched by the backend; Supertonic, GPT-SoVITS and Applio run as separate processes; VieNeu uses its own external Python environment.
-5. Open `http://localhost:3000/text-to-speech` and use **Settings → Voice / Health Check** to configure and verify the provider.
+1. Install app dependencies (`npm ci`) and copy `.env.example` to `.env`.
+2. Set local origins to `http://localhost:3000` where appropriate.
+3. Start the app with `npm run dev`.
+4. Start only the provider you installed: Piper is invoked by the backend; Supertonic and GPT-SoVITS run as separate HTTP processes; Applio runs its Gradio server; VieNeu uses its external Python SDK on demand.
+5. Open `http://localhost:3000/text-to-speech`, select the provider and use **Settings → Voice / Health Check**. Check the provider's own URL/command above first.
 
-`npm run dev` deliberately starts only the browser app and Node backend. Optional provider auto-start flags default to `false` even if the external engine is missing. `npm run dev:full` can start providers you explicitly enable; leave unused providers at `KAI_PROVIDER_*_ENABLED=false`. Models may be several GB and may need a compatible GPU, disk space and first-run downloads. Only use voice cloning/conversion with consent and rights.
+`npm run dev` does not install or launch all optional TTS runtimes. Avoid `npm run dev:full` until every provider it may start is installed and configured. After changing `.env`, restart the Node backend. If an optional provider is missing, disable its `KAI_PROVIDER_*_ENABLED` flag; algorithm visualizations should still run. First-run downloads may be large and may require compatible CPU/GPU hardware. Review each source, model and voice asset license before use or redistribution.
 
 ## Development checks
 

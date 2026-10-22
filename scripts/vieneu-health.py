@@ -33,6 +33,14 @@ BASE_REQUIRED_MODULES = [
 ]
 
 MODE_REQUIRED_MODULES = {
+    "v3turbo": [
+        ("onnxruntime", "onnxruntime"),
+        ("huggingface_hub", "huggingface-hub"),
+    ],
+    "v3nano": [
+        ("onnxruntime", "onnxruntime"),
+        ("huggingface_hub", "huggingface-hub"),
+    ],
     "standard": [
         ("llama_cpp", "llama-cpp-python"),
         ("onnxruntime", "onnxruntime"),
@@ -63,7 +71,7 @@ def main() -> int:
         })
         return 1
 
-    mode = str(os.environ.get("VIENEU_MODE") or "turbo").strip().lower()
+    mode = str(os.environ.get("VIENEU_MODE") or "v3turbo").strip().lower()
     missing = find_missing_modules(BASE_REQUIRED_MODULES + MODE_REQUIRED_MODULES.get(mode, []))
     if missing:
         packages = ", ".join(item["package"] for item in missing)

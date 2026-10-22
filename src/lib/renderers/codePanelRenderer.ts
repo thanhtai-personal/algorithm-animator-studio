@@ -1,12 +1,10 @@
-import landTileUrl from "@/assets/sprites/land-tile.jpg";
-import { LandTileMapSprite, type LandTileMap } from "@/lib/sprites/LandTileMapSprite";
+import type { LandTileMap } from "@/lib/sprites/LandTileMapSprite";
 import type { Frame } from "../algorithms";
 import type { Lang } from "../i18n";
 import { roundRect } from "./shapes";
 import type { Theme } from "./theme";
 
 type CodePanelStyle = "default" | "grass";
-const landTileMapSprite = new LandTileMapSprite({ imageUrl: landTileUrl });
 const PANEL_LAND_MAP: LandTileMap = {
   tileWidth: 42,
   rows: [{ height: 54, tiles: ["stone"] }],
@@ -130,5 +128,18 @@ function drawLandTileMap(
 ) {
   ctx.fillStyle = fallback;
   ctx.fillRect(x, y, w, h);
-  landTileMapSprite.drawMap(ctx, x, y, w, h, map);
+  // Procedural background replaces the unlicensed historic land-tile image.
+  let rowTop = y + h;
+  for (const row of map.rows) {
+    const tileHeight = Math.max(1, Math.min(h, row.height));
+    rowTop -= tileHeight;
+    ctx.fillStyle = "rgba(33, 61, 45, 0.8)";
+    ctx.fillRect(x, rowTop, w, tileHeight);
+    for (let i = 0; i < Math.ceil(w / map.tileWidth); i++) {
+      const tileWidth = Math.min(map.tileWidth, w - i * map.tileWidth);
+      if (tileWidth <= 0) break;
+      ctx.fillStyle = i % 2 ? "rgba(94, 119, 77, 0.35)" : "rgba(151, 171, 116, 0.28)";
+      ctx.fillRect(x + i * map.tileWidth, rowTop + tileHeight * 0.48, tileWidth, tileHeight * 0.52);
+    }
+  }
 }

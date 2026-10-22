@@ -1,6 +1,6 @@
 # Algorithm Animator Studio — public-release preparation documents
 
-This folder contains the maintainer-facing materials for a possible source release. **Presence of these files is not release clearance.** The repository remains Private and the cleanup PR remains Draft until evidence is recorded.
+This folder contains the maintainer-facing materials for a possible source release. **Presence of these files is not release clearance.** PR #28 has been merged, but the repository remains Private and the public release is still blocked pending evidence and maintainer approval.
 
 - [Licensing boundaries](LICENSING.md) — what the proposed MIT license covers and does not cover.
 - [Asset provenance](ASSET_PROVENANCE.md) — known-unverified sprite, sound, image and MIDI groups.
@@ -12,5 +12,12 @@ This folder contains the maintainer-facing materials for a possible source relea
 - [History sanitization](HISTORY_SANITIZATION.md) — safe strategies for removing private historical content.
 - [Release notes template](RELEASE_NOTES_TEMPLATE.md) — evidence-backed release notes.
 - [Cleanup work log](cleanup-progress-2026-10-21.md) — implementation record; not a substitute for test logs.
+
+## Example outputs made with the tool
+
+- [Bruno Fernandes: 100 Goals!](https://www.youtube.com/watch?v=h2EwOys6evI)
+- [100 Bruno Fernandes United Assists](https://www.youtube.com/watch?v=-BIriLyQXkw)
+
+These links show finished videos produced with Algorithm Animator Studio; they are not application walkthroughs or evidence that the current source build has passed validation.
 
 Use `npm run validate:oss` for functional checks after `npm ci`. Separately, `npm run audit:oss:release` intentionally exits nonzero until the maintainer clears the remaining release blockers and updates the gate. Do not turn that failure into a skipped CI status.

@@ -1,11 +1,11 @@
 # Open-source release gate — Algorithm Animator Studio
 
-**CURRENT STATUS: BLOCKED / NOT PUBLIC-READY.** Do not merge the draft cleanup PR, make the repository public or publish an installer until each applicable blocking check below is evidenced. This checklist is deliberately a set of release gates rather than optimistic progress percentages.
+**CURRENT STATUS: ALREADY PUBLIC / OFFICIAL RELEASE BLOCKED.** PR #28 is merged. Public history exposure was verified on 22 October 2026. No official version, tag or installer should be published until applicable security/rights/engineering gates have evidence. This checklist is deliberately a set of release gates rather than optimistic progress percentages.
 
 ## Ownership, license and legal
 
 - [ ] Owner/rightsholder approves the top-level MIT copyright attribution and confirms the ownership/rights to license every original source contribution.
-- [x] Proposed MIT `LICENSE`, licensing scope, notices and asset provenance register added **on the cleanup branch** (not yet published from `main`).
+- [x] MIT `LICENSE`, licensing scope, notices and asset provenance register are on `main`; owner rights approval remains pending.
 - [ ] Audit source borrowed from templates, tutorials, projects, dependencies and any generated code; preserve/reconcile incompatible file-specific rights.
 - [ ] Decide and document the actual third-party binary distribution format (source-only vs bundled Windows/Electron).
 - [ ] Confirm the Remotion License applies to maintainers **and downstream usage**; this is source-available, not OSI open source; disclose the limitation.
@@ -38,9 +38,9 @@
 
 - [x] README includes feature scope, local start commands and separate TTS installation instructions.
 - [x] CONTRIBUTING, SECURITY, code of conduct and SUPPORT prepared on OSS branch.
-- [ ] Triage, remove or archive obsolete internal docs and environment examples before making Public.
+- [ ] Review any surviving sensitive internal source/docs already exposed by Public history; apply the documented incident response.
 - [ ] Confirm license + disclaimer text with project owner and final copyright holder.
-- [ ] Add tagged release/version, changelog and accurate screenshot/demo media whose rights are verified.
+- [ ] Only tag/publish a version after history/credentials, rights and real build/test/voice evidence are approved. Review-only source ZIP is not a release.
 - [ ] Verify links from `README.md` and GitHub issue/PR templates, then review proposed public README for truthful tested capabilities.
 
 ## Release decision

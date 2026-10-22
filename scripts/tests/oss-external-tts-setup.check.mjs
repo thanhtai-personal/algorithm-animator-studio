@@ -25,7 +25,7 @@ test("VieNeu is an optional external checkout without vendored SDK/model/preset 
 test("README has separate setup instructions for the supported voice engines", () => {
   const readme = read("README.md");
   for (const upstream of [
-    "OHF-Voice/piper1-gpl", "supertone-inc/supertonic", "pnnbao97/VieNeu-TTS",
+    "OHF-Voice/piper1-gpl", "supertone-oss-archive/supertonic", "pnnbao97/VieNeu-TTS",
     "RVC-Boss/GPT-SoVITS", "IAHispano/Applio",
   ]) assert.ok(readme.includes(upstream), `missing upstream instructions: ${upstream}`);
   for (const command of [

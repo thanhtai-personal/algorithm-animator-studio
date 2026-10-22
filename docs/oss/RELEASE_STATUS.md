@@ -14,7 +14,7 @@ Windows/Electron binaries: **not cleared for redistribution**
 | Gate | State | Evidence / reason |
 | --- | --- | --- |
 | Source ownership & third-party media | **BLOCKED** | Initial ownership approval pending, replaced uncleared web assets pending PR merge, historical media remains accessible |
-| Dependencies & platform binaries | **BLOCKED** | 1,272 npm packages examined from lockfile; custom Remotion/GSAP terms, GPL FFmpeg platform artifacts, 11 packages missing license metadata |
+| Dependencies & platform binaries | **BLOCKED** | 1,272 packages in lockfile; custom Remotion/GSAP, GPL FFmpeg, 11 metadata gaps; CI `npm ci` reported 31 vulnerability advisories including 3 critical |
 | Secrets and full Git history | **BLOCKED** | Nonempty historical signing credential fields found in old PR tips; full content scan and owner rotation review not completed |
 | Tests/build/voice inference | **BLOCKED** | GitHub Actions runner failure before steps; no reproducible green `validate:oss`, algorithm/video/audio acceptance log |
 | Release metadata and docs | **IN PROGRESS** | Legal docs exist, source-only draft workflow/snapshot script prepared, version and provenance signoff pending |

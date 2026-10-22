@@ -44,8 +44,12 @@ remote-control-app/release/
 /artifacts/
 
 server/data
-# Piper models are allowed so desktop installer can bundle offline voices.
-# Runtime venv/download temp files are still ignored.
+# User-managed TTS weights are third-party assets with model-specific licenses.
+# Keep them out of the OSS source tree; install a compatible model explicitly.
+models/*.onnx
+models/*.onnx.json
+models/**/*.onnx
+models/**/*.onnx.json
 models/.venv/
 models/**/*.download
 models/**/*.tmp

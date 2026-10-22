@@ -33,7 +33,7 @@ Open `http://localhost:3000/algorithms` or `http://localhost:3000/text-to-speech
 
 ## Voice provider setup
 
-Piper depends on a local executable plus compatible licensed ONNX voice models. Other providers may need local Python services, downloaded model weights, an external API key (ElevenLabs), or separately installed tools. See:
+Piper depends on a local executable plus a separately installed ONNX voice model. Voice-model licenses differ; review `docs/oss/third-party-audit.md` before using or redistributing a model. Other providers may need local Python services, downloaded model weights, an external API key (ElevenLabs), or separately installed tools. See:
 - `docs/local-voice-services.md`
 - `docs/vieneu-local-tts-provider.md`
 - `docs/gpt-sovits-local-provider.md`

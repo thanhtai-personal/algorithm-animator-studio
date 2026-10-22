@@ -23,12 +23,13 @@ Original main commit: `8009a08aeb8df6e0d1e15440f9e80c4b17d80d7a`
 16. Added `WhisperCliService.ts` and repaired the auto-lyrics import so it no longer depends on removed YouTube Tools. Added `WHISPER_PYTHON` runtime configuration and retained compatibility with the older `YOUTUBE_TOOLS_PYTHON` setting during migration.
 17. Expanded `OssAlgorithmTtsRegression.test.ts` to cover 26 deterministic sorting algorithms, linear/binary search, BFS/DFS/Dijkstra, A*, all seven TTS generation/conversion endpoints, all six provider health/config flows, Piper model discovery and Supertonic style import. Expanded the local-import guard to scan `.mts`/`.cts` and detect local `require()` calls. These tests have been authored but **not executed successfully**.
 18. Added `npm run test:oss:static` and a single `npm run validate:oss` command for the retained-surface guard, OSS structural checks, Vitest suite, web build and server bundle. The CI workflow now uses that same command after `npm ci` to reduce drift between local and CI validation.
+19. Removed all four Piper ONNX weight files and their matching JSON configs from the current Git tree (~268 MB); kept the Piper provider, model catalog, download endpoints and UI install flow. Added an audit explaining why models are opt-in and not bundled. The downloaded files are now ignored by Git. This only cleans the current tree; the weights remain in earlier commits and must be addressed before any public release.
 
 ## File counts — actual Git tree set comparison
 Both recursive Git tree snapshots were compared by **blob path**, rather than trusting GitHub's paginated/truncated compare file list:
 - Baseline: **1,312 tracked files**.
-- Current branch: **673 tracked files**.
-- **656 tracked files deleted**, **17 added**, **32 modified**.
+- Current branch before the 22 October model cleanup: **673 tracked files**; after removing the four Piper models/configs and adding the audit: **666 tracked files**.
+- Current comparison: **664 tracked files deleted**, **18 added**, **32 modified**.
 - **599 deleted files under `src/` or `server/`**.
 - Legacy feature and backend source, obsolete specs, tests, scripts, and preset media were removed. Counts are from a full recursive Git tree diff; do not rely on GitHub compare results truncated at 300 files.
 - No `models/*.onnx` deleted, pending independent license/model-card audit.
@@ -55,7 +56,7 @@ Both recursive Git tree snapshots were compared by **blob path**, rather than tr
 1. **Validation gate remains blocked.** Run `npm ci && npm run validate:oss` from a real checkout and fix any failures. In parallel, resolve why GitHub Actions fails before runner allocation; inspect Actions settings/billing or configure a permitted runner. Do not make the private repository public just to get CI running.
 2. **Implemented static source separation:** Math/Preset and old rhythmic transcode are gone; prove full `npm test`, web/server builds, algorithm Remotion CLI render and timeline MP4 export against a clean checkout before marking this complete.
 3. **Done: YouTube Tools removed from Settings and backend**; check FFmpeg/FFprobe status and all six TTS provider health flows in a running environment before publication.
-4. Isolate optional voice model dependencies. Keep all six TTS integrations while auditing four Piper ONNX weights and `libs/VieNeu-TTS` rights, attribution, download paths and opt-in installation.
+4. Continue optional voice isolation: the Piper binaries are no longer bundled, but remain in Git history. Audit and isolate the VieNeu preset/sample voice assets (`voices.json` declares CC BY-NC 4.0) while keeping the VieNeu provider integration and an opt-in install path. Verify provider setup after the change.
 5. Audit full Git history for secrets/sensitive media and third-party asset licenses. Deletion from latest tree does not remove history; rotate any compromised credentials.
 6. Remove remaining dead dependencies/scripts/media, close stale CI workflows, write license/SECURITY/CONTRIBUTING/THIRD_PARTY_NOTICES and verify a clean user install.
 7. Only with explicit owner approval and legal/CI signoff: merge PR, address history sanitation strategy (legacy media remains in past commits), and switch to Public.

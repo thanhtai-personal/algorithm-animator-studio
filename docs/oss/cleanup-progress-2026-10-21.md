@@ -71,3 +71,10 @@ This ledger is a status record; it is **not** evidence of a passing build or lic
 - README now contains a direct download/clone, configure, start and health-check table and per-provider guides, distinguishing local engines from hosted ElevenLabs.
 - Added `scripts/tests/oss-external-tts.check.mjs` to guard the absence of embedded vendors/models and the optional-startup contract.
 - GitHub tree/source assertions passed for the above file/config facts. **No full regression/build/audio inference was successfully executed** in this session due to unavailable working checkout / runner.
+
+## External TTS documentation sync — 2026-10-22
+
+- README already has separate install/start instructions for Piper, Supertonic, VieNeu, GPT-SoVITS and Applio, and identifies ElevenLabs as a cloud service.
+- Removed six remaining generated VieNeu egg-info metadata files, so the current tree contains no `libs/VieNeu-TTS` vendor directory. Added ignore rule to prevent reintroducing that checkout.
+- Updated `docs/local-voice-services.md` and `docs/vieneu-local-tts-provider.md` to correctly distinguish `npm run dev` (web/server only), optional on-demand VieNeu Python bridge and `vieneu:serve`/`dev:full`.
+- Added `scripts/tests/oss-external-tts-setup.check.mjs` structural guard. No runtime inference or clean-build pass has yet been verified.

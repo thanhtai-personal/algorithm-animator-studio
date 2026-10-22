@@ -65,3 +65,6 @@ NUL
 # One-off local scratch and backup lockfiles (OSS cleanup)
 .tmp-*/
 package-lock.json.bak-*
+
+# VieNeu SDK is an external dependency, never vendor it into this OSS repo.
+libs/VieNeu-TTS/

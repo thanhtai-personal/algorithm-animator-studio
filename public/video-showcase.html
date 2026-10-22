@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Two example videos created with Algorithm Animator Studio.">
+  <title>Video Showcase | Algorithm Animator Studio</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #0b1020; color: #f2f5fb; line-height: 1.5; }
+    main { max-width: 1140px; margin: 0 auto; padding: clamp(24px, 5vw, 60px) 20px; }
+    a { color: #90c9ff; }
+    a:hover { color: #d1e8ff; }
+    .eyebrow { color: #a3b8d8; font-size: .78rem; text-transform: uppercase; letter-spacing: .18em; font-weight: 700; }
+    h1 { font-size: clamp(1.85rem, 4vw, 3.1rem); line-height: 1.14; letter-spacing: -.03em; margin: .5rem 0 1rem; }
+    .intro { max-width: 60rem; color: #b9c7de; margin: 0 0 2.5rem; }
+    .videos { display: grid; gap: 24px; grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); align-items: start; }
+    .panel { min-width: 0; padding: 18px; background: #151e32; border: 1px solid #35415b; border-radius: 16px; }
+    .panel h2 { font-size: 1.12rem; margin: 0 0 14px; }
+    .player { width: 100%; overflow: hidden; border-radius: 10px; background: #000; }
+    .player.short { aspect-ratio: 9 / 16; max-width: 360px; margin-inline: auto; }
+    .player.landscape { aspect-ratio: 16 / 9; }
+    iframe { display: block; width: 100%; height: 100%; border: 0; }
+    .fallback { font-size: .92rem; margin: 12px 0 0; color: #b9c7de; }
+    footer { margin-top: 2rem; color: #a3b8d8; font-size: .9rem; }
+    @media (max-width: 760px) { .videos { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Algorithm Animator Studio</p>
+    <h1>Example videos · Video mẫu</h1>
+    <p class="intro">Two finished outputs made with the studio. Play them here or open the original YouTube video if embedding is unavailable. / Hai video thành phẩm; có thể xem trực tiếp hoặc mở trên YouTube.</p>
+    <section class="videos" aria-label="Example videos">
+      <article class="panel">
+        <h2>01 · YouTube Shorts</h2>
+        <div class="player short">
+          <iframe src="https://www.youtube-nocookie.com/embed/KDJrXGYr_TA"
+            title="Example 1 – YouTube Shorts" loading="lazy"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen></iframe>
+        </div>
+        <p class="fallback"><a href="https://www.youtube.com/shorts/KDJrXGYr_TA" target="_blank" rel="noopener noreferrer">Watch on YouTube / Xem trên YouTube ↗</a></p>
+      </article>
+      <article class="panel">
+        <h2>02 · YouTube Video</h2>
+        <div class="player landscape">
+          <iframe src="https://www.youtube-nocookie.com/embed/CxcTJC_GDfY"
+            title="Example 2 – YouTube Video" loading="lazy"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen></iframe>
+        </div>
+        <p class="fallback"><a href="https://www.youtube.com/watch?v=CxcTJC_GDfY" target="_blank" rel="noopener noreferrer">Watch on YouTube / Xem trên YouTube ↗</a></p>
+      </article>
+    </section>
+    <footer>Only the video players are provided by YouTube. Embedding may be blocked by video privacy, owner settings, or browser restrictions.</footer>
+  </main>
+</body>
+</html>

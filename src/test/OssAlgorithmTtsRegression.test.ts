@@ -50,12 +50,12 @@ describe("Algorithm OSS regressions", () => {
 });
 
 describe("All six OSS voice provider client contracts", () => {
-  const requests: { url: string; body?: string }[] = [];
+  const requests: { url: string; body?: string; method: string }[] = [];
 
   beforeEach(() => {
     requests.length = 0;
     vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
-      requests.push({ url: String(url), body: init?.body?.toString() });
+      requests.push({ url: String(url), body: init?.body?.toString(), method: init?.method || "GET" });
       return {
         ok: true,
         headers: { get: () => "application/json" },
@@ -109,6 +109,7 @@ describe("All six OSS voice provider client contracts", () => {
       "/api/supertonic/styles/import",
     ]);
     expect(JSON.parse(requests.at(-1)?.body || "{}")).toEqual({ styleJson: { voiceId: "fixture" } });
+    expect(requests.map((request) => request.method)).toEqual(["GET", "GET", "GET", "GET", "GET", "GET", "GET", "GET", "POST"]);
   });
 
   it("still requests the shared Piper/voice health endpoint", async () => {

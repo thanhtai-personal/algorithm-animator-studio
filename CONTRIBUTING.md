@@ -4,7 +4,7 @@ Thanks for improving algorithm animations, education tooling, rendering, or prov
 
 ## Before a change
 
-Read [README.md](README.md), [architecture](docs/oss/ARCHITECTURE.md), [development guide](docs/oss/DEVELOPMENT.md), [licensing scope](docs/oss/LICENSING.md), [security policy](SECURITY.md) and [code of conduct](CODE_OF_CONDUCT.md). During OSS preparation the repo and PR may still be private; contributions will open only after the maintainer declares the project release-ready.
+Read [README.md](README.md), [architecture](docs/oss/ARCHITECTURE.md), [development guide](docs/oss/DEVELOPMENT.md), [licensing scope](docs/oss/LICENSING.md), [security policy](SECURITY.md) and [code of conduct](CODE_OF_CONDUCT.md). This repository is already Public but has no certified release; contributions can be proposed while the owner completes the audit.
 
 Prefer small PRs with a clear behavioral goal. Open an issue to discuss large API, database, rendering or licensing changes first. Avoid introducing authentication, story, news or generic publishing modules back into the OSS core.
 

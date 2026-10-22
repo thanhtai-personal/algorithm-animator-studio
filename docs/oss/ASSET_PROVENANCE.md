@@ -12,7 +12,7 @@
 | `src/assets/audios/midis/SuperMarioMakerTitleTheme.mid` | Removed (1 MIDI) | Do not distribute a recognizable third-party musical composition without a license; use procedural/custom licensed music |
 | `src/assets/marble-*.wav` | Removed (4 historic sound files, no longer needed) | No required current dependency; procedural SFX and user music still available |
 | `haaland.jpg` | Removed (1 historic photograph) | Not needed for Algorithm / TTS; photographer/publicity rights unconfirmed |
-| `public/favicon.ico`, `public/kai-studio-logo.svg`, `public/placeholder.svg` | **Retained pending authorship review** | These UI identity/assets are small, but remain release signoff items until the owner confirms creation, licensing or replacement |
+| `public/favicon.ico`, `public/kai-studio-logo.svg`, `public/placeholder.svg` | **Removed on security-hardening branch** | Replaced logo usage with existing Lucide icon; simple new SVG favicon. Historical copies remain reachable until separately addressed |
 | External Piper/Supertonic/VieNeu/GPT-SoVITS/Applio models and voices | **Not bundled** | Keep optional independent installs; follow `docs/oss/third-party-audit.md` and the provider README |
 | FFmpeg/Remotion/npm dependencies | **Required code/runtime, not covered by repository MIT** | Use each upstream license and attribution; read `THIRD_PARTY_NOTICES.md` |
 
@@ -26,7 +26,7 @@ Third-party source available on a website is not automatically reusable. A MIDI 
 
 ## Release blockers
 
-- Verify creator/owner rights for the three retained `public/` identity/placeholder assets; remove or substitute any without sufficient evidence.
+- Verify the security-hardening PR is merged and the unverified `public/` image and site-verification files are absent from new HEAD; old history still requires review.
 - Run regression tests and real browser/Canvas/Remotion smoke checks for the procedural animal mode and SFX; these have **not** been certified in the current tool environment.
 - Check all historical Git refs and past commit objects, including old sprite/music/model copies and potential credential files. Current-tree deletion is not enough.
 - No license grant is made for the previously tracked unknown-rights media.

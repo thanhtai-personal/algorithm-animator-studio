@@ -12,6 +12,13 @@ A visual algorithm animation and video authoring toolkit with built-in text-to-s
 - **Voice tools (optional adapters):** Piper; Supertonic; VieNeu TTS; GPT-SoVITS; ElevenLabs (hosted/proprietary); RVC/Applio TTS and voice conversion. Provider binaries, weights and recordings are separate.
 - Local provider settings/health, model discovery, generated audio and video files.
 
+## Example outputs made with Algorithm Animator Studio
+
+These are example videos produced with the tool (finished outputs, not walkthroughs of the application):
+
+- [Bruno Fernandes: 100 Goals!](https://www.youtube.com/watch?v=h2EwOys6evI)
+- [100 Bruno Fernandes United Assists](https://www.youtube.com/watch?v=-BIriLyQXkw)
+
 Removed from this OSS preparation branch: story/news/social publishing, unrelated demos, the generic Math/Preset Video library and legacy source media. Algorithm Explainer and Timeline Remotion compositions are still retained. Other shared modules await dependency auditing.
 
 ## Local development

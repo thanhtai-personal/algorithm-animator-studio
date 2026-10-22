@@ -182,7 +182,9 @@ npm ci
 npm run validate:oss
 ```
 
-The command checks the retained algorithm/TTS surface, runs the OSS structural/import checks and Vitest regression suite, then builds the web client and server bundle. It stops on the first failure. This command has been added for reproducible local validation but has **not yet been executed successfully** in the current session.
+The command checks the retained algorithm/TTS surface, runs the OSS structural/import checks and Vitest regression suite, then builds the web client and server bundle.
+
+For release review, run `npm run audit:oss:release` separately. It **deliberately exits with an error** while legal/history/asset and verification gates remain unsigned; its failure is a safety signal, not a green test. See [the history/publication playbook](docs/oss/HISTORY_SANITIZATION.md). It stops on the first failure. This command has been added for reproducible local validation but has **not yet been executed successfully** in the current session.
 
 These checks are *not* a guarantee of rights clearance, complete runtime behavior or usable Windows installer. See `docs/oss/2026-10-21-source-inventory.md` and `docs/superpowers/plans/2026-10-21-oss-core-with-tts.md` for outstanding work. Recent GitHub Actions jobs fail before runner assignment (no steps/logs recorded); resolve that infrastructure issue or run the command in a checked-out workspace before treating the baseline as green.
 

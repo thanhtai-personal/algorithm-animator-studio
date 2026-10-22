@@ -18,7 +18,7 @@
 
 - [ ] Scan **all refs and commit history** for tokens, OAuth secrets, private user/model/audio assets, absolute local paths and unlicensed large binaries.
 - [ ] Rotate any credential discovered, even if removed from the current tree.
-- [ ] Decide history sanitization vs a fresh root/history; receive owner approval before irreversible rewrite/force-push. Validate that all refs/tags/releases used for Public exclude sensitive objects.
+- [ ] Decide history sanitization vs a fresh root/history using [the publication playbook](HISTORY_SANITIZATION.md); receive owner approval before irreversible rewrite/force-push. Validate that all refs/tags/releases used for Public exclude sensitive objects.
 - [ ] Verify `.env.example` contains placeholders only and no retired OAuth/channel settings.
 - [ ] Enable Private Vulnerability Reporting, branch protection, required checks and dependency alerts where available.
 

@@ -27,3 +27,12 @@ test("VieNeu local ignored files do not count as vendored source; committed file
     fs.rmSync(repo, { recursive: true, force: true });
   }
 });
+
+test("Electron verifier does not require or bundle a local VieNeu SDK", () => {
+  const source = fs.readFileSync(
+    new URL("../../scripts/verify-electron-build.mjs", import.meta.url), "utf8",
+  );
+  assert.doesNotMatch(source, /^\s*"libs\/VieNeu-TTS\/pyproject\.toml",?$/m);
+  assert.doesNotMatch(source, /^\s*\["libs\/VieNeu-TTS",/m);
+  assert.match(source, /Do not bundle optional TTS weights or VieNeu SDK/);
+});

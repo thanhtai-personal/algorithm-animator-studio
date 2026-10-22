@@ -73,7 +73,7 @@
   "uiTheBrowserCanStillCreateBasicAnimationsExports": "The browser can still create basic animations/exports, but local Piper, FFmpeg, folder picking, and YouTube secrets require the Desktop app.",
   "uiThisOnlyDiscardsEditsThatHaveNotBeen": "This only discards edits that have not been saved yet. Saved runtime settings, modules, chill tracks, and template files are kept.",
   "uiUnsavedSettingsReset": "Unsaved settings reset.",
-  "uiUseTurboForCpuTestsStandardForHigher": "Use turbo for CPU tests, standard for higher quality, remote for a VieNeu server.",
+  "uiUseTurboForCpuTestsStandardForHigher": "Use v3turbo for local CPU/ONNX; v3nano for lower-resource CPUs. Legacy turbo/standard require extra dependencies; remote needs a compatible VieNeu API.",
   "uiVietnamese": "Vietnamese",
   "uiViewList": "View list"
 }

@@ -31,7 +31,7 @@ The Piper voice repository itself displays MIT metadata, but the official Piper 
 
 ## VieNeu-TTS
 
-- The current branch no longer vendors `libs/VieNeu-TTS`; its 94 tracked source, sample, and preset files are removed from the current tree. The provider adapter/API remains, and users may clone the upstream project separately into `../VieNeu-TTS`.
+- The current branch no longer vendors `libs/VieNeu-TTS`; its 94 tracked source, sample, and preset files are removed from the current tree. The provider adapter/API remains, and users may clone the upstream project separately into `../VieNeu-TTS`. The app adapter now defaults to the upstream open-source v3 SDK modes `v3turbo` (ONNX/CPU) or `v3nano` (lower-resource CPU); the upstream README states v4 is proprietary, so it is not described as open source here.
 - The previously vendored `voices.json` declared `CC BY-NC 4.0`; sample `.wav`, `.txt` and `.pt` assets were also present. Removing them from the current tree avoids bundling them by default, but does not erase their earlier Git history.
 - The upstream model repository metadata at https://huggingface.co/pnnbao-ump/VieNeu-TTS does not override licenses attached to preset voices or sample recordings. Review upstream source, model, and voice-asset terms before use; commercial use and redistribution are not assumed to be permitted.
 

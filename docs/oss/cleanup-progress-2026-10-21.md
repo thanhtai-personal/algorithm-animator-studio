@@ -87,3 +87,11 @@ This ledger is a status record; it is **not** evidence of a passing build or lic
 - Cleaned obsolete social OAuth/YouTube download configuration from `.env.example`; retained separate local Whisper settings and optional TTS provider flags.
 - `package.json` identifies the project and records `license: MIT` while retaining `private: true` to prevent accidental npm publication. This does NOT make the GitHub repo Public.
 - **Release remains BLOCKED:** unknown sprite/audio/MIDI/photo rights, Remotion/FFmpeg packaging conditions, previous Git history, owner approval and CI/runtime tests.
+
+## TTS setup improvements — 2026-10-22
+
+- Rewrote the README's TTS setup section into a practical per-provider guide with clone/download commands, isolated Python environments, startup commands, environment variables, health checks and model/license cautions for Piper, Supertonic, external VieNeu v3, GPT-SoVITS and Applio. ElevenLabs is clearly marked as hosted/proprietary.
+- Corrected the GPT-SoVITS startup example to use the upstream `api_v2.py` API (`/tts`, port 9880), rather than a non-existent `go-api.bat` example.
+- Updated VieNeu defaults and the Python health check to target the open-source v3 `v3turbo`/`v3nano` modes; legacy `turbo`/`standard` modes remain available but require extra dependencies. Documented that upstream v4 is proprietary and that VieNeu remains optional/external.
+- Added a static test to guard the README provider setup and VieNeu mode defaults. Updated `docs/local-voice-services.md`, `docs/vieneu-local-tts-provider.md` and the third-party audit to stay aligned.
+- CI/runtime regression, clean build and real model/audio smoke tests remain **unverified**; recent GitHub Actions jobs have failed before runner allocation. Do not treat the new static test as executed.

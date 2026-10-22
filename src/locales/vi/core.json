@@ -73,7 +73,7 @@
   "uiTheBrowserCanStillCreateBasicAnimationsExports": "Browser vẫn tạo animation/export cơ bản được, nhưng Piper local, FFmpeg, chọn folder máy và YouTube secret cần dùng Desktop app.",
   "uiThisOnlyDiscardsEditsThatHaveNotBeen": "Thao tác này chỉ bỏ các chỉnh sửa chưa lưu. Settings runtime, module, chill track và template file đã lưu sẽ được giữ nguyên.",
   "uiUnsavedSettingsReset": "Đã bỏ thay đổi chưa lưu.",
-  "uiUseTurboForCpuTestsStandardForHigher": "Dùng turbo để test CPU, standard cho chất lượng cao hơn, remote khi có VieNeu server.",
+  "uiUseTurboForCpuTestsStandardForHigher": "Dùng v3turbo cho CPU/ONNX local; v3nano cho máy cấu hình thấp. Turbo/standard cũ cần dependency bổ sung; remote cần VieNeu API tương thích.",
   "uiVietnamese": "Tiếng Việt",
   "uiViewList": "Xem danh sách"
 }

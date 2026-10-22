@@ -53,7 +53,8 @@
     "audit:oss:release": "node scripts/oss-release-audit.mjs",
     "audit:oss:history": "node scripts/audit-oss-history.mjs",
     "audit:oss:deps": "node scripts/oss-dependency-audit.mjs",
-    "prepare:oss:snapshot": "node scripts/oss-source-snapshot.mjs"
+    "prepare:oss:snapshot": "node scripts/oss-source-snapshot.mjs",
+    "audit:oss:vulns": "npm audit --omit=dev --audit-level=high"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",

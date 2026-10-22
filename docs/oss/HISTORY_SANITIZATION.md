@@ -1,5 +1,8 @@
 # Git history and repository publication playbook
 
+> **22 October 2026 correction:** The repository is **already Public** and PR #28 has been merged. Previous references below to a private-only pre-publication decision describe the earlier state, not current visibility. See [public exposure response](PUBLIC_HISTORY_RESPONSE_20261022.md) for the risk already identified. A clean HEAD or a fresh tag here does not erase old ref data.
+
+
 **Do not run any history rewrite automatically.** An audit and explicit owner decision are required first.
 
 ## Why HEAD cleanup is not enough

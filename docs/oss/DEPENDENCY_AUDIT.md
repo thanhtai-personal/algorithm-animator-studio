@@ -33,6 +33,12 @@ npm run validate:oss
 
 `audit:oss:deps` deliberately exits nonzero for missing/custom/copyleft metadata until the maintainer reviews the actual obligations. The report goes to ignored `artifacts/oss-dependency-audit` (no silent “pass”). The CycloneDX SBOM must be generated from a checked-out installed build, reviewed and retained privately for release evidence. Do not upload confidential scan findings to public issues.
 
+## Package vulnerability signal from CI
+
+During a **real successful `npm ci`** step in GitHub Actions on 22 October 2026, npm reported **31 vulnerabilities: 1 low, 16 moderate, 11 high, 3 critical** across the installed dependency inventory. This count is an npm audit signal, not proof that each advisory is exploitable in the application's actual configuration.
+
+Before a source or binary release, run `npm run audit:oss:vulns` on the checked-out build, inspect **production** high/critical findings first, upgrade or remove affected packages when safe, and document justified exceptions. Do **not** run blind `npm audit fix --force` or silently suppress advisories.
+
 ## Release policy
 
 Source-only releases may include code that integrates separately licensed dependencies, but the top-level MIT license **does not grant unrestricted rights** to Remotion, GSAP, FFmpeg binaries or speech models. No Windows installer should be published before the exact shipped binary manifest and obligations are checked.

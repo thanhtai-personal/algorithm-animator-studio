@@ -3,16 +3,29 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { spawnSync } from "node:child_process";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const read = name => fs.readFileSync(path.join(root, name), "utf8");
 
-test("unverified bundled sprites, MIDI, SFX, photos and old audio are absent", () => {
-  for (const target of [
-    "src/assets/sprites", "src/assets/audios", "src/assets/marble-lets-go.wav",
-    "src/assets/marble-count-one.wav", "src/assets/marble-count-two.wav",
-    "src/assets/marble-count-three.wav", "haaland.jpg",
-  ]) assert.equal(fs.existsSync(path.join(root, target)), false, `asset still bundled: ${target}`);
+test("unverified media are not TRACKED in the distributable source", () => {
+  // A developer can add ignored, licensed local packs. Do not reject local files.
+  const patterns = [
+    "src/assets/sprites", "src/assets/audios/select-audio",
+    "src/assets/audios/swap-audio", "src/assets/audios/midis",
+    "src/assets/marble-lets-go.wav", "src/assets/marble-count-one.wav",
+    "src/assets/marble-count-two.wav", "src/assets/marble-count-three.wav",
+    "haaland.jpg",
+  ];
+  const result = spawnSync("git", ["ls-files", "--cached", "--", ...patterns], {
+    cwd: root, encoding: "utf8", windowsHide: true,
+  });
+  if (result.status !== 0) {
+    // Source ZIP without .git: static procedural fallback checks still apply below.
+    assert.equal(fs.existsSync(path.join(root, ".git")), false, "Git tracked-media audit failed in a Git checkout");
+    return;
+  }
+  assert.equal(result.stdout.trim(), "", "unverified media remain tracked in the Git index");
 });
 
 test("animal visual mode remains available as procedural drawing", () => {

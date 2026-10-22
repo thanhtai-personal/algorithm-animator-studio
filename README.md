@@ -103,7 +103,7 @@ If you do not install VieNeu, leave `KAI_PROVIDER_VIENEU_ENABLED=false` and `VIE
 
 ### 4. GPT-SoVITS — experimental local voice cloning
 
-Upstream source and install instructions: [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS). Clone/download it into a separate folder (for example `../GPT-SoVITS`) and follow its own setup instructions. Start its API using the launch script supplied by the version you installed; the documented default API address is `http://127.0.0.1:9880`.
+Upstream source and install instructions: [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS). To keep it outside this repository, you can clone it from the app root with `git clone https://github.com/RVC-Boss/GPT-SoVITS.git ../GPT-SoVITS`, then follow that version's installation instructions and download its required models separately. Start its API using the launch script supplied by the version you installed; the documented default API address is `http://127.0.0.1:9880`.
 
 Configure `.env` with your actual paths:
 
@@ -118,7 +118,7 @@ Then run `npm run gpt-sovits:serve` in its own terminal, or start the upstream A
 
 ### 5. RVC/Applio — optional voice conversion
 
-Download Applio from its [official repository](https://github.com/IAHispano/Applio), install it using its current instructions, then start it separately (commonly `run-applio.bat`). Import/train a voice model you have permission to use.
+Download Applio from its [official repository](https://github.com/IAHispano/Applio), or clone the source to a separate folder such as `../Applio`; follow the current upstream installation instructions, then start it separately (commonly `run-applio.bat`). Download/train the voice model outside this repository and only use models you have permission to use.
 
 Example `.env` settings; update paths and API name to match your installation:
 

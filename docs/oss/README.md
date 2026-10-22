@@ -1,6 +1,6 @@
 # Algorithm Animator Studio — public-release preparation documents
 
-This folder contains the maintainer-facing materials for a possible source release. **Presence of these files is not release clearance.** PR #28 has been merged, but the repository remains Private and the public release is still blocked pending evidence and maintainer approval.
+This folder contains the maintainer-facing materials for a possible source release. **Presence of these files is not release clearance.** PR #28 has been merged and the repository is already Public; **an official release remains blocked** pending security, legal and test evidence.
 
 - [Licensing boundaries](LICENSING.md) — what the proposed MIT license covers and does not cover.
 - [Asset provenance](ASSET_PROVENANCE.md) — known-unverified sprite, sound, image and MIDI groups.
@@ -9,6 +9,9 @@ This folder contains the maintainer-facing materials for a possible source relea
 - [Architecture](ARCHITECTURE.md) — algorithm/Remotion/TTS separation.
 - [Development](DEVELOPMENT.md) — reproducible local setup and checks.
 - [Release checklist](RELEASE_CHECKLIST.md) — manual approval and green build gates.
+- [Public history response](PUBLIC_HISTORY_RESPONSE_20261022.md) — known signing-config exposure and owner steps.
+- [Dependency inventory](DEPENDENCY_AUDIT.md) — lockfile/binary license blockers.
+- [Release status](RELEASE_STATUS.md) — factual version and visibility record.
 - [History sanitization](HISTORY_SANITIZATION.md) — safe strategies for removing private historical content.
 - [Release notes template](RELEASE_NOTES_TEMPLATE.md) — evidence-backed release notes.
 - [Cleanup work log](cleanup-progress-2026-10-21.md) — implementation record; not a substitute for test logs.

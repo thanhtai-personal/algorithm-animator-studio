@@ -14,9 +14,9 @@
 | [ElevenLabs](https://elevenlabs.io/) | Optional remote commercial API via user-supplied key | Proprietary hosted service, not open-source software; API use and generated content governed by service terms |
 | [React, Vite, Lucide, shadcn/ui and other npm libraries](https://www.npmjs.com/) | Frontend and Node build/runtime dependencies | Each package retains its own license and notices. Audit the lockfile and distributed dependency tree, especially transitive binaries and fonts, before a binary release |
 
-## Bundled media requiring a decision
+## Historic media and current-tree decisions
 
-`src/assets/sprites/`, `src/assets/audios/`, `src/assets/marble-*.wav`, `haaland.jpg` and other tracked media are listed in [ASSET_PROVENANCE](docs/oss/ASSET_PROVENANCE.md). **Do not treat these files as MIT, CC0 or public domain without evidence.**
+Earlier commits contained `src/assets/sprites/`, `src/assets/audios/`, `src/assets/marble-*.wav`, `haaland.jpg` and other media, documented in [ASSET_PROVENANCE](docs/oss/ASSET_PROVENANCE.md). They were removed from the latest tree but can remain in public history. **Do not treat historical media as MIT, CC0 or public domain without evidence.**
 
 ## Requirements for a release
 
@@ -32,4 +32,4 @@ This list is incomplete until a dependency and binary provenance scan is run. Se
 
 The 22 October 2026 audit replaces unknown-rights animal sprite sheets with procedural visuals and removes historical packaged MP3, WAV, MIDI and photo assets from the candidate source tree. These old media files may still be reachable via previous Git commits and pull refs. No license permission is claimed for them. Optional locally supplied media belongs to its own author and license and is not subject to the repository's MIT grant just because it is loaded by the app.
 
-Small UI identity assets under `public/` are not yet cleared and require owner provenance confirmation or replacement before a public release. See `docs/oss/ASSET_PROVENANCE.md` and `docs/oss/REF_TIP_AUDIT_20261022.md`.
+Unknown-rights UI assets were replaced/removed on the security-hardening branch. Historical refs still require separate assessment. See `docs/oss/ASSET_PROVENANCE.md` and `docs/oss/REF_TIP_AUDIT_20261022.md`.

@@ -62,3 +62,12 @@ Both recursive Git tree snapshots were compared by **blob path**, rather than tr
 7. Only with explicit owner approval and legal/CI signoff: merge PR, address history sanitation strategy (legacy media remains in past commits), and switch to Public.
 
 This ledger is a status record; it is **not** evidence of a passing build or license clearance.
+
+## Optional external TTS startup update — 2026-10-22
+
+- **VieNeu option selected: external checkout**, not removal of the adapter. The source checkout and voice assets are kept out of the repository; run `npm run vieneu:install`, `npm run vieneu:health` after installing the separate upstream checkout. Backend generation calls the external Python environment on demand; Gradio is optional.
+- `npm run dev` starts **only frontend and backend** and does not require TTS vendors. The old multi-provider startup is now explicitly `npm run dev:full`.
+- Optional startup flags in `.env.example` for Supertonic, VieNeu, GPT-SoVITS and Applio default to `false`, and the desktop packager no longer includes the removed `libs/VieNeu-TTS` or downloaded `models` directories.
+- README now contains a direct download/clone, configure, start and health-check table and per-provider guides, distinguishing local engines from hosted ElevenLabs.
+- Added `scripts/tests/oss-external-tts.check.mjs` to guard the absence of embedded vendors/models and the optional-startup contract.
+- GitHub tree/source assertions passed for the above file/config facts. **No full regression/build/audio inference was successfully executed** in this session due to unavailable working checkout / runner.

@@ -2,7 +2,7 @@
 
 A visual algorithm animation and video authoring toolkit with built-in text-to-speech integrations.
 
-**Status (21 October 2026):** Open-source cleanup **in progress** on `chore/oss-algorithm-tts-cleanup-20261021`. This repository is not ready to be made Public: the full Git history, third-party model/media rights, dependency integrity and runtime tests have **not yet been cleared**. Do not redistribute bundled third-party voice weights until their model licenses and provenance are confirmed. Legacy preset media has been removed from the current tree, but remains in the Git history.
+**Status (22 October 2026):** Open-source cleanup **in progress** on `chore/oss-algorithm-tts-cleanup-20261021`. This repository is not ready to be made Public: the full Git history, third-party model/media rights, dependency integrity and runtime tests have **not yet been cleared**. Do not redistribute bundled third-party voice weights until their model licenses and provenance are confirmed. Legacy preset media has been removed from the current tree, but remains in the Git history.
 
 ## Features retained in the OSS edition
 
@@ -163,6 +163,7 @@ npm run validate:oss
 The command checks the retained algorithm/TTS surface, runs the OSS structural/import checks and Vitest regression suite, then builds the web client and server bundle. It stops on the first failure. This command has been added for reproducible local validation but has **not yet been executed successfully** in the current session.
 
 These checks are *not* a guarantee of rights clearance, complete runtime behavior or usable Windows installer. See `docs/oss/2026-10-21-source-inventory.md` and `docs/superpowers/plans/2026-10-21-oss-core-with-tts.md` for outstanding work. Recent GitHub Actions jobs fail before runner assignment (no steps/logs recorded); resolve that infrastructure issue or run the command in a checked-out workspace before treating the baseline as green.
+
 ## Licensing
 
 No repository-wide open-source license is granted yet. Source code, vendored libraries, Piper models and other binary assets can have **different** authors and redistribution terms. A top-level LICENSE will only be selected after ownership and third-party notices are reviewed.

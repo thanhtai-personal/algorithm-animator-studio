@@ -8,20 +8,35 @@ import {
 } from "@/lib/voiceApi";
 
 describe("Algorithm OSS regressions", () => {
-  it.each(["bubble", "insertion", "quick", "merge"])("%s sorts duplicate input without mutating the source", (algorithm) => {
-    const input = [8, 2, 5, 2, 1];
+  it.each([
+    "bubble", "odd_even", "pancake", "bitonic", "selection", "insertion",
+    "quick", "merge", "heap", "counting", "radix", "bucket", "shell",
+    "cocktail", "comb", "gnome", "tim", "intro", "tree_sort", "cycle",
+    "pigeonhole", "strand", "tournament", "smooth", "stooge", "flash",
+  ])("%s sorts duplicate input without mutating the source", (algorithm) => {
+    // Bogo sort is deliberately excluded because its randomized runtime is unbounded.
+    const input = [5, 2, 2, 1];
     const frames = ALGORITHMS[algorithm].run(input);
-    expect(frames.length).toBeGreaterThan(0);
-    expect(frames.at(-1)?.arr).toEqual([1, 2, 2, 5, 8]);
-    expect(input).toEqual([8, 2, 5, 2, 1]);
+    expect(frames.length, `${algorithm} must emit animation frames`).toBeGreaterThan(0);
+    expect(frames.at(-1)?.arr, `${algorithm} final frame must be sorted`).toEqual([1, 2, 2, 5]);
+    expect(input).toEqual([5, 2, 2, 1]);
   });
 
-  it("retains BFS and Dijkstra graph frame generation", () => {
-    for (const algorithm of ["bfs", "dijkstra"]) {
-      const frames = ALGORITHMS[algorithm].run([]);
-      expect(frames.length).toBeGreaterThan(0);
-      expect(frames.some((frame) => Boolean(frame.graph))).toBe(true);
-    }
+  it.each(["linear", "binary"])("%s reports a successful search", (algorithm) => {
+    const frames = ALGORITHMS[algorithm].run([5, 2, 2, 1], { target: 2 });
+    expect(frames.length).toBeGreaterThan(0);
+    expect(frames.at(-1)?.event).toBe("found");
+  });
+
+  it.each(["bfs", "dfs", "dijkstra"])("%s retains graph frame generation", (algorithm) => {
+    const frames = ALGORITHMS[algorithm].run([]);
+    expect(frames.length).toBeGreaterThan(0);
+    expect(frames.some((frame) => Boolean(frame.graph))).toBe(true);
+    expect(frames.at(-1)?.event).toBe("found");
+  });
+
+  it("keeps A* world frames available", () => {
+    expect(ALGORITHMS.astar.run([]).length).toBeGreaterThan(0);
   });
 
   it("keeps Remotion dimensions and normalizes unsupported old story/news templates", () => {

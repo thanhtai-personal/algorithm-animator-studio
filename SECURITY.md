@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-No public release or supported security-maintenance branch exists yet. This private OSS preparation branch is experimental and must not be deployed as a publicly exposed service.
+This repository is **Public**, but there is **no official supported release** yet. Development source is experimental. Historical signing-config review is ongoing; see [the response record](docs/oss/PUBLIC_HISTORY_RESPONSE_20261022.md). Do not deploy it as an exposed service.
 
 Once releases exist, this table must be updated with the supported version range and security update policy.
 
@@ -22,4 +22,4 @@ Consider local API exposure, provider API keys, unsafe file/path handling, comma
 
 Secrets discovered in Git history need **rotation** even if a later commit removes the file. Removing current files is not history sanitization.
 
-For routine bugs, use an ordinary GitHub issue after public release.
+For routine non-sensitive bugs, use an ordinary GitHub issue; never publish suspected secrets or exploit payloads.

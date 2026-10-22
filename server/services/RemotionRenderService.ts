@@ -10,7 +10,6 @@ import { createVideoOutput } from "../utils/videoOutput";
 const require = createRequire(import.meta.url);
 const COMPOSITION_ID = "AlgorithmExplainer";
 export const REMOTION_ENTRY_POINT = path.resolve(process.cwd(), "src/features/remotion-video/remotion/index.ts");
-const PRESET_VIDEO_SOURCE_ROOT = path.resolve(process.cwd(), "src/features/preset-video");
 const DEFAULT_INPUT: NormalizedRemotionVideoInput = {
   title: "Bubble Sort Explained Visually",
   subtitle: "A clean React-powered video template rendered with Remotion.",
@@ -106,10 +105,7 @@ function canResolve(packageName: string) {
 
 export async function getRemotionBundleUrl(bundleOverride?: (options: { entryPoint: string; onProgress?: (progress: number) => void }) => Promise<string>) {
   if (!fs.existsSync(REMOTION_ENTRY_POINT)) throw new Error(`Không tìm thấy Remotion entry point: ${REMOTION_ENTRY_POINT}`);
-  const entryMtimeMs = Math.max(
-    getDirectoryMtimeMs(path.dirname(REMOTION_ENTRY_POINT)),
-    fs.existsSync(PRESET_VIDEO_SOURCE_ROOT) ? getDirectoryMtimeMs(PRESET_VIDEO_SOURCE_ROOT) : 0,
-  );
+  const entryMtimeMs = getDirectoryMtimeMs(path.dirname(REMOTION_ENTRY_POINT));
   if (cachedBundle && cachedBundle.entryMtimeMs === entryMtimeMs) return cachedBundle.serveUrl;
 
   const bundle = bundleOverride ?? (await import("@remotion/bundler")).bundle;
@@ -134,7 +130,7 @@ function normalizeRemotionVideoInput(raw: RemotionVideoRenderBody): NormalizedRe
   return {
     ...DEFAULT_INPUT,
     ...raw,
-    template: raw.template === "news-card" || raw.template === "story-card" ? raw.template : "algorithm-explainer",
+    template: "algorithm-explainer",
     aspectRatio: raw.aspectRatio === "9:16" ? "9:16" : "16:9",
     title: sanitizeText(raw.title, DEFAULT_INPUT.title, 96),
     subtitle: sanitizeText(raw.subtitle, DEFAULT_INPUT.subtitle, 160),

@@ -44,8 +44,12 @@ remote-control-app/release/
 /artifacts/
 
 server/data
-# Piper models are allowed so desktop installer can bundle offline voices.
-# Runtime venv/download temp files are still ignored.
+# User-managed TTS weights are third-party assets with model-specific licenses.
+# Keep them out of the OSS source tree; install a compatible model explicitly.
+models/*.onnx
+models/*.onnx.json
+models/**/*.onnx
+models/**/*.onnx.json
 models/.venv/
 models/**/*.download
 models/**/*.tmp
@@ -53,10 +57,14 @@ src/assets/audios/bg-audio/
 server/.env.temp
 NUL
 
-# Understand Anything keeps only its reusable scan inventory. Other
-# intermediate inputs and structural extraction outputs are reproducible.
-.understand-anything/tmp/
-.understand-anything/intermediate/*
-!.understand-anything/intermediate/scan-result.json
+# Generated architecture graphs must not be committed or presented as current.
+.understand-anything/
 
 .codex
+
+# One-off local scratch and backup lockfiles (OSS cleanup)
+.tmp-*/
+package-lock.json.bak-*
+
+# VieNeu SDK is an external dependency, never vendor it into this OSS repo.
+libs/VieNeu-TTS/

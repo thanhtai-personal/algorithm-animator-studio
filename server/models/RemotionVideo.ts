@@ -1,5 +1,5 @@
 export type RemotionVideoAspectRatio = "16:9" | "9:16";
-export type RemotionVideoTemplate = "algorithm-explainer" | "news-card" | "story-card";
+export type RemotionVideoTemplate = "algorithm-explainer";
 
 export type RemotionVideoRenderBody = {
   title?: string;

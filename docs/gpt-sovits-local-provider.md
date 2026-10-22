@@ -1,6 +1,6 @@
 # GPT-SoVITS local provider cho KAI STUDIO
 
-GPT-SoVITS được tích hợp như một provider local thử nghiệm để tạo voice-over bằng API local `/tts`.
+GPT-SoVITS được tích hợp như một provider local thử nghiệm để tạo voice-over bằng API local `/tts`. Source/model phải được tải và cài riêng từ [upstream GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS), ví dụ vào thư mục sibling `../GPT-SoVITS`; chúng không được bundle trong repo này.
 Provider này mặc định **tắt** để tránh làm `npm run dev` khởi động nặng.
 
 ## 1. Bật/tắt provider

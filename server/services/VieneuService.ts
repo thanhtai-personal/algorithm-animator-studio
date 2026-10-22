@@ -24,7 +24,7 @@ import { resolveRuntimeExecutable } from "./RuntimeEnvService";
 
 const HEALTH_PATH = path.join(PROJECT_ROOT, "scripts", "vieneu-health.py");
 const BRIDGE_PATH = path.join(PROJECT_ROOT, "scripts", "vieneu-generate.py");
-const DEFAULT_SOURCE_DIR = path.join(PROJECT_ROOT, "libs", "VieNeu-TTS");
+const DEFAULT_SOURCE_DIR = path.resolve(PROJECT_ROOT, "..", "VieNeu-TTS");
 const DEFAULT_TIMEOUT_MS = 20 * 60 * 1000;
 const CONFIG_TIMEOUT_MS = 8000;
 
@@ -198,7 +198,7 @@ function resolveVieneuPython(value: string, sourceDir: string) {
 
   if (commandLooksExecutable(configured)) return configured;
 
-  // Khi chưa tạo .venv trong libs/VieNeu-TTS, vẫn fallback sang Python global để
+  // Khi chưa tạo .venv trong external VieNeu-TTS checkout, vẫn fallback sang Python global để
   // health-check báo đúng lỗi thiếu SDK/dependencies thay vì báo mất Python.
   if (!requested || samePath(configured, defaultVenvPython)) {
     return process.platform === "win32" ? "python" : "python3";

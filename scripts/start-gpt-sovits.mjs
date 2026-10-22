@@ -19,7 +19,7 @@ if (!providerEnabled(env.KAI_PROVIDER_GPT_SOVITS_ENABLED, false)) {
 }
 
 const command = String(env.GPT_SOVITS_START_COMMAND || "").trim();
-const sourceDir = path.resolve(env.GPT_SOVITS_SOURCE_DIR || path.join(projectRoot, "libs", "GPT-SoVITS"));
+const sourceDir = path.resolve(env.GPT_SOVITS_SOURCE_DIR || path.resolve(projectRoot, "..", "GPT-SoVITS));
 
 if (!command) {
   console.log("[gpt-sovits] GPT_SOVITS_START_COMMAND is empty; skipping startup.");

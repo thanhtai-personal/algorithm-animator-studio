@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import type { TimelineLyricCue, TimelineLyricWord } from "../models/TimelineVideo";
 import { readEnvValues, type RuntimeEnvValues } from "./EnvFileService";
-import { resolveWhisper, runCommand } from "./YoutubeToolsService";
+import { resolveWhisper, runCommand } from "./WhisperCliService";
 
 type WhisperWord = { word?: string; start?: number; end?: number; probability?: number };
 type WhisperSegment = { id?: number; start?: number; end?: number; text?: string; words?: WhisperWord[] };

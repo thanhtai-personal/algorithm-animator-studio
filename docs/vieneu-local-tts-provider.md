@@ -1,6 +1,6 @@
 # Tích hợp VieNeu-TTS local provider
 
-Tài liệu này hướng dẫn setup VieNeu-TTS như một provider TTS local mới trong KAI Studio / KATA Studio.
+Tài liệu này hướng dẫn sử dụng VieNeu-TTS từ checkout Python riêng, tích hợp tùy chọn vào Algorithm Animator Studio. Không tải hoặc đóng gói preset/sample voice mặc định vào source OSS.
 
 Provider mới dùng Python bridge thay vì gọi trực tiếp từ frontend:
 
@@ -29,7 +29,6 @@ React UI
 - Settings > Voice có thêm tab `VieNeu`.
 - Settings > Health Check có thêm trạng thái `VieNeu SDK` và `VieNeu Python`.
 - Long Content Studio có thêm voice provider `VieNeu-TTS local`.
-- Story Video Studio có thêm voice provider `VieNeu-TTS local`.
 
 ### Env / scripts
 
@@ -41,7 +40,7 @@ npm run vieneu:install
 npm run vieneu:health
 ```
 
-`npm run vieneu:install` hiện cài editable từ source VieNeu-TTS trong `libs/VieNeu-TTS` mặc định. `npm run dev` cũng chạy thêm process `dev:vieneu` để kiểm tra bridge VieNeu sẵn sàng.
+`npm run vieneu:install` cài editable từ checkout VieNeu-TTS riêng, mặc định là thư mục sibling `../VieNeu-TTS`. SDK, virtualenv, model và preset/sample voice assets không được bundle vào repo này. `npm run dev` chỉ chạy frontend và backend; VieNeu không tự khởi động trong lệnh này.
 
 ## 2. Yêu cầu máy local
 
@@ -52,49 +51,48 @@ Khuyến nghị:
 - Có mạng trong lần chạy đầu tiên để SDK tải model/cache nếu cần.
 - CPU vẫn test được với `VIENEU_MODE=turbo`; GPU/standard cho chất lượng tốt hơn.
 
-## 3. Cài VieNeu-TTS từ source trong `libs/`
+## 3. Download and install VieNeu-TTS separately
 
-Không khuyến nghị cài VieNeu bằng `pip install vieneu` trực tiếp nữa. Source VieNeu-TTS hiện đã nằm trong repo tại:
+The VieNeu SDK is intentionally not vendored into Algorithm Animator Studio. This keeps third-party voice presets/sample recordings and the SDK's separate license terms outside the app's default source distribution.
 
-```txt
-libs/VieNeu-TTS
+From the app repository root, clone the upstream project into a sibling folder:
+
+```bat
+git clone https://github.com/pnnbao97/VieNeu-TTS.git ..\VieNeu-TTS
 ```
 
-Cách chuẩn là tạo virtual environment ngay trong `libs/VieNeu-TTS` và cài editable từ source để KAI Studio có thể dùng code VieNeu local:
+Use Python 3.10 or 3.11. Set the following values in the app's `.env` before installing:
+
+```env
+VIENEU_SOURCE_DIR=../VieNeu-TTS
+VIENEU_PYTHON=../VieNeu-TTS/.venv/Scripts/python.exe
+KAI_PROVIDER_VIENEU_ENABLED=true
+VIENEU_AUTO_START=true
+VIENEU_START_MODE=bridge
+VIENEU_MODE=turbo
+```
+
+On Linux/macOS, use `VIENEU_PYTHON=../VieNeu-TTS/.venv/bin/python`.
+
+Install into VieNeu's own virtual environment and run the SDK health check:
 
 ```bat
 npm run vieneu:install
-```
-
-Lệnh trên mặc định dùng Python global để tạo `.venv`, sau đó cài SDK vào Python riêng của VieNeu:
-
-```txt
-VIENEU_SOURCE_DIR=libs/VieNeu-TTS
-VIENEU_PYTHON=libs/VieNeu-TTS/.venv/Scripts/python.exe
-```
-
-Nếu chưa tạo `.venv`, health check sẽ fallback sang Python global để báo đúng lỗi thiếu SDK/dependencies, thay vì báo nhầm là mất Python.
-
-Kiểm tra import SDK:
-
-```bat
 npm run vieneu:health
 ```
 
-Nếu muốn dùng source VieNeu ở thư mục fork riêng, đặt biến trước khi chạy:
+The install script creates `.venv` inside the external VieNeu checkout and installs the SDK in editable mode. The app backend calls the Python bridge on demand; you do not need to launch Gradio to generate audio. To open the optional Gradio UI, set `VIENEU_START_MODE=gradio` and run `npm run vieneu:serve`.
 
-```bat
-set VIENEU_SOURCE_DIR=D:\AI\VieNeu-TTS
-npm run vieneu:install
-```
+Review the upstream code, model and voice-asset licenses before commercial use or redistribution. The upstream project has separately licensed voice presets/sample assets; do not copy those assets into this app repository. The app's TTS adapter remains optional and the other providers do not depend on VieNeu.
+
 
 ## 4. Cấu hình `.env`
 
 Thêm hoặc chỉnh các biến sau:
 
 ```env
-VIENEU_SOURCE_DIR=libs/VieNeu-TTS
-VIENEU_PYTHON=libs/VieNeu-TTS/.venv/Scripts/python.exe
+VIENEU_SOURCE_DIR=../VieNeu-TTS
+VIENEU_PYTHON=../VieNeu-TTS/.venv/Scripts/python.exe
 VIENEU_START_MODE=bridge
 VIENEU_AUTO_START=true
 VIENEU_MODE=turbo
@@ -111,10 +109,10 @@ Giải thích nhanh:
 
 | Biến | Ý nghĩa |
 | --- | --- |
-| `VIENEU_SOURCE_DIR` | Source VieNeu-TTS, mặc định `libs/VieNeu-TTS`. Dùng cho `npm run vieneu:install`, `npm run vieneu:health`, `npm run dev:vieneu`. |
-| `VIENEU_PYTHON` | Python executable trong virtualenv của source VieNeu-TTS, mặc định `libs/VieNeu-TTS/.venv/Scripts/python.exe`. Có thể set `python` để dùng Python global nếu global đã cài SDK VieNeu. |
-| `VIENEU_START_MODE` | Chế độ process VieNeu khi `npm run dev`: `bridge` để health-check và chờ backend gọi on-demand, `gradio` để mở UI Gradio, `off` để tắt. |
-| `VIENEU_AUTO_START` | Đặt `false` nếu không muốn `npm run dev` tự chạy process VieNeu. |
+| `VIENEU_SOURCE_DIR` | Source VieNeu-TTS, mặc định `../VieNeu-TTS` (external checkout). Dùng cho `npm run vieneu:install`, `npm run vieneu:health`, `npm run dev:vieneu`. |
+| `VIENEU_PYTHON` | Python executable trong virtualenv của source VieNeu-TTS, mặc định `../VieNeu-TTS/.venv/Scripts/python.exe` on Windows (`../VieNeu-TTS/.venv/bin/python` on Linux/macOS). Có thể set `python` để dùng Python global nếu global đã cài SDK VieNeu. |
+| `VIENEU_START_MODE` | Chế độ process VieNeu khi `npm run vieneu:serve` hoặc `npm run dev:full`: `bridge` để health-check và chờ backend gọi on-demand, `gradio` để mở UI Gradio, `off` để tắt. |
+| `VIENEU_AUTO_START` | Đặt `false` nếu không muốn script `vieneu:serve` khởi chạy process; `npm run dev` không chạy VieNeu. |
 | `VIENEU_MODE` | `turbo`, `standard`, hoặc `remote`. CPU nên test bằng `turbo`. |
 | `VIENEU_EMOTION` | Emotion truyền vào SDK, mặc định `natural`. |
 | `VIENEU_DEFAULT_VOICE_ID` | Preset voice ID nếu SDK/model có preset voice. Để trống dùng giọng mặc định. |
@@ -139,16 +137,18 @@ Nếu OK sẽ thấy JSON tương tự:
 Nếu lỗi import `vieneu`, kiểm tra lại:
 
 ```bat
-libs\VieNeu-TTS\.venv\Scripts\activate
+..\VieNeu-TTS\.venv\Scripts\activate.bat
 python -c "import vieneu; print(getattr(vieneu, '__version__', 'dev'))"
 ```
 
-## 6. Chạy cùng `npm run dev` và health check trong app
+## 6. Chạy ứng dụng và VieNeu riêng, kiểm tra health
 
-Chạy dev như bình thường. Lệnh này hiện khởi động đồng thời `client`, `server`, `supertonic`, `applio` và `vieneu`:
+Chạy ứng dụng bằng `npm run dev` (chỉ web và Node backend). Khi đã cài VieNeu ở checkout bên ngoài, backend có thể gọi Python bridge on-demand bằng `/api/vieneu/generate` nếu provider được bật. Để chạy tiến trình kiểm tra VieNeu riêng bằng CLI, mở terminal khác và dùng `npm run vieneu:serve` với `VIENEU_AUTO_START=true`:
 
 ```bat
 npm run dev
+# terminal khác (chỉ khi cần theo dõi VieNeu riêng):
+npm run vieneu:serve
 ```
 
 Mặc định `dev:vieneu` chạy chế độ `bridge`: kiểm tra SDK, báo ready và giữ process sống để log không biến mất. Backend vẫn tạo audio bằng `/api/vieneu/generate`, không cần mở Gradio.
@@ -169,7 +169,7 @@ Settings -> Voice -> VieNeu
 
 Kiểm tra các field:
 
-- `VieNeu Python`: trỏ đúng `libs/VieNeu-TTS/.venv/Scripts/python.exe` hoặc đường dẫn tuyệt đối tương ứng.
+- `VieNeu Python`: trỏ đúng `../VieNeu-TTS/.venv/Scripts/python.exe` hoặc đường dẫn tuyệt đối tương ứng.
 - `VieNeu mode`: `turbo` để test CPU.
 - `VieNeu emotion`: `natural`.
 - Bấm lưu settings nếu đang chỉnh runtime settings.
@@ -226,17 +226,7 @@ Vào Long Content Studio:
 
 Khi tạo xong, audio được cache và có thể export kèm video giống Piper/ElevenLabs/Supertonic.
 
-## 9. Dùng trong Story Video Studio
-
-Vào Story Video Studio:
-
-1. Ở `Voice đọc truyện`, chọn `VieNeu-TTS local`.
-2. Chọn `mode`, `emotion`, preset voice nếu có.
-3. Dán nội dung truyện.
-4. Bấm `Tạo audio đọc truyện`.
-5. Audio sinh ra sẽ vào danh sách audio đã tạo và dùng tiếp để render video.
-
-## 10. Clone giọng bằng reference audio
+## 9. Clone giọng bằng reference audio
 
 Cấu hình `.env`:
 
@@ -259,7 +249,7 @@ Lưu ý:
 Kiểm tra `VIENEU_PYTHON` có đúng file không:
 
 ```bat
-libs\VieNeu-TTS\.venv\Scripts\python.exe --version
+..\VieNeu-TTS\.venv\Scripts\python.exe --version
 ```
 
 Nếu dùng runtime settings trong UI, đường dẫn trên UI sẽ override `.env`.
@@ -269,14 +259,14 @@ Nếu dùng runtime settings trong UI, đường dẫn trên UI sẽ override `.
 Cài lại từ source VieNeu-TTS trong đúng môi trường:
 
 ```bat
-cd /d libs\VieNeu-TTS
+cd /d ..\VieNeu-TTS
 .venv\Scripts\activate
 python -m pip install --upgrade pip setuptools wheel
 python -m pip install -e . --extra-index-url https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu/
 python -c "import vieneu; print(getattr(vieneu, '__version__', 'dev'))"
 ```
 
-Nếu vừa sửa code trong repo VieNeu-TTS, thường không cần cài lại vì đang dùng `pip install -e .`. Chỉ cần chạy lại health check hoặc restart `npm run dev`.
+Nếu vừa sửa code trong repo VieNeu-TTS, thường không cần cài lại vì đang dùng `pip install -e .`. Chỉ cần chạy lại health check hoặc chạy lại `npm run vieneu:health`.
 
 ### Lần generate đầu rất lâu
 

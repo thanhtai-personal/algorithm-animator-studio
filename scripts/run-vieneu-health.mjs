@@ -5,7 +5,7 @@ import path from "node:path";
 const projectRoot = process.cwd();
 const dotEnv = readDotEnv(path.join(projectRoot, ".env"));
 const runtimeEnv = { ...dotEnv, ...process.env };
-const DEFAULT_SOURCE_DIR = path.join(projectRoot, "libs", "VieNeu-TTS");
+const DEFAULT_SOURCE_DIR = path.resolve(projectRoot, "..", "VieNeu-TTS");
 const sourceDir = path.resolve(runtimeEnv.VIENEU_SOURCE_DIR || DEFAULT_SOURCE_DIR);
 const venvDir = path.join(sourceDir, ".venv");
 const defaultVenvPython = process.platform === "win32"

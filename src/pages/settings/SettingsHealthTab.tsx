@@ -1,4 +1,4 @@
-import { BookOpen, Bot, CheckCircle2, ChevronsLeft, ChevronsRight, Cloud, Mic2, Radio, RefreshCw, Server, Waves, Youtube } from "lucide-react";
+import { BookOpen, Bot, CheckCircle2, ChevronsLeft, ChevronsRight, Cloud, Mic2, Radio, RefreshCw, Server, Waves } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { StatusTile } from "./SettingsFields";
 import { applioInstruction, elevenLabsInstruction, piperInstruction, supertonicInstruction, systemInstruction, vieneuInstruction, type HealthInstruction } from "./SettingsHealthInstructions";
 import { SettingsMarkdown } from "./SettingsMarkdown";
 import { HealthAutoInstallDialog } from "./HealthAutoInstallDialog";
-import type { ElevenLabsConfigResponse, HealthResponse, PiperModel, RvcApplioConfigResponse, SupertonicConfigResponse, VieneuConfigResponse, YoutubeToolsHealthResponse } from "./SettingsTypes";
+import type { ElevenLabsConfigResponse, HealthResponse, PiperModel, RvcApplioConfigResponse, SupertonicConfigResponse, VieneuConfigResponse } from "./SettingsTypes";
 
 type SettingsHealthTabProps = {
   availableModels: number;
@@ -22,10 +22,9 @@ type SettingsHealthTabProps = {
   rvcApplio: RvcApplioConfigResponse | null;
   supertonic: SupertonicConfigResponse | null;
   vieneu: VieneuConfigResponse | null;
-  youtubeTools: YoutubeToolsHealthResponse | null;
 };
 
-type HealthSectionId = "system" | "piper" | "applio" | "supertonic" | "vieneu" | "elevenlabs" | "youtubeTools";
+type HealthSectionId = "system" | "piper" | "applio" | "supertonic" | "vieneu" | "elevenlabs";
 
 const HEALTH_SECTIONS: { id: HealthSectionId; label: string; shortLabel: string; icon: typeof Server }[] = [
   { id: "system", label: "System", shortLabel: "S", icon: Server },
@@ -34,7 +33,6 @@ const HEALTH_SECTIONS: { id: HealthSectionId; label: string; shortLabel: string;
   { id: "supertonic", label: "Supertonic", shortLabel: "S", icon: Radio },
   { id: "vieneu", label: "VieNeu", shortLabel: "V", icon: Waves },
   { id: "elevenlabs", label: "ElevenLabs", shortLabel: "E", icon: Cloud },
-  { id: "youtubeTools", label: "YouTube Tools", shortLabel: "Y", icon: Youtube },
 ];
 
 export function SettingsHealthTab(props: SettingsHealthTabProps) {
@@ -61,7 +59,6 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
   const vieneuFailed = Boolean(props.vieneu && (!props.vieneu.sdkInstalled || !props.vieneu.pythonExists || !props.vieneu.bridgeExists));
   const elevenLabsConfigured = Boolean(props.elevenLabs?.hasApiKey);
   const elevenLabsFailed = Boolean(props.elevenLabs && elevenLabsConfigured && !props.elevenLabs.endpointsOk);
-  const youtubeToolsFailed = Boolean(props.youtubeTools && !props.youtubeTools.ok);
   const sectionState = {
     system: {
       passed: Boolean(props.health?.ok && props.health?.generatedDir),
@@ -92,11 +89,6 @@ export function SettingsHealthTab(props: SettingsHealthTabProps) {
       passed: Boolean(props.elevenLabs?.hasApiKey && props.elevenLabs?.endpointsOk),
       failed: elevenLabsFailed,
       instruction: elevenLabsInstruction(props.lang),
-    },
-    youtubeTools: {
-      passed: Boolean(props.youtubeTools?.ok),
-      failed: youtubeToolsFailed,
-      instruction: youtubeToolsInstruction(props.lang, props.youtubeTools),
     },
   } satisfies Record<HealthSectionId, { passed: boolean; failed: boolean; instruction: HealthInstruction }>;
   const activeMeta = HEALTH_SECTIONS.find((section) => section.id === activeSection) || HEALTH_SECTIONS[0];
@@ -176,6 +168,8 @@ function renderHealthSection(section: HealthSectionId, props: SettingsHealthTabP
       <>
         <StatusTile lang={props.lang} label={uiText("Backend")} ok={Boolean(props.health?.ok)} value={props.health ? t(props.lang, "settingsConnected") : t(props.lang, "settingsNotChecked")} />
         <StatusTile lang={props.lang} label={t(props.lang, "settingsGeneratedData")} ok={Boolean(props.health?.generatedDir)} value={props.health?.generatedDir || "-"} />
+        <StatusTile lang={props.lang} label={uiText("FFmpeg")} ok={Boolean(props.health?.ffmpeg?.ok)} value={props.health?.ffmpeg?.detail || t(props.lang, "settingsNotChecked")} />
+        <StatusTile lang={props.lang} label={uiText("FFprobe")} ok={Boolean(props.health?.ffprobe?.ok)} value={props.health?.ffprobe?.detail || t(props.lang, "settingsNotChecked")} />
       </>
     );
   }
@@ -254,22 +248,6 @@ function renderHealthSection(section: HealthSectionId, props: SettingsHealthTabP
     );
   }
 
-  if (section === "youtubeTools") {
-    return (
-      <>
-        <StatusTile lang={props.lang} label={uiText("yt-dlp")} ok={Boolean(props.youtubeTools?.ytDlp.ok)} value={formatToolStatus(props.youtubeTools?.ytDlp)} />
-        <StatusTile lang={props.lang} label={uiText("Whisper")} ok={Boolean(props.youtubeTools?.whisper.ok)} value={formatToolStatus(props.youtubeTools?.whisper)} />
-        <StatusTile lang={props.lang} label={uiText("FFmpeg")} ok={Boolean(props.youtubeTools?.ffmpeg.ok)} value={formatToolStatus(props.youtubeTools?.ffmpeg)} />
-        <StatusTile lang={props.lang} label={uiText("FFprobe")} ok={Boolean(props.youtubeTools?.ffprobe.ok)} value={formatToolStatus(props.youtubeTools?.ffprobe)} />
-        <StatusTile lang={props.lang} label={uiText("Python")} ok={Boolean(props.youtubeTools?.python.ok)} value={formatToolStatus(props.youtubeTools?.python)} />
-        <StatusTile lang={props.lang} label={t(props.lang, "uiOutputFolder")} ok={Boolean(props.youtubeTools?.outputDir)} value={props.youtubeTools?.outputDir || "-"} />
-        <StatusTile lang={props.lang} label={t(props.lang, "uiYoutubeCookies")} ok={Boolean(props.youtubeTools?.cookieStatus.ok)} value={`${props.youtubeTools?.cookieMode || "none"} · ${formatToolStatus(props.youtubeTools?.cookieStatus)}`} />
-        <StatusTile lang={props.lang} label={uiText("JS runtime")} ok={Boolean(props.youtubeTools?.jsRuntime.ok)} value={formatToolStatus(props.youtubeTools?.jsRuntime)} />
-        <StatusTile lang={props.lang} label={uiText("Remote components")} ok={Boolean(props.youtubeTools?.remoteComponents.ok)} value={formatToolStatus(props.youtubeTools?.remoteComponents)} />
-      </>
-    );
-  }
-
   return (
     <>
       <StatusTile lang={props.lang} label={uiText("ElevenLabs")} ok={Boolean(props.elevenLabs?.hasApiKey && props.elevenLabs?.endpointsOk)} value={props.elevenLabs?.hasApiKey ? `${props.elevenLabs.voices.length} ${t(props.lang, "settingsVoicesConfigured")}` : t(props.lang, "settingsNoApiKey")} />
@@ -295,77 +273,6 @@ function formatEndpointValue(check: { url: string; ok: boolean; detail?: string;
   const target = check.apiName || check.url;
   if (check.ok) return target;
   return check.detail ? `${target} · ${check.detail}` : target;
-}
-
-function formatToolStatus(status?: { ok: boolean; command: string; version?: string; detail?: string }) {
-  if (!status) return "-";
-  return status.ok ? `${status.command} · ${status.version || "OK"}` : `${status.command} · ${status.detail || "Missing"}`;
-}
-
-function youtubeToolsInstruction(lang: Lang, health: YoutubeToolsHealthResponse | null): HealthInstruction {
-  const commands = health?.installHint?.length ? health.installHint : [
-    "python -m pip install -U yt-dlp openai-whisper",
-    "ffmpeg -version",
-  ];
-  return {
-    description: t(lang, "uiInstallYtDlpWhisperAndFfmpegForYoutube"),
-    markdown: [
-      "## YouTube Tools",
-      "",
-      t(lang, "uiRequiredBackgroundTools"),
-      "",
-      "- yt-dlp",
-      "- Whisper / openai-whisper",
-      "- FFmpeg",
-      "- Python",
-      "- Node.js hoặc Deno cho YouTube JS challenge",
-      "",
-      "```bash",
-      ...commands,
-      "```",
-      "",
-      t(lang, "uiWhenYoutubeReturns429NotABot"),
-      "",
-      "1. " + t(lang, "uiPreferCookiesTxtWhenChromeCannotBeRead"),
-      "2. " + t(lang, "uiInstallALocalOnlyCookiesTxtExporterExtension"),
-      "3. " + t(lang, "uiSaveTheFileSomewherePrivateThenSetYoutube_cookies_file"),
-      "",
-      "```bat",
-      "yt-dlp --cookies \"C:\\path\\www.youtube.com_cookies.txt\" --simulate \"https://youtu.be/VIDEO_ID\"",
-      "```",
-      "",
-      t(lang, "uiIfYouUseBrowserCookiesDirectly"),
-      "",
-      "```env",
-      "YOUTUBE_COOKIES_FROM_BROWSER=firefox",
-      "```",
-      "",
-      t(lang, "uiFirefoxIsUsuallyMoreReliableThanChromeOn"),
-      "",
-      t(lang, "uiWhenYoutubeReportsNChallengeOnlyImagesAvailable"),
-      "",
-      "```env",
-      "YOUTUBE_JS_RUNTIME=node",
-      "YOUTUBE_REMOTE_COMPONENTS=ejs:github",
-      "```",
-      "",
-      t(lang, "uiSecurityNoteCookiesTxtIsEquivalentToA"),
-      "",
-      t(lang, "uiOptionalEnvOverrides"),
-      "",
-      "```env",
-      "YOUTUBE_TOOLS_PYTHON=python",
-      "YOUTUBE_DLP_EXE=yt-dlp",
-      "WHISPER_EXE=whisper",
-      "YOUTUBE_COOKIES_FROM_BROWSER=",
-      "YOUTUBE_COOKIES_FILE=C:/path/to/youtube-cookies.txt",
-      "YOUTUBE_JS_RUNTIME=node",
-      "YOUTUBE_REMOTE_COMPONENTS=ejs:github",
-      "YOUTUBE_TRANSCRIPT_MODEL=base",
-      "YOUTUBE_TRANSCRIPT_LANGUAGE=auto",
-      "```",
-    ].join("\n"),
-  };
 }
 
 function InstructionDialog(props: { lang: Lang; title: string; failed: boolean; instruction: HealthInstruction }) {

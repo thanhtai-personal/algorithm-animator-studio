@@ -17,24 +17,12 @@ const FEATURE_GROUPS: Array<{
   items: MenuFeatureId[];
 }> = [
   {
-    title: { en: "Algorithm channel screens", vi: "Màn hình kênh thuật toán" },
-    items: ["algorithm-studio", "rhythmic-studio", "maze-pathfinding", "algorithm-long"],
+    title: { en: "Algorithm animation", vi: "Trực quan thuật toán" },
+    items: ["algorithm-studio", "maze-pathfinding", "algorithm-long"],
   },
   {
-    title: { en: "News channel screens", vi: "Màn hình kênh tin tức" },
-    items: ["github-trending", "football-commentary"],
-  },
-  {
-    title: { en: "Story channel screens", vi: "Màn hình kênh truyện" },
-    items: ["story-studio", "story-author", "story-review"],
-  },
-  {
-    title: { en: "Common video screens", vi: "Màn hình video chung" },
-    items: ["common-video", "text-to-speech", "youtube-tools"],
-  },
-  {
-    title: { en: "Management screens", vi: "Màn hình quản lý" },
-    items: ["jobs", "channel", "assets"],
+    title: { en: "Voice and workspace", vi: "Giọng nói và công cụ" },
+    items: ["text-to-speech", "assets"],
   },
 ];
 

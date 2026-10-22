@@ -1,8 +1,6 @@
 import { type CSSProperties, type PropsWithChildren, useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
 import { AppHeader } from "@/components/AppHeader";
 import { AppSidebar, type SidebarMode } from "@/components/AppSidebar";
-import { BackgroundJobsNotifier } from "@/components/BackgroundJobsNotifier";
 import { ChillMusicNotifier } from "@/components/ChillMusicNotifier";
 import { useFantasticMode } from "@/hooks/use-fantastic-mode";
 import { readChillModeEnabled, subscribeChillMode } from "@/lib/chillMusicSettings";
@@ -23,12 +21,10 @@ function readResponsiveSidebarMode(): SidebarMode {
 }
 
 export function AppLayout({ children }: PropsWithChildren) {
-  const location = useLocation();
   const [lang, setLang] = useState<Lang>(() => readSystemLang("en"));
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>(readResponsiveSidebarMode);
   const [fantasticMode] = useFantasticMode();
   const [chillModeEnabled, setChillModeEnabled] = useState(() => readChillModeEnabled());
-  const rhythmicStudioActive = location.pathname.startsWith("/algorithms/rhythmic") || location.pathname.startsWith("/algorithms/marble-tower");
 
   useEffect(() => subscribeSystemLang(setLang), []);
   useEffect(() => subscribeChillMode(setChillModeEnabled), []);
@@ -65,7 +61,6 @@ export function AppLayout({ children }: PropsWithChildren) {
         {children}
       </div>
       <ChillMusicNotifier enabled={fantasticMode && chillModeEnabled} />
-      {!rhythmicStudioActive ? <BackgroundJobsNotifier /> : null}
     </div>
   );
 }

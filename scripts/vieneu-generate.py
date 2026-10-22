@@ -62,7 +62,7 @@ def main() -> int:
         from vieneu import Vieneu  # type: ignore
     except Exception as exc:  # pragma: no cover - runtime dependency check
         raise RuntimeError(
-            "Không import được SDK vieneu. VieNeu source hiện nên nằm ở libs/VieNeu-TTS. "
+            "Không import được SDK vieneu. Clone VieNeu-TTS riêng và đặt VIENEU_SOURCE_DIR trỏ tới source đó. "
             "Chạy: npm run vieneu:install rồi thử lại."
         ) from exc
 

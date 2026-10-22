@@ -20,7 +20,7 @@ import { SettingsChillTab } from "./settings/SettingsChillTab";
 import { SettingsDataTab } from "./settings/SettingsDataTab";
 import { SettingsHealthTab } from "./settings/SettingsHealthTab";
 import { SettingsModulesTab } from "./settings/SettingsModulesTab";
-import { EMPTY_FORM, type ElevenLabsConfigResponse, type HealthResponse, type PiperModel, type RvcApplioConfigResponse, type RvcApplioTemplateFileResponse, type SelectPathResponse, type SettingsForm, type SettingsFormKey, type SupertonicConfigResponse, type VieneuConfigResponse, type YoutubeToolsHealthResponse } from "./settings/SettingsTypes";
+import { EMPTY_FORM, type ElevenLabsConfigResponse, type HealthResponse, type PiperModel, type RvcApplioConfigResponse, type RvcApplioTemplateFileResponse, type SelectPathResponse, type SettingsForm, type SettingsFormKey, type SupertonicConfigResponse, type VieneuConfigResponse } from "./settings/SettingsTypes";
 import { SettingsVoiceTab } from "./settings/SettingsVoiceTab";
 import { readSystemLang, subscribeSystemLang, t, type Lang  } from "@/lib/i18n";
 import { buildApiUrl, parseApiResponse } from "@/lib/runtimeApi";
@@ -61,7 +61,6 @@ export default function Settings() {
   const [supertonic, setSupertonic] = useState<SupertonicConfigResponse | null>(null);
   const [rvcApplio, setRvcApplio] = useState<RvcApplioConfigResponse | null>(null);
   const [vieneu, setVieneu] = useState<VieneuConfigResponse | null>(null);
-  const [youtubeTools, setYoutubeTools] = useState<YoutubeToolsHealthResponse | null>(null);
   const [models, setModels] = useState<PiperModel[]>([]);
   const [loading, setLoading] = useState(false);
   const [selecting, setSelecting] = useState<string | null>(null);
@@ -85,7 +84,7 @@ export default function Settings() {
     setLoading(true);
     try {
       const headers = buildRuntimeSettingsHeaders();
-      const [healthData, modelData, elevenData, supertonicData, rvcApplioData, vieneuData, applioTemplateData, youtubeToolsData] = await Promise.all([
+      const [healthData, modelData, elevenData, supertonicData, rvcApplioData, vieneuData, applioTemplateData] = await Promise.all([
         parseApiResponse<HealthResponse>(await fetch(buildApiUrl("/api/health"), { headers })),
         parseApiResponse<{ models: PiperModel[] }>(await fetch(buildApiUrl("/api/models"), { headers })),
         parseApiResponse<ElevenLabsConfigResponse>(await fetch(buildApiUrl("/api/elevenlabs/config"), { headers })),
@@ -93,7 +92,6 @@ export default function Settings() {
         parseApiResponse<RvcApplioConfigResponse>(await fetch(buildApiUrl("/api/rvc-applio/config"), { headers })),
         parseApiResponse<VieneuConfigResponse>(await fetch(buildApiUrl("/api/vieneu/config"), { headers })),
         parseApiResponse<RvcApplioTemplateFileResponse>(await fetch(buildApiUrl("/api/rvc-applio/templates"), { headers })),
-        parseApiResponse<YoutubeToolsHealthResponse>(await fetch(buildApiUrl("/api/youtube-tools/health"), { headers })),
       ]);
       setHealth(healthData);
       setModels(modelData.models);
@@ -103,7 +101,6 @@ export default function Settings() {
       setVieneu(vieneuData);
       setApplioTemplates(applioTemplateData);
       setSavedApplioTemplates(applioTemplateData);
-      setYoutubeTools(youtubeToolsData);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t(lang, "settingsCouldNotCheckPiper"));
     } finally {
@@ -289,7 +286,6 @@ export default function Settings() {
               rvcApplio={rvcApplio}
               supertonic={supertonic}
               vieneu={vieneu}
-              youtubeTools={youtubeTools}
             />
           </TabsContent>
         </Tabs>

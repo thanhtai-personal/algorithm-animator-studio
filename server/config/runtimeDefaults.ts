@@ -73,6 +73,7 @@ export const DEFAULT_RUNTIME_ENV_VALUES: Record<string, string> = {
   RVC_APPLIO_PYTHON: "python",
   YOUTUBE_TOOLS_PYTHON: "python",
   YOUTUBE_DLP_EXE: "yt-dlp",
+  WHISPER_PYTHON: "python",
   WHISPER_EXE: "whisper",
   YOUTUBE_COOKIES_FROM_BROWSER: "",
   YOUTUBE_COOKIES_FILE: "",

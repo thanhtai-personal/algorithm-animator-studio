@@ -1,11 +1,10 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "algorithm-animator-studio",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n client,server,supertonic,applio,vieneu,gptsovits -c cyan,green,magenta,yellow,blue,red \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:supertonic\" \"npm run dev:applio\" \"npm run dev:vieneu\" \"npm run dev:gpt-sovits\"",
-    "dev:remote": "concurrently -n remote-api,remote-ui -c green,cyan \"cross-env PORT=8891 CLIENT_ORIGIN=http://127.0.0.1:3891 tsx watch remote-control-app/server/remoteIndex.ts\" \"vite --config remote-control-app/vite.config.ts\"",
+    "dev": "concurrently -n client,server -c cyan,green \"npm run dev:client\" \"npm run dev:server\"",
     "prod:local": "npm run build && node scripts/start-production-local.mjs",
     "build": "vite build",
     "build:dev": "vite build --mode development",
@@ -22,17 +21,9 @@
     "vieneu:install": "node scripts/install-vieneu-from-source.mjs",
     "vieneu:health": "node scripts/run-vieneu-health.mjs",
     "supertonic:serve": "node scripts/start-supertonic.mjs",
-    "dev:full": "npm run dev",
+    "dev:full": "concurrently -n client,server,supertonic,applio,vieneu,gptsovits -c cyan,green,magenta,yellow,blue,red \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:supertonic\" \"npm run dev:applio\" \"npm run dev:vieneu\" \"npm run dev:gpt-sovits\"",
     "start:server": "tsx server/index.ts",
     "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --packages=external --outfile=dist-electron/server/index.js",
-    "build:remote:renderer": "vite build --config remote-control-app/vite.config.ts",
-    "build:remote:server": "esbuild remote-control-app/server/remoteIndex.ts --bundle --platform=node --format=cjs --outfile=remote-control-app/dist-server/index.cjs",
-    "build:remote:prepare": "node remote-control-app/scripts/prepare-package.mjs",
-    "build:remote:verify": "node remote-control-app/scripts/verify-build.mjs",
-    "build:remote": "npm run build:remote:renderer && npm run build:remote:server && npm run build:remote:prepare && npm run build:remote:verify",
-    "remote:preview": "npm run build:remote && npm run electron:install && electron remote-control-app/electron/main.cjs",
-    "dist:remote:win:unpacked": "npm run build:remote && npm run electron:install && electron-builder --projectDir remote-control-app/dist-package --win --x64 --dir --config ../electron-builder.json",
-    "dist:remote:win:nsis": "npm run build:remote && npm run electron:install && electron-builder --projectDir remote-control-app/dist-package --win nsis --x64 --config ../electron-builder.json",
     "build:desktop": "cross-env DESKTOP_BUILD=true VITE_PUBLIC_WEB=false npm run build && npm run build:server && node scripts/prepare-desktop-env.mjs && npm run build:desktop:verify",
     "dist:win": "npm run build:desktop && npm run electron:install && electron-builder --win --x64 --config.directories.output=release/win",
     "dist:win:nsis": "npm run build:desktop && npm run electron:install && electron-builder --win nsis --x64 --config.directories.output=release/win",
@@ -56,7 +47,10 @@
     "dev:remotion": "remotion studio src/features/remotion-video/remotion/index.ts --port=3003",
     "remotion:render:test": "remotion render src/features/remotion-video/remotion/index.ts AlgorithmExplainer generated-videos/remotion-test.mp4",
     "dev:gpt-sovits": "node scripts/start-gpt-sovits.mjs",
-    "gpt-sovits:serve": "node scripts/start-gpt-sovits.mjs"
+    "gpt-sovits:serve": "node scripts/start-gpt-sovits.mjs",
+    "test:oss:static": "node --test scripts/tests/oss-*.check.mjs",
+    "validate:oss": "node scripts/assert-oss-retained-surface.mjs && npm run test:oss:static && npm test && npm run build && npm run build:server",
+    "audit:oss:release": "node scripts/oss-release-audit.mjs"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
@@ -169,7 +163,7 @@
     "vitest": "^4.1.8"
   },
   "main": "electron/main.cjs",
-  "description": "Social videos publishing studio.",
+  "description": "Algorithm animation, algorithm video editing and optional external TTS integrations.",
   "author": "KAI STUDIO",
   "build": {
     "appId": "vn.kaistudio.app",
@@ -203,29 +197,6 @@
         ]
       },
       {
-        "from": "libs/VieNeu-TTS",
-        "to": "electron-runtime/libs/VieNeu-TTS",
-        "filter": [
-          "**/*",
-          "!**/.git/**",
-          "!**/.venv/**",
-          "!**/__pycache__/**",
-          "!**/*.pyc",
-          "!**/.mypy_cache/**",
-          "!**/.pytest_cache/**"
-        ]
-      },
-      {
-        "from": "models",
-        "to": "electron-runtime/bundled-models",
-        "filter": [
-          "**/*.onnx",
-          "**/*.onnx.json",
-          "!**/*.download",
-          "!**/.gitkeep"
-        ]
-      },
-      {
         "from": ".env.example",
         "to": "electron-runtime/.env.example"
       }
@@ -251,5 +222,26 @@
       "createStartMenuShortcut": true,
       "shortcutName": "KAI STUDIO"
     }
-  }
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thanhtai-personal/algorithm-animator-studio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thanhtai-personal/algorithm-animator-studio/issues"
+  },
+  "homepage": "https://github.com/thanhtai-personal/algorithm-animator-studio#readme",
+  "engines": {
+    "node": ">=22 <26"
+  },
+  "keywords": [
+    "algorithms",
+    "visualization",
+    "pathfinding",
+    "remotion",
+    "video",
+    "text-to-speech",
+    "education"
+  ]
 }

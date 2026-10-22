@@ -1,10 +1,10 @@
-VieNeu runs from the local source under `libs/VieNeu-TTS`. Health checks Python, the bridge scripts, and whether the `vieneu` SDK can be imported.
+VieNeu is an optional provider. Clone its SDK separately into `../VieNeu-TTS`; this app repo does not bundle the SDK, preset voices, or sample voice assets. Health checks Python, the bridge scripts, and whether the `vieneu` SDK can be imported.
 
 ### Install
 
-1. The VieNeu-TTS source is already placed in this repo at `libs/VieNeu-TTS`.
-2. Run the install command to create `.venv` inside that folder and install the source in editable mode.
-3. After install, `npm run dev` starts an additional `vieneu` process to verify that the bridge is ready.
+1. Clone `https://github.com/pnnbao97/VieNeu-TTS` into `../VieNeu-TTS`, outside this app repo.
+2. Run the install command to create `.venv` inside that external checkout and install the source in editable mode.
+3. Use Python 3.10 or 3.11. The provider is disabled by default; set `KAI_PROVIDER_VIENEU_ENABLED=true` and `VIENEU_AUTO_START=true` in `.env` to enable it.
 
 ```bat
 npm run vieneu:install
@@ -12,7 +12,7 @@ npm run vieneu:health
 npm run dev
 ```
 
-If you want to update VieNeu from your own fork, replace the source under `libs/VieNeu-TTS` or set `VIENEU_SOURCE_DIR` to your fork path before running `npm run vieneu:install`.
+If you do not use VieNeu, leave `KAI_PROVIDER_VIENEU_ENABLED=false`. Do not use preset/sample voices unless their license permits your intended use.
 
 If you want to use global Python instead of `.venv`, set `VIENEU_PYTHON=python` in `.env` or Settings -> Voice -> VieNeu. This only works when the global Python environment already has the VieNeu SDK/dependencies installed.
 

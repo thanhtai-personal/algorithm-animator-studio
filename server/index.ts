@@ -22,11 +22,9 @@ import {
 } from "./config/paths";
 import { createElevenLabsRouter } from "./routes/elevenLabsRoutes";
 import { createGenerateRouter } from "./routes/generateRoutes";
-import { createChannelProviderRouter } from "./routes/channelProviderRoutes";
 import { createHealthRouter } from "./routes/healthRoutes";
 import { createProviderStartupRouter } from "./routes/providerStartupRoutes";
 import { createMusicLibraryRouter } from "./routes/musicLibraryRoutes";
-import { createMuNewsRouter } from "./routes/muNewsRoutes";
 import { createModelRouter } from "./routes/modelRoutes";
 import { createPiperRuntimeRouter } from "./routes/piperRuntimeRoutes";
 import { createSystemRouter } from "./routes/systemRoutes";
@@ -35,20 +33,10 @@ import { createSupertonicRouter } from "./routes/supertonicRoutes";
 import { createGptSoVitsRouter } from "./routes/gptSoVitsRoutes";
 import { createRvcApplioRouter } from "./routes/rvcApplioRoutes";
 import { createVieneuRouter } from "./routes/vieneuRoutes";
-import { createStoryReviewRouter } from "./routes/storyReviewRoutes";
 import { createVideoRouter } from "./routes/videoRoutes";
-import { createWebExtractRouter } from "./routes/webExtractRoutes";
 import { createResourceRouter } from "./routes/resourceRoutes";
-import { createYoutubeRouter } from "./routes/youtubeRoutes";
-import { createYoutubeToolRouter } from "./routes/youtubeToolRoutes";
-import { createAiVideoAgentRouter } from "./routes/aiVideoAgentRoutes";
-import { createPublishQueueRouter } from "./routes/publishQueueRoutes";
-import { startLocalPublishWorker } from "./services/PublishWorkerService";
 import { readRuntimeEnvFromRequest } from "./services/RuntimeEnvService";
 import { readEnvValues } from "./services/EnvFileService";
-import { attachBackgroundJobsWebSocket } from "./services/BackgroundJobsRealtimeService";
-import { listYoutubeToolsJobs } from "./services/YoutubeToolsJobService";
-import { listAgentVideoJobs } from "./services/AiVideoAgentService";
 
 const app = express();
 const httpServer = createServer(app);
@@ -64,14 +52,23 @@ app.use(`/${GENERATED_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedD
 app.use(`/${GENERATED_PREVIEW_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedPreviewDir));
 app.use(`/${GENERATED_VIDEO_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedVideoDir));
 app.use(`/${GENERATED_BACKGROUND_MUSIC_PUBLIC_PATH}`, createDynamicStaticMiddleware(getGeneratedBackgroundMusicDir));
-app.use("/api", createHealthRouter(), createModelRouter(), createMusicLibraryRouter(), createMuNewsRouter(), createPiperRuntimeRouter(), createSystemRouter(), createSetupWizardRouter(), createProviderStartupRouter(), createResourceRouter(), createStoryReviewRouter(), createWebExtractRouter(), createGenerateRouter(), createAiVideoAgentRouter(), createChannelProviderRouter(), createElevenLabsRouter(), createSupertonicRouter(), createGptSoVitsRouter(), createRvcApplioRouter(), createVieneuRouter(), createVideoRouter(), createYoutubeRouter(), createYoutubeToolRouter(), createPublishQueueRouter());
-
-startLocalPublishWorker();
-attachBackgroundJobsWebSocket(httpServer, () => ({
-  atMs: Date.now(),
-  youtubeJobs: listYoutubeToolsJobs(),
-  agentJobs: listAgentVideoJobs(),
-}));
+app.use("/api",
+  createHealthRouter(),
+  createModelRouter(),
+  createMusicLibraryRouter(),
+  createPiperRuntimeRouter(),
+  createSystemRouter(),
+  createSetupWizardRouter(),
+  createProviderStartupRouter(),
+  createResourceRouter(),
+  createGenerateRouter(),
+  createElevenLabsRouter(),
+  createSupertonicRouter(),
+  createGptSoVitsRouter(),
+  createRvcApplioRouter(),
+  createVieneuRouter(),
+  createVideoRouter(),
+);
 
 httpServer.listen(PORT, () => {
   console.log(`KAI STUDIO backend running at http://localhost:${PORT}`);

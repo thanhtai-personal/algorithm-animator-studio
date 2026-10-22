@@ -12,6 +12,12 @@ test("auto lyrics uses a standalone Whisper adapter, not deleted YouTube Tools",
   assert.match(lyrics, /from "\.\/WhisperCliService"/);
   assert.doesNotMatch(lyrics, /YoutubeToolsService/);
   const standalone = read("server/services/WhisperCliService.ts");
+  const defaults = read("server/config/runtimeDefaults.ts");
+  const runtimeEnv = read("server/services/RuntimeEnvService.ts");
+  const runtimeSettings = read("src/lib/runtimeSettings.ts");
+  assert.match(defaults, /WHISPER_PYTHON: "python"/);
+  assert.match(runtimeEnv, /"WHISPER_PYTHON"/);
+  assert.match(runtimeSettings, /WHISPER_PYTHON/);
   assert.match(standalone, /export async function resolveWhisper/);
   assert.match(standalone, /export function runCommand/);
   assert.doesNotMatch(standalone, /yt_dlp|youtubeDownload|YOUTUBE_DLP/);

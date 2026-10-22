@@ -16,7 +16,8 @@ test("VieNeu is an optional external checkout without vendored SDK/model/preset 
   assert.match(example, /VIENEU_AUTO_START=false/);
   const script = read("scripts/install-vieneu-from-source.mjs");
   assert.match(script, /DEFAULT_SOURCE_DIR/);
-  assert.match(script, /\.\.,?\s*["']VieNeu-TTS["']/);
+  assert.match(script, /VieNeu-TTS/);
+  assert.doesNotMatch(script, /libs\/VieNeu-TTS/);
 });
 
 test("README has separate setup instructions for the supported voice engines", () => {

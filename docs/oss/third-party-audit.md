@@ -38,6 +38,6 @@ The Piper voice repository itself displays MIT metadata, but the official Piper 
 ## Next actions
 
 1. Preserve Piper provider code and installer; test status/install behavior in a clean checkout once runnable CI/local execution is available.
-2. Isolate the VieNeu non-commercial preset/sample assets without removing the VieNeu provider integration; ensure optional provider absence does not stop the main app.
+2. Keep VieNeu as an optional adapter to an external checkout; test setup with the checkout absent and present, and prevent preset/sample assets from being reintroduced into the app tree.
 3. Review the Git history. The model weights and VieNeu sample assets existed in earlier commits, so current-tree deletion alone is insufficient for public publication.
 4. Add final third-party notices only after the full license/provenance chain has been verified.

@@ -18,7 +18,7 @@ const healthScript = path.join(projectRoot, "scripts", "vieneu-health.py");
 const env = buildVieneuEnv(runtimeEnv, sourceDir, pythonExe);
 const managed = String(runtimeEnv.KAI_STUDIO_MANAGED_SERVICE || "").trim() === "1";
 
-if (!providerEnabled(runtimeEnv.KAI_PROVIDER_VIENEU_ENABLED, true)) {
+if (!providerEnabled(runtimeEnv.KAI_PROVIDER_VIENEU_ENABLED, false)) {
   console.log("[vieneu] provider disabled by KAI_PROVIDER_VIENEU_ENABLED=false; skipping startup.");
   process.exit(0);
 }

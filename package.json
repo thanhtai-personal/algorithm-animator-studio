@@ -1,5 +1,5 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "algorithm-animator-studio",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -221,5 +221,26 @@
       "createStartMenuShortcut": true,
       "shortcutName": "KAI STUDIO"
     }
-  }
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thanhtai-personal/algorithm-animator-studio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thanhtai-personal/algorithm-animator-studio/issues"
+  },
+  "homepage": "https://github.com/thanhtai-personal/algorithm-animator-studio#readme",
+  "engines": {
+    "node": ">=22 <26"
+  },
+  "keywords": [
+    "algorithms",
+    "visualization",
+    "pathfinding",
+    "remotion",
+    "video",
+    "text-to-speech",
+    "education"
+  ]
 }

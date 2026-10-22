@@ -5,7 +5,7 @@ Tài liệu điều hướng nhanh. [README — Voice provider setup](../README.
 | Provider | Tải từ upstream | Khởi chạy và kết nối |
 | --- | --- | --- |
 | **Piper** | [OHF Piper](https://github.com/OHF-Voice/piper1-gpl) | Cài `piper-tts` hoặc binary tương thích với adapter; đặt `PIPER_EXE`, tải model riêng qua Settings → Voice hoặc `MODEL_DIR`. Không cần HTTP server |
-| **Supertonic** | [Supertonic](https://github.com/supertone-inc/supertonic), [Python HTTP service](https://github.com/supertone-oss-archive/supertonic-py) | Trong môi trường Python riêng chạy `npm run supertonic:install`, `npm run supertonic:serve`; `SUPERTONIC_BASE_URL=http://127.0.0.1:6688` |
+| **Supertonic** | [Supertonic](https://github.com/supertone-oss-archive/supertonic), [Python HTTP service](https://github.com/supertone-oss-archive/supertonic-py) | Trong môi trường Python riêng chạy `npm run supertonic:install`, `npm run supertonic:serve`; `SUPERTONIC_BASE_URL=http://127.0.0.1:6688` |
 | **VieNeu-TTS** | [VieNeu-TTS](https://github.com/pnnbao97/VieNeu-TTS) | Clone bên ngoài repo (`../VieNeu-TTS`), chạy `npm run vieneu:install`, `npm run vieneu:health`; cấu hình `VIENEU_SOURCE_DIR` và `VIENEU_PYTHON`. Backend tạo giọng qua Python bridge khi được yêu cầu, không cần chạy Gradio |
 | **GPT-SoVITS** | [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS) | Cài riêng, chạy API của bản upstream; `GPT_SOVITS_BASE_URL` (thường port 9880). Có thể đặt `GPT_SOVITS_START_COMMAND` rồi dùng `npm run gpt-sovits:serve` |
 | **RVC/Applio** | [Applio](https://github.com/IAHispano/Applio) | Cài/chạy Gradio riêng, cấu hình `RVC_APPLIO_BASE_URL`, `RVC_APPLIO_PYTHON` và API template trong [hướng dẫn Applio](rvc-applio-local-voice-provider.md); `npm run applio:install` chỉ cài `gradio_client` cho Python đang dùng |
@@ -25,3 +25,7 @@ Truy cập `http://localhost:3000/text-to-speech` và `Settings → Voice / Heal
 `npm run dev:full` chỉ dành cho môi trường đã cài và cấu hình các provider; lệnh này có thể cố gắng gọi thêm tiến trình tùy chọn. Luôn kiểm tra giấy phép độc lập của model/voice/preset trước khi dùng thương mại hoặc phát hành lại: [kiểm toán tài nguyên TTS](oss/third-party-audit.md).
 
 **Kiểm thử source:** `npm ci && npm run validate:oss`. Các bài test/command này chưa được xác nhận chạy thành công trên CI của nhánh cleanup.
+
+## Licensing notes for a public build
+
+The application adapter is part of the proposed MIT source. Independent engines/models have separate licenses: Piper runtime GPLv3, Supertonic runtime/sample code MIT but weights OpenRAIL-M, VieNeu SDK Apache-2.0 with non-commercial sample voices, and possible external voice-recording restrictions. Remotion itself is source-available under a non-OSI license. **Do not bundle downloaded engines, models, presets or recordings** without reviewing their exact terms; see [third-party notices](../THIRD_PARTY_NOTICES.md) and [release checklist](oss/RELEASE_CHECKLIST.md).

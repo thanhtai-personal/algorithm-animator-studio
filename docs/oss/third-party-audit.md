@@ -41,3 +41,12 @@ The Piper voice repository itself displays MIT metadata, but the official Piper 
 2. Keep VieNeu as an optional adapter to an external checkout; test setup with the checkout absent and present, and prevent preset/sample assets from being reintroduced into the app tree.
 3. Review the Git history. The model weights and VieNeu sample assets existed in earlier commits, so current-tree deletion alone is insufficient for public publication.
 4. Add final third-party notices only after the full license/provenance chain has been verified.
+## Broader dependency review (22 October 2026)
+
+- **Remotion** is source-available with its own non-OSI license. Individuals and small qualifying organizations may use it for free; other entities may need a Company License, especially for automated renders. Its usage rights are not supplied by Algorithm Animator Studio's proposed MIT license: https://github.com/remotion-dev/remotion/blob/main/LICENSE.md and https://www.remotion.dev/docs/license/pricing.
+- **FFmpeg** is LGPL-2.1-or-later by default, but particular builds may include GPL-covered components. The specific platform binary and encoder features used by a desktop release must be audited: https://ffmpeg.org/legal.html.
+- **Supertonic** source/sample code is MIT, but its model weights are under OpenRAIL-M and the upstream project has moved to a read-only archive (September 2026): https://github.com/supertone-oss-archive/supertonic.
+- **Project media** remain unresolved: 20 animal sprite sheets, sound effects, MIDI, standalone photos and leftover historical audio are not proven redistributable. See [asset register](ASSET_PROVENANCE.md).
+- **Source history** still contains previously removed items. The project must not be switched Public until credentials and third-party assets in all reachable commits/refs are reviewed and handled appropriately.
+
+See [the third-party inventory](../../THIRD_PARTY_NOTICES.md) and [release checklist](RELEASE_CHECKLIST.md). Neither a license file nor an attribution list is a substitute for actual rights clearance.

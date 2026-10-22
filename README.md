@@ -2,14 +2,14 @@
 
 A visual algorithm animation and video authoring toolkit with built-in text-to-speech integrations.
 
-**Status (22 October 2026):** Open-source cleanup **in progress** on `chore/oss-algorithm-tts-cleanup-20261021`. This repository is not ready to be made Public: the full Git history, third-party model/media rights, dependency integrity and runtime tests have **not yet been cleared**. Do not redistribute bundled third-party voice weights until their model licenses and provenance are confirmed. Legacy preset media has been removed from the current tree, but remains in the Git history.
+**Status (22 October 2026):** Source and legal release preparation **in progress** on `chore/oss-algorithm-tts-cleanup-20261021`. This repository is not ready to be made Public: the full Git history, third-party model/media rights, dependency integrity and runtime tests have **not yet been cleared**. Do not redistribute bundled third-party voice weights until their model licenses and provenance are confirmed. Legacy preset media has been removed from the current tree, but remains in the Git history.
 
 ## Features retained in the OSS edition
 
 - **Algorithm Shorts:** sorting, searching, graph visualizations, custom code, previews and exports.
 - **Maze Pathfinding:** graph/pathfinding competition and visualization.
 - **Algorithm Long Video:** long-form explainers with Canvas/FFmpeg and the algorithm-oriented Remotion renderer.
-- **Voice tools (all current adapters):** Piper; Supertonic; VieNeu TTS; GPT-SoVITS; ElevenLabs; RVC/Applio TTS and voice conversion.
+- **Voice tools (optional adapters):** Piper; Supertonic; VieNeu TTS; GPT-SoVITS; ElevenLabs (hosted/proprietary); RVC/Applio TTS and voice conversion. Provider binaries, weights and recordings are separate.
 - Local provider settings/health, model discovery, generated audio and video files.
 
 Removed from this OSS preparation branch: story/news/social publishing, unrelated demos, the generic Math/Preset Video library and legacy source media. Algorithm Explainer and Timeline Remotion compositions are still retained. Other shared modules await dependency auditing.
@@ -38,7 +38,7 @@ Every optional TTS engine is installed **outside this repository**. The app owns
 | Engine | Download / project | Startup method | How the app connects |
 | --- | --- | --- | --- |
 | Piper | [OHF-Voice/piper1-gpl](https://github.com/OHF-Voice/piper1-gpl) and voice model selected in Settings | Local executable, **no HTTP process** | `PIPER_EXE` + `MODEL_DIR` |
-| Supertonic | [supertone-inc/supertonic](https://github.com/supertone-inc/supertonic) / its [Python service](https://github.com/supertone-oss-archive/supertonic-py) | `npm run supertonic:serve` after installing Python package | `SUPERTONIC_BASE_URL` (default `http://127.0.0.1:6688`) |
+| Supertonic | [supertone-inc/supertonic](https://github.com/supertone-oss-archive/supertonic) / its [Python service](https://github.com/supertone-oss-archive/supertonic-py) | `npm run supertonic:serve` after installing Python package | `SUPERTONIC_BASE_URL` (default `http://127.0.0.1:6688`) |
 | VieNeu-TTS | [pnnbao97/VieNeu-TTS](https://github.com/pnnbao97/VieNeu-TTS) — **separate sibling checkout** | Python bridge on demand; optional `npm run vieneu:serve` | `VIENEU_SOURCE_DIR`, `VIENEU_PYTHON` |
 | GPT-SoVITS | [RVC-Boss/GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS) — separate checkout | Its upstream API, or `npm run gpt-sovits:serve` with a configured start command | `GPT_SOVITS_BASE_URL` (usually port 9880) |
 | RVC/Applio | [IAHispano/Applio](https://github.com/IAHispano/Applio) — separate checkout | Its Gradio server, optionally started by `npm run dev:applio` | `RVC_APPLIO_BASE_URL`, `RVC_APPLIO_PYTHON`, Gradio API template |
@@ -62,9 +62,11 @@ Install only the provider(s) you intend to use. The app adapters remain in this 
 - No separate HTTP service is required; the backend calls the local executable.
 - Review the exact voice model card before use. Piper model licenses vary; see [the third-party audit](docs/oss/third-party-audit.md).
 
-### 2. Supertonic — local HTTP TTS service
+### 2. Supertonic — local HTTP TTS service (archived upstream)
 
-Official project: [Supertonic](https://github.com/supertone-inc/supertonic).
+The Supertonic project moved to an archived read-only repository in September 2026. Source examples and model weights have separate license conditions; consult [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES.md) before installing. The commands below remain a compatibility guide and are not a promise of upstream support.
+
+Official project: [Supertonic](https://github.com/supertone-oss-archive/supertonic).
 
 Create a dedicated Python environment, activate it, then install and run the server from the app repository:
 
@@ -184,10 +186,26 @@ The command checks the retained algorithm/TTS surface, runs the OSS structural/i
 
 These checks are *not* a guarantee of rights clearance, complete runtime behavior or usable Windows installer. See `docs/oss/2026-10-21-source-inventory.md` and `docs/superpowers/plans/2026-10-21-oss-core-with-tts.md` for outstanding work. Recent GitHub Actions jobs fail before runner assignment (no steps/logs recorded); resolve that infrastructure issue or run the command in a checked-out workspace before treating the baseline as green.
 
-## Licensing
+## License, assets and third parties
 
-No repository-wide open-source license is granted yet. Source code, vendored libraries, Piper models and other binary assets can have **different** authors and redistribution terms. A top-level LICENSE will only be selected after ownership and third-party notices are reviewed.
+**MIT is proposed for the original Algorithm Animator Studio code and documentation** that contributors have the right to license: see [LICENSE](LICENSE) and [LICENSING.md](docs/oss/LICENSING.md). This does **not** give a blanket MIT license to bundled artwork, recorded sounds, pretrained voices, independent TTS services, FFmpeg or Remotion.
 
-## Contributing
+**Remotion is source-available under its own license, not OSI-open-source;** usage terms depend on the user/organization and may require commercial licensing. **FFmpeg** has LGPL/GPL obligations depending on the build. See [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES.md), [TTS model audit](docs/oss/third-party-audit.md), and [asset provenance](docs/oss/ASSET_PROVENANCE.md).
 
-Work is still underway in a private draft PR. A contributor guide, security contact, first release and public roadmap will be added once a clean build and legal/provenance review are complete.
+This GitHub repository remains Private and the cleanup PR remains Draft because media provenance, earlier Git history, a clean build and end-to-end provider tests still require clearance. **Do not treat these proposed documents as a declaration that the current branch is safe to publish.**
+
+## Contributing and project policy
+
+Read [CONTRIBUTING](CONTRIBUTING.md), [SECURITY](SECURITY.md), [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md), [SUPPORT](SUPPORT.md), and the [release gate checklist](docs/oss/RELEASE_CHECKLIST.md). The initial release and security support policy will only become active after maintainer approval.
+
+## Documentation
+
+| Topic | Guide |
+|---|---|
+| Architecture and supported modules | [OSS architecture](docs/oss/ARCHITECTURE.md) |
+| Local setup, validation and tests | [Development](docs/oss/DEVELOPMENT.md) |
+| Piper / Supertonic / VieNeu / GPT-SoVITS / Applio | [Standalone TTS services](docs/local-voice-services.md) |
+| Remotion and timeline video | [Video renderer](docs/remotion-video-engine.md) |
+| Legal scope and dependencies | [Licensing scope](docs/oss/LICENSING.md) · [Third-party notices](THIRD_PARTY_NOTICES.md) |
+| Unverified artwork / media | [Asset provenance](docs/oss/ASSET_PROVENANCE.md) |
+| Public release readiness | [Release checklist](docs/oss/RELEASE_CHECKLIST.md) |

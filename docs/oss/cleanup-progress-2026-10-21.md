@@ -78,3 +78,12 @@ This ledger is a status record; it is **not** evidence of a passing build or lic
 - Removed six remaining generated VieNeu egg-info metadata files, so the current tree contains no `libs/VieNeu-TTS` vendor directory. Added ignore rule to prevent reintroducing that checkout.
 - Updated `docs/local-voice-services.md` and `docs/vieneu-local-tts-provider.md` to correctly distinguish `npm run dev` (web/server only), optional on-demand VieNeu Python bridge and `vieneu:serve`/`dev:full`.
 - Added `scripts/tests/oss-external-tts-setup.check.mjs` structural guard. No runtime inference or clean-build pass has yet been verified.
+
+## OSS license and governance document preparation — 2026-10-22
+
+- Proposed MIT `LICENSE` for original author-owned source and documentation, with an explicit separate license scope policy. Owner approval of copyright provenance remains a blocker.
+- Added `THIRD_PARTY_NOTICES.md`, `docs/oss/{LICENSING,ASSET_PROVENANCE,ARCHITECTURE,DEVELOPMENT,RELEASE_CHECKLIST}.md`, and community `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `SUPPORT.md`, PR template.
+- README now links release documents and warns that Remotion is **source-available, not OSI-open-source**; no attribution-only claims for unknown-rights media.
+- Cleaned obsolete social OAuth/YouTube download configuration from `.env.example`; retained separate local Whisper settings and optional TTS provider flags.
+- `package.json` identifies the project and records `license: MIT` while retaining `private: true` to prevent accidental npm publication. This does NOT make the GitHub repo Public.
+- **Release remains BLOCKED:** unknown sprite/audio/MIDI/photo rights, Remotion/FFmpeg packaging conditions, previous Git history, owner approval and CI/runtime tests.

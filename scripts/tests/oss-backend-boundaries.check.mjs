@@ -25,6 +25,14 @@ test("OSS backend keeps algorithm render, media and every TTS provider API", () 
   ]) assert.ok(server.includes(`${route}()`), `core endpoint missing: ${route}`);
 });
 
+test("VieNeu is optional and its third-party source/voice assets are not vendored", () => {
+  assert.equal(fs.existsSync(path.join(root, "libs", "VieNeu-TTS")), false,
+    "install VieNeu in a separate checkout; do not bundle upstream preset/sample assets");
+  const envExample = fs.readFileSync(path.join(root, ".env.example"), "utf8");
+  assert.match(envExample, /VIENEU_SOURCE_DIR=\.\.\/VieNeu-TTS/);
+  assert.match(envExample, /KAI_PROVIDER_VIENEU_ENABLED=false/);
+});
+
 test("retired non-core backend route/service/model files are absent", () => {
   const removed = {
     "server/routes/": [

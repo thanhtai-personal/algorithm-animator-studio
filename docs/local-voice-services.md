@@ -33,8 +33,8 @@ npm run supertonic:serve
 ## VieNeu-TTS local
 
 - Tài liệu: `docs/vieneu-local-tts-provider.md`
-- Source mặc định: `libs/VieNeu-TTS`
-- Python mặc định: `libs/VieNeu-TTS/.venv/Scripts/python.exe`
+- Source mặc định: `../VieNeu-TTS` (clone riêng từ upstream; không được bundle vào app repo)
+- Python mặc định trên Windows: `../VieNeu-TTS/.venv/Scripts/python.exe`
 - Lệnh chính:
 
 ```bat
@@ -43,7 +43,7 @@ npm run vieneu:health
 npm run dev
 ```
 
-`npm run dev` đã gọi `npm run dev:vieneu`. Mặc định chạy ở mode `bridge`, tức là kiểm tra SDK và để backend gọi VieNeu khi generate audio. Muốn mở UI Gradio thì đặt `VIENEU_START_MODE=gradio`.
+`npm run vieneu:install` tạo môi trường Python riêng trong checkout VieNeu bên ngoài repo; `npm run vieneu:health` xác nhận SDK. Đặt `KAI_PROVIDER_VIENEU_ENABLED=true` và `VIENEU_AUTO_START=true` khi muốn bật. Mặc định provider này tắt để app không phụ thuộc vào VieNeu. Muốn mở UI Gradio thì đặt `VIENEU_START_MODE=gradio`.
 
 ## ElevenLabs
 

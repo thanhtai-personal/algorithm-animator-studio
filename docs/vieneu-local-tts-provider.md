@@ -41,7 +41,7 @@ npm run vieneu:install
 npm run vieneu:health
 ```
 
-`npm run vieneu:install` hiện cài editable từ source VieNeu-TTS trong `libs/VieNeu-TTS` mặc định. `npm run dev` cũng chạy thêm process `dev:vieneu` để kiểm tra bridge VieNeu sẵn sàng.
+`npm run vieneu:install` cài editable từ checkout VieNeu-TTS riêng, mặc định là thư mục sibling `../VieNeu-TTS`. SDK, virtualenv, model và preset/sample voice assets không được bundle vào repo này. `npm run dev` chỉ kiểm tra provider nếu `KAI_PROVIDER_VIENEU_ENABLED=true`.
 
 ## 2. Yêu cầu máy local
 
@@ -52,49 +52,48 @@ Khuyến nghị:
 - Có mạng trong lần chạy đầu tiên để SDK tải model/cache nếu cần.
 - CPU vẫn test được với `VIENEU_MODE=turbo`; GPU/standard cho chất lượng tốt hơn.
 
-## 3. Cài VieNeu-TTS từ source trong `libs/`
+## 3. Download and install VieNeu-TTS separately
 
-Không khuyến nghị cài VieNeu bằng `pip install vieneu` trực tiếp nữa. Source VieNeu-TTS hiện đã nằm trong repo tại:
+The VieNeu SDK is intentionally not vendored into Algorithm Animator Studio. This keeps third-party voice presets/sample recordings and the SDK's separate license terms outside the app's default source distribution.
 
-```txt
-libs/VieNeu-TTS
+From the app repository root, clone the upstream project into a sibling folder:
+
+```bat
+git clone https://github.com/pnnbao97/VieNeu-TTS.git ..\VieNeu-TTS
 ```
 
-Cách chuẩn là tạo virtual environment ngay trong `libs/VieNeu-TTS` và cài editable từ source để KAI Studio có thể dùng code VieNeu local:
+Use Python 3.10 or 3.11. Set the following values in the app's `.env` before installing:
+
+```env
+VIENEU_SOURCE_DIR=../VieNeu-TTS
+VIENEU_PYTHON=../VieNeu-TTS/.venv/Scripts/python.exe
+KAI_PROVIDER_VIENEU_ENABLED=true
+VIENEU_AUTO_START=true
+VIENEU_START_MODE=bridge
+VIENEU_MODE=turbo
+```
+
+On Linux/macOS, use `VIENEU_PYTHON=../VieNeu-TTS/.venv/bin/python`.
+
+Install into VieNeu's own virtual environment and run the SDK health check:
 
 ```bat
 npm run vieneu:install
-```
-
-Lệnh trên mặc định dùng Python global để tạo `.venv`, sau đó cài SDK vào Python riêng của VieNeu:
-
-```txt
-VIENEU_SOURCE_DIR=libs/VieNeu-TTS
-VIENEU_PYTHON=libs/VieNeu-TTS/.venv/Scripts/python.exe
-```
-
-Nếu chưa tạo `.venv`, health check sẽ fallback sang Python global để báo đúng lỗi thiếu SDK/dependencies, thay vì báo nhầm là mất Python.
-
-Kiểm tra import SDK:
-
-```bat
 npm run vieneu:health
 ```
 
-Nếu muốn dùng source VieNeu ở thư mục fork riêng, đặt biến trước khi chạy:
+The install script creates `.venv` inside the external VieNeu checkout and installs the SDK in editable mode. The app backend calls the Python bridge on demand; you do not need to launch Gradio to generate audio. To open the optional Gradio UI, set `VIENEU_START_MODE=gradio` and run `npm run vieneu:serve`.
 
-```bat
-set VIENEU_SOURCE_DIR=D:\AI\VieNeu-TTS
-npm run vieneu:install
-```
+Review the upstream code, model and voice-asset licenses before commercial use or redistribution. The upstream project has separately licensed voice presets/sample assets; do not copy those assets into this app repository. The app's TTS adapter remains optional and the other providers do not depend on VieNeu.
+
 
 ## 4. Cấu hình `.env`
 
 Thêm hoặc chỉnh các biến sau:
 
 ```env
-VIENEU_SOURCE_DIR=libs/VieNeu-TTS
-VIENEU_PYTHON=libs/VieNeu-TTS/.venv/Scripts/python.exe
+VIENEU_SOURCE_DIR=../VieNeu-TTS
+VIENEU_PYTHON=../VieNeu-TTS/.venv/Scripts/python.exe
 VIENEU_START_MODE=bridge
 VIENEU_AUTO_START=true
 VIENEU_MODE=turbo
@@ -111,8 +110,8 @@ Giải thích nhanh:
 
 | Biến | Ý nghĩa |
 | --- | --- |
-| `VIENEU_SOURCE_DIR` | Source VieNeu-TTS, mặc định `libs/VieNeu-TTS`. Dùng cho `npm run vieneu:install`, `npm run vieneu:health`, `npm run dev:vieneu`. |
-| `VIENEU_PYTHON` | Python executable trong virtualenv của source VieNeu-TTS, mặc định `libs/VieNeu-TTS/.venv/Scripts/python.exe`. Có thể set `python` để dùng Python global nếu global đã cài SDK VieNeu. |
+| `VIENEU_SOURCE_DIR` | Source VieNeu-TTS, mặc định `../VieNeu-TTS` (external checkout). Dùng cho `npm run vieneu:install`, `npm run vieneu:health`, `npm run dev:vieneu`. |
+| `VIENEU_PYTHON` | Python executable trong virtualenv của source VieNeu-TTS, mặc định `../VieNeu-TTS/.venv/Scripts/python.exe` on Windows (`../VieNeu-TTS/.venv/bin/python` on Linux/macOS). Có thể set `python` để dùng Python global nếu global đã cài SDK VieNeu. |
 | `VIENEU_START_MODE` | Chế độ process VieNeu khi `npm run dev`: `bridge` để health-check và chờ backend gọi on-demand, `gradio` để mở UI Gradio, `off` để tắt. |
 | `VIENEU_AUTO_START` | Đặt `false` nếu không muốn `npm run dev` tự chạy process VieNeu. |
 | `VIENEU_MODE` | `turbo`, `standard`, hoặc `remote`. CPU nên test bằng `turbo`. |
@@ -169,7 +168,7 @@ Settings -> Voice -> VieNeu
 
 Kiểm tra các field:
 
-- `VieNeu Python`: trỏ đúng `libs/VieNeu-TTS/.venv/Scripts/python.exe` hoặc đường dẫn tuyệt đối tương ứng.
+- `VieNeu Python`: trỏ đúng `../VieNeu-TTS/.venv/Scripts/python.exe` hoặc đường dẫn tuyệt đối tương ứng.
 - `VieNeu mode`: `turbo` để test CPU.
 - `VieNeu emotion`: `natural`.
 - Bấm lưu settings nếu đang chỉnh runtime settings.

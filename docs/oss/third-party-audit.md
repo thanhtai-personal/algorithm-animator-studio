@@ -31,10 +31,9 @@ The Piper voice repository itself displays MIT metadata, but the official Piper 
 
 ## VieNeu-TTS
 
-- The vendored SDK's `libs/VieNeu-TTS/LICENSE` is Apache License 2.0 for the source code.
-- The tracked `libs/VieNeu-TTS/src/vieneu/assets/voices.json` explicitly declares `CC BY-NC 4.0` and says its model/preset voices are for non-commercial use; the tree also contains reference voice `.wav`, `.txt` and `.pt` assets under `src/vieneu/assets/samples/` and `examples/audio_ref/`.
-- The source-code license does not by itself clear the separately identified preset/voice data. Keep these assets marked as a release blocker until the integration is changed to an opt-in external install/path or the applicable rights are independently confirmed.
-- The upstream model repository currently declares Apache-2.0 metadata for the main model: https://huggingface.co/pnnbao-ump/VieNeu-TTS. That does not override the explicit license metadata attached to the bundled `voices.json` or independently settle rights in sample recordings/preset codes.
+- The current branch no longer vendors `libs/VieNeu-TTS`; its 94 tracked source, sample, and preset files are removed from the current tree. The provider adapter/API remains, and users may clone the upstream project separately into `../VieNeu-TTS`.
+- The previously vendored `voices.json` declared `CC BY-NC 4.0`; sample `.wav`, `.txt` and `.pt` assets were also present. Removing them from the current tree avoids bundling them by default, but does not erase their earlier Git history.
+- The upstream model repository metadata at https://huggingface.co/pnnbao-ump/VieNeu-TTS does not override licenses attached to preset voices or sample recordings. Review upstream source, model, and voice-asset terms before use; commercial use and redistribution are not assumed to be permitted.
 
 ## Next actions
 

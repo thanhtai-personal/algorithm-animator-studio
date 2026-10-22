@@ -1,11 +1,11 @@
-VieNeu chạy qua source local trong `libs/VieNeu-TTS`. Health kiểm tra Python, bridge script và SDK `vieneu` có import được không.
+VieNeu là provider tùy chọn. SDK phải được clone riêng vào `../VieNeu-TTS`; repo Algorithm Animator Studio không bundle SDK, preset hoặc sample voice assets. Health kiểm tra Python, bridge script và SDK `vieneu` có import được không.
 
 ### Cài đặt
 
-1. Source VieNeu-TTS đã được đặt trong repo tại `libs/VieNeu-TTS`.
-2. Chạy lệnh cài để tạo `.venv` ngay trong thư mục đó và cài editable từ source.
-3. Nếu máy đã có Python global, script sẽ dùng Python global để tạo `.venv`. Không cần cài Python thêm lần nữa.
-4. Sau khi cài xong, `npm run dev` sẽ tự chạy thêm process `vieneu` để kiểm tra bridge sẵn sàng.
+1. Clone source từ `https://github.com/pnnbao97/VieNeu-TTS` vào `../VieNeu-TTS` (thư mục nằm ngoài repo ứng dụng).
+2. Chạy lệnh cài để tạo `.venv` trong checkout VieNeu riêng và cài editable từ source.
+3. Dùng Python 3.10 hoặc 3.11; script dùng Python global chỉ để bootstrap virtualenv.
+4. Provider mặc định tắt. Sau khi cài, đặt `KAI_PROVIDER_VIENEU_ENABLED=true` và `VIENEU_AUTO_START=true` trong `.env` nếu muốn bật.
 
 ```bat
 npm run vieneu:install
@@ -13,7 +13,7 @@ npm run vieneu:health
 npm run dev
 ```
 
-Nếu muốn cập nhật VieNeu từ fork riêng, thay source trong `libs/VieNeu-TTS` hoặc set `VIENEU_SOURCE_DIR` sang thư mục fork của bạn trước khi chạy `npm run vieneu:install`.
+Nếu không dùng VieNeu, để `KAI_PROVIDER_VIENEU_ENABLED=false`. Không dùng preset/sample voices nếu điều khoản license không cho phép mục đích của bạn.
 
 Nếu muốn dùng luôn Python global thay vì `.venv`, điền `VIENEU_PYTHON=python` trong `.env` hoặc Settings -> Voice -> VieNeu. Cách này chỉ hoạt động khi Python global đã cài được SDK/dependencies VieNeu.
 

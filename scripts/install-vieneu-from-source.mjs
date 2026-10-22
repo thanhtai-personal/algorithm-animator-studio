@@ -5,7 +5,7 @@ import path from "node:path";
 const projectRoot = process.cwd();
 const dotEnv = readDotEnv(path.join(projectRoot, ".env"));
 const runtimeEnv = { ...dotEnv, ...process.env };
-const DEFAULT_SOURCE_DIR = path.join(projectRoot, "libs", "VieNeu-TTS");
+const DEFAULT_SOURCE_DIR = path.resolve(projectRoot, "..", "VieNeu-TTS");
 const EXTRA_INDEX_URL = "https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu/";
 
 const sourceDir = path.resolve(runtimeEnv.VIENEU_SOURCE_DIR || DEFAULT_SOURCE_DIR);
@@ -29,8 +29,7 @@ function run(command, args, options = {}) {
 if (!fs.existsSync(sourceDir)) {
   console.error(`Không tìm thấy VieNeu-TTS source: ${sourceDir}`);
   console.error("Hãy fork/clone repo VieNeu-TTS về đúng thư mục, ví dụ:");
-  console.error("  cd /d C:\\DATA\\working\\sources");
-  console.error("  git clone https://github.com/<your-github-user>/VieNeu-TTS.git VieNeu-TTS");
+  console.error("  git clone https://github.com/pnnbao97/VieNeu-TTS.git ../VieNeu-TTS");
   process.exit(1);
 }
 

@@ -5,7 +5,7 @@ import path from "node:path";
 const projectRoot = process.cwd();
 const dotEnv = readDotEnv(path.join(projectRoot, ".env"));
 const runtimeEnv = { ...dotEnv, ...process.env };
-const DEFAULT_SOURCE_DIR = path.join(projectRoot, "libs", "VieNeu-TTS");
+const DEFAULT_SOURCE_DIR = path.resolve(projectRoot, "..", "VieNeu-TTS");
 const sourceDir = path.resolve(runtimeEnv.VIENEU_SOURCE_DIR || DEFAULT_SOURCE_DIR);
 const venvDir = path.join(sourceDir, ".venv");
 const defaultVenvPython = process.platform === "win32"
@@ -30,7 +30,7 @@ if (String(runtimeEnv.VIENEU_AUTO_START || "true").toLowerCase() === "false" || 
 
 if (!fs.existsSync(sourceDir)) {
   console.warn(`[vieneu] source not found: ${sourceDir}`);
-  console.warn("[vieneu] Put VieNeu-TTS under libs/VieNeu-TTS or set VIENEU_SOURCE_DIR.");
+  console.warn("[vieneu] Clone https://github.com/pnnbao97/VieNeu-TTS.git into ../VieNeu-TTS, or set VIENEU_SOURCE_DIR to a separate checkout.");
   process.exit(0);
 }
 

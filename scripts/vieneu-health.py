@@ -76,7 +76,7 @@ def main() -> int:
             "missingModules": missing,
             "error": f"VieNeu SDK import được nhưng thiếu dependency Python: {modules}. Hãy cài lại VieNeu deps: npm run vieneu:install",
             "installCommand": "npm run vieneu:install",
-            "pipHint": f"{sys.executable} -m pip install -e libs/VieNeu-TTS --extra-index-url https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu/",
+            "pipHint": f"{sys.executable} -m pip install -e \"{os.environ.get('VIENEU_SOURCE_DIR') or '../VieNeu-TTS'}\" --extra-index-url https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu/",
             "packages": packages,
         })
         return 1

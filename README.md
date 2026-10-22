@@ -15,7 +15,13 @@ A visual algorithm animation and video authoring toolkit with built-in text-to-s
 
 <!-- Maintainer TODO: supply the exact second YouTube channel URL/handle, then replace the unlinked second row above and add its own clickable showcase badge. Do not use a generic YouTube search URL as a substitute for a channel. -->
 
-**Status (22 October 2026):** OSS release preparation is still **in progress**. This repository is not ready to be made Public: the full Git history, third-party model/media rights, dependency integrity and runtime tests have **not yet been cleared**. TTS providers are optional adapters; install their engines, models and voice assets separately, after reviewing each upstream license. Legacy preset media has been removed from the current tree, but remains in the Git history.
+**Status (22 October 2026):** OSS release preparation is still **in progress**. **This repository is already Public**, but has **no approved official release**. Historical PR refs contain potentially sensitive Android signing configuration and uncleared model/media files; full-history scanning, credential-owner review, dependency clearance and reproducible build tests remain **OPEN**. TTS providers are optional adapters; install their engines, models and voice assets separately, after reviewing each upstream license. Legacy preset media has been removed from the current tree, but remains in the Git history.
+
+## Security and release warning
+
+Public visibility does not certify this project's history, source licenses or binaries. See the [public-history response](docs/oss/PUBLIC_HISTORY_RESPONSE_20261022.md), [release status](docs/oss/RELEASE_STATUS.md), [dependency audit](docs/oss/DEPENDENCY_AUDIT.md) and [release checklist](docs/oss/RELEASE_CHECKLIST.md).
+
+A history-free, **review-only** source archive can be prepared from a clean checkout with `npm run prepare:oss:snapshot`. This creates a ZIP under ignored `artifacts/oss-release-review/`, not an official release. It does **not** delete sensitive data already accessible through GitHub history.
 
 ## Features retained in the OSS edition
 

@@ -55,7 +55,7 @@ python -m pip install --upgrade pip
 npm run supertonic:install
 ```
 
-Linux/macOS activation is `source .venv-supertonic/bin/activate` after creating the environment with `python3 -m venv .venv-supertonic`.
+Linux/macOS activation is `source ../.venv-supertonic/bin/activate` after creating the environment with `python3 -m venv ../.venv-supertonic`. Keeping this environment outside the repository avoids accidentally committing runtime files.
 
 Set these values in `.env` for local browser development:
 

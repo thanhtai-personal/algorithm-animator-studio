@@ -150,7 +150,7 @@ function drawFallbackAnimal(ctx: CanvasRenderingContext2D, x: number, y: number,
   ctx.arc(x + w * 0.35, y + h * 0.32, Math.max(2, w * 0.07), 0, Math.PI * 2);
   ctx.arc(x + w * 0.65, y + h * 0.32, Math.max(2, w * 0.07), 0, Math.PI * 2);
   ctx.fill();
-  const symbol = ANIMAL_SYMBOLS[Math.max(0, Math.min(19, Math.round(weight) - 1))];
+  const symbol = ANIMAL_SYMBOLS[Math.max(0, Math.min(19, Math.round(weight) - 1))] ?? "🐾";
   ctx.font = `${Math.max(14, Math.min(w * 0.73, h * 0.52, 58))}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";

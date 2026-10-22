@@ -9,8 +9,7 @@ Node.js 22, npm and optionally FFmpeg for rendering. Use Python only for the TTS
 ```bash
 git clone https://github.com/thanhtai-personal/algorithm-animator-studio.git
 cd algorithm-animator-studio
-# Check out the OSS preparation branch while the PR remains private:
-git checkout chore/oss-algorithm-tts-cleanup-20261021
+# Default branch is already Public development source, not a certified official release.
 npm ci
 cp .env.example .env    # Windows PowerShell: Copy-Item .env.example .env
 npm run dev
@@ -43,4 +42,4 @@ For a targeted regression: `npx vitest run src/test/OssAlgorithmTtsRegression.te
 
 The baseline GitHub Actions job has reported failures before runner assignment (`runner_id=0`, no steps or logs), so its status does not prove source-level pass/fail. Check GitHub Actions settings, repository plan/billing/runner availability, and rerun after an administrator resolves the block. A fully checked-out machine can run `npm ci && npm run validate:oss` without changing repository visibility.
 
-Do not mark the branch release-ready until those steps have been executed successfully and the complete [release checklist](RELEASE_CHECKLIST.md) is satisfied.
+Run `npm run audit:oss:deps` to produce a local license report, and `npm run prepare:oss:snapshot` to create a history-free source REVIEW ZIP. Neither makes the public Git history clean or marks an official release. See the [release checklist](RELEASE_CHECKLIST.md).

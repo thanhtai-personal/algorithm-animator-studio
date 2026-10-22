@@ -1,5 +1,3 @@
-import landTileUrl from "@/assets/sprites/land-tile.jpg";
-import { LandTileMapSprite, type LandTileMap } from "@/lib/sprites/LandTileMapSprite";
 import type { Frame } from "../algorithms";
 import { getSprite, spriteForWeight, weightForValue, type AnimalColumnSettings } from "../animalColumns";
 import { roundRect } from "./shapes";
@@ -22,22 +20,6 @@ type AnimalShape = {
   weight: number;
 };
 
-const chartLandSprite = new LandTileMapSprite({ imageUrl: landTileUrl });
-const TREE_MAP: LandTileMap = {
-  tileWidth: 38,
-  rows: [
-    { height: 42, tiles: ["tree"] },
-    { height: 42, tiles: ["tree"] },
-  ],
-};
-const GROUND_MAP: LandTileMap = {
-  tileWidth: 42,
-  rows: [
-    { height: 22, tiles: ["grass"] },
-    { height: 78, tiles: ["stone"] },
-  ],
-};
-
 export function drawAnimalColumns(
   ctx: CanvasRenderingContext2D,
   frame: Frame,
@@ -52,7 +34,7 @@ export function drawAnimalColumns(
   const arr = frame.arr;
   if (!arr.length) return;
 
-  const landH = getTileMapHeight(GROUND_MAP);
+  const landH = Math.min(100, Math.max(60, chartH * 0.25));
   const landY = chartBottom - landH;
   const baseline = landY;
   const gap = Math.max(8, Math.floor((chartW / arr.length) * 0.28));
@@ -144,7 +126,7 @@ function drawSingleAnimal(
   }
 
   const drawn = sprite?.draw(ctx, x, y, { width: animalW, height: animalH });
-  if (!drawn) drawFallbackAnimal(ctx, x, y, animalW, animalH, isActive ? theme.swap : theme.bar);
+  if (!drawn) drawFallbackAnimal(ctx, x, y, animalW, animalH, isActive ? theme.swap : theme.bar, shape.weight);
 
   if (frame.arr.length <= 30) {
     const isSelected = frame.highlight.includes(shape.index);
@@ -152,15 +134,28 @@ function drawSingleAnimal(
   }
 }
 
-function drawFallbackAnimal(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string) {
+const ANIMAL_SYMBOLS = [
+  "🐭", "🐹", "🦦", "🐰", "🐧", "🐱", "🦊", "🐼", "🐻", "🦌",
+  "🐐", "🦙", "🦘", "🐺", "🐴", "🦓", "🦁", "🐯", "🐮", "🦒",
+] as const;
+
+function drawFallbackAnimal(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, weight: number) {
+  ctx.save();
   ctx.fillStyle = color;
   roundRect(ctx, x, y, w, h, Math.min(16, w / 4));
   ctx.fill();
+  // Procedural core stays usable even on machines without color emoji glyphs.
   ctx.fillStyle = "rgba(15,23,42,0.82)";
   ctx.beginPath();
   ctx.arc(x + w * 0.35, y + h * 0.32, Math.max(2, w * 0.07), 0, Math.PI * 2);
   ctx.arc(x + w * 0.65, y + h * 0.32, Math.max(2, w * 0.07), 0, Math.PI * 2);
   ctx.fill();
+  const symbol = ANIMAL_SYMBOLS[Math.max(0, Math.min(19, Math.round(weight) - 1))];
+  ctx.font = `${Math.max(14, Math.min(w * 0.73, h * 0.52, 58))}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(symbol, x + w / 2, y + h * 0.64, w * 0.95);
+  ctx.restore();
 }
 
 function drawValueLabel(ctx: CanvasRenderingContext2D, shape: AnimalShape, y: number, active: boolean, selected: boolean, minY: number) {
@@ -241,29 +236,40 @@ function drawWeightSignSprite(
 
 function drawSceneBackdrop(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
   ctx.save();
-  ctx.fillStyle = "#05090d";
+  const sky = ctx.createLinearGradient(x, y, x, y + h);
+  sky.addColorStop(0, "#101a34");
+  sky.addColorStop(1, "#295547");
+  ctx.fillStyle = sky;
   ctx.fillRect(x, y, w, h);
   const treeH = Math.min(96, Math.max(42, h * 0.34));
-  const skyH = Math.max(0, h - treeH);
-  if (skyH > 0) chartLandSprite.drawBackground(ctx, "night", x, y, w, skyH);
-  if (treeH > 0) chartLandSprite.drawMap(ctx, x, y + skyH, w, treeH, TREE_MAP);
-  ctx.fillStyle = "rgba(2, 6, 23, 0.2)";
-  ctx.fillRect(x, y, w, h);
+  const baseY = y + h;
+  ctx.fillStyle = "#143d35";
+  for (let dx = 0; dx < w + 52; dx += 40) {
+    ctx.beginPath();
+    ctx.moveTo(x + dx, baseY - treeH);
+    ctx.lineTo(x + dx - 22, baseY);
+    ctx.lineTo(x + dx + 22, baseY);
+    ctx.closePath();
+    ctx.fill();
+  }
   ctx.restore();
 }
 
 function drawLandGround(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
   ctx.save();
-  ctx.fillStyle = "#06110b";
-  ctx.fillRect(x, y, w, h);
-  chartLandSprite.drawMap(ctx, x, y, w, h, GROUND_MAP);
-  ctx.fillStyle = "rgba(2, 6, 23, 0.18)";
-  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = "#24523c";
+  ctx.fillRect(x, y, w, Math.min(22, h));
+  ctx.fillStyle = "#3b3831";
+  ctx.fillRect(x, y + Math.min(22, h), w, Math.max(0, h - 22));
+  ctx.strokeStyle = "rgba(255,255,255,0.08)";
+  ctx.lineWidth = 2;
+  for (let dx = 0; dx < w; dx += 34) {
+    ctx.beginPath();
+    ctx.moveTo(x + dx, y + 22);
+    ctx.lineTo(x + dx - 10, y + h);
+    ctx.stroke();
+  }
   ctx.restore();
-}
-
-function getTileMapHeight(map: LandTileMap) {
-  return map.rows.reduce((total, row) => total + row.height, 0);
 }
 
 function getMovingSwapPair(frame: Frame, previousFrame?: Frame | null): [number, number] | null {

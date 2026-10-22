@@ -63,7 +63,10 @@ export const ANIMAL_SPRITES: AnimalSpriteEntry[] = Object.entries(spriteModules)
   .filter((entry) => entry.heightWeight >= 1 && entry.heightWeight <= 20)
   .sort((a, b) => a.heightWeight - b.heightWeight);
 
-export const ANIMAL_WEIGHT_VALUES = ANIMAL_SPRITES.map((entry) => entry.weightValue);
+// Fall back to twenty procedural animal markers when no licensed sprite pack is installed.
+export const ANIMAL_WEIGHT_VALUES = ANIMAL_SPRITES.length
+  ? ANIMAL_SPRITES.map((entry) => entry.weightValue)
+  : Array.from({ length: 20 }, (_, index) => index + 1);
 
 const imageCache = new Map<string, HTMLImageElement>();
 const spriteCache = new Map<string, Sprite>();

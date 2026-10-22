@@ -4,7 +4,9 @@ import { getRemotionDimensions, normalizeRemotionVideoInput, type RemotionVideoI
 import {
   generatePiperVoice, generateSupertonicVoice, generateVieneuVoice,
   generateGptSoVitsVoice, generateElevenLabsVoice, generateRvcApplioVoice,
-  convertRvcApplioVoice, getVoiceHealth,
+  convertRvcApplioVoice, getVoiceHealth, getPiperModels, getPiperRuntimeStatus,
+  getElevenLabsConfig, getSupertonicConfig, getRvcApplioConfig, getVieneuConfig,
+  getGptSoVitsConfig, importSupertonicVoiceStyle,
 } from "@/lib/voiceApi";
 
 describe("Algorithm OSS regressions", () => {
@@ -82,6 +84,31 @@ describe("All six OSS voice provider client contracts", () => {
     ]);
     expect(JSON.parse(requests[1].body || "{}").responseFormat).toBe("wav");
     expect(JSON.parse(requests[6].body || "{}").audioRelativePath).toBe("audio/speech.wav");
+  });
+
+  it("keeps all six provider health/config flows, Piper model discovery and Supertonic style import", async () => {
+    await getVoiceHealth();
+    await getPiperRuntimeStatus();
+    await getPiperModels();
+    await getSupertonicConfig();
+    await getVieneuConfig();
+    await getGptSoVitsConfig();
+    await getElevenLabsConfig();
+    await getRvcApplioConfig();
+    await importSupertonicVoiceStyle({ voiceId: "fixture" });
+
+    expect(requests.map((request) => request.url)).toEqual([
+      "/api/health",
+      "/api/piper-runtime/status",
+      "/api/models",
+      "/api/supertonic/config",
+      "/api/vieneu/config",
+      "/api/gpt-sovits/config",
+      "/api/elevenlabs/config",
+      "/api/rvc-applio/config",
+      "/api/supertonic/styles/import",
+    ]);
+    expect(JSON.parse(requests.at(-1)?.body || "{}")).toEqual({ styleJson: { voiceId: "fixture" } });
   });
 
   it("still requests the shared Piper/voice health endpoint", async () => {

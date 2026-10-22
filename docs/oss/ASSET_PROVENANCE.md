@@ -24,6 +24,10 @@ For each proposed asset document: file hash, author/rightsholder, authoritative 
 
 Third-party source available on a website is not automatically reusable. A MIDI format does not eliminate the copyright in the underlying composition. AI generation alone does not establish unrestricted rights.
 
+## Legacy-rights classification
+
+**UNKNOWN** is the appropriate status for artwork, audio and model rights in historical commits that have no verified license or consent record. Their removal from current HEAD reduces distribution but does not retroactively establish rights in older copies. Do not republish such historical assets.
+
 ## Release blockers
 
 - Verify the security-hardening PR is merged and the unverified `public/` image and site-verification files are absent from new HEAD; old history still requires review.

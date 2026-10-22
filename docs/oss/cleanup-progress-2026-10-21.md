@@ -28,8 +28,8 @@ Original main commit: `8009a08aeb8df6e0d1e15440f9e80c4b17d80d7a`
 ## File counts — actual Git tree set comparison
 Both recursive Git tree snapshots were compared by **blob path**, rather than trusting GitHub's paginated/truncated compare file list:
 - Baseline: **1,312 tracked files**.
-- Current branch before the 22 October model cleanup: **673 tracked files**; after removing the four Piper models/configs and adding the audit: **666 tracked files**.
-- Current comparison: **664 tracked files deleted**, **18 added**, **32 modified**.
+- Current branch: **669 tracked files**.
+- Current comparison: **664 tracked files deleted**, **21 added**, **36 modified**.
 - **599 deleted files under `src/` or `server/`**.
 - Legacy feature and backend source, obsolete specs, tests, scripts, and preset media were removed. Counts are from a full recursive Git tree diff; do not rely on GitHub compare results truncated at 300 files.
 - No `models/*.onnx` deleted, pending independent license/model-card audit.

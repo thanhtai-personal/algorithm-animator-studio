@@ -129,7 +129,9 @@ describe("Optional TTS providers without bundled model assets", () => {
       KAI_PROVIDER_GPT_SOVITS_ENABLED: "true",
       GPT_SOVITS_BASE_URL: "http://127.0.0.1:9880",
     });
-    expect(status.enabled).toBe(false);
+    // GPT-SoVITS "enabled" represents the saved provider toggle, not a healthy server.
+    // Keep it true while separately reporting the connection failure.
+    expect(status.enabled).toBe(true);
     expect(status.serverOk).toBe(false);
     expect(status.error).toContain("ECONNREFUSED fixture");
   });

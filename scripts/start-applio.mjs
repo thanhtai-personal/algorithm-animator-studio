@@ -14,7 +14,7 @@ const env = {
 const command = String(env.RVC_APPLIO_START_COMMAND || "").trim();
 const managed = String(env.KAI_STUDIO_MANAGED_SERVICE || "").trim() === "1";
 
-if (!providerEnabled(env.KAI_PROVIDER_APPLIO_ENABLED, true)) {
+if (!providerEnabled(env.KAI_PROVIDER_APPLIO_ENABLED, false)) {
   console.log("[applio] provider disabled by KAI_PROVIDER_APPLIO_ENABLED=false; skipping startup.");
   process.exit(0);
 }

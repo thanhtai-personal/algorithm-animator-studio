@@ -6,7 +6,7 @@ const envFile = readDotEnv(path.resolve(process.cwd(), ".env"));
 const env = { ...envFile, ...process.env };
 const managed = String(env.KAI_STUDIO_MANAGED_SERVICE || "").trim() === "1";
 
-if (!providerEnabled(env.KAI_PROVIDER_SUPERTONIC_ENABLED, true)) {
+if (!providerEnabled(env.KAI_PROVIDER_SUPERTONIC_ENABLED, false)) {
   console.log("[supertonic] provider disabled by KAI_PROVIDER_SUPERTONIC_ENABLED=false; skipping startup.");
   process.exit(0);
 }

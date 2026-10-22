@@ -1,22 +1,32 @@
-# Bundled asset provenance register
+# Bundled media and provenance audit — 22 October 2026
 
-**Release blocker — 22 October 2026.** These assets are currently tracked but their rights have not been verified. Their presence in a private worktree is **not** permission to distribute them in an MIT source release.
+**Scope:** `audit/oss-media-history-20261022`, based on the merged `main` state. The application is mainly a local tool, but publishing its source/history and redistributing models or example media still requires permission. Individual non-commercial licenses are not automatically compatible with a permissive OSS release.
 
-| Current file group | Current role | Rights status | Required action before Public / download |
-|---|---|---|---|
-| `src/assets/sprites/01_mouse.png` through `20_giraffe.png` | Algorithm animal-column sprite-sheet visualizations | **UNKNOWN** source, artist, license and redistribution permission | Find original author/source and permitted license, or replace with owned procedural/CC0 material; attach proof in this register |
-| `src/assets/sprites/land-tile.jpg` | Sprite/visual background tile | **UNKNOWN** | Verify provenance or replace/remove |
-| `src/assets/audios/select-audio/*.mp3` and `swap-audio/*.mp3` | UI / animation effects | **UNKNOWN** recordist, sample library and license | Replace with appropriately licensed sound effects or document exact permission & attribution |
-| `src/assets/audios/midis/SuperMarioMakerTitleTheme.mid` | MIDI tune potentially based on third-party musical composition | **HIGH RISK**, musical composition rights not established | Remove from release, including generated audio or video derived from it; do not assume MIDI files are public domain |
-| `src/assets/marble-*.wav` | Historical audio clips | **UNKNOWN** | Remove if unreferenced; otherwise obtain rights or replace |
-| `haaland.jpg` | Historical standalone image | **UNKNOWN**, possible publicity/third-party photographic rights | Remove from public tree unless permission is documented |
-| `public/favicon.ico`, `public/placeholder.svg`, other UI illustrations | User interface assets | **NOT YET AUDITED** | Verify origin and terms; replace template-supplied assets if necessary |
-| Downloaded TTS/voice/model data | Not bundled by policy | Individual model/voice-specific licenses | Keep external; document exact model license and source before redistributing any weights |
+## Current-tree decisions
 
-## Evidence checklist for each asset
+| Group | Status | Functional replacement / action |
+| --- | --- | --- |
+| `src/assets/sprites/01_mouse.png` … `20_giraffe.png` | Removed (20 sprites, origin/license not documented) | Animal columns use 20 procedural animal symbols and keep value/weight mapping; licensed compatible sprite packs can be installed locally |
+| `src/assets/sprites/land-tile.jpg` | Removed | Procedural sky, trees, grass and ground replace its use in the animal-column renderer |
+| `src/assets/audios/select-audio/*.mp3`, `swap-audio/*.mp3` | Removed (9 MP3 assets, source/license not verified) | Web Audio procedural SFX remains; optionally install a properly licensed effect pack locally |
+| `src/assets/audios/midis/SuperMarioMakerTitleTheme.mid` | Removed (1 MIDI) | Do not distribute a recognizable third-party musical composition without a license; use procedural/custom licensed music |
+| `src/assets/marble-*.wav` | Removed (4 historic sound files, no longer needed) | No required current dependency; procedural SFX and user music still available |
+| `haaland.jpg` | Removed (1 historic photograph) | Not needed for Algorithm / TTS; photographer/publicity rights unconfirmed |
+| `public/favicon.ico`, `public/kai-studio-logo.svg`, `public/placeholder.svg` | **Retained pending authorship review** | These UI identity/assets are small, but remain release signoff items until the owner confirms creation, licensing or replacement |
+| External Piper/Supertonic/VieNeu/GPT-SoVITS/Applio models and voices | **Not bundled** | Keep optional independent installs; follow `docs/oss/third-party-audit.md` and the provider README |
+| FFmpeg/Remotion/npm dependencies | **Required code/runtime, not covered by repository MIT** | Use each upstream license and attribution; read `THIRD_PARTY_NOTICES.md` |
 
-Record: **path, author/rightsholder, source URL or creation evidence, exact license (version), attribution text, modification history, permitted uses including redistribution/commercial use, verifier, date verified**. Use one row per asset (or per provably licensed asset pack).
+**Removed now:** 36 tracked media files (~30.4 MB). This is a current-tree change, not Git-history deletion. The animal-sprite artwork changes appearance to procedurally drawn symbols; original sprite animation frames are deliberately not redistributed.
 
-Do **not** infer an asset license from a nearby dependency's MIT license. Attribution alone is not sufficient where distribution permission is missing, and AI-generated status alone does not prove unrestricted copyright or publicity rights.
+## Criteria for any new bundled assets
 
-Until approved, the project source can be prepared privately, but the history and current unverified media prevent a release-clearance claim. The repository should remain Private.
+For each proposed asset document: file hash, author/rightsholder, authoritative source URL, creation or acquisition record, exact license version, modification log, permitted redistribution and modifications, commercial limits, required credits, review date and reviewer. Only bundle if the terms are compatible with the intended public source distribution. A local file may be under a narrower license than the application itself, but it must not be claimed under MIT or silently bundled.
+
+Third-party source available on a website is not automatically reusable. A MIDI format does not eliminate the copyright in the underlying composition. AI generation alone does not establish unrestricted rights.
+
+## Release blockers
+
+- Verify creator/owner rights for the three retained `public/` identity/placeholder assets; remove or substitute any without sufficient evidence.
+- Run regression tests and real browser/Canvas/Remotion smoke checks for the procedural animal mode and SFX; these have **not** been certified in the current tool environment.
+- Check all historical Git refs and past commit objects, including old sprite/music/model copies and potential credential files. Current-tree deletion is not enough.
+- No license grant is made for the previously tracked unknown-rights media.

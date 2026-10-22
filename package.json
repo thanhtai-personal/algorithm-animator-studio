@@ -50,7 +50,8 @@
     "gpt-sovits:serve": "node scripts/start-gpt-sovits.mjs",
     "test:oss:static": "node --test scripts/tests/oss-*.check.mjs",
     "validate:oss": "node scripts/assert-oss-retained-surface.mjs && npm run test:oss:static && npm test && npm run build && npm run build:server",
-    "audit:oss:release": "node scripts/oss-release-audit.mjs"
+    "audit:oss:release": "node scripts/oss-release-audit.mjs",
+    "audit:oss:history": "node scripts/audit-oss-history.mjs"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",

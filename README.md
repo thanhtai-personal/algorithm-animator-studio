@@ -213,6 +213,14 @@ ElevenLabs is a proprietary hosted service, not a local open-source engine. Add 
 
 `npm run dev` does not install or launch all optional TTS runtimes. Avoid `npm run dev:full` until every provider it may start is installed and configured. After changing `.env`, restart the Node backend. If an optional provider is missing, disable its `KAI_PROVIDER_*_ENABLED` flag; algorithm visualizations should still run. First-run downloads may be large and may require compatible CPU/GPU hardware. Review each source, model and voice asset license before use or redistribution.
 
+## Local media and asset licensing
+
+The open-source tree intentionally **does not bundle** unverified animal sprite sheets, third-party sound effects, MIDI tunes or old demo recordings. **Animal Columns still works** with twenty procedurally drawn animal markers, generated landscape artwork and the built-in Web Audio SFX/music engine. Existing algorithm, Maze and video export features are not gated on the removed assets.
+
+For **local personal use only**, you may supply your own correctly licensed sprites and effects under `src/assets/sprites/`, `src/assets/audios/select-audio/` and `src/assets/audios/swap-audio/`; the Vite glob discovers compatible files automatically. Sprite sheets must have the expected 20-level filename pattern and matching frame layout; arbitrary PNGs will not render correctly. These directories are ignored by Git, and a local-only use case does **not** automatically permit uploading third-party media to a public repository. Original author's terms still apply to uploads and videos.
+
+See [asset provenance and replacement policy](docs/oss/ASSET_PROVENANCE.md), [historical refs audit](docs/oss/REF_TIP_AUDIT_20261022.md) and [history sanitization](docs/oss/HISTORY_SANITIZATION.md). The six optional TTS setup guides above remain valid; external model assets and voice recordings also have separate license terms.
+
 ## Development checks
 
 From a clean checkout with Node.js 22:

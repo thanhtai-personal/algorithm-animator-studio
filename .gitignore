@@ -68,3 +68,12 @@ package-lock.json.bak-*
 
 # VieNeu SDK is an external dependency, never vendor it into this OSS repo.
 libs/VieNeu-TTS/
+
+# Optional, user-supplied animation/SFX packs must not be committed without rights clearance.
+src/assets/sprites/*.png
+src/assets/sprites/*.jpg
+src/assets/audios/select-audio/*
+src/assets/audios/swap-audio/*
+src/assets/audios/midis/*
+src/assets/marble-*.wav
+/haaland.jpg

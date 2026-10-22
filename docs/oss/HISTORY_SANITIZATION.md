@@ -51,3 +51,9 @@ Secrets audit date and tool/output location: **PENDING**
 Selected publication strategy: **PENDING**  
 Approved release tree hash: **PENDING**  
 Visibility/change approval: **PENDING**
+
+## Checked refs and the runnable audit (22 October 2026)
+
+Read [the API tip-tree findings](REF_TIP_AUDIT_20261022.md). The documented 59 refs and 37 distinct tip trees confirm some old PR refs still hold legacy media and model weights. Two early PR refs include paths named `credentials.json` and `.npmrc` whose contents were **not** inspected; do not treat this as proof of an exposed secret or as proof that the repository is clean.
+
+Run the local `npm run audit:oss:history` script from a **full private clone** only after fetching branch, tag and pull head refs. It uses `git rev-list --objects --all` and Gitleaks, saves sensitive scan output in ignored `artifacts/oss-history-audit/`, prints only high-level status, and does not change any refs. The GitHub connector cannot execute the full clone/secret-content scan in this session; the task remains a release blocker until the script and a human content review have actually passed.

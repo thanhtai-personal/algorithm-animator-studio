@@ -27,3 +27,9 @@
 5. Verify that a clean external TTS setup does not download/install models silently on behalf of a user without revealing model terms. Obtain permission for voice cloning/conversion.
 
 This list is incomplete until a dependency and binary provenance scan is run. See `docs/oss/RELEASE_CHECKLIST.md`.
+
+## Optional local media versus distributed source
+
+The 22 October 2026 audit replaces unknown-rights animal sprite sheets with procedural visuals and removes historical packaged MP3, WAV, MIDI and photo assets from the candidate source tree. These old media files may still be reachable via previous Git commits and pull refs. No license permission is claimed for them. Optional locally supplied media belongs to its own author and license and is not subject to the repository's MIT grant just because it is loaded by the app.
+
+Small UI identity assets under `public/` are not yet cleared and require owner provenance confirmation or replacement before a public release. See `docs/oss/ASSET_PROVENANCE.md` and `docs/oss/REF_TIP_AUDIT_20261022.md`.

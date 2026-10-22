@@ -44,16 +44,16 @@ Do **not** check API keys, OAuth credentials, voice recordings or private datase
 
 ## Development checks
 
+From a clean checkout with Node.js 22:
+
 ```bash
-node scripts/assert-oss-retained-surface.mjs
-node --test scripts/tests/oss-*.check.mjs
-npm test
-npm run build
-npm run build:server
+npm ci
+npm run validate:oss
 ```
 
-These checks are *not* a guarantee of rights clearance, complete runtime behavior or usable Windows installer. See `docs/oss/2026-10-21-source-inventory.md` and `docs/superpowers/plans/2026-10-21-oss-core-with-tts.md` for outstanding work. Current GitHub-hosted CI reports failures before job steps are recorded; runtime validation is pending.
+The command checks the retained algorithm/TTS surface, runs the OSS structural/import checks and Vitest regression suite, then builds the web client and server bundle. It stops on the first failure. This command has been added for reproducible local validation but has **not yet been executed successfully** in the current session.
 
+These checks are *not* a guarantee of rights clearance, complete runtime behavior or usable Windows installer. See `docs/oss/2026-10-21-source-inventory.md` and `docs/superpowers/plans/2026-10-21-oss-core-with-tts.md` for outstanding work. Recent GitHub Actions jobs fail before runner assignment (no steps/logs recorded); resolve that infrastructure issue or run the command in a checked-out workspace before treating the baseline as green.
 ## Licensing
 
 No repository-wide open-source license is granted yet. Source code, vendored libraries, Piper models and other binary assets can have **different** authors and redistribution terms. A top-level LICENSE will only be selected after ownership and third-party notices are reviewed.

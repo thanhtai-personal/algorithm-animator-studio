@@ -1,5 +1,5 @@
 # Algorithm Animator OSS cleanup — evidence ledger
-Updated: 2026-10-21
+Updated: 2026-10-22
 Source branch: `chore/oss-algorithm-tts-cleanup-20261021`
 Draft PR: https://github.com/thanhtai-personal/algorithm-animator-studio/pull/28
 Original main commit: `8009a08aeb8df6e0d1e15440f9e80c4b17d80d7a`
@@ -20,6 +20,9 @@ Original main commit: `8009a08aeb8df6e0d1e15440f9e80c4b17d80d7a`
 13. **Isolated Remotion**: `Root.tsx` now registers `AlgorithmExplainer` and `TimelineVideo` only. Preset/Math registration, video API endpoints, rhythmic transcode endpoint and preset-aware bundle cache removed. Algorithm Remotion template accepts only `algorithm-explainer` while keeping bars/maze, background music and voice.
 14. Deleted standalone `src/features/{math-video,preset-video}` modules, their backend services/routes/model, and leftover exclusive scripts/tests/workflows. Removed 7 legacy preset media assets (~32.3 MB) plus unrelated Math/Fashion/Rhythmic documents (~32.5 MB combined in this step). `remotion:render:test` and `dev:remotion` scripts remain.
 15. Updated Remotion technical docs and AI context to refer to the supported renderer and tracked test paths. **These changes are not evidence that actual rendering or TTS has passed.**
+16. Added `WhisperCliService.ts` and repaired the auto-lyrics import so it no longer depends on removed YouTube Tools. Added `WHISPER_PYTHON` runtime configuration and retained compatibility with the older `YOUTUBE_TOOLS_PYTHON` setting during migration.
+17. Expanded `OssAlgorithmTtsRegression.test.ts` to cover 26 deterministic sorting algorithms, linear/binary search, BFS/DFS/Dijkstra, A*, and all seven existing TTS/voice-conversion client endpoints. Expanded the local-import guard to scan `.mts`/`.cts` and detect local `require()` calls. These tests have been authored but **not executed successfully**.
+18. Added `npm run test:oss:static` and a single `npm run validate:oss` command for the retained-surface guard, OSS structural checks, Vitest suite, web build and server bundle. The CI workflow now uses that same command after `npm ci` to reduce drift between local and CI validation.
 
 ## File counts — actual Git tree set comparison
 Both recursive Git tree snapshots were compared by **blob path**, rather than trusting GitHub's paginated/truncated compare file list:
@@ -44,12 +47,12 @@ Both recursive Git tree snapshots were compared by **blob path**, rather than tr
 **NOT verified by successful execution:**
 - `npm ci`, `npm test`, `npm run build`, `npm run build:server`, `python3 scripts/context_index.py check`.
 - End-to-end video export, browser navigation, Windows Electron, and provider TTS audio output.
-- New import-integrity script, despite being checked into Git, has **not** been executed against a full checkout in this session.
-- Latest GitHub Actions jobs are marked **failure** with no recorded steps; runner/log access still blocks a trustworthy green baseline.
+- New import-integrity script and expanded regression tests have **not** been executed against a full checkout in this session. `npm run validate:oss` is now available but has not passed.
+- Latest GitHub Actions runs (including `39707745662` and `39707738903`) are marked **failure** with `runner_id=0` and `steps=[]`; retries reproduce the same pre-run failure. No test/build step has run, and the available connector cannot retrieve job annotations/logs. The root cause remains unconfirmed; check repository Actions availability/account billing or use a checked-out local workspace. Do not infer a source failure or success from these runs.
 - Redistribution rights and full secret/history scan.
 
 ## Next atomic stages (keep PR Draft)
-1. **Get runnable CI / checked-out local workspace**. Run npm install/test/build and all `node --test scripts/tests/oss-*.check.mjs` checks. Fix dangling imports before any merge.
+1. **Validation gate remains blocked.** Run `npm ci && npm run validate:oss` from a real checkout and fix any failures. In parallel, resolve why GitHub Actions fails before runner allocation; inspect Actions settings/billing or configure a permitted runner. Do not make the private repository public just to get CI running.
 2. **Implemented static source separation:** Math/Preset and old rhythmic transcode are gone; prove full `npm test`, web/server builds, algorithm Remotion CLI render and timeline MP4 export against a clean checkout before marking this complete.
 3. **Done: YouTube Tools removed from Settings and backend**; check FFmpeg/FFprobe status and all six TTS provider health flows in a running environment before publication.
 4. Isolate optional voice model dependencies. Keep all six TTS integrations while auditing four Piper ONNX weights and `libs/VieNeu-TTS` rights, attribution, download paths and opt-in installation.

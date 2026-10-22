@@ -47,7 +47,9 @@
     "dev:remotion": "remotion studio src/features/remotion-video/remotion/index.ts --port=3003",
     "remotion:render:test": "remotion render src/features/remotion-video/remotion/index.ts AlgorithmExplainer generated-videos/remotion-test.mp4",
     "dev:gpt-sovits": "node scripts/start-gpt-sovits.mjs",
-    "gpt-sovits:serve": "node scripts/start-gpt-sovits.mjs"
+    "gpt-sovits:serve": "node scripts/start-gpt-sovits.mjs",
+    "test:oss:static": "node --test scripts/tests/oss-*.check.mjs",
+    "validate:oss": "node scripts/assert-oss-retained-surface.mjs && npm run test:oss:static && npm test && npm run build && npm run build:server"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",

@@ -27,10 +27,14 @@ A visual algorithm animation and video authoring toolkit with built-in text-to-s
 
 ## Example outputs made with Algorithm Animator Studio
 
-These are example videos produced with the tool (finished outputs, not walkthroughs of the application):
+Two example videos produced with the studio (finished outputs, not application walkthroughs):
 
-- [Bruno Fernandes: 100 Goals!](https://www.youtube.com/watch?v=h2EwOys6evI)
-- [100 Bruno Fernandes United Assists](https://www.youtube.com/watch?v=-BIriLyQXkw)
+| Example 1 · YouTube Short | Example 2 · YouTube video |
+| --- | --- |
+| [![Watch example Short](https://i.ytimg.com/vi/KDJrXGYr_TA/hqdefault.jpg)](https://www.youtube.com/shorts/KDJrXGYr_TA) | [![Watch example video](https://i.ytimg.com/vi/CxcTJC_GDfY/hqdefault.jpg)](https://www.youtube.com/watch?v=CxcTJC_GDfY) |
+| [▶ Watch the Short](https://www.youtube.com/shorts/KDJrXGYr_TA) | [▶ Watch the video](https://www.youtube.com/watch?v=CxcTJC_GDfY) |
+
+**Watch both videos embedded in the app:** start the web client (`npm run dev`), then open [Video showcase](http://localhost:3000/video-showcase.html). GitHub README pages do not support YouTube iframes, so the previews above link to YouTube; the separate showcase page contains the playable embeds.
 
 Removed from this OSS preparation branch: story/news/social publishing, unrelated demos, the generic Math/Preset Video library and legacy source media. Algorithm Explainer and Timeline Remotion compositions are still retained. Other shared modules await dependency auditing.
 

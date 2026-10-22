@@ -26,6 +26,8 @@ jobs:
         run: |
           mkdir -p artifacts/oss-dependency-audit
           npm sbom --sbom-format cyclonedx > artifacts/oss-dependency-audit/npm-sbom.cdx.json
+      - name: Block on high/critical production advisories
+        run: npm run audit:oss:vulns
       - name: Review dependency license blockers
         run: npm run audit:oss:deps
       - name: Require complete history, rights and maintainer signoff

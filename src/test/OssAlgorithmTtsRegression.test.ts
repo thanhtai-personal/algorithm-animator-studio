@@ -55,7 +55,9 @@ describe("All six OSS voice provider client contracts", () => {
   beforeEach(() => {
     requests.length = 0;
     vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
-      requests.push({ url: String(url), body: init?.body?.toString(), method: init?.method || "GET" });
+      // buildApiUrl() returns absolute URLs for local/desktop backends.
+      // Compare only pathname so tests remain independent of server host/port.
+      requests.push({ url: new URL(String(url), "http://localhost").pathname, body: init?.body?.toString(), method: init?.method || "GET" });
       return {
         ok: true,
         headers: { get: () => "application/json" },

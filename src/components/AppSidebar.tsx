@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, PanelLeftClose, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, PanelLeftClose, Play, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { APP_NAVIGATION_GROUPS, APP_TITLE, filterNavigationGroupsByFeatures } from "@/components/appNavigation";
@@ -42,7 +42,7 @@ export function AppSidebar({ lang, mode, onClose, onCollapse, onExpand }: AppSid
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between gap-2 border-b border-border/60 p-3 lg:hidden">
             <div className="flex min-w-0 items-center gap-2">
-              <img src="/kai-studio-logo.svg" alt={t(lang, "uiKaiStudioLogo")} className="h-9 w-9 rounded-xl" />
+              <span role="img" aria-label={t(lang, "uiKaiStudioLogo")} className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary"><Play className="h-5 w-5 fill-current" /></span>
               <p className="truncate text-sm font-bold">{APP_TITLE}</p>
             </div>
             <Button aria-label={t(lang, "uiCloseMenu")} size="icon" variant="ghost" onClick={onClose}>

@@ -77,3 +77,13 @@ src/assets/audios/swap-audio/*
 src/assets/audios/midis/*
 src/assets/marble-*.wav
 /haaland.jpg
+
+# Credentials, signing keys and site-verification tokens (HEAD ignore does not purge Git history)
+**/credentials.json
+**/*.keystore
+**/*.jks
+**/*.p12
+**/*.pfx
+**/*.pem
+.npmrc
+public/tiktokvt*.txt

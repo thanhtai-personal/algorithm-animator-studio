@@ -85,7 +85,7 @@ export function AppHeader({ sidebarMode, onToggleSidebar }: AppHeaderProps) {
           {sidebarMode === "hidden" ? <PanelLeftOpen className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </Button>
 
-        <img src="/kai-studio-logo.svg" alt={t(lang, "uiKaiStudioLogo")} className="h-9 w-9 shrink-0 rounded-xl max-[350px]:hidden sm:h-10 sm:w-10" />
+        <span role="img" aria-label={t(lang, "uiKaiStudioLogo")} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary max-[350px]:hidden sm:h-10 sm:w-10"><Play className="h-5 w-5 fill-current" /></span>
         <div className="hidden min-w-0 flex-1 sm:block">
           <h1 className="truncate bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-base font-black text-transparent md:text-lg">{APP_TITLE}</h1>
         </div>

@@ -2,6 +2,19 @@
 
 A visual algorithm animation and video authoring toolkit with built-in text-to-speech integrations.
 
+## 🎬 Product video showcase · Video sản phẩm thực tế
+
+**See videos made with the studio before installing it. / Xem video sản phẩm được tạo bởi công cụ trước khi cài đặt.**
+
+[![Code Visual Lab on YouTube](https://img.shields.io/badge/▶_Code_Visual_Lab-View_product_videos-FF0000?logo=youtube&logoColor=white)](https://www.youtube.com/channel/UCpKqiKf3QmCHGQNBlg8ngKA)
+
+| Product-video channel | Content / Nội dung |
+| --- | --- |
+| **[▶ Code Visual Lab](https://www.youtube.com/channel/UCpKqiKf3QmCHGQNBlg8ngKA)** | Algorithm animations, Shorts, visual explanations / Video thuật toán và trực quan hóa |
+| **▶ Second showcase channel / Kênh sản phẩm thứ hai** | **Channel URL required / Cần bổ sung link chính xác** — intentionally not linked until verified, to avoid directing viewers to a similarly named channel |
+
+<!-- Maintainer TODO: supply the exact second YouTube channel URL/handle, then replace the unlinked second row above and add its own clickable showcase badge. Do not use a generic YouTube search URL as a substitute for a channel. -->
+
 **Status (22 October 2026):** OSS release preparation is still **in progress**. This repository is not ready to be made Public: the full Git history, third-party model/media rights, dependency integrity and runtime tests have **not yet been cleared**. TTS providers are optional adapters; install their engines, models and voice assets separately, after reviewing each upstream license. Legacy preset media has been removed from the current tree, but remains in the Git history.
 
 ## Features retained in the OSS edition
@@ -41,6 +54,8 @@ Open `http://localhost:3000/algorithms` or `http://localhost:3000/text-to-speech
 ## Voice provider setup
 
 All local TTS engines are optional and run independently of the main app. This repository contains provider adapters, not third-party runtimes or downloaded model weights. Install only the engine(s) you need, keep their Python environments and models outside this repository, and enable only those providers in `.env`.
+
+**VieNeu-TTS is external-only:** its SDK/model/sample assets are not bundled with this repository. You can skip VieNeu entirely and leave `KAI_PROVIDER_VIENEU_ENABLED=false`. To use it, clone and run the separate upstream checkout using [the instructions below](#3-vieneu-tts--optional-external-vietnamese-tts).
 
 ### Quick start
 
@@ -249,7 +264,7 @@ These checks are *not* a guarantee of rights clearance, complete runtime behavio
 
 **Remotion is source-available under its own license, not OSI-open-source;** usage terms depend on the user/organization and may require commercial licensing. **FFmpeg** has LGPL/GPL obligations depending on the build. See [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES.md), [TTS model audit](docs/oss/third-party-audit.md), and [asset provenance](docs/oss/ASSET_PROVENANCE.md).
 
-This GitHub repository remains Private and the cleanup PR remains Draft because media provenance, earlier Git history, a clean build and end-to-end provider tests still require clearance. **Do not treat these proposed documents as a declaration that the current branch is safe to publish.**
+This GitHub repository remains Private. The earlier cleanup PR #28 was merged into `main` as internal preparation, **not** as approval to publish; media provenance, earlier Git history, a clean build and end-to-end provider tests still require clearance. **Do not treat these proposed documents as a declaration that the current branch is safe to publish.**
 
 ## Contributing and project policy
 

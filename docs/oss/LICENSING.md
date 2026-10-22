@@ -1,12 +1,12 @@
 # Licensing policy and scope
 
-**Prepared for maintainer approval — 22 October 2026.** This branch is PRIVATE and is not cleared for a public release.
+**Prepared for maintainer approval — 22 October 2026.** This repository is already PUBLIC, but no official release is cleared. This supersedes the previous private-branch wording.
 
 ## The project's own code
 
 The `LICENSE` file proposes **MIT** for the original application source and documentation for which the Algorithm Animator Studio maintainers possess licensing rights. Contributors should supply only work they are entitled to license under MIT. Do not assume code copied from another project is covered merely because it is tracked in this repository.
 
-The GitHub repository may use a different display license until GitHub rescans the default branch; this is a draft PR, not a public license announcement for the original `main` history. The copyright holder should review the copyright line before merge.
+The GitHub repository may use a different display license until GitHub rescans the default branch; the public default branch already contains MIT, but this does not grant rights to historical third-party media or prove ownership of every source contribution. The copyright holder should review the copyright line before merge.
 
 ## What is *not* relicensed by the MIT file
 

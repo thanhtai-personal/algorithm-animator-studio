@@ -18,7 +18,7 @@ npm ci
 npm run dev
 ```
 
-Truy cập `http://localhost:3000/text-to-speech` và `Settings → Voice / Health Check`. Trong `.env.example`, các cờ `KAI_PROVIDER_*_ENABLED` của Supertonic, VieNeu, GPT-SoVITS và Applio mặc định là `false`. Chỉ bật provider đã cài và chỉ tải model/voice mà bạn có quyền sử dụng. Thiếu provider tùy chọn không được ngăn app thuật toán khởi động.
+Truy cập `http://localhost:3000/text-to-speech` và `Settings → Voice / Health Check`. Trong `.env.example` và runtime defaults, các cờ `KAI_PROVIDER_*_ENABLED` của Supertonic, VieNeu, GPT-SoVITS và Applio mặc định là `false`; tiến trình startup cũng bỏ qua provider nếu không bật cờ. Chỉ bật provider đã cài và chỉ tải model/voice mà bạn có quyền sử dụng. Thiếu provider tùy chọn không được ngăn app thuật toán khởi động.
 
 **Riêng VieNeu:** không còn chứa SDK/vendor, preset hoặc mẫu voice trong source. Để tắt hoàn toàn, giữ `KAI_PROVIDER_VIENEU_ENABLED=false`, `VIENEU_AUTO_START=false`. Để bật, clone riêng upstream vào thư mục sibling rồi làm theo [hướng dẫn VieNeu đầy đủ](vieneu-local-tts-provider.md). Nếu chọn Gradio, cấu hình `VIENEU_START_MODE=gradio` và chạy `npm run vieneu:serve` riêng; backend dùng bridge on-demand không bắt buộc Gradio.
 

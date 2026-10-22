@@ -123,6 +123,15 @@ The backend invokes VieNeu directly through the external Python environment **wh
 
 If you do not install VieNeu, leave `KAI_PROVIDER_VIENEU_ENABLED=false` and `VIENEU_AUTO_START=false`. The other TTS providers do not depend on VieNeu.
 
+**If an older local checkout already contains `libs/VieNeu-TTS/`:** do not delete your SDK, downloaded models or recordings just to satisfy OSS checks. That path is ignored by Git, and the OSS checks verify **Git-tracked files** rather than whether a locally installed folder exists. Inspect from your checkout root:
+
+```bash
+git ls-files --cached -- libs/VieNeu-TTS/
+git status --ignored --short -- libs/VieNeu-TTS/
+```
+
+The first command must print **nothing**. If it lists files, those files are staged/tracked and must be removed from Git's index before publication (preserve your working copies). An ignored local folder may still appear in the second command; that is expected. The recommended setup remains a separate `../VieNeu-TTS` checkout configured through `VIENEU_SOURCE_DIR`; keep any older local installation until you have migrated its settings and files safely.
+
 ### 4. GPT-SoVITS — experimental local voice cloning
 
 Upstream source and install instructions: [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS). To keep it outside this repository, you can clone it from the app root with `git clone https://github.com/RVC-Boss/GPT-SoVITS.git ../GPT-SoVITS`, then follow that version's installation instructions and download its required models separately. Start its API using the launch script supplied by the version you installed; the documented default API address is `http://127.0.0.1:9880`.

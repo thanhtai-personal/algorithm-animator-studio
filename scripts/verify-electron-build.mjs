@@ -12,13 +12,11 @@ const requiredFiles = [
   "scripts/ensure-electron-binary.mjs",
   "scripts/vieneu-health.py",
   "scripts/vieneu-generate.py",
-  "libs/VieNeu-TTS/pyproject.toml",
 ];
 
 const requiredPackageResources = [
   ["dist", "desktop-client"],
   ["scripts", "electron-runtime/scripts"],
-  ["libs/VieNeu-TTS", "electron-runtime/libs/VieNeu-TTS"],
 ];
 
 const errors = [];
@@ -36,6 +34,15 @@ runNodeCheck("scripts/ensure-electron-binary.mjs");
 const packageJson = readJson(path.join(root, "package.json"));
 if (packageJson) {
   const extraResources = packageJson.build?.extraResources || [];
+  // VieNeu SDK and model weights are user-managed external dependencies.
+  // Desktop packaging must not copy either into an OSS installer.
+  for (const entry of extraResources) {
+    const from = String(entry?.from || "").replaceAll("\\", "/").replace(/\/+$/, "");
+    if (from === "libs/VieNeu-TTS" || from.startsWith("libs/VieNeu-TTS/") ||
+        from === "models" || from.startsWith("models/")) {
+      errors.push(`Do not bundle optional TTS weights or VieNeu SDK: ${from}`);
+    }
+  }
   for (const [from, to] of requiredPackageResources) {
     const matched = extraResources.some((item) => item?.from === from && item?.to === to);
     if (!matched) errors.push(`package.json build.extraResources missing ${from} -> ${to}`);

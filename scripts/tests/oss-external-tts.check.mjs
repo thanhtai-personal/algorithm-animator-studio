@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { trackedFilesUnder } from "./helpers/oss-tracked-source.mjs";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -22,7 +23,8 @@ test("optional TTS source and third-party sample voices are not embedded in desk
   const resourceSources = (pkg.build?.extraResources || []).map((item) => item.from);
   assert.ok(!resourceSources.includes("libs/VieNeu-TTS"));
   assert.ok(!resourceSources.includes("models"));
-  assert.equal(fs.existsSync(path.join(root, "libs/VieNeu-TTS")), false);
+  assert.deepEqual(trackedFilesUnder(root, "libs/VieNeu-TTS"), [],
+    "local ignored VieNeu files are okay, but Git must not track bundled SDK/voices");
   for (const provider of ["SUPERTONIC", "APPLIO", "VIENEU", "GPT_SOVITS"]) {
     assert.ok(example.includes(`KAI_PROVIDER_${provider}_ENABLED=false`), `${provider} must be opt-in`);
   }

@@ -6,8 +6,8 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const sourceRoots = ["src", "server"];
-const exts = ["", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".json", ".css", ".scss", ".png", ".svg", ".webp", ".jpg", ".jpeg", ".wav", ".mp3"];
-const indexExts = ["index.ts", "index.tsx", "index.js", "index.mjs"];
+const exts = ["", ".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs", ".json", ".css", ".scss", ".png", ".svg", ".webp", ".jpg", ".jpeg", ".wav", ".mp3"];
+const indexExts = ["index.ts", "index.tsx", "index.mts", "index.cts", "index.js", "index.mjs", "index.cjs"];
 
 function listFiles(dir) {
   if (!fs.existsSync(dir)) return [];
@@ -34,11 +34,11 @@ test("TypeScript and JS source have no dangling local import targets", () => {
   const missing = [];
   for (const sourceRoot of sourceRoots) {
     for (const file of listFiles(path.join(root, sourceRoot))) {
-      if (!/\.(?:[cm]?js|jsx|tsx?)$/.test(file)) continue;
+      if (!/\.(?:[cm]?js|[cm]?ts|jsx|tsx)$/.test(file)) continue;
       if (file.endsWith(".d.ts")) continue;
       const content = fs.readFileSync(file, "utf8");
       // Both static imports/re-exports and import("...") expressions.
-      const regex = /(?:\bfrom\s*|\bimport\s*\(\s*)["']([^"']+)["']/g;
+      const regex = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s*|\brequire\s*\(\s*)["']([^"']+)["']/g;
       for (const match of content.matchAll(regex)) {
         const target = resolveLocalImport(file, match[1]);
         if (target && !target.resolved) {

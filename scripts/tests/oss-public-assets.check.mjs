@@ -12,6 +12,8 @@ test("public source does not ship uncleared graphics or an old verification toke
   ]) assert.equal(fs.existsSync(path.join(root, pathName)), false, `uncleared asset: ${pathName}`);
   assert.ok(fs.existsSync(path.join(root, "public/favicon.svg")));
   assert.match(read("index.html"), /href="\/favicon.svg"/);
+  const codeRenderer = read("src/lib/renderers/codePanelRenderer.ts");
+  assert.doesNotMatch(codeRenderer, /land-tile\.jpg/);
   for (const name of ["AppHeader", "AppSidebar"]) {
     const source = read(`src/components/${name}.tsx`);
     assert.doesNotMatch(source, /kai-studio-logo\.svg|placeholder\.svg/);

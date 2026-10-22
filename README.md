@@ -62,7 +62,21 @@ python3 -m venv ../.venv-piper
 ../.venv-piper/bin/python -m pip install --upgrade pip piper-tts
 ```
 
-Set `PIPER_EXE` in `.env` to the executable from that environment (Windows: `../.venv-piper/Scripts/piper.exe`; Linux/macOS: `../.venv-piper/bin/piper`). Then run `npm run dev`, open **Settings → Voice**, and download a compatible model plus its `.onnx.json` configuration. Read that exact voice's model card first; model licenses differ.
+Put the executable path and a model directory outside the repository in `.env`.
+
+Windows:
+```env
+PIPER_EXE=../.venv-piper/Scripts/piper.exe
+MODEL_DIR=../tts-models
+```
+
+Linux/macOS:
+```env
+PIPER_EXE=../.venv-piper/bin/piper
+MODEL_DIR=../tts-models
+```
+
+Then run `npm run dev`, open **Settings → Voice**, and download a compatible model plus its `.onnx.json` configuration into `MODEL_DIR`. Read that exact voice's model card first; model licenses differ. If you prefer the default ignored `models/` folder, make sure its contents stay untracked.
 
 **Other separate engines**
 

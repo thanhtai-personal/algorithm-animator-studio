@@ -34,7 +34,7 @@ test("optional local TTS runtimes default off and use external sibling checkouts
 test("README provides separate download, install, start and health-check steps", () => {
   const readme = read("README.md");
   for (const required of [
-    "piper-tts", "PIPER_EXE", "MODEL_DIR", "Settings → Voice",
+    "piper-tts", "PIPER_EXE", "MODEL_DIR=../tts-models", "Settings → Voice",
     "npm run supertonic:install", "npm run supertonic:serve", "/v1/health",
     "git clone https://github.com/pnnbao97/VieNeu-TTS.git ../VieNeu-TTS",
     "npm run vieneu:install", "npm run vieneu:health",

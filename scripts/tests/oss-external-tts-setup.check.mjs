@@ -11,7 +11,7 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 test("VieNeu is an optional external checkout without vendored SDK/model/preset artifacts", () => {
   assert.deepEqual(trackedFilesUnder(root, "libs/VieNeu-TTS"), [],
     "upstream VieNeu SDK, model and voice presets must not be committed to Git");
-  assert.match(read(".gitignore"), /^libs\\/VieNeu-TTS\\/$/m);
+  assert.ok(read(".gitignore").split(/\r?\n/).includes("libs/VieNeu-TTS/"), "local VieNeu checkout must stay gitignored");
   const example = read(".env.example");
   assert.match(example, /VIENEU_SOURCE_DIR=\.\.\/VieNeu-TTS/);
   assert.match(example, /KAI_PROVIDER_VIENEU_ENABLED=false/);

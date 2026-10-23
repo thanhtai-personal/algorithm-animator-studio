@@ -7,6 +7,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Python bytecode
+__pycache__/
+*.py[cod]
+
 node_modules
 dist
 dist-ssr
@@ -22,3 +26,64 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+.env
+.env.*
+!.env.example
+.certs/
+# Desktop/runtime builds
+release/
+dist-electron/
+runtime/
+remote-control-app/dist/
+remote-control-app/dist-server/
+remote-control-app/dist-package/
+remote-control-app/release/
+
+# Generated verification screenshots, videos, reports, and browser profiles
+/artifacts/
+
+server/data
+# User-managed TTS weights are third-party assets with model-specific licenses.
+# Keep them out of the OSS source tree; install a compatible model explicitly.
+models/*.onnx
+models/*.onnx.json
+models/**/*.onnx
+models/**/*.onnx.json
+models/.venv/
+models/**/*.download
+models/**/*.tmp
+src/assets/audios/bg-audio/
+server/.env.temp
+NUL
+
+# Generated architecture graphs must not be committed or presented as current.
+.understand-anything/
+
+.codex
+
+# One-off local scratch and backup lockfiles (OSS cleanup)
+.tmp-*/
+package-lock.json.bak-*
+
+# VieNeu SDK is an external dependency, never vendor it into this OSS repo.
+libs/VieNeu-TTS/
+
+# Optional, user-supplied animation/SFX packs must not be committed without rights clearance.
+src/assets/sprites/*.png
+src/assets/sprites/*.jpg
+src/assets/audios/select-audio/*
+src/assets/audios/swap-audio/*
+src/assets/audios/midis/*
+src/assets/marble-*.wav
+/haaland.jpg
+
+# Credentials, signing keys and site-verification tokens (HEAD ignore does not purge Git history)
+**/credentials.json
+**/*.keystore
+**/*.jks
+**/*.p12
+**/*.pfx
+**/*.pem
+.npmrc
+public/tiktokvt*.txt

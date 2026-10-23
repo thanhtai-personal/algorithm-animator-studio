@@ -9,7 +9,7 @@ const Switch = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SwitchPrimitives.Root
     className={cn(
-      "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors data-[state=checked]:bg-primary data-[state=unchecked]:bg-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
+      "kai-switch peer relative inline-flex h-7 w-14 shrink-0 cursor-pointer items-center overflow-hidden rounded-full border border-transparent px-0.5 transition-all duration-300 data-[state=checked]:border-orange-300/70 data-[state=checked]:bg-orange-400 data-[state=unchecked]:border-border/70 data-[state=unchecked]:bg-muted-foreground/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
       className,
     )}
     {...props}
@@ -17,7 +17,7 @@ const Switch = React.forwardRef<
   >
     <SwitchPrimitives.Thumb
       className={cn(
-        "pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0",
+        "switch-thumb-indicator pointer-events-none relative z-10 block h-6 w-6 rounded-full bg-background shadow-lg ring-0 transition-all data-[state=checked]:bg-orange-100 data-[state=checked]:shadow-[0_0_18px_rgba(251,146,60,0.75)] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] data-[state=checked]:translate-x-7 data-[state=unchecked]:translate-x-0",
       )}
     />
   </SwitchPrimitives.Root>

@@ -1,0 +1,86 @@
+.fantastic-mode .auth-page {
+  background:
+    radial-gradient(circle at 50% 48%, hsl(var(--primary) / 0.1), transparent 24rem),
+    linear-gradient(135deg, hsl(var(--background) / 0.18), hsl(var(--background) / 0.04));
+}
+
+.fantastic-mode .auth-aura {
+  position: absolute;
+  inset: 12% 8%;
+  pointer-events: none;
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 30% 38%, hsl(var(--primary) / 0.22), transparent 18rem),
+    radial-gradient(circle at 72% 44%, hsl(var(--accent) / 0.16), transparent 15rem);
+  filter: blur(34px);
+}
+
+.fantastic-mode .auth-grid {
+  position: relative;
+  z-index: 1;
+}
+
+.fantastic-mode .auth-card,
+.fantastic-mode .auth-hero {
+  border-color: hsl(var(--primary) / 0.28);
+  background:
+    linear-gradient(135deg, hsl(var(--card) / 0.78), hsl(var(--card) / 0.42)),
+    radial-gradient(circle at 12% 0%, hsl(var(--primary) / 0.16), transparent 16rem);
+  box-shadow:
+    0 28px 90px hsl(214 80% 5% / 0.42),
+    inset 0 0 0 1px hsl(0 0% 100% / 0.06);
+  backdrop-filter: blur(22px);
+}
+
+.fantastic-mode .auth-hero {
+  position: relative;
+  min-height: 30rem;
+  overflow: hidden;
+  border-radius: 2rem;
+  padding: 3rem;
+}
+
+.fantastic-mode .auth-orbit {
+  position: absolute;
+  right: -6rem;
+  top: -5rem;
+  width: 24rem;
+  height: 24rem;
+  border-radius: 9999px;
+  border: 1px solid hsl(var(--primary) / 0.24);
+  box-shadow:
+    inset 0 0 42px hsl(var(--primary) / 0.16),
+    0 0 76px hsl(var(--accent) / 0.14);
+  animation: auth-orbit-drift 12s ease-in-out infinite alternate;
+}
+
+.fantastic-mode .auth-lock {
+  box-shadow:
+    0 0 0 1px hsl(0 0% 100% / 0.18),
+    0 0 24px hsl(var(--primary) / 0.42);
+}
+
+.fantastic-mode .auth-card input {
+  background: hsl(var(--background) / 0.48);
+  box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.08);
+}
+
+html:not(.dark).fantastic-mode .auth-card,
+html:not(.dark).fantastic-mode .auth-hero {
+  background:
+    linear-gradient(135deg, hsl(0 0% 100% / 0.9), hsl(190 64% 96% / 0.68)),
+    radial-gradient(circle at 12% 0%, hsl(188 88% 54% / 0.12), transparent 14rem);
+  border-color: hsl(190 44% 78% / 0.62);
+  box-shadow:
+    0 24px 70px hsl(202 42% 32% / 0.16),
+    0 0 0 1px hsl(0 0% 100% / 0.76);
+}
+
+@keyframes auth-orbit-drift {
+  from {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(0.96);
+  }
+  to {
+    transform: translate3d(-3rem, 2rem, 0) rotate(18deg) scale(1.08);
+  }
+}

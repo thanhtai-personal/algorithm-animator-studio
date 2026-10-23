@@ -1,0 +1,15 @@
+{
+  "uiCloseMenu": "Đóng menu",
+  "uiCollapseMenu": "Thu gọn menu",
+  "uiExpandMenu": "Mở rộng menu",
+  "uiFantasticMode": "Fantastic Mode",
+  "uiHideMenu": "Ẩn menu",
+  "uiModules": "Module",
+  "uiModuleSettings": "Cài đặt module",
+  "uiOpenMenu": "Mở menu",
+  "uiScreenVisibility": "Ẩn/hiện màn hình",
+  "uiThisScreenIsLockedToItsModuleType": "Màn hình này đã khóa theo module nên ẩn phần chọn video type.",
+  "uiToggleFantasticMode": "Bật/tắt Fantastic Mode",
+  "uiToggleLightDarkTheme": "Đổi giao diện sáng/tối",
+  "uiToggleSettingsPanel": "Thu gọn/mở panel thiết lập"
+}

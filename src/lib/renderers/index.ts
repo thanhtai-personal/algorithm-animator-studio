@@ -1,0 +1,204 @@
+import { Frame } from "../algorithms";
+import type { AnimalColumnSettings } from "../animalColumns";
+import type { Lang } from "../i18n";
+import { drawAnimalColumns } from "./animalColumnRenderer";
+import { drawAlgorithmWorld, drawAlgorithmWorldComparison } from "./algorithmWorldRenderer";
+import { drawBars } from "./barRenderer";
+import { drawCodePanel } from "./codePanelRenderer";
+import { drawCountingSort } from "./countingSortRenderer";
+import { drawGraph } from "./graphRenderer";
+import { roundRect, shade } from "./shapes";
+import { drawSortEssence } from "./sortEssenceRenderer";
+import { THEMES, type Theme } from "./theme";
+
+export { THEMES };
+export type { Theme };
+
+export type RenderOpts = {
+  title: string;
+  subtitle: string;
+  theme: Theme;
+  code: string;
+  showCode: boolean;
+  complexity?: { time: string; best?: string; worst?: string; space: string };
+  previousFrame?: Frame | null;
+  transitionProgress?: number;
+  algorithmId?: string;
+  animalColumns?: AnimalColumnSettings;
+  lang?: Lang;
+};
+
+export function renderFrame(
+  ctx: CanvasRenderingContext2D,
+  frame: Frame | null | undefined,
+  opts: RenderOpts,
+  width: number,
+  height: number,
+) {
+  const { theme, title, subtitle, code, showCode, complexity } = opts;
+
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+  bgGrad.addColorStop(0, theme.bg);
+  bgGrad.addColorStop(1, shade(theme.bg, -10));
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, width, height);
+
+  const isPortrait = height >= width;
+  const padding = Math.round(Math.min(width, height) * 0.04);
+  const headerH = Math.round(height * (isPortrait ? 0.11 : 0.14));
+  const codeH = showCode ? Math.floor(height * (isPortrait ? 0.4 : 0.45)) : 0;
+  const chartTop = headerH;
+  const chartBottom = height - codeH - padding;
+  const chartH = chartBottom - chartTop;
+  const chartW = width - padding * 2;
+
+  drawHeader(ctx, title, subtitle, width, height, headerH, isPortrait, theme);
+  const lang = opts.lang ?? "en";
+  if (complexity && !frame?.world && !frame?.worldCompare) drawComplexityBadges(ctx, complexity, width, height, padding, lang);
+
+  if (!frame) {
+    drawEmptyState(ctx, padding, chartTop, chartW, chartH, theme, lang);
+    return;
+  }
+
+  if (frame.worldCompare) {
+    drawAlgorithmWorldComparison(ctx, frame.worldCompare, padding, chartTop, chartW, chartH, theme, lang);
+  } else if (frame.world) {
+    drawAlgorithmWorld(ctx, frame, padding, chartTop, chartW, chartH, theme, lang);
+  } else if (frame.graph) {
+    drawGraph(ctx, frame, padding, chartTop, chartW, chartH, theme, lang);
+  } else if (frame.counting) {
+    drawCountingSort(ctx, frame, padding, chartTop, chartW, chartH, theme, {
+      animalColumns: opts.animalColumns,
+      previousFrame: opts.previousFrame,
+      transitionProgress: opts.transitionProgress,
+      lang,
+    });
+  } else if (frame.arr && frame.arr.length) {
+    if (opts.animalColumns?.mode === "animal") {
+      drawAnimalColumns(ctx, frame, padding, chartTop, chartW, chartH, chartBottom, theme, {
+        previousFrame: opts.previousFrame,
+        transitionProgress: opts.transitionProgress,
+        settings: opts.animalColumns,
+      });
+    } else if (opts.algorithmId && opts.algorithmId !== "custom") {
+      drawSortEssence(ctx, frame, padding, chartTop, chartW, chartH, chartBottom, theme, {
+        algorithmId: opts.algorithmId,
+        previousFrame: opts.previousFrame,
+        transitionProgress: opts.transitionProgress,
+        lang,
+      });
+    } else {
+      drawBars(ctx, frame, padding, chartTop, chartW, chartH, chartBottom, theme, {
+        previousFrame: opts.previousFrame,
+        transitionProgress: opts.transitionProgress,
+      });
+    }
+  }
+
+  drawTarget(ctx, frame, padding, chartTop, height, lang);
+
+  if (showCode) {
+    const animalCodePanel = opts.animalColumns?.mode === "animal";
+    const codePanelGap = animalCodePanel ? 0 : Math.round(padding * 0.5);
+    drawCodePanel(
+      ctx,
+      frame,
+      code,
+      padding,
+      chartBottom + codePanelGap,
+      width - padding * 2,
+      codeH - codePanelGap - padding / 2,
+      theme,
+      height,
+      animalCodePanel ? "grass" : "default",
+      lang,
+    );
+  }
+}
+
+function drawHeader(
+  ctx: CanvasRenderingContext2D,
+  title: string,
+  subtitle: string,
+  width: number,
+  height: number,
+  headerH: number,
+  isPortrait: boolean,
+  theme: Theme,
+) {
+  ctx.fillStyle = "#ffffff";
+  const titlePx = Math.round(height * (isPortrait ? 0.045 : 0.06));
+  const subPx = Math.round(titlePx * 0.55);
+  ctx.font = `bold ${titlePx}px ui-sans-serif, system-ui, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.fillText(title, width / 2, headerH * 0.5);
+  ctx.fillStyle = theme.highlight;
+  ctx.font = `500 ${subPx}px ui-sans-serif, system-ui, sans-serif`;
+  ctx.fillText(subtitle, width / 2, headerH * 0.5 + titlePx * 0.7);
+}
+
+function drawComplexityBadges(
+  ctx: CanvasRenderingContext2D,
+  complexity: NonNullable<RenderOpts["complexity"]>,
+  width: number,
+  height: number,
+  padding: number,
+  lang: Lang,
+) {
+  const cPx = Math.max(14, Math.round(height * 0.018));
+  ctx.font = `600 ${cPx}px ui-monospace, monospace`;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  const parts: { label: string; value: string; color: string }[] = [
+    { label: label(lang, "Thời gian", "Time"), value: complexity.time, color: "#fde047" },
+  ];
+  if (complexity.worst && complexity.worst !== complexity.time)
+    parts.push({ label: label(lang, "Xấu nhất", "Worst"), value: complexity.worst, color: "#fb7185" });
+  if (complexity.best && complexity.best !== complexity.time)
+    parts.push({ label: label(lang, "Tốt nhất", "Best"), value: complexity.best, color: "#86efac" });
+  parts.push({ label: label(lang, "Bộ nhớ", "Space"), value: complexity.space, color: "#a5f3fc" });
+
+  let x = width - padding;
+  const y = padding + cPx + 75;
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    const text = `${p.label}: ${p.value}`;
+    const tw = ctx.measureText(text).width + 16;
+    ctx.fillStyle = "rgba(15,23,42,0.7)";
+    ctx.strokeStyle = p.color;
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, x - tw, y - cPx * 0.85, tw, cPx * 1.7, 8);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = p.color;
+    ctx.fillText(text, x - 8, y);
+    x -= tw + 8;
+  }
+  ctx.textBaseline = "alphabetic";
+}
+
+function drawEmptyState(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, theme: Theme, lang: Lang) {
+  ctx.fillStyle = "rgba(255,255,255,0.74)";
+  ctx.textAlign = "center";
+  ctx.font = `700 ${Math.max(18, Math.round(h * 0.065))}px ui-sans-serif, system-ui, sans-serif`;
+  ctx.fillText(label(lang, "Chưa có frame animation", "No animation frame available"), x + w / 2, y + h / 2);
+  ctx.fillStyle = theme.highlight;
+  ctx.font = `500 ${Math.max(14, Math.round(h * 0.035))}px ui-sans-serif, system-ui, sans-serif`;
+  ctx.fillText(label(lang, "Hãy chọn thuật toán khác hoặc reset timeline.", "Try another algorithm or reset the preview timeline."), x + w / 2, y + h / 2 + 42);
+}
+
+function drawTarget(ctx: CanvasRenderingContext2D, frame: Frame, padding: number, chartTop: number, height: number, lang: Lang) {
+  if (typeof frame.target === "undefined" || frame.target === null) return;
+  ctx.fillStyle = "#fff";
+  ctx.textAlign = "left";
+  const px = Math.round(height * 0.022);
+  ctx.font = `600 ${px}px ui-monospace, monospace`;
+  const result = frame.found != null
+    ? `  ->  ${frame.found >= 0 ? `${label(lang, "thấy", "found")}@${frame.found}` : label(lang, "không thấy", "not found")}`
+    : "";
+  ctx.fillText(`${label(lang, "mục tiêu", "target")} = ${frame.target}${result}`, padding + 8, chartTop + 6 + px);
+}
+
+function label(lang: Lang, vi: string, en: string) {
+  return lang === "vi" ? vi : en;
+}

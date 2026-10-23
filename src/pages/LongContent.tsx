@@ -1,0 +1,324 @@
+import { ChevronDown, ChevronRight, Download, Film, Languages, Pause, Play, RefreshCcw } from "lucide-react";
+import { ReactNode, useState } from "react";
+import { ALGORITHMS, ALGO_GROUPS, COMPLEXITY } from "@/lib/algorithms";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LONG_VIDEO_TYPES, type LongVideoType } from "@/lib/longVideoTypes";
+import { THEMES } from "@/lib/renderer";
+import { EXPORT_FORMATS, ExportFormat } from "./studio/exportFormats";
+import { BackgroundImagePanel } from "./long-content/BackgroundImagePanel";
+import { KineticSfxPanel } from "./long-content/KineticSfxPanel";
+import { LongContentTabs } from "./long-content/LongContentTabs";
+import { MusicPanel } from "./long-content/MusicPanel";
+import { LongContentStudio, useLongContentStudio } from "./long-content/useLongContentStudio";
+import { uiText } from "@/lib/i18n";
+import { RemotionVideoGenerator } from "@/features/remotion-video/components/RemotionVideoGenerator";
+
+type RenderLibrary = "ffmpeg" | "remotion";
+
+export default function LongContent() {
+  const studio = useLongContentStudio();
+  const [renderLibrary, setRenderLibrary] = useState<RenderLibrary>("ffmpeg");
+
+  function requestExport() {
+    void studio.exportVideo();
+  }
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <main className="grid grid-cols-1 gap-4 p-4 xl:grid-cols-[340px_minmax(0,1fr)_380px]">
+        <LeftControls studio={studio} onExport={requestExport} />
+        <div className="space-y-4">
+          <RenderLibrarySelect value={renderLibrary} onChange={setRenderLibrary} />
+          {renderLibrary === "ffmpeg" ? (
+            <>
+              <PreviewPanel studio={studio} />
+              <BackgroundImagePanel studio={studio} />
+              <MusicPanel studio={studio} />
+            </>
+          ) : (
+            <RemotionVideoGenerator
+              fixedTemplate="algorithm-explainer"
+              heading="Remotion thuật toán dài"
+              description="Render template thuật toán đúng màn Video thuật toán dài: intro, bars, narration/subtitle và MP4 backend."
+              preset={{
+                template: "algorithm-explainer",
+                title: `${studio.algo.name} Explained Visually`,
+                subtitle: "Long-form algorithm explainer rendered with Remotion",
+                algorithmLabel: studio.algo.name,
+                data: [18, 42, 27, 64, 33, 75, 52, 91, 46, 68],
+                aspectRatio: "16:9",
+                durationSeconds: Math.max(12, studio.introSeconds + studio.animationSeconds),
+              }}
+              onVideoCreated={() => undefined}
+            />
+          )}
+        </div>
+        <LongContentTabs studio={studio} />
+      </main>
+    </div>
+  );
+}
+
+function RenderLibrarySelect({ value, onChange }: { value: RenderLibrary; onChange: (value: RenderLibrary) => void }) {
+  return (
+    <Card className="border-border/70 p-4">
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_240px] md:items-center">
+        <div>
+          <h2 className="font-semibold">{uiText("Thư viện render")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{uiText("Chọn FFmpeg/Canvas cho workflow cũ hoặc Remotion cho video template React.")}</p>
+        </div>
+        <Select value={value} onValueChange={(next) => onChange(next as RenderLibrary)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ffmpeg">FFmpeg / Canvas</SelectItem>
+            <SelectItem value="remotion">Remotion</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </Card>
+  );
+}
+
+function LeftControls({ studio: s, onExport }: { studio: LongContentStudio; onExport: () => void }) {
+  return (
+    <Tabs defaultValue="export" className="space-y-4">
+      <TabsList className="grid grid-cols-2">
+        <TabsTrigger value="export">{uiText("Export")}</TabsTrigger>
+        <TabsTrigger value="content">{uiText("Nội dung")}</TabsTrigger>
+      </TabsList>
+      <TabsContent value="export" className="mt-0 space-y-4">
+        <VisualExportPanel studio={s} onExport={onExport} />
+      </TabsContent>
+      <TabsContent value="content" className="mt-0 space-y-4">
+        <CollapsibleSection title={uiText("Cấu hình nội dung")} icon={<Film className="h-4 w-4 text-emerald-400" />}>
+          <SystemLanguageInfo studio={s} />
+
+          <div>
+            <Label>{uiText("Thuật toán")}</Label>
+            <Select value={s.algoId} onValueChange={s.setAlgoId}>
+              <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ALGO_GROUPS.map((group, index) => (
+                  <div key={group.label.en}>
+                    {index > 0 && <SelectSeparator />}
+                    <SelectGroup>
+                      <SelectLabel className="bg-emerald-500/10 text-[11px] uppercase tracking-wider text-emerald-300">
+                        {group.label.vi}
+                      </SelectLabel>
+                      {group.ids.map((id) => <SelectItem key={id} value={id}>{ALGORITHMS[id].name}</SelectItem>)}
+                    </SelectGroup>
+                  </div>
+                ))}
+              </SelectContent>
+            </Select>
+            {COMPLEXITY[s.algoId] ? <ComplexityBadges algoId={s.algoId} /> : null}
+          </div>
+
+          <VideoTypeSelect studio={s} />
+          <KineticSfxPanel studio={s} />
+
+          <div className="grid grid-cols-2 gap-3">
+            <NumberSlider label={uiText("Intro")} value={s.introSeconds} min={3} max={10} suffix="s" onChange={s.setIntroSeconds} />
+            <NumberSlider label={uiText("Animation")} value={s.animationSeconds} min={12} max={90} suffix="s" onChange={s.setAnimationSeconds} />
+          </div>
+          <NumberSlider label={uiText("FPS export")} value={s.fps} min={15} max={60} suffix="fps" onChange={s.setFps} />
+
+          <div>
+            <Label>{uiText("Theme")}</Label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {Object.keys(THEMES).map((name) => (
+                <Button key={name} size="sm" variant={s.themeName === name ? "default" : "outline"} onClick={() => s.setThemeName(name as keyof typeof THEMES)}>
+                  {name[0].toUpperCase() + name.slice(1)}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </CollapsibleSection>
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function VisualExportPanel({ studio: s, onExport }: { studio: LongContentStudio; onExport: () => void }) {
+  return (
+    <Card className="space-y-4 border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.34),0_0_28px_rgba(16,185,129,0.06)]">
+      <div className="space-y-3">
+        <div>
+          <h2 className="font-semibold">{uiText("Visual & export")}</h2>
+          <p className="text-xs text-muted-foreground">{uiText("Cấu hình hình ảnh và xuất video.")}</p>
+        </div>
+        <Button className="w-full bg-emerald-500 text-slate-950 hover:bg-emerald-600" onClick={onExport} disabled={s.exporting}>
+          <Download className="mr-2 h-4 w-4" />
+          {s.exporting ? `Đang xuất ${s.exportProgress}%` : "Xuất long video 16:9"}
+        </Button>
+      </div>
+
+      <div className="grid gap-3">
+        <div>
+          <Label>{uiText("Tỉ lệ video")}</Label>
+          <div className="mt-2 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200">
+            YouTube long video · 16:9 · 1920×1080
+          </div>
+        </div>
+        <div>
+          <Label>{uiText("Định dạng")}</Label>
+          <Select value={s.exportFormat} onValueChange={(v) => s.setExportFormat(v as ExportFormat)}>
+            <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {EXPORT_FORMATS.map((format) => <SelectItem key={format.id} value={format.id}>{format.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
+          <Label>{uiText("Hiện code trong animation")}</Label>
+          <Switch checked={s.showCode} onCheckedChange={s.setShowCode} />
+        </div>
+      </div>
+
+      {s.algo.category === "sort" ? <AnimalControls studio={s} compact /> : null}
+    </Card>
+  );
+}
+
+function VideoTypeSelect({ studio: s }: { studio: LongContentStudio }) {
+  const selected = LONG_VIDEO_TYPES.find((type) => type.id === s.longVideoType);
+  function selectVideoType(value: LongVideoType) {
+    s.setLongVideoType(value);
+    s.setNarrationEnabled(value === "classic");
+  }
+  return (
+    <div>
+      <Label>{uiText("Type video")}</Label>
+      <Select value={s.longVideoType} onValueChange={(value) => selectVideoType(value as LongVideoType)}>
+        <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {LONG_VIDEO_TYPES.map((type) => (
+            <SelectItem key={type.id} value={type.id}>{type.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <p className="mt-2 text-xs text-muted-foreground">{selected?.description}</p>
+    </div>
+  );
+}
+
+function CollapsibleSection(props: { title: string; icon?: ReactNode; children: ReactNode }) {
+  const [open, setOpen] = useState(true);
+  const Icon = open ? ChevronDown : ChevronRight;
+  return (
+    <Card className="border-border/70 p-4 shadow-[0_14px_36px_rgba(15,23,42,0.34),0_0_28px_rgba(16,185,129,0.05)]">
+      <button type="button" className="flex w-full items-center justify-between gap-3 text-left" onClick={() => setOpen((value) => !value)}>
+        <span className="flex items-center gap-2">
+          {props.icon}
+          <span className="font-semibold">{props.title}</span>
+        </span>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </button>
+      {open ? <div className="mt-4 space-y-4">{props.children}</div> : null}
+    </Card>
+  );
+}
+
+function PreviewPanel({ studio: s }: { studio: LongContentStudio }) {
+  return (
+    <div className="flex flex-col items-center gap-4">
+      <Card className="w-full border-border/70 p-3 shadow-[0_16px_42px_rgba(15,23,42,0.38),0_0_34px_rgba(14,165,233,0.06)]">
+        <canvas
+          ref={s.canvasRef}
+          width={s.W}
+          height={s.H}
+          className="mx-auto rounded-xl border border-border/60 bg-slate-950"
+          style={{ width: "100%", maxHeight: "72vh", aspectRatio: "16 / 9" }}
+        />
+      </Card>
+      <Card className="w-full max-w-4xl space-y-3 border-border/70 p-4 shadow-[0_14px_34px_rgba(15,23,42,0.32),0_0_24px_rgba(16,185,129,0.05)]">
+        <div className="flex gap-2">
+          <Button className="flex-1" onClick={() => s.setPlaying(!s.playing)} disabled={s.exporting}>
+            {s.playing ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
+            {s.playing ? "Tạm dừng" : "Preview"}
+          </Button>
+          <Button variant="outline" onClick={() => { s.setPlaying(false); s.setElapsedSec(0); }}>
+            <RefreshCcw className="mr-2 h-4 w-4" /> Reset
+          </Button>
+        </div>
+        <Slider value={[s.elapsedSec]} min={0} max={s.totalDuration} step={0.1} onValueChange={([value]) => { s.setPlaying(false); s.setElapsedSec(value); }} />
+        <div className="flex justify-between gap-3 text-xs text-muted-foreground">
+          <span>{s.timelineState.scene.title}</span>
+          <span>{s.lang.toUpperCase()} · {LONG_VIDEO_TYPES.find((type) => type.id === s.longVideoType)?.label} · Voice {s.narrationEnabled ? s.voiceProvider : "off"} · Frame {s.frameIdx + 1}/{s.frames.length} · {Math.round(s.totalDuration)}s</span>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function SystemLanguageInfo({ studio: s }: { studio: LongContentStudio }) {
+  return (
+    <div className="rounded-lg border border-border bg-card/50 p-3">
+      <Label className="flex items-center gap-2"><Languages className="h-4 w-4" /> {uiText("Ngôn ngữ kịch bản")}</Label>
+      <div className="mt-2 rounded-md border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm font-semibold text-emerald-200">
+        {s.lang === "vi" ? "Tiếng Việt" : "English"}
+      </div>
+      <p className="mt-2 text-xs text-muted-foreground">
+        Kịch bản, subtitle và voice-over tự dùng ngôn ngữ hệ thống đã chọn ở header. Đổi ngôn ngữ tại header chung để xuất bản VI hoặc EN.
+      </p>
+    </div>
+  );
+}
+
+function ComplexityBadges({ algoId }: { algoId: string }) {
+  const item = COMPLEXITY[algoId];
+  if (!item) return null;
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-mono">
+      <span className="rounded border border-yellow-400/30 bg-yellow-400/15 px-2 py-0.5 text-yellow-300">Time {item.time}</span>
+      {item.best && item.best !== item.time ? <span className="rounded border border-emerald-400/30 bg-emerald-400/15 px-2 py-0.5 text-emerald-300">Best {item.best}</span> : null}
+      {item.worst && item.worst !== item.time ? <span className="rounded border border-rose-400/30 bg-rose-400/15 px-2 py-0.5 text-rose-300">Worst {item.worst}</span> : null}
+      <span className="rounded border border-cyan-400/30 bg-cyan-400/15 px-2 py-0.5 text-cyan-300">Space {item.space}</span>
+    </div>
+  );
+}
+
+function NumberSlider(props: { label: string; value: number; min: number; max: number; suffix: string; step?: number; onChange: (value: number) => void }) {
+  return (
+    <div>
+      <div className="mb-2 flex justify-between gap-2">
+        <Label>{props.label}</Label>
+        <span className="font-mono text-xs text-emerald-400">{props.value}{props.suffix}</span>
+      </div>
+      <Slider value={[props.value]} min={props.min} max={props.max} step={props.step ?? 1} onValueChange={([value]) => props.onChange(value)} />
+    </div>
+  );
+}
+
+function AnimalControls({ studio: s, compact = false }: { studio: LongContentStudio; compact?: boolean }) {
+  return (
+    <div className="space-y-3 rounded-lg border border-border/70 bg-background/30 p-3 shadow-[0_10px_24px_rgba(15,23,42,0.24)]">
+      <div>
+        <Label>{uiText("Kiểu cột")}</Label>
+        <Select value={s.columnVisualMode} onValueChange={(value) => s.setColumnVisualMode(value as typeof s.columnVisualMode)}>
+          <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="bar">{uiText("Cột thường")}</SelectItem>
+            <SelectItem value="animal">{uiText("Animal columns")}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {s.columnVisualMode === "animal" ? (
+        <div className={compact ? "grid gap-3 md:grid-cols-3" : "space-y-3"}>
+          <NumberSlider label={uiText("Sprite")} value={s.animalSpriteScale} min={0.6} max={1.6} suffix="x" step={0.1} onChange={s.setAnimalSpriteScale} />
+          <NumberSlider label={uiText("Độ nhảy")} value={s.animalJumpIntensity} min={0.4} max={1.8} suffix="x" step={0.1} onChange={s.setAnimalJumpIntensity} />
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 px-3 py-2">
+            <Label>{uiText("Highlight cũng nhảy")}</Label>
+            <Switch checked={s.animalHighlightJump} onCheckedChange={s.setAnimalHighlightJump} />
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}

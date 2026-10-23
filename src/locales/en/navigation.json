@@ -1,0 +1,15 @@
+{
+  "uiCloseMenu": "Close menu",
+  "uiCollapseMenu": "Collapse menu",
+  "uiExpandMenu": "Expand menu",
+  "uiFantasticMode": "Fantastic Mode",
+  "uiHideMenu": "Hide menu",
+  "uiModules": "Modules",
+  "uiModuleSettings": "Module settings",
+  "uiOpenMenu": "Open menu",
+  "uiScreenVisibility": "Screen visibility",
+  "uiThisScreenIsLockedToItsModuleType": "This screen is locked to its module type, so the video type picker is hidden.",
+  "uiToggleFantasticMode": "Toggle Fantastic Mode",
+  "uiToggleLightDarkTheme": "Toggle light/dark theme",
+  "uiToggleSettingsPanel": "Toggle settings panel"
+}

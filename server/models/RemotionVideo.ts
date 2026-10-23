@@ -1,0 +1,23 @@
+export type RemotionVideoAspectRatio = "16:9" | "9:16";
+export type RemotionVideoTemplate = "algorithm-explainer";
+
+export type RemotionVideoRenderBody = {
+  title?: string;
+  subtitle?: string;
+  template?: RemotionVideoTemplate;
+  aspectRatio?: RemotionVideoAspectRatio;
+  durationSeconds?: number;
+  fps?: number;
+  primaryColor?: string;
+  accentColor?: string;
+  algorithmLabel?: string;
+  data?: number[];
+  narration?: string;
+  watermark?: string;
+  voiceAudioUrl?: string;
+  backgroundMusicUrl?: string;
+  voiceVolume?: number;
+  backgroundMusicVolume?: number;
+};
+
+export type NormalizedRemotionVideoInput = Required<RemotionVideoRenderBody>;

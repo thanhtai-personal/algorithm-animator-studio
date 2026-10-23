@@ -1,0 +1,198 @@
+.kai-section-loader {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 1.15em;
+  height: 1.15em;
+  min-width: 1.15em;
+  min-height: 1.15em;
+  color: currentColor;
+  vertical-align: -0.14em;
+  filter: drop-shadow(0 0 0.35em hsl(var(--primary) / 0.42));
+}
+
+.kai-flask-loader {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.kai-flask-loader-outline,
+.kai-flask-loader-water {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.kai-flask-loader-outline {
+  fill: hsl(var(--background) / 0.2);
+  stroke: currentColor;
+  stroke-width: 5;
+}
+
+.kai-flask-loader-water {
+  fill: hsl(var(--accent) / 0.78);
+  stroke: hsl(var(--accent) / 0.52);
+  stroke-width: 1.5;
+  transform-origin: 32px 58px;
+  animation: kai-flask-loader-water 1.35s ease-in-out infinite;
+}
+
+.kai-flask-loader-bubble {
+  fill: hsl(38 96% 64% / 0.9);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: kai-flask-loader-bubble 1.28s ease-in-out infinite;
+}
+
+.kai-flask-loader-bubble-b {
+  animation-delay: -0.42s;
+}
+
+.kai-flask-loader-bubble-c {
+  animation-delay: -0.78s;
+}
+
+.kai-page-loader {
+  position: relative;
+  display: grid;
+  min-height: var(--kai-page-loader-min-height, min(72dvh, 720px));
+  width: 100%;
+  place-items: center;
+  align-content: center;
+  overflow-x: hidden;
+  overflow-y: visible;
+  border-radius: var(--kai-page-loader-radius, 1.5rem);
+  background:
+    radial-gradient(circle at 50% 48%, hsl(var(--primary) / 0.18), transparent 28%),
+    radial-gradient(circle at 50% 52%, hsl(var(--accent) / 0.12), transparent 38%);
+  color: hsl(var(--primary));
+}
+
+.kai-page-loader.min-h-screen {
+  --kai-page-loader-min-height: 100dvh;
+  --kai-page-loader-radius: 0;
+}
+
+.kai-page-loader.kai-route-loader {
+  --kai-page-loader-min-height: calc(100dvh - 65px);
+  --kai-page-loader-radius: 0;
+}
+
+.kai-page-loader::before {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border-radius: 999px;
+  background: conic-gradient(from 120deg, transparent, hsl(var(--primary) / 0.32), hsl(var(--accent) / 0.22), transparent 68%);
+  filter: blur(1.5rem);
+  opacity: 0.68;
+  animation: kai-page-loader-spin 2.8s linear infinite;
+}
+
+.kai-page-loader-orb {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  height: 8.25rem;
+  width: 12.5rem;
+  place-items: center;
+  border: 1px solid hsl(var(--primary) / 0.32);
+  border-radius: 2rem;
+  background: hsl(var(--background) / 0.72);
+  box-shadow:
+    0 0 0 1px hsl(var(--accent) / 0.12) inset,
+    0 22px 90px hsl(var(--primary) / 0.22);
+  backdrop-filter: blur(18px);
+}
+
+.kai-infinity-loader {
+  width: min(9.75rem, 76vw);
+  height: auto;
+  overflow: visible;
+  color: hsl(var(--primary));
+  filter:
+    drop-shadow(0 0 0.4rem hsl(var(--primary) / 0.48))
+    drop-shadow(0 0 1rem hsl(var(--accent) / 0.28));
+}
+
+.kai-infinity-loader-track,
+.kai-infinity-loader-segment {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.kai-infinity-loader-track {
+  stroke: hsl(var(--primary) / 0.14);
+  stroke-width: 10;
+}
+
+.kai-infinity-loader-segment {
+  stroke: currentColor;
+  stroke-width: 12;
+  stroke-dasharray: 12 88;
+  animation: kai-infinity-loader-flow 1.34s linear infinite;
+}
+
+.kai-infinity-loader-segment-b {
+  color: hsl(var(--accent));
+  opacity: 0.86;
+  animation-delay: -0.44s;
+}
+
+.kai-infinity-loader-segment-c {
+  color: hsl(38 96% 57%);
+  opacity: 0.78;
+  animation-delay: -0.88s;
+}
+
+.fantastic-mode .kai-section-loader,
+.fantastic-mode .kai-page-loader-orb {
+  filter: saturate(1.55) drop-shadow(0 0 0.55em hsl(var(--primary) / 0.42));
+}
+
+@keyframes kai-flask-loader-water {
+  0%,
+  100% {
+    transform: rotate(-2deg) translateY(0);
+  }
+  50% {
+    transform: rotate(2deg) translateY(-1px);
+  }
+}
+
+@keyframes kai-flask-loader-bubble {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.65);
+  }
+  50% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-9px) scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kai-flask-loader-water,
+  .kai-flask-loader-bubble,
+  .kai-infinity-loader-segment,
+  .kai-page-loader::before {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+@keyframes kai-page-loader-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes kai-infinity-loader-flow {
+  to {
+    stroke-dashoffset: -100;
+  }
+}

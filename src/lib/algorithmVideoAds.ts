@@ -1,0 +1,90 @@
+export type AlgorithmVideoAdId = "test" | "none" | "kata" | "thiendaochilo" | "kata_rental";
+export type AlgorithmVideoAdSlotId = "left_facade" | "right_billboard";
+
+export type AlgorithmVideoAdCreative = "default" | "kata_rental" | "thiendaochilo";
+
+export type AlgorithmVideoAd = {
+  id: AlgorithmVideoAdId;
+  label: { vi: string; en: string };
+  brand: string;
+  eyebrow?: string;
+  subtitle?: string;
+  url?: string;
+  displayUrl?: string;
+  contact?: string;
+  address?: string;
+  accent: string;
+  accentSecondary?: string;
+  creative?: AlgorithmVideoAdCreative;
+};
+
+export type AlgorithmVideoAdSlot = {
+  id: AlgorithmVideoAdSlotId;
+  label: { vi: string; en: string };
+  placement: "facade" | "billboard";
+};
+
+export type AlgorithmVideoAdSelection = Record<AlgorithmVideoAdSlotId, AlgorithmVideoAdId>;
+
+export const ALGORITHM_VIDEO_AD_SLOTS: readonly AlgorithmVideoAdSlot[] = [
+  { id: "left_facade", label: { vi: "Vị trí 1 · Mặt tiền trái", en: "Slot 1 · Left facade" }, placement: "facade" },
+  { id: "right_billboard", label: { vi: "Vị trí 2 · Biển hậu cảnh phải", en: "Slot 2 · Rear-right billboard" }, placement: "billboard" },
+] as const;
+
+export const ALGORITHM_VIDEO_ADS: readonly AlgorithmVideoAd[] = [
+  {
+    id: "test",
+    label: { vi: "TEST quảng cáo (mặc định)", en: "TEST advertisement (default)" },
+    brand: "TEST QUẢNG CÁO",
+    subtitle: "ADVERTISEMENT SLOT",
+    accent: "#7f929f",
+  },
+  {
+    id: "none",
+    label: { vi: "Để trống vị trí", en: "Leave slot empty" },
+    brand: "",
+    accent: "#57636b",
+  },
+  {
+    id: "kata",
+    label: { vi: "KATA Makeup", en: "KATA Makeup" },
+    brand: "KATA.MAKEUP",
+    url: "https://www.kata.makeup/",
+    accent: "#d792a4",
+  },
+  {
+    id: "thiendaochilo",
+    label: { vi: "Thiên Đạo Chi Lộ · Web novel", en: "Thiên Đạo Chi Lộ · Web novel" },
+    brand: "THIÊN ĐẠO CHI LỘ",
+    eyebrow: "TIÊN HIỆP · HUYỀN HUYỄN",
+    subtitle: "MỘT BƯỚC LÊN TRỜI",
+    url: "https://thiendaochilo.vercel.app/",
+    displayUrl: "thiendaochilo.vercel.app",
+    contact: "TÁC GIẢ · DẠ TỬ LAM",
+    accent: "#a11b1b",
+    accentSecondary: "#e8c97a",
+    creative: "thiendaochilo",
+  },
+  {
+    id: "kata_rental",
+    label: { vi: "KATA · Thuê đồ & Makeup", en: "KATA · Rental & Makeup" },
+    brand: "KATA",
+    eyebrow: "KATA RENTAL",
+    subtitle: "TIỆM THUÊ ĐỒ · MAKEUP",
+    url: "https://www.kata.makeup/vi/kata",
+    displayUrl: "kata.makeup/vi/kata",
+    contact: "0393 545 364",
+    address: "63 Nơ Trang Long · Kiến Đức · Lâm Đồng",
+    accent: "#6f3345",
+    accentSecondary: "#c5a163",
+    creative: "kata_rental",
+  },
+] as const;
+
+export function getAlgorithmVideoAd(id: AlgorithmVideoAdId | string | undefined) {
+  return ALGORITHM_VIDEO_ADS.find((item) => item.id === id) ?? ALGORITHM_VIDEO_ADS[0];
+}
+
+export function createDefaultAlgorithmVideoAds(): AlgorithmVideoAdSelection {
+  return { left_facade: "test", right_billboard: "test" };
+}

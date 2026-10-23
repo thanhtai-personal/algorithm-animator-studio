@@ -1,0 +1,516 @@
+{
+  "schema_version": 1,
+  "project": {
+    "name": "Algorithm Animator Studio (OSS cleanup)",
+    "summary": "React/Vite algorithm visualization, maze and long-video authoring with Piper, Supertonic, VieNeu, GPT-SoVITS, ElevenLabs and RVC/Applio TTS providers; unsupported legacy modules are being removed.",
+    "stack": [
+      "React 18",
+      "TypeScript",
+      "Vite",
+      "Express",
+      "Electron",
+      "Remotion",
+      "Three.js / React Three Fiber",
+      "Phaser",
+      "Vitest"
+    ],
+    "entrypoints": [
+      {
+        "path": "src/main.tsx",
+        "role": "Browser bootstrap"
+      },
+      {
+        "path": "src/App.tsx",
+        "role": "Frontend route composition"
+      },
+      {
+        "path": "server/index.ts",
+        "role": "Express composition root"
+      },
+      {
+        "path": "electron/main.cjs",
+        "role": "Desktop main process"
+      }
+    ]
+  },
+  "policy": {
+    "source_of_truth": "Source code, tests, and type definitions override this curated routing index when they disagree.",
+    "default_domain_results": 2,
+    "max_primary_files": 12,
+    "max_primary_lines": 2400,
+    "always_load": [
+      {
+        "path": "AGENTS.md",
+        "role": "Repository-wide rules and guardrails"
+      }
+    ],
+    "never_load_by_default": [
+      ".env and credentials",
+      "node_modules/** and build outputs",
+      "models/** binary model data",
+      "libs/VieNeu-TTS/** vendored source unless the task targets VieNeu internals",
+      "src/components/ui/** generated primitives unless a primitive itself is being changed"
+    ]
+  },
+  "domains": [
+    {
+      "id": "ai-context-tooling",
+      "name": "AI context and repository indexing",
+      "summary": "Curated source context router, agent instructions and reproducible indexing scripts. Generated graphs are local-only.",
+      "keywords": [
+        "understand anything",
+        "knowledge graph",
+        "context index",
+        "context router",
+        "indexing",
+        "agent context",
+        "AGENTS",
+        "cây dữ liệu",
+        "nạp context",
+        "sơ đồ source"
+      ],
+      "primary": [
+        {
+          "path": "AGENTS.md",
+          "role": "Repository-wide context loading rules"
+        },
+        {
+          "path": "docs/ai-context/README.md",
+          "role": "Context router workflow and trust policy"
+        },
+        {
+          "path": "docs/ai-context/index.json",
+          "role": "Curated domain routing data"
+        },
+        {
+          "path": "scripts/context_index.py",
+          "role": "Context query and validation CLI"
+        },
+        {
+          "path": "scripts/build_understand_graph.py",
+          "role": "Deterministic graph assembler"
+        }
+      ],
+      "expand": [
+        "scripts/*context*",
+        "scripts/*understand*"
+      ],
+      "tests": [
+        "scripts/test_context_index.py",
+        "scripts/test_build_understand_graph.py"
+      ],
+      "docs": [
+        "docs/ai-context/README.md"
+      ],
+      "related": [
+        "app-shell",
+        "runtime-assets-jobs"
+      ]
+    },
+    {
+      "id": "app-shell",
+      "name": "Application shell and navigation",
+      "summary": "Routes, navigation groups, layout, localization, feature visibility, auth, and shared browser runtime behavior.",
+      "keywords": [
+        "app",
+        "route",
+        "router",
+        "navigation",
+        "sidebar",
+        "layout",
+        "menu",
+        "i18n",
+        "locale",
+        "auth",
+        "responsive",
+        "điều hướng",
+        "giao diện"
+      ],
+      "primary": [
+        {
+          "path": "src/App.tsx",
+          "role": "Canonical frontend routes"
+        },
+        {
+          "path": "src/components/appNavigation.ts",
+          "role": "Navigation taxonomy"
+        },
+        {
+          "path": "src/components/AppLayout.tsx",
+          "role": "Shared page shell"
+        },
+        {
+          "path": "src/lib/i18n.ts",
+          "role": "Localization runtime"
+        },
+        {
+          "path": "src/lib/menuFeatureSettings.ts",
+          "role": "Feature visibility settings"
+        }
+      ],
+      "expand": [
+        "src/components/App*.tsx",
+        "src/locales/**/*.json",
+        "src/pages/Auth.tsx",
+        "src/lib/auth.ts"
+      ],
+      "tests": [
+        "src/test/App*.test.ts*",
+        "src/lib/auth.test.ts"
+      ],
+      "docs": [],
+      "related": [
+        "runtime-assets-jobs",
+        "desktop-distribution"
+      ]
+    },
+    {
+      "id": "algorithm-studio",
+      "name": "Algorithm video studio",
+      "summary": "Manual algorithms sorting, searching, graph, custom code, visualization and video export without login.",
+      "keywords": [
+        "algorithm",
+        "sorting",
+        "sort",
+        "short",
+        "canvas",
+        "3d",
+        "renderer",
+        "playback",
+        "timeline",
+        "export",
+        "thuật toán",
+        "sắp xếp",
+        "xuất video"
+      ],
+      "primary": [
+        {
+          "path": "src/pages/AlgorithmChannelPage.tsx",
+          "role": "Manual algorithm entrypoint"
+        },
+        {
+          "path": "src/pages/Index.tsx",
+          "role": "Manual studio page"
+        },
+        {
+          "path": "src/lib/algorithms/index.ts",
+          "role": "Algorithm registry"
+        },
+        {
+          "path": "src/pages/studio/renderStudioPreview.ts",
+          "role": "Preview rendering dispatch"
+        },
+        {
+          "path": "src/pages/studio/videoExport.ts",
+          "role": "2D export path"
+        },
+        {
+          "path": "src/pages/studio/videoExport3D.ts",
+          "role": "3D export path"
+        }
+      ],
+      "expand": [
+        "src/pages/studio/**/*",
+        "src/lib/algorithms/**/*",
+        "src/lib/renderers/**/*",
+        "src/features/algorithm-video-3d/**/*"
+      ],
+      "tests": [
+        "src/test/Algorithm*.test.ts*"
+      ],
+      "docs": [
+        "docs/short-studio-algorithms.md",
+        "docs/tasks/sorting-algorithm-tasks.md"
+      ],
+      "related": [
+        "video-rendering-editor",
+        "maze-racing"
+      ]
+    },
+    {
+      "id": "maze-racing",
+      "name": "Maze pathfinding and racing",
+      "summary": "Manual and agentic maze/pathfinding experience with algorithm runners, tournament state, Canvas renderers, and Phaser preview.",
+      "keywords": [
+        "maze",
+        "pathfinding",
+        "graph",
+        "bfs",
+        "dfs",
+        "dijkstra",
+        "astar",
+        "phaser",
+        "tournament",
+        "vehicle",
+        "mê cung",
+        "tìm đường"
+      ],
+      "primary": [
+        {
+          "path": "src/pages/MazePathfindingPage.tsx",
+          "role": "Manual maze entrypoint"
+        },
+        {
+          "path": "src/pages/AlgorithmWorld.tsx",
+          "role": "Manual maze studio"
+        },
+        {
+          "path": "src/lib/algorithmWorld.ts",
+          "role": "Maze domain model"
+        },
+        {
+          "path": "src/lib/algorithmWorldRunner.ts",
+          "role": "Pathfinding execution"
+        },
+        {
+          "path": "src/pages/algorithm-world/PhaserMazePreview.tsx",
+          "role": "Phaser preview entrypoint"
+        }
+      ],
+      "expand": [
+        "src/pages/algorithm-world/**/*",
+        "src/lib/algorithmWorld*.ts",
+        "src/lib/renderers/algorithmWorld*.ts"
+      ],
+      "tests": [],
+      "docs": [
+        "docs/free-maze-racing-assets.md"
+      ],
+      "related": [
+        "algorithm-studio"
+      ]
+    },
+    {
+      "id": "video-rendering-editor",
+      "name": "Video editor and rendering",
+      "summary": "Algorithm Remotion composition and timeline editor/rendering; standalone Math/Preset, story and news templates retired.",
+      "keywords": [
+        "video",
+        "editor",
+        "timeline",
+        "remotion",
+        "render",
+        "ffmpeg",
+        "lyrics",
+        "subtitle",
+        "audio mix",
+        "proshow",
+        "xuất",
+        "dựng phim"
+      ],
+      "primary": [
+        {
+          "path": "src/pages/VideoCreate.tsx",
+          "role": "Manual video workspace"
+        },
+        {
+          "path": "src/features/video-editor/components/ProShowVideoEditor.tsx",
+          "role": "Editor composition"
+        },
+        {
+          "path": "src/features/video-editor/lib/videoEditorApi.ts",
+          "role": "Render API contract"
+        },
+        {
+          "path": "src/features/remotion-video/lib/remotionTimelineTypes.ts",
+          "role": "Shared Remotion timeline contract"
+        },
+        {
+          "path": "server/routes/videoRoutes.ts",
+          "role": "Video and render endpoints"
+        }
+      ],
+      "expand": [
+        "src/features/video-editor/**/*",
+        "src/features/remotion-video/**/*",
+        "server/services/{Video,Timeline,Remotion}*.ts",
+        "server/utils/{ffmpeg,audioOutput,videoOutput}.ts"
+      ],
+      "tests": [
+        "src/test/VideoEditor*.test.ts*",
+        "scripts/tests/oss-remotion-isolation.check.mjs"
+      ],
+      "docs": [
+        "docs/video-create-proshow-editor.md",
+        "docs/remotion-video-engine.md"
+      ],
+      "related": [
+        "voice-providers",
+        "runtime-assets-jobs"
+      ]
+    },
+    {
+      "id": "voice-providers",
+      "name": "Voice and local TTS providers",
+      "summary": "Piper, ElevenLabs, Supertonic, VieNeu, GPT-SoVITS, and RVC/Applio setup, health checks, generation, and runtime configuration.",
+      "keywords": [
+        "voice",
+        "tts",
+        "piper",
+        "elevenlabs",
+        "supertonic",
+        "vieneu",
+        "gpt-sovits",
+        "rvc",
+        "applio",
+        "model",
+        "giọng nói",
+        "đọc"
+      ],
+      "primary": [
+        {
+          "path": "src/pages/TextToSpeech.tsx",
+          "role": "Voice generation UI"
+        },
+        {
+          "path": "src/lib/voiceApi.ts",
+          "role": "Unified frontend voice contracts"
+        },
+        {
+          "path": "server/routes/generateRoutes.ts",
+          "role": "Unified generation route"
+        },
+        {
+          "path": "server/services/TtsGenerationService.ts",
+          "role": "Provider dispatch"
+        },
+        {
+          "path": "server/config/runtimeDefaults.ts",
+          "role": "Local runtime defaults"
+        }
+      ],
+      "expand": [
+        "server/{routes,services,config}/*{Piper,piper,Supertonic,supertonic,Vieneu,vieneu,GptSoVits,gptSoVits,RvcApplio,rvcApplio,ElevenLabs,elevenLabs}*.ts",
+        "src/pages/settings/**/*",
+        "scripts/*{vieneu,supertonic,applio,gpt-sovits}*"
+      ],
+      "tests": [],
+      "docs": [
+        "docs/local-voice-services.md",
+        "docs/vieneu-local-tts-provider.md",
+        "docs/gpt-sovits-local-provider.md",
+        "docs/rvc-applio-local-voice-provider.md"
+      ],
+      "related": [
+        "video-rendering-editor",
+        "runtime-assets-jobs",
+        "desktop-distribution"
+      ]
+    },
+    {
+      "id": "runtime-assets-jobs",
+      "name": "Runtime, assets, setup, and jobs",
+      "summary": "Local runtime, resource output, generated video and audio assets; social publishing and agent queues retired.",
+      "keywords": [
+        "server",
+        "api",
+        "express",
+        "runtime",
+        "setup",
+        "health",
+        "asset",
+        "resource",
+        "job manager",
+        "storage",
+        "backend",
+        "cấu hình",
+        "tài nguyên"
+      ],
+      "primary": [
+        {
+          "path": "server/index.ts",
+          "role": "Backend composition root"
+        },
+        {
+          "path": "src/lib/runtimeApi.ts",
+          "role": "Frontend API URL and error boundary"
+        },
+        {
+          "path": "src/pages/RuntimeSetup.tsx",
+          "role": "Runtime setup UI"
+        },
+        {
+          "path": "src/pages/GeneratedAssets.tsx",
+          "role": "Generated resource management"
+        },
+        {
+          "path": "server/config/paths.ts",
+          "role": "Filesystem path authority"
+        }
+      ],
+      "expand": [
+        "server/{routes,services,models,config,utils}/**/*",
+        "src/lib/{runtimeApi,runtimeSettings,setupWizardApi,generatedAssetsApi,backgroundJobsRealtime}.ts"
+      ],
+      "tests": [
+        "scripts/start-production-local.test.mjs"
+      ],
+      "docs": [
+        "docs/tasks/desktop-public-web-runtime.md"
+      ],
+      "related": [
+        "app-shell",
+        "voice-providers",
+        "desktop-distribution"
+      ]
+    },
+    {
+      "id": "desktop-distribution",
+      "name": "Electron desktop and distribution",
+      "summary": "Electron lifecycle, backend bootstrap, runtime preparation, packaged resources, Windows verification, and public-web/desktop differences.",
+      "keywords": [
+        "electron",
+        "desktop",
+        "windows",
+        "exe",
+        "nsis",
+        "packaging",
+        "build",
+        "bootstrap",
+        "distribution",
+        "đóng gói",
+        "cài đặt"
+      ],
+      "primary": [
+        {
+          "path": "package.json",
+          "role": "Build and packaging commands"
+        },
+        {
+          "path": "electron/main.cjs",
+          "role": "Electron main process"
+        },
+        {
+          "path": "electron/runtime-bootstrap.cjs",
+          "role": "Packaged backend/provider bootstrap"
+        },
+        {
+          "path": "scripts/prepare-desktop-env.mjs",
+          "role": "Desktop environment preparation"
+        },
+        {
+          "path": "scripts/verify-electron-build.mjs",
+          "role": "Packaged build verification"
+        }
+      ],
+      "expand": [
+        "electron/**/*",
+        "scripts/{ensure-electron-binary,start-production-local,prepare-desktop-env,verify-electron-build}.mjs",
+        "vite.config.ts",
+        "vercel.json"
+      ],
+      "tests": [
+        "scripts/start-production-local.test.mjs"
+      ],
+      "docs": [
+        "docs/electron-windows-build.md",
+        "docs/tasks/desktop-public-web-runtime.md"
+      ],
+      "related": [
+        "runtime-assets-jobs",
+        "voice-providers",
+        "app-shell"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+.fantastic-mode [data-fantastic-enter] {
+  animation-delay: var(--fantastic-enter-delay, 0ms);
+  animation-duration: 560ms;
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fantastic-mode [data-fantastic-enter="left"] {
+  animation-name: fantastic-enter-left;
+}
+
+.fantastic-mode [data-fantastic-enter="right"] {
+  animation-name: fantastic-enter-right;
+}
+
+.fantastic-mode [data-fantastic-enter="top"] {
+  animation-name: fantastic-enter-top;
+}
+
+.fantastic-mode [data-fantastic-enter="bottom"] {
+  animation-name: fantastic-enter-bottom;
+}
+
+.fantastic-mode [data-fantastic-enter="pop"] {
+  animation-name: fantastic-enter-pop;
+  animation-duration: 480ms;
+}
+
+.fantastic-mode button:not(:disabled),
+.fantastic-mode a,
+.fantastic-mode [role="tab"],
+.fantastic-mode input,
+.fantastic-mode textarea,
+.fantastic-mode [role="combobox"] {
+  transition:
+    transform 220ms cubic-bezier(0.2, 1, 0.22, 1),
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+.fantastic-mode input:focus,
+.fantastic-mode textarea:focus,
+.fantastic-mode [role="combobox"]:focus {
+  transform: translateY(-1px) scale(1.004);
+}
+
+@keyframes fantastic-enter-left {
+  0% {
+    opacity: 0;
+    transform: translate3d(-42px, 12px, 0) scale(0.982);
+  }
+  68% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes fantastic-enter-right {
+  0% {
+    opacity: 0;
+    transform: translate3d(42px, 12px, 0) scale(0.982);
+  }
+  68% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes fantastic-enter-top {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -34px, 0) scale(0.988);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes fantastic-enter-bottom {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 34px, 0) scale(0.988);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes fantastic-enter-pop {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.82);
+  }
+  70% {
+    opacity: 1;
+    transform: translate3d(0, -1px, 0) scale(1.035);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fantastic-mode [data-fantastic-enter] {
+    animation: none;
+  }
+}

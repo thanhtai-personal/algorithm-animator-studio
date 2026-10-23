@@ -1,0 +1,364 @@
+import type {
+  AlgorithmWorldAlgorithmId,
+  AlgorithmWorldCell,
+  AlgorithmWorldMazeId,
+  AlgorithmWorldPresentationMode,
+  AlgorithmWorldProblemType,
+  AlgorithmWorldScenarioOptions,
+  AlgorithmWorldTournamentResults,
+  AlgorithmWorldTournamentRound,
+  Frame,
+} from "./algorithms/types";
+import {
+  WORLD_GOAL,
+  WORLD_START,
+  cellKey,
+  cellListToKeys,
+  makeDynamicObstacleSets,
+  makeMazeWalls,
+  manhattan,
+  neighbors,
+  sameCell,
+  resolveMazeId,
+  worldAlgorithmName,
+} from "./algorithmWorld";
+import { resolveTournamentMatch, tournamentSeed } from "./algorithmWorldTournament";
+import { pushWorldFrame } from "./algorithmWorldFrameBuilder";
+import { createRaceCompareFrames } from "./algorithmWorldRaceRunner";
+import { runBidirectionalBfs, runTremaux, runWallFollower } from "./algorithmWorldSearchStrategies";
+
+type ScoreMap = Record<string, number>;
+export type SearchResult = { frames: Frame[]; path: AlgorithmWorldCell[]; visitedCount: number; reached: boolean };
+type BuildArgs = Required<Pick<AlgorithmWorldScenarioOptions, "videoMode" | "compareEnabled" | "presentationMode" | "problemType" | "mazeId" | "primaryAlgorithm" | "secondaryAlgorithm" | "primaryVehicleColor" | "secondaryVehicleColor" | "primaryVehicleId" | "secondaryVehicleId">> & { randomMazeRequested: boolean; tournamentEnabled: boolean; tournamentRound: AlgorithmWorldTournamentRound; tournamentMatch: number; tournamentResults: AlgorithmWorldTournamentResults; tournamentEntrants: AlgorithmWorldAlgorithmId[] };
+export type AlgorithmWorldBuildArgs = BuildArgs;
+
+export function createAlgorithmWorldFrames(opts: AlgorithmWorldScenarioOptions = {}) {
+  const tournamentEnabled = opts.tournamentEnabled ?? false;
+  const tournamentRound = (opts.tournamentRound ?? 0) as AlgorithmWorldTournamentRound;
+  const tournamentMatch = opts.tournamentMatch ?? 0;
+  const tournamentResults = opts.tournamentResults ?? {};
+  const tournamentEntrants = opts.tournamentEntrants ?? [];
+  const tournament = tournamentEnabled ? resolveTournamentMatch(tournamentRound, tournamentMatch, tournamentResults, tournamentEntrants) : null;
+  const requestedMazeId = tournamentEnabled ? "random" : opts.mazeId ?? "astar_labyrinth";
+  const mazeSeed = tournamentEnabled ? tournamentSeed(tournamentRound, tournamentMatch, tournamentEntrants) : opts.randomSeed ?? Date.now();
+  const args: BuildArgs = {
+    videoMode: opts.videoMode ?? "short",
+    compareEnabled: opts.compareEnabled ?? opts.videoMode === "long",
+    presentationMode: opts.presentationMode ?? "explainer",
+    problemType: opts.problemType ?? "fastest",
+    mazeId: resolveMazeId(requestedMazeId, mazeSeed),
+    randomMazeRequested: requestedMazeId === "random" || tournamentEnabled,
+    primaryAlgorithm: tournament?.left ?? opts.primaryAlgorithm ?? "astar",
+    secondaryAlgorithm: tournament?.right ?? opts.secondaryAlgorithm ?? "dijkstra",
+    primaryVehicleColor: opts.primaryVehicleColor ?? "#34d399",
+    secondaryVehicleColor: opts.secondaryVehicleColor ?? "#facc15",
+    primaryVehicleId: opts.primaryVehicleId ?? "bolt",
+    secondaryVehicleId: opts.secondaryVehicleId ?? "comet",
+    tournamentEnabled,
+    tournamentRound,
+    tournamentMatch,
+    tournamentResults,
+    tournamentEntrants,
+  };
+  const compareEnabled = args.compareEnabled || args.presentationMode === "vehicle_race";
+  if (args.presentationMode === "vehicle_race") return createRaceCompareFrames(args);
+  if (compareEnabled) return createCompareFrames(args);
+  return createSingleFrames(args.primaryAlgorithm, args.problemType, args.mazeId, args.presentationMode);
+}
+
+function createCompareFrames(args: BuildArgs) {
+  const left = createSingleFrames(args.primaryAlgorithm, args.problemType, args.mazeId, args.presentationMode);
+  const right = createSingleFrames(args.secondaryAlgorithm, args.problemType, args.mazeId, args.presentationMode);
+  const max = Math.max(left.length, right.length);
+  const frames: Frame[] = [];
+  for (let i = 0; i < max; i++) {
+    const leftFrame = left[Math.min(i, left.length - 1)];
+    const rightFrame = right[Math.min(i, right.length - 1)];
+    frames.push({
+      ...leftFrame,
+      vars: {
+        ...leftFrame.vars,
+        task: args.problemType === "escape" ? "Find a path to the exit" : "Find the fastest path to the exit",
+        layout: args.videoMode,
+        presentation: args.presentationMode,
+        compareLeft: worldAlgorithmName(args.primaryAlgorithm),
+        compareRight: worldAlgorithmName(args.secondaryAlgorithm),
+      },
+      world: undefined,
+      worldCompare: {
+        problemType: args.problemType,
+        left: leftFrame.world!,
+        right: rightFrame.world!,
+      },
+    });
+  }
+  return frames;
+}
+
+function createSingleFrames(algorithm: AlgorithmWorldAlgorithmId, problemType: AlgorithmWorldProblemType, mazeId: AlgorithmWorldMazeId, presentationMode: AlgorithmWorldPresentationMode) {
+  const baseWalls = makeMazeWalls(mazeId);
+  const dynamicSets = makeDynamicObstacleSets(mazeId);
+  const frames: Frame[] = [];
+  const allDynamicWalls: AlgorithmWorldCell[] = [];
+  let searchStart = WORLD_START;
+  let previousPath: AlgorithmWorldCell[] = [];
+  let committedPrefix: AlgorithmWorldCell[] = [WORLD_START];
+
+  pushWorldFrame(frames, algorithm, problemType, {
+    phase: "setup",
+    status: `${worldAlgorithmName(algorithm)} starts at the maze entrance and looks for the exit.`,
+    walls: baseWalls,
+    dynamicWalls: [],
+    openSet: [WORLD_START],
+    closedSet: [],
+    current: WORLD_START,
+    path: [],
+    previousPath: [],
+    replanCount: 0,
+    mazeId,
+    presentationMode,
+    line: 0,
+  });
+
+  for (let wave = 0; wave < dynamicSets.length; wave++) {
+    const result = runSearch({
+      algorithm,
+      problemType,
+      start: searchStart,
+      goal: WORLD_GOAL,
+      baseWalls,
+      dynamicWalls: allDynamicWalls,
+      previousPath,
+      committedPrefix,
+      replanCount: wave,
+      mazeId,
+      presentationMode,
+    });
+    frames.push(...result.frames);
+    previousPath = mergePath(committedPrefix, result.path);
+
+    const index = Math.min(previousPath.length - 2, Math.max(1, Math.floor(previousPath.length * 0.34)));
+    searchStart = previousPath[index] ?? searchStart;
+    committedPrefix = previousPath.slice(0, index + 1);
+    const blockers = dynamicSets[wave];
+    allDynamicWalls.push(...blockers);
+    pushWorldFrame(frames, algorithm, problemType, {
+      phase: "obstacle",
+      status: "Real-time walls appear. The old route breaks, so the search restarts from the current position.",
+      walls: baseWalls,
+      dynamicWalls: [...allDynamicWalls],
+      openSet: [],
+      closedSet: [],
+      current: searchStart,
+      path: committedPrefix,
+      previousPath,
+      shatteredPath: previousPath,
+      pulseCells: blockers,
+      replanCount: wave + 1,
+      mazeId,
+      presentationMode,
+      line: 8,
+      event: "swap",
+    });
+  }
+
+  const final = runSearch({
+    algorithm,
+    problemType,
+    start: searchStart,
+    goal: WORLD_GOAL,
+    baseWalls,
+    dynamicWalls: allDynamicWalls,
+    previousPath,
+    committedPrefix,
+    replanCount: dynamicSets.length,
+    mazeId,
+    presentationMode,
+  });
+  frames.push(...final.frames);
+  pushWorldFrame(frames, algorithm, problemType, {
+    phase: "done",
+    status: `Exit reached. Final route runs from entrance to exit using ${worldAlgorithmName(algorithm)}.`,
+    walls: baseWalls,
+    dynamicWalls: allDynamicWalls,
+    openSet: [],
+    closedSet: [],
+    current: WORLD_GOAL,
+    path: mergePath(committedPrefix, final.path),
+    previousPath,
+    replanCount: dynamicSets.length,
+    mazeId,
+    presentationMode,
+    visitedCount: final.visitedCount,
+    line: 0,
+    event: "found",
+  });
+  return frames;
+}
+
+export type SearchParams = {
+  algorithm: AlgorithmWorldAlgorithmId;
+  problemType: AlgorithmWorldProblemType;
+  start: AlgorithmWorldCell;
+  goal: AlgorithmWorldCell;
+  baseWalls: AlgorithmWorldCell[];
+  dynamicWalls: AlgorithmWorldCell[];
+  previousPath: AlgorithmWorldCell[];
+  committedPrefix: AlgorithmWorldCell[];
+  replanCount: number;
+  mazeId: AlgorithmWorldMazeId;
+  presentationMode: AlgorithmWorldPresentationMode;
+};
+
+export function runSearch(params: SearchParams): SearchResult {
+  if (params.algorithm === "bidirectional_bfs") return runBidirectionalBfs(params);
+  if (params.algorithm === "wall_follower") return runWallFollower(params);
+  if (params.algorithm === "tremaux") return runTremaux(params);
+  const blocked = cellListToKeys([...params.baseWalls, ...params.dynamicWalls]);
+  const frontier: AlgorithmWorldCell[] = [params.start];
+  const frontierKeys = new Set([cellKey(params.start)]);
+  const closed: AlgorithmWorldCell[] = [];
+  const cameFrom = new Map<string, AlgorithmWorldCell>();
+  const gScore: ScoreMap = { [cellKey(params.start)]: 0 };
+  const hScore: ScoreMap = { [cellKey(params.start)]: manhattan(params.start, params.goal) };
+  const fScore: ScoreMap = { [cellKey(params.start)]: score(params.algorithm, 0, hScore[cellKey(params.start)]) };
+  const frames: Frame[] = [];
+  let lastPath: AlgorithmWorldCell[] = [params.start];
+
+  while (frontier.length) {
+    sortFrontier(frontier, params.algorithm, gScore, fScore);
+    const current = frontier.shift()!;
+    frontierKeys.delete(cellKey(current));
+    if (closed.some((cell) => sameCell(cell, current))) continue;
+    closed.push(current);
+    lastPath = reconstructPath(cameFrom, current);
+    const fullPath = mergePath(params.committedPrefix, lastPath);
+    const reached = sameCell(current, params.goal);
+    pushWorldFrame(frames, params.algorithm, params.problemType, {
+      phase: params.replanCount ? "replan" : "search",
+      status: statusText(params.algorithm, reached, params.replanCount),
+      walls: params.baseWalls,
+      dynamicWalls: params.dynamicWalls,
+      openSet: [...frontier],
+      closedSet: [...closed],
+      current,
+      path: reached ? fullPath : params.committedPrefix,
+      previousPath: params.previousPath,
+      scores: scoreSnapshot(current, gScore, hScore, fScore),
+      replanCount: params.replanCount,
+      mazeId: params.mazeId,
+      presentationMode: params.presentationMode,
+      stepCount: frames.length + 1,
+      visitedCount: closed.length,
+      line: reached ? 0 : 2,
+      event: reached ? "found" : "visit",
+    });
+    if (reached) return { frames, path: lastPath, visitedCount: closed.length, reached: true };
+
+    for (const next of orderedNeighbors(current, params.algorithm)) {
+      const nextKey = cellKey(next);
+      if (blocked.has(nextKey) || closed.some((cell) => sameCell(cell, next))) continue;
+      const tentativeG = (gScore[cellKey(current)] ?? Infinity) + cellCost(next, params.problemType);
+      if (tentativeG >= (gScore[nextKey] ?? Infinity)) continue;
+      cameFrom.set(nextKey, current);
+      gScore[nextKey] = tentativeG;
+      hScore[nextKey] = manhattan(next, params.goal);
+      fScore[nextKey] = score(params.algorithm, tentativeG, hScore[nextKey]);
+      if (!frontierKeys.has(nextKey)) {
+        if (params.algorithm === "dfs") frontier.unshift(next);
+        else frontier.push(next);
+        frontierKeys.add(nextKey);
+      }
+      pushWorldFrame(frames, params.algorithm, params.problemType, {
+        phase: params.replanCount ? "replan" : "search",
+        status: `${worldAlgorithmName(params.algorithm)} checks neighbor cells and updates runtime counters.`,
+        walls: params.baseWalls,
+        dynamicWalls: params.dynamicWalls,
+        openSet: [...frontier],
+        closedSet: [...closed],
+        current: next,
+        path: params.committedPrefix,
+        previousPath: params.previousPath,
+        pulseCells: [next],
+        scores: scoreSnapshot(next, gScore, hScore, fScore),
+        replanCount: params.replanCount,
+        mazeId: params.mazeId,
+        presentationMode: params.presentationMode,
+        stepCount: frames.length + 1,
+        visitedCount: closed.length,
+        line: 6,
+        event: "compare",
+      });
+    }
+    trimBeamFrontier(frontier, params.algorithm, fScore);
+  }
+  return { frames, path: lastPath, visitedCount: closed.length, reached: false };
+}
+
+function orderedNeighbors(cell: AlgorithmWorldCell, algorithm: AlgorithmWorldAlgorithmId) {
+  const list = neighbors(cell);
+  if (algorithm === "dfs") return [...list].reverse();
+  return list;
+}
+
+function sortFrontier(frontier: AlgorithmWorldCell[], algorithm: AlgorithmWorldAlgorithmId, gScore: ScoreMap, fScore: ScoreMap) {
+  if (algorithm === "bfs" || algorithm === "dfs") return;
+  const scores = algorithm === "dijkstra" ? gScore : fScore;
+  frontier.sort((a, b) => (scores[cellKey(a)] ?? Infinity) - (scores[cellKey(b)] ?? Infinity));
+}
+
+function trimBeamFrontier(frontier: AlgorithmWorldCell[], algorithm: AlgorithmWorldAlgorithmId, fScore: ScoreMap) {
+  if (algorithm !== "beam") return;
+  frontier.sort((a, b) => (fScore[cellKey(a)] ?? Infinity) - (fScore[cellKey(b)] ?? Infinity));
+  frontier.splice(4);
+}
+
+function score(algorithm: AlgorithmWorldAlgorithmId, g: number, h: number) {
+  if (algorithm === "greedy") return h;
+  if (algorithm === "fringe") return g + h * 0.92;
+  if (algorithm === "theta_star") return g * 0.85 + h;
+  if (algorithm === "weighted_astar") return g + h * 1.8;
+  if (algorithm === "astar" || algorithm === "beam") return g + h;
+  if (algorithm === "dijkstra") return g;
+  return g;
+}
+
+function cellCost(cell: AlgorithmWorldCell, problemType: AlgorithmWorldProblemType) {
+  if (problemType === "escape") return 1;
+  return 1 + (cell.x % 5 === 0 || cell.y % 4 === 0 ? 2 : 0);
+}
+
+function statusText(algorithm: AlgorithmWorldAlgorithmId, reached: boolean, replanCount: number) {
+  if (reached) return `${worldAlgorithmName(algorithm)} found a complete path from entrance to exit.`;
+  if (algorithm === "greedy") return `${worldAlgorithmName(algorithm)} chases the closest-looking cell toward the exit.`;
+  if (algorithm === "weighted_astar") return `${worldAlgorithmName(algorithm)} pushes harder toward the exit than classic A*.`;
+  if (algorithm === "beam") return `${worldAlgorithmName(algorithm)} keeps only a few best-looking frontier cells.`;
+  if (algorithm === "fringe") return `${worldAlgorithmName(algorithm)} batches promising frontier cells before raising its search threshold.`;
+  if (algorithm === "theta_star") return `${worldAlgorithmName(algorithm)} favors direct sight lines while still using A*-style guidance.`;
+  return replanCount
+    ? `${worldAlgorithmName(algorithm)} replans after the maze changed.`
+    : `${worldAlgorithmName(algorithm)} expands the maze from the entrance.`;
+}
+
+function reconstructPath(cameFrom: Map<string, AlgorithmWorldCell>, current: AlgorithmWorldCell) {
+  const path = [current];
+  let key = cellKey(current);
+  while (cameFrom.has(key)) {
+    const prev = cameFrom.get(key)!;
+    path.unshift(prev);
+    key = cellKey(prev);
+  }
+  return path;
+}
+
+function mergePath(prefix: AlgorithmWorldCell[], suffix: AlgorithmWorldCell[]) {
+  if (!prefix.length) return suffix;
+  if (!suffix.length) return prefix;
+  return sameCell(prefix[prefix.length - 1], suffix[0]) ? [...prefix, ...suffix.slice(1)] : [...prefix, ...suffix];
+}
+
+function scoreSnapshot(cell: AlgorithmWorldCell, gScore: ScoreMap, hScore: ScoreMap, fScore: ScoreMap) {
+  const key = cellKey(cell);
+  return { g: gScore[key] ?? 0, h: hScore[key] ?? 0, f: fScore[key] ?? 0 };
+}
+

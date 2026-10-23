@@ -1,0 +1,26 @@
+/*
+ * Runtime performance guardrails. Keep functional transitions intact while
+ * stopping decorative loops that continuously consume compositor/GPU time.
+ */
+
+.fantastic-mode .tabs-list-animated::before,
+.fantastic-mode .kai-switch::before {
+  animation: none;
+}
+
+.fantastic-mode .tabs-list-animated::before {
+  transform: translateX(0);
+  opacity: 0.22;
+}
+
+.fantastic-mode .kai-switch::before {
+  transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabs-active-indicator,
+  .kai-switch::before,
+  .switch-thumb-indicator {
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,42 @@
+name: OSS source release candidate (manual, gated)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  review-snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Reproducible algorithms, TTS contract, web and server verification
+        run: npm run validate:oss
+      - name: Generate CycloneDX dependency inventory
+        run: |
+          mkdir -p artifacts/oss-dependency-audit
+          npm sbom --sbom-format cyclonedx > artifacts/oss-dependency-audit/npm-sbom.cdx.json
+      - name: Block on high/critical production advisories
+        run: npm run audit:oss:vulns
+      - name: Review dependency license blockers
+        run: npm run audit:oss:deps
+      - name: Require complete history, rights and maintainer signoff
+        run: npm run audit:oss:release
+      - name: Prepare source-only REVIEW archive (never auto-publish)
+        run: npm run prepare:oss:snapshot
+      - name: Upload cleared review archive for maintainer inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: oss-source-review
+          path: artifacts/oss-release-review/*
+          if-no-files-found: error

@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Thiết lập KAI STUDIO</title>
+    <style>
+      :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 16% 0%, rgba(139, 92, 246, .26), transparent 34%), #070717; color: #f8fafc; }
+      main { width: min(980px, calc(100vw - 40px)); margin: 22px auto; }
+      .panel { border: 1px solid rgba(148, 163, 184, .24); border-radius: 26px; padding: 22px; background: rgba(15, 23, 42, .88); box-shadow: 0 24px 80px rgba(0,0,0,.38); }
+      .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+      .step { border: 1px solid rgba(148,163,184,.16); border-radius: 16px; padding: 12px 14px; background: rgba(2,6,23,.45); color: #94a3b8; font-weight: 800; font-size: 13px; }
+      .step.active { color: #f8fafc; border-color: rgba(167,139,250,.55); background: rgba(139,92,246,.18); }
+      h1 { margin: 0 0 8px; font-size: 22px; letter-spacing: -.02em; }
+      h2 { margin: 20px 0 10px; font-size: 15px; color: #e2e8f0; }
+      p { margin: 0; color: #cbd5e1; line-height: 1.55; }
+      .muted { color: #94a3b8; font-size: 12px; line-height: 1.5; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+      label { display: grid; gap: 6px; color: #cbd5e1; font-size: 12px; font-weight: 700; }
+      input, select { width: 100%; border: 1px solid rgba(148,163,184,.24); border-radius: 13px; padding: 11px 12px; background: rgba(2,6,23,.62); color: #f8fafc; outline: none; }
+      input:focus, select:focus { border-color: rgba(167,139,250,.75); }
+      .with-button { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+      .full { grid-column: 1 / -1; }
+      .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+      button { border: 0; border-radius: 14px; padding: 11px 16px; font-weight: 800; color: #0f172a; background: #f8fafc; cursor: pointer; }
+      button[disabled] { cursor: not-allowed; opacity: .48; }
+      .secondary { color: #f8fafc; background: rgba(148,163,184,.16); }
+      .progress-wrap { margin: 18px 0 14px; height: 10px; overflow: hidden; border-radius: 999px; background: rgba(51,65,85,.9); }
+      .progress { width: 5%; height: 100%; background: linear-gradient(90deg, #8b5cf6, #22c55e); transition: width .25s ease; }
+      .message { margin-top: 14px; padding: 14px 16px; border-radius: 16px; background: rgba(2, 6, 23, .52); color: #dbeafe; font-size: 13px; line-height: 1.55; white-space: pre-wrap; }
+      .list { display: grid; gap: 10px; margin-top: 18px; max-height: 380px; overflow: auto; padding-right: 4px; }
+      .task { border: 1px solid rgba(148, 163, 184, .16); border-radius: 16px; padding: 12px 14px; background: rgba(15, 23, 42, .72); }
+      .task-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .task-title { font-size: 14px; font-weight: 800; }
+      .badge { border-radius: 999px; padding: 4px 9px; font-size: 11px; font-weight: 900; text-transform: uppercase; color: #cbd5e1; background: rgba(148,163,184,.16); }
+      .success { color: #bbf7d0; background: rgba(34,197,94,.16); }
+      .failed { color: #fecaca; background: rgba(239,68,68,.16); }
+      .running { color: #bfdbfe; background: rgba(59,130,246,.16); }
+      .skipped { color: #fde68a; background: rgba(245,158,11,.16); }
+      .pending { color: #ddd6fe; background: rgba(139,92,246,.16); }
+      .warning { color: #fde68a; background: rgba(245,158,11,.16); }
+      .task-detail, .command, .output { margin-top: 8px; color: #cbd5e1; font-size: 12px; line-height: 1.45; word-break: break-word; }
+      .command { color: #a5b4fc; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; }
+      .output { max-height: 130px; overflow: auto; padding: 10px; border-radius: 12px; background: rgba(2,6,23,.72); color: #e2e8f0; white-space: pre-wrap; }
+      .hidden { display: none !important; }
+      .finish-card { margin-top: 18px; border: 1px solid rgba(34,197,94,.28); border-radius: 18px; padding: 16px; background: rgba(34,197,94,.08); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="panel">
+        <div class="steps">
+          <div id="stepConfigTab" class="step active">1. Cấu hình nơi lưu</div>
+          <div id="stepInstallTab" class="step">2. Cài service</div>
+          <div id="stepFinishTab" class="step">3. Hoàn tất</div>
+        </div>
+
+        <section id="configView">
+          <h1>Thiết lập KAI STUDIO lần đầu</h1>
+          <p>Chọn nơi lưu model, dữ liệu sinh ra và kiểm tra lại các port/service local. App chỉ cài phần còn thiếu sau khi bạn bấm bắt đầu.</p>
+
+          <h2>Thư mục runtime</h2>
+          <div class="grid">
+            <label class="full">Nơi lưu models Piper / runtime voice
+              <div class="with-button">
+                <input id="MODEL_DIR" />
+                <button class="secondary" data-browse="MODEL_DIR">Chọn</button>
+              </div>
+            </label>
+            <label class="full">Nơi lưu generated data/audio/video
+              <div class="with-button">
+                <input id="SERVER_DATA_DIR" />
+                <button class="secondary" data-browse="SERVER_DATA_DIR">Chọn</button>
+              </div>
+            </label>
+          </div>
+
+          <h2>Port local</h2>
+          <div class="grid">
+            <label>Backend server
+              <input id="SERVER_ORIGIN" placeholder="http://localhost:5050" />
+            </label>
+            <label>Desktop client
+              <input id="CLIENT_ORIGIN" placeholder="http://localhost:3000" />
+            </label>
+            <label>Supertonic URL
+              <input id="SUPERTONIC_BASE_URL" placeholder="http://127.0.0.1:6688" />
+            </label>
+            <label>Applio URL
+              <input id="RVC_APPLIO_BASE_URL" placeholder="http://127.0.0.1:6969" />
+            </label>
+            <label>VieNeu remote URL
+              <input id="VIENEU_REMOTE_API_BASE" placeholder="http://127.0.0.1:23333/v1" />
+            </label>
+            <label>Supertonic model
+              <select id="SUPERTONIC_MODEL">
+                <option value="supertonic-3">supertonic-3</option>
+                <option value="supertonic-2">supertonic-2</option>
+                <option value="supertonic">supertonic</option>
+              </select>
+            </label>
+          </div>
+
+          <h2>Service nâng cao</h2>
+          <div class="grid">
+            <label class="full">Lệnh khởi động Applio/RVC
+              <input id="RVC_APPLIO_START_COMMAND" placeholder="C:/TOOLS/ApplioV3.6.2/run-applio.bat" />
+            </label>
+            <label>Applio API name
+              <input id="RVC_APPLIO_API_NAME" placeholder="/infer_convert" />
+            </label>
+            <label>Applio Python
+              <input id="RVC_APPLIO_PYTHON" placeholder=".venv/Scripts/python.exe" />
+            </label>
+            <label>VieNeu source dir
+              <input id="VIENEU_SOURCE_DIR" placeholder="libs/VieNeu-TTS" />
+            </label>
+            <label>VieNeu Python
+              <input id="VIENEU_PYTHON" placeholder=".venv/Scripts/python.exe" />
+            </label>
+            <label>VieNeu auto start
+              <select id="VIENEU_AUTO_START"><option value="true">true</option><option value="false">false</option></select>
+            </label>
+            <label>VieNeu mode
+              <select id="VIENEU_MODE"><option value="turbo">turbo</option><option value="quality">quality</option></select>
+            </label>
+          </div>
+
+          <div class="message">Lưu ý: app sẽ chạy lệnh bằng hidden process, log hiển thị trong màn hình này. App không tự mở localhost:6969; nếu Applio tự mở browser thì cần kiểm tra lại nội dung file .bat.</div>
+          <div class="actions"><button id="startBtn">Bắt đầu cài đặt</button></div>
+        </section>
+
+        <section id="installView" class="hidden">
+          <h1>Đang cài đặt service local</h1>
+          <p>Task nào đã có sẵn sẽ được bỏ qua. Task nào lỗi sẽ được giữ lại trong báo cáo cuối.</p>
+          <div class="progress-wrap"><div id="progress" class="progress"></div></div>
+          <div id="message" class="message">Đang chuẩn bị...</div>
+          <div id="tasks" class="list"></div>
+        </section>
+
+        <section id="finishView" class="hidden">
+          <h1>Hoàn tất thiết lập</h1>
+          <div id="finishMessage" class="finish-card">Đã hoàn tất setup.</div>
+          <div class="actions"><button id="continueBtn" disabled>Vào Studio</button></div>
+        </section>
+      </section>
+    </main>
+    <script>
+      const { ipcRenderer } = require("electron");
+      const fields = [
+        "MODEL_DIR", "SERVER_DATA_DIR", "SERVER_ORIGIN", "CLIENT_ORIGIN", "SUPERTONIC_BASE_URL", "SUPERTONIC_MODEL",
+        "RVC_APPLIO_BASE_URL", "RVC_APPLIO_START_COMMAND", "RVC_APPLIO_API_NAME", "RVC_APPLIO_PYTHON",
+        "VIENEU_SOURCE_DIR", "VIENEU_PYTHON", "VIENEU_AUTO_START", "VIENEU_MODE", "VIENEU_REMOTE_API_BASE",
+      ];
+      const configView = document.getElementById("configView");
+      const installView = document.getElementById("installView");
+      const finishView = document.getElementById("finishView");
+      const message = document.getElementById("message");
+      const tasksEl = document.getElementById("tasks");
+      const progress = document.getElementById("progress");
+      const continueBtn = document.getElementById("continueBtn");
+      const finishMessage = document.getElementById("finishMessage");
+      const tasks = new Map();
+      let total = 8;
+
+      document.getElementById("startBtn").addEventListener("click", () => {
+        const payload = collectConfig();
+        switchStep("install");
+        ipcRenderer.send("runtime-setup-save-config", payload);
+      });
+      continueBtn.addEventListener("click", () => ipcRenderer.send("runtime-setup-continue"));
+
+      document.querySelectorAll("[data-browse]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const id = button.getAttribute("data-browse");
+          const input = document.getElementById(id);
+          const selected = await ipcRenderer.invoke("runtime-setup-select-directory", input.value);
+          if (selected) input.value = selected;
+        });
+      });
+
+      ipcRenderer.invoke("runtime-setup-initial-config").then((config) => {
+        for (const id of fields) {
+          const input = document.getElementById(id);
+          if (input && config[id] !== undefined) input.value = config[id];
+        }
+      });
+
+      function collectConfig() {
+        const values = {};
+        for (const id of fields) values[id] = document.getElementById(id)?.value || "";
+        values.VITE_API_URL = values.SERVER_ORIGIN;
+        values.VITE_CLIENT_ORIGIN = values.CLIENT_ORIGIN;
+        values.VITE_PUBLIC_WEB = "false";
+        return values;
+      }
+
+      function switchStep(step) {
+        configView.classList.toggle("hidden", step !== "config");
+        installView.classList.toggle("hidden", step !== "install");
+        finishView.classList.toggle("hidden", step !== "finish");
+        document.getElementById("stepConfigTab").classList.toggle("active", step === "config");
+        document.getElementById("stepInstallTab").classList.toggle("active", step === "install");
+        document.getElementById("stepFinishTab").classList.toggle("active", step === "finish");
+      }
+
+      function normalizeState(value) {
+        if (value === "done") return "success";
+        if (value === "error") return "failed";
+        if (value === "warning") return "warning";
+        return value || "running";
+      }
+
+      function upsertTask(task) {
+        if (!task || !task.id) return;
+        tasks.set(task.id, { ...(tasks.get(task.id) || {}), ...task, state: normalizeState(task.state || task.status) });
+        renderTasks();
+        updateProgress();
+      }
+
+      function renderTasks() {
+        tasksEl.innerHTML = "";
+        for (const task of tasks.values()) {
+          const state = normalizeState(task.state);
+          const row = document.createElement("article");
+          row.className = "task";
+          row.innerHTML = `
+            <div class="task-head">
+              <div class="task-title">${escapeHtml(task.label || task.id)}</div>
+              <div class="badge ${state}">${labelForState(state)}</div>
+            </div>
+            ${task.detail ? `<div class="task-detail">${escapeHtml(task.detail)}</div>` : ""}
+            ${task.command ? `<div class="command">$ ${escapeHtml(task.command)}</div>` : ""}
+            ${task.message ? `<div class="task-detail">${escapeHtml(task.message)}</div>` : ""}
+            ${task.output ? `<div class="output">${escapeHtml(task.output)}</div>` : ""}
+          `;
+          tasksEl.appendChild(row);
+        }
+      }
+
+      function updateProgress() {
+        const values = [...tasks.values()];
+        const finished = values.filter((task) => ["success", "failed", "skipped", "warning"].includes(normalizeState(task.state))).length;
+        const denominator = Math.max(total, values.length, 1);
+        progress.style.width = `${Math.min(100, Math.max(5, Math.round((finished / denominator) * 100)))}%`;
+      }
+
+      function finish(payload) {
+        const failed = payload?.summary?.failed || [...tasks.values()].filter((task) => normalizeState(task.state) === "failed").length;
+        const success = payload?.summary?.success || [...tasks.values()].filter((task) => normalizeState(task.state) === "success").length;
+        const skipped = payload?.summary?.skipped || [...tasks.values()].filter((task) => normalizeState(task.state) === "skipped").length;
+        progress.style.width = "100%";
+        finishMessage.className = failed ? "finish-card failed" : "finish-card success";
+        finishMessage.textContent = payload?.message || `Success: ${success}, Failed: ${failed}, Skipped: ${skipped}.`;
+        continueBtn.disabled = false;
+        switchStep("finish");
+      }
+
+      function labelForState(state) {
+        if (state === "success") return "Success";
+        if (state === "failed") return "Failed";
+        if (state === "skipped") return "Skipped";
+        if (state === "pending") return "Pending";
+        if (state === "warning") return "Warning";
+        return "Running";
+      }
+
+      function escapeHtml(value) {
+        return String(value || "").replace(/[&<>'"]/g, (char) => ({
+          "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
+        }[char]));
+      }
+
+      ipcRenderer.on("runtime-setup-status", (_event, payload) => {
+        if (payload?.kind === "config-error") {
+          alert(payload.message || "Không lưu được cấu hình.");
+          switchStep("config");
+          return;
+        }
+
+        if (payload?.message && message) message.textContent = payload.message;
+
+        if (payload?.kind === "task-list") {
+          tasks.clear();
+          total = Math.max(payload.tasks?.length || 0, 1);
+          for (const task of payload.tasks || []) upsertTask(task);
+          return;
+        }
+
+        if (payload?.kind === "task-update") {
+          upsertTask(payload.task);
+          return;
+        }
+
+        if (payload?.kind === "summary" || payload?.kind === "ready") {
+          finish(payload);
+          return;
+        }
+
+        if (payload?.step && payload.step !== "config") {
+          upsertTask({
+            id: `runtime-${payload.step}`,
+            label: payload.step === "ready" ? "Runtime bootstrap" : payload.step,
+            state: normalizeState(payload.status),
+            detail: payload.message,
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
